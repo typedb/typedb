@@ -25,11 +25,22 @@ import io.mindmaps.graql.Query;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import io.mindmaps.graql.internal.antlr.GraqlParser;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenFactory;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.UnbufferedCharStream;
+import org.antlr.v4.runtime.UnbufferedTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -53,7 +64,7 @@ public class QueryParser {
 
     /**
      * Create a query parser with the specified graph
-     *  @param queryBuilder the QueryBuilder to operate the query on
+     *  @param queryBuilder the QueryBuilderImpl to operate the query on
      */
     private QueryParser(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
@@ -62,7 +73,7 @@ public class QueryParser {
 
     /**
      * Create a query parser with the specified graph
-     *  @param queryBuilder the QueryBuilder to operate the query on
+     *  @param queryBuilder the QueryBuilderImpl to operate the query on
      *  @return a query parser that operates with the specified graph
      */
     public static QueryParser create(QueryBuilder queryBuilder) {

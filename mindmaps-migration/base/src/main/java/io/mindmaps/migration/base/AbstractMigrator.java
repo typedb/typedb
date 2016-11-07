@@ -21,7 +21,7 @@ package io.mindmaps.migration.base;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.internal.template.macro.Macro;
 
 import java.util.Iterator;
@@ -34,7 +34,7 @@ import java.util.stream.StreamSupport;
 public abstract class AbstractMigrator implements Migrator {
 
     public static final int BATCH_SIZE = 25;
-    public final QueryBuilder queryBuilder = Graql.withoutGraph();
+    public final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph();
 
     /**
      * Register a macro to use in templating

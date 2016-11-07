@@ -20,7 +20,6 @@ package io.mindmaps.test.graql.reasoner;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
@@ -46,7 +45,7 @@ public class QueryTest {
     @BeforeClass
     public static void setUpClass() {
         graph = SNBGraph.getGraph();
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test
