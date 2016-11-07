@@ -229,6 +229,7 @@ public class ReasonerTest {
     }
 
     @Test
+    @Ignore
     public void testTypeVar(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type id 'university';" +
