@@ -36,7 +36,7 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public long indexCost() {
-        return 1;
+        return 2;
     }
 
     @Override

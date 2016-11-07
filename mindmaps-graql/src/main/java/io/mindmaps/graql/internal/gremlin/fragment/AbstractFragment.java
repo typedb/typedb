@@ -7,10 +7,10 @@ import java.util.Optional;
 abstract class AbstractFragment implements Fragment{
 
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
-    static final long NUM_INSTANCES_PER_TYPE = 1_000;
-    static final long NUM_INSTANCES_PER_SCOPE = 1_000;
+    static final long NUM_INSTANCES_PER_TYPE = 1_000_000;
+    static final long NUM_INSTANCES_PER_SCOPE = 1_000_000;
     static final long NUM_RELATION_PER_CASTING = 1_000;
-    static final long NUM_SHORTCUT_EDGES_PER_INSTANCE = 10;
+    static final long NUM_SHORTCUT_EDGES_PER_INSTANCE = 1_000;
     static final long NUM_SUBTYPES_PER_TYPE = 10;
     static final long NUM_CASTINGS_PER_INSTANCE = 10;
     static final long NUM_SCOPES_PER_INSTANCE = 10;

@@ -85,7 +85,7 @@ public interface Fragment extends Comparable<Fragment> {
     default long indexCost() {
         // TODO: Find a better way to represent these values
         // Just a big number
-        return fragmentCost(1_000_000);
+        return fragmentCost(1_000_000_000);
     }
 
     long fragmentCost(long previousCost);

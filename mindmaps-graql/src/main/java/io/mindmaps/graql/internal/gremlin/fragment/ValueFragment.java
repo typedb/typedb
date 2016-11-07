@@ -39,7 +39,7 @@ class ValueFragment extends AbstractFragment {
     @Override
     public long indexCost() {
         if (predicate.isSpecific()) {
-            return 1;
+            return 2;
         } else {
             return super.indexCost();
         }
@@ -47,7 +47,11 @@ class ValueFragment extends AbstractFragment {
 
     @Override
     public long fragmentCost(long previousCost) {
-        return previousCost;
+        if (predicate.isSpecific()) {
+            return 1;
+        } else {
+            return previousCost;
+        }
     }
 
     /**
