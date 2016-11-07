@@ -31,45 +31,43 @@ import static junit.framework.TestCase.assertEquals;
 
 public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
 
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-   
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();;
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
 
     @Before
     public void setup(){
         load(getFile("csv", "pets/schema.gql"));
-        exit.expectSystemExitWithStatus(0);
     }
 
     @Test
     public void csvMainTest(){
+        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void tsvMainTest(){
+        exit.expectSystemExitWithStatus(0);
         String tsvFile = getFile("csv", "pets/data/pets.tsv").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-delimiter", "\t", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void spacesMainTest(){
+        exit.expectSystemExitWithStatus(0);
         String tsvFile = getFile("csv", "pets/data/pets.spaces").getAbsolutePath();
         runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainTestDistributedLoader(){
+        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect(new String[]{"csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainDifferentBatchSizeTest(){
+        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
     }
 

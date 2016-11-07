@@ -36,26 +36,21 @@ public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
 
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();;
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
-    
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setup(){
         load(getFile("json", "simple-schema/schema.gql"));
-        exit.expectSystemExitWithStatus(0);
     }
 
     @Test
     public void jsonMigratorMainTest(){
+        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void jsonMainDistributedLoaderTest(){
+        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567"});
     }
 
@@ -93,6 +88,7 @@ public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
+        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace(),});
     }
 

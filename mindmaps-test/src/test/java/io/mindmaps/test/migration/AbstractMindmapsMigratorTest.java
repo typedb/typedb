@@ -32,6 +32,7 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.test.AbstractGraphTest;
 import io.mindmaps.util.Schema;
 import org.junit.Rule;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
@@ -53,13 +54,16 @@ public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
+
     public static File getFile(String component, String fileName){
         return new File(AbstractMindmapsMigratorTest.class.getResource(component + "/" + fileName).getPath());
     }
 
     public void load(File ontology) {
         try {
-            Graql.withGraph(graph)
+            graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 

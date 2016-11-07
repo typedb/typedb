@@ -18,30 +18,22 @@
 
 package io.mindmaps.test.migration.export;
 
-import org.junit.Rule;
 import io.mindmaps.example.PokemonGraphFactory;
 import io.mindmaps.migration.export.Main;
 import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 
 public class GraphWriterMainTest extends AbstractMindmapsMigratorTest {
-
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    @Rule
-    public TemporaryFolder folder= new TemporaryFolder();
 
     @Before
     public void start() {
         PokemonGraphFactory.loadGraph(graph);
+    }
+
+    @Before
+    public void expectExit(){
+        exit.expectSystemExitWithStatus(0);
     }
 
     @Test

@@ -22,53 +22,64 @@ import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.migration.owl.Main;
-import org.junit.Assert;
+import io.mindmaps.migration.owl.OwlModel;
+import org.junit.Before;
 import org.junit.Test;
+
+import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class OwlMigratorMainTest extends TestOwlMindMapsBase{
 
     @Test
     public void owlMainFileTest(){
+        exit.expectSystemExitWithStatus(0);
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"owl", "-file", owlFile, "-keyspace", graph.getKeyspace()});
+        runAndataCorrect(new String[]{"owl", "-input", owlFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void owlMainNoFileSpecifiedTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Please specify owl file with the -owl option.");
-        runAndAssertDataCorrect(new String[]{"owl", "-keyspace", graph.getKeyspace()});
+        exception.expectMessage("Please specify owl file with the -i option.");
+        runAndataCorrect(new String[]{"owl", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void owlMainCannotOpenFileTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Cannot find file: grah/?*");
-        runAndAssertDataCorrect(new String[]{"owl", "-file", "grah/?*", "-keyspace", graph.getKeyspace()});
+        runAndataCorrect(new String[]{"owl", "-input", "grah/?*", "-keyspace", graph.getKeyspace()});
     }
 
-    public void runAndAssertDataCorrect(String[] args){
+    public void runAndataCorrect(String[] args){
         Main.main(args);
         graph = factory.getGraph();
 
-        EntityType top = graph.getEntityType("tThing");
-        EntityType type = graph.getEntityType("tAuthor");
-        Assert.assertNotNull(type);
-        Assert.assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
-        Assert.assertNotNull(type.superType());
-        Assert.assertEquals("tPerson", type.superType().getId());
-        Assert.assertEquals(top, type.superType().superType());
-        Assert.assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
-        Assert.assertNotEquals(0, type.instances().size());
-        Assert.assertTrue(
-                type.instances().stream().map(Entity::getId).anyMatch(s -> s.equals("eShakespeare"))
+        EntityType top = migrator.graph().getEntityType("tThing");
+        EntityType type = migrator.graph().getEntityType("tAuthor");
+        assertNotNull(type);
+        assertNull(migrator.graph().getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
+        assertNotNull(type.superType());
+        assertEquals("tPerson", type.superType().getId());
+        assertEquals(top, type.superType().superType());
+        assertTrue(top.subTypes().contains(migrator.graph().getEntityType("tPlace")));
+        assertNotEquals(0, type.instances().size());
+
+        assertTrue(
+                type.instances().stream()
+                        .flatMap(inst -> inst.asEntity()
+                                .resources(migrator.graph().getResourceType(OwlModel.IRI.owlname())).stream())
+                        .anyMatch(s -> s.getValue().equals("eShakespeare"))
         );
-        final Entity author = graph.getEntity("eShakespeare");
-        Assert.assertNotNull(author);
-        final Entity work = graph.getEntity("eHamlet");
-        Assert.assertNotNull(work);
+        final Entity author = getEntity("eShakespeare");
+        assertNotNull(author);
+        final Entity work = getEntity("eHamlet");
+        assertNotNull(work);
         assertRelationBetweenInstancesExists(work, author, "op-wrote");
-        Reasoner reasoner = new Reasoner(graph);
-        Assert.assertTrue(!reasoner.getRules(graph).isEmpty());
+        assertTrue(!Reasoner.getRules(graph).isEmpty());
     }
 }
