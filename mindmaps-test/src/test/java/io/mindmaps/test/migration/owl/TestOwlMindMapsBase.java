@@ -15,31 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package test.io.mindmaps.migration.owl;
+package io.mindmaps.test.migration.owl;
 
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.migration.owl.OwlModel;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 
-import org.junit.After;
-import org.junit.Assert;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.migration.owl.OwlModel;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.Before;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.migration.owl.OWLMigrator;
 
 /**
@@ -50,24 +44,15 @@ import io.mindmaps.migration.owl.OWLMigrator;
  * @author borislav
  *
  */
-public class TestOwlMindMapsBase {
-    public static final String OWL_TEST_GRAPH = "owltestgraph";
- 
-    MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, "graph-" + this.getClass().getName()).getGraph();
-    OWLOntologyManager manager;
-    
+public class TestOwlMindMapsBase extends AbstractMindmapsMigratorTest {
+    protected OWLOntologyManager manager;
+    protected OWLMigrator migrator;
+
     @Before
     public void init() {
         manager = OWLManager.createOWLOntologyManager();
     }
     
-    @After
-    public void closeGraph() {   
-        graph.close();
-    }
-    
-    OWLMigrator migrator;
-
     @Before
     public void initMigrator() {
          migrator = new OWLMigrator();
@@ -76,11 +61,9 @@ public class TestOwlMindMapsBase {
     OWLOntologyManager owlManager() {
         return manager;
     }
-    
-    OWLOntology loadOntologyFromResource(String resource) {
-        try (InputStream in = TestOwlMindMapsBase.class.getClassLoader().getResourceAsStream(resource)) {
-            if (in == null)
-                throw new NullPointerException("Resource : " + resource + " not found.");
+
+    protected OWLOntology loadOntologyFromResource(String component, String resource) {
+        try (InputStream in = new FileInputStream(getFile(component, resource))) {
             return owlManager().loadOntologyFromOntologyDocument(in);
         }
         catch (Exception ex) {
@@ -100,24 +83,5 @@ public class TestOwlMindMapsBase {
 
     <T extends Concept> Optional<T> findById(Collection<T> C, String id) {
         return C.stream().filter(x -> x.equals(getEntity(id))).findFirst();
-    }
-    
-    void checkResource(final Entity e, final String resourceTypeId, final Object value) {
-        Optional<Resource<?>> r = e.resources().stream().filter(x -> x.type().getId().equals(resourceTypeId)).findFirst();
-        Assert.assertTrue(r.isPresent());
-        Assert.assertEquals(value, r.get().getValue());
-    }
-    
-    void checkRelation(Entity subject, String relationTypeId, Entity object) {
-        RelationType relationType = graph.getRelationType(relationTypeId);
-        final RoleType subjectRole = graph.getRoleType(migrator.namer().subjectRole(relationType.getId()));
-        final RoleType objectRole = graph.getRoleType(migrator.namer().objectRole(relationType.getId()));
-        Assert.assertNotNull(subjectRole);
-        Assert.assertNotNull(objectRole);
-        Optional<Relation> relation = relationType.instances().stream().filter(rel -> {
-            Map<RoleType, Instance> players = rel.rolePlayers();
-            return subject.equals(players.get(subjectRole)) && object.equals(players.get(objectRole)); 
-        }).findFirst();
-        Assert.assertTrue(relation.isPresent());
     }
 }

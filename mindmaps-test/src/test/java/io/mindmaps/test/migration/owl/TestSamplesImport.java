@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package test.io.mindmaps.migration.owl;
+package io.mindmaps.test.migration.owl;
 
 import java.util.Optional;
 
@@ -43,7 +43,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testShoppingOntology()  {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("Shopping.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "Shopping.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -69,7 +69,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testShakespeareOntology()   {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("shakespeare.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "shakespeare.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -99,7 +99,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Assert.assertNotNull(author);
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
-            checkRelation(author, "op-wrote", work);
+            assertRelationBetweenInstancesExists(work, author, "op-wrote");
             Reasoner reasoner = new Reasoner(migrator.graph());
             Assert.assertTrue(!Reasoner.getRules(graph).isEmpty());
         }
@@ -113,7 +113,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testProductOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("Product.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "Product.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -128,7 +128,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Optional<Entity> e = findById(type.instances(), "eProduct5");
             Assert.assertTrue(e.isPresent());
             e.get().resources().stream().map(Resource::type).forEach(System.out::println);
-            checkResource(e.get(), "Product_Available", "14");
+            assertResourceEntityRelationExists("Product_Available", "14", e.get());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -140,7 +140,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void test1Ontology() {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("test1.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "test1.owl");
             O.axioms().forEach(System.out::println);            
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
@@ -191,7 +191,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testFamilyOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("family.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "family.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -223,19 +223,4 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Assert.fail(t.toString());
         }
     }
-
-//    public static void main(String []argv) {
-//        JUnitCore junit = new JUnitCore();
-//        Result result = null;
-//        do      {
-//            result = junit.run(Request.method(TestSamplesImport.class, "test1Ontology"));
-//        } while (result.getFailureCount() == 0 && false);
-//        System.out.println("Failures " + result.getFailureCount());
-//        if (result.getFailureCount() > 0) {
-//            for (Failure failure : result.getFailures()) {
-//                failure.getException().printStackTrace();
-//            }
-//        }
-//        System.exit(0);
-//    }
 }

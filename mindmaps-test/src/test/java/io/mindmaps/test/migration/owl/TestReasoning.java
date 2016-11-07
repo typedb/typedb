@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package test.io.mindmaps.migration.owl;
+package io.mindmaps.test.migration.owl;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
@@ -27,6 +27,7 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.migration.owl.OwlModel;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
@@ -51,13 +52,12 @@ import static org.junit.Assert.assertEquals;
 public class TestReasoning extends TestOwlMindMapsBase {
 
     private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
-    private OWLOntology family = null;
     private OWLReasoner hermit;
     private io.mindmaps.graql.Reasoner mmReasoner;
 
     @Before
     public void loadOwlFiles() throws MindmapsValidationException {
-        family = loadOntologyFromResource("family.owl");
+        OWLOntology family = loadOntologyFromResource("owl", "family.owl");
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();
         hermit = new Reasoner(new Configuration(), family);

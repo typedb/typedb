@@ -1,4 +1,4 @@
-package test.io.mindmaps.migration.owl;
+package io.mindmaps.test.migration.owl;
 
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
@@ -20,7 +20,7 @@ public class TestSubProperties extends TestOwlMindMapsBase {
 	
 	@Before
 	public void loadShakespeare() throws MindmapsValidationException {
-        shakespeare = loadOntologyFromResource("shakespeare.owl");
+        shakespeare = loadOntologyFromResource("owl", "shakespeare.owl");
         migrator.ontology(shakespeare).graph(graph).migrate();
         migrator.graph().commit();
 	}
