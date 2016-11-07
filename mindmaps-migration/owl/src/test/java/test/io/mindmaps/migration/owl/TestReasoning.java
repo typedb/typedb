@@ -109,8 +109,9 @@ public class TestReasoning extends TestOwlMindMapsBase {
     }
 
     @Test
-    public void testFullReasoning(){
+    public void testFullReasoning() {
         QueryBuilder qb = Graql.withGraph(migrator.graph());
+
         String richardId = "richard_henry_steward_1897";
         String hasGreatUncleId = "op-hasGreatUncle";
         String explicitQuery = "match $x isa tPerson;" +
@@ -136,24 +137,77 @@ public class TestReasoning extends TestOwlMindMapsBase {
                 "{$y has owl-iri 'erebecca_green_1800';} or {$y has owl-iri 'eann_green_1806';};";
         assertEquals(mmReasoner.resolve(new Query(queryString3, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)));
 
-        String eleanorId = "eleanor_pringle_1741";
-        String elisabethId = "elizabeth_clamper_1760";
-        String annId = "ann_lodge_1763";
-        String reeceId = "reece_bright_1993";
-        String megaId = "mega_clamper_1995";
-        String anneId = "anne_archer_1964";
-
         IRI hasAncestor = baseIri.resolve("#hasAncestor");
-        IRI isAncestorOf = baseIri.resolve("#isAncestorOf");
         String hasAncestorId = "op-hasAncestor";
         String isAncestorOfId = "op-isAncestorOf";
 
+        String eleanorId = "eleanor_pringle_1741";
         assertEquals(inferRelationOWL(hasAncestor, eleanorId, hermit), inferRelationMM(hasAncestorId, eleanorId));
-        assertEquals(inferRelationOWL(hasAncestor, elisabethId, hermit), inferRelationMM(hasAncestorId, elisabethId));
-        //assertEquals(inferRelationOWL(hasAncestor, annId, hermit), inferRelationMM(hasAncestorId, annId));
 
-        assertEquals(inferRelationOWL(isAncestorOf, anneId, hermit), inferRelationMM(isAncestorOfId, anneId));
-        assertEquals(inferRelationOWL(isAncestorOf, megaId, hermit), inferRelationMM(isAncestorOfId, megaId));
-        //assertEquals(inferRelationOWL(isAncestorOf, reeceId, hermit), inferRelationMM(isAncestorOfId, reeceId));
+        String elisabethId = "elizabeth_clamper_1760";
+        String explicitElisabethQuery = "match $x isa tPerson, has owl-iri $iri;" +
+                "{$iri value 'ethomas_john_bright_1988';} or {$iri value 'emartin_dowse_1944';} or" +
+                "{$iri value 'ejames_archer_1840';} or {$iri value 'ejulie_bright_1966';} or" +
+                "{$iri value 'edavid_bright_1934';} or {$iri value 'ejune_dowse_1941';} or" +
+                "{$iri value 'erichard_john_bright_1962';} or {$iri value 'ejames_bright_1964';} or" +
+                "{$iri value 'eanne_archer_1964';} or {$iri value 'ewilliam_archer_1801';} or" +
+                "{$iri value 'epeter_william_bright_1941';} or {$iri value 'ejames_alexander_archer_1882';} or" +
+                "{$iri value 'eyvonne_archer_1940';} or {$iri value 'ewilliam_archer_1832';} or" +
+                "{$iri value 'eiris_ellen_archer_1906';} or {$iri value 'eavril_bright_1990';} or" +
+                "{$iri value 'ejane_archer';} or {$iri value 'ejean_margaret_archer_1934';} or" +
+                "{$iri value 'eethel_archer_1912';} or {$iri value 'ejohn_bright_1930';} or" +
+                "{$iri value 'ewilliam_bright_2001';} or {$iri value 'ejohn_archer_1804';} or" +
+                "{$iri value 'ejane_archer_1837';} or {$iri value 'emary_archer_1885';} or" +
+                "{$iri value 'eroy_cleife_1944';} or {$iri value 'emark_bright_1956';} or" +
+                "{$iri value 'ejames_keith_archer_1946';} or {$iri value 'epaul_archer_1950';} or" +
+                "{$iri value 'elily_archer_1880';} or {$iri value 'ejanet_bright_1964';} or" +
+                "{$iri value 'echristopher_archer_1849';} or {$iri value 'ethomas_archer_1849';} or" +
+                "{$iri value 'ealec_john_archer_1927';} or {$iri value 'emaureen_dowse_1939';} or" +
+                "{$iri value 'eclare_bright_1966';} or {$iri value 'ejohn_english_archer';} or" +
+                "{$iri value 'ejoyce_archer_1921';} or {$iri value 'ealan_john_dowse_1936';} or" +
+                "{$iri value 'ejane_archer_1837';} or {$iri value 'emary_archer_1885';} or" +
+                "{$iri value 'eian_alexander_archer_1944';} or {$iri value 'ewilliam_bright_1970';} or" +
+                "{$iri value 'emary_archer_1850';} or {$iri value 'eellen_archer_1875';} or" +
+                "{$iri value 'ejames_archer_1887';} or {$iri value 'edorothy_archer_1845';} or" +
+                "{$iri value 'eian_bright_1959';} or {$iri value 'ethomas_archer_1868';} or" +
+                "{$iri value 'erobert_david_bright_1965';} or {$iri value 'esheila_cleife_1949';} or" +
+                "{$iri value 'ejohn_archer_1835';} or {$iri value 'eelizabeth_archer_1843';} or" +
+                "{$iri value 'enorman_james_archer_1909';} or {$iri value 'ereece_bright_1993';}; select $x;";
+        QueryAnswers elisabethAnswers = inferRelationMM(hasAncestorId, elisabethId);
+        assertEquals(elisabethAnswers, Sets.newHashSet(qb.<MatchQuery>parse(explicitElisabethQuery)));
+
+        String anneId = "anne_archer_1964";
+        String explicitAnneQuery = "match $x isa tPerson, has owl-iri $iri;" +
+                "{$iri value 'ejane_blake_1784';} or {$iri value 'esarah_jacobs_1834';} or" +
+                "{$iri value 'eharriet_whitefield_1861';} or {$iri value 'eelizabeth_clamper_1760';} or" +
+                "{$iri value 'ewilliam_lock_jacobs_1861';} or {$iri value 'ejames_jacobs_1806';} or" +
+                "{$iri value 'eharriet_ann_young_1825';} or {$iri value 'ealec_john_archer_1927';} or" +
+                "{$iri value 'eeleanor_pringle_1741';} or {$iri value 'ewilliam_rivers_lockey_1815';} or" +
+                "{$iri value 'eviolet_heath_1887';} or {$iri value 'ejohn_archer_1835';} or" +
+                "{$iri value 'ejeremiah_jacobs';} or {$iri value 'esarah_jewell_1790';} or" +
+                "{$iri value 'eedward_young_1795';} or {$iri value 'eelizabeth_rivers_1787';} or" +
+                "{$iri value 'ecatherine_thompson';} or {$iri value 'eelizabeth_gray_1810';} or" +
+                "{$iri value 'ejohn_lockey_1789';} or {$iri value 'eeden_georgina_gardner_thompson_1810';} or" +
+                "{$iri value 'ejames_whitfield_1821';} or {$iri value 'ewilliam_archer_1764';} or" +
+                "{$iri value 'ejames_alexander_archer_1882';} or {$iri value 'epriscilla_saunders_1810';} or" +
+                "{$iri value 'ehumphrey_archer_1726';} or {$iri value 'ejohn_archer_1804';} or" +
+                "{$iri value 'ejames_whitfield_1792';} or {$iri value 'eann_norton_1799';} or" +
+                "{$iri value 'ewilliam_lock';} or {$iri value 'esarah_lockey_1848';}; select $x;";
+        assertEquals(inferRelationMM(isAncestorOfId, anneId), Sets.newHashSet(qb.<MatchQuery>parse(explicitAnneQuery)));
+
+        String megaId = "mega_clamper_1995";
+        String explicitMegaQuery = "match $x isa tPerson, has owl-iri $iri;" +
+                "{$iri value 'esarah_rever_1850';} or {$iri value 'eelizabeth_frances_jessop_1869';} or" +
+                "{$iri value 'epatricia_ann_kingswood_1944';} or {$iri value 'esarah_dickens_1801';} or" +
+                "{$iri value 'ewilliam_rever_1870';} or {$iri value 'ejames_jessop_1836';} or" +
+                "{$iri value 'eann_lodge_1763';} or {$iri value 'ewilliam_cotton';} or" +
+                "{$iri value 'eedward_jessop_1802';} or {$iri value 'emartha_wife_of_john_cotton';} or" +
+                "{$iri value 'efrances_spikin_1779';} or {$iri value 'erose_evlyn_rever_1906';} or" +
+                "{$iri value 'eedward_blanchard_1771';} or {$iri value 'ejohn_jessop_1773';} or" +
+                "{$iri value 'evincent_cotton_1808';} or {$iri value 'eamanda_usher_1968';} or" +
+                "{$iri value 'esusanna_wife_of_william_cotton';} or {$iri value 'ejohn_cotton_1778';} or" +
+                "{$iri value 'eelizabeth_blanchard_1807';} or {$iri value 'ejames_dickens_1774';} or" +
+                "{$iri value 'emartha_cotton_1832';}; select $x;";
+        assertEquals(inferRelationMM(isAncestorOfId, megaId), Sets.newHashSet(qb.<MatchQuery>parse(explicitMegaQuery)));
     }
 }

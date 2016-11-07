@@ -229,6 +229,22 @@ public class ReasonerTest {
     }
 
     @Test
+    @Ignore
+    public void testTypeVar(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type id 'university';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
+        String queryString2 = "match $x isa university;$y isa country;$y has name 'Poland';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        MatchQuery orig = Graql.parse(queryString);
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
     public void testSub(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type sub geoObject;" +
