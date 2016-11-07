@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Query;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import io.mindmaps.graql.internal.antlr.GraqlParser;
 import org.antlr.v4.runtime.*;
@@ -48,24 +48,24 @@ import static io.mindmaps.graql.Graql.sum;
  */
 public class QueryParser {
 
-    private final QueryBuilder queryBuilder;
+    private final QueryBuilderImpl queryBuilder;
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
 
     /**
      * Create a query parser with the specified graph
-     *  @param queryBuilder the QueryBuilder to operate the query on
+     *  @param queryBuilder the QueryBuilderImpl to operate the query on
      */
-    private QueryParser(QueryBuilder queryBuilder) {
+    private QueryParser(QueryBuilderImpl queryBuilder) {
         this.queryBuilder = queryBuilder;
         registerDefaultAggregates();
     }
 
     /**
      * Create a query parser with the specified graph
-     *  @param queryBuilder the QueryBuilder to operate the query on
+     *  @param queryBuilder the QueryBuilderImpl to operate the query on
      *  @return a query parser that operates with the specified graph
      */
-    public static QueryParser create(QueryBuilder queryBuilder) {
+    public static QueryParser create(QueryBuilderImpl queryBuilder) {
         return new QueryParser(queryBuilder);
     }
 

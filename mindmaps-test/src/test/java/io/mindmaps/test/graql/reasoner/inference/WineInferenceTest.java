@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 public class WineInferenceTest {
 
     private static Reasoner reasoner;
-    private static QueryBuilder qb;
+    private static QueryBuilderImpl qb;
 
     @BeforeClass
     public static void setUpClass() {

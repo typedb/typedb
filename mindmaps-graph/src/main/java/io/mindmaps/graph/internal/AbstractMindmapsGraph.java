@@ -36,6 +36,7 @@ import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.exception.GraphRuntimeException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.exception.MoreThanOneConceptException;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
@@ -158,6 +159,11 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
         return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph()).V();
+    }
+
+    @Override
+    public QueryBuilder graql(){
+        return null;
     }
 
     public ElementFactory getElementFactory(){

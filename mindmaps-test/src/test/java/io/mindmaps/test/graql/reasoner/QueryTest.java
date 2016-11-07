@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 public class QueryTest {
 
     private static MindmapsGraph graph;
-    private static QueryBuilder qb;
+    private static QueryBuilderImpl qb;
 
     @BeforeClass
     public static void setUpClass() {

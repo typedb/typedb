@@ -23,7 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.migration.owl.OwlModel;
@@ -93,7 +93,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
     }
 
     private QueryAnswers inferRelationMM(String relationId, String instanceId) {
-        QueryBuilder qb = Graql.withGraph(migrator.graph());
+        QueryBuilderImpl qb = Graql.withGraph(migrator.graph());
 
         long mmStartTime = System.currentTimeMillis();
         String subjectRoleId = "owl-subject-" + relationId;
@@ -110,7 +110,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
 
     @Test
     public void testFullReasoning(){
-        QueryBuilder qb = Graql.withGraph(migrator.graph());
+        QueryBuilderImpl qb = Graql.withGraph(migrator.graph());
         String richardId = "richard_henry_steward_1897";
         String hasGreatUncleId = "op-hasGreatUncle";
         String explicitQuery = "match $x isa tPerson;" +

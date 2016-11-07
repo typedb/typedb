@@ -23,7 +23,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -115,7 +115,7 @@ public abstract class Atom extends AtomBase {
     }
 
     public MatchQuery getMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilderImpl qb = Graql.withGraph(graph);
         MatchQuery matchQuery = qb.match(getPattern());
 
         //add IdPredicates

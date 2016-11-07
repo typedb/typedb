@@ -27,7 +27,7 @@ import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -129,7 +129,7 @@ public class MigrationCLI {
         System.out.println("Migration complete. Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
         MindmapsGraph graph = getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilderImpl qb = Graql.withGraph(graph);
 
         StringBuilder builder = new StringBuilder();
         builder.append("Graph ontology contains:\n");

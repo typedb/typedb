@@ -43,16 +43,16 @@ public class Graql {
     /**
      * @return a query builder without a specified graph
      */
-    public static QueryBuilder withoutGraph() {
-        return new QueryBuilder();
+    public static QueryBuilderImpl withoutGraph() {
+        return new QueryBuilderImpl();
     }
 
     /**
      * @param graph the graph to operate the query on
      * @return a query builder using the specified graph
      */
-    public static QueryBuilder withGraph(MindmapsGraph graph) {
-        return new QueryBuilder(graph);
+    public static QueryBuilderImpl withGraph(MindmapsGraph graph) {
+        return new QueryBuilderImpl(graph);
     }
 
     /**

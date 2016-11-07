@@ -21,7 +21,7 @@ package io.mindmaps.test.graql.query;
 import com.google.common.collect.Lists;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 
 public class MatchQueryModifierTest extends AbstractMovieGraphTest {
 
-    private QueryBuilder qb;
+    private QueryBuilderImpl qb;
 
     @Before
     public void setUp() {

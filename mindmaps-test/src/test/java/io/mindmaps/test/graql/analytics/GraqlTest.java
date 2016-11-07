@@ -24,7 +24,7 @@ import com.google.common.collect.Lists;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
 import io.mindmaps.test.AbstractGraphTest;
@@ -42,7 +42,7 @@ import static org.junit.Assume.assumeFalse;
 
 public class GraqlTest extends AbstractGraphTest {
 
-    private QueryBuilder qb;
+    private QueryBuilderImpl qb;
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";

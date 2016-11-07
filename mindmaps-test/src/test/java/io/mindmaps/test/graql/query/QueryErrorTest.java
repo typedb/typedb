@@ -21,7 +21,7 @@ package io.mindmaps.test.graql.query;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,7 +37,7 @@ import static org.hamcrest.core.StringContains.containsString;
 public class QueryErrorTest extends AbstractMovieGraphTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    private QueryBuilder qb;
+    private QueryBuilderImpl qb;
 
     @Before
     public void setUp() {
@@ -137,7 +137,7 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
         // Create a fresh graph, with no has-resource between person and name
         MindmapsGraph empty = factoryWithNewKeyspace().getGraph();
 
-        QueryBuilder emptyQb = withGraph(empty);
+        QueryBuilderImpl emptyQb = withGraph(empty);
         emptyQb.insert(
                 id("person").isa("entity-type"),
                 id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)

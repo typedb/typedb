@@ -18,7 +18,7 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,7 +34,7 @@ public class AskQueryTest extends AbstractMovieGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    private QueryBuilder qb;
+    private QueryBuilderImpl qb;
 
     @Before
     public void setUp() {

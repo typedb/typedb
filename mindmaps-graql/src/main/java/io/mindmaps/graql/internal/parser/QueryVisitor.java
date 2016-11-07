@@ -31,7 +31,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.NamedAggregate;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Query;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.antlr.GraqlBaseVisitor;
@@ -58,11 +58,11 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("unchecked")
 class QueryVisitor extends GraqlBaseVisitor {
 
-    private final QueryBuilder queryBuilder;
+    private final QueryBuilderImpl queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
 
     QueryVisitor(
-            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder) {
+            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilderImpl queryBuilder) {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;
     }

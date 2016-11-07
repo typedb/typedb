@@ -23,7 +23,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.test.AbstractMovieGraphTest;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertFalse;
 
 public class AdminTest extends AbstractMovieGraphTest {
 
-    private QueryBuilder qb;
+    private QueryBuilderImpl qb;
 
     @Before
     public void setUp() {

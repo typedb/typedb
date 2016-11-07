@@ -21,11 +21,10 @@ package io.mindmaps.test.graql.reasoner;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
@@ -49,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 
 public class AtomicQueryTest {
     private static MindmapsGraph graph;
-    private static QueryBuilder qb;
+    private static QueryBuilderImpl qb;
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();

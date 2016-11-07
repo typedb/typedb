@@ -23,7 +23,7 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +56,7 @@ public class SNBGraph {
     }
 
     private static void addOntology() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
+        QueryBuilderImpl qb = Graql.withGraph(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-ontology.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
@@ -77,7 +77,7 @@ public class SNBGraph {
     }
 
     private static void addRules() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
+        QueryBuilderImpl qb = Graql.withGraph(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
@@ -89,7 +89,7 @@ public class SNBGraph {
     }
 
     private static void addData() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
+        QueryBuilderImpl qb = Graql.withGraph(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-data.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);

@@ -20,13 +20,12 @@ package io.mindmaps.engine.loader;
 
 import io.mindmaps.engine.backgroundtasks.InMemoryTaskManager;
 import io.mindmaps.engine.postprocessing.Cache;
-import io.mindmaps.engine.postprocessing.PostProcessing;
 import io.mindmaps.engine.postprocessing.PostProcessingTask;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.util.ErrorMessage;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -131,7 +130,7 @@ public class RESTLoader {
             for (int i = 0; i < repeatCommits; i++) {
 
                 try {
-                    QueryBuilder builder = withGraph(graph);
+                    QueryBuilderImpl builder = withGraph(graph);
                     inserts.asList().stream().map(Object::toString).forEach(b -> builder.parse(b).execute());
 
                     graph.commit();

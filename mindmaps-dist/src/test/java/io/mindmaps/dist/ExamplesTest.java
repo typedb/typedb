@@ -21,7 +21,7 @@ package io.mindmaps.dist;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ExamplesTest {
 
-    private QueryBuilder qb;
+    private QueryBuilderImpl qb;
 
     @Before
     public void setUp() {
