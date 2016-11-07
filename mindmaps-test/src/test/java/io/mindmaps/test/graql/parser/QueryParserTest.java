@@ -27,7 +27,7 @@ import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
@@ -72,7 +72,7 @@ import static org.junit.Assume.assumeFalse;
 
 public class QueryParserTest extends AbstractMovieGraphTest {
 
-    private QueryBuilderImpl qb;
+    private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -428,7 +428,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testCustomAggregate() {
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
 
         qb.registerAggregate(
                 "get-any", args -> new AbstractAggregate<Map<String, Concept>, Concept>() {

@@ -21,7 +21,7 @@ package io.mindmaps.test.graql.reasoner.graphs;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -62,7 +62,7 @@ public class GenericGraph {
         System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
-        QueryBuilderImpl qb = mindmaps.graql();
+        QueryBuilder qb = mindmaps.graql();
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);

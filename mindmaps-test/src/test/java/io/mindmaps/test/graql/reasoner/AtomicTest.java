@@ -24,7 +24,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
@@ -61,7 +61,7 @@ public class AtomicTest {
         exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
 
         MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         String atomString = "match $x isa person;";
 
         Query query = new Query(atomString, graph);
@@ -74,7 +74,7 @@ public class AtomicTest {
         exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
 
         MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         String atomString = "match $x isa person;";
 
         Query query = new Query(atomString, graph);
@@ -87,7 +87,7 @@ public class AtomicTest {
         exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
 
         MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         String recRelString = "match ($x, $y) isa resides;";
 
         Atomic recRel = AtomicFactory.create(qb.<MatchQuery>parse(recRelString).admin().getPattern().getPatterns().iterator().next());
@@ -98,7 +98,7 @@ public class AtomicTest {
     @Test
     public void testRecursive(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String recRelString = "match ($x, $y) isa resides;";
@@ -118,7 +118,7 @@ public class AtomicTest {
     @Test
     public void testFactory(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         String atomString = "match $x isa person;";
         String relString = "match ($x, $y) isa recommendation;";
         String resString = "match $x has gender 'male';";
@@ -166,7 +166,7 @@ public class AtomicTest {
     @Test
     public void testRelationConstructor(){
         MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
 
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         MatchQuery MQ = qb.parse(queryString);
@@ -189,7 +189,7 @@ public class AtomicTest {
     @Test
     public void testRelationConstructor2(){
         MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test;";
         MatchQuery MQ = qb.parse(queryString);
@@ -214,7 +214,7 @@ public class AtomicTest {
     @Test
     public void testValuePredicateComparison(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         Atomic atom = AtomicFactory.create(qb.parsePatterns("$x value '0';").iterator().next().admin());
         Atomic atom2 = AtomicFactory.create(qb.parsePatterns("$x value != '0';").iterator().next().admin());
         assertTrue(!atom.isEquivalent(atom2));

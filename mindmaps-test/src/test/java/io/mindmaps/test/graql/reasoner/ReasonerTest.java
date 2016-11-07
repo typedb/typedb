@@ -23,7 +23,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
@@ -146,7 +146,7 @@ public class ReasonerTest {
         graph.putRule("test", body, head, graph.getMetaRuleInference());
 
         Reasoner reasoner = new Reasoner(graph);
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
@@ -289,7 +289,7 @@ public class ReasonerTest {
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         Query query = new Query(queryString, graph);
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
@@ -302,7 +302,7 @@ public class ReasonerTest {
         createReflexiveRule(graph.getRelationType("knows"), graph);
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
@@ -318,7 +318,7 @@ public class ReasonerTest {
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        QueryBuilderImpl qb = graph.graql();
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }

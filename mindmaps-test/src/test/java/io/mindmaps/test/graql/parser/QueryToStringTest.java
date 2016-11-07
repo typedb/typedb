@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest extends AbstractMovieGraphTest {
 
-    private QueryBuilderImpl qb;
+    private QueryBuilder qb;
 
     @Before
     public void setUp() {

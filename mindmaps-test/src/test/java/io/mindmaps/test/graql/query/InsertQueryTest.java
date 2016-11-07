@@ -27,7 +27,7 @@ import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
@@ -58,7 +58,7 @@ import static org.junit.Assume.assumeFalse;
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class InsertQueryTest extends AbstractMovieGraphTest {
 
-    private QueryBuilderImpl qb;
+    private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 

@@ -48,7 +48,7 @@ public class Graql {
     /**
      * @return a query builder without a specified graph
      */
-    public static QueryBuilderImpl withoutGraph() {
+    public static QueryBuilder withoutGraph() {
         return new QueryBuilderImpl();
     }
 

@@ -23,7 +23,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
@@ -33,8 +33,6 @@ import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.util.ErrorMessage;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,12 +40,14 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
 public class AtomicQueryTest {
     private static MindmapsGraph graph;
-    private static QueryBuilderImpl qb;
+    private static QueryBuilder qb;
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();

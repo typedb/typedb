@@ -31,7 +31,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.NamedAggregate;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Query;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.antlr.GraqlBaseVisitor;
@@ -41,7 +41,11 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -58,11 +62,11 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("unchecked")
 class QueryVisitor extends GraqlBaseVisitor {
 
-    private final QueryBuilderImpl queryBuilder;
+    private final QueryBuilder queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
 
     QueryVisitor(
-            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilderImpl queryBuilder) {
+            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder) {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;
     }

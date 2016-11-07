@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.test.AbstractMovieGraphTest;
 import io.mindmaps.util.Schema;
 import org.junit.Before;
@@ -62,7 +62,7 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class MatchQueryTest extends AbstractMovieGraphTest {
 
-    private QueryBuilderImpl qb;
+    private QueryBuilder qb;
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 

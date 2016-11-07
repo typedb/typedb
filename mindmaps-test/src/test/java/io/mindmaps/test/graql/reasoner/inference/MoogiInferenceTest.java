@@ -3,7 +3,7 @@ package io.mindmaps.test.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
@@ -18,7 +18,7 @@ public class MoogiInferenceTest {
 
     private static MindmapsGraph graph;
     private static Reasoner reasoner;
-    private static QueryBuilderImpl qb;
+    private static QueryBuilder qb;
     private final static String dataDir = "femtomoogi/";
     private final static String schemaFile = dataDir + "schema.gql";
     private final static String entityFile = dataDir + "entities-new.gql";

@@ -18,7 +18,7 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.graql.QueryBuilderImpl;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
@@ -37,7 +37,7 @@ import static org.junit.Assume.assumeFalse;
 
 public class DeleteQueryTest extends AbstractMovieGraphTest {
 
-    private QueryBuilderImpl qb;
+    private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
