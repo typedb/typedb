@@ -28,18 +28,23 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
 import org.junit.*;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 import spark.utils.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.Permission;
 import java.util.Collection;
 
 import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 
 public class CSVMigratorMainTest {
+
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -67,6 +72,8 @@ public class CSVMigratorMainTest {
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
         load(getFile("pets/schema.gql"));
+
+        exit.expectSystemExitWithStatus(0);
     }
 
     @After
@@ -102,9 +109,8 @@ public class CSVMigratorMainTest {
     }
 
     @Test
-    public void csvMainNoFileNameTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Data file missing (-i)");
+    public void csvMainNoArgsTest(){
+        exit.expectSystemExitWithStatus(1);
         runAndAssertDataCorrect(new String[]{});
     }
 

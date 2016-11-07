@@ -28,6 +28,7 @@ import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
 import org.junit.*;
 import org.junit.Rule;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
@@ -40,6 +41,9 @@ import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 
 public class JsonMigratorMainTest {
+
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -67,6 +71,8 @@ public class JsonMigratorMainTest {
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
         load(getFile("simple-schema/schema.gql"));
+
+        exit.expectSystemExitWithStatus(0);
     }
 
     @After
@@ -85,9 +91,8 @@ public class JsonMigratorMainTest {
     }
 
     @Test
-    public void jsonMainNoDataFileNameTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Data file missing (-i)");
+    public void jsonMainNoArgsTest() {
+        exit.expectSystemExitWithStatus(1);
         runAndAssertDataCorrect(new String[]{"json"});
     }
 

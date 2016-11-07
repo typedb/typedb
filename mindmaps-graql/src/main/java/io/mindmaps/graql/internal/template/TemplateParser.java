@@ -34,7 +34,7 @@ import java.util.Map;
 
 public class TemplateParser {
 
-    private static Map<String, Macro<Object>> macros;
+    private final Map<String, Macro<Object>> macros = new HashMap<>();
 
     /**
      * Create a template parser
@@ -87,7 +87,7 @@ public class TemplateParser {
      * Register the default macros that can be used by the visitor
      */
     private void registerDefaultMacros(){
-        macros = new HashMap<>();
+
         registerMacro("noescp", new NoescpMacro());
         registerMacro("int", new IntMacro());
         registerMacro("double", new DoubleMacro());

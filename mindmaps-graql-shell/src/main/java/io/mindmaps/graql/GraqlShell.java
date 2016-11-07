@@ -63,6 +63,7 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.util.REST.RemoteShell.ACTION;
@@ -352,46 +353,51 @@ public class GraqlShell {
 
         String queryString;
 
+        java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
+
         while ((queryString = console.readLine()) != null) {
             history.flush();
 
-            switch (queryString) {
-                case EDIT_COMMAND:
-                    executeQuery(runEditor());
-                    break;
-                case COMMIT_COMMAND:
-                    commit();
-                    break;
-                case ROLLBACK_COMMAND:
-                    rollback();
-                    break;
-                case CLEAR_COMMAND:
-                    console.clearScreen();
-                    break;
-                case LICENSE_COMMAND:
-                    printLicense();
-                    break;
-                case EXIT_COMMAND:
-                    return;
-                case "":
-                    // Ignore empty command
-                    break;
-                default:
-                    // Load from a file if load command used
-                    if (queryString.startsWith(LOAD_COMMAND + " ")) {
-                        String path = queryString.substring(LOAD_COMMAND.length() + 1);
+            Matcher matcher = commandPattern.matcher(queryString);
 
-                        try {
-                            queryString = loadQuery(path);
-                        } catch (IOException e) {
-                            System.err.println(e.toString());
-                            break;
-                        }
-                    }
-
-                    executeQuery(queryString);
-                    break;
+            if (matcher.matches()) {
+                switch (matcher.group(1)) {
+                    case EDIT_COMMAND:
+                        executeQuery(runEditor());
+                        return;
+                    case COMMIT_COMMAND:
+                        commit();
+                        return;
+                    case ROLLBACK_COMMAND:
+                        rollback();
+                        return;
+                    case CLEAR_COMMAND:
+                        console.clearScreen();
+                        return;
+                    case LICENSE_COMMAND:
+                        printLicense();
+                        return;
+                    case EXIT_COMMAND:
+                        return;
+                    case "":
+                        // Ignore empty command
+                        return;
+                }
             }
+
+            // Load from a file if load command used
+            if (queryString.startsWith(LOAD_COMMAND + " ")) {
+                String path = queryString.substring(LOAD_COMMAND.length() + 1);
+
+                try {
+                    queryString = loadQuery(path);
+                } catch (IOException e) {
+                    System.err.println(e.toString());
+                    break;
+                }
+            }
+
+            executeQuery(queryString);
         }
     }
 
