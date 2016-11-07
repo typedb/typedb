@@ -16,79 +16,43 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.json;
+package io.mindmaps.test.migration.json;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Resource;
-import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.migration.base.LoadingMigrator;
-import org.junit.After;
-import org.junit.AfterClass;
+import io.mindmaps.migration.json.JsonMigrator;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.Collection;
 
-import static io.mindmaps.migration.json.JsonMigratorUtil.getFile;
-import static io.mindmaps.migration.json.JsonMigratorUtil.getProperties;
-import static io.mindmaps.migration.json.JsonMigratorUtil.getProperty;
-import static io.mindmaps.migration.json.JsonMigratorUtil.getResource;
-import static io.mindmaps.migration.json.JsonMigratorUtil.getResources;
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class JsonMigratorTest {
+public class JsonMigratorTest extends AbstractMindmapsMigratorTest {
 
-    private MindmapsGraph graph;
     private LoadingMigrator migrator;
-
-    @BeforeClass
-    public static void start(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
-
-        MindmapsEngineServer.start();
-    }
-
-    @AfterClass
-    public static void stop(){
-        MindmapsEngineServer.stop();
-    }
 
     @Before
     public void setup(){
-        String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-
-        graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        BlockingLoader loader = new BlockingLoader(GRAPH_NAME);
+        BlockingLoader loader = new BlockingLoader(graph.getKeyspace());
         loader.setExecutorSize(1);
 
-        migrator = new JsonMigrator().getLoadingMigrator(loader);
-    }
-
-    @After
-    public void shutdown(){
-        graph.clear();
+        migrator = new LoadingMigrator(loader, new JsonMigrator());
     }
 
     @Test
     public void testMigrateSimpleSchemaData() {
-        load(getFile("simple-schema/schema.gql"));
+        load(getFile("json", "simple-schema/schema.gql"));
 
         String template = "  \n" +
                 "insert " +
@@ -114,32 +78,32 @@ public class JsonMigratorTest {
                 "  \n" +
                 "} ";
 
-        migrate(template, getFile("simple-schema/data.json"));
+        migrator.migrate(template, getFile("json", "simple-schema/data.json"));
 
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
         Entity person = personType.instances().iterator().next();
 
-        Entity address = getProperty(graph, person, "has-address").asEntity();
+        Entity address = getProperty(person, "has-address").asEntity();
 
-        Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
+        Entity streetAddress = getProperty(address, "address-has-street").asEntity();
 
-        Resource number = getResource(graph, streetAddress, "number").asResource();
+        Resource number = getResource(streetAddress, "number").asResource();
         assertEquals(21L, number.getValue());
 
-        Resource street = getResource(graph, streetAddress, "street").asResource();
+        Resource street = getResource(streetAddress, "street").asResource();
         assertEquals("2nd Street", street.getValue());
 
-        Resource city = getResource(graph, address, "city").asResource();
+        Resource city = getResource(address, "city").asResource();
         assertEquals("New York", city.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");
+        Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
         assertEquals(2, phoneNumbers.size());
 
         boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
-            Object location = getResource(graph, phoneNumber, "location").getValue();
-            Object code = getResource(graph, phoneNumber, "code").getValue();
+            Object location = getResource(phoneNumber, "location").getValue();
+            Object code = getResource(phoneNumber, "code").getValue();
             return ((location.equals("home") && code.equals(44L)) || (location.equals("work") && code.equals(45L)));
         });
 
@@ -147,8 +111,8 @@ public class JsonMigratorTest {
     }
 
     @Test
-    public void testMigrateAllTypesData() {
-        load(getFile("all-types/schema.gql"));
+    public void testMigrateAllTypesData() throws FileNotFoundException {
+        load(getFile("json", "all-types/schema.gql"));
 
         String template = "" +
                 "insert $x isa thing\n" +
@@ -160,7 +124,7 @@ public class JsonMigratorTest {
                 "  has a-string <a-string>\n" +
                 "  if (ne a-null null) do {has a-null <a-null>};";
 
-        migrate(template, getFile("all-types/data.json"));
+        migrator.migrate(template, new FileReader(getFile("json", "all-types/data.json")));
 
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
@@ -168,16 +132,16 @@ public class JsonMigratorTest {
 
         Entity thing = things.iterator().next();
 
-        Collection<Object> integers = getResources(graph, thing, "a-int").map(r -> r.asResource().getValue()).collect(toSet());
+        Collection<Object> integers = getResources(thing, "a-int").map(r -> r.asResource().getValue()).collect(toSet());
         assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
-        Resource aBoolean = getResource(graph, thing, "a-boolean");
+        Resource aBoolean = getResource(thing, "a-boolean");
         assertEquals(true, aBoolean.getValue());
 
-        Resource aNumber = getResource(graph, thing, "a-number");
+        Resource aNumber = getResource(thing, "a-number");
         assertEquals(42.1, aNumber.getValue());
 
-        Resource aString = getResource(graph, thing, "a-string");
+        Resource aString = getResource(thing, "a-string");
         assertEquals("hi", aString.getValue());
 
         assertEquals(0, graph.getResourceType("a-null").instances().size());
@@ -185,21 +149,21 @@ public class JsonMigratorTest {
 
     @Test
     public void testMigrateDirectory(){
-        load(getFile("string-or-object/schema.gql"));
+        load(getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
                 "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        migrate(template, getFile("string-or-object/data"));
+        migrator.migrate(template, getFile("json", "string-or-object/data"));
 
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
 
         Collection<Entity> things = theThing.instances();
         boolean thingsCorrect = things.stream().allMatch(thing -> {
-            Object string = getResource(graph, thing, "a-string").getValue();
+            Object string = getResource(thing, "a-string").getValue();
             return string.equals("hello") || string.equals("goodbye");
         });
 
@@ -208,33 +172,16 @@ public class JsonMigratorTest {
 
     @Test
     public void testStringOrObject(){
-        load(getFile("string-or-object/schema.gql"));
+        load(getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
                 "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        migrate(template, getFile("string-or-object/data"));
+        migrator.migrate(template, getFile("json", "string-or-object/data"));
 
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
-    }
-
-    // common class
-    private void migrate(String template, File file){
-        migrator.migrate(template, file);
-    }
-
-    private void load(File ontology) {
-        try {
-            graph.graql()
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
-                    .execute();
-
-            graph.commit();
-        } catch (IOException|MindmapsValidationException e){
-            throw new RuntimeException(e);
-        }
     }
 }

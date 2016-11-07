@@ -16,67 +16,37 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.json;
+package io.mindmaps.test.migration.json;
 
-import com.google.common.io.Files;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
-import io.mindmaps.engine.MindmapsEngineServer;
-import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import org.junit.*;
+import io.mindmaps.migration.json.Main;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
+import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
-import static io.mindmaps.migration.json.JsonMigratorUtil.*;
-import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 
-public class JsonMigratorMainTest {
+public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
 
+    private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();;
+    private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
+    
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-    private MindmapsGraph graph;
-
-    private final String dataFile = getFile("simple-schema/data.json").getAbsolutePath();;
-    private final String templateFile = getFile("simple-schema/template.gql").getAbsolutePath();
-
-    @BeforeClass
-    public static void start(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
-
-        MindmapsEngineServer.start();
-    }
-
-    @AfterClass
-    public static void stop(){
-        MindmapsEngineServer.stop();
-    }
-
     @Before
     public void setup(){
-        graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        load(getFile("simple-schema/schema.gql"));
-
+        load(getFile("json", "simple-schema/schema.gql"));
         exit.expectSystemExitWithStatus(0);
-    }
-
-    @After
-    public void shutdown(){
-        graph.clear();
     }
 
     @Test
@@ -139,27 +109,13 @@ public class JsonMigratorMainTest {
         assertEquals(1, personType.instances().size());
 
         Entity person = personType.instances().iterator().next();
-        Entity address = getProperty(graph, person, "has-address").asEntity();
-        Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
+        Entity address = getProperty(person, "has-address").asEntity();
+        Entity streetAddress = getProperty(address, "address-has-street").asEntity();
 
-        Resource number = getResource(graph, streetAddress, "number").asResource();
+        Resource number = getResource(streetAddress, "number").asResource();
         assertEquals(21L, number.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");
+        Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
         assertEquals(2, phoneNumbers.size());
     }
-
-    // common class
-    private void load(File ontology) {
-        try {
-            graph.graql()
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
-                    .execute();
-
-            graph.commit();
-        } catch (IOException |MindmapsValidationException e){
-            throw new RuntimeException(e);
-        }
-    }
-
 }
