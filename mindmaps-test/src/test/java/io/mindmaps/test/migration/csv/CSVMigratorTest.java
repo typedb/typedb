@@ -16,56 +16,40 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.csv;
+package io.mindmaps.test.migration.csv;
 
 import com.google.common.io.Files;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
-import io.mindmaps.engine.MindmapsEngineServer;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.migration.base.LoadingMigrator;
-import org.junit.*;
+import io.mindmaps.migration.csv.CSVMigrator;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import static java.util.stream.Collectors.joining;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
-public class CSVMigratorTest {
+public class CSVMigratorTest extends AbstractMindmapsMigratorTest {
 
-    private MindmapsGraph graph;
     private LoadingMigrator migrator;
     private CSVMigrator csvMigrator;
 
-    @BeforeClass
-    public static void start(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
-
-        MindmapsEngineServer.start();
-    }
-
-    @AfterClass
-    public static void stop(){
-        MindmapsEngineServer.stop();
-    }
-
     @Before
     public void setup(){
-        String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-
-        graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-
-        BlockingLoader loader = new BlockingLoader(GRAPH_NAME);
+        BlockingLoader loader = new BlockingLoader(graph.getKeyspace());
         loader.setExecutorSize(1);
         loader.setBatchSize(10);
 
@@ -73,14 +57,9 @@ public class CSVMigratorTest {
         migrator = new LoadingMigrator(loader, csvMigrator);
     }
 
-    @After
-    public void shutdown(){
-        graph.clear();
-    }
-
     @Test
     public void multiFileMigrateGraphPersistenceTest(){
-        load(getFile("multi-file/schema.gql"));
+        load(getFile("csv", "multi-file/schema.gql"));
         assertNotNull(graph.getEntityType("pokemon"));
 
         String pokemonTemplate = "" +
@@ -101,12 +80,12 @@ public class CSVMigratorTest {
                 "   $type has type-id <type_id>                 ; " +
                 "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 
-        migrate(pokemonTemplate, getFile("multi-file/data/pokemon.csv"));
-        migrate(pokemonTypeTemplate, getFile("multi-file/data/types.csv"));
-        migrate(edgeTemplate, getFile("multi-file/data/edges.csv"));
+        migrator.migrate(pokemonTemplate, getFile("csv", "multi-file/data/pokemon.csv"));
+        migrator.migrate(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv"));
+        migrator.migrate(edgeTemplate, getFile("csv", "multi-file/data/edges.csv"));
 
         Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
-        assertEquals(151, pokemon.size());
+        assertEquals(9, pokemon.size());
 
         ResourceType<String> typeid = graph.getResourceType("type-id");
         ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
@@ -120,15 +99,15 @@ public class CSVMigratorTest {
         assertNotNull(poison);
         assertNotNull(bulbasaur);
 
-        assertRelationExists(relation, bulbasaur, grass);
-        assertRelationExists(relation, bulbasaur, poison);
+        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getId());
+        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getId());
     }
 
     @Test
-    public void quotesWithoutContentTest() throws IOException{
-        load(getFile("pets/schema.gql"));
-        String template = Files.readLines(getFile("pets/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
-        migrate(template, getFile("pets/quotes/emptyquotes.csv"));
+    public void quotesWithoutContentTest() throws IOException {
+        load(getFile("csv", "pets/schema.gql"));
+        String template = Files.readLines(getFile("csv", "pets/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
+        migrator.migrate(template, getFile("csv", "pets/quotes/emptyquotes.csv"));
 
         Collection<Entity> pets = graph.getEntityType("pet").instances();
         assertEquals(9, pets.size());
@@ -150,11 +129,11 @@ public class CSVMigratorTest {
     @Test
     @Ignore
     public void multipleEntitiesInOneFileTest() throws IOException {
-        load(getFile("single-file/schema.gql"));
+        load(getFile("csv", "single-file/schema.gql"));
         assertNotNull(graph.getEntityType("make"));
 
-        String template = Files.readLines(getFile("single-file/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
-        migrate(template, getFile("single-file/data/cars.csv"));
+        String template = Files.readLines(getFile("csv", "single-file/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
+        migrator.migrate(template, getFile("csv", "single-file/data/cars.csv"));
 
         // test
         Collection<Entity> makes = graph.getEntityType("make").instances();
@@ -175,11 +154,11 @@ public class CSVMigratorTest {
 
     @Test
     public void testMigrateAsStringMethod(){
-        load(getFile("multi-file/schema.gql"));
+        load(getFile("csv", "multi-file/schema.gql"));
         assertNotNull(graph.getEntityType("pokemon"));
 
         String pokemonTypeTemplate = "insert $x isa pokemon-type has type-id <id>-type has description <identifier>;";
-        String templated = csvMigrator.migrate(pokemonTypeTemplate, getFile("multi-file/data/types.csv"))
+        String templated = csvMigrator.migrate(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv"))
                 .map(InsertQuery::toString)
                 .collect(joining("\n"));
 
@@ -187,31 +166,5 @@ public class CSVMigratorTest {
 
         String expected = "id \"17-type\"";
         assertTrue(templated.contains(expected));
-    }
-
-    private void assertRelationExists(RelationType rel, Entity entity1, Entity entity2){
-        assertTrue(rel.instances().stream().anyMatch(r ->
-                r.rolePlayers().values().contains(entity1) && r.rolePlayers().values().contains(entity2)));
-    }
-
-    private File getFile(String fileName){
-        return new File(CSVMigratorTest.class.getClassLoader().getResource(fileName).getPath());
-    }
-
-    // common class
-    private void migrate(String template, File file){
-        migrator.migrate(template, file);
-    }
-
-    private void load(File ontology) {
-        try {
-            graph.graql()
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
-                    .execute();
-
-            graph.commit();
-        } catch (IOException|MindmapsValidationException e){
-            throw new RuntimeException(e);
-        }
     }
 }

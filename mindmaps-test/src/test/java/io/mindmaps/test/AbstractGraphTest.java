@@ -20,6 +20,7 @@ package io.mindmaps.test;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
+import org.junit.After;
 import org.junit.Before;
 
 /**
@@ -34,5 +35,10 @@ public abstract class AbstractGraphTest extends AbstractEngineTest {
     public void createGraph() {
         factory = factoryWithNewKeyspace();
         graph = factory.getGraph();
+    }
+
+    @After
+    public void closeGraph() {
+        graph.close();
     }
 }

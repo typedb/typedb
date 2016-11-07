@@ -39,7 +39,7 @@ public abstract class AbstractEngineTest {
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
+        logger.setLevel(Level.INFO);
     }
 
     @BeforeClass
@@ -75,7 +75,6 @@ public abstract class AbstractEngineTest {
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
 
             hideLogs();
-            sleep(5000);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

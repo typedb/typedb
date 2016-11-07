@@ -16,67 +16,34 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.csv;
+package io.mindmaps.test.migration.csv;
 
-import com.google.common.io.Files;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.engine.MindmapsEngineServer;
-import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.migration.csv.Main;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.*;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.Permission;
 import java.util.Collection;
 
-import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 
-public class CSVMigratorMainTest {
+public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
 
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
-    private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-    private MindmapsGraph graph;
-
-    private final String dataFile = getFile("pets/data/pets.csv").getAbsolutePath();;
-    private final String templateFile = getFile("pets/template.gql").getAbsolutePath();
-
-    @BeforeClass
-    public static void start(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
-
-        MindmapsEngineServer.start();
-    }
-
-    @AfterClass
-    public static void stop(){
-        MindmapsEngineServer.stop();
-    }
+   
+    private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();;
+    private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
 
     @Before
     public void setup(){
-        graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        load(getFile("pets/schema.gql"));
-
+        load(getFile("csv", "pets/schema.gql"));
         exit.expectSystemExitWithStatus(0);
-    }
-
-    @After
-    public void shutdown(){
-        graph.clear();
     }
 
     @Test
@@ -86,13 +53,13 @@ public class CSVMigratorMainTest {
 
     @Test
     public void tsvMainTest(){
-        String tsvFile = getFile("pets/data/pets.tsv").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace()});
+        String tsvFile = getFile("csv", "pets/data/pets.tsv").getAbsolutePath();
+        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-delimiter", "\t", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void spacesMainTest(){
-        String tsvFile = getFile("pets/data/pets.spaces").getAbsolutePath();
+        String tsvFile = getFile("csv", "pets/data/pets.spaces").getAbsolutePath();
         runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace()});
     }
 
@@ -160,22 +127,5 @@ public class CSVMigratorMainTest {
 
         Entity bowser = graph.getResource("Bowser", name).ownerInstances().iterator().next().asEntity();
         assertEquals(1, bowser.resources(death).size());
-    }
-
-    private File getFile(String fileName){
-        return new File(CSVMigratorMainTest.class.getClassLoader().getResource(fileName).getPath());
-    }
-
-    // common class
-    private void load(File ontology) {
-        try {
-            graph.graql()
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
-                    .execute();
-
-            graph.commit();
-        } catch (IOException|MindmapsValidationException e){
-            throw new RuntimeException(e);
-        }
     }
 }
