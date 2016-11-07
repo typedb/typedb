@@ -29,6 +29,7 @@ import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outRolePlaye
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.shortcut;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.value;
 import static io.mindmaps.graql.internal.pattern.Patterns.var;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -117,7 +118,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
         Var pattern = var("x").id("Titanic").isa(var("y").id("movie"));
         GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"), Optional.empty());
 
-        Set<GraqlTraversal> traversals = query.allGraqlTraversals();
+        Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
         assertEquals(12, traversals.size());
 
@@ -144,7 +145,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
         Pattern pattern = or(var("x").id("Titanic").value("hello"), var().rel("x").rel("y"));
         GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"), Optional.empty());
 
-        Set<GraqlTraversal> traversals = query.allGraqlTraversals();
+        Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
         // Expect all combinations of both disjunctions
         Set<GraqlTraversal> expected = ImmutableSet.of(

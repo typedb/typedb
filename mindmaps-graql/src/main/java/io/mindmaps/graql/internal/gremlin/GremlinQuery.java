@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * A class for building gremlin traversals from patterns.
@@ -114,9 +113,9 @@ public class GremlinQuery {
         return innerQueries.stream().flatMap(ConjunctionQuery::getConcepts);
     }
 
-    public Set<GraqlTraversal> allGraqlTraversals() {
+    public Stream<GraqlTraversal> allGraqlTraversals() {
         List<Set<List<Fragment>>> collect = innerQueries.stream().map(ConjunctionQuery::allFragmentOrders).collect(toList());
         Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
-        return lists.stream().map(list -> GraqlTraversal.create(graph, Sets.newHashSet(list))).collect(toSet());
+        return lists.stream().map(list -> GraqlTraversal.create(graph, Sets.newHashSet(list)));
     }
 }
