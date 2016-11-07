@@ -19,17 +19,14 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +44,8 @@ import java.util.stream.Collectors;
  * separate iteration from <code>putValue</code> to ensure that the graph remains sound.
  */
 
-class BulkResourceMutate<T> {
+public class BulkResourceMutate<T> {
+    static final Logger LOGGER = LoggerFactory.getLogger(BulkResourceMutate.class);
 
     private static final int numberOfRetries = 10;
 
@@ -63,10 +61,8 @@ class BulkResourceMutate<T> {
     private RoleType resourceValue;
     private RelationType relationType;
 
-    // This has been added for debugging purposes - set to true for debugging
-    private boolean verboseOutput = false;
-
     public BulkResourceMutate(String keyspace, String resourceTypeId) {
+        LOGGER.debug("Starting BulkResourceMutate");
         this.keyspace = keyspace;
         this.resourceTypeId = resourceTypeId;
     }
@@ -80,10 +76,8 @@ class BulkResourceMutate<T> {
         currentNumberOfVertices++;
         initialiseGraph();
 
-        if (verboseOutput) {
-            System.out.println("considering vertex: " + vertex);
-            vertex.properties().forEachRemaining(System.out::println);
-        }
+        LOGGER.debug("Considering vertex: " + vertex);
+        vertex.properties().forEachRemaining(p -> LOGGER.debug("Vertex property: " + p.toString()));
 
         String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
         resourcesToPersist.put(id, value);
@@ -95,17 +89,23 @@ class BulkResourceMutate<T> {
      * Force all pending operations in the batch to be committed.
      */
     void flush() {
-        boolean hasFailed = false;
+        boolean hasFailed;
         int numberOfFailures = 0;
 
         do {
+            hasFailed = false;
+            LOGGER.debug("Flush called, about to persist");
             try {
                 persistResources();
             } catch (Exception e) {
+                LOGGER.debug(e.getMessage());
                 hasFailed = true;
                 numberOfFailures++;
-                if (!(numberOfFailures < numberOfRetries))
+                LOGGER.debug("Number of failures: " + numberOfFailures);
+                if (!(numberOfFailures < numberOfRetries)) {
+                    LOGGER.debug("REACHED MAX NUMBER OF RETRIES !!!!!!!!");
                     throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId, e.getMessage()), e);
+                }
             }
         } while (hasFailed);
 
@@ -114,8 +114,12 @@ class BulkResourceMutate<T> {
     }
 
     private void persistResources() throws MindmapsValidationException {
-        initialiseGraph();
+        if (resourcesToPersist.isEmpty()){
+            LOGGER.debug("Nothing to persist");
+            return;
+        }
 
+        initialiseGraph();
         resourcesToPersist.forEach((id, value) -> {
             Instance instance =
                     graph.getInstance(id);
@@ -133,13 +137,11 @@ class BulkResourceMutate<T> {
                         }
                     }).collect(Collectors.toList());
 
-            if (verboseOutput) {
-                System.out.println("assertions currently attached");
-                relations.forEach(System.out::println);
-            }
+            relations.forEach(relation -> LOGGER.debug("Assertions currently attached: " + relation.toString()));
 
             // if there are no resources at all make a new one
             if (relations.isEmpty()) {
+                LOGGER.debug("Persisting a new assertion");
                 Resource<T> resource = graph.putResource(value, resourceType);
 
                 graph.addRelation(relationType)
@@ -158,14 +160,16 @@ class BulkResourceMutate<T> {
             // if it doesn't exist already delete the old one and add the new one
             // TODO: we need to figure out what to do when we have multiple resources of the same type already in graph
             if (!relations.isEmpty()) {
-                graph.getRelation(relations.get(0).getId()).delete();
+                LOGGER.debug("Deleting " + relations.size() + " existing assertion(s), adding a new one");
+//                graph.getRelation(relations.get(0).getId()).delete();
+                relations.forEach(Concept::delete);
 
                 Resource<T> resource = graph.putResource(value, resourceType);
 
                 graph.addRelation(relationType)
                         .putRolePlayer(resourceOwner, instance)
                         .putRolePlayer(resourceValue, resource);
-            }
+            } else LOGGER.debug("Correct assertion already exists");
         });
 
         graph.commit();
