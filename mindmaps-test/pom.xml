@@ -173,16 +173,6 @@
         <!-- migration -->
         <dependency>
             <groupId>io.mindmaps</groupId>
-            <artifactId>migration-sql</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>1.4.192</version>
-        </dependency>
-        <dependency>
-            <groupId>io.mindmaps</groupId>
             <artifactId>migration-csv</artifactId>
             <version>${project.version}</version>
         </dependency>
