@@ -605,4 +605,11 @@ public class MindmapsGraphHighLevelTest extends GraphTestBase{
         }
         assertEquals(expectedNumber, count);
     }
+
+
+    @Test
+    public void testGraqlQuery(){
+
+    }
+
 }

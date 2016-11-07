@@ -68,6 +68,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param patterns an array of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
+    @Override
     public MatchQuery match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
@@ -76,6 +77,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
+    @Override
     public MatchQuery match(Collection<? extends Pattern> patterns) {
         MatchQuery query = Queries.match(Patterns.conjunction(AdminConverter.getPatternAdmins(patterns)));
         return graph.map(query::withGraph).orElse(query);
@@ -85,6 +87,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
+    @Override
     public InsertQuery insert(Var... vars) {
         return insert(Arrays.asList(vars));
     }
@@ -93,15 +96,18 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
+    @Override
     public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, graph);
     }
 
+    @Override
     public ComputeQuery compute(String computeMethod) {
         return Queries.compute(graph, computeMethod);
     }
 
+    @Override
     public ComputeQuery compute(String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         return Queries.compute(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
@@ -110,6 +116,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
      */
+    @Override
     public Stream<Pattern> parsePatterns(InputStream inputStream) {
         return queryParser.parsePatterns(inputStream);
     }
@@ -118,6 +125,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param patternsString a string representing a list of patterns
      * @return a list of patterns
      */
+    @Override
     public List<Pattern> parsePatterns(String patternsString) {
         return queryParser.parsePatterns(patternsString);
     }
@@ -126,6 +134,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
+    @Override
     public <T extends Query<?>> T parse(String queryString) {
         return queryParser.parseQuery(queryString);
     }
@@ -135,10 +144,12 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @param data data to use in template
      * @return a resolved graql query
      */
+    @Override
     public String parseTemplate(String template, Map<String, Object> data){
         return templateParser.parseTemplate(template, data);
     }
 
+    @Override
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         queryParser.registerAggregate(name, aggregateMethod);
     }
