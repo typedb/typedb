@@ -101,7 +101,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
         String subjectRoleId = "owl-subject-" + relationId;
         String objectRoleId = "owl-object-" + relationId;
         MatchQuery query = qb.match(
-                var("x").isa("tPerson"), //.has(OwlModel.IRI.owlname(), var("name")),
+                var("x").isa("tPerson"),
                 var("y").has(OwlModel.IRI.owlname(), "e"+instanceId),
                 var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
         QueryAnswers mmAnswers = mmReasoner.resolve(query);
@@ -110,9 +110,8 @@ public class TestReasoning extends TestOwlMindMapsBase {
         return mmAnswers;
     }
 
-
     @Test
-    public void testReasoning() {
+    public void testFullReasoning() {
         QueryBuilder qb = Graql.withGraph(migrator.graph());
 
         String richardId = "richard_henry_steward_1897";
