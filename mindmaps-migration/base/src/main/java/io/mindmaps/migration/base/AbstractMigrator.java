@@ -21,6 +21,8 @@ package io.mindmaps.migration.base;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.internal.template.macro.Macro;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -32,14 +34,23 @@ import java.util.stream.StreamSupport;
 public abstract class AbstractMigrator implements Migrator {
 
     public static final int BATCH_SIZE = 25;
+    public final QueryBuilder queryBuilder = Graql.withoutGraph();
+
+    /**
+     * Register a macro to use in templating
+     */
+    public AbstractMigrator registerMacro(Macro macro){
+        queryBuilder.registerMacro(macro);
+        return this;
+    }
 
     public LoadingMigrator getLoadingMigrator(Loader loader){
         return new LoadingMigrator(loader, this);
     }
 
     protected InsertQuery template(String template, Map<String, Object> data){
-        String templated = Graql.parseTemplate(template, data);
-        return Graql.parse(templated);
+        String templated = queryBuilder.parseTemplate(template, data);
+        return queryBuilder.parse(templated);
     }
 
     /**

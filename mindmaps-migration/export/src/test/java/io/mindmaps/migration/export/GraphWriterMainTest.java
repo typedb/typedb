@@ -21,13 +21,18 @@ package io.mindmaps.migration.export;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class GraphWriterMainTest {
+
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -48,6 +53,11 @@ public class GraphWriterMainTest {
         MindmapsEngineServer.stop();
     }
 
+    @Before
+    public void setupExit(){
+        exit.expectSystemExitWithStatus(0);
+    }
+
     @Test
     public void exportOntologyToSystemOutTest(){
         runAndAssertDataCorrect(new String[]{"export", "-ontology", "-keyspace", "original"});
@@ -59,8 +69,15 @@ public class GraphWriterMainTest {
     }
 
     @Test
-    public void exportNoGraphNameTest(){
+    public void exportNoArgsTest(){
+        exit.expectSystemExitWithStatus(1);
         runAndAssertDataCorrect(new String[]{"export", "ontology"});
+    }
+
+    @Test
+    public void exportOnlyHelpMessageTest(){
+        exit.expectSystemExitWithStatus(1);
+        runAndAssertDataCorrect(new String[]{"export", "-h"});
     }
 
     @Test
