@@ -125,22 +125,30 @@ public class GraqlTraversal {
      * Get the estimated complexity of the traversal.
      */
     public long getComplexity() {
-        return fragments.stream().mapToLong(list -> {
+        Set<String> names = new HashSet<>();
+
+        long totalCost = 0;
+
+        for (List<Fragment> list : fragments) {
             long listCost = 0;
-            String currentName = null;
 
             for (Fragment fragment : list) {
-                if (fragment.getStart().equals(currentName)) {
+                String start = fragment.getStart();
+
+                if (names.contains(start)) {
                     listCost += fragment.fragmentCost(listCost);
                 } else {
                     listCost += fragment.indexCost();
                 }
 
-                currentName = fragment.getEnd().orElse(fragment.getStart());
+                names.add(fragment.getStart());
+                fragment.getEnd().ifPresent(names::add);
             }
 
-            return listCost;
-        }).sum();
+            totalCost += listCost;
+        }
+
+        return totalCost;
     }
 
     @Override
