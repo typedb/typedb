@@ -52,17 +52,16 @@ public class Utility {
     }
 
     public static void printAnswers(Set<Map<String, Concept>> answers) {
-        for (Map<String, Concept> result : answers) {
-            for (Map.Entry<String, Concept> entry : result.entrySet()) {
+        answers.forEach(result -> {
+            result.entrySet().forEach(entry -> {
                 Concept concept = entry.getValue();
                 System.out.print(entry.getKey() + ": " + concept.getId() + " : ");
-
-                if (concept.isResource()) {
+                if (concept.isResource())
                     System.out.print(concept.asResource().getValue() + " ");
-                }
-            }
+            });
             System.out.println();
-        }
+        });
+        System.out.println();
     }
 
     public static Set<RoleType> getCompatibleRoleTypes(Type type, Type relType) {
