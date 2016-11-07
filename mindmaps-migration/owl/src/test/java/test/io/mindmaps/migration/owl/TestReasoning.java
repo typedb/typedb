@@ -28,7 +28,6 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.migration.owl.OwlModel;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
@@ -49,7 +48,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class TestReasoning extends TestOwlMindMapsBase {
