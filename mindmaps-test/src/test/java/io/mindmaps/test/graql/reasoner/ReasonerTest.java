@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Rule;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
