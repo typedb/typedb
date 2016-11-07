@@ -16,20 +16,19 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.export;
+package io.mindmaps.test.migration.export;
 
-import io.mindmaps.engine.MindmapsEngineServer;
-import io.mindmaps.engine.util.ConfigProperties;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
+import io.mindmaps.example.PokemonGraphFactory;
+import io.mindmaps.migration.export.Main;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class GraphWriterMainTest {
+public class GraphWriterMainTest extends AbstractMindmapsMigratorTest {
 
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
@@ -40,34 +39,21 @@ public class GraphWriterMainTest {
     @Rule
     public TemporaryFolder folder= new TemporaryFolder();
 
-    @BeforeClass
-    public static void start(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
-
-        MindmapsEngineServer.start();
-    }
-
-    @AfterClass
-    public static void stop(){
-        MindmapsEngineServer.stop();
-    }
-
     @Before
-    public void setupExit(){
-        exit.expectSystemExitWithStatus(0);
+    public void start() {
+        PokemonGraphFactory.loadGraph(graph);
     }
 
     @Test
     public void exportOntologyToSystemOutTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-ontology", "-keyspace", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-ontology", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void exportDataToSystemOutTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-keyspace", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-keyspace", graph.getKeyspace()});
     }
-
+    
     @Test
     public void exportNoArgsTest(){
         exit.expectSystemExitWithStatus(1);
@@ -82,7 +68,7 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportEngineURLProvidedTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-uri", "localhost:4567", "-keyspace", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
     private void runAndAssertDataCorrect(String[] args){

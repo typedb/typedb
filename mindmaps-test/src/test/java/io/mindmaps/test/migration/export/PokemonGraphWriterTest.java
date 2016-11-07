@@ -15,9 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.mindmaps.migration.export;
+package io.mindmaps.test.migration.export;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.example.PokemonGraphFactory;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,11 +25,7 @@ public class PokemonGraphWriterTest extends GraphWriterTestBase {
 
     @Before
     public void setup(){
-        original = Mindmaps.factory(Mindmaps.IN_MEMORY, "original").getGraph();
-        copy = Mindmaps.factory(Mindmaps.IN_MEMORY, "copy").getGraph();
-        writer = new GraphWriter(original);
-
-        PokemonGraphFactory.loadGraph(original);
+        PokemonGraphFactory.loadGraph(graph);
     }
 
     @Test
@@ -38,7 +33,7 @@ public class PokemonGraphWriterTest extends GraphWriterTestBase {
         String ontology = writer.dumpOntology();
         insert(copy, ontology);
 
-        assertOntologiesEqual(original, copy);
+        assertOntologiesEqual(graph, copy);
     }
 
     @Test
@@ -49,6 +44,6 @@ public class PokemonGraphWriterTest extends GraphWriterTestBase {
         String data = writer.dumpData();
         insert(copy, data);
 
-        assertDataEqual(original, copy);
+        assertDataEqual(graph, copy);
     }
 }

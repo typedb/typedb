@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.mindmaps.migration.export;
+package io.mindmaps.test.migration.export;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.Instance;
@@ -27,7 +28,10 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
+import io.mindmaps.migration.export.GraphWriter;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.After;
+import org.junit.Before;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -38,19 +42,23 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
-public abstract class GraphWriterTestBase {
+public abstract class GraphWriterTestBase extends AbstractMindmapsMigratorTest {
 
-    protected MindmapsGraph original;
     protected MindmapsGraph copy;
     protected GraphWriter writer;
 
-    @After
-    public void clear(){
-        copy.clear();
-        original.clear();
+    @Before
+    public void createWriter(){
+        copy = factoryWithNewKeyspace().getGraph();
+        writer = new GraphWriter(graph);
     }
 
-    public void insert(MindmapsGraph graph, String query){
+    @After
+    public void clear(){
+        copy.close();
+    }
+
+    public void insert(MindmapsGraph graph, String query) {
         graph.graql().parse("insert " + query).execute();
     }
 
@@ -109,8 +117,6 @@ public abstract class GraphWriterTestBase {
      * Get an entity that is uniquely defined by its resources
      */
     public Instance getInstanceUniqueByResourcesFromGraph(MindmapsGraph graph, Instance instance){
-        System.out.println(instance);
-        System.out.println(getInstancesByResources(graph, instance));
         return getInstancesByResources(graph, instance)
                .iterator().next();
     }
