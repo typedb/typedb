@@ -285,6 +285,19 @@ public class Analytics {
     }
 
     /**
+     * Compute the median of instances of the selected resource-type.
+     *
+     * @return median
+     */
+    public Map<Integer, Set<String>> shortestPath(String startId, String endId) {
+        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
+        MindmapsComputer computer = getGraphComputer();
+        ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypes, startId, endId),
+                new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.DISTANCE));
+        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+    }
+
+    /**
      * Compute the number of connected components.
      *
      * @return a map of set, each set contains all the vertex ids belonging to one connected component

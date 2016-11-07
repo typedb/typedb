@@ -21,7 +21,8 @@ class ClusterMemberMapReduce extends MindmapsMapReduce<Set<String>> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
-        if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+        if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
+                vertex.keys().contains((String)persistentProperties.get(CLUSTER_LABEL))) {
             emitter.emit(vertex.value((String)persistentProperties.get(CLUSTER_LABEL)),
                     Collections.singleton(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name())));
         }
