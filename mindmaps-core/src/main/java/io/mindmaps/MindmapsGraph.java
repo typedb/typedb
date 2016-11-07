@@ -177,13 +177,6 @@ public interface MindmapsGraph extends AutoCloseable{
     Instance getInstance(String id);
 
     /**
-     * Gets an Instance which is connected to the provided unique resource
-     * @param uniqueResource A unique resource which is connected to only one entity
-     * @return The Instance connected to this resource.
-     */
-    Instance getInstance(Resource uniqueResource);
-
-    /**
      *
      * @param id A unique Id which identifies the Entity in the graph.
      * @return The Entity with the provided Id or null if no such Entity exists.
