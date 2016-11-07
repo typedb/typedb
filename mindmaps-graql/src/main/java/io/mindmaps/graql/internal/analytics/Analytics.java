@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 
 /**
  * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer
@@ -475,7 +474,7 @@ public class Analytics {
         List<Pattern> checkSubtypes = subtypes.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
-        return withGraph(graph).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+        return graph.graql().match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 
     private boolean selectedTypesHaveInstance() {
@@ -486,7 +485,7 @@ public class Analytics {
         List<Pattern> checkSubtypes = subtypes.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
-        return withGraph(graph).match(or(checkSubtypes)).ask().execute();
+        return graph.graql().match(or(checkSubtypes)).ask().execute();
     }
 
     protected MindmapsComputer getGraphComputer() {

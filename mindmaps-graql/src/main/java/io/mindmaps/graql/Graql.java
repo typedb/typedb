@@ -20,7 +20,6 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
@@ -31,7 +30,13 @@ import io.mindmaps.graql.internal.query.predicate.Predicates;
 import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class Graql {
@@ -45,14 +50,6 @@ public class Graql {
      */
     public static QueryBuilderImpl withoutGraph() {
         return new QueryBuilderImpl();
-    }
-
-    /**
-     * @param graph the graph to operate the query on
-     * @return a query builder using the specified graph
-     */
-    public static QueryBuilderImpl withGraph(MindmapsGraph graph) {
-        return new QueryBuilderImpl(graph);
     }
 
     /**

@@ -43,7 +43,6 @@ import static io.mindmaps.concept.ResourceType.DataType.STRING;
 import static io.mindmaps.graql.Graql.gt;
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.util.Schema.MetaSchema.ENTITY_TYPE;
 import static io.mindmaps.util.Schema.MetaSchema.RELATION_TYPE;
 import static io.mindmaps.util.Schema.MetaSchema.RESOURCE_TYPE;
@@ -71,7 +70,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         graph = factoryWithNewKeyspace().getGraph();
         MovieGraphFactory.loadGraph(graph);
 
-        qb = withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

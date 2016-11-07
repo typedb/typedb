@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.AskQuery;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.admin.Conjunction;
@@ -56,7 +55,7 @@ public class AtomicQueryTest {
     @BeforeClass
     public static void setUpClass() {
         graph = SNBGraph.getGraph();
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

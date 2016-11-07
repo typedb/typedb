@@ -40,7 +40,6 @@ import static io.mindmaps.graql.Graql.min;
 import static io.mindmaps.graql.Graql.select;
 import static io.mindmaps.graql.Graql.sum;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.test.graql.query.QueryUtil.movies;
 import static org.junit.Assert.assertEquals;
 
@@ -50,7 +49,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

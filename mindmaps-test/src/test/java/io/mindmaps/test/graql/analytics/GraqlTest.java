@@ -63,7 +63,7 @@ public class GraqlTest extends AbstractGraphTest {
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
-        qb = withGraph(graph);
+        qb = graph.graql();
         keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
@@ -121,7 +121,7 @@ public class GraqlTest extends AbstractGraphTest {
         correctDegrees.put(relationId24, 2l);
 
         correctDegrees.forEach((k, v) -> {
-            List<Concept> resources = withGraph(graph)
+            List<Concept> resources = graph.graql()
                     .match(id(k).has(Analytics.degree, var("x")))
                     .get("x").collect(Collectors.toList());
             assertEquals(1, resources.size());

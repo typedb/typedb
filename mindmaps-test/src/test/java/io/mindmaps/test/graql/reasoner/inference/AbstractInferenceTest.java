@@ -20,7 +20,6 @@ package io.mindmaps.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.graql.Reasoner;
@@ -41,7 +40,7 @@ public class AbstractInferenceTest {
     public static void setUpClass() {
         MindmapsGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     /**silently allows multiple isas*/

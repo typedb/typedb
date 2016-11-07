@@ -36,8 +36,8 @@ import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.exception.GraphRuntimeException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.exception.MoreThanOneConceptException;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
@@ -164,7 +164,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public QueryBuilder graql(){
-        return Graql.withGraph(this);
+        return new QueryBuilderImpl(this);
     }
 
     public ElementFactory getElementFactory(){

@@ -30,7 +30,6 @@ import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.migration.base.LoadingMigrator;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -229,7 +228,7 @@ public class JsonMigratorTest {
 
     private void load(File ontology) {
         try {
-            Graql.withGraph(graph)
+            graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 

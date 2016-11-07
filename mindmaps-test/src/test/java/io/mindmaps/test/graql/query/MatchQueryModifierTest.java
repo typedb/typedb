@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -48,7 +47,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

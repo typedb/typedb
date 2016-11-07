@@ -32,7 +32,7 @@ public class TestSubProperties extends TestOwlMindMapsBase {
     	Map<OWLNamedIndividual, Set<OWLNamedIndividual>> createdInstances = 
     			reasoner.getObjectPropertyInstances(manager.getOWLDataFactory().getOWLObjectProperty(createdProp));
     	int owlCount = createdInstances.values().stream().mapToInt(S -> S.size()).sum();
-    	int mmCount = Graql.withGraph(migrator.graph()).match(Graql.var("r").isa(migrator.namer().objectPropertyName(createdProp)))
+        int mmCount = migrator.graph().graql().match(Graql.var("r").isa(migrator.namer().objectPropertyName(createdProp)))
     		.stream().mapToInt(M -> 1).sum();
     	Assert.assertEquals(owlCount, mmCount);
     }

@@ -118,7 +118,7 @@ public class Reasoner {
 
     private void linkConceptTypes(Rule rule) {
         LOG.debug("Linking rule " + rule.getId() + "...");
-        QueryBuilderImpl qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(qb.parsePatterns(rule.getLHS()));
         MatchQuery qRHS = qb.match(qb.parsePatterns(rule.getRHS()));
 
@@ -133,7 +133,7 @@ public class Reasoner {
 
     public static Set<Rule> getRules(MindmapsGraph graph) {
         Set<Rule> rules = new HashSet<>();
-        QueryBuilderImpl qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         MatchQuery sq = qb.parse("match $x isa inference-rule;");
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
         for (Map<String, Concept> result : results) {
@@ -346,7 +346,7 @@ public class Reasoner {
                 .getDisjunctiveNormalForm()
                 .getPatterns()
                 .forEach( conj -> {
-                    Query cq = new ReasonerMatchQuery(Graql.withGraph(graph).match(conj).select(selectVars), graph);
+                    Query cq = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
                     answers.addAll(resolveConjunctiveQuery(cq, materialise));
                 });
         return answers;

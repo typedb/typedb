@@ -26,11 +26,9 @@ import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.Graql;
 import org.junit.*;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
-import spark.utils.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -171,7 +169,7 @@ public class CSVMigratorMainTest {
     // common class
     private void load(File ontology) {
         try {
-            Graql.withGraph(graph)
+            graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 

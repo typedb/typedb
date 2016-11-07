@@ -18,7 +18,6 @@
 
 package io.mindmaps.test.graql.examples;
 
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilderImpl;
@@ -36,7 +35,7 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
 
     @Before
     public void setUp() {
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

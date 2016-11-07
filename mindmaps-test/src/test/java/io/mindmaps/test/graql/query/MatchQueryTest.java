@@ -21,7 +21,6 @@ package io.mindmaps.test.graql.query;
 import com.google.common.collect.Lists;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.test.AbstractMovieGraphTest;
@@ -69,7 +68,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

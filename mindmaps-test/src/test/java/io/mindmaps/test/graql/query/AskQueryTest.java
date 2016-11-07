@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -38,7 +37,7 @@ public class AskQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

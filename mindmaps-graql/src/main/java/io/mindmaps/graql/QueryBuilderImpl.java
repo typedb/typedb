@@ -58,7 +58,7 @@ public class QueryBuilderImpl implements QueryBuilder{
         templateParser = TemplateParser.create();
     }
 
-    QueryBuilderImpl(MindmapsGraph graph) {
+    public QueryBuilderImpl(MindmapsGraph graph) {
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();

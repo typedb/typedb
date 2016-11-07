@@ -59,7 +59,6 @@ import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.parse;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.util.Schema.MetaSchema.ENTITY_TYPE;
 import static io.mindmaps.util.Schema.MetaSchema.RELATION_TYPE;
 import static io.mindmaps.util.Schema.MetaSchema.ROLE_TYPE;
@@ -79,7 +78,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test
@@ -429,7 +428,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testCustomAggregate() {
-        QueryBuilderImpl qb = Graql.withGraph(graph);
+        QueryBuilderImpl qb = graph.graql();
 
         qb.registerAggregate(
                 "get-any", args -> new AbstractAggregate<Map<String, Concept>, Concept>() {
