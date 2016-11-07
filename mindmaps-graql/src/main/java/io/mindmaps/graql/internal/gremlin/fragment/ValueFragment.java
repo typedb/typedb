@@ -61,4 +61,23 @@ class ValueFragment extends AbstractFragment {
         Object value = predicate.getInnerValues().iterator().next();
         return ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName()).getConceptProperty();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        ValueFragment that = (ValueFragment) o;
+
+        return predicate != null ? predicate.equals(that.predicate) : that.predicate == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (predicate != null ? predicate.hashCode() : 0);
+        return result;
+    }
 }

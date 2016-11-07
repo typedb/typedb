@@ -35,4 +35,23 @@ class LhsFragment extends AbstractFragment {
     public long fragmentCost(long previousCost) {
         return previousCost;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        LhsFragment that = (LhsFragment) o;
+
+        return lhs != null ? lhs.equals(that.lhs) : that.lhs == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (lhs != null ? lhs.hashCode() : 0);
+        return result;
+    }
 }
