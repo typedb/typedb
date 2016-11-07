@@ -74,6 +74,10 @@
                     <groupId>com.codahale.metrics</groupId>
                     <artifactId>metrics-graphite</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr-runtime</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
