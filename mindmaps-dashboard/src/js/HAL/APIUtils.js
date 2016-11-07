@@ -48,19 +48,28 @@ export function defaultProperties(resource) {
     };
 }
 
-export function additionalProperties(resource) {
-    return Object.keys(resource)
-        .filter(x => !x.startsWith('_'))
-        .reduce((newPropertiesObject, key) => {
-            newPropertiesObject[key] = resource[key];
-            return newPropertiesObject
+export function extractResources(resource) {
+    if (API.KEY_EMBEDDED in resource) {
+        var embeddedObject = resource[API.KEY_EMBEDDED];
+        return Object.keys(embeddedObject).reduce((newResourcesObject, key) => {
+            var currentResourceList = embeddedObject[key];
+            currentResourceList.forEach(function(currentResource) {
+                if (currentResource[API.KEY_BASE_TYPE] === API.RESOURCE_TYPE)
+                    newResourcesObject[key] = {
+                        id: currentResource[API.KEY_ID],
+                        label: buildLabel(currentResource),
+                        link: currentResource[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF]
+                    };
+            });
+            return newResourcesObject;
         }, {});
+    }
 }
 
 export function nodeLinks(resource) {
     var linksObject = resource[API.KEY_LINKS];
-    return  Object.keys(linksObject)
-        .filter(x => (x!==API.KEY_SELF && x!==API.KEY_ONTOLOGY))
+    return Object.keys(linksObject)
+        .filter(x => (x !== API.KEY_SELF && x !== API.KEY_ONTOLOGY))
         .reduce((newLinksObject, key) => {
             newLinksObject[key] = linksObject[key].length;
             return newLinksObject

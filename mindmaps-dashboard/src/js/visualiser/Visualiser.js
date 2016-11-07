@@ -164,7 +164,6 @@ export default class Visualiser {
      */
     addNode(id, bp, ap, ls) {
         if (!this.nodeExists(id)) {
-          console.log("im adding "+ bp.id);
             this.nodes.add({
                 id: id,
                 uuid: bp.id,
@@ -354,7 +353,7 @@ export default class Visualiser {
     generateLabel(type, properties, label) {
         if (type in this.displayProperties)
             return this.displayProperties[type].reduce((l, x) => {
-                return (l.length ? l + "\n" : l) + x + ": " + properties[x]
+                return (l.length ? l + "\n" : l) + x + ": " + properties[x].label
             }, "");
         else
             return label;
