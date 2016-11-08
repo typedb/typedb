@@ -12,7 +12,12 @@ rhs {$x has languageRequirement 'satisfied';};
 
 isa inference-rule,
 lhs {$x isa applicant;
-$x has degreeOrigin 'nonUS' or $x has TOEFL <500;},
+$x has degreeOrigin 'nonUS';},
+rhs {$x has languageRequirement 'unsatisfied';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has TOEFL <500;},
 rhs {$x has languageRequirement 'unsatisfied';};
 
 
