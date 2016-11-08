@@ -26,9 +26,9 @@ import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
+import io.mindmaps.test.graql.reasoner.graphs.TestGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -106,7 +106,7 @@ public class QueryTest {
 
     @Test
     public void testAlphaEquivalence2() {
-        MindmapsGraph lgraph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        MindmapsGraph lgraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
 
         String queryString = "match $X id 'a'; (ancestor-friend: $X, person: $Y), isa Ancestor-friend; select $Y;";
         String queryString2 = "match $X id 'a'; (person: $X, ancestor-friend: $Y), isa Ancestor-friend; select $Y;";

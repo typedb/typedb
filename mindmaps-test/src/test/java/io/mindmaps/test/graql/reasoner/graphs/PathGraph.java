@@ -20,27 +20,27 @@ package io.mindmaps.test.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.google.common.math.IntMath.pow;
 
-public class PathGraph extends GenericGraph {
+public class PathGraph extends TestGraph {
 
-    public static MindmapsGraph getGraph(int n, int children) {
-        final String gqlFile = "path-test.gql";
-        getGraph(gqlFile);
+    final static String key = "index";
+    final static String gqlFile = "path-test.gql";
+
+    public PathGraph(int n, int children){
+        super(key, gqlFile);
         buildExtensionalDB(n, children);
         commit();
-        return mindmaps;
     }
 
-    protected static void buildExtensionalDB(int n, int children) {
+    public static MindmapsGraph getGraph(int n, int children) {
+        return new PathGraph(n, children).graph();
+    }
+
+    protected void buildExtensionalDB(int n, int children) {
         long startTime = System.currentTimeMillis();
 
         EntityType vertex = mindmaps.getEntityType("vertex");
@@ -82,31 +82,5 @@ public class PathGraph extends GenericGraph {
 
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("PathGraph loading time: " + loadTime + " ms");
-    }
-
-    private static Instance getInstance(String id){
-        Set<Instance> instances = mindmaps.getResourcesByValue(id)
-                .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
-        if (instances.size() != 1)
-            throw new IllegalStateException("Something wrong, multiple instances with given res value");
-        return instances.iterator().next();
-    }
-
-    private static Instance putEntity(String id, EntityType type) {
-        ResourceType<String> index = mindmaps.getResourceType("index");
-        RelationType indexRelation = mindmaps.getRelationType("has-index");
-        RoleType indexTarget = mindmaps.getRoleType("has-index-owner");
-        RoleType indexValue = mindmaps.getRoleType("has-index-value");
-        Instance inst = mindmaps.addEntity(type);
-        putResource(inst, index, id, indexRelation, indexTarget, indexValue);
-        return inst;
-    }
-
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
-                                        RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-        mindmaps.addRelation(relationType)
-                .putRolePlayer(targetRole, instance)
-                .putRolePlayer(valueRole, resourceInstance);
     }
 }
