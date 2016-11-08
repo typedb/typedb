@@ -56,13 +56,20 @@ class QueryUtil {
             assertNotNull(result);
 
             String resourceValue = result.getId();
-            if(result.isEntity()){
-                for (ResourceType resourceType : resourceTypes) {
-                    Collection<Resource<?>> foundResources = result.asEntity().resources(resourceType);
-                    if(!foundResources.isEmpty()) {
-                        resourceValue = foundResources.iterator().next().getValue().toString();
-                        break;
-                    }
+            //Dumb flow due to resources not being in Instance interface
+            for (ResourceType resourceType : resourceTypes) {
+                Collection<Resource<?>> foundResources;
+                if(result.isEntity()){
+                    foundResources = result.asEntity().resources(resourceType);
+                } else if(result.isRule()){
+                    foundResources = result.asRule().resources(resourceType);
+                } else {
+                    break;
+                }
+
+                if(!foundResources.isEmpty()) {
+                    resourceValue = foundResources.iterator().next().getValue().toString();
+                    break;
                 }
             }
 

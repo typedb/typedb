@@ -359,7 +359,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("y").has("name", "Robert de Niro")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("name"), "Heat", "Neil McCauley");
+        List<ResourceType> resourceTypes = Arrays.asList(graph.getResourceType("name"), graph.getResourceType("title"));
+        QueryUtil.assertResultsMatch(query, "x", null, resourceTypes, "Heat", "Neil McCauley");
     }
 
     @Test
