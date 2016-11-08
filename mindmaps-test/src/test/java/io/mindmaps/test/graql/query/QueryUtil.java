@@ -24,6 +24,8 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +41,12 @@ class QueryUtil {
 
     public static void assertResultsMatch(
             Iterable<Map<String, Concept>> query, String var, String type, ResourceType resourceType, String... expectedResources
+    ){
+        assertResultsMatch(query, var, type, Collections.singletonList(resourceType), expectedResources);
+    }
+
+    public static void assertResultsMatch(
+            Iterable<Map<String, Concept>> query, String var, String type, List<ResourceType> resourceTypes, String... expectedResources
     ) {
         Set<String> expectedSet = Sets.newHashSet(expectedResources);
         Set<String> unfoundSet = Sets.newHashSet(expectedResources);
@@ -49,9 +57,13 @@ class QueryUtil {
 
             String resourceValue = result.getId();
             if(result.isEntity()){
-                Collection<Resource<?>> foundResources = result.asEntity().resources(resourceType);
-                if(!foundResources.isEmpty())
-                    resourceValue = foundResources.iterator().next().getValue().toString();
+                for (ResourceType resourceType : resourceTypes) {
+                    Collection<Resource<?>> foundResources = result.asEntity().resources(resourceType);
+                    if(!foundResources.isEmpty()) {
+                        resourceValue = foundResources.iterator().next().getValue().toString();
+                        break;
+                    }
+                }
             }
 
             assertTrue("Unexpected value: " + resourceValue, expectedSet.contains(resourceValue));

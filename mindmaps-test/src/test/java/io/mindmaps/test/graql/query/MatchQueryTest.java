@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -368,7 +369,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("y").has("name", "Kermit The Frog")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"),  "The Muppets", "Kermit The Frog");
+        List<ResourceType> resourceTypes = Arrays.asList(graph.getResourceType("title"), graph.getResourceType("name"));
+        QueryUtil.assertResultsMatch(query, "x", null, resourceTypes,  "The Muppets", "Kermit The Frog");
     }
 
     @Test
