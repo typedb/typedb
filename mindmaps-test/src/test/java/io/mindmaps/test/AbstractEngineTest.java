@@ -75,7 +75,6 @@ public abstract class AbstractEngineTest {
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
 
             hideLogs();
-            sleep(5000);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
