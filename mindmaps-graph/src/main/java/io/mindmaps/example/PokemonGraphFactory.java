@@ -38,7 +38,7 @@ public class PokemonGraphFactory{
     private static ResourceType<String> description;
     private static ResourceType<String> name;
     private static ResourceType<Long> height;
-    private static ResourceType<Long> weight;
+    private static ResourceType<Double> weight;
     private static RoleType ancestor;
     private static RoleType descendent;
     private static RoleType pokemonWithType;
@@ -122,7 +122,7 @@ public class PokemonGraphFactory{
         pokedexNo = graph.putResourceType("pokedex-no", ResourceType.DataType.LONG);
         description = graph.putResourceType("description", ResourceType.DataType.STRING);
         height = graph.putResourceType("height", ResourceType.DataType.LONG);
-        weight = graph.putResourceType("weight", ResourceType.DataType.LONG);
+        weight = graph.putResourceType("weight", ResourceType.DataType.DOUBLE);
     }
 
     private static void buildInstances(MindmapsGraph graph) {
@@ -131,7 +131,7 @@ public class PokemonGraphFactory{
         addResource(graph,bulbasaur,1L,pokedexNo);
         addResource(graph,bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
         addResource(graph,bulbasaur,7L,height);
-        addResource(graph,bulbasaur,69L,weight);
+        addResource(graph,bulbasaur,69d,weight);
         putTypes(graph,bulbasaur, poison, grass);
 
         Entity ivysaur = graph.addEntity(pokemon);
@@ -139,7 +139,7 @@ public class PokemonGraphFactory{
         addResource(graph,ivysaur,2L,pokedexNo);
         addResource(graph,ivysaur,"When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",description);
         addResource(graph,ivysaur,10L,height);
-        addResource(graph,ivysaur,130L,weight);
+        addResource(graph,ivysaur,130d,weight);
         putTypes(graph,ivysaur, poison, grass);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,ivysaur)
@@ -150,7 +150,7 @@ public class PokemonGraphFactory{
         addResource(graph,venusaur,3L,pokedexNo);
         addResource(graph,venusaur,"The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",description);
         addResource(graph,venusaur,20L,height);
-        addResource(graph,venusaur,1000L,weight);
+        addResource(graph,venusaur,1000d,weight);
         putTypes(graph,venusaur, poison, grass);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,venusaur)
@@ -161,7 +161,7 @@ public class PokemonGraphFactory{
         addResource(graph,charmander,4L,pokedexNo);
         addResource(graph,charmander,"Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",description);
         addResource(graph,charmander,6L,height);
-        addResource(graph,charmander,85L,weight);
+        addResource(graph,charmander,85d,weight);
         putTypes(graph,charmander, fire);
 
         Entity charmeleon = graph.addEntity(pokemon);
@@ -169,7 +169,7 @@ public class PokemonGraphFactory{
         addResource(graph,charmeleon,5L,pokedexNo);
         addResource(graph,charmeleon,"When it swings its burning tail, it elevates the temperature to unbearably high levels.",description);
         addResource(graph,charmeleon,11L,height);
-        addResource(graph,charmeleon,190L,weight);
+        addResource(graph,charmeleon,190d,weight);
         putTypes(graph,charmeleon, fire);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,charmeleon)
@@ -180,7 +180,7 @@ public class PokemonGraphFactory{
         addResource(graph,charizard,6L,pokedexNo);
         addResource(graph,charizard,"Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",description);
         addResource(graph,charizard,17L,height);
-        addResource(graph,charizard,905L,weight);
+        addResource(graph,charizard,905d,weight);
         putTypes(graph,charizard, fire, flying);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,charizard)
