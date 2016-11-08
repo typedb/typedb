@@ -118,6 +118,10 @@
                     <groupId>com.codahale.metrics</groupId>
                     <artifactId>metrics-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr-runtime</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
