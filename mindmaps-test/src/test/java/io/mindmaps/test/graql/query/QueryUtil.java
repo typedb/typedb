@@ -20,33 +20,36 @@ package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.ResourceType;
 
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 class QueryUtil {
 
     static final String[] movies = new String[] {
-        "Godfather", "The-Muppets", "Apocalypse-Now", "Heat", "Hocus-Pocus", "Spy", "Chinese-Coffee"
+        "Godfather", "The Muppets", "Apocalypse Now", "Heat", "Hocus Pocus", "Spy", "Chinese Coffee"
     };
 
     public static void assertResultsMatch(
-            Iterable<Map<String, Concept>> query, String var, String type, String... expectedIds
+            Iterable<Map<String, Concept>> query, String var, String type, ResourceType resourceType, String... expectedResources
     ) {
-        Set<String> expectedSet = Sets.newHashSet(expectedIds);
-        Set<String> unfoundSet = Sets.newHashSet(expectedIds);
+        Set<String> expectedSet = Sets.newHashSet(expectedResources);
+        Set<String> unfoundSet = Sets.newHashSet(expectedResources);
 
         query.forEach(results -> {
             Concept result = results.get(var);
             assertNotNull(result);
-            String id = result.getId();
-            assertTrue("Unexpected id: " + id, expectedSet.contains(id));
-            unfoundSet.remove(id);
+            String resourceValue = result.asEntity().resources(resourceType).iterator().next().asResource().getValue().toString();
+            assertTrue("Unexpected value: " + resourceValue, expectedSet.contains(resourceValue));
+            unfoundSet.remove(resourceValue);
             if (type != null) assertEquals(type, result.type().getId());
         });
 
-        assertTrue("expected ids not found: " + unfoundSet, unfoundSet.isEmpty());
+        assertTrue("expected values not found: " + unfoundSet, unfoundSet.isEmpty());
     }
 }
