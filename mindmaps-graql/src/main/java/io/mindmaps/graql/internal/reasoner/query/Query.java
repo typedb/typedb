@@ -50,11 +50,6 @@ public class Query implements MatchQueryInternal {
     private final Set<String> selectVars;
 
     public Query(MatchQuery query, MindmapsGraph graph) {
-        if (query.admin().getPattern()
-                .getPatterns().stream()
-                .filter(PatternAdmin::isDisjunction).count() != 0 )
-            throw new IllegalArgumentException(ErrorMessage.DISJUNCTIVE_QUERY_ARGUMENT.getMessage());
-
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);

@@ -72,7 +72,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
     @Override
     public String getPredicateValue() {
-        if (!predicate.isSpecific()) return "";
+        if (predicate.getPredicate().getValue() == null) return "";
         else return predicate.getPredicate().getValue().toString();
     }
 

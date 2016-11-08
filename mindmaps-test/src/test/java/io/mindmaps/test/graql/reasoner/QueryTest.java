@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
@@ -30,13 +29,10 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.test.graql.reasoner.graphs.TestGraph;
-import io.mindmaps.util.ErrorMessage;
-import junit.framework.TestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Map;
-import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,9 +41,6 @@ public class QueryTest {
 
     private static MindmapsGraph graph;
     private static QueryBuilder qb;
-
-    @org.junit.Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void setUpClass() {
@@ -180,17 +173,6 @@ public class QueryTest {
         Atomic childAtomCopy = childCopy.getAtom();
 
         assertTrue(!childAtomCopy.equals(childAtom));
-    }
-
-    @Test
-    public void testDisjunctiveAsInput(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.DISJUNCTIVE_QUERY_ARGUMENT.getMessage());
-
-        String queryString = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
-                "($x, $y) isa is-located-in;";
-        MatchQuery query = new Query(queryString, lgraph);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

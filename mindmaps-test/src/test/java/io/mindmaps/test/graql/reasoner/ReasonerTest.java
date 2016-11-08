@@ -31,7 +31,6 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
-import io.mindmaps.util.ErrorMessage;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -121,7 +120,7 @@ public class ReasonerTest {
     @Test
     public void testComma2(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        String queryString = "match $x isa person, value <21 value >18;";
+        String queryString = "match $x isa person, value <21, value >18;";
         String queryString2 = "match $x isa person;$x value <21;$x value >18;";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);

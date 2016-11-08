@@ -164,7 +164,6 @@ public enum ErrorMessage {
     ANSWER_ERROR("Answer method called on an instance with no answers"),
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms"),
-    DISJUNCTIVE_QUERY_ARGUMENT("Attempted creation of a conjunctive query out of a disjunctive one"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
