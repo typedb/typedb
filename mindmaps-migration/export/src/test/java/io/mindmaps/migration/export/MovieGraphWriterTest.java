@@ -36,7 +36,7 @@ public class MovieGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingMovieGraphOntology() {
         String ontology = writer.dumpOntology();
-        copy.graql().parse(ontology).execute();
+        insert(copy, ontology);
 
         assertOntologiesEqual(original, copy);
     }
@@ -44,11 +44,10 @@ public class MovieGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingMovieGraphData() {
         String ontology = writer.dumpOntology();
-        System.out.println(ontology);
-        copy.graql().parse(ontology).execute();
+        insert(copy, ontology);
 
         String data = writer.dumpData();
-        copy.graql().parse(data).execute();
+        insert(copy, data);
 
         assertDataEqual(original, copy);
     }

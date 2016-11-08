@@ -36,7 +36,7 @@ public class PokemonGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingPokemonGraphOntology(){
         String ontology = writer.dumpOntology();
-        copy.graql().parse(ontology).execute();
+        insert(copy, ontology);
 
         assertOntologiesEqual(original, copy);
     }
@@ -44,10 +44,10 @@ public class PokemonGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingPokemonGraphData(){
         String ontology = writer.dumpOntology();
-        copy.graql().parse(ontology).execute();
+        insert(copy, ontology);
 
         String data = writer.dumpData();
-        copy.graql().parse(data).execute();
+        insert(copy, data);
 
         assertDataEqual(original, copy);
     }

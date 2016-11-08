@@ -180,7 +180,7 @@ public class MigrationCLI {
         return Mindmaps.factory(getEngineURI(), getKeyspace()).getGraph();
     }
 
-    public void addOptions(Options options){
+    public void addOptions(Options options) {
         options.getOptions().forEach(defaultOptions::addOption);
     }
 
