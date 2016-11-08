@@ -262,7 +262,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(Graql.<AskQuery>parse("match $x isa movie id 'Godfather'; ask;").withGraph(graph).execute());
+        assertTrue(Graql.<AskQuery>parse("match $x isa movie has title 'Godfather'; ask;").withGraph(graph).execute());
     }
 
     @Test
@@ -485,7 +485,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testHasVariable() {
-        MatchQuery query = qb.parse("match Godfather has tmdb-vote-count $x;");
+        MatchQuery query = qb.parse("match has title 'Godfather' has tmdb-vote-count $x;");
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());

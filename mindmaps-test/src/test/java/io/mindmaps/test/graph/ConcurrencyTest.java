@@ -61,6 +61,7 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
         assertEquals(1, graph.getRelationType(RELATION_TYPE).instances().size());
     }
 
+    @Ignore //TODO: Change this test. This was ignored because duplicates can no longer be created via putInstance methods
     @Test
     public void testWritingTheSameDataSequentially() throws MindmapsValidationException, InterruptedException {
         createOntology(graph);
@@ -85,13 +86,14 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
         RoleType role1 = graph.getRoleType(ROLE_1);
         RoleType role2 = graph.getRoleType(ROLE_2);
 
-        Entity e1 = graph.putEntity("e1", entityType);
-        Entity e2 = graph.putEntity("e2", entityType);
-        graph.putRelation("relation1",relationType).putRolePlayer(role1,e1).putRolePlayer(role2,e2);
+        Entity e1 = graph.addEntity(entityType);
+        Entity e2 = graph.addEntity(entityType);
+        graph.addRelation(relationType).putRolePlayer(role1,e1).putRolePlayer(role2,e2);
 
         graph.commit();
     }
 
+    @Ignore //TODO: Change this test. This was ignored because duplicates can no longer be created via putInstance methods
     @Test
     public void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite()  throws ExecutionException, InterruptedException, MindmapsValidationException {
         // TODO: Fix this test in tinkergraph

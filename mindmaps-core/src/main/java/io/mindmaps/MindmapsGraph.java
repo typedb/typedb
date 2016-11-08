@@ -97,15 +97,6 @@ public interface MindmapsGraph extends AutoCloseable{
 
     /**
      *
-     * @param id A unique id for the Entity
-     * @param type The type of this Entity
-     * @return A new or existing Entity with the provided Id.
-     */
-    @Deprecated
-    Entity putEntity(String id, EntityType type);
-
-    /**
-     *
      * @param type The type of this Entity
      * @return A new entity.
      */
@@ -122,32 +113,12 @@ public interface MindmapsGraph extends AutoCloseable{
     <V> Resource <V> putResource(V value, ResourceType<V> type);
 
     /**
-     *
-     * @param id A unique Id for the Rule
-     * @param lhs A string representing the left hand side Graql query.
-     * @param rhs A string representing the right hand side Graql query.
-     * @param type The rule type of this Rule
-     * @return new or existing Rule with the provided Id.
-     */
-    @Deprecated
-    Rule putRule(String id, String lhs, String rhs, RuleType type);
-
-    /**
      * @param lhs A string representing the left hand side Graql query.
      * @param rhs A string representing the right hand side Graql query.
      * @param type The rule type of this Rule
      * @return a new Rule
      */
     Rule addRule(String lhs, String rhs, RuleType type);
-
-    /**
-     *
-     * @param id A unique Id for the Relation
-     * @param type The relation type of this Relation
-     * @return A new empty relation.
-     */
-    @Deprecated
-    Relation putRelation(String id, RelationType type);
 
     /**
      *

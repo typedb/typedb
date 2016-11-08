@@ -41,13 +41,13 @@ public class QueryBuilderTest extends AbstractMovieGraphTest {
     @Test
     public void testBuildQueryGraphFirst() {
         MatchQuery query = graph.graql().match(var("x").isa("movie"));
-        QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), QueryUtil.movies);
     }
 
     @Test
     public void testBuildMatchQueryGraphLast() {
         MatchQuery query = match(var("x").isa("movie")).withGraph(graph);
-        QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), QueryUtil.movies);
     }
 
     @Test
