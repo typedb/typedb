@@ -7,17 +7,21 @@ import io.mindmaps.concept.RoleType;
 
 import static com.google.common.math.IntMath.pow;
 
-public class PathGraphSymmetric extends PathGraph{
+public class PathGraphSymmetric extends TestGraph{
 
-    public static MindmapsGraph getGraph(int n, int children) {
-        final String gqlFile = "path-test-symmetric.gql";
-        getGraph(gqlFile);
-        buildExtensionalDB(n, children);
+    final static String key = "index";
+    final static String gqlFile = "path-test-symmetric.gql";
+
+    public PathGraphSymmetric(int n, int m){
+        super(key, gqlFile);
+        buildExtensionalDB(n, m);
         commit();
-        return mindmaps;
     }
 
-    protected static void buildExtensionalDB(int n, int children) {
+    public static MindmapsGraph getGraph(int n, int m) {
+        return new PathGraphSymmetric(n, m).graph();
+    }
+    protected void buildExtensionalDB(int n, int children) {
         long startTime = System.currentTimeMillis();
 
         EntityType vertex = mindmaps.getEntityType("vertex");
@@ -26,12 +30,12 @@ public class PathGraphSymmetric extends PathGraph{
         RoleType arcTo = mindmaps.getRoleType("arcB");
 
         RelationType arc = mindmaps.getRelationType("arc");
-        mindmaps.putEntity("a0", startVertex);
+        putEntity("a0", startVertex);
 
         for(int i = 1 ; i <= n ;i++) {
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
-                mindmaps.putEntity("a" + i + "," + j, vertex);
+                putEntity("a" + i + "," + j, vertex);
                 if (j != 0 && j % 100 ==0)
                     System.out.println(j + " entities out of " + m + " inserted");
             }
@@ -39,8 +43,8 @@ public class PathGraphSymmetric extends PathGraph{
 
         for (int j = 0; j < children; j++) {
             mindmaps.addRelation(arc)
-                    .putRolePlayer(arcFrom, mindmaps.getInstance("a0"))
-                    .putRolePlayer(arcTo, mindmaps.getInstance("a1," + j));
+                    .putRolePlayer(arcFrom, getInstance("a0"))
+                    .putRolePlayer(arcTo, getInstance("a1," + j));
         }
 
         for(int i = 1 ; i < n ;i++) {
@@ -48,8 +52,8 @@ public class PathGraphSymmetric extends PathGraph{
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
                     mindmaps.addRelation(arc)
-                            .putRolePlayer(arcFrom, mindmaps.getInstance("a" + i + "," + j))
-                            .putRolePlayer(arcTo, mindmaps.getInstance("a" + (i + 1) + "," + (j * children + c)));
+                            .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
+                            .putRolePlayer(arcTo, getInstance("a" + (i + 1) + "," + (j * children + c)));
 
                 }
                 if (j!= 0 && j % 100 == 0)

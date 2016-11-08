@@ -18,6 +18,7 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.exception.InvalidConceptValueException;
@@ -64,6 +65,19 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
                 owners.add(concept.asInstance());
         });
         return owners;
+    }
+
+    @Override
+    public Instance owner() {
+        if(!type().isUnique())
+            throw new ConceptNotUniqueException(this);
+
+        Collection<Instance> owners = ownerInstances();
+        if(owners.isEmpty()) {
+            return null;
+        } else {
+            return owners.iterator().next();
+        }
     }
 
     /**

@@ -32,6 +32,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graql.QueryBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -332,6 +333,12 @@ public interface MindmapsGraph extends AutoCloseable{
      * @return A read only tinkerpop traversal for manually traversing the graph
      */
     GraphTraversal<Vertex, Vertex> getTinkerTraversal();
+
+    /**
+     *
+     * @return returns a query builder to allow for the creation of graql queries
+     */
+    QueryBuilder graql();
 
     /**
      * Validates and attempts to commit the graph. An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.

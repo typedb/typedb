@@ -25,6 +25,7 @@ import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.template.TemplateParser;
+import io.mindmaps.graql.internal.template.macro.Macro;
 import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
@@ -43,21 +44,21 @@ import java.util.stream.Stream;
  * A {@code QueryBuiler} is constructed with a {@code MindmapsGraph}. All operations are performed using this
  * graph. The user must explicitly commit or rollback changes after executing queries.
  * <p>
- * {@code QueryBuilder} also provides static methods for creating {@code Vars}.
+ * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  */
-public class QueryBuilder {
+public class QueryBuilderImpl implements QueryBuilder{
 
     private final Optional<MindmapsGraph> graph;
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
 
-    QueryBuilder() {
+    QueryBuilderImpl() {
         this.graph = Optional.empty();
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
     }
 
-    QueryBuilder(MindmapsGraph graph) {
+    public QueryBuilderImpl(MindmapsGraph graph) {
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
@@ -67,6 +68,7 @@ public class QueryBuilder {
      * @param patterns an array of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
+    @Override
     public MatchQuery match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
@@ -75,6 +77,7 @@ public class QueryBuilder {
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
+    @Override
     public MatchQuery match(Collection<? extends Pattern> patterns) {
         MatchQuery query = Queries.match(Patterns.conjunction(AdminConverter.getPatternAdmins(patterns)));
         return graph.map(query::withGraph).orElse(query);
@@ -84,6 +87,7 @@ public class QueryBuilder {
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
+    @Override
     public InsertQuery insert(Var... vars) {
         return insert(Arrays.asList(vars));
     }
@@ -92,15 +96,18 @@ public class QueryBuilder {
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
+    @Override
     public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, graph);
     }
 
+    @Override
     public ComputeQuery compute(String computeMethod) {
         return Queries.compute(graph, computeMethod);
     }
 
+    @Override
     public ComputeQuery compute(String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         return Queries.compute(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
@@ -109,6 +116,7 @@ public class QueryBuilder {
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
      */
+    @Override
     public Stream<Pattern> parsePatterns(InputStream inputStream) {
         return queryParser.parsePatterns(inputStream);
     }
@@ -117,6 +125,7 @@ public class QueryBuilder {
      * @param patternsString a string representing a list of patterns
      * @return a list of patterns
      */
+    @Override
     public List<Pattern> parsePatterns(String patternsString) {
         return queryParser.parsePatterns(patternsString);
     }
@@ -125,6 +134,7 @@ public class QueryBuilder {
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
+    @Override
     public <T extends Query<?>> T parse(String queryString) {
         return queryParser.parseQuery(queryString);
     }
@@ -134,11 +144,17 @@ public class QueryBuilder {
      * @param data data to use in template
      * @return a resolved graql query
      */
+    @Override
     public String parseTemplate(String template, Map<String, Object> data){
         return templateParser.parseTemplate(template, data);
     }
 
+    @Override
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         queryParser.registerAggregate(name, aggregateMethod);
+    }
+
+    public void registerMacro(Macro macro){
+        templateParser.registerMacro(macro.name(), macro);
     }
 }

@@ -9,7 +9,7 @@ cache:
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
 script:
-    - mvn test jacoco:report coveralls:report
+    - mvn test
 before_install:
   - sudo apt-get -y install npm
   - npm install -g npm

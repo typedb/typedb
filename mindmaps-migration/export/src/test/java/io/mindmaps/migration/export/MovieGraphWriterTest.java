@@ -19,10 +19,7 @@ package io.mindmaps.migration.export;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.graql.Graql;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class MovieGraphWriterTest extends GraphWriterTestBase {
@@ -39,7 +36,7 @@ public class MovieGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingMovieGraphOntology() {
         String ontology = writer.dumpOntology();
-        Graql.withGraph(copy).parse(ontology).execute();
+        insert(copy, ontology);
 
         assertOntologiesEqual(original, copy);
     }
@@ -47,11 +44,10 @@ public class MovieGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingMovieGraphData() {
         String ontology = writer.dumpOntology();
-        System.out.println(ontology);
-        Graql.withGraph(copy).parse(ontology).execute();
+        insert(copy, ontology);
 
         String data = writer.dumpData();
-        Graql.withGraph(copy).parse(data).execute();
+        insert(copy, data);
 
         assertDataEqual(original, copy);
     }

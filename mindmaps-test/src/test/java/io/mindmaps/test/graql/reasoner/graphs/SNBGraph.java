@@ -18,86 +18,35 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
-
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.QueryBuilder;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.UUID;
-
-public class SNBGraph {
-
-    private static MindmapsGraph mindmaps;
+public class SNBGraph extends TestGraph{
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        buildGraph();
-
-        try {
-            mindmaps.commit();
-        } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
-        }
-
-        return mindmaps;
+        return new SNBGraph().graph();
     }
 
-    private static void buildGraph() {
-        addOntology();
-        addData();
-        addRules();
+    @Override
+    protected void buildGraph() {
+        buildOntology();
+        buildInstances();
+        buildRelations();
+        buildRules();
     }
 
-    private static void addOntology() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-ontology.gql"), StandardCharsets.UTF_8);
-            String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qb.parse(query).execute();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-product-ontology.gql"), StandardCharsets.UTF_8);
-            String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qb.parse(query).execute();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
+    @Override
+    protected void buildOntology() {
+        loadGraqlFile("ldbc-snb-ontology.gql");
+        loadGraqlFile("ldbc-snb-product-ontology.gql");
     }
 
-    private static void addRules() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-rules.gql"), StandardCharsets.UTF_8);
-            String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qb.parse(query).execute();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
+    @Override
+    protected void buildRules() {
+        loadGraqlFile("ldbc-snb-rules.gql");
     }
 
-    private static void addData() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-data.gql"), StandardCharsets.UTF_8);
-            String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qb.parse(query).execute();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
+    @Override
+    protected void buildInstances() {
+        loadGraqlFile("ldbc-snb-data.gql");
     }
-
 }

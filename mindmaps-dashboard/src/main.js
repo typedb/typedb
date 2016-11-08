@@ -20,7 +20,7 @@ var Vue = require('vue')
 var VueRouter = require('vue-router')
 
 // Components
-var app = require('./components/main.vue');
+var graknapp = require('./components/main.vue');
 var visualiser = require('./components/visualiser.vue')
 var console = require('./components/console.vue')
 var status =  require('./components/status.vue')
@@ -44,7 +44,7 @@ router.map({
 })
 router.redirect({
     // home page
-    '*': '/status'
+    '*': '/graph'
 })
 
-router.start(app, '#app')
+router.start(graknapp, '#grakn-app')

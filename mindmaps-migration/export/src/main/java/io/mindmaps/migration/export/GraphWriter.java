@@ -34,7 +34,6 @@ import static java.util.stream.Collectors.joining;
 public class GraphWriter {
 
     private static final String EOL = ";\n";
-    private static final String INSERT = "insert\n";
 
     private final MindmapsGraph graph;
     private final List<String> reserved = Arrays.asList("inference-rule", "constraint-rule");
@@ -48,7 +47,7 @@ public class GraphWriter {
      * @return Graql insert query with ontology of given graph
      */
     public String dumpOntology(){
-        return joinAsInsert(types().map(TypeMapper::map));
+        return join(types().map(TypeMapper::map));
     }
 
     /**
@@ -56,7 +55,7 @@ public class GraphWriter {
      * @return Graql insert query with data in given graph
      */
     public String dumpData(){
-        return joinAsInsert(types()
+        return join(types()
                 .filter(t -> t.superType() == null)
                 .filter(t -> !t.isRoleType())
                 .flatMap(c -> c.instances().stream())
@@ -69,11 +68,11 @@ public class GraphWriter {
      * @param stream stream of Graql patterns
      * @return Graql patterns as a string
      */
-    private String joinAsInsert(Stream<Var> stream){
+    private String join(Stream<Var> stream){
         return stream
                 .map(Object::toString)
                 .filter(s -> !s.isEmpty())
-                .collect(joining(EOL, INSERT, EOL));
+                .collect(joining(EOL, "", EOL));
     }
 
     /**

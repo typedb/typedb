@@ -23,11 +23,13 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import io.mindmaps.concept.*;
 import io.mindmaps.util.REST;
-import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -177,13 +179,12 @@ public class HALConcept {
     // ================================ resources as HAL state properties ========================= //
 
     private void generateResources(Representation resource, Collection<Resource<?>> resourcesCollection) {
-        final Map<String, JSONArray> resources = new HashMap<>();
         resourcesCollection.forEach(currentResource -> {
-            resources.putIfAbsent(currentResource.type().getId(), new JSONArray());
-            resources.get(currentResource.type().getId()).put(currentResource.getValue());
+            Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId())
+                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+            generateStateAndLinks(embeddedResource, currentResource);
+            resource.withRepresentation(currentResource.type().getId(),embeddedResource);
         });
-
-        resources.keySet().forEach(current -> resource.withProperty(current, resources.get(current)));
     }
 
     // ======================================= _embedded ================================================//
@@ -196,13 +197,11 @@ public class HALConcept {
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
             String rolePlayedByCurrentConcept = null;
             boolean isResource = false;
-            Concept resourceToUse = null;
             for (Map.Entry<RoleType, Instance> entry : rel.rolePlayers().entrySet()) {
                 //Some role players can be null
                 if (entry.getValue() != null) {
                     if (entry.getValue().isResource()) {
                         isResource = true;
-                        resourceToUse = entry.getValue();
                         rolePlayedByCurrentConcept = entry.getKey().getId();
                     } else {
                         if (entry.getValue().getId().equals(entity.getId()))

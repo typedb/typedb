@@ -30,7 +30,6 @@ import org.junit.rules.ExpectedException;
 
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -41,7 +40,7 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test
@@ -137,7 +136,7 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
         // Create a fresh graph, with no has-resource between person and name
         MindmapsGraph empty = factoryWithNewKeyspace().getGraph();
 
-        QueryBuilder emptyQb = withGraph(empty);
+        QueryBuilder emptyQb = empty.graql();
         emptyQb.insert(
                 id("person").isa("entity-type"),
                 id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)

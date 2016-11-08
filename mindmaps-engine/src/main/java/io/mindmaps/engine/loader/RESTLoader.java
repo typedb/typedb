@@ -20,7 +20,6 @@ package io.mindmaps.engine.loader;
 
 import io.mindmaps.engine.backgroundtasks.InMemoryTaskManager;
 import io.mindmaps.engine.postprocessing.Cache;
-import io.mindmaps.engine.postprocessing.PostProcessing;
 import io.mindmaps.engine.postprocessing.PostProcessingTask;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
@@ -41,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.mindmaps.engine.loader.TransactionState.State;
-import static io.mindmaps.graql.Graql.withGraph;
 
 /**
  * Singleton class that handles insert queries received via REST end point.
@@ -131,7 +129,7 @@ public class RESTLoader {
             for (int i = 0; i < repeatCommits; i++) {
 
                 try {
-                    QueryBuilder builder = withGraph(graph);
+                    QueryBuilder builder = graph.graql();
                     inserts.asList().stream().map(Object::toString).forEach(b -> builder.parse(b).execute());
 
                     graph.commit();

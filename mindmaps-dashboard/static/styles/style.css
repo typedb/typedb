@@ -1,4 +1,51 @@
 @import url("fonts.css");
+
+/*style that was injected in page*/
+
+.tab-row {
+    padding-top: 20px;
+}
+
+.pe-7s-angle-right-circle {
+    padding-left: 5px;
+}
+
+.pe-7s-refresh {
+    padding-right: 0px;
+    padding-left: 5px;
+}
+
+.console-button {
+    float: right;
+    margin-left: 5px;
+}
+
+.btn-info {
+    margin-left: 30px;
+    margin-right: 10px;
+}
+
+.form-buttons {
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+}
+
+.types-button {
+    padding-left: 5px;
+}
+
+h4 {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.li-active {
+    background-color: #337ab7;
+}
+
+
+/*----------------------------*/
+
 body {
     -moz-user-select: none;
 }
@@ -7,22 +54,22 @@ div {
     outline: none;
 }
 
-.list-key{
-  font-weight:500;
-  color:#FFFFFF;
+.list-key {
+    font-weight: 500;
+    color: #FFFFFF;
 }
 
-.graph-panel-body{
-  position:relative;
+.graph-panel-body {
+    position: relative;
 }
 
 .properties-tab {
     z-index: 2;
     position: absolute;
-    right: 5px;
+    right: 0px;
     top: 0px;
-    margin-top: 5px;
-    margin-bottom:0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 .panel-body {
@@ -33,28 +80,34 @@ div {
     z-index: 0;
 }
 
-.tab-pane .panel-body{
-  padding:5px;
+.tab-pane .panel-body {
+    padding: 5px;
 }
 
-#graph-icon{
-  font-size:25px;
-  margin-bottom: -25px;
-  margin-right:10px;
+#graph-icon {
+    font-size: 25px;
+    margin-bottom: -25px;
+    margin-right: 10px;
 }
 
-.panel-console{
-  padding:7px;
-  margin-bottom: 0px;
+#panel-console-container {
+    border: 3px solid #4e5156;
+    margin-bottom: 0px;
+}
+
+#panel-console {
+    padding: 10px;
+    margin-bottom: 0px;
 }
 
 #list-resources-tab {
+    left: auto !important;
     width: 270px;
     background-color: rgba(68, 70, 79, 0.9);
 }
 
-.panel-heading > h4{
-  margin-left: 2px;
+.panel-heading>h4 {
+    margin-left: 2px;
 }
 
 .btn:active, .btn.active {
@@ -1103,12 +1156,12 @@ sup {
     width: 150px;
     background-color: #f6a821;
     height: 180px;
-    padding: 10px 5px;
+    padding: 10px 15px;
     font-weight: 200;
     letter-spacing: 2px;
     color: #FFFFFF;
     margin-top: 20px;
-    font-size: 170%;
+    font-size: 190%;
     height: 50px;
     line-height: 20px;
 }
@@ -1311,9 +1364,9 @@ sup {
     padding: 5px 15px 15px 15px;
 }
 
-.panel.panel-filled .panel-body {
+/*.panel.panel-filled .panel-body {
     padding-top: 10px;
-}
+}*/
 
 .panel .panel-footer {
     background-color: transparent;
@@ -1799,7 +1852,7 @@ h1 small, h2 small, h3 small, h4 small, h5 small, h6 small, .h1 small, .h2 small
     line-height: 20px;
 }
 
-.dd-handle {
+.dd-handle, .node-properties{
     display: block;
     margin: 5px 0;
     padding: 10px 10px;
@@ -1811,6 +1864,10 @@ h1 small, h2 small, h3 small, h4 small, h5 small, h6 small, .h1 small, .h2 small
     border-radius: 3px;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -ms-user-select: none;
 }
 
 .dd-handle:hover {

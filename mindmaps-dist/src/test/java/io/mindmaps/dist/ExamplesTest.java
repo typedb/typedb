@@ -20,7 +20,6 @@ package io.mindmaps.dist;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +39,7 @@ public class ExamplesTest {
     @Before
     public void setUp() {
         MindmapsGraph graph = Mindmaps.factory("in-memory", "my-graph").getGraph();
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

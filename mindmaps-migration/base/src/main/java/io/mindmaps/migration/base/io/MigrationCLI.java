@@ -25,7 +25,6 @@ import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.apache.commons.cli.CommandLine;
@@ -75,8 +74,15 @@ public class MigrationCLI {
             die(e.getMessage());
         }
 
-        if (cmd.hasOption("h") || cmd.getOptions().length == 0) {
+        if (cmd.hasOption("h")) {
             printHelpMessage();
+        }
+
+        if(cmd.getOptions().length == 0){
+            printHelpMessage();
+            exit();
+        } else if(cmd.getOptions().length == 1 && cmd.hasOption("h")){
+            exit();
         }
     }
 
@@ -90,6 +96,12 @@ public class MigrationCLI {
             }
             catch (IOException e) { die("Problem writing"); }
         });
+
+        try {
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void writeToSout(String string){
@@ -109,12 +121,14 @@ public class MigrationCLI {
     }
 
     public void printPartialCompletionMessage(){
-        System.out.println("Migration complete");
+        System.out.println("Migration complete.");
     }
 
     public void printWholeCompletionMessage(){
+        System.out.println("Migration complete. Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
+
         MindmapsGraph graph = getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
 
         StringBuilder builder = new StringBuilder();
         builder.append("Graph ontology contains:\n");
@@ -166,8 +180,12 @@ public class MigrationCLI {
         return Mindmaps.factory(getEngineURI(), getKeyspace()).getGraph();
     }
 
-    public void addOptions(Options options){
+    public void addOptions(Options options) {
         options.getOptions().forEach(defaultOptions::addOption);
+    }
+
+    public void exit(){
+        System.exit(1);
     }
 
     public String die(String errorMsg) {

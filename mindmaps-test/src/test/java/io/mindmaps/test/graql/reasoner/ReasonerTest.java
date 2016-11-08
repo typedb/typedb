@@ -80,7 +80,7 @@ public class ReasonerTest {
                       "(member-location: $z, container-location: $y) isa sublocate;";
         String head = "(member-location: $x, container-location: $y) isa sublocate;";
 
-        InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
+        InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -94,7 +94,7 @@ public class ReasonerTest {
         String body = "($x, $y) isa knows;";
         String head = "($x, $x) isa knows;";
 
-        InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
+        InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -144,10 +144,10 @@ public class ReasonerTest {
         Query query = new Query(queryString, graph);
         String body = "$x isa person;$x has name 'Bob';";
         String head = "$x has firstname 'Bob';";
-        graph.putRule("test", body, head, graph.getMetaRuleInference());
+        graph.addRule(body, head, graph.getMetaRuleInference());
 
         Reasoner reasoner = new Reasoner(graph);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
@@ -229,6 +229,22 @@ public class ReasonerTest {
     }
 
     @Test
+    @Ignore
+    public void testTypeVar(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type id 'university';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
+        String queryString2 = "match $x isa university;$y isa country;$y has name 'Poland';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        MatchQuery orig = Graql.parse(queryString);
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
     public void testSub(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type sub geoObject;" +
@@ -290,7 +306,7 @@ public class ReasonerTest {
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         Query query = new Query(queryString, graph);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
@@ -303,7 +319,7 @@ public class ReasonerTest {
         createReflexiveRule(graph.getRelationType("knows"), graph);
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
@@ -315,11 +331,11 @@ public class ReasonerTest {
         MindmapsGraph graph = SNBGraph.getGraph();
         String body = "$x isa person;";
         String head = "($x, $x) isa knows;";
-        graph.putRule("test", body, head, graph.getMetaRuleInference());
+        graph.addRule(body, head, graph.getMetaRuleInference());
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }

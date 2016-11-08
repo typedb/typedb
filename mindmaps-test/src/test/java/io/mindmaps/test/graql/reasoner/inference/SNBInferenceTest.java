@@ -20,13 +20,13 @@ package io.mindmaps.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -37,15 +37,22 @@ import static org.junit.Assert.assertEquals;
 
 public class SNBInferenceTest {
 
+    private static MindmapsGraph graph;
+    private static QueryBuilder qb;
+    private static Reasoner reasoner;
+
+    @BeforeClass
+    public static void setup(){
+        graph = SNBGraph.getGraph();
+        qb = graph.graql();
+        reasoner = new Reasoner(graph);
+    }
+
     /**
      * Tests transitivity
      */
     @Test
     public void testTransitivity() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "$x isa university;$y isa country;(located-subject: $x, subject-location: $y) isa resides;";
         MatchQuery query = qb.parse(queryString);
@@ -59,10 +66,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testTransitivityPrime() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "$x isa university;$y isa country;($x, $y) isa resides;";
         MatchQuery query = qb.parse(queryString);
@@ -79,10 +82,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testTransitivity2() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match $x isa company;$y isa country;" +
                 "(located-subject: $x, subject-location: $y) isa resides;";
         MatchQuery query = qb.parse(queryString);
@@ -97,10 +96,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testTransitivity2Prime() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match $x isa company;$y isa country;" +
                 "($x, $y) isa resides;";
         MatchQuery query = qb.parse(queryString);
@@ -118,10 +113,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testTag() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "$x isa person;$y isa tag;($x, $y) isa recommendation;";
         MatchQuery query = qb.parse(queryString);
@@ -140,10 +131,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testTagVarSub() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "$y isa person;$t isa tag;($y, $t) isa recommendation;";
         MatchQuery query = qb.parse(queryString);
@@ -163,10 +150,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testProduct() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "$x isa person;$y isa product;($x, $y) isa recommendation;";
         MatchQuery query = qb.parse(queryString);
@@ -186,10 +169,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testProductVarSub() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "$y isa person;$yy isa product;($y, $yy) isa recommendation;";
         MatchQuery query = qb.parse(queryString);
@@ -209,10 +188,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testCombinedProductTag() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "$x isa person;{$y isa product;} or {$y isa tag;};($x, $y) isa recommendation;";
         MatchQuery query = qb.parse(queryString);
@@ -235,10 +210,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testCombinedProductTag2() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match " +
                 "{$p isa person;$r isa product;($p, $r) isa recommendation;} or" +
                 "{$p isa person;$r isa tag;($p, $r) isa recommendation;};";
@@ -262,10 +233,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testBook() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
                 "$c isa category;$c has name 'book';" +
@@ -283,10 +250,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testBand() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
                 "$c isa category;$c has name 'Band';" +
@@ -306,10 +269,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testVarConsistency(){
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match $x isa person;$y isa product;" +
                     "($x, $y) isa recommendation;" +
                     "$z isa category;$z has name 'motorbike';" +
@@ -329,10 +288,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testVarConsistency2(){
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         //select people that have Chopin as a recommendation
         String queryString = "match $x isa person; $y isa tag; ($x, $y) isa tagging;" +
                         "$z isa product;$z has name 'Nocturnes'; ($x, $z) isa recommendation; select $x, $y;";
@@ -351,10 +306,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testVarConsistency3(){
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match $x isa person;$pr isa product, has name 'Nocturnes';($x, $pr) isa recommendation; select $x;";
         Query query = new Query(queryString, graph);
 
@@ -369,10 +320,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testQueryConsistency() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;" +
                         "$z isa person;$z has name 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y;";
         MatchQuery query = qb.parse(queryString);
@@ -396,10 +343,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testOrdering() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         //select recommendationS of Karl Fischer and their types
         String queryString = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
                         "($x, $p) isa recommendation; ($p, $t) isa typing; select $p, $t;";
@@ -418,10 +361,6 @@ public class SNBInferenceTest {
 
     @Test
     public void testOrdering2() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         //select recommendationS of Karl Fischer and their types
         String queryString2 = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
                 "($p, $c) isa typing; ($x, $p) isa recommendation; select $p, $c;";
@@ -443,10 +382,6 @@ public class SNBInferenceTest {
      */
     @Test
     public void testInverseVars() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
         //select recommendation of Karl Fischer and their types
         String queryString = "match $p isa product;" +
                 "$x isa person;$x has name 'Karl Fischer'; ($p, $x) isa recommendation; ($p, $t) isa typing; select $p, $t;";

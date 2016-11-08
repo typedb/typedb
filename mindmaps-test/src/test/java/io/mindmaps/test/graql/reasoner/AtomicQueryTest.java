@@ -21,9 +21,7 @@ package io.mindmaps.test.graql.reasoner;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
 import io.mindmaps.graql.AskQuery;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
@@ -32,11 +30,9 @@ import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.atom.IdPredicate;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
-import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
+import io.mindmaps.test.graql.reasoner.graphs.TestGraph;
 import io.mindmaps.util.ErrorMessage;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,6 +40,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
@@ -57,7 +55,7 @@ public class AtomicQueryTest {
     @BeforeClass
     public static void setUpClass() {
         graph = SNBGraph.getGraph();
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test
@@ -111,7 +109,7 @@ public class AtomicQueryTest {
     @Test
     @Ignore
     public void testUnification(){
-        MindmapsGraph localGraph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        MindmapsGraph localGraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", localGraph);
         AtomicQuery childQuery = new AtomicQuery("match ($X, $Y) isa Friend; $Y has name 'd'; select $X;", localGraph);
 

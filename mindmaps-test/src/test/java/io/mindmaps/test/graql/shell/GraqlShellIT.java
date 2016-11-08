@@ -240,6 +240,15 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testRollbackSemicolon() throws Exception {
+        String[] result = testShell("insert E isa entity-type;\nrollback;\nmatch $x isa entity-type\n").split("\n");
+
+        // Make sure there are no results for match query
+        assertEquals(">>> match $x isa entity-type", result[result.length-2]);
+        assertEquals(">>> ", result[result.length-1]);
+    }
+
+    @Test
     public void testErrorWhenEngineNotRunning() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-u", "localhost:7654");

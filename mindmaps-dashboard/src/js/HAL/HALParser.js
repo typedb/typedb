@@ -57,7 +57,7 @@ export default class HALParser {
     parseHalObject(obj) {
         if (obj !== null) {
             var links = Utils.nodeLinks(obj);
-            this.newResource(this.getHref(obj), Utils.defaultProperties(obj), Utils.additionalProperties(obj), links);
+            this.newResource(this.getHref(obj), Utils.defaultProperties(obj), Utils.extractResources(obj), links);
             // Add assertions from _embedded
             if (API.KEY_EMBEDDED in obj) {
                 _.map(Object.keys(obj[API.KEY_EMBEDDED]), key => {
@@ -75,20 +75,21 @@ export default class HALParser {
      */
     parseEmbedded(objs, parent, roleName) {
         _.map(objs, child => {
-          var links = Utils.nodeLinks(child);
-            // Add resource and iterate its _embedded field
-            var hrefP = this.getHref(child);
-            var hrefC = this.getHref(parent);
+            if (child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE) {
+                var links = Utils.nodeLinks(child);
+                // Add resource and iterate its _embedded field
+                var hrefP = this.getHref(child);
+                var hrefC = this.getHref(parent);
 
-            this.newResource(hrefP, Utils.defaultProperties(child), Utils.additionalProperties(child), links);
+                this.newResource(hrefP, Utils.defaultProperties(child), Utils.extractResources(child), links);
 
-            if (Utils.edgeLeftToRight(parent, child))
-                this.newRelationship(hrefP, hrefC, roleName);
-            else
-                this.newRelationship(hrefC, hrefP, roleName);
+                if (Utils.edgeLeftToRight(parent, child))
+                    this.newRelationship(hrefP, hrefC, roleName);
+                else
+                    this.newRelationship(hrefC, hrefP, roleName);
 
-            this.parseHalObject(child);
-
+                this.parseHalObject(child);
+            }
         });
     }
 

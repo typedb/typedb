@@ -36,10 +36,13 @@ public class Main {
 
         MigrationCLI cli = new MigrationCLI(args, options);
 
-        String outputFile = cli.getOption("destination");
+        if(!cli.hasOption("ontology") && !cli.hasOption("data")) {
+            cli.writeToSout("Missing arguments -ontology and/or -data");
+            cli.exit();
+        }
 
-        System.out.println("Writing graph " + cli.getKeyspace() + " using MM Engine " +
-                cli.getEngineURI() + " to " + (outputFile == null ? "System.out" : outputFile));
+        cli.writeToSout("Writing graph " + cli.getKeyspace() + " using MM Engine " +
+                cli.getEngineURI() + " to System.out");
 
         MindmapsGraph graph = cli.getGraph();
         GraphWriter graphWriter = new GraphWriter(graph);
@@ -51,5 +54,7 @@ public class Main {
         if(cli.hasOption("data")){
             cli.writeToSout(graphWriter.dumpOntology());
         }
+
+        System.exit(0);
     }
 }

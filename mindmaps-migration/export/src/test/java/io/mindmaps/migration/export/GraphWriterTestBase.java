@@ -17,7 +17,6 @@
  */
 package io.mindmaps.migration.export;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
@@ -29,7 +28,6 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import org.junit.After;
-import org.junit.Before;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -50,6 +48,10 @@ public abstract class GraphWriterTestBase {
     public void clear(){
         copy.clear();
         original.clear();
+    }
+
+    public void insert(MindmapsGraph graph, String query){
+        graph.graql().parse("insert " + query).execute();
     }
 
     public void assertDataEqual(MindmapsGraph one, MindmapsGraph two){

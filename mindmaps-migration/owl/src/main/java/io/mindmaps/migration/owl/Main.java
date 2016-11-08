@@ -70,5 +70,7 @@ public class Main {
             if (migrator.graph() != null)
                 migrator.graph().close();
         }
+
+        System.exit(0);
     }
 }

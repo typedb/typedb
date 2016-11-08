@@ -22,21 +22,24 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 
-public class MatrixGraphII extends GenericGraph{
+public class MatrixGraphII extends TestGraph{
 
-    public static MindmapsGraph getGraph(int n, int m) {
-        final String gqlFile = "matrix-testII.gql";
-        getGraph(gqlFile);
+    final static String key = "index";
+    final static String gqlFile = "matrix-testII.gql";
+
+    public MatrixGraphII(int n, int m){
+        super(key, gqlFile);
         buildExtensionalDB(n, m);
         commit();
-        return mindmaps;
     }
 
-    private static void buildExtensionalDB(int n, int m) {
+    public static MindmapsGraph getGraph(int n, int m) {
+        return new MatrixGraphII(n, m).graph();
+    }
+
+    private void buildExtensionalDB(int n, int m) {
         RoleType Qfrom = mindmaps.getRoleType("Q-from");
         RoleType Qto = mindmaps.getRoleType("Q-to");
 
@@ -66,22 +69,5 @@ public class MatrixGraphII extends GenericGraph{
                 }
             }
         }
-    }
-    private static Instance putEntity(String id, EntityType type) {
-        ResourceType<String> index = mindmaps.getResourceType("index");
-        RelationType indexRelation = mindmaps.getRelationType("has-index");
-        RoleType indexTarget = mindmaps.getRoleType("has-index-owner");
-        RoleType indexValue = mindmaps.getRoleType("has-index-value");
-        Instance inst = mindmaps.addEntity(type);
-        putResource(inst, index, id, indexRelation, indexTarget, indexValue);
-        return inst;
-    }
-
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
-                                        RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-        mindmaps.addRelation(relationType)
-                .putRolePlayer(targetRole, instance)
-                .putRolePlayer(valueRole, resourceInstance);
     }
 }
