@@ -19,7 +19,6 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
@@ -156,103 +155,103 @@ public class MovieGraphFactory {
     }
 
     private static void buildInstances() throws ParseException {
-        godfather = putEntity(movie, "Godfather");
+        godfather = mindmapsGraph.addEntity(movie);
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
         putResource(godfather, tmdbVoteAverage, 8.6);
         putResource(godfather, releaseDate, DATE_FORMAT.parse("Sun Jan 01 00:00:00 GMT 1984").getTime());
 
-        theMuppets = putEntity(movie, "The Muppets");
+        theMuppets = mindmapsGraph.addEntity(movie);
         putResource(theMuppets, title, "The Muppets");
         putResource(theMuppets, tmdbVoteCount, 100L);
         putResource(theMuppets, tmdbVoteAverage, 7.6);
         putResource(theMuppets, releaseDate, DATE_FORMAT.parse("Sat Feb 02 00:00:00 GMT 1985").getTime());
 
-        apocalypseNow = putEntity(movie, "Apocalypse Now");
+        apocalypseNow = mindmapsGraph.addEntity(movie);
         putResource(apocalypseNow, title, "Apocalypse Now");
         putResource(apocalypseNow, tmdbVoteCount, 400L);
         putResource(apocalypseNow, tmdbVoteAverage, 8.4);
 
-        heat = putEntity(movie, "Heat");
+        heat = mindmapsGraph.addEntity(movie);
         putResource(heat, title, "Heat");
 
-        hocusPocus = putEntity(movie, "Hocus Pocus");
+        hocusPocus = mindmapsGraph.addEntity(movie);
         putResource(hocusPocus, title, "Hocus Pocus");
         putResource(hocusPocus, tmdbVoteCount, 435L);
 
-        spy = putEntity(movie, "Spy");
+        spy = mindmapsGraph.addEntity(movie);
         putResource(spy, title, "Spy");
         putResource(spy, releaseDate, DATE_FORMAT.parse("Mon Mar 03 00:00:00 BST 1986").getTime());
 
-        chineseCoffee = putEntity(movie, "Chinese Coffee");
+        chineseCoffee = mindmapsGraph.addEntity(movie);
         putResource(chineseCoffee, title, "Chinese Coffee");
         putResource(chineseCoffee, tmdbVoteCount, 5L);
         putResource(chineseCoffee, tmdbVoteAverage, 3.1d);
         putResource(chineseCoffee, releaseDate, DATE_FORMAT.parse("Sat Sep 02 00:00:00 GMT 2000").getTime());
 
-        marlonBrando = putEntity(person, "Marlon Brando");
+        marlonBrando = mindmapsGraph.addEntity(person);
         putResource(marlonBrando, name, "Marlon Brando");
-        alPacino = putEntity(person, "Al Pacino");
+        alPacino = mindmapsGraph.addEntity(person);
         putResource(alPacino, name, "Al Pacino");
-        missPiggy = putEntity(person, "Miss Piggy");
+        missPiggy = mindmapsGraph.addEntity(person);
         putResource(missPiggy, name, "Miss Piggy");
-        kermitTheFrog = putEntity(person, "Kermit The Frog");
+        kermitTheFrog = mindmapsGraph.addEntity(person);
         putResource(kermitTheFrog, name, "Kermit The Frog");
-        martinSheen = putEntity(person, "Martin Sheen");
+        martinSheen = mindmapsGraph.addEntity(person);
         putResource(martinSheen, name, "Martin Sheen");
-        robertDeNiro = putEntity(person, "Robert de Niro");
+        robertDeNiro = mindmapsGraph.addEntity(person);
         putResource(robertDeNiro, name, "Robert de Niro");
-        judeLaw = putEntity(person, "Jude Law");
+        judeLaw = mindmapsGraph.addEntity(person);
         putResource(judeLaw, name, "Jude Law");
-        mirandaHeart = putEntity(person, "Miranda Heart");
+        mirandaHeart = mindmapsGraph.addEntity(person);
         putResource(mirandaHeart, name, "Miranda Heart");
-        betteMidler = putEntity(person, "Bette Midler");
+        betteMidler = mindmapsGraph.addEntity(person);
         putResource(betteMidler, name, "Bette Midler");
-        sarahJessicaParker = putEntity(person, "Sarah Jessica Parker");
+        sarahJessicaParker = mindmapsGraph.addEntity(person);
         putResource(sarahJessicaParker, name, "Sarah Jessica Parker");
 
-        crime = putEntity(genre, "crime");
+        crime = mindmapsGraph.addEntity(genre);
         putResource(crime, name, "crime");
-        drama = putEntity(genre, "drama");
+        drama = mindmapsGraph.addEntity(genre);
         putResource(drama, name, "drama");
-        war = putEntity(genre, "war");
+        war = mindmapsGraph.addEntity(genre);
         putResource(war, name, "war");
-        action = putEntity(genre, "action");
+        action = mindmapsGraph.addEntity(genre);
         putResource(action, name, "action");
-        comedy = putEntity(genre, "comedy");
+        comedy = mindmapsGraph.addEntity(genre);
         putResource(comedy, name, "comedy");
-        family = putEntity(genre, "family");
+        family = mindmapsGraph.addEntity(genre);
         putResource(family, name, "family");
-        musical = putEntity(genre, "musical");
+        musical = mindmapsGraph.addEntity(genre);
         putResource(musical, name, "musical");
-        fantasy = putEntity(genre, "fantasy");
+        fantasy = mindmapsGraph.addEntity(genre);
         putResource(fantasy, name, "fantasy");
 
-        donVitoCorleone = putEntity(character, "Don Vito Corleone");
+        donVitoCorleone = mindmapsGraph.addEntity(character);
         putResource(donVitoCorleone, name, "Don Vito Corleone");
-        michaelCorleone = putEntity(character, "Michael Corleone");
+        michaelCorleone = mindmapsGraph.addEntity(character);
         putResource(michaelCorleone, name, "Michael Corleone");
-        colonelWalterEKurtz = putEntity(character, "Colonel Walter E. Kurtz");
+        colonelWalterEKurtz = mindmapsGraph.addEntity(character);
         putResource(colonelWalterEKurtz, name, "Colonel Walter E. Kurtz");
-        benjaminLWillard = putEntity(character, "Benjamin L. Willard");
+        benjaminLWillard = mindmapsGraph.addEntity(character);
         putResource(benjaminLWillard, name, "Benjamin L. Willard");
-        ltVincentHanna = putEntity(character, "Lt Vincent Hanna");
+        ltVincentHanna = mindmapsGraph.addEntity(character);
         putResource(ltVincentHanna, name, "Lt Vincent Hanna");
-        neilMcCauley = putEntity(character, "Neil McCauley");
+        neilMcCauley = mindmapsGraph.addEntity(character);
         putResource(neilMcCauley, name, "Neil McCauley");
-        bradleyFine = putEntity(character, "Bradley Fine");
+        bradleyFine = mindmapsGraph.addEntity(character);
         putResource(bradleyFine, name, "Bradley Fine");
-        nancyBArtingstall = putEntity(character, "Nancy B Artingstall");
+        nancyBArtingstall = mindmapsGraph.addEntity(character);
         putResource(nancyBArtingstall, name, "Nancy B Artingstall");
-        winifred = putEntity(character, "Winifred");
+        winifred = mindmapsGraph.addEntity(character);
         putResource(winifred, name, "Winifred");
-        sarah = putEntity(character, "Sarah");
+        sarah = mindmapsGraph.addEntity(character);
         putResource(sarah, name, "Sarah");
-        harry = putEntity(character, "Harry");
+        harry = mindmapsGraph.addEntity(character);
         putResource(harry, name, "Harry");
 
-        cluster0 = putEntity(cluster, "0");
-        cluster1 = putEntity(cluster, "1");
+        cluster0 = mindmapsGraph.addEntity(cluster);
+        cluster1 = mindmapsGraph.addEntity(cluster);
         putResource(cluster0, name, "0");
         putResource(cluster1, name, "1");
     }
@@ -319,10 +318,6 @@ public class MovieGraphFactory {
         putResource(materialize, name, "materialize-rule");
     }
 
-    private static Entity putEntity(EntityType type, String name) {
-        return mindmapsGraph.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
-    }
-
     private static void hasResource(Type type, ResourceType<?> resourceType) {
         RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
         RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
@@ -334,15 +329,7 @@ public class MovieGraphFactory {
 
     private static <D> void putResource(Instance instance, ResourceType<D> resourceType, D resource) {
         Resource resourceInstance = mindmapsGraph.putResource(resource, resourceType);
-
-        RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
-        RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
-        RelationType relationType = mindmapsGraph.putRelationType("has-" + resourceType.getId())
-                .hasRole(owner).hasRole(value);
-
-        mindmapsGraph.addRelation(relationType)
-                .putRolePlayer(owner, instance)
-                .putRolePlayer(value, resourceInstance);
+        instance.hasResource(resourceInstance);
     }
 
     private static void hasCast(Instance movie, Instance person, Instance character) {
