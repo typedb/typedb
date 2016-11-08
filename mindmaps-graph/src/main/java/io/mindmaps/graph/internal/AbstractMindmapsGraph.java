@@ -318,14 +318,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return elementFactory.buildRule(addVertex(Schema.BaseType.RULE), type, lhs, rhs);
     }
 
-    @Deprecated
-    @Override
-    public Relation putRelation(String itemIdentifier, RelationType type) {
-        RelationImpl relation = elementFactory.buildRelation(putVertex(itemIdentifier, Schema.BaseType.RELATION), type);
-        relation.setHash(null);
-        return relation;
-    }
-
     @Override
     public Relation addRelation(RelationType type) {
         RelationImpl relation = elementFactory.buildRelation(addVertex(Schema.BaseType.RELATION), type);

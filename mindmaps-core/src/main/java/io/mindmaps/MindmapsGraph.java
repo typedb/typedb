@@ -133,15 +133,6 @@ public interface MindmapsGraph extends AutoCloseable{
 
     /**
      *
-     * @param id A unique Id for the Relation
-     * @param type The relation type of this Relation
-     * @return A new empty relation.
-     */
-    @Deprecated
-    Relation putRelation(String id, RelationType type);
-
-    /**
-     *
      * @param type The relation type of this Relation
      * @return A new empty relation.
      */
