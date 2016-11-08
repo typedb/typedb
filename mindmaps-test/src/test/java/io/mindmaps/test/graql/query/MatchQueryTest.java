@@ -265,7 +265,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testAssertionQuery() {
         MatchQuery query = qb.match(
                 var("a").rel("production-with-cast", "x").rel("y"),
-                var("y").has("name", "Miss-Piggy"),
+                var("y").has("name", "Miss Piggy"),
                 var("a").isa("has-cast")
         ).select("x");
 

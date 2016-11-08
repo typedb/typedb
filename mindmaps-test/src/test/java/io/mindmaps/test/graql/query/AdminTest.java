@@ -95,7 +95,7 @@ public class AdminTest extends AbstractMovieGraphTest {
         MatchQuery query = qb.match(var("x").isa("movie"));
 
         Conjunction<PatternAdmin> pattern = query.admin().getPattern();
-        pattern.getPatterns().add(var("x").has("title", "SYpy").admin());
+        pattern.getPatterns().add(var("x").has("title", "Spy").admin());
 
         assertEquals(1, query.stream().count());
     }
