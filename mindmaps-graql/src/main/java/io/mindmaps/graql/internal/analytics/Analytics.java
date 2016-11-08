@@ -293,7 +293,9 @@ public class Analytics {
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypes, startId, endId),
-                new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.DISTANCE));
+                new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.FOUND_IN_ITERATION));
+        Map<Integer, Set<String>> map = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
