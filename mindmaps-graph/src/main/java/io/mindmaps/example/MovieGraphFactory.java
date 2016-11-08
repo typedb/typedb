@@ -305,13 +305,13 @@ public class MovieGraphFactory {
         RuleType aRuleType = mindmapsGraph.putRuleType("a-rule-type");
         hasResource(aRuleType, name);
 
-        Rule expectation = mindmapsGraph.putRule("expectation-rule", "$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
+        Rule expectation = mindmapsGraph.addRule("$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
                 .setExpectation(true)
                 .addConclusion(movie).addHypothesis(person);
 
         putResource(expectation, name, "expectation-rule");
 
-        Rule materialize = mindmapsGraph.putRule("materialize-rule", "$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
+        Rule materialize = mindmapsGraph.addRule("$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
                 .setMaterialise(true)
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
 
