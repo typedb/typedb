@@ -20,6 +20,7 @@ package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.test.AbstractMovieGraphTest;
@@ -71,12 +72,12 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
                 var("x").isa("movie").has("tmdb-vote-count", var("v")),
                 var().rel("x").rel("y"),
                 or(
-                        var("y").isa("person").id("Marlon-Brando"),
+                        var("y").isa("person").has("name", "Marlon Brando"),
                         var("y").isa("genre").has("name", "crime")
                 )
         ).orderBy("v", false);
 
-        assertOrderedResultsMatch(query, "x", "movie", "Godfather", "Godfather", "Apocalypse-Now");
+        assertOrderedResultsMatch(query, "x", "movie", "Godfather", "Godfather", "Apocalypse Now");
     }
 
     @Test
@@ -92,7 +93,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         ).orderBy("n").offset(4).limit(8).select("x");
 
         QueryUtil.assertResultsMatch(
-                query, "x", "movie", "Hocus-Pocus", "Spy", "The-Muppets", "Godfather", "Apocalypse-Now"
+                query, "x", "movie", graph.getResourceType("title"), "Hocus Pocus", "Spy", "The Muppets", "Godfather", "Apocalypse Now"
         );
     }
 
@@ -103,7 +104,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         assertResultsOrderedByValue(query, "n", false);
 
         // Make sure all results are included
-        QueryUtil.assertResultsMatch(query, "the-movie", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatch(query, "the-movie", "movie", graph.getResourceType("title"), QueryUtil.movies);
     }
 
     @Test
@@ -111,7 +112,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         MatchQuery query = qb.match(var("z").isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", false);
 
         // Make sure movies are in the correct order
-        assertOrderedResultsMatch(query, "z", "movie", "Godfather", "Hocus-Pocus", "Apocalypse-Now", "The-Muppets");
+        assertOrderedResultsMatch(query, "z", "movie", "Godfather", "Hocus Pocus", "Apocalypse Now", "The Muppets");
     }
 
     @Test
@@ -121,11 +122,11 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("genre").has("name", "crime"),
-                        var("y").isa("person").id("Marlon-Brando")
+                        var("y").isa("person").has("name", "Marlon Brando")
                 )
         ).select("x").orderBy("t", false).distinct();
 
-        assertOrderedResultsMatch(query, "x", "movie", "Heat", "Godfather", "Apocalypse-Now");
+        assertOrderedResultsMatch(query, "x", "movie", "Heat", "Godfather", "Apocalypse Now");
     }
 
     @Test
@@ -137,7 +138,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         ).select("x");
         List<Map<String, Concept>> nondistinctResults = Lists.newArrayList(query);
 
-        QueryUtil.assertResultsMatch(query, "x", "person", "Kermit-The-Frog", "Miss-Piggy");
+        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("name"), "Kermit The Frog", "Miss Piggy");
         assertEquals(4, nondistinctResults.size());
     }
 
@@ -150,23 +151,28 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         ).distinct().select("x");
         List<Map<String, Concept>> distinctResults = Lists.newArrayList(query);
 
-        QueryUtil.assertResultsMatch(query, "x", "person", "Kermit-The-Frog", "Miss-Piggy");
+        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("name"), "Kermit The Frog", "Miss Piggy");
         assertEquals(2, distinctResults.size());
     }
 
-    private void assertOrderedResultsMatch(MatchQuery query, String var, String expectedType, String... expectedIds) {
-        Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedIds));
+    private void assertOrderedResultsMatch(MatchQuery query, String var, String expectedType, String... expectedTitles) {
+        Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedTitles));
+        ResourceType title = graph.getResourceType("title");
 
         query.forEach(results -> {
             Concept result = results.get(var);
             assertNotNull(result);
 
-            String expectedId = expectedQueue.poll();
-            if (expectedId != null) assertEquals(expectedId, result.getId());
+            String expectedTitle = expectedQueue.poll();
+            if (expectedTitle != null) {
+                //The most lovely lookup ever
+                String foundTitle = result.asEntity().resources(title).iterator().next().asResource().getValue().toString();
+                assertEquals(expectedTitle, foundTitle);
+            }
             if (expectedType != null) assertEquals(expectedType, result.type().getId());
         });
 
-        assertTrue("expected ids not found: " + expectedQueue, expectedQueue.isEmpty());
+        assertTrue("expected titles not found: " + expectedQueue, expectedQueue.isEmpty());
     }
 
     private void assertResultsOrderedByValue(MatchQuery query, String var, boolean asc) {

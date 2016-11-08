@@ -85,7 +85,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Instance godfather = graph.getInstance("Godfather");
+        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }

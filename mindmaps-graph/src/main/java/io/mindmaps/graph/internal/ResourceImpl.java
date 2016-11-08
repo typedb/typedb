@@ -18,13 +18,12 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.exception.ConceptNotUniqueException;
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.exception.InvalidConceptValueException;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.exception.InvalidConceptValueException;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -69,9 +68,6 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
 
     @Override
     public Instance owner() {
-        if(!type().isUnique())
-            throw new ConceptNotUniqueException(this);
-
         Collection<Instance> owners = ownerInstances();
         if(owners.isEmpty()) {
             return null;
