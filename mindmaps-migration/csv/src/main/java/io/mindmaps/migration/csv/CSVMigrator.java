@@ -18,10 +18,8 @@
 
 package io.mindmaps.migration.csv;
 
-import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.migration.base.AbstractMigrator;
@@ -39,45 +37,60 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * The CSV data migrator will migrate all of the data in a CSV file into Mindmaps Graql var patters, to be
+ * The CSV migrator will migrate all of the data in a CSV file into Mindmaps Graql var patters, to be
  * imported into a graph as the user sees fit.
  */
 public class CSVMigrator extends AbstractMigrator {
 
-    public static final char DELIMITER = ',';
-    private char delimiter = DELIMITER;
+    public static final char SEPARATOR = ',';
+    private char separator = SEPARATOR;
+
+    private final Reader reader;
+    private final String template;
 
     /**
-     * Set delimiter the input file will be split on
-     * @param delimiter character separating columns in input
+     * Construct a CSVMigrator to migrate data in the given file
+     * @param template parametrized graql insert query
+     * @param file file with the data to be migrated
      */
-    public CSVMigrator setDelimiter(char delimiter){
-        this.delimiter = delimiter;
-        return this;
-    }
-
-    @Override
-    public Stream<InsertQuery> migrate(String template, File file){
-        try (FileReader reader = new FileReader(file)){
-            return migrate(template, reader);
+    public CSVMigrator(String template, File file) {
+        try {
+            this.reader = new FileReader(file);
+            this.template = template;
         } catch (IOException e){
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * Each String in the stream is a CSV file
+     * Construct a CSVMigrator to migrate data in the given Reader
      * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
-     * @return
+     */
+    public CSVMigrator(String template, Reader reader){
+        this.reader = reader;
+        this.template = template;
+    }
+
+    /**
+     * Set separator the input file will be split on
+     * @param separator character separating columns in input
+     */
+    public CSVMigrator setSeparator(char separator){
+        this.separator = separator;
+        return this;
+    }
+
+    /**
+     * Each String in the stream is a CSV file
+     * @return stream of parsed insert queries
      */
     @Override
-    public Stream<InsertQuery> migrate(String template, final Reader reader) {
-
+    public Stream<InsertQuery> migrate() {
         try(
                 CSVReader csvReader =
                         new CSVReader(reader, 0, new CSVParserBuilder()
-                                .withSeparator(delimiter)
+                                .withSeparator(separator)
                                 .withIgnoreLeadingWhiteSpace(true)
                                 .withEscapeChar('\\')
                                 .withFieldAsNull(CSVReaderNullFieldIndicator.EMPTY_SEPARATORS)
@@ -94,6 +107,18 @@ public class CSVMigrator extends AbstractMigrator {
                     .map(col -> parse(header, col))
                     .map(col -> template(template, col));
         } catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Close the reader
+     */
+    @Override
+    public void close() {
+        try {
+            reader.close();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

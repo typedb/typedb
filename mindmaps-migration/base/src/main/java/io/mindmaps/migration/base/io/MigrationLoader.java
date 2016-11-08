@@ -16,52 +16,32 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.base;
+package io.mindmaps.migration.base.io;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.Loader;
+import io.mindmaps.migration.base.Migrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.Reader;
 
-public class LoadingMigrator {
+public class MigrationLoader {
 
-    protected static Logger LOG = LoggerFactory.getLogger(LoadingMigrator.class);
-    private final Migrator migrator;
-    private final Loader loader;
-
-    public LoadingMigrator(MindmapsGraph graph, Migrator migrator){
-        this(new BlockingLoader(graph.getKeyspace()), migrator);
+    public static void load(MindmapsGraph graph, Migrator migrator){
+        load(new BlockingLoader(graph.getKeyspace()), migrator);
     }
 
-    public LoadingMigrator(Loader loader, Migrator migrator){
-        this.loader = loader;
-        this.migrator = migrator;
+    public static void load(Loader loader, int batchSize, Migrator migrator){
+        loader.setBatchSize(batchSize);
+        load(loader, migrator);
     }
 
-    /**
-     * Set number of rows to migrate in one batch
-     * @param batchSize number of rows to migrate at once
-     */
-    public LoadingMigrator setBatchSize(int batchSize){
-        this.loader.setBatchSize(batchSize);
-        return this;
-    }
-
-    public void migrate(String template, File file) {
+    public static void load(Loader loader, Migrator migrator) {
         try{
-            migrator.migrate(template, file).forEach(loader::add);
-        } finally {
-            loader.waitToFinish();
-        }
-    }
-
-    public void migrate(String template, Reader reader) {
-        try{
-            migrator.migrate(template, reader).forEach(loader::add);
+            migrator.migrate().forEach(loader::add);
         } finally {
             loader.waitToFinish();
         }

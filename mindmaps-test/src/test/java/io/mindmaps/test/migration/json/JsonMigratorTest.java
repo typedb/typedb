@@ -23,11 +23,8 @@ import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Resource;
-import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.migration.base.LoadingMigrator;
 import io.mindmaps.migration.json.JsonMigrator;
 import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -39,16 +36,6 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class JsonMigratorTest extends AbstractMindmapsMigratorTest {
-
-    private LoadingMigrator migrator;
-
-    @Before
-    public void setup(){
-        BlockingLoader loader = new BlockingLoader(graph.getKeyspace());
-        loader.setExecutorSize(1);
-
-        migrator = new LoadingMigrator(loader, new JsonMigrator());
-    }
 
     @Test
     public void testMigrateSimpleSchemaData() {
@@ -78,7 +65,7 @@ public class JsonMigratorTest extends AbstractMindmapsMigratorTest {
                 "  \n" +
                 "} ";
 
-        migrator.migrate(template, getFile("json", "simple-schema/data.json"));
+        migrate(new JsonMigrator(template, getFile("json", "simple-schema/data.json")));
 
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
@@ -124,7 +111,7 @@ public class JsonMigratorTest extends AbstractMindmapsMigratorTest {
                 "  has a-string <a-string>\n" +
                 "  if (ne a-null null) do {has a-null <a-null>};";
 
-        migrator.migrate(template, new FileReader(getFile("json", "all-types/data.json")));
+        migrate(new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
 
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
@@ -156,7 +143,7 @@ public class JsonMigratorTest extends AbstractMindmapsMigratorTest {
                 "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        migrator.migrate(template, getFile("json", "string-or-object/data"));
+        migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
@@ -179,7 +166,7 @@ public class JsonMigratorTest extends AbstractMindmapsMigratorTest {
                 "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        migrator.migrate(template, getFile("json", "string-or-object/data"));
+        migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());

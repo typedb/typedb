@@ -18,7 +18,6 @@
 
 package io.mindmaps.migration.base;
 
-import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.QueryBuilderImpl;
@@ -42,10 +41,6 @@ public abstract class AbstractMigrator implements Migrator {
     public AbstractMigrator registerMacro(Macro macro){
         queryBuilder.registerMacro(macro);
         return this;
-    }
-
-    public LoadingMigrator getLoadingMigrator(Loader loader){
-        return new LoadingMigrator(loader, this);
     }
 
     protected InsertQuery template(String template, Map<String, Object> data){

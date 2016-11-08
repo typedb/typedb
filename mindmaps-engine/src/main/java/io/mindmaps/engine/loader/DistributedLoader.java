@@ -84,9 +84,10 @@ public class DistributedLoader extends Loader {
     }
 
     @Override
-    public void setThreadsNumber(int number){
+    public Loader setThreadsNumber(int number){
         this.threadsNumber = number;
         resetAvailabilityMap();
+        return this;
     }
 
     public void resetAvailabilityMap(){

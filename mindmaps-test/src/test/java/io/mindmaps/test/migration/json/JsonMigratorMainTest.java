@@ -19,14 +19,10 @@
 package io.mindmaps.test.migration.json;
 
 import io.mindmaps.concept.*;
-import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.migration.json.Main;
 import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
-import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 
@@ -57,61 +53,68 @@ public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
     @Test
     public void jsonMainNoArgsTest() {
         exit.expectSystemExitWithStatus(1);
-        runAndAssertDataCorrect(new String[]{"json"});
+        run(new String[]{"json"});
     }
 
     @Test
     public void jsonMainNoTemplateFileNameTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Template file missing (-t)");
-        runAndAssertDataCorrect(new String[]{"-input", ""});
+        run(new String[]{"-input", ""});
     }
 
     @Test
     public void jsonMainUnknownArgumentTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Unrecognized option: -whale");
-        runAndAssertDataCorrect(new String[]{"-whale", ""});
+        run(new String[]{"-whale", ""});
     }
 
     @Test
     public void jsonMainNoDataFileExistsTest(){
         exception.expect(RuntimeException.class);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile + "wrong", "-template", templateFile + "wrong"});
+        run(new String[]{"-input", dataFile + "wrong", "-template", templateFile + "wrong"});
     }
 
     @Test
     public void jsonMainNoTemplateFileExistsTest(){
         exception.expect(RuntimeException.class);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile + "wrong"});
+        run(new String[]{"-input", dataFile, "-template", templateFile + "wrong"});
     }
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
         exit.expectSystemExitWithStatus(0);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace(),});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void jsonMainThrowableTest(){
         exception.expect(NumberFormatException.class);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "hello"});
+        run(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "hello"});
+    }
+
+    private void run(String[] args){
+        Main.main(args);
     }
 
     private void runAndAssertDataCorrect(String[] args){
-        Main.main(args);
 
-        EntityType personType = graph.getEntityType("person");
-        assertEquals(1, personType.instances().size());
+        exit.checkAssertionAfterwards(() -> {
+            EntityType personType = graph.getEntityType("person");
+            assertEquals(1, personType.instances().size());
 
-        Entity person = personType.instances().iterator().next();
-        Entity address = getProperty(person, "has-address").asEntity();
-        Entity streetAddress = getProperty(address, "address-has-street").asEntity();
+            Entity person = personType.instances().iterator().next();
+            Entity address = getProperty(person, "has-address").asEntity();
+            Entity streetAddress = getProperty(address, "address-has-street").asEntity();
 
-        Resource number = getResource(streetAddress, "number").asResource();
-        assertEquals(21L, number.getValue());
+            Resource number = getResource(streetAddress, "number").asResource();
+            assertEquals(21L, number.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
-        assertEquals(2, phoneNumbers.size());
+            Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
+            assertEquals(2, phoneNumbers.size());
+        });
+
+        run(args);
     }
 }
