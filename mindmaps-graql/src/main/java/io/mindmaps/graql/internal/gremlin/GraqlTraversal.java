@@ -130,19 +130,24 @@ public class GraqlTraversal {
         long totalCost = 0;
 
         for (List<Fragment> list : fragments) {
+            long currentCost;
+            long previousCost = 1;
             long listCost = 0;
 
             for (Fragment fragment : list) {
                 String start = fragment.getStart();
 
                 if (names.contains(start)) {
-                    listCost += fragment.fragmentCost(listCost);
+                    currentCost = fragment.fragmentCost(previousCost);
                 } else {
-                    listCost += fragment.indexCost();
+                    currentCost = fragment.indexCost() * previousCost;
                 }
 
-                names.add(fragment.getStart());
+                names.add(start);
                 fragment.getEnd().ifPresent(names::add);
+
+                listCost += currentCost;
+                previousCost = currentCost;
             }
 
             totalCost += listCost;
