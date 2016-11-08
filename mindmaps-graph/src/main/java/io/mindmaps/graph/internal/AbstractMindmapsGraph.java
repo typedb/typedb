@@ -307,12 +307,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return putConceptType(itemIdentifier, Schema.BaseType.RULE_TYPE, getMetaRuleType()).asRuleType();
     }
 
-    @Deprecated
-    @Override
-    public Rule putRule(String itemIdentifier, String lhs, String rhs, RuleType type) {
-        return elementFactory.buildRule(putVertex(itemIdentifier, Schema.BaseType.RULE), type, lhs, rhs);
-    }
-
     @Override
     public Rule addRule(String lhs, String rhs, RuleType type) {
         return elementFactory.buildRule(addVertex(Schema.BaseType.RULE), type, lhs, rhs);
