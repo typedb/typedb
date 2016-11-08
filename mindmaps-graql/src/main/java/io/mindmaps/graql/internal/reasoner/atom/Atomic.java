@@ -33,8 +33,8 @@ public interface Atomic extends Cloneable{
     /**
      * @return true if atom alpha-equivalent
      */
-    default boolean isEquivalent(Object obj){ return false;}
-    default int equivalenceHashCode(){ return 1;}
+    boolean isEquivalent(Object obj);
+    int equivalenceHashCode();
 
     /**
      * @return true if the atom can be resolved by a rule (atom exists in one of the rule's head)

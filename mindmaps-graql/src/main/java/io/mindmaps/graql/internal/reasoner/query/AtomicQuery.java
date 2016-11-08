@@ -122,7 +122,7 @@ public class AtomicQuery extends Query{
                     .filter(Concept::isResource)
                     .forEach(c -> {
                         Map<String, Concept> answer = new HashMap<>();
-                        answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName())));
+                        answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName()).getPredicateValue()));
                         answer.put(atom.getValueVariable(), c);
                         insertAnswers.add(answer);
                     });

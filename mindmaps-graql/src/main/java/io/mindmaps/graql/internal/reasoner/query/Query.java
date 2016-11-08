@@ -68,7 +68,7 @@ public class Query implements MatchQueryInternal {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph().orElse(null);
-        this.selectVars = Sets.newHashSet(atom.getMatchQuery(graph).admin().getSelectedNames());
+        this.selectVars = Sets.newHashSet(atom.getVarNames());
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         atomSet = new HashSet<>();
         addAtom(AtomicFactory.create(atom, this));
@@ -321,6 +321,7 @@ public class Query implements MatchQueryInternal {
             return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
     }
 
+    //TODO cause broken
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
         getTypeConstraints()
@@ -343,11 +344,11 @@ public class Query implements MatchQueryInternal {
         return map;
     }
 
-    public String getIdPredicate(String var) {
+    public Predicate getIdPredicate(String var) {
         Set<Predicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
-        return relevantSubs.isEmpty()? "" : relevantSubs.iterator().next().getPredicateValue();
+        return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 
     public String getValuePredicate(String var){

@@ -19,7 +19,6 @@
 package test.io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -33,8 +32,6 @@ import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.migration.owl.Main;
 import io.mindmaps.migration.owl.OwlModel;
-import java.util.Collection;
-import java.util.Optional;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;

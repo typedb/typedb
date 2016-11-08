@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.reasoner.atom;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 
-public class TypeAtom extends Atom{
+public class TypeAtom extends Binary{
 
     public TypeAtom(VarAdmin pattern) {
         super(pattern);
@@ -33,40 +33,46 @@ public class TypeAtom extends Atom{
     }
 
     @Override
+    public boolean isEquivalent(Object obj) {
+        if (!(obj.getClass().equals(this.getClass()))) return false;
+        Binary a2 = (Binary) obj;
+        Query parent = getParentQuery();
+        Predicate predicate = parent.getIdPredicate(valueVariable);
+        Predicate objPredicate = a2.getParentQuery().getIdPredicate(a2.valueVariable);
+
+        String idPredicate = predicate != null? predicate.getPredicateValue() : "";
+        String objIdPredicate = objPredicate != null? objPredicate.getPredicateValue() : "";
+
+        return this.typeId.equals(a2.getTypeId())
+                && idPredicate.equals(objIdPredicate);
+    }
+
+    @Override
+    public int equivalenceHashCode(){
+        int hashCode = 1;
+        Predicate predicate = getParentQuery().getIdPredicate(this.valueVariable);
+        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + (predicate != null? getParentQuery().getIdPredicate(this.valueVariable).hashCode() : 0);
+        return hashCode;
+    }
+
+    @Override
+    protected String extractValueVariableName(VarAdmin var) {
+        return var.getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).getName();
+    }
+
+    @Override
+    protected void setValueVariable(String var) {
+        valueVariable = var;
+        atomPattern.asVar().getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).setName(var);
+    }
+
+    @Override
     public Atomic clone(){
         return new TypeAtom(this);
     }
 
     @Override
     public boolean isType(){ return true;}
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof TypeAtom)) return false;
-        TypeAtom a2 = (TypeAtom) obj;
-        return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        return hashCode;
-    }
-
-    @Override
-    public boolean isEquivalent(Object obj) {
-        if (!(obj instanceof TypeAtom)) return false;
-        TypeAtom a2 = (TypeAtom) obj;
-        return this.typeId.equals(a2.getTypeId());
-    }
-
-    @Override
-    public int equivalenceHashCode(){
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        return hashCode;
-    }
 }
 

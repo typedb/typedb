@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.atom;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,16 +30,39 @@ public class Resource extends Binary{
     public Resource(VarAdmin pattern, Query par) { super(pattern, par);}
     public Resource(Resource a) { super(a);}
 
+    //TODO assumes a single value predicates can be assigned to a variable
     @Override
-    protected String extractName(VarAdmin var){
+    public boolean isEquivalent(Object obj) {
+        if (!(obj.getClass().equals(this.getClass()))) return false;
+        Binary a2 = (Binary) obj;
+        Query parent = getParentQuery();
+        return this.typeId.equals(a2.getTypeId())
+                && parent.getValuePredicate(valueVariable).equals(a2.getParentQuery().getValuePredicate(a2.valueVariable));
+    }
+
+    //TODO assumes a single value predicates can be assigned to a variable
+    @Override
+    public int equivalenceHashCode(){
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + getParentQuery().getValuePredicate(this.valueVariable).hashCode();
+        return hashCode;
+    }
+
+    @Override
+    protected String extractValueVariableName(VarAdmin var){
         String name = "";
-        Set<HasResourceProperty> props = var.getProperties(HasResourceProperty.class).collect(Collectors.toSet());
-        if(props.size() == 1){
-            VarAdmin resVar = props.iterator().next().getResource();
-            if (resVar.getValuePredicates().isEmpty() && resVar.isUserDefinedName())
-                name = resVar.getName();
-        }
+        HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
+        VarAdmin resVar = prop.getResource();
+        if (resVar.getValuePredicates().isEmpty() && resVar.isUserDefinedName())
+            name = resVar.getName();
         return name;
+    }
+
+    @Override
+    protected void setValueVariable(String var) {
+        valueVariable = var;
+        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setName(var));
     }
 
     @Override

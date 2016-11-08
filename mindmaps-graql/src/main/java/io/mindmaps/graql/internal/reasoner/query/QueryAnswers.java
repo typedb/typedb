@@ -93,7 +93,8 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return unify(unifiers, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
-    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars, Map<String, Concept> valueConstraints, Map<String, Type> typeConstraints){
+    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars,
+                               Map<String, Concept> valueConstraints, Map<String, String> typeConstraints){
         if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(entry -> {
@@ -105,7 +106,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
                 Concept con = entry.get(var);
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
-                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.type()) ) )
+                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId()) ) )
                     isCompatible = false;
                 else
                     answer.put(var, con);
@@ -133,13 +134,21 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         //identify extra subs contribute to/constraining answers
         Map<String, Concept> subVars = new HashMap<>();
         Map<String, Concept> valueConstraints = new HashMap<>();
-        Map<String, Type> typeConstraints = new HashMap<>();
+        Map<String, String> typeConstraints = new HashMap<>();
 
         //find extra type constraints
-        Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
+        //TODO revisit bo bez sensu
+        //TODO look only for instance types as we are looking at specific concepts
+        /*
+        Set<Atom> extraTypes =  parentQuery.getTypeConstraints();
+        extraTypes.removeAll(childQuery.getTypeConstraints());
+        // Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
         extraTypes.forEach( type -> {
-           typeConstraints.put(type.getVarName(), type.getType());
+           //typeConstraints.put(type.getVarName(), type.getType());
+
+            typeConstraints.put(type.getVarName(), parentQuery.getIdPredicate(type.getValueVariable()).getPredicateValue());
         });
+        */
 
         //find extra subs
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
