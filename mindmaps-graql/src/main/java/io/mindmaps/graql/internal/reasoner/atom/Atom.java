@@ -21,22 +21,24 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.util.ErrorMessage;
+import javafx.util.Pair;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 public abstract class Atom extends AtomBase {
 
@@ -91,6 +93,68 @@ public abstract class Atom extends AtomBase {
      * */
     public boolean isResource(){ return false;}
 
+    private boolean checkRuleApplicable(InferenceRule child) {
+        boolean relRelevant = true;
+        Query parent = getParentQuery();
+        Atom childAtom = child.getRuleConclusionAtom();
+
+        if (isRelation()) {
+            Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
+            //Check for role compatibility
+            Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
+            for (Map.Entry<RoleType, Pair<String, Type>> entry : parentRoleVarTypeMap.entrySet()) {
+                RoleType role = entry.getKey();
+                Type pType = entry.getValue().getValue();
+                if (pType != null) {
+                    //vars can be matched by role types
+                    if (childRoleVarTypeMap.containsKey(role)) {
+                        Type chType = childRoleVarTypeMap.get(role).getValue();
+                        //check type compatibility
+                        if (chType != null) {
+                            relRelevant &= pType.equals(chType) || chType.subTypes().contains(pType);
+
+                            //Check for any constraints on the variables
+                            String chVar = childRoleVarTypeMap.get(role).getKey();
+                            String pVar = entry.getValue().getKey();
+                            String chId = child.getBody().getIdPredicate(chVar);
+                            String pId = parent.getIdPredicate(pVar);
+                            if (!chId.isEmpty() && !pId.isEmpty())
+                                relRelevant &= chId.equals(pId);
+                        }
+                    }
+                }
+            }
+        }
+        else if (isResource()) {
+            String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
+            String parentVal = parent.getValuePredicate(getValueVariable());
+            relRelevant = parentVal.isEmpty() || parentVal.equals(childVal);
+        }
+        return relRelevant;
+    }
+
+    public Set<Rule> getApplicableRules() {
+        Set<Rule> children = new HashSet<>();
+        MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+        Type type = getType();
+        //TODO change if we allow for Types having null type
+        if (type == null) {
+            Collection<Rule> applicableRules = Reasoner.getRules(graph).stream()
+                    .filter(rule -> rule.getConclusionTypes().stream().filter(Type::isRelationType).count() != 0)
+                    .collect(Collectors.toSet());
+            children.addAll(applicableRules);
+        }
+        else{
+            Collection<Rule> rulesFromType = type.getRulesOfConclusion();
+            rulesFromType.forEach(rule -> {
+                InferenceRule child = new InferenceRule(rule, graph);
+                boolean ruleRelevant = checkRuleApplicable(child);
+                if (ruleRelevant) children.add(rule);
+            });
+        }
+        return children;
+    }
+
     @Override
     public boolean isRuleResolvable() {
         Type type = getType();
@@ -115,7 +179,7 @@ public abstract class Atom extends AtomBase {
     }
 
     public MatchQuery getMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         MatchQuery matchQuery = qb.match(getPattern());
 
         //add IdPredicates

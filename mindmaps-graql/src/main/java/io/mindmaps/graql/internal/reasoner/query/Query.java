@@ -21,7 +21,6 @@ package io.mindmaps.graql.internal.reasoner.query;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
@@ -39,7 +38,6 @@ import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 
@@ -59,7 +57,7 @@ public class Query implements MatchQueryInternal {
     }
 
     public Query(String query, MindmapsGraph graph) {
-        this(Graql.withGraph(graph).<MatchQuery>parse(query), graph);
+        this(graph.graql().<MatchQuery>parse(query), graph);
     }
 
     public Query(Query q) {

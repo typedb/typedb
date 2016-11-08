@@ -52,4 +52,10 @@ public interface Resource<D> extends Instance{
      */
     Collection<Instance> ownerInstances();
 
+    /**
+     *
+     * @return The instance which is connected to this unique resource, if the resource is unique
+     */
+    Instance owner();
+
 }

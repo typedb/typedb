@@ -18,20 +18,14 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
-import io.mindmaps.exception.MindmapsValidationException;
 
-import java.util.UUID;
-
-public class AbstractGraph {
-
-    private static MindmapsGraph mindmaps;
+public class AbstractGraph extends TestGraph{
 
     private static EntityType P, Q, p, q, r, s, t, u;
     private static RelationType rel, REL;
@@ -40,26 +34,11 @@ public class AbstractGraph {
     private static Instance instanceU, instanceT, instanceP;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        buildGraph();
-
-        try {
-            mindmaps.commit();
-        } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
-        }
-
-        return mindmaps;
+        return new AbstractGraph().graph();
     }
 
-    private static void buildGraph() {
-        buildOntology();
-        buildInstances();
-        buildRelations();
-        buildRules();
-    }
-
-    private static void buildOntology() {
+    @Override
+    protected void buildOntology() {
         relRoleA = mindmaps.putRoleType("rel-roleA");
         relRoleB = mindmaps.putRoleType("rel-roleB");
         rel = mindmaps.putRelationType("rel").hasRole(relRoleA).hasRole(relRoleB);
@@ -78,13 +57,15 @@ public class AbstractGraph {
         t = mindmaps.putEntityType("t").playsRole(relRoleB).playsRole(RELRoleB);
     }
 
-    private static void buildInstances() {
-        instanceU = mindmaps.putEntity("instanceU", u);
-        instanceT = mindmaps.putEntity("instanceT", t);
-        instanceP = mindmaps.putEntity("instanceP", P);
+    @Override
+    protected void buildInstances() {
+        instanceU = putEntity("instanceU", u);
+        instanceT = putEntity("instanceT", t);
+        instanceP = putEntity("instanceP", P);
     }
 
-    private static void buildRelations() {
+    @Override
+    protected void  buildRelations() {
         mindmaps.addRelation(rel)
                 .putRolePlayer(relRoleA, instanceU)
                 .putRolePlayer(relRoleB, instanceT);
@@ -93,28 +74,28 @@ public class AbstractGraph {
                 .putRolePlayer(RELRoleB, instanceP);
 
     }
-    private static void buildRules() {
+    @Override
+    protected void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         String R1_LHS = "$x isa p;$y isa q;($x, $y) isa rel;";
         String R1_RHS = "$x isa Q;";
-        mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
+        mindmaps.addRule(R1_LHS, R1_RHS, inferenceRule);
 
         String R2_LHS = "$x isa r;";
         String R2_RHS = "$x isa p;";
-        mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
+        mindmaps.addRule(R2_LHS, R2_RHS, inferenceRule);
 
         String R3_LHS = "$x isa s;";
         String R3_RHS = "$x isa p;";
-        mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
+        mindmaps.addRule(R3_LHS, R3_RHS, inferenceRule);
 
         String R4_LHS = "$x isa t;";
         String R4_RHS = "$x isa q;";
-        mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
+        mindmaps.addRule(R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS = "$x isa u;";
         String R5_RHS = "$x isa r;";
-        mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
+        mindmaps.addRule(R5_LHS, R5_RHS, inferenceRule);
     }
-
 }

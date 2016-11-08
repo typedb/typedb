@@ -19,9 +19,7 @@ package io.mindmaps.migration.export;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.example.PokemonGraphFactory;
-import io.mindmaps.graql.Graql;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class PokemonGraphWriterTest extends GraphWriterTestBase {
@@ -38,7 +36,7 @@ public class PokemonGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingPokemonGraphOntology(){
         String ontology = writer.dumpOntology();
-        Graql.withGraph(copy).parse(ontology).execute();
+        insert(copy, ontology);
 
         assertOntologiesEqual(original, copy);
     }
@@ -46,10 +44,10 @@ public class PokemonGraphWriterTest extends GraphWriterTestBase {
     @Test
     public void testWritingPokemonGraphData(){
         String ontology = writer.dumpOntology();
-        Graql.withGraph(copy).parse(ontology).execute();
+        insert(copy, ontology);
 
         String data = writer.dumpData();
-        Graql.withGraph(copy).parse(data).execute();
+        insert(copy, data);
 
         assertDataEqual(original, copy);
     }

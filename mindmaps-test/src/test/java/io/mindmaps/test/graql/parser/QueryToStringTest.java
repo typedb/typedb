@@ -33,7 +33,6 @@ import static io.mindmaps.graql.Graql.match;
 import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest extends AbstractMovieGraphTest {
@@ -42,7 +41,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

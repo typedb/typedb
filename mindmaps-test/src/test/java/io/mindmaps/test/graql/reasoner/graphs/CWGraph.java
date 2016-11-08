@@ -18,28 +18,16 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
-import io.mindmaps.exception.MindmapsValidationException;
 
-import java.util.UUID;
-
-public class CWGraph {
-
-    private static MindmapsGraph mindmaps;
-
+public class CWGraph extends TestGraph {
     private static EntityType person, criminal, weapon, rocket, missile, country;
-
-    private static RelationType hasNameRelation;
-    private static ResourceType<String> name;
-    private static RoleType hasNameTarget, hasNameValue;
     
     private static ResourceType<String> alignment;
     private static RelationType alignmentRelation;
@@ -63,32 +51,11 @@ public class CWGraph {
     private static Instance colonelWest, Nono, America, Tomahawk;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        buildGraph();
-
-        try {
-            mindmaps.commit();
-        } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
-        }
-
-        return mindmaps;
+        return new CWGraph().graph();
     }
 
-    private static void buildGraph() {
-        buildOntology();
-        buildInstances();
-        buildRelations();
-        buildRules();
-    }
-
-    private static void buildOntology() {
-        hasNameTarget = mindmaps.putRoleType("has-name-owner");
-        hasNameValue = mindmaps.putRoleType("has-name-value");
-        hasNameRelation = mindmaps.putRelationType("has-name")
-                .hasRole(hasNameTarget).hasRole(hasNameValue);
-        name = mindmaps.putResourceType("name", ResourceType.DataType.STRING).playsRole(hasNameValue);
-
+    @Override
+    protected void buildOntology() {
         nationalityTarget = mindmaps.putRoleType("has-nationality-owner");
         nationalityValue = mindmaps.putRoleType("has-nationality-value");
         nationalityRelation = mindmaps.putRelationType("has-nationality")
@@ -136,7 +103,7 @@ public class CWGraph {
                 .hasRole(payee).hasRole(payer);
 
         person = mindmaps.putEntityType("person")
-                .playsRole(hasNameTarget)
+                .playsRole(hasKeyTarget)
                 .playsRole(seller)
                 .playsRole(payee)
                 .playsRole(nationalityTarget);
@@ -145,21 +112,21 @@ public class CWGraph {
                 .superType(person);
 
         weapon = mindmaps.putEntityType("weapon")
-                .playsRole(hasNameTarget)
+                .playsRole(hasKeyTarget)
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
         rocket = mindmaps.putEntityType("rocket")
-                .playsRole(hasNameTarget)
+                .playsRole(hasKeyTarget)
                 .playsRole(transactionItem)
                 .playsRole(ownedItem)
                 .playsRole(propulsionTarget);
         missile = mindmaps.putEntityType("missile")
                 .superType(weapon)
-                .playsRole(hasNameTarget)
+                .playsRole(hasKeyTarget)
                 .playsRole(transactionItem);
 
         country = mindmaps.putEntityType("country")
-                .playsRole(hasNameTarget)
+                .playsRole(hasKeyTarget)
                 .playsRole(buyer)
                 .playsRole(owner)
                 .playsRole(enemyTarget)
@@ -167,7 +134,8 @@ public class CWGraph {
                 .playsRole(enemySource);
     }
 
-    private static void buildInstances() {
+    @Override
+    protected void buildInstances() {
         colonelWest =  putEntity("colonelWest", person);
         Nono =  putEntity("Nono", country);
         America =  putEntity("America", country);
@@ -177,7 +145,8 @@ public class CWGraph {
         putResource(Tomahawk, propulsion, "gsp", propulsionRelation, propulsionTarget, propulsionValue);
     }
 
-    private static void buildRelations() {
+    @Override
+    protected void buildRelations() {
         //Enemy(Nono, America)
         mindmaps.addRelation(isEnemyOf)
                 .putRolePlayer(enemySource, Nono)
@@ -194,7 +163,8 @@ public class CWGraph {
                 .putRolePlayer(payer, Nono);
 
     }
-    private static void buildRules() {
+    @Override
+    protected void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
@@ -239,19 +209,5 @@ public class CWGraph {
         String R5_RHS = "(seller: $x, buyer: $y, transaction-item: $z) isa transaction;";
 
         mindmaps.addRule(R5_LHS, R5_RHS, inferenceRule);
-    }
-
-    private static Instance putEntity(String id, EntityType type) {
-        Instance inst = mindmaps.addEntity(type);
-        putResource(inst, name, id, hasNameRelation, hasNameTarget, hasNameValue);
-        return inst;
-    }
-
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
-                                        RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-        mindmaps.addRelation(relationType)
-                .putRolePlayer(targetRole, instance)
-                .putRolePlayer(valueRole, resourceInstance);
     }
 }

@@ -18,34 +18,22 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
-
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.Graql;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 
-public class AdmissionsGraph {
-
-    private static MindmapsGraph mindmaps;
+public class AdmissionsGraph extends TestGraph{
 
     private static EntityType applicant;
-
-    private static ResourceType<String> name;
-    private static RelationType hasNameRelation;
-    private static RoleType hasNameTarget, hasNameValue;
 
     private static ResourceType<Long> TOEFL;
     private static RelationType TOEFLrelation;
@@ -95,35 +83,12 @@ public class AdmissionsGraph {
     private static RelationType decisionTypeRelation;
     private static ResourceType<String> decisionType;
 
-
-    private static RelationType hasResource;
-
-    private static RoleType hasResourceTarget, hasResourceValue;
-
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        buildGraph();
-        try {
-            mindmaps.commit();
-        } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
-        }
-        return mindmaps;
+        return new AdmissionsGraph().graph();
     }
 
-    private static void buildGraph() {
-        buildOntology();
-        buildInstances();
-        addRules();
-    }
-
-    private static void buildOntology() {
-        hasNameTarget = mindmaps.putRoleType("has-name-owner");
-        hasNameValue = mindmaps.putRoleType("has-name-value");
-        hasNameRelation = mindmaps.putRelationType("has-name")
-                .hasRole(hasNameTarget).hasRole(hasNameValue);
-        name = mindmaps.putResourceType("name", ResourceType.DataType.STRING).playsRole(hasNameValue);
-
+    @Override
+    protected void buildOntology() {
         TOEFLtarget= mindmaps.putRoleType("has-TOEFL-owner");
         TOEFLvalue = mindmaps.putRoleType("has-TOEFL-value");
         TOEFLrelation = mindmaps.putRelationType("has-TOEFL")
@@ -216,10 +181,11 @@ public class AdmissionsGraph {
                 .playsRole(degreeOriginTarget)
                 .playsRole(decisionTypeTarget)
                 .playsRole(admissionStatusTarget)
-                .playsRole(hasNameTarget);
+                .playsRole(hasKeyTarget);
     }
 
-    private static void buildInstances() {
+    @Override
+    protected void buildInstances() {
         Instance Alice = putEntity("Alice", applicant);
         Instance Bob = putEntity("Bob", applicant);
         Instance Charlie = putEntity("Charlie", applicant);
@@ -265,29 +231,15 @@ public class AdmissionsGraph {
         putResource(Frank, GRE, 100L, GRErelation, GREtarget, GREvalue);
     }
 
-    private static void addRules() {
+    @Override
+    protected void buildRules() {
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/admission-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            Graql.withGraph(mindmaps).parse(query).execute();
+            mindmaps.graql().parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();
         }
     }
-
-    private static Instance putEntity(String id, EntityType type) {
-        Instance inst = mindmaps.addEntity(type);
-        putResource(inst, name, id, hasNameRelation, hasNameTarget, hasNameValue);
-        return inst;
-    }
-
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
-                                    RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-        mindmaps.addRelation(relationType)
-                .putRolePlayer(targetRole, instance)
-                .putRolePlayer(valueRole, resourceInstance);
-    }
-
 }

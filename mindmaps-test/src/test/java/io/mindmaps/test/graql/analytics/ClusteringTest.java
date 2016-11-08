@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -173,7 +172,7 @@ public class ClusteringTest extends AbstractGraphTest {
                     .filter(set -> set.size() != 1)
                     .flatMap(Collection::stream)
                     .forEach(id -> {
-                        List<Concept> resources = withGraph(graph)
+                        List<Concept> resources = graph.graql()
                                 .match(id(id).has(Analytics.connectedComponent, var("x")))
                                 .get("x").collect(Collectors.toList());
                         assertEquals(1, resources.size());
@@ -202,7 +201,7 @@ public class ClusteringTest extends AbstractGraphTest {
             memberMap.values().stream()
                     .flatMap(Collection::stream)
                     .forEach(id -> {
-                        List<Concept> resources = withGraph(graph)
+                        List<Concept> resources = graph.graql()
                                 .match(id(id).has(Analytics.connectedComponent, var("x")))
                                 .get("x").collect(Collectors.toList());
                         assertEquals(1, resources.size());

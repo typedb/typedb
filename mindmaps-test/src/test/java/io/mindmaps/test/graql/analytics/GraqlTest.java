@@ -22,7 +22,12 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.analytics.Analytics;
@@ -32,12 +37,21 @@ import io.mindmaps.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.var;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class GraqlTest extends AbstractGraphTest {
@@ -63,7 +77,7 @@ public class GraqlTest extends AbstractGraphTest {
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
-        qb = withGraph(graph);
+        qb = graph.graql();
         keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
@@ -121,7 +135,7 @@ public class GraqlTest extends AbstractGraphTest {
         correctDegrees.put(relationId24, 2l);
 
         correctDegrees.forEach((k, v) -> {
-            List<Concept> resources = withGraph(graph)
+            List<Concept> resources = graph.graql()
                     .match(id(k).has(Analytics.degree, var("x")))
                     .get("x").collect(Collectors.toList());
             assertEquals(1, resources.size());
