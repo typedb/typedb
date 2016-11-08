@@ -5,8 +5,11 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
+import io.mindmaps.graql.internal.pattern.property.HasResourceTypeProperty;
 import io.mindmaps.graql.internal.pattern.property.IdProperty;
 import io.mindmaps.graql.internal.pattern.property.IsaProperty;
+import io.mindmaps.graql.internal.pattern.property.PlaysRoleProperty;
+import io.mindmaps.graql.internal.pattern.property.SubProperty;
 import io.mindmaps.graql.internal.pattern.property.ValueProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import java.util.HashSet;
@@ -20,6 +23,10 @@ public class PropertyMapper {
             return map((ValueProperty)prop, var, parent);
         else if (prop instanceof IdProperty)
             return map((IdProperty)prop, var, parent);
+        else if (prop instanceof SubProperty)
+            return map((SubProperty)prop, var, parent);
+        else if (prop instanceof PlaysRoleProperty)
+            return map((PlaysRoleProperty)prop, var, parent);
         else if (prop instanceof IsaProperty)
             return map((IsaProperty)prop, var, parent);
         else if (prop instanceof HasResourceProperty)
@@ -46,20 +53,42 @@ public class PropertyMapper {
         return atoms;
     }
 
+    public static Set<Atomic> map(SubProperty prop, VarAdmin var, Query parent) {
+        //TODO as in IsaProperty
+        VarAdmin subVar = Graql.var(var.getName()).sub(prop.getSuperType().getId().get()).admin();
+                //has(type, Graql.var(valueVariable)).admin();
+        return Sets.newHashSet(AtomicFactory.create(subVar, parent));
+    }
+
+    public static Set<Atomic> map(PlaysRoleProperty prop, VarAdmin var, Query parent) {
+        //TODO as in IsaProperty
+        //VarAdmin playsRoleVar = Graql.var(var.getName()).playsRole
+        return Sets.newHashSet(AtomicFactory.create(prop.getRole(), parent));
+    }
+
+    public static Set<Atomic> map(HasResourceTypeProperty prop, VarAdmin var, Query parent) {
+        //TODO as in IsaProperty
+        Set<Atomic> atoms = new HashSet<>();
+        return atoms;
+    }
+
     public static Set<Atomic> map(IsaProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getType().getId().orElse("");
 
         VarAdmin baseVar = prop.getType();
-        if (baseVar.isUserDefinedName()){
-            VarAdmin resVar = Graql.var(varName).isa(Graql.var(baseVar.getName())).admin();
-            atoms.add(AtomicFactory.create(resVar, parent));
-        }
-        else {
-            VarAdmin tVar = Graql.var(varName).isa(type).admin();
+
+        String valueVariable = baseVar.isUserDefinedName() ?
+                baseVar.getName() : varName + "-type-" + UUID.randomUUID().toString();
+        VarAdmin resVar = Graql.var(varName).isa(Graql.var(valueVariable)).admin();
+        atoms.add(AtomicFactory.create(resVar, parent));
+
+        if (!baseVar.isUserDefinedName()) {
+            VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
             atoms.add(AtomicFactory.create(tVar, parent));
         }
+
         return atoms;
     }
 
