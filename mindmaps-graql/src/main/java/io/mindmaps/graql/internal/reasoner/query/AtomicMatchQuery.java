@@ -1,6 +1,5 @@
 package io.mindmaps.graql.internal.reasoner.query;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.IdPredicate;
@@ -38,7 +37,7 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public void DBlookup() {
-        answers.addAll(Sets.newHashSet(getMatchQuery().distinct()));
+        answers.addAll(execute());
     }
 
     @Override

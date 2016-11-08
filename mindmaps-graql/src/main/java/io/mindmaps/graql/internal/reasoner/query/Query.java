@@ -50,6 +50,11 @@ public class Query implements MatchQueryInternal {
     private final Set<String> selectVars;
 
     public Query(MatchQuery query, MindmapsGraph graph) {
+        if (query.admin().getPattern()
+                .getPatterns().stream()
+                .filter(PatternAdmin::isDisjunction).count() != 0 )
+            throw new IllegalArgumentException(ErrorMessage.DISJUNCTIVE_QUERY_ARGUMENT.getMessage());
+
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
@@ -97,8 +102,6 @@ public class Query implements MatchQueryInternal {
         return hashCode;
     }
 
-    public void print(){ atomSet.forEach(System.out::println);}
-
     @Override
     public String toString() { return getMatchQuery().toString();}
 
@@ -121,6 +124,9 @@ public class Query implements MatchQueryInternal {
 
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
+
+    @Override
+    public List<Map<String, Concept>> execute() { return getMatchQuery().execute();}
 
     private Conjunction<PatternAdmin> createPattern(Set<Atomic> atoms){
         Set<PatternAdmin> patterns = new HashSet<>();
