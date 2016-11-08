@@ -20,20 +20,20 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="container-fluid">
         <div class="row">
             <div class="col-xs-12">
-                <div class="panel panel-filled" style="margin-bottom: 0px;">
-                    <div class="panel-body panel-console">
-                        <div class="form-group">
+                <div class="panel panel-filled" id="panel-console-container">
+                    <div class="panel-body row" id="panel-console">
+                        <div class="form-group col-xs-8" style="margin-bottom:0px;">
                             <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
                         </div>
-                        <div class="from-buttons">
-                            <button @click="runQuery" class="btn btn-default search-button">Submit<i
+                        <div class="form-buttons col-xs-4">
+                          <button @click="getMetaTypes" class="btn btn-info console-button">Types<i class="types-button"
+                                                                                          v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
+                          </button>
+                          <button @click="clearGraph" class="btn btn-default console-button">Clear<i class="pe-7s-refresh"></i>
+                          </button>
+                            <button @click="runQuery" class="btn btn-default search-button console-button">Submit<i
                                     class="pe-7s-angle-right-circle"></i></button>
-                            <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i>
-                            </button>
-                            <button @click="getMetaTypes" class="btn btn-info">Show Types<i class="types-button"
-                                                                                            v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
-                            </button>
-                        </div>
+                          </div>
                     </div>
                 </div>
             </div>
@@ -41,7 +41,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
         <div class="row" v-show="typeInstances">
             <div class="col-xs-12">
-                <div class="panel panel-c-info panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
+                <div class="panel panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
                     <div class="tabs-col">
                         <div class="tabs-container">
                             <ul class="nav nav-tabs">
@@ -97,12 +97,14 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                   <div class="panel-body">
                                     <div class="properties-list">
                                         <span>Node:</span>
+                                        <div class="node-properties">
                                           <div class="dd-item" v-for="(key, value) in allNodeOntologyProps">
-                                            <div class="dd-handle"><span class="list-key">{{key}}:</span> {{value}}</div>
+                                            <div ><span class="list-key">{{key}}:</span> {{value}}</div>
                                             </div>
+                                        </div>
                                         <span v-show="numOfResources>0">Resources:</span>
                                             <div class="dd-item" v-for="(key, value) in allNodeResources">
-                                                <div class="dd-handle"><span class="list-key">{{key}}:</span> {{value}}</div>
+                                                <div class="dd-handle" @dblclick="addResourceNodeWithOwners(value.link)"><span class="list-key">{{key}}:</span> {{value.label}}</div>
                                             </div>
                                         <span v-show="numOfLinks>0">Links:</span>
                                             <div class="dd-item" v-for="(key, value) in allNodeLinks">
@@ -215,7 +217,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                             </div>
                                             <div class="modal-body">
                                                   <div class="properties-list">
-                                                      <p v-show="allNodeProps.length">Select properties to be show on nodes of type
+                                                      <p v-show="allNodeProps.length">Select properties to show on nodes of type
                                                           "{{nodeType}}".</p>
                                                       <p v-else>There is nothing configurable for nodes of type "{{nodeType}}".</p>
                                                       <br/>
@@ -236,37 +238,6 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </template>
 
 <style>
-    .tab-row {
-        padding-top: 20px;
-    }
-
-    .pe-7s-angle-right-circle {
-        padding-left: 5px;
-    }
-
-    .pe-7s-refresh {
-        padding-right: 0px;
-        padding-left: 5px;
-    }
-
-    .form-buttons {
-        padding-bottom: 0px;
-        margin-bottom: 0px;
-    }
-
-    .types-button {
-        padding-left: 5px;
-    }
-
-    h4 {
-        margin-top: 0px;
-        margin-bottom: 0px;
-        margin-left: -10px;
-    }
-
-    .li-active {
-        background-color: #337ab7;
-    }
 </style>
 
-<script src="visualiserController.js"></script>
+<script src="../controllers/visualiser.js"></script>
