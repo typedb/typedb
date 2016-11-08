@@ -105,7 +105,7 @@ public class AtomicQueryTest {
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
     }
 
-    //TODO
+    //TODO Bug #10655 if we group resources into atomic queries
     @Test
     @Ignore
     public void testUnification(){

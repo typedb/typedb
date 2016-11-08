@@ -71,7 +71,10 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public boolean isValuePredicate(){ return true;}
 
     @Override
-    public String getPredicateValue() { return predicate.getPredicate().getValue().toString();}
+    public String getPredicateValue() {
+        if (predicate.getPredicate().getValue() == null) return "";
+        else return predicate.getPredicate().getValue().toString();
+    }
 
     @Override
     protected ValuePredicateAdmin extractPredicate(VarAdmin pattern) {

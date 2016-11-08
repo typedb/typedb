@@ -368,50 +368,50 @@ rhs {($x, $y) isa recommendation;};
 ##############Album->Band##################
 #############################################
 
-isa inference-rule,
-lhs {$x isa person;
-$t isa tag;$t has name 'Master of Puppets';
-($x, $t) isa tagging;
-$y isa tag;
-{$y has name 'Megadeth';} or {$y has name 'Slayer';};
-},
-rhs {($x, $y) isa recommendation;};
+#isa inference-rule,
+#lhs {$x isa person;
+#$t isa tag;$t has name 'Master of Puppets';
+#($x, $t) isa tagging;
+#$y isa tag;
+#{$y has name 'Megadeth';} or {$y has name 'Slayer';};
+#},
+#rhs {($x, $y) isa recommendation;};
 
-isa inference-rule,
-lhs {$x isa person;
-$t isa tag;$t has name 'Far Beyond Driven';
-($x, $t) isa tagging;
-$y isa tag;
-{$y has name 'Pantera';} or {$y has name 'Superjoint Ritual';};
-},
-rhs {($x, $y) isa recommendation;};
+#isa inference-rule,
+#lhs {$x isa person;
+#$t isa tag;$t has name 'Far Beyond Driven';
+#($x, $t) isa tagging;
+#$y isa tag;
+#{$y has name 'Pantera';} or {$y has name 'Superjoint Ritual';};
+#},
+#rhs {($x, $y) isa recommendation;};
 
-isa inference-rule,
-lhs {$x isa person;
-$t isa tag;$t has name 'Hybrhas name Theory';
-($x, $t) isa tagging;
-$y isa tag;
-{$y has name 'Linkin Park';} or {$y has name 'Limp Bizkit';};
-},
-rhs {($x, $y) isa recommendation;};
+#isa inference-rule,
+#lhs {$x isa person;
+#$t isa tag;$t has name 'Hybrhas name Theory';
+#($x, $t) isa tagging;
+#$y isa tag;
+#{$y has name 'Linkin Park';} or {$y has name 'Limp Bizkit';};
+#},
+#rhs {($x, $y) isa recommendation;};
 
-isa inference-rule,
-lhs {$x isa person;
-$t isa tag;$t has name 'Powerslave';
-($x, $t) isa tagging;
-$y isa tag;
-{$y has name 'Iron Maiden';} or {$y has name 'Judas Priest';};
-},
-rhs {($x, $y) isa recommendation;};
+#isa inference-rule,
+#lhs {$x isa person;
+#$t isa tag;$t has name 'Powerslave';
+#($x, $t) isa tagging;
+#$y isa tag;
+#{$y has name 'Iron Maiden';} or {$y has name 'Judas Priest';};
+#},
+#rhs {($x, $y) isa recommendation;};
 
-isa inference-rule,
-lhs {$x isa person;
-$t isa tag;$t has name 'Enter the Chicken';
-($x, $t) isa tagging;
-$y isa tag;
-{$y has name 'Buckethead';} or {$y has name 'Primus';};
-},
-rhs {($x, $y) isa recommendation;};
+#isa inference-rule,
+#lhs {$x isa person;
+#$t isa tag;$t has name 'Enter the Chicken';
+#($x, $t) isa tagging;
+#$y isa tag;
+#{$y has name 'Buckethead';} or {$y has name 'Primus';};
+#},
+#rhs {($x, $y) isa recommendation;};
 
 #isa inference-rule,
 #lhs {$x isa person;
@@ -449,14 +449,14 @@ $y has name 'Cacophony';
 },
 rhs {($x, $y) isa recommendation;};
 
-isa inference-rule,
-lhs {$x isa person;
-$t isa tag;$t has name 'Led Zeppelin IV';
-($x, $t) isa tagging;
-$y isa tag;
-{$y has name 'Led Zeppelin';} or {$y has name 'Deep Purple';};
-},
-rhs {($x, $y) isa recommendation;};
+#isa inference-rule,
+#lhs {$x isa person;
+#$t isa tag;$t has name 'Led Zeppelin IV';
+#($x, $t) isa tagging;
+#$y isa tag;
+#{$y has name 'Led Zeppelin';} or {$y has name 'Deep Purple';};
+#},
+#rhs {($x, $y) isa recommendation;};
 
 ############################################
 ##############Song/Single->Band##################

@@ -97,8 +97,6 @@ public class Query implements MatchQueryInternal {
         return hashCode;
     }
 
-    public void print(){ atomSet.forEach(System.out::println);}
-
     @Override
     public String toString() { return getMatchQuery().toString();}
 
@@ -121,6 +119,9 @@ public class Query implements MatchQueryInternal {
 
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
+
+    @Override
+    public List<Map<String, Concept>> execute() { return getMatchQuery().execute();}
 
     private Conjunction<PatternAdmin> createPattern(Set<Atomic> atoms){
         Set<PatternAdmin> patterns = new HashSet<>();

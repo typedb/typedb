@@ -120,7 +120,7 @@ public class ReasonerTest {
     @Test
     public void testComma2(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        String queryString = "match $x isa person, value <21 value >18;";
+        String queryString = "match $x isa person, value <21, value >18;";
         String queryString2 = "match $x isa person;$x value <21;$x value >18;";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);
@@ -324,6 +324,17 @@ public class ReasonerTest {
         MatchQuery query = new Query(queryString, lgraph);
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(lgraph.graql().parse(queryString2)));
+    }
+
+    @Test
+    public void testAndOrValuePredicate(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $y isa person;$y has age >18 and <25;";
+        String explicitQuery = "match $y isa person;$y has name 'Bob';";
+        MatchQuery query = new Query(queryString, graph);
+        QueryBuilder qb = graph.graql();
+        Reasoner reasoner = new Reasoner(graph);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
