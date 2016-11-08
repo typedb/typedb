@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
@@ -33,7 +32,6 @@ import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.query.ReasonerMatchQuery;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,77 +45,12 @@ public class Reasoner {
     private final MindmapsGraph graph;
     private final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
-    private final Map<String, InferenceRule> workingMemory = new HashMap<>();
-
     public Reasoner(MindmapsGraph graph) {
         this.graph = graph;
         linkConceptTypes();
     }
 
-    private boolean checkRuleApplicableToAtom(Atom parentAtom, InferenceRule child) {
-        boolean relRelevant = true;
-        Query parent = parentAtom.getParentQuery();
-        Atom childAtom = child.getRuleConclusionAtom();
-
-        if (parentAtom.isRelation()) {
-            Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
-            //Check for role compatibility
-            Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = parentAtom.getRoleVarTypeMap();
-            for (Map.Entry<RoleType, Pair<String, Type>> entry : parentRoleVarTypeMap.entrySet()) {
-                RoleType role = entry.getKey();
-                Type pType = entry.getValue().getValue();
-                if (pType != null) {
-                    //vars can be matched by role types
-                    if (childRoleVarTypeMap.containsKey(role)) {
-                        Type chType = childRoleVarTypeMap.get(role).getValue();
-                        //check type compatibility
-                        if (chType != null) {
-                            relRelevant &= pType.equals(chType) || chType.subTypes().contains(pType);
-
-                            //Check for any constraints on the variables
-                            String chVar = childRoleVarTypeMap.get(role).getKey();
-                            String pVar = entry.getValue().getKey();
-                            String chId = child.getBody().getIdPredicate(chVar);
-                            String pId = parent.getIdPredicate(pVar);
-                            if (!chId.isEmpty() && !pId.isEmpty())
-                                relRelevant &= chId.equals(pId);
-                        }
-                    }
-                }
-            }
-        }
-        else if (parentAtom.isResource()) {
-            String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
-            String parentVal = parent.getValuePredicate(parentAtom.getValueVariable());
-            relRelevant = parentVal.isEmpty() || parentVal.equals(childVal);
-        }
-        return relRelevant;
-    }
-
-    //TODO move to Atomic?
-    private Set<Rule> getApplicableRules(Atom atom) {
-        Set<Rule> children = new HashSet<>();
-        Type type = atom.getType();
-        //TODO change if we allow for Types having null type
-        if (type == null) {
-            Collection<Rule> applicableRules = Reasoner.getRules(graph).stream()
-                    .filter(rule -> rule.getConclusionTypes().stream().filter(Type::isRelationType).count() != 0)
-                    .collect(Collectors.toSet());
-            children.addAll(applicableRules);
-        }
-        else{
-            Collection<Rule> rulesFromType = type.getRulesOfConclusion();
-            rulesFromType.forEach(rule -> {
-                InferenceRule child = workingMemory.get(rule.getId());
-                boolean ruleRelevant = checkRuleApplicableToAtom(atom, child);
-                if (ruleRelevant) children.add(rule);
-            });
-        }
-        return children;
-    }
-
     private void linkConceptTypes(Rule rule) {
-        LOG.debug("Linking rule " + rule.getId() + "...");
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(qb.parsePatterns(rule.getLHS()));
         MatchQuery qRHS = qb.match(qb.parsePatterns(rule.getRHS()));
@@ -127,8 +60,6 @@ public class Reasoner {
 
         hypothesisConceptTypes.forEach(rule::addHypothesis);
         conclusionConceptTypes.forEach(rule::addConclusion);
-
-        LOG.debug("Rule " + rule.getId() + " linked");
     }
 
     public static Set<Rule> getRules(MindmapsGraph graph) {
@@ -150,14 +81,9 @@ public class Reasoner {
      */
     public void linkConceptTypes() {
         Set<Rule> rules = getRules(graph);
-        LOG.debug(rules.size() + " rules initialized...");
-
-        for (Rule rule : rules) {
-            workingMemory.putIfAbsent(rule.getId(), new InferenceRule(rule, graph));
-            if (rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty()) {
-                linkConceptTypes(rule);
-            }
-        }
+        rules.stream()
+                .filter(rule -> rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty())
+                .forEach(this::linkConceptTypes);
     }
 
     private void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
@@ -204,7 +130,7 @@ public class Reasoner {
 
         if(queryAdmissible) {
             Atom atom = atomicQuery.getAtom();
-            Set<Rule> rules = getApplicableRules(atom);
+            Set<Rule> rules = atom.getApplicableRules();
             for (Rule rl : rules) {
                 InferenceRule rule = new InferenceRule(rl, graph);
                 rule.unify(atom);
@@ -249,7 +175,7 @@ public class Reasoner {
                 atomicQuery.memoryLookup(matAnswers);
 
             Atom atom = atomicQuery.getAtom();
-            Set<Rule> rules = getApplicableRules(atom);
+            Set<Rule> rules = atom.getApplicableRules();
             for (Rule rl : rules) {
                 InferenceRule rule = new InferenceRule(rl, graph);
                 rule.unify(atom);
