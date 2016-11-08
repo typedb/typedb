@@ -18,6 +18,8 @@
 
 package io.mindmaps.test.migration;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.Instance;
@@ -27,10 +29,14 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
 import io.mindmaps.test.AbstractGraphTest;
 import io.mindmaps.util.Schema;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
@@ -56,6 +62,12 @@ public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
 
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
+
+    @BeforeClass
+    public static void setLogLevel(){
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(Loader.class);
+        logger.setLevel(Level.DEBUG);
+    }
 
     public static File getFile(String component, String fileName){
         return new File(AbstractMindmapsMigratorTest.class.getResource(component + "/" + fileName).getPath());
