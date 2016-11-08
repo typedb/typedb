@@ -44,7 +44,12 @@ class QueryUtil {
         query.forEach(results -> {
             Concept result = results.get(var);
             assertNotNull(result);
-            String resourceValue = result.asEntity().resources(resourceType).iterator().next().asResource().getValue().toString();
+
+            String resourceValue = result.getId();
+            if(result.isEntity()){
+                resourceValue = result.asEntity().resources(resourceType).iterator().next().asResource().getValue().toString();
+            }
+
             assertTrue("Unexpected value: " + resourceValue, expectedSet.contains(resourceValue));
             unfoundSet.remove(resourceValue);
             if (type != null) assertEquals(type, result.type().getId());

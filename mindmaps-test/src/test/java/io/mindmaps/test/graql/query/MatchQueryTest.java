@@ -104,9 +104,9 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         MatchQuery query = qb.match(var().rel("actor", "x"));
 
         QueryUtil.assertResultsMatch(
-                query, "x", "person", graph.getResourceType("title"),
-                "Marlon-Brando", "Al-Pacino", "Miss-Piggy", "Kermit-The-Frog", "Martin-Sheen", "Robert-de-Niro",
-                "Jude-Law", "Miranda-Heart", "Bette-Midler", "Sarah-Jessica-Parker"
+                query, "x", "person", graph.getResourceType("name"),
+                "Marlon Brando", "Al Pacino", "Miss Piggy", "Kermit The Frog", "Martin Sheen", "Robert de Niro",
+                "Jude Law", "Miranda Heart", "Bette Midler", "Sarah Jessica Parker"
         );
     }
 
@@ -117,7 +117,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                         .has("title", any(lt("Juno").and(gt("Godfather")), eq("Apocalypse Now"), eq("Spy")).and(neq("Apocalypse Now")))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Hocus-Pocus", "Heat", "Spy");
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Hocus Pocus", "Heat", "Spy");
     }
 
     @Test
@@ -126,7 +126,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("x").isa("movie").has("title", all(lte("Juno"), gte("Godfather"), neq("Heat")).or(eq("The Muppets")))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Hocus-Pocus", "Godfather", "The-Muppets");
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Hocus Pocus", "Godfather", "The Muppets");
     }
 
     @Test
@@ -135,7 +135,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("x").isa("genre").has("name", regex("^f.*y$"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "genre", graph.getResourceType("title"), "family", "fantasy");
+        QueryUtil.assertResultsMatch(query, "x", "genre", graph.getResourceType("name"), "family", "fantasy");
     }
 
     @Test
@@ -144,7 +144,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("x").isa("character").has("name", contains("ar"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "character", graph.getResourceType("title"), "Sarah", "Benjamin-L-Willard", "Harry");
+        QueryUtil.assertResultsMatch(query, "x", "character", graph.getResourceType("name"), "Sarah", "Benjamin L. Willard", "Harry");
     }
 
     @Test
@@ -161,7 +161,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         MatchQuery query = qb.match(
                 var("x").isa("movie"),
                 var("y").isa("person"),
-                var("z").isa("character").id("Don-Vito-Corleone"),
+                var("z").isa("character").has("name", "Don Vito Corleone"),
                 var().rel("x").rel("y").rel("z")
         ).select("x", "y");
         List<Map<String, Concept>> results = Lists.newArrayList(query);
@@ -169,8 +169,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(1, results.size());
 
         Map<String, Concept> result = results.get(0);
-        assertEquals("Godfather", result.get("x").getId());
-        assertEquals("Marlon-Brando", result.get("y").getId());
+        assertEquals("Godfather", result.get("x").asEntity().resources(graph.getResourceType("title")).iterator().next().getValue());
+        assertEquals("Marlon Brando", result.get("y").asEntity().resources(graph.getResourceType("name")).iterator().next().getValue());
     }
 
     @Test
@@ -187,20 +187,20 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var().rel("x").rel("y"),
                 var("y").isa("movie"),
                 var().rel("y").rel("z"),
-                var("z").isa("person").id("Marlon-Brando")
+                var("z").isa("person").has("name", "Marlon Brando")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("title"), "Marlon-Brando", "Al-Pacino", "Martin-Sheen");
+        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("name"), "Marlon Brando", "Al Pacino", "Martin Sheen");
     }
 
     @Test
     public void testRoleQuery() {
         MatchQuery query = qb.match(
                 var().rel("actor", "x").rel("y"),
-                var("y").id("Apocalypse-Now")
+                var("y").has("name", "Apocalypse Now")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("title"), "Marlon-Brando", "Martin-Sheen");
+        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("name"), "Marlon Brando", "Martin Sheen");
     }
 
     @Test
@@ -225,7 +225,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("x").has("tmdb-vote-count", lte(400))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Apocalypse-Now", "The-Muppets", "Chinese-Coffee");
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Apocalypse Now", "The Muppets", "Chinese Coffee");
     }
 
     @Test
@@ -234,7 +234,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("x").has("tmdb-vote-average", gt(7.8))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Apocalypse-Now", "Godfather");
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Apocalypse Now", "Godfather");
     }
 
     @Test
@@ -243,7 +243,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("x").has("release-date", gte(DATE_FORMAT.parse("Tue Jun 23 12:34:56 GMT 1984").getTime()))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Spy", "The-Muppets", "Chinese-Coffee");
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Spy", "The Muppets", "Chinese Coffee");
     }
 
     @Test
@@ -265,11 +265,11 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testAssertionQuery() {
         MatchQuery query = qb.match(
                 var("a").rel("production-with-cast", "x").rel("y"),
-                var("y").id("Miss-Piggy"),
+                var("y").has("name", "Miss-Piggy"),
                 var("a").isa("has-cast")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "The-Muppets");
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "The Muppets");
     }
 
     @Test
@@ -282,7 +282,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 )
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Godfather", "Apocalypse-Now", "Heat", "The-Muppets", "Chinese-Coffee");
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Godfather", "Apocalypse Now", "Heat", "The Muppets", "Chinese Coffee");
     }
 
     @Test
@@ -295,7 +295,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testVariableAsRoleType() {
         MatchQuery query = qb.match(var().rel(var().id("genre-of-production"), "y"));
         QueryUtil.assertResultsMatch(
-                query, "y", null, graph.getResourceType("title"),
+                query, "y", null, graph.getResourceType("name"),
                 "crime", "drama", "war", "action", "comedy", "family", "musical", "comedy", "fantasy"
         );
     }
@@ -355,20 +355,20 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testRobertDeNiroNotRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y").isa("has-cast"),
-                var("y").id("Robert-de-Niro")
+                var("y").has("name", "Robert de Niro")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"), "Heat", "Neil-McCauley");
+        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("name"), "Heat", "Neil McCauley");
     }
 
     @Test
     public void testKermitIsRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y").isa("has-cast"),
-                var("y").id("Kermit-The-Frog")
+                var("y").has("name", "Kermit The Frog")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"),  "The-Muppets", "Kermit-The-Frog");
+        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"),  "The Muppets", "Kermit The Frog");
     }
 
     @Test
@@ -395,7 +395,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testMatchRuleRightHandSide() {
         MatchQuery query = qb.match(var("x").lhs("$x id 'expect-lhs';").rhs("$x id 'expect-rhs';"));
-        QueryUtil.assertResultsMatch(query, "x", "a-rule-type", graph.getResourceType("title"), "expectation-rule");
+        QueryUtil.assertResultsMatch(query, "x", "a-rule-type", graph.getResourceType("name"), "expectation-rule");
         assertTrue(query.iterator().next().get("x").asRule().getExpectation());
     }
 
@@ -435,7 +435,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testHasVariable() {
-        MatchQuery query = qb.match(var().id("Godfather").has("tmdb-vote-count", var("x")));
+        MatchQuery query = qb.match(var().has("name", "Godfather").has("tmdb-vote-count", var("x")));
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
     }
 
