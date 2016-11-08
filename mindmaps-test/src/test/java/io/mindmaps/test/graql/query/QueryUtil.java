@@ -20,8 +20,10 @@ package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,7 +49,9 @@ class QueryUtil {
 
             String resourceValue = result.getId();
             if(result.isEntity()){
-                resourceValue = result.asEntity().resources(resourceType).iterator().next().asResource().getValue().toString();
+                Collection<Resource<?>> foundResources = result.asEntity().resources(resourceType);
+                if(!foundResources.isEmpty())
+                    resourceValue = foundResources.iterator().next().getValue().toString();
             }
 
             assertTrue("Unexpected value: " + resourceValue, expectedSet.contains(resourceValue));

@@ -197,7 +197,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testRoleQuery() {
         MatchQuery query = qb.match(
                 var().rel("actor", "x").rel("y"),
-                var("y").has("name", "Apocalypse Now")
+                var("y").has("title", "Apocalypse Now")
         ).select("x");
 
         QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("name"), "Marlon Brando", "Martin Sheen");
@@ -435,7 +435,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testHasVariable() {
-        MatchQuery query = qb.match(var().has("name", "Godfather").has("tmdb-vote-count", var("x")));
+        MatchQuery query = qb.match(var().has("title", "Godfather").has("tmdb-vote-count", var("x")));
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
     }
 
