@@ -244,12 +244,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return vertex;
     }
 
-    @Deprecated
-    @Override
-    public Entity putEntity(String itemIdentifier, EntityType type) {
-        return elementFactory.buildEntity(putVertex(itemIdentifier, Schema.BaseType.ENTITY), type);
-    }
-
     @Override
     public Entity addEntity(EntityType type) {
         return elementFactory.buildEntity(addVertex(Schema.BaseType.ENTITY), type);

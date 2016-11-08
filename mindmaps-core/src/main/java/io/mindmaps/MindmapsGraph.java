@@ -97,15 +97,6 @@ public interface MindmapsGraph extends AutoCloseable{
 
     /**
      *
-     * @param id A unique id for the Entity
-     * @param type The type of this Entity
-     * @return A new or existing Entity with the provided Id.
-     */
-    @Deprecated
-    Entity putEntity(String id, EntityType type);
-
-    /**
-     *
      * @param type The type of this Entity
      * @return A new entity.
      */
