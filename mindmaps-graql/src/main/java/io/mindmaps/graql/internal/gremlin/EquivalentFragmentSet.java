@@ -18,10 +18,9 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import com.google.common.collect.ImmutableSet;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -33,7 +32,7 @@ import java.util.stream.Stream;
  */
 public class EquivalentFragmentSet {
 
-    private final Collection<Fragment> fragments;
+    private final ImmutableSet<Fragment> fragments;
 
     public static EquivalentFragmentSet create(Fragment... fragments) {
         return new EquivalentFragmentSet(fragments);
@@ -43,7 +42,7 @@ public class EquivalentFragmentSet {
      * @param fragments an array of Fragments that this EquivalentFragmentSet contains
      */
     private EquivalentFragmentSet(Fragment... fragments) {
-        this.fragments = Arrays.asList(fragments);
+        this.fragments = ImmutableSet.copyOf(fragments);
         this.fragments.forEach(f -> f.setEquivalentFragmentSet(this));
     }
 
@@ -52,5 +51,21 @@ public class EquivalentFragmentSet {
      */
     Stream<Fragment> getFragments() {
         return fragments.stream();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        EquivalentFragmentSet that = (EquivalentFragmentSet) o;
+
+        return fragments != null ? fragments.equals(that.fragments) : that.fragments == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return fragments != null ? fragments.hashCode() : 0;
     }
 }
