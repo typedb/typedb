@@ -97,23 +97,6 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     @Test
-    public void testRestartTraversalSlower() {
-        // This distinct casting will require restarting the traversal with a new V() step
-        Fragment distinctCasting = distinctCasting("c1", "c2");
-        Fragment inRolePlayer = inRolePlayer("x", "c1");
-        Fragment inCasting = inCasting("c1", "r");
-        Fragment outCasting = outCasting("r", "c2");
-        Fragment outRolePlayer = outRolePlayer("c2", "y");
-
-        GraqlTraversal distinctEarly =
-                traversal(xId, inRolePlayer, inCasting, outCasting, distinctCasting, outRolePlayer);
-        GraqlTraversal distinctLate =
-                traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, distinctCasting);
-
-        assertFaster(distinctLate, distinctEarly);
-    }
-
-    @Test
     public void testAllTraversalsSimpleQuery() {
         Var pattern = var("x").id("Titanic").isa(var("y").id("movie"));
         GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"), Optional.empty());
