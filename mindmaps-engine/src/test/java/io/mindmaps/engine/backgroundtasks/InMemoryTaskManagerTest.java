@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import static io.mindmaps.engine.backgroundtasks.TaskStatus.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,13 +46,13 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
         int runCount = task.getRunCount();
 
         UUID uuid = taskManager.scheduleTask(task, 0);
-        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(CREATED, taskManager.getTaskState(uuid).getStatus());
 
         // Wait for supervisor thread to mark task as completed
         Thread.sleep(2000);
 
         // Check that task has ran
-        assertEquals(TaskStatus.COMPLETED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(COMPLETED, taskManager.getTaskState(uuid).getStatus());
         assertTrue(task.getRunCount() > runCount);
     }
 
@@ -59,7 +60,7 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
     public void testRecurring() throws Exception {
         TestTask task = new TestTask();
         UUID uuid = taskManager.scheduleRecurringTask(task, 100, 100);
-        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(CREATED, taskManager.getTaskState(uuid).getStatus());
 
         // Check that task has repeatedly ran
         Thread.sleep(1100);
@@ -72,33 +73,34 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
     public void testStop() {
         UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
         taskManager.stopTask(uuid);
-        assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testPause() {
         UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
         taskManager.pauseTask(uuid);
-        assertEquals(TaskStatus.PAUSED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(PAUSED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testResume() {
         UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
         taskManager.pauseTask(uuid);
-        assertEquals(TaskStatus.PAUSED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(PAUSED, taskManager.getTaskState(uuid).getStatus());
         taskManager.resumeTask(uuid);
-        assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(RUNNING, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testRestart() throws Exception {
         UUID uuid = taskManager.scheduleTask(new TestTask(), 0);
         taskManager.stopTask(uuid);
-        assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
+        Thread.sleep(100);
+        assertEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
         taskManager.restartTask(uuid);
         Thread.sleep(100);
-        assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(RUNNING, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
@@ -124,7 +126,7 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
             }
         }
 
-        assertEquals(paused.size(), taskManager.getTasks(TaskStatus.PAUSED).size());
-        taskManager.getTasks(TaskStatus.PAUSED).forEach(x -> assertTrue(paused.contains(x)));
+        assertEquals(paused.size(), taskManager.getTasks(PAUSED).size());
+        taskManager.getTasks(PAUSED).forEach(x -> assertTrue(paused.contains(x)));
     }
 }

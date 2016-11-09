@@ -80,8 +80,9 @@ public abstract class Loader {
      * Set the size of the each transaction in terms of number of vars.
      * @param size number of vars in each transaction
      */
-    public void setBatchSize(int size){
+    public Loader setBatchSize(int size){
         this.batchSize = size;
+        return this;
     }
 
     /**
@@ -94,8 +95,9 @@ public abstract class Loader {
     /**
      * Set the number of thread that will execute insert transactions at a time
      */
-    public void setThreadsNumber(int number){
+    public Loader setThreadsNumber(int number){
         this.threadsNumber = number;
+        return this;
     }
 
     /**

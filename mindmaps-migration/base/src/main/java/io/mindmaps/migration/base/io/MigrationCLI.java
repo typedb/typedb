@@ -18,6 +18,7 @@
 
 package io.mindmaps.migration.base.io;
 
+import com.google.common.io.Files;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.MindmapsEngineServer;
@@ -33,16 +34,20 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.count;
 import static io.mindmaps.graql.Graql.var;
+import static java.util.stream.Collectors.joining;
 
 public class MigrationCLI {
 
@@ -120,10 +125,6 @@ public class MigrationCLI {
                 " into graph " + getKeyspace());
     }
 
-    public void printPartialCompletionMessage(){
-        System.out.println("Migration complete.");
-    }
-
     public void printWholeCompletionMessage(){
         System.out.println("Migration complete. Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
@@ -144,7 +145,6 @@ public class MigrationCLI {
         builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
         builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
 
-        builder.append("Migration complete");
         System.out.println(builder);
 
         graph.close();
@@ -170,6 +170,15 @@ public class MigrationCLI {
         return cmd.hasOption(opt);
     }
 
+    public String fileAsString(File file){
+        try {
+            return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
+        } catch (IOException e) {
+            die("Could not read file " + file.getPath());
+            throw new RuntimeException(e);
+        }
+    }
+
     public Loader getLoader(){
         return getEngineURI().equals(Mindmaps.DEFAULT_URI)
                 ? new BlockingLoader(getKeyspace())
@@ -186,6 +195,10 @@ public class MigrationCLI {
 
     public void exit(){
         System.exit(1);
+    }
+
+    public String die(Throwable throwable){
+        return die(ExceptionUtils.getFullStackTrace(throwable));
     }
 
     public String die(String errorMsg) {

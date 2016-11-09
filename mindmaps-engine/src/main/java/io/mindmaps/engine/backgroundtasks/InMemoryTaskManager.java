@@ -38,7 +38,7 @@ public class InMemoryTaskManager implements TaskManager {
 
     private InMemoryTaskManager() {
         taskStateStorage = new ConcurrentHashMap<>();
-        taskStorage = new HashMap<>();
+        taskStorage = new ConcurrentHashMap<>();
 
         ConfigProperties properties = ConfigProperties.getInstance();
         // One thread is reserved for the supervisor
@@ -186,7 +186,8 @@ public class InMemoryTaskManager implements TaskManager {
                 executeSingle(uuid, task, state.getDelay());
 
             // Update status message
-            state.setStatusChangeMessage(message)
+            state.setStatus(TaskStatus.SCHEDULED)
+                 .setStatusChangeMessage(message)
                  .setStatusChangedBy(requesterName);
             taskStateStorage.put(uuid, state);
         } catch(ClassNotFoundException | InstantiationException | IllegalAccessException e) {

@@ -64,7 +64,7 @@ public class Main {
             cli.printWholeCompletionMessage();
         }
         catch (Throwable t) {
-            cli.die(t.getMessage());
+            cli.die(t);
         }
         finally {
             if (migrator.graph() != null)

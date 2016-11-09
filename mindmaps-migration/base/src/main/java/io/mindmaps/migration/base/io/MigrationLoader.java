@@ -16,29 +16,34 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.test;
+package io.mindmaps.migration.base.io;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsGraphFactory;
-import org.junit.After;
-import org.junit.Before;
+import io.mindmaps.engine.loader.BlockingLoader;
+import io.mindmaps.engine.loader.Loader;
+import io.mindmaps.migration.base.Migrator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Abstract test class that provides a new empty graph every test that can be committed to.
- */
-public abstract class AbstractGraphTest extends AbstractEngineTest {
+import java.io.File;
+import java.io.Reader;
 
-    protected MindmapsGraphFactory factory;
-    protected MindmapsGraph graph;
+public class MigrationLoader {
 
-    @Before
-    public void createGraph() {
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
+    public static void load(MindmapsGraph graph, Migrator migrator){
+        load(new BlockingLoader(graph.getKeyspace()), migrator);
     }
 
-    @After
-    public void closeGraph() {
-        graph.close();
+    public static void load(Loader loader, int batchSize, Migrator migrator){
+        loader.setBatchSize(batchSize);
+        load(loader, migrator);
+    }
+
+    public static void load(Loader loader, Migrator migrator) {
+        try{
+            migrator.migrate().forEach(loader::add);
+        } finally {
+            loader.waitToFinish();
+        }
     }
 }

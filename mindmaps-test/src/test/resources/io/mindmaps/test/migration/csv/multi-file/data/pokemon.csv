@@ -1,0 +1,10 @@
+id,identifier,species_id,height,weight,base_experience,order,is_default
+1,bulbasaur,1,7,69,64,1,1
+2,ivysaur,2,10,130,142,2,1
+3,venusaur,3,20,1000,236,3,1
+4,charmander,4,6,85,62,5,1
+5,charmeleon,5,11,190,142,6,1
+6,charizard,6,17,905,240,7,1
+7,squirtle,7,5,90,63,10,1
+8,wartortle,8,10,225,142,11,1
+9,blastoise,9,16,855,239,12,1
