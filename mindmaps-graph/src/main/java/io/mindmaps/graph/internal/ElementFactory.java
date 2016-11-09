@@ -95,7 +95,9 @@ final class ElementFactory {
     }
 
     private RuleImpl buildRule(Vertex v, RuleType type){
-        return buildRule(v, type, v.value(Schema.ConceptProperty.RULE_LHS.name()), v.value(Schema.ConceptProperty.RULE_RHS.name()));
+        Pattern lhs = mindmapsGraph.graql().parsePattern(v.value(Schema.ConceptProperty.RULE_LHS.name()));
+        Pattern rhs = mindmapsGraph.graql().parsePattern(v.value(Schema.ConceptProperty.RULE_RHS.name()));
+        return buildRule(v, type, lhs, rhs);
     }
     RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
         return  new RuleImpl(v, type, mindmapsGraph, lhs, rhs);
