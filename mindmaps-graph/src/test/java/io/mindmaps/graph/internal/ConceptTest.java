@@ -31,6 +31,7 @@ import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MoreThanOneEdgeException;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -311,8 +312,10 @@ public class ConceptTest extends GraphTestBase{
 
     @Test
     public void  testAsRule() {
+        Pattern lhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
+        Pattern rhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
         RuleType type = mindmapsGraph.putRuleType("a type");
-        Concept concept = mindmapsGraph.addRule("lhs", "rhs", type);
+        Concept concept = mindmapsGraph.addRule(lhs, rhs, type);
         assertTrue(concept.isRule());
         io.mindmaps.concept.Rule concept2 = concept.asRule();
         assertEquals(concept2, concept);
@@ -328,8 +331,10 @@ public class ConceptTest extends GraphTestBase{
 
     @Test
     public void  testAsInstance() {
+        Pattern lhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
+        Pattern rhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
         RuleType type = mindmapsGraph.putRuleType("a type");
-        Concept concept = mindmapsGraph.addRule("lhs", "rhs", type);
+        Concept concept = mindmapsGraph.addRule(lhs, rhs, type);
         assertTrue(concept.isInstance());
         Instance concept2 = concept.asInstance();
         assertEquals(concept2, concept);

@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
@@ -127,9 +128,8 @@ public class Utility {
         VarAdmin startVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "z").admin();
         VarAdmin endVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "z").rel(toRoleId, "y").admin();
         VarAdmin headVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "y").admin();
-        String body = Patterns.conjunction(Sets.newHashSet(startVar, endVar)).toString() + ";";
-        String head = headVar.toString() + ";";
-        return graph.addRule(body, head, graph.getMetaRuleInference());
+        Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
+        return graph.addRule(body, headVar, graph.getMetaRuleInference());
     }
 
     /**
@@ -143,8 +143,8 @@ public class Utility {
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        String body = Graql.var().isa(relType.getId()).rel("x").rel("y").toString() + ";";
-        String head = Graql.var().isa(relType.getId()).rel("x").rel("x").toString() + ";";
+        Var body = Graql.var().isa(relType.getId()).rel("x").rel("y");
+        Var head = Graql.var().isa(relType.getId()).rel("x").rel("x");
         return graph.addRule(body, head, graph.getMetaRuleInference());
     }
 
@@ -172,9 +172,7 @@ public class Utility {
             childVar.rel(childRoleId, varName);
             vars.add(varName);
         });
-        String body = childVar.toString() + ";";
-        String head = parentVar.toString() + ";";
-        return graph.addRule(body, head, graph.getMetaRuleInference());
+        return graph.addRule(childVar, parentVar, graph.getMetaRuleInference());
     }
 
     public static Rule createPropertyChainRule(RelationType relation, String fromRoleId, String toRoleId,
@@ -192,9 +190,7 @@ public class Utility {
         });
 
         Var headVar = Graql.var().isa(relation.getId()).rel(fromRoleId, "x").rel(toRoleId, varNames.peek());
-        String body = Patterns.conjunction(bodyVars).toString() + ";";
-        String head = headVar.toString() + ";";
-        return graph.addRule(body, head, graph.getMetaRuleInference());
+        return graph.addRule(Patterns.conjunction(bodyVars), headVar, graph.getMetaRuleInference());
     }
 
     public static boolean checkTypesCompatible(Type aType, Type bType) {

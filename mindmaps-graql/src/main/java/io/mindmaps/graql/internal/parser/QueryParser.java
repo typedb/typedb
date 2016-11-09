@@ -111,6 +111,14 @@ public class QueryParser {
     }
 
     /**
+     * @param patternString a string representing a pattern
+     * @return a pattern
+     */
+    public Pattern parsePattern(String patternString){
+        return parseQueryFragment(GraqlParser::pattern, QueryVisitor::visitPattern, patternString);
+    }
+
+    /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
      */

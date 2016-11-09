@@ -21,6 +21,7 @@ package io.mindmaps.graph.internal;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -31,10 +32,10 @@ import java.util.HashSet;
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(Vertex v, RuleType type, AbstractMindmapsGraph mindmapsGraph, String lhs, String rhs) {
+    RuleImpl(Vertex v, RuleType type, AbstractMindmapsGraph mindmapsGraph, Pattern lhs, Pattern rhs) {
         super(v, type, mindmapsGraph);
-        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);
-        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs);
+        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs.toString());
+        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs.toString());
     }
 
     //TODO: Fill out details on this method

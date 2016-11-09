@@ -29,6 +29,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.util.ErrorMessage;
 
 import java.text.ParseException;
@@ -305,13 +306,18 @@ public class MovieGraphFactory {
         RuleType aRuleType = mindmapsGraph.putRuleType("a-rule-type");
         hasResource(aRuleType, name);
 
-        Rule expectation = mindmapsGraph.addRule("$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
+        Pattern lhs = mindmapsGraph.graql().parsePattern("$x id 'expect-lhs'");
+        Pattern rhs = mindmapsGraph.graql().parsePattern("$x id 'expect-rhs'");
+
+        Rule expectation = mindmapsGraph.addRule(lhs, rhs, aRuleType)
                 .setExpectation(true)
                 .addConclusion(movie).addHypothesis(person);
 
         putResource(expectation, name, "expectation-rule");
 
-        Rule materialize = mindmapsGraph.addRule("$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
+        lhs = mindmapsGraph.graql().parsePattern("$x id 'materialize-lhs'");
+        rhs = mindmapsGraph.graql().parsePattern("$x id 'materialize-rhs'");
+        Rule materialize = mindmapsGraph.addRule(lhs, rhs, aRuleType)
                 .setMaterialise(true)
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
 

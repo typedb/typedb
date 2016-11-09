@@ -236,7 +236,7 @@ public class EntityTest extends GraphTestBase{
         Entity entity = mindmapsGraph.addEntity(entityType);
         Resource resource = mindmapsGraph.putResource("A resource thing", resourceType);
         Relation relation = mindmapsGraph.addRelation(relationType);
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
+        Rule rule = mindmapsGraph.addRule(null, null, ruleType);
 
         assertTrue(entity.getId().startsWith(Schema.BaseType.ENTITY.name() + "-" + entity.type().getId() + "-"));
         assertTrue(resource.getId().startsWith(Schema.BaseType.RESOURCE.name() + "-" + resource.type().getId() + "-"));

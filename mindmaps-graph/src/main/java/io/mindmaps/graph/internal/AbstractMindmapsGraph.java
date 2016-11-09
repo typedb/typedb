@@ -36,6 +36,7 @@ import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.exception.GraphRuntimeException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.exception.MoreThanOneConceptException;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryBuilderImpl;
 import io.mindmaps.util.ErrorMessage;
@@ -308,7 +309,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     @Override
-    public Rule addRule(String lhs, String rhs, RuleType type) {
+    public Rule addRule(Pattern lhs, Pattern rhs, RuleType type) {
         return elementFactory.buildRule(addVertex(Schema.BaseType.RULE), type, lhs, rhs);
     }
 
