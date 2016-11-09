@@ -77,7 +77,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     protected void generateInstanceId(V type){
         if(getId() == null){
             String id = getBaseType() + "-" + type.getId() + "-" + UUID.randomUUID().toString();
-            setImmutableProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, id);
+            setImmutableProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, id, getId(), Function.identity());
         }
     }
 
@@ -756,26 +756,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                 throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundValue, this, newValue, conceptProperty.name()));
             }
         } else {
-            if(converter == null){
-                setProperty(conceptProperty, newValue);
-            } else {
-                setProperty(conceptProperty, converter.apply(newValue));
-            }
-        }
-    }
-
-    void setImmutableProperty(Schema.ConceptProperty conceptProperty, Object value){
-        if(value == null){
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(conceptProperty.name()));
-        }
-
-        if(getProperty(conceptProperty) != null){
-            Object foundValue = getProperty(conceptProperty);
-            if(!foundValue.equals(value)){
-                throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundValue, this, value, conceptProperty.name()));
-            }
-        } else {
-            setProperty(conceptProperty, value);
+            setProperty(conceptProperty, converter.apply(newValue));
         }
     }
     

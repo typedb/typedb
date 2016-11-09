@@ -35,8 +35,11 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     RuleImpl(Vertex v, RuleType type, AbstractMindmapsGraph mindmapsGraph, Pattern lhs, Pattern rhs) {
         super(v, type, mindmapsGraph);
 
-        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);
-        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs);
+        //setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);
+        //setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs);
+
+        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
+        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
     }
 
     //TODO: Fill out details on this method
@@ -69,7 +72,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Pattern getLHS() {
-        return getMindmapsGraph().graql().parsePattern(getProperty(Schema.ConceptProperty.RULE_LHS));
+        return parsePattern(getProperty(Schema.ConceptProperty.RULE_LHS));
     }
 
     /**
@@ -78,7 +81,14 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Pattern getRHS() {
-        return getMindmapsGraph().graql().parsePattern(getProperty(Schema.ConceptProperty.RULE_RHS));
+        return parsePattern(getProperty(Schema.ConceptProperty.RULE_RHS));
+    }
+
+    private Pattern parsePattern(String value){
+        if(value == null)
+            return null;
+        else
+            return getMindmapsGraph().graql().parsePattern(value);
     }
 
 

@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * A Type represents any ontological element in the graph. For example Entity Types and Rule Types.
@@ -47,7 +48,7 @@ import java.util.Set;
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractMindmapsGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
-        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit);
+        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
     }
     TypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);

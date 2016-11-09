@@ -29,6 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -93,7 +94,8 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
                 }
             }
 
-            setImmutableProperty(dataType().getConceptProperty(), castValue(value));
+            Schema.ConceptProperty property = dataType().getConceptProperty();
+            setImmutableProperty(property, castValue(value), getProperty(property), Function.identity());
 
             return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getId(), value.toString()));
         } catch (ClassCastException e) {
