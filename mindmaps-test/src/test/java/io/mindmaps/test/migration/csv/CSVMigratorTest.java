@@ -36,6 +36,8 @@ import static java.util.stream.Collectors.joining;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 public class CSVMigratorTest extends AbstractMindmapsMigratorTest {
 
@@ -143,8 +145,6 @@ public class CSVMigratorTest extends AbstractMindmapsMigratorTest {
         String templated = new CSVMigrator(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv")).migrate()
                 .map(InsertQuery::toString)
                 .collect(joining("\n"));
-
-        System.out.println(templated);
 
         String expected = "id \"17-type\"";
         assertTrue(templated.contains(expected));

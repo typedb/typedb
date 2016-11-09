@@ -29,6 +29,7 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.migration.base.Migrator;
@@ -73,7 +74,13 @@ public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
     }
 
     protected void migrate(Migrator migrator){
-        MigrationLoader.load(graph, migrator);
+        int numberThreads = 8;
+        if(usingTinker()){
+            numberThreads = 1;
+        }
+
+        MigrationLoader.load(
+                new BlockingLoader(graph.getKeyspace()).setThreadsNumber(numberThreads), migrator);
     }
 
     protected void load(File ontology) {
