@@ -38,32 +38,32 @@ public class GraphWriterMainTest extends AbstractMindmapsMigratorTest {
 
     @Test
     public void exportOntologyToSystemOutTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-ontology", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("export", "-ontology", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void exportDataToSystemOutTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("export", "-data", "-keyspace", graph.getKeyspace());
     }
     
     @Test
     public void exportNoArgsTest(){
         exit.expectSystemExitWithStatus(1);
-        runAndAssertDataCorrect(new String[]{"export", "ontology"});
+        runAndAssertDataCorrect("export", "ontology");
     }
 
     @Test
     public void exportOnlyHelpMessageTest(){
         exit.expectSystemExitWithStatus(1);
-        runAndAssertDataCorrect(new String[]{"export", "-h"});
+        runAndAssertDataCorrect("export", "-h");
     }
 
     @Test
     public void exportEngineURLProvidedTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("export", "-data", "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
     }
 
-    private void runAndAssertDataCorrect(String[] args){
+    private void runAndAssertDataCorrect(String... args){
         Main.main(args);
     }
 }

@@ -37,28 +37,28 @@ public class OwlMigratorMainTest extends TestOwlMindMapsBase{
     public void owlMainFileTest(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
         exit.expectSystemExitWithStatus(0);
-        runAndataCorrect(new String[]{"owl", "-input", owlFile, "-keyspace", graph.getKeyspace()});
+        runAndataCorrect("owl", "-input", owlFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void owlMainNoFileSpecifiedTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Please specify owl file with the -i option.");
-        run(new String[]{"owl", "-keyspace", graph.getKeyspace()});
+        run("owl", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void owlMainCannotOpenFileTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Cannot find file: grah/?*");
-        run(new String[]{"owl", "-input", "grah/?*", "-keyspace", graph.getKeyspace()});
+        run("owl", "-input", "grah/?*", "-keyspace", graph.getKeyspace());
     }
 
-    public void run(String[] args){
+    public void run(String... args){
         Main.main(args);
     }
 
-    public void runAndataCorrect(String[] args){
+    public void runAndataCorrect(String... args){
         exit.checkAssertionAfterwards(() -> {
             graph = factory.getGraph();
 

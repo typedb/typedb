@@ -41,64 +41,64 @@ public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
     @Test
     public void jsonMigratorMainTest(){
         exit.expectSystemExitWithStatus(0);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void jsonMainDistributedLoaderTest(){
         exit.expectSystemExitWithStatus(0);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567"});
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567");
     }
 
     @Test
     public void jsonMainNoArgsTest() {
         exit.expectSystemExitWithStatus(1);
-        run(new String[]{"json"});
+        run("json");
     }
 
     @Test
     public void jsonMainNoTemplateFileNameTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Template file missing (-t)");
-        run(new String[]{"-input", ""});
+        run("-input", "");
     }
 
     @Test
     public void jsonMainUnknownArgumentTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Unrecognized option: -whale");
-        run(new String[]{"-whale", ""});
+        run("-whale", "");
     }
 
     @Test
     public void jsonMainNoDataFileExistsTest(){
         exception.expect(RuntimeException.class);
-        run(new String[]{"-input", dataFile + "wrong", "-template", templateFile + "wrong"});
+        run("-input", dataFile + "wrong", "-template", templateFile + "wrong");
     }
 
     @Test
     public void jsonMainNoTemplateFileExistsTest(){
         exception.expect(RuntimeException.class);
-        run(new String[]{"-input", dataFile, "-template", templateFile + "wrong"});
+        run("-input", dataFile, "-template", templateFile + "wrong");
     }
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
         exit.expectSystemExitWithStatus(0);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void jsonMainThrowableTest(){
         exception.expect(NumberFormatException.class);
-        run(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "hello"});
+        run("-input", dataFile, "-template", templateFile, "-batch", "hello");
     }
 
-    private void run(String[] args){
+    private void run(String... args){
         Main.main(args);
     }
 
-    private void runAndAssertDataCorrect(String[] args){
+    private void runAndAssertDataCorrect(String... args){
 
         exit.checkAssertionAfterwards(() -> {
             EntityType personType = graph.getEntityType("person");

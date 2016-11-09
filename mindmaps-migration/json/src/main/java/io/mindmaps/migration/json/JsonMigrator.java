@@ -74,9 +74,9 @@ public class JsonMigrator extends AbstractMigrator {
      */
     @Override
     public Stream<InsertQuery> migrate(){
-        return stream(readers.stream()
+        return readers.stream()
                 .map(this::asString)
-                .map(this::toJsonMap).iterator())
+                .map(this::toJsonMap)
                 .map(data -> template(template, data));
     }
 

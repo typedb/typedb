@@ -40,72 +40,72 @@ public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
     @Test
     public void csvMainTest(){
         exit.expectSystemExitWithStatus(0);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void tsvMainTest(){
         exit.expectSystemExitWithStatus(0);
         String tsvFile = getFile("csv", "pets/data/pets.tsv").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void spacesMainTest(){
         exit.expectSystemExitWithStatus(0);
         String tsvFile = getFile("csv", "pets/data/pets.spaces").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainTestDistributedLoader(){
         exit.expectSystemExitWithStatus(0);
-        runAndAssertDataCorrect(new String[]{"csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainDifferentBatchSizeTest(){
         exit.expectSystemExitWithStatus(0);
-        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainNoArgsTest(){
         exit.expectSystemExitWithStatus(1);
-        run(new String[]{});
+        run();
     }
 
     @Test
     public void csvMainNoTemplateNameTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Template file missing (-t)");
-        run(new String[]{"-input", dataFile});
+        run("-input", dataFile);
     }
 
     @Test
     public void csvMainInvalidTemplateFileTest(){
         exception.expect(RuntimeException.class);
-        run(new String[]{"-input", dataFile + "wrong", "-template", templateFile + "wrong"});
+        run("-input", dataFile + "wrong", "-template", templateFile + "wrong");
     }
 
     @Test
     public void csvMainThrowableTest(){
         exception.expect(NumberFormatException.class);
-        run(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "hello"});
+        run("-input", dataFile, "-template", templateFile, "-batch", "hello");
     }
 
     @Test
     public void unknownArgumentTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Unrecognized option: -whale");
-        run(new String[]{ "-whale", ""});
+        run("-whale", "");
     }
 
-    private void run(String[] args){
+    private void run(String... args){
         Main.main(args);
     }
 
-    private void runAndAssertDataCorrect(String[] args){
+    private void runAndAssertDataCorrect(String... args){
 
         exit.checkAssertionAfterwards(() -> {
             Collection<Entity> pets = graph.getEntityType("pet").instances();
