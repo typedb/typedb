@@ -333,6 +333,7 @@ public class Query implements MatchQueryInternal {
                             map.put(var, type);
                         else
                            map.replace(var, type);
+
                     }
                     else {
                         Set<String> vars = atom.getVarNames();
