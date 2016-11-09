@@ -69,6 +69,7 @@ public class Query implements MatchQueryInternal {
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph().orElse(null);
         this.selectVars = Sets.newHashSet(atom.getVarNames());
+        //selectVars.addAll(atom.getParentQuery().getSelectedNames());
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);

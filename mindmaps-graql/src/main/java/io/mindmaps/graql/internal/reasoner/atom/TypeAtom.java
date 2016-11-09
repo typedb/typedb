@@ -17,6 +17,7 @@
  */
 package io.mindmaps.graql.internal.reasoner.atom;
 
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 
@@ -68,5 +69,10 @@ public class TypeAtom extends Binary{
 
     @Override
     public boolean isType(){ return true;}
+
+    @Override
+    public Type getType(){
+        return  getPredicate() != null? getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
+    }
 }
 

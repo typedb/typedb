@@ -99,6 +99,6 @@ public class InferenceRule {
      */
    public void unify(Atom parentAtom) {
         unifyViaAtom(parentAtom);
-        //propagateConstraints(parentAtom);
+        propagateConstraints(parentAtom);
     }
 }

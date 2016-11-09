@@ -56,9 +56,11 @@ public abstract class Binary extends Atom{
     protected abstract String extractValueVariableName(VarAdmin var);
 
     public Predicate getPredicate(){
-        return getParentQuery().getAtoms().stream()
+        if (predicate != null) return predicate;
+        else
+            return getParentQuery() != null ? getParentQuery().getAtoms().stream()
                 .filter(Atomic::isPredicate).map(at -> (Predicate) at)
-                .filter(at -> at.getVarName().equals(valueVariable)).findFirst().orElse(null);
+                .filter(at -> at.getVarName().equals(valueVariable)).findFirst().orElse(null) : null;
     }
 
     public boolean predicatesEqual(Binary atom){

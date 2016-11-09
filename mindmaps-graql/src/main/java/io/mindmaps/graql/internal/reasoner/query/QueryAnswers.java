@@ -24,6 +24,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 
+import io.mindmaps.graql.internal.reasoner.atom.Binary;
 import io.mindmaps.graql.internal.reasoner.atom.Predicate;
 import java.util.Collection;
 import java.util.HashMap;
@@ -139,16 +140,17 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         //find extra type constraints
         //TODO revisit bo bez sensu
         //TODO look only for instance types as we are looking at specific concepts
-        /*
+
         Set<Atom> extraTypes =  parentQuery.getTypeConstraints();
         extraTypes.removeAll(childQuery.getTypeConstraints());
         // Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
-        extraTypes.forEach( type -> {
+        extraTypes.stream().map(t -> (Binary) t).forEach(type -> {
            //typeConstraints.put(type.getVarName(), type.getType());
-
-            typeConstraints.put(type.getVarName(), parentQuery.getIdPredicate(type.getValueVariable()).getPredicateValue());
+            //if (type.getPredicate() != null)
+            Predicate predicate = parentQuery.getIdPredicate(type.getValueVariable());
+            if (predicate != null) typeConstraints.put(type.getVarName(), predicate.getPredicateValue());
         });
-        */
+
 
         //find extra subs
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){

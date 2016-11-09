@@ -31,6 +31,7 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -249,6 +250,19 @@ public class ReasonerTest {
 
     @Test
     public void testTypeVar(){
+        MindmapsGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $x isa person;$y isa $type;($x, $y) isa recommendation;";
+        String queryString2 = "match $x isa $person;($x, $y) isa recommendation;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        printAnswers(reasoner.resolve(query));
+        //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testTypeVar2(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type id 'university';" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
