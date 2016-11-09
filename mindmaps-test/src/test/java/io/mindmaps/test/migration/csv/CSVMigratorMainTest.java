@@ -101,7 +101,7 @@ public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
         Main.main(args);
     }
 
-    private void runAndAssertDataCorrect(String[] args){
+    private void runAndAssertDataCorrect(String... args){
         exit.checkAssertionAfterwards(this::assertPetGraphCorrect);
         run(args);
     }
