@@ -24,6 +24,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
@@ -56,8 +57,8 @@ public class ReasonerTest {
         roleMap.put(graph.getRoleType("member-location").getId(), graph.getRoleType("subject-location").getId());
         roleMap.put(graph.getRoleType("container-location").getId(), graph.getRoleType("located-subject").getId());
 
-        String body = "(subject-location: $x, located-subject: $x1) isa resides;";
-        String head = "(member-location: $x, container-location: $x1) isa sublocate;";
+        Pattern body = graph.graql().parsePattern("(subject-location: $x, located-subject: $x1) isa resides;");
+        Pattern head = graph.graql().parsePattern("(member-location: $x, container-location: $x1) isa sublocate;");
 
         InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         Rule rule = createSubPropertyRule(parent , child, roleMap, graph);
@@ -76,9 +77,9 @@ public class ReasonerTest {
 
         InferenceRule R = new InferenceRule(rule, graph);
 
-        String body = "(member-location: $x, container-location: $z) isa sublocate;" +
-                      "(member-location: $z, container-location: $y) isa sublocate;";
-        String head = "(member-location: $x, container-location: $y) isa sublocate;";
+        Pattern body = graph.graql().parsePattern("(member-location: $x, container-location: $z) isa sublocate;" +
+                      "(member-location: $z, container-location: $y) isa sublocate;");
+        Pattern head = graph.graql().parsePattern("(member-location: $x, container-location: $y) isa sublocate;");
 
         InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -91,8 +92,8 @@ public class ReasonerTest {
         Rule rule = createReflexiveRule(graph.getRelationType("knows"), graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
-        String body = "($x, $y) isa knows;";
-        String head = "($x, $x) isa knows;";
+        Pattern body = graph.graql().parsePattern("($x, $y) isa knows;");
+        Pattern head = graph.graql().parsePattern("($x, $x) isa knows;");
 
         InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -142,8 +143,8 @@ public class ReasonerTest {
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
         Query query = new Query(queryString, graph);
-        String body = "$x isa person;$x has name 'Bob';";
-        String head = "$x has firstname 'Bob';";
+        Pattern body = graph.graql().parsePattern("$x isa person;$x has name 'Bob';");
+        Pattern head = graph.graql().parsePattern("$x has firstname 'Bob';");
         graph.addRule(body, head, graph.getMetaRuleInference());
 
         Reasoner reasoner = new Reasoner(graph);
@@ -364,8 +365,8 @@ public class ReasonerTest {
     //Bug with unification, perhaps should unify select vars not atom vars
     public void testVarContraction3(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        String body = "$x isa person;";
-        String head = "($x, $x) isa knows;";
+        Pattern body = graph.graql().parsePattern("$x isa person;");
+        Pattern head = graph.graql().parsePattern("($x, $x) isa knows;");
         graph.addRule(body, head, graph.getMetaRuleInference());
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";

@@ -24,6 +24,7 @@ import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
+import io.mindmaps.graql.Pattern;
 
 public class AbstractGraph extends TestGraph{
 
@@ -78,24 +79,24 @@ public class AbstractGraph extends TestGraph{
     protected void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
-        String R1_LHS = "$x isa p;$y isa q;($x, $y) isa rel;";
-        String R1_RHS = "$x isa Q;";
+        Pattern R1_LHS = mindmaps.graql().parsePattern("$x isa p;$y isa q;($x, $y) isa rel;");
+        Pattern R1_RHS = mindmaps.graql().parsePattern("$x isa Q;");
         mindmaps.addRule(R1_LHS, R1_RHS, inferenceRule);
 
-        String R2_LHS = "$x isa r;";
-        String R2_RHS = "$x isa p;";
+        Pattern R2_LHS = mindmaps.graql().parsePattern("$x isa r;");
+        Pattern R2_RHS = mindmaps.graql().parsePattern("$x isa p;");
         mindmaps.addRule(R2_LHS, R2_RHS, inferenceRule);
 
-        String R3_LHS = "$x isa s;";
-        String R3_RHS = "$x isa p;";
+        Pattern R3_LHS = mindmaps.graql().parsePattern("$x isa s;");
+        Pattern R3_RHS = mindmaps.graql().parsePattern("$x isa p;");
         mindmaps.addRule(R3_LHS, R3_RHS, inferenceRule);
 
-        String R4_LHS = "$x isa t;";
-        String R4_RHS = "$x isa q;";
+        Pattern R4_LHS = mindmaps.graql().parsePattern("$x isa t;");
+        Pattern R4_RHS = mindmaps.graql().parsePattern("$x isa q;");
         mindmaps.addRule(R4_LHS, R4_RHS, inferenceRule);
 
-        String R5_LHS = "$x isa u;";
-        String R5_RHS = "$x isa r;";
+        Pattern R5_LHS = mindmaps.graql().parsePattern("$x isa u;");
+        Pattern R5_RHS = mindmaps.graql().parsePattern("$x isa r;");
         mindmaps.addRule(R5_LHS, R5_RHS, inferenceRule);
     }
 }
