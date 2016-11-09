@@ -24,9 +24,8 @@ import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.Collection;
-import java.util.Set;
 
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Helper methods for converting classes to admin equivalents
@@ -37,15 +36,15 @@ public class AdminConverter {
      * @param patterns a collection of patterns to change to admin
      * @return a collection of Pattern.Admin from the given patterns
      */
-    public static Set<PatternAdmin> getPatternAdmins(Collection<? extends Pattern> patterns) {
-        return patterns.stream().map(Pattern::admin).collect(toSet());
+    public static Collection<PatternAdmin> getPatternAdmins(Collection<? extends Pattern> patterns) {
+        return patterns.stream().map(Pattern::admin).collect(toList());
     }
 
     /**
      * @param patterns a collection of vars to change to admin
      * @return a collection of Var.Admin from the given patterns
      */
-    public static Set<VarAdmin> getVarAdmins(Collection<? extends Var> patterns) {
-        return patterns.stream().map(Var::admin).collect(toSet());
+    public static Collection<VarAdmin> getVarAdmins(Collection<? extends Var> patterns) {
+        return patterns.stream().map(Var::admin).collect(toList());
     }
 }
