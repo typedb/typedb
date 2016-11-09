@@ -18,18 +18,14 @@
 
 package io.mindmaps.test.migration.csv;
 
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.migration.csv.Main;
 import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
-import org.junit.*;
-import java.util.Collection;
-
-import static junit.framework.TestCase.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
 
-    private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();;
+    private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
 
     @Before
@@ -106,27 +102,7 @@ public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
     }
 
     private void runAndAssertDataCorrect(String... args){
-
-        exit.checkAssertionAfterwards(() -> {
-            Collection<Entity> pets = graph.getEntityType("pet").instances();
-            assertEquals(9, pets.size());
-
-            Collection<Entity> cats = graph.getEntityType("cat").instances();
-            assertEquals(2, cats.size());
-
-            Collection<Entity> hamsters = graph.getEntityType("hamster").instances();
-            assertEquals(1, hamsters.size());
-
-            ResourceType<String> name = graph.getResourceType("name");
-            ResourceType<String> death = graph.getResourceType("death");
-
-            Entity puffball = graph.getResource("Puffball", name).ownerInstances().iterator().next().asEntity();
-            assertEquals(0, puffball.resources(death).size());
-
-            Entity bowser = graph.getResource("Bowser", name).ownerInstances().iterator().next().asEntity();
-            assertEquals(1, bowser.resources(death).size());
-        });
-
+        exit.checkAssertionAfterwards(this::assertPetGraphCorrect);
         run(args);
     }
 }

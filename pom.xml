@@ -69,6 +69,7 @@
         <logback.version>1.1.7</logback.version>
         <junit.version>4.11</junit.version>
         <csv.version>3.8</csv.version>
+        <jool.version>3.8.5</jool.version>
     </properties>
 
     <licenses>

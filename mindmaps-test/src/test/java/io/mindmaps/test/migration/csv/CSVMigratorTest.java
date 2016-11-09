@@ -20,7 +20,6 @@ package io.mindmaps.test.migration.csv;
 
 import com.google.common.io.Files;
 import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.migration.csv.CSVMigrator;
@@ -68,23 +67,7 @@ public class CSVMigratorTest extends AbstractMindmapsMigratorTest {
         migrate(new CSVMigrator(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv")));
         migrate(new CSVMigrator(edgeTemplate, getFile("csv", "multi-file/data/edges.csv")));
 
-        Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
-        assertEquals(9, pokemon.size());
-
-        ResourceType<String> typeid = graph.getResourceType("type-id");
-        ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
-
-        Entity grass = graph.getResource("12", typeid).ownerInstances().iterator().next().asEntity();
-        Entity poison = graph.getResource("4", typeid).ownerInstances().iterator().next().asEntity();
-        Entity bulbasaur = graph.getResource("1", pokedexno).ownerInstances().iterator().next().asEntity();
-        RelationType relation = graph.getRelationType("has-type");
-
-        assertNotNull(grass);
-        assertNotNull(poison);
-        assertNotNull(bulbasaur);
-
-        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getId());
-        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getId());
+        assertPokemonGraphCorrect();
     }
 
     @Test

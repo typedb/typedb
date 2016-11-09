@@ -69,6 +69,14 @@ public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
         logger.setLevel(Level.DEBUG);
     }
 
+    protected static String getFileAsString(String component, String fileName){
+        try {
+            return Files.readLines(getFile(component, fileName), StandardCharsets.UTF_8).stream().collect(joining());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     protected static File getFile(String component, String fileName){
         return new File(AbstractMindmapsMigratorTest.class.getResource(component + "/" + fileName).getPath());
     }
@@ -175,5 +183,45 @@ public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
 
         Collection<Relation> relations = instance.relations(roleOwner);
         return relations.stream().map(r -> r.rolePlayers().get(roleOther).asResource());
+    }
+
+    protected void assertPetGraphCorrect(){
+        Collection<Entity> pets = graph.getEntityType("pet").instances();
+        assertEquals(9, pets.size());
+
+        Collection<Entity> cats = graph.getEntityType("cat").instances();
+        assertEquals(2, cats.size());
+
+        Collection<Entity> hamsters = graph.getEntityType("hamster").instances();
+        assertEquals(1, hamsters.size());
+
+        ResourceType<String> name = graph.getResourceType("name");
+        ResourceType<String> death = graph.getResourceType("death");
+
+        Entity puffball = graph.getResource("Puffball", name).ownerInstances().iterator().next().asEntity();
+        assertEquals(0, puffball.resources(death).size());
+
+        Entity bowser = graph.getResource("Bowser", name).ownerInstances().iterator().next().asEntity();
+        assertEquals(1, bowser.resources(death).size());
+    }
+
+    protected void assertPokemonGraphCorrect(){
+        Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
+        assertEquals(9, pokemon.size());
+
+        ResourceType<String> typeid = graph.getResourceType("type-id");
+        ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
+
+        Entity grass = graph.getResource("12", typeid).ownerInstances().iterator().next().asEntity();
+        Entity poison = graph.getResource("4", typeid).ownerInstances().iterator().next().asEntity();
+        Entity bulbasaur = graph.getResource("1", pokedexno).ownerInstances().iterator().next().asEntity();
+        RelationType relation = graph.getRelationType("has-type");
+
+        assertNotNull(grass);
+        assertNotNull(poison);
+        assertNotNull(bulbasaur);
+
+        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getId());
+        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getId());
     }
 }
