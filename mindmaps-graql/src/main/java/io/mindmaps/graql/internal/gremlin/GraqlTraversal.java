@@ -125,6 +125,11 @@ public class GraqlTraversal {
      * Get the estimated complexity of the traversal.
      */
     public long getComplexity() {
+
+        // TODO: Find a better way to represent these values
+        // Just a pretend big number
+        long NUM_VERTICES_ESTIMATE = 1_000;
+
         Set<String> names = new HashSet<>();
 
         long totalCost = 0;
@@ -140,7 +145,9 @@ public class GraqlTraversal {
                 if (names.contains(start)) {
                     currentCost = fragment.fragmentCost(previousCost);
                 } else {
-                    currentCost = fragment.indexCost() * previousCost;
+                    // Restart traversal, meaning we are navigating from all vertices
+                    // The constant '1' cost is to discourage constant restarting, even when indexed
+                    currentCost = fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost + 1;
                 }
 
                 names.add(start);
