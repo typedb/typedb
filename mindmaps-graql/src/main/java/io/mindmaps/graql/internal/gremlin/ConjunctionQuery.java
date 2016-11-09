@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -41,6 +42,7 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -59,6 +61,7 @@ import static java.util.stream.Collectors.toSet;
 class ConjunctionQuery {
 
     private final Set<VarAdmin> vars;
+
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
     private final ImmutableList<Fragment> sortedFragments;
 
@@ -76,6 +79,22 @@ class ConjunctionQuery {
                 vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         this.sortedFragments = sortFragments();
+    }
+
+    /**
+     * Get all possible orderings of fragments
+     */
+    Set<List<Fragment>> allFragmentOrders() {
+        Collection<List<EquivalentFragmentSet>> fragmentSetPermutations = Collections2.permutations(equivalentFragmentSets);
+        return fragmentSetPermutations.stream().flatMap(fragmentSet -> foo(fragmentSet).stream()).collect(toSet());
+    }
+
+    private static Set<List<Fragment>> foo(List<EquivalentFragmentSet> fragmentSets) {
+        // Get fragments in each set
+        List<Set<Fragment>> fragments = fragmentSets.stream()
+                .map(set -> set.getFragments().collect(toSet()))
+                .collect(toList());
+        return Sets.cartesianProduct(fragments);
     }
 
     /**

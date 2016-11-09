@@ -33,4 +33,23 @@ class DistinctCastingFragment extends AbstractFragment {
     public long fragmentCost(long previousCost) {
         return previousCost / NUM_ROLES_PER_RELATION;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        DistinctCastingFragment that = (DistinctCastingFragment) o;
+
+        return otherCastingName != null ? otherCastingName.equals(that.otherCastingName) : that.otherCastingName == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (otherCastingName != null ? otherCastingName.hashCode() : 0);
+        return result;
+    }
 }

@@ -37,17 +37,12 @@ class ValueFragment extends AbstractFragment {
     }
 
     @Override
-    public long indexCost() {
+    public long fragmentCost(long previousCost) {
         if (predicate.isSpecific()) {
             return 1;
         } else {
-            return super.indexCost();
+            return previousCost;
         }
-    }
-
-    @Override
-    public long fragmentCost(long previousCost) {
-        return previousCost;
     }
 
     /**
@@ -56,5 +51,24 @@ class ValueFragment extends AbstractFragment {
     private Schema.ConceptProperty getValueProperty() {
         Object value = predicate.getInnerValues().iterator().next();
         return ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName()).getConceptProperty();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        ValueFragment that = (ValueFragment) o;
+
+        return predicate != null ? predicate.equals(that.predicate) : that.predicate == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (predicate != null ? predicate.hashCode() : 0);
+        return result;
     }
 }

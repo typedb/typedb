@@ -55,4 +55,27 @@ class ShortcutFragment extends AbstractFragment {
     public long fragmentCost(long previousCost) {
         return previousCost * NUM_SHORTCUT_EDGES_PER_INSTANCE;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        ShortcutFragment that = (ShortcutFragment) o;
+
+        if (relationType != null ? !relationType.equals(that.relationType) : that.relationType != null) return false;
+        if (roleStart != null ? !roleStart.equals(that.roleStart) : that.roleStart != null) return false;
+        return roleEnd != null ? roleEnd.equals(that.roleEnd) : that.roleEnd == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (relationType != null ? relationType.hashCode() : 0);
+        result = 31 * result + (roleStart != null ? roleStart.hashCode() : 0);
+        result = 31 * result + (roleEnd != null ? roleEnd.hashCode() : 0);
+        return result;
+    }
 }

@@ -20,6 +20,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
@@ -157,7 +158,8 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        Conjunction<PatternAdmin> conjunction = Patterns.conjunction(AdminConverter.getPatternAdmins(patterns));
+        Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
+        Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(patternAdmins));
 
         return () -> conjunction;
     }
@@ -175,7 +177,8 @@ public class Graql {
      * @return a pattern that will match when any contained pattern matches
      */
     public static Pattern or(Collection<? extends Pattern> patterns) {
-        Disjunction<PatternAdmin> disjunction = Patterns.disjunction(AdminConverter.getPatternAdmins(patterns));
+        Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
+        Disjunction<PatternAdmin> disjunction = Patterns.disjunction(Sets.newHashSet(patternAdmins));
 
         return () -> disjunction;
     }

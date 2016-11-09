@@ -82,11 +82,5 @@ public interface Fragment extends Comparable<Fragment> {
      */
     FragmentPriority getPriority();
 
-    default long indexCost() {
-        // TODO: Find a better way to represent these values
-        // Just a big number
-        return fragmentCost(1_000_000);
-    }
-
     long fragmentCost(long previousCost);
 }

@@ -35,4 +35,23 @@ class DataTypeFragment extends AbstractFragment {
     public long fragmentCost(long previousCost) {
         return previousCost / ResourceType.DataType.SUPPORTED_TYPES.size();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        DataTypeFragment that = (DataTypeFragment) o;
+
+        return dataType != null ? dataType.equals(that.dataType) : that.dataType == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
+        return result;
+    }
 }

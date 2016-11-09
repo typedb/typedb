@@ -19,6 +19,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
@@ -131,7 +132,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
 
     @Override
     default InsertQuery insert(Collection<? extends Var> vars) {
-        ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
+        ImmutableMultiset<VarAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
     }
 

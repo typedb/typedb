@@ -42,4 +42,22 @@ class InIsaFragment extends AbstractFragment {
         return previousCost * NUM_INSTANCES_PER_TYPE;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        InIsaFragment that = (InIsaFragment) o;
+
+        return allowCastings == that.allowCastings;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (allowCastings ? 1 : 0);
+        return result;
+    }
 }

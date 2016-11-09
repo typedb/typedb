@@ -554,6 +554,11 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(0, query.stream().count());
     }
 
+    @Test
+    public void testQueryDoesNotCrash() {
+        qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); select $a1, $a2;").execute();
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMatchEmpty() {
         qb.match().execute();

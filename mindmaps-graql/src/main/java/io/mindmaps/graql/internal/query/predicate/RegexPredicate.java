@@ -43,4 +43,20 @@ class RegexPredicate extends AbstractValuePredicate {
     public String toString() {
         return "/" + StringConverter.escapeString(pattern) + "/";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RegexPredicate that = (RegexPredicate) o;
+
+        return pattern != null ? pattern.equals(that.pattern) : that.pattern == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return pattern != null ? pattern.hashCode() : 0;
+    }
 }

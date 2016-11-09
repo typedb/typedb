@@ -4,16 +4,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -31,12 +34,12 @@ public class GraqlTraversal {
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
     private final MindmapsGraph graph;
 
-    private GraqlTraversal(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
+    private GraqlTraversal(MindmapsGraph graph, Set<? extends List<Fragment>> fragments) {
         this.graph = graph;
-        this.fragments = fragments;
+        this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
     }
 
-    public static GraqlTraversal create(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
+    public static GraqlTraversal create(MindmapsGraph graph, Set<? extends List<Fragment>> fragments) {
         return new GraqlTraversal(graph, fragments);
     }
 
@@ -122,22 +125,42 @@ public class GraqlTraversal {
      * Get the estimated complexity of the traversal.
      */
     public long getComplexity() {
-        return fragments.stream().mapToLong(list -> {
+
+        // TODO: Find a better way to represent these values
+        // Just a pretend big number
+        long NUM_VERTICES_ESTIMATE = 1_000;
+
+        Set<String> names = new HashSet<>();
+
+        long totalCost = 0;
+
+        for (List<Fragment> list : fragments) {
+            long currentCost;
+            long previousCost = 1;
             long listCost = 0;
-            String currentName = null;
 
             for (Fragment fragment : list) {
-                if (fragment.getStart().equals(currentName)) {
-                    listCost += fragment.fragmentCost(listCost);
+                String start = fragment.getStart();
+
+                if (names.contains(start)) {
+                    currentCost = fragment.fragmentCost(previousCost);
                 } else {
-                    listCost += fragment.indexCost();
+                    // Restart traversal, meaning we are navigating from all vertices
+                    // The constant '1' cost is to discourage constant restarting, even when indexed
+                    currentCost = fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost + 1;
                 }
 
-                currentName = fragment.getEnd().orElse(fragment.getStart());
+                names.add(start);
+                fragment.getEnd().ifPresent(names::add);
+
+                listCost += currentCost;
+                previousCost = currentCost;
             }
 
-            return listCost;
-        }).sum();
+            totalCost += listCost;
+        }
+
+        return totalCost;
     }
 
     @Override
@@ -150,7 +173,7 @@ public class GraqlTraversal {
                 if (!fragment.getStart().equals(currentName)) {
                     if (currentName != null) sb.append(" ");
 
-                    sb.append("$").append(fragment.getStart());
+                    sb.append("$").append(StringUtils.left(fragment.getStart(), 3));
                     currentName = fragment.getStart();
                 }
 
@@ -158,12 +181,31 @@ public class GraqlTraversal {
 
                 Optional<String> end = fragment.getEnd();
                 if (end.isPresent()) {
-                    sb.append("$").append(end.get());
+                    sb.append("$").append(StringUtils.left(end.get(), 3));
                     currentName = end.get();
                 }
             }
 
             return sb.toString();
         }).collect(joining(", ")) + "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GraqlTraversal that = (GraqlTraversal) o;
+
+        if (fragments != null ? !fragments.equals(that.fragments) : that.fragments != null) return false;
+        return graph != null ? graph.equals(that.graph) : that.graph == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = fragments != null ? fragments.hashCode() : 0;
+        result = 31 * result + (graph != null ? graph.hashCode() : 0);
+        return result;
     }
 }

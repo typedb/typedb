@@ -42,4 +42,23 @@ class OrPredicate extends AbstractValuePredicate {
     public String toString() {
         return "(" + predicate1 + " or " + predicate2 + ")";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        OrPredicate that = (OrPredicate) o;
+
+        if (predicate1 != null ? !predicate1.equals(that.predicate1) : that.predicate1 != null) return false;
+        return predicate2 != null ? predicate2.equals(that.predicate2) : that.predicate2 == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = predicate1 != null ? predicate1.hashCode() : 0;
+        result = 31 * result + (predicate2 != null ? predicate2.hashCode() : 0);
+        return result;
+    }
 }
