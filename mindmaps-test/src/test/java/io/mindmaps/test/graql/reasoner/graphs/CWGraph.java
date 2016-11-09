@@ -25,6 +25,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Pattern;
 
 public class CWGraph extends TestGraph {
@@ -169,45 +170,45 @@ public class CWGraph extends TestGraph {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
-        Pattern R1_LHS =
-                mindmaps.graql().parsePattern("$x isa person;$x has nationality 'American';" +
+        Pattern R1_LHS = Graql.and(
+                mindmaps.graql().parsePatterns("$x isa person;$x has nationality 'American';" +
                 "$y isa weapon;" +
                 "$z isa country;$z has alignment 'hostile';" +
-                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;");
+                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;"));
 
-        Pattern R1_RHS = mindmaps.graql().parsePattern("$x isa criminal;");
+        Pattern R1_RHS = Graql.and(mindmaps.graql().parsePatterns("$x isa criminal;"));
 
         mindmaps.addRule(R1_LHS, R1_RHS, inferenceRule);
 
         //R2: "Missiles are a kind of a weapon"
-        Pattern R2_LHS = mindmaps.graql().parsePattern("$x isa missile;");
-        Pattern R2_RHS = mindmaps.graql().parsePattern("$x isa weapon;");
+        Pattern R2_LHS = Graql.and(mindmaps.graql().parsePatterns("$x isa missile;"));
+        Pattern R2_RHS = Graql.and(mindmaps.graql().parsePatterns("$x isa weapon;"));
 
         mindmaps.addRule(R2_LHS, R2_RHS, inferenceRule);
 
         //R3: "If a country is an enemy of America then it is hostile"
-        Pattern R3_LHS =
-                mindmaps.graql().parsePattern("$x isa country;" +
+        Pattern R3_LHS = Graql.and(
+                mindmaps.graql().parsePatterns("$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
-                "$y isa country;$y has name 'America';");
-        Pattern R3_RHS = mindmaps.graql().parsePattern("$x has alignment 'hostile';");
+                "$y isa country;$y has name 'America';"));
+        Pattern R3_RHS = Graql.and(mindmaps.graql().parsePatterns("$x has alignment 'hostile';"));
 
         mindmaps.addRule(R3_LHS, R3_RHS, inferenceRule);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
-        Pattern R4_LHS = mindmaps.graql().parsePattern("$x isa rocket;$x has propulsion 'gsp';");
-        Pattern R4_RHS = mindmaps.graql().parsePattern("$x isa missile;");
+        Pattern R4_LHS = Graql.and(mindmaps.graql().parsePatterns("$x isa rocket;$x has propulsion 'gsp';"));
+        Pattern R4_RHS = Graql.and(mindmaps.graql().parsePatterns("$x isa missile;"));
 
         mindmaps.addRule(R4_LHS, R4_RHS, inferenceRule);
 
-        Pattern R5_LHS =
-                mindmaps.graql().parsePattern("$x isa person;" +
+        Pattern R5_LHS = Graql.and(
+                mindmaps.graql().parsePatterns("$x isa person;" +
                 "$y isa country;" +
                 "$z isa weapon;" +
                 "($x, $y) isa is-paid-by;" +
-                "($y, $z) isa owns;");
+                "($y, $z) isa owns;"));
 
-        Pattern R5_RHS = mindmaps.graql().parsePattern("(seller: $x, buyer: $y, transaction-item: $z) isa transaction;");
+        Pattern R5_RHS = Graql.and(mindmaps.graql().parsePatterns("(seller: $x, buyer: $y, transaction-item: $z) isa transaction;"));
 
         mindmaps.addRule(R5_LHS, R5_RHS, inferenceRule);
     }
