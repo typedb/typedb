@@ -33,14 +33,7 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.or;
@@ -84,7 +77,8 @@ public class Analytics {
         // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
         try {
             graph.rollback();
-        } catch (UnsupportedOperationException ignored){}
+        } catch (UnsupportedOperationException ignored) {
+        }
 
         // fetch all the types
         Set<Type> subtypes = subTypeIds.stream().map((id) -> {
@@ -289,14 +283,30 @@ public class Analytics {
      *
      * @return median
      */
-    public Map<Integer, Set<String>> shortestPath(String startId, String endId) {
-        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
+    public List<String> shortestPath(String startId, String endId) {
+        if (!selectedTypesHaveInstance()) return Collections.emptyList();
         MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypes, startId, endId),
                 new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         Map<Integer, Set<String>> map = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
 
-        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        List<String> path = new ArrayList<>();
+//
+//        List<Integer> sortedKeys = new ArrayList(map.keySet());
+//        Collections.sort(sortedKeys);
+//        path.add(endId);
+//        sortedKeys.forEach(key->path.add(map.get(key).iterator().next()));
+//        path.add(startId);
+//        Collections.reverse(path);
+
+        path.add(startId);
+        path.addAll(map.entrySet().stream()
+                .sorted(Comparator.comparingInt(pair -> -1 * pair.getKey()))
+                .map(pair -> pair.getValue().iterator().next())
+                .collect(Collectors.toList()));
+        path.add(endId);
+
+        return path;
     }
 
     /**
@@ -424,7 +434,8 @@ public class Analytics {
             // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             try {
                 graph.rollback();
-            } catch (UnsupportedOperationException ignored){}
+            } catch (UnsupportedOperationException ignored) {
+            }
 
             ResourceType resource = graph.getResourceType(resourceTypeId);
             if (resource == null) continue;

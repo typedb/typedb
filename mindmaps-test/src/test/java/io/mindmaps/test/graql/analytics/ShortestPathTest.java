@@ -41,6 +41,9 @@ public class ShortestPathTest extends AbstractGraphTest {
     private String entityId2;
     private String entityId3;
     private String entityId4;
+    private String relationId12;
+    private String relationId23;
+    private String relationId24;
     private List<String> instanceIds;
 
     String keyspace;
@@ -64,17 +67,19 @@ public class ShortestPathTest extends AbstractGraphTest {
 
         // test on an empty graph
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-
+        List<String> correctPath;
+        List<String> result;
 
         // add something, test again
         addOntologyAndEntities();
 
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        Map<Integer, Set<String>> result = computer.shortestPath(entityId1, entityId4);
-        result.forEach((k, v) -> {
-            System.out.println("k = " + k);
-            System.out.println("v = " + v);
-        });
+        result = computer.shortestPath(entityId1, entityId4);
+        correctPath = Lists.newArrayList(entityId1, relationId12, entityId2, relationId24, entityId4);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
 
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
@@ -103,13 +108,13 @@ public class ShortestPathTest extends AbstractGraphTest {
         entityType2.playsRole(role1).playsRole(role2);
         RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
-        String relationId12 = graph.addRelation(relationType)
+        relationId12 = graph.addRelation(relationType)
                 .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity2).getId();
-        String relationId23 = graph.addRelation(relationType)
+        relationId23 = graph.addRelation(relationType)
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity3).getId();
-        String relationId24 = graph.addRelation(relationType)
+        relationId24 = graph.addRelation(relationType)
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity4).getId();
         instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
