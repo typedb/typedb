@@ -479,7 +479,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return (Aggregate) visit(ctx);
     }
 
-    @Override
     public Pattern visitPattern(GraqlParser.PatternContext ctx) {
         return (Pattern) visit(ctx);
     }
