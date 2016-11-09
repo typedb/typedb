@@ -20,20 +20,13 @@ package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.backgroundtasks.InMemoryTaskManager;
-import io.mindmaps.engine.backgroundtasks.TaskStatus;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
 
 import static io.mindmaps.engine.backgroundtasks.TaskStatus.*;
 import static io.mindmaps.engine.backgroundtasks.TaskStatus.RUNNING;
-import static io.mindmaps.engine.backgroundtasks.TaskStatus.SCHEDULED;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 

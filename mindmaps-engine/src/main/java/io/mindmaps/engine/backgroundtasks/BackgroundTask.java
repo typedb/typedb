@@ -42,8 +42,8 @@ public interface BackgroundTask {
     Map<String, Object> pause();
 
     /**
-     * Called to resume execution of a previously paused. Execution should resume from the best point possible when
-     * pause() was called.
+     * Called to restore state necessary for execution to a previously suspended point by pause() however resume() itself
+     * should not aim to resume execution as this will be accomplished by a subsequent call to start().
      * @param m Map<> as returned by pause()
      */
     void resume(Map<String, Object> m);
