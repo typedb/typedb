@@ -32,6 +32,7 @@
       <module>json</module>
       <module>base</module>
       <module>export</module>
+      <module>sql</module>
   </modules>
 
     <dependencies>

@@ -17,6 +17,9 @@ then
 elif [ $1 == "export" ]
 then
   java -cp ${CONCATCLASSPATH} -Dmindmaps.dir=${SCRIPTPATH} io.mindmaps.migration.export.Main ${1+"$@"}
+elif [ $1 == "sql" ]
+then
+  java -cp ${CONCATCLASSPATH} -Dmindmaps.dir=${SCRIPTPATH} io.mindmaps.migration.sql.Main ${1+"$@"}
 else
-  echo "usage: ./migration.sh {owl, csv, json, export} <params>"
+  echo "usage: ./migration.sh {owl, csv, json, export, sql} <params>"
 fi

@@ -59,4 +59,13 @@ public abstract class AbstractMigrator implements Migrator {
                 Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
 
     }
+
+    /**
+     * Test if an object is a valid Mindmaps value
+     * @param value object to check
+     * @return if the value is valid
+     */
+    protected boolean validValue(Object value){
+        return value != null;
+    }
 }

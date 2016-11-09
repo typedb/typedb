@@ -143,13 +143,4 @@ public class CSVMigrator extends AbstractMigrator {
                         i -> data[i]
                 ));
     }
-
-    /**
-     * Test if an object is a valid Mindmaps value
-     * @param value object to check
-     * @return if the value is valid
-     */
-    private boolean validValue(Object value){
-        return value != null;
-    }
 }

@@ -1,0 +1,8 @@
+insert
+
+$x isa <SPECIES>
+    has name <NAME>
+    has owner <OWNER>
+    has sex <SEX>
+    if(ne BIRTH null) do { has birth <BIRTH> }
+    if(ne DEATH null) do { has death <DEATH> };
