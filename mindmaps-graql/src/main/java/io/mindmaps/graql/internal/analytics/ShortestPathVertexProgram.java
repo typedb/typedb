@@ -22,10 +22,12 @@ import com.google.common.collect.Sets;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyVertexProperty;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -75,6 +77,12 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<String> {
     }
 
     @Override
+    public Set<MessageScope> getMessageScopes(final Memory memory) {
+        if (memory.get(FOUND_DESTINATION)) return Collections.emptySet();
+        return messageScopeSet;
+    }
+
+    @Override
     public void setup(final Memory memory) {
         LOGGER.debug("ShortestPathVertexProgram Started !!!!!!!!");
         memory.set(VOTE_TO_HALT, true);
@@ -87,9 +95,6 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<String> {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    // TODO: try not to persist
-//                    vertex.property(FROM_VERTEX, Integer.MAX_VALUE);
-
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
@@ -103,7 +108,6 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<String> {
                     // send message from the starting vertex
                     String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
                     if (persistentProperties.get(START_ID).equals(id)) {
-//                        vertex.property(FROM_VERTEX, id);
                         LOGGER.debug("Found starting vertex");
                         messenger.sendMessage(messageScopeIn, id);
                         messenger.sendMessage(messageScopeOut, id);
@@ -112,10 +116,7 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<String> {
                 break;
             case 1:
                 if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    // TODO: try not to persist
-//                    vertex.property(FROM_VERTEX, Integer.MAX_VALUE);
-
-                    String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
+//                    String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
                     Set<String> messageSet = new HashSet<>();
                     boolean hasBothMessages = false;
                     String fromVertex = null;
@@ -128,9 +129,9 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<String> {
                             hasBothMessages = true;
                         }
                         if (hasBothMessages && fromVertex != null) {
-                            vertex.property(FROM_VERTEX, fromVertex);
-                            messenger.sendMessage(messageScopeIn, id);
-                            messenger.sendMessage(messageScopeOut, id);
+//                            vertex.property(FROM_VERTEX, fromVertex);
+                            messenger.sendMessage(messageScopeIn, fromVertex);
+                            messenger.sendMessage(messageScopeOut, fromVertex);
                             break;
                         }
                     }
@@ -139,30 +140,40 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<String> {
                 }
                 break;
             default:
-                // split the default case because shortcut edges cannot be filtered out
-                if (memory.getIteration() % 2 == 0) {
-                    if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                        update(vertex, messenger, memory);
+                if (memory.get(FOUND_DESTINATION)) {
+                    String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
+                    if (memory.get(NEXT_DESTINATION).equals(id)) {
+                        LOGGER.debug("Traversing back to vertex " + id);
+                        memory.set(NEXT_DESTINATION, vertex.value(FROM_VERTEX));
+                        vertex.property(FOUND_IN_ITERATION, memory.getIteration());
                     }
                 } else {
-                    if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
-                            (boolean) vertex.value(IS_ACTIVE_CASTING)) {
-                        update(vertex, messenger, memory);
+                    // split the default case because shortcut edges cannot be filtered out
+                    if (memory.getIteration() % 2 == 0) {
+                        if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                            update(vertex, messenger, memory, false);
+                        }
+                    } else {
+                        if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
+                                (boolean) vertex.value(IS_ACTIVE_CASTING)) {
+                            update(vertex, messenger, memory, true);
+                        }
                     }
                 }
                 break;
         }
     }
 
-    private void update(Vertex vertex, Messenger<String> messenger, Memory memory) {
-        if (memory.get(FOUND_DESTINATION)) {
-            String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
-            if (memory.get(NEXT_DESTINATION).equals(id)) {
-                LOGGER.debug("Traversing back to vertex " + id);
-                memory.set(NEXT_DESTINATION, vertex.value(FROM_VERTEX));
-                vertex.property(FOUND_IN_ITERATION, memory.getIteration());
-            }
-        } else if (messenger.receiveMessages().hasNext()) {
+    private void update(Vertex vertex, Messenger<String> messenger, Memory memory, boolean isCasting) {
+//        if (memory.get(FOUND_DESTINATION)) {
+//            String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
+//            if (memory.get(NEXT_DESTINATION).equals(id)) {
+//                LOGGER.debug("Traversing back to vertex " + id);
+//                memory.set(NEXT_DESTINATION, vertex.value(FROM_VERTEX));
+//                vertex.property(FOUND_IN_ITERATION, memory.getIteration());
+//            }
+//        } else
+        if (messenger.receiveMessages().hasNext()) {
             String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
             LOGGER.debug("Considering vertex " + id);
 
@@ -177,11 +188,18 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<String> {
                     return;
                 }
 
-                vertex.property(FROM_VERTEX, fromVertex);
-                messenger.sendMessage(messageScopeIn, id);
-                messenger.sendMessage(messageScopeOut, id);
+                if (isCasting) {
+                    String message = messenger.receiveMessages().next();
+                    messenger.sendMessage(messageScopeIn, message);
+                    messenger.sendMessage(messageScopeOut, message);
+                    LOGGER.debug("This is a casting vertex");
+                } else {
+                    vertex.property(FROM_VERTEX, fromVertex);
+                    messenger.sendMessage(messageScopeIn, id);
+                    messenger.sendMessage(messageScopeOut, id);
+                    LOGGER.debug("FromVertex added");
+                }
                 memory.and(VOTE_TO_HALT, false);
-                LOGGER.debug("FromVertex added");
             }
         }
     }

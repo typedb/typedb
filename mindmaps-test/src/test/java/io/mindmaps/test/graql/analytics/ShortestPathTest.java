@@ -74,8 +74,28 @@ public class ShortestPathTest extends AbstractGraphTest {
         addOntologyAndEntities();
 
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
+        result = computer.shortestPath(entityId1, entityId2);
+        correctPath = Lists.newArrayList(entityId1, relationId12, entityId2);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+        result = computer.shortestPath(entityId2, entityId1);
+        Collections.reverse(result);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+
+        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
         result = computer.shortestPath(entityId1, entityId4);
         correctPath = Lists.newArrayList(entityId1, relationId12, entityId2, relationId24, entityId4);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+        result = computer.shortestPath(entityId4, entityId1);
+        Collections.reverse(result);
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
