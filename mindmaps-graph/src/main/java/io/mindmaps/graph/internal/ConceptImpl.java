@@ -47,6 +47,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * A concept which can represent anything in the graph
@@ -741,6 +742,25 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
             return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
         } catch (IllegalStateException e){
             return false;
+        }
+    }
+
+
+    <X> void setImmutableProperty(Schema.ConceptProperty conceptProperty, X newValue, X foundValue, Function<X, Object> converter){
+        if(newValue == null){
+            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(conceptProperty.name()));
+        }
+
+        if(foundValue != null){
+            if(!foundValue.equals(newValue)){
+                throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundValue, this, newValue, conceptProperty.name()));
+            }
+        } else {
+            if(converter == null){
+                setProperty(conceptProperty, newValue);
+            } else {
+                setProperty(conceptProperty, converter.apply(newValue));
+            }
         }
     }
 

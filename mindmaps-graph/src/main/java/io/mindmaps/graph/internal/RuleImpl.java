@@ -21,9 +21,7 @@ package io.mindmaps.graph.internal;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
-import io.mindmaps.exception.InvalidConceptValueException;
 import io.mindmaps.graql.Pattern;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -37,13 +35,8 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     RuleImpl(Vertex v, RuleType type, AbstractMindmapsGraph mindmapsGraph, Pattern lhs, Pattern rhs) {
         super(v, type, mindmapsGraph);
 
-        if(lhs == null)
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS));
-        if(rhs == null)
-            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS));
-
-        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs.toString());
-        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs.toString());
+        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);
+        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs);
     }
 
     //TODO: Fill out details on this method
