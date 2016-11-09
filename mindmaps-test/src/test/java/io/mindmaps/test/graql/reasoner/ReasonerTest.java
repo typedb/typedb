@@ -38,6 +38,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.mindmaps.graql.Graql.and;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
@@ -57,8 +58,8 @@ public class ReasonerTest {
         roleMap.put(graph.getRoleType("member-location").getId(), graph.getRoleType("subject-location").getId());
         roleMap.put(graph.getRoleType("container-location").getId(), graph.getRoleType("located-subject").getId());
 
-        Pattern body = graph.graql().parsePattern("(subject-location: $x, located-subject: $x1) isa resides;");
-        Pattern head = graph.graql().parsePattern("(member-location: $x, container-location: $x1) isa sublocate;");
+        Pattern body = and(graph.graql().parsePatterns("(subject-location: $x, located-subject: $x1) isa resides;"));
+        Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
 
         InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         Rule rule = createSubPropertyRule(parent , child, roleMap, graph);
@@ -77,9 +78,9 @@ public class ReasonerTest {
 
         InferenceRule R = new InferenceRule(rule, graph);
 
-        Pattern body = graph.graql().parsePattern("(member-location: $x, container-location: $z) isa sublocate;" +
-                      "(member-location: $z, container-location: $y) isa sublocate;");
-        Pattern head = graph.graql().parsePattern("(member-location: $x, container-location: $y) isa sublocate;");
+        Pattern body = and(graph.graql().parsePatterns("(member-location: $x, container-location: $z) isa sublocate;" +
+                      "(member-location: $z, container-location: $y) isa sublocate;"));
+        Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $y) isa sublocate;"));
 
         InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -92,8 +93,8 @@ public class ReasonerTest {
         Rule rule = createReflexiveRule(graph.getRelationType("knows"), graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
-        Pattern body = graph.graql().parsePattern("($x, $y) isa knows;");
-        Pattern head = graph.graql().parsePattern("($x, $x) isa knows;");
+        Pattern body = and(graph.graql().parsePatterns("($x, $y) isa knows;"));
+        Pattern head = and(graph.graql().parsePatterns("($x, $x) isa knows;"));
 
         InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -143,8 +144,8 @@ public class ReasonerTest {
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
         Query query = new Query(queryString, graph);
-        Pattern body = graph.graql().parsePattern("$x isa person;$x has name 'Bob';");
-        Pattern head = graph.graql().parsePattern("$x has firstname 'Bob';");
+        Pattern body = and(graph.graql().parsePatterns("$x isa person;$x has name 'Bob';"));
+        Pattern head = and(graph.graql().parsePatterns("$x has firstname 'Bob';"));
         graph.addRule(body, head, graph.getMetaRuleInference());
 
         Reasoner reasoner = new Reasoner(graph);

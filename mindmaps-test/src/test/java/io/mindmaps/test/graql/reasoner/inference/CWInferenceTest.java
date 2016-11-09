@@ -28,6 +28,7 @@ import io.mindmaps.graql.Reasoner;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
 import org.junit.Test;
 
+import static io.mindmaps.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
 
 
@@ -246,8 +247,8 @@ public class CWInferenceTest {
 
         localGraph.putEntityType("region");
 
-        Pattern R6_LHS = localGraph.graql().parsePattern("$x isa region;");
-        Pattern R6_RHS = localGraph.graql().parsePattern("$x isa country;");
+        Pattern R6_LHS = and(localGraph.graql().parsePatterns("$x isa region;"));
+        Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
         localGraph.addRule(R6_LHS, R6_RHS, inferenceRule);
 
         localReasoner.linkConceptTypes();

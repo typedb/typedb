@@ -26,6 +26,8 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.graql.Pattern;
 
+import static io.mindmaps.graql.Graql.and;
+
 public class GeoGraph extends TestGraph{
 
     private static EntityType university, city, region, country, continent, geographicalObject;
@@ -179,10 +181,10 @@ public class GeoGraph extends TestGraph{
     @Override
     protected void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
-        Pattern transitivity_LHS = mindmaps.graql().parsePattern(
+        Pattern transitivity_LHS = and(mindmaps.graql().parsePatterns(
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "(geo-entity: $y, entity-location: $z) isa is-located-in;");
-        Pattern transitivity_RHS = mindmaps.graql().parsePattern("(geo-entity: $x, entity-location: $z) isa is-located-in;");
+                "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
+        Pattern transitivity_RHS = and(mindmaps.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
         mindmaps.addRule(transitivity_LHS, transitivity_RHS, inferenceRule);
     }
 }
