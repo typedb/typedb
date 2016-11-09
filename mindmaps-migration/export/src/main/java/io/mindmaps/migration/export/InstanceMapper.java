@@ -110,8 +110,8 @@ public class InstanceMapper {
     //TODO hypothesis, conclusion, isMaterialize, etc
     private static Var map(Rule rule){
         Var var = base(rule);
-        var = var.lhs(rule.getLHS());
-        var = var.rhs(rule.getRHS());
+        var = var.lhs(rule.getLHS().toString());
+        var = var.rhs(rule.getRHS().toString());
         return var;
     }
 
