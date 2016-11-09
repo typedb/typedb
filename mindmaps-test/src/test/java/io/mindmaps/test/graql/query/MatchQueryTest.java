@@ -397,7 +397,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        MatchQuery query = qb.match(var("x").lhs(qb.parsePattern("$x id 'expect-lhs'")).rhs("$x id 'expect-rhs';"));
+        MatchQuery query = qb.match(var("x").lhs(qb.parsePattern("$x id 'expect-lhs'")).rhs(qb.parsePattern("$x id 'expect-rhs'")));
         QueryUtil.assertResultsMatch(query, "x", "a-rule-type", graph.getResourceType("name"), "expectation-rule");
         assertTrue(query.iterator().next().get("x").asRule().getExpectation());
     }

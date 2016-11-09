@@ -100,7 +100,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.match(var("x").rhs("$x isa movie;")));
+        assertValidToString(qb.match(var("x").rhs(qb.parsePattern("$x isa movie"))));
     }
 
     @Test

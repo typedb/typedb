@@ -259,7 +259,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var rhs(String rhs) {
+    public Var rhs(Pattern rhs) {
         return addProperty(new RhsProperty(rhs));
     }
 

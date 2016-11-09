@@ -111,7 +111,7 @@ public class InstanceMapper {
     private static Var map(Rule rule){
         Var var = base(rule);
         var = var.lhs(rule.getLHS());
-        var = var.rhs(rule.getRHS().toString());
+        var = var.rhs(rule.getRHS());
         return var;
     }
 

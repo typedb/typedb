@@ -104,7 +104,7 @@ public class Fragments {
         return new ValueFragment(start, predicate);
     }
 
-    public static RhsFragment rhs(String start, String rhs) {
+    public static RhsFragment rhs(String start, Pattern rhs) {
         return new RhsFragment(start, rhs);
     }
 

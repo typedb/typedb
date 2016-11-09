@@ -355,7 +355,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertRule() {
-        assertInsert(var("x").isa("a-rule-type").lhs(qb.parsePattern("$x isa entity-type")).rhs("rhs"));
+        assertInsert(var("x").isa("a-rule-type").lhs(qb.parsePattern("$x isa entity-type")).rhs(qb.parsePattern("$x isa entity-type")));
     }
 
     @Test

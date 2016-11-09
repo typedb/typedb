@@ -240,7 +240,7 @@ public interface Var extends Pattern {
      * @param rhs the right-hand side of this rule
      * @return this
      */
-    Var rhs(String rhs);
+    Var rhs(Pattern rhs);
 
     /**
      * @return an Admin class to allow inspection of this Var

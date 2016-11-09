@@ -18,19 +18,20 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 
 public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleFragmentProperty {
 
-    private final String rhs;
+    private final Pattern rhs;
 
-    public RhsProperty(String rhs) {
+    public RhsProperty(Pattern rhs) {
         this.rhs = rhs;
     }
 
-    public String getRhs() {
+    public Pattern getRhs() {
         return rhs;
     }
 
