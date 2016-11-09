@@ -1,6 +1,7 @@
 package io.mindmaps.graql.internal.gremlin.fragment;
 
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -107,7 +108,7 @@ public class Fragments {
         return new RhsFragment(start, rhs);
     }
 
-    public static LhsFragment lhs(String start, String lhs) {
+    public static LhsFragment lhs(String start, Pattern lhs) {
         return new LhsFragment(start, lhs);
     }
 

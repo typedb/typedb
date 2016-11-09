@@ -50,6 +50,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.Graql.and;
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
@@ -261,7 +262,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitAndPattern(GraqlParser.AndPatternContext ctx) {
-        return Graql.and(visitPatterns(ctx.patterns()));
+        return and(visitPatterns(ctx.patterns()));
     }
 
     @Override
@@ -291,7 +292,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropLhs(GraqlParser.PropLhsContext ctx) {
-        return var -> var.lhs(getOriginalText(ctx.patterns()));
+        return var -> var.lhs(and(visitPatterns(ctx.patterns())));
     }
 
     @Override

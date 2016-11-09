@@ -105,7 +105,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs("$x isa person;")));
+        assertValidToString(qb.match(var("x").lhs(qb.parse("$x isa person;"))));
     }
 
     @Test

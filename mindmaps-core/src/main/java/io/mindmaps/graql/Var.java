@@ -234,7 +234,7 @@ public interface Var extends Pattern {
      * @param lhs the left-hand side of this rule
      * @return this
      */
-    Var lhs(String lhs);
+    Var lhs(Pattern lhs);
 
     /**
      * @param rhs the right-hand side of this rule

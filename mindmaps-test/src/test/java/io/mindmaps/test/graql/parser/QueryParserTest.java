@@ -392,7 +392,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
         assertTrue(qb.match(var().id("my-rule-thing").isa(RULE_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(var().isa("my-rule-thing").lhs(lhs).rhs(rhs)).ask().execute());
+        assertTrue(qb.match(var().isa("my-rule-thing").lhs(qb.parsePattern(lhs)).rhs(rhs)).ask().execute());
     }
 
     @Test

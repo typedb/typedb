@@ -240,7 +240,7 @@ public class InsertQueryExecutor {
             );
         } else if (type.isRuleType()) {
             return addOrGetInstance(id, type.asRuleType(), graph::getRule, ruleType -> {
-                Pattern lhs = graph.graql().parsePattern(var.getProperty(LhsProperty.class).get().getLhs());
+                Pattern lhs = var.getProperty(LhsProperty.class).get().getLhs();
                 Pattern rhs = graph.graql().parsePattern(var.getProperty(RhsProperty.class).get().getRhs());
                 return graph.addRule(lhs, rhs, ruleType);
             });

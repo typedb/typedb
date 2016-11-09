@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.pattern;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.Conjunction;
@@ -253,7 +254,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var lhs(String lhs) {
+    public Var lhs(Pattern lhs) {
         return addProperty(new LhsProperty(lhs));
     }
 

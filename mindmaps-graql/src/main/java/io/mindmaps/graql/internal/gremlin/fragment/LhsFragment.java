@@ -1,5 +1,6 @@
 package io.mindmaps.graql.internal.gremlin.fragment;
 
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -9,9 +10,9 @@ import static io.mindmaps.util.Schema.ConceptProperty.RULE_LHS;
 
 class LhsFragment extends AbstractFragment {
 
-    private final String lhs;
+    private final Pattern lhs;
 
-    LhsFragment(String start, String lhs) {
+    LhsFragment(String start, Pattern lhs) {
         super(start);
         this.lhs = lhs;
     }
