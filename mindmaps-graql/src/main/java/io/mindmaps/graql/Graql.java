@@ -161,7 +161,7 @@ public class Graql {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(patternAdmins));
 
-        return () -> conjunction;
+        return conjunction;
     }
 
     /**
@@ -180,7 +180,7 @@ public class Graql {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         Disjunction<PatternAdmin> disjunction = Patterns.disjunction(Sets.newHashSet(patternAdmins));
 
-        return () -> disjunction;
+        return disjunction;
     }
 
 
