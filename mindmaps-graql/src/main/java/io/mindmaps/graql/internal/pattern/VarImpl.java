@@ -494,13 +494,14 @@ class VarImpl implements VarAdmin {
 
         if (userDefinedName != var.userDefinedName) return false;
         if (!properties.equals(var.properties)) return false;
-        return name.equals(var.name);
+        return !userDefinedName || name.equals(var.name);
+
     }
 
     @Override
     public int hashCode() {
         int result = properties.hashCode();
-        result = 31 * result + name.hashCode();
+        if (userDefinedName) result = 31 * result + name.hashCode();
         result = 31 * result + (userDefinedName ? 1 : 0);
         return result;
     }
