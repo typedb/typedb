@@ -18,16 +18,11 @@
 
 package io.mindmaps.migration.csv;
 
-import com.google.common.io.Files;
-import io.mindmaps.migration.base.LoadingMigrator;
+import io.mindmaps.migration.base.io.MigrationLoader;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
-import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * Main program to migrate CSV files into a Mindmaps graph. For use from a command line.
@@ -52,7 +47,7 @@ public class Main {
         String csvDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
         String csvTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : CSVMigrator.BATCH_SIZE;
-        String delimiterString =  cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.DELIMITER);
+        String delimiterString =  cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.SEPARATOR);
 
         if(delimiterString.toCharArray().length != 1){
             cli.die("Wrong number of characters in delimiter " + delimiterString);
@@ -70,24 +65,21 @@ public class Main {
 
         cli.printInitMessage(csvDataFile.getPath());
 
-        try{
-            String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
-
-            CSVMigrator csvMigrator = new CSVMigrator().setDelimiter(csvDelimiter);
-
-            LoadingMigrator migrator = csvMigrator
-                    .getLoadingMigrator(cli.getLoader())
-                    .setBatchSize(batchSize);
+        String template = cli.fileAsString(csvTemplate);
+        try(
+                CSVMigrator csvMigrator =
+                    new CSVMigrator(template, csvDataFile).setSeparator(csvDelimiter)
+        ){
 
             if(cli.hasOption("n")){
-                cli.writeToSout(csvMigrator.migrate(template, csvDataFile));
+                cli.writeToSout(csvMigrator.migrate());
             } else {
-                migrator.migrate(template, csvDataFile);
+                MigrationLoader.load(cli.getLoader(), batchSize, csvMigrator);
                 cli.printWholeCompletionMessage();
             }
         }
         catch (Throwable throwable){
-            cli.die(ExceptionUtils.getFullStackTrace(throwable));
+            cli.die(throwable);
         }
 
         System.exit(0);

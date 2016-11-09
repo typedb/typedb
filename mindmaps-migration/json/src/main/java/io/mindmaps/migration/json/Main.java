@@ -18,16 +18,11 @@
 
 package io.mindmaps.migration.json;
 
-import com.google.common.io.Files;
-import io.mindmaps.migration.base.LoadingMigrator;
+import io.mindmaps.migration.base.io.MigrationLoader;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
-import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * Main program to migrate a JSON schema and data into a Mindmaps graph. For use from a command line.
@@ -65,23 +60,17 @@ public class Main {
 
         cli.printInitMessage(jsonDataFile.getPath());
 
-        try{
-            String template = Files.readLines(jsonTemplateFile, StandardCharsets.UTF_8).stream().collect(joining("\n"));
-
-            JsonMigrator jsonMigrator = new JsonMigrator();
-
-            LoadingMigrator migrator = jsonMigrator
-                    .getLoadingMigrator(cli.getLoader())
-                    .setBatchSize(batchSize);
+        String template = cli.fileAsString(jsonTemplateFile);
+        try(JsonMigrator jsonMigrator = new JsonMigrator(template, jsonDataFile)){
 
             if(cli.hasOption("n")){
-                cli.writeToSout(jsonMigrator.migrate(template, jsonDataFile));
+                cli.writeToSout(jsonMigrator.migrate());
             } else {
-                migrator.migrate(template, jsonDataFile);
+                MigrationLoader.load(cli.getLoader(), batchSize, jsonMigrator);
                 cli.printWholeCompletionMessage();
             }
         } catch (Throwable throwable){
-            cli.die(ExceptionUtils.getFullStackTrace(throwable));
+            cli.die(throwable);
         }
 
         System.exit(0);

@@ -18,6 +18,7 @@
 
 package io.mindmaps.migration.json;
 
+import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.migration.base.AbstractMigrator;
@@ -29,36 +30,69 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Migrator for migrating JSON data into Mindmaps instances
  */
 public class JsonMigrator extends AbstractMigrator {
 
-    @Override
-    public  Stream<InsertQuery> migrate(String template, File jsonFileOrDir) {
+    private final Set<Reader> readers;
+    private final String template;
+
+    /**
+     * Construct a JsonMigrator to migrate data in the given file or dir
+     * @param template parametrized graql insert query
+     * @param jsonFileOrDir either a Json file or a directory containing Json files
+     */
+    public JsonMigrator(String template, File jsonFileOrDir){
         File[] files = {jsonFileOrDir};
         if(jsonFileOrDir.isDirectory()){
             files = jsonFileOrDir.listFiles(jsonFiles);
         }
 
-        Stream<String> jsonObjects = Stream.of(files).
-                map(this::asReader)
-                .map(this::asString);
-
-        return stream(jsonObjects.map(this::toJsonMap).iterator())
-                .map(i -> template(template, i));
+        this.readers = Stream.of(files).map(this::asReader).collect(toSet());
+        this.template = template;
     }
 
     /**
-     * Readers contains a Json object
+     * Construct a JsonMigrator to migrate data in given reader
      * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
      */
+    public JsonMigrator(String template, Reader reader){
+        this.readers = Sets.newHashSet(reader);
+        this.template = template;
+    }
+
+    /**
+     * Migrate each of the given json objects as an insert query
+     * @return stream of parsed insert queries
+     */
     @Override
-    public Stream<InsertQuery> migrate(String template, Reader reader){
-        return Stream.of(template(template, toJsonMap(asString(reader))));
+    public Stream<InsertQuery> migrate(){
+        return stream(readers.stream()
+                .map(this::asString)
+                .map(this::toJsonMap).iterator())
+                .map(data -> template(template, data));
+    }
+
+    /**
+     * Close the readers
+     * @throws Exception
+     */
+    @Override
+    public void close() throws Exception {
+        readers.forEach((reader) -> {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
