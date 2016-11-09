@@ -70,6 +70,14 @@
                     <groupId>com.codahale.metrics</groupId>
                     <artifactId>metrics-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.codahale.metrics</groupId>
+                    <artifactId>metrics-graphite</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr-runtime</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -105,6 +113,10 @@
                 <exclusion>
                     <groupId>com.codahale.metrics</groupId>
                     <artifactId>metrics-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr-runtime</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
