@@ -25,6 +25,7 @@ import io.mindmaps.graql.Pattern;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -33,8 +34,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class RuleTest extends GraphTestBase{
-    private Pattern lhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
-    private Pattern rhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
+    private Pattern lhs;
+    private Pattern rhs;
+
+    @Before
+    public void setupRules(){
+        lhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
+        rhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
+    }
 
     @Test
     public void testType() {
@@ -48,8 +55,8 @@ public class RuleTest extends GraphTestBase{
     public void testRuleValues() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
         Rule rule = mindmapsGraph.addRule(lhs, rhs, conceptType);
-        assertEquals("lhs", rule.getLHS());
-        assertEquals("rhs", rule.getRHS());
+        assertEquals(lhs, rule.getLHS());
+        assertEquals(rhs, rule.getRHS());
     }
 
     @Test

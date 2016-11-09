@@ -52,8 +52,8 @@ public class Reasoner {
 
     private void linkConceptTypes(Rule rule) {
         QueryBuilder qb = graph.graql();
-        MatchQuery qLHS = qb.match(qb.parsePatterns(rule.getLHS()));
-        MatchQuery qRHS = qb.match(qb.parsePatterns(rule.getRHS()));
+        MatchQuery qLHS = qb.match(rule.getLHS());
+        MatchQuery qRHS = qb.match(rule.getRHS());
 
         Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();

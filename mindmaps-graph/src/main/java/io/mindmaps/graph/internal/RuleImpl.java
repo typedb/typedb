@@ -67,8 +67,8 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return A string representing the left hand side GraQL query.
      */
     @Override
-    public String getLHS() {
-        return getProperty(Schema.ConceptProperty.RULE_LHS);
+    public Pattern getLHS() {
+        return getMindmapsGraph().graql().parsePattern(getProperty(Schema.ConceptProperty.RULE_LHS));
     }
 
     /**
@@ -76,8 +76,8 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return A string representing the right hand side GraQL query.
      */
     @Override
-    public String getRHS() {
-        return getProperty(Schema.ConceptProperty.RULE_RHS);
+    public Pattern getRHS() {
+        return getMindmapsGraph().graql().parsePattern(getProperty(Schema.ConceptProperty.RULE_RHS));
     }
 
 

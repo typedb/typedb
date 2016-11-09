@@ -18,6 +18,8 @@
 
 package io.mindmaps.concept;
 
+import io.mindmaps.graql.Pattern;
+
 import java.util.Collection;
 
 /**
@@ -45,13 +47,13 @@ public interface Rule extends Instance{
      *
      * @return A string representing the left hand side GraQL query.
      */
-    String getLHS();
+    Pattern getLHS();
 
     /**
      *
      * @return A string representing the right hand side GraQL query.
      */
-    String getRHS();
+    Pattern getRHS();
 
     //TODO: Fill out details on this method
     /**

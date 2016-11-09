@@ -28,8 +28,8 @@ public class InferenceRule {
     public InferenceRule(Rule rl, MindmapsGraph graph){
         this.rule = rl;
         QueryBuilder qb = graph.graql();
-        body = new Query(qb.match(qb.parsePatterns(rule.getLHS())), graph);
-        head = new AtomicQuery(qb.match(qb.parsePatterns(rule.getRHS())), graph);
+        body = new Query(qb.match(rule.getLHS()), graph);
+        head = new AtomicQuery(qb.match(rule.getRHS()), graph);
     }
 
     public Query getBody(){return body;}
