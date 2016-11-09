@@ -31,23 +31,18 @@ public class Resource extends Binary{
     public Resource(Resource a) { super(a);}
 
     //TODO assumes a single value predicates can be assigned to a variable
+    /*
     @Override
-    public boolean isEquivalent(Object obj) {
-        if (!(obj.getClass().equals(this.getClass()))) return false;
-        Binary a2 = (Binary) obj;
-        Query parent = getParentQuery();
-        return this.typeId.equals(a2.getTypeId())
-                && parent.getValuePredicate(valueVariable).equals(a2.getParentQuery().getValuePredicate(a2.valueVariable));
+    public boolean predicatesEqual(Binary atom){
+        return getParentQuery().getValuePredicate(valueVariable)
+                .equals(atom.getParentQuery().getValuePredicate(atom.valueVariable));
     }
 
-    //TODO assumes a single value predicates can be assigned to a variable
     @Override
-    public int equivalenceHashCode(){
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + getParentQuery().getValuePredicate(this.valueVariable).hashCode();
-        return hashCode;
+    public int predicateHashCode(){
+        return getParentQuery().getValuePredicate(this.valueVariable).hashCode();
     }
+    */
 
     @Override
     protected String extractValueVariableName(VarAdmin var){

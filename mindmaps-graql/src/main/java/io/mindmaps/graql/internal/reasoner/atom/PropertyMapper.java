@@ -58,18 +58,18 @@ public class PropertyMapper {
         String varName = var.getName();
         String type = prop.getSuperType().getId().orElse("");
         VarAdmin baseVar = prop.getSuperType();
-
-        //isa part
         String valueVariable = baseVar.isUserDefinedName() ?
                 baseVar.getName() : varName + "-sub-" + UUID.randomUUID().toString();
-        VarAdmin resVar = Graql.var(varName).sub(Graql.var(valueVariable)).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
 
         //id part
         if (!baseVar.isUserDefinedName()) {
             VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
             atoms.add(AtomicFactory.create(tVar, parent));
         }
+
+        //isa part
+        VarAdmin resVar = Graql.var(varName).sub(Graql.var(valueVariable)).admin();
+        atoms.add(AtomicFactory.create(resVar, parent));
         return atoms;
     }
 
@@ -78,18 +78,16 @@ public class PropertyMapper {
         String varName = var.getName();
         String type = prop.getRole().getId().orElse("");
         VarAdmin baseVar = prop.getRole();
-
-        //isa part
         String valueVariable = baseVar.isUserDefinedName() ?
                 baseVar.getName() : varName + "-plays-role-" + UUID.randomUUID().toString();
-        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(valueVariable)).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
-
         //id part
         if (!baseVar.isUserDefinedName()) {
             VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
             atoms.add(AtomicFactory.create(tVar, parent));
         }
+        //isa part
+        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(valueVariable)).admin();
+        atoms.add(AtomicFactory.create(resVar, parent));
         return atoms;
     }
 
@@ -98,18 +96,18 @@ public class PropertyMapper {
         String varName = var.getName();
         String type = prop.getResourceType().getId().orElse("");
         VarAdmin baseVar = prop.getResourceType();
-
-        //isa part
         String valueVariable = baseVar.isUserDefinedName() ?
                 baseVar.getName() : varName + "-has-resource-" + UUID.randomUUID().toString();
-        VarAdmin resVar = Graql.var(varName).hasResource(Graql.var(valueVariable)).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
 
         //id part
         if (!baseVar.isUserDefinedName()) {
             VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
             atoms.add(AtomicFactory.create(tVar, parent));
         }
+
+        //isa part
+        VarAdmin resVar = Graql.var(varName).hasResource(Graql.var(valueVariable)).admin();
+        atoms.add(AtomicFactory.create(resVar, parent));
         return atoms;
     }
 
@@ -117,14 +115,9 @@ public class PropertyMapper {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getType().getId().orElse("");
-
         VarAdmin baseVar = prop.getType();
-
-        //isa part
         String valueVariable = baseVar.isUserDefinedName() ?
                 baseVar.getName() : varName + "-type-" + UUID.randomUUID().toString();
-        VarAdmin resVar = Graql.var(varName).isa(Graql.var(valueVariable)).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
 
         //id part
         if (!baseVar.isUserDefinedName()) {
@@ -132,6 +125,9 @@ public class PropertyMapper {
             atoms.add(AtomicFactory.create(tVar, parent));
         }
 
+        //isa part
+        VarAdmin resVar = Graql.var(varName).isa(Graql.var(valueVariable)).admin();
+        atoms.add(AtomicFactory.create(resVar, parent));
         return atoms;
     }
 

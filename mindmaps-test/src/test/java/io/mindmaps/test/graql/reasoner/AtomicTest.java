@@ -219,4 +219,22 @@ public class AtomicTest {
         Atomic atom2 = AtomicFactory.create(qb.parsePatterns("$x value != '0';").iterator().next().admin());
         assertTrue(!atom.isEquivalent(atom2));
     }
+
+    @Test
+    public void testBinaryComparison() {
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = graph.graql();
+        Reasoner reasoner = new Reasoner(graph);
+
+        String recRelString = "match $x has name $y;";
+        String nrecRelString = "match $x has name $y;";
+
+        Atomic resAtom = AtomicFactory
+                .create(qb.<MatchQuery>parse(recRelString).admin().getPattern().getPatterns().iterator().next()
+                        , new Query(recRelString, graph));
+        Atomic resAtom2 = AtomicFactory
+                .create(qb.<MatchQuery>parse(nrecRelString).admin().getPattern().getPatterns().iterator().next()
+                        , new Query(recRelString, graph));
+        System.out.println();
+    }
 }

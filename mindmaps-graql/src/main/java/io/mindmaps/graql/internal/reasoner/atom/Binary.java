@@ -26,49 +26,103 @@ import io.mindmaps.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class Binary extends Atom{
 
+    protected Predicate predicate = null;
     protected String valueVariable;
 
     public Binary(VarAdmin pattern) {
         super(pattern);
         this.valueVariable = extractValueVariableName(pattern);
+        this.predicate = getPredicate();
     }
 
     public Binary(VarAdmin pattern, Query par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
+        this.predicate = getPredicate();
     }
 
     public Binary(Binary a) {
         super(a);
         this.valueVariable = extractValueVariableName(a.getPattern().asVar());
+        this.predicate = getPredicate();
     }
 
+    protected abstract String extractValueVariableName(VarAdmin var);
+
+    public Predicate getPredicate(){
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+                .filter(at -> at.getVarName().equals(valueVariable)).findFirst().orElse(null);
+    }
+
+    public boolean predicatesEqual(Binary atom){
+        return (predicate == null && atom.predicate == null)
+                || ( (predicate != null && atom.predicate != null) && predicate.equals(atom.predicate));
+    }
+
+    public boolean predicatesEquivalent(Binary atom){
+        return (predicate == null && atom.predicate == null)
+            || ((predicate != null && atom.predicate != null) && predicate.isEquivalent(atom.predicate));
+    }
+    public int predicateHashCode(){
+        return predicate != null? predicate.hashCode() : 0;
+    }
+    /*
+    public boolean predicatesEqual(Binary atom){
+        return getParentQuery().getValuePredicate(valueVariable)
+                .equals(atom.getParentQuery().getValuePredicate(atom.valueVariable));
+    }
+
+    public int predicateHashCode(){
+        return getParentQuery().getValuePredicate(this.valueVariable).hashCode();
+    }
+    */
     @Override
     public boolean isBinary(){ return true;}
-
-
-    protected abstract String extractValueVariableName(VarAdmin var);
 
     @Override
     public boolean equals(Object obj) {
         if (!(obj.getClass().equals(this.getClass()))) return false;
         Binary a2 = (Binary) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
-                && this.valueVariable.equals(a2.getValueVariable());
+                && predicatesEqual(a2);
+    }
+
+    @Override
+    public boolean isEquivalent(Object obj) {
+        if (!(obj.getClass().equals(this.getClass()))) return false;
+        Binary a2 = (Binary) obj;
+        return this.typeId.equals(a2.getTypeId())
+                && predicatesEquivalent(a2);
     }
 
     @Override
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.valueVariable.hashCode();
         hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + predicateHashCode();
         return hashCode;
+    }
+
+    @Override
+    public int equivalenceHashCode(){
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + predicateHashCode();
+        return hashCode;
+    }
+    @Override
+    public Set<Predicate> getPredicates(){
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isPredicate).map(atom -> (Predicate) atom)
+                .filter(atom -> atom.getVarName().equals(valueVariable)).collect(Collectors.toSet());
     }
 
     public String getValueVariable(){ return valueVariable;}

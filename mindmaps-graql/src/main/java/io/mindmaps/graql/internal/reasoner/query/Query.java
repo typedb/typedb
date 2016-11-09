@@ -44,7 +44,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 public class Query implements MatchQueryInternal {
 
     protected final MindmapsGraph graph;
-    protected final Set<Atomic> atomSet;
+    protected final Set<Atomic> atomSet = new HashSet<>();
 
     private final Conjunction<PatternAdmin> pattern;
     private final Set<String> selectVars;
@@ -52,7 +52,7 @@ public class Query implements MatchQueryInternal {
     public Query(MatchQuery query, MindmapsGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
-        this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
+        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         this.pattern = createPattern(atomSet);
     }
 
@@ -70,7 +70,6 @@ public class Query implements MatchQueryInternal {
         this.graph = atom.getParentQuery().getGraph().orElse(null);
         this.selectVars = Sets.newHashSet(atom.getVarNames());
         this.pattern = Patterns.conjunction(Sets.newHashSet());
-        atomSet = new HashSet<>();
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
     }
@@ -150,7 +149,7 @@ public class Query implements MatchQueryInternal {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
-    public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
+    public Set<Atomic> getAtoms() { return Sets.newHashSet(atomSet); /*return new HashSet<>(atomSet);*/}
     public Set<Predicate> getIdPredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)
@@ -194,7 +193,6 @@ public class Query implements MatchQueryInternal {
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
     private boolean containsEquivalentAtom(Atomic atom){
         boolean isContained = false;
-
         Iterator<Atomic> it = atomSet.iterator();
         while( it.hasNext() && !isContained) {
             Atomic at = it.next();
@@ -324,34 +322,28 @@ public class Query implements MatchQueryInternal {
     //TODO cause broken
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
-        getTypeConstraints()
-                .forEach(atom -> {
-                    if (!atom.isRelation()) {
-                        String var = atom.getVarName();
-                        Type type = atom.getType();
-                        if (!map.containsKey(var))
-                            map.put(var, type);
-                        else
-                           map.replace(var, type);
-
-                    }
-                    else {
-                        Set<String> vars = atom.getVarNames();
-                        vars.forEach(var -> {
-                           if (!map.containsKey(var))
-                                map.put(var, null);
-                        });
-                    }});
+        getVarSet().forEach(var -> {
+                Predicate predicate = getIdPredicate(var);
+                if (predicate != null) map.putIfAbsent(var, graph.getType(predicate.getPredicateValue()));
+        });
+        //getTypeConstraints().forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
         return map;
     }
 
     public Predicate getIdPredicate(String var) {
+        //direct
         Set<Predicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
+        //indirect
+        getTypeConstraints().stream()
+                .filter(type -> type.getVarName().equals(var))
+                .forEach(type -> type.getPredicates().stream().findFirst().ifPresent(relevantSubs::add));
+        assert(relevantSubs.size() < 2);
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 
+    //TODO should return predicate
     public String getValuePredicate(String var){
         Set<Predicate> relevantVPs = getValuePredicates().stream()
                 .filter(vp -> vp.getVarName().equals(var))
@@ -424,13 +416,11 @@ public class Query implements MatchQueryInternal {
     public boolean isEquivalent(Query q) {
         boolean equivalent = true;
         if(atomSet.size() != q.getAtoms().size()) return false;
-
         Iterator<Atomic> it = atomSet.iterator();
         while (it.hasNext() && equivalent) {
             Atomic atom = it.next();
             equivalent = q.containsEquivalentAtom(atom);
         }
-
         return equivalent;
     }
 }

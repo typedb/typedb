@@ -32,29 +32,23 @@ public class TypeAtom extends Binary{
         super(a);
     }
 
+    /*
     @Override
-    public boolean isEquivalent(Object obj) {
-        if (!(obj.getClass().equals(this.getClass()))) return false;
-        Binary a2 = (Binary) obj;
+    public boolean predicatesEqual(Binary atom){
         Query parent = getParentQuery();
         Predicate predicate = parent.getIdPredicate(valueVariable);
-        Predicate objPredicate = a2.getParentQuery().getIdPredicate(a2.valueVariable);
-
+        Predicate objPredicate = atom.getParentQuery().getIdPredicate(atom.valueVariable);
         String idPredicate = predicate != null? predicate.getPredicateValue() : "";
         String objIdPredicate = objPredicate != null? objPredicate.getPredicateValue() : "";
-
-        return this.typeId.equals(a2.getTypeId())
-                && idPredicate.equals(objIdPredicate);
+        return idPredicate.equals(objIdPredicate);
     }
 
     @Override
-    public int equivalenceHashCode(){
-        int hashCode = 1;
+    public int predicateHashCode(){
         Predicate predicate = getParentQuery().getIdPredicate(this.valueVariable);
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + (predicate != null? getParentQuery().getIdPredicate(this.valueVariable).hashCode() : 0);
-        return hashCode;
+        return predicate != null? getParentQuery().getIdPredicate(this.valueVariable).hashCode() : 0;
     }
+    */
 
     @Override
     protected String extractValueVariableName(VarAdmin var) {
