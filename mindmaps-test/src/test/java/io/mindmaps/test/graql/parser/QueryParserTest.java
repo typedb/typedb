@@ -22,11 +22,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RuleType;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -385,14 +387,26 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertRules() {
+        String ruleTypeId = "my-rule-thing";
         String lhs = "$x isa movie;";
         String rhs = "id '123' isa movie;";
+        Pattern lhsPattern = and(qb.parsePatterns(lhs));
+        Pattern rhsPattern = and(qb.parsePatterns(rhs));
 
-        qb.parse("insert id 'my-rule-thing' isa rule-type; \n" +
+        qb.parse("insert id '" + ruleTypeId + "' isa rule-type; \n" +
                 "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
         assertTrue(qb.match(var().id("my-rule-thing").isa(RULE_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(var().isa("my-rule-thing").lhs(qb.parsePattern(lhs)).rhs(qb.parsePattern(rhs))).ask().execute());
+
+        RuleType ruleType = graph.getRuleType(ruleTypeId);
+        boolean found = false;
+        for (io.mindmaps.concept.Rule rule : ruleType.instances()) {
+            if(lhsPattern.equals(rule.getLHS()) && rhsPattern.equals(rule.getRHS())){
+                found = true;
+                break;
+            }
+        }
+        assertTrue("Unable to find rule with lhs [" + lhsPattern + "] and rhs [" + rhsPattern + "]", found);
     }
 
     @Test
