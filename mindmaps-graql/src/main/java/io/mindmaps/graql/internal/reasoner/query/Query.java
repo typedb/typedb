@@ -47,11 +47,11 @@ public class Query implements MatchQueryInternal {
     protected final Set<Atomic> atomSet = new HashSet<>();
 
     private final Conjunction<PatternAdmin> pattern;
-    private final Set<String> selectVars = new HashSet<>();;
+    private final Set<String> selectVars;
 
     public Query(MatchQuery query, MindmapsGraph graph) {
         this.graph = graph;
-        this.selectVars.addAll(query.admin().getSelectedNames());
+        this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         this.pattern = createPattern(atomSet);
     }
@@ -64,18 +64,16 @@ public class Query implements MatchQueryInternal {
         this(q.toString(), q.graph);
     }
 
-    protected Query(Atom atom) {
+    protected Query(Atom atom, Set<String> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph().orElse(null);
-        this.selectVars.addAll(atom.getVarNames());
+        this.selectVars = atom.getVarNames();
+        selectVars.addAll(vars);
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
-
-        //Set<String> extraSelects = Sets.newHashSet(atom.getParentQuery().getSelectedNames());
-        //extraSelects.retainAll(getVarSet());
-        //selectVars.addAll(extraSelects);
+        selectVars.retainAll(getVarSet());
     }
 
     //alpha-equivalence equality
@@ -110,7 +108,10 @@ public class Query implements MatchQueryInternal {
     public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
 
     @Override
-    public Set<String> getSelectedNames() { return selectVars;}
+    public Set<String> getSelectedNames() { return Sets.newHashSet(selectVars);}
+
+    @Override
+    public MatchQuery select(Set<String> vars){ return this;}
 
     @Override
     public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order) {
@@ -372,8 +373,6 @@ public class Query implements MatchQueryInternal {
             Atomic lcon = AtomicFactory.create(con, this);
             lcon.setParentQuery(this);
             addAtom(lcon);
-            if (lcon.isPredicate() && ((Predicate)lcon).isIdPredicate())
-                selectVars.remove(lcon.getVarName());
         });
     }
 

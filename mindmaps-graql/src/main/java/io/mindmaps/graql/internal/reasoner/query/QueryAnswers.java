@@ -173,7 +173,6 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             if (predicate != null) typeConstraints.put(type.getVarName(), predicate.getPredicateValue());
         });
 
-
         //find extra subs
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
             //get |child - parent| set difference
@@ -190,6 +189,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         }
 
         QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, valueConstraints, typeConstraints);
-        return unifiedAnswers.filterVars(parentQuery.getSelectedNames());
+        return unifiedAnswers.filterVars(parentQuery.getSelectedNames())
+                             .filterInComplete(parentQuery.getSelectedNames());
     }
 }

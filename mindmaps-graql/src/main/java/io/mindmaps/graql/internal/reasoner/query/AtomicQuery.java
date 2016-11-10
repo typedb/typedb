@@ -67,8 +67,8 @@ public class AtomicQuery extends Query{
         children.addAll(q.getChildren());
     }
 
-    public AtomicQuery(Atom at) {
-        super(at);
+    public AtomicQuery(Atom at, Set<String> vars) {
+        super(at, vars);
         atom = selectAtoms().iterator().next();
     }
 

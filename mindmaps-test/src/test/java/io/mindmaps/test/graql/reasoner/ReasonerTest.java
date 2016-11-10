@@ -231,73 +231,131 @@ public class ReasonerTest {
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
-    @Test
-    public void testTypePatterns() {
-        MindmapsGraph lgraph = GeoGraph.getGraph();
-        QueryBuilder qb = lgraph.graql();
-        Query q = new Query("match $x isa university;", lgraph);
-        String typeString = "match $x isa $type; $type sub geoObject, plays-role geo-entity;";
-        MatchQuery mq = qb.parse(typeString);
-        Query q1 = new Query(typeString, lgraph);
-
-        Query q2 = new Query("match $x isa $type; $type id 'university';", lgraph);
-        Query q3 = new Query("match $x isa $type; $type sub geoObject;", lgraph);
-        Query q4 = new Query("match $x isa $type; $type plays-role geo-entity;", lgraph);
-        Query q5 = new Query("match $x isa $type; $type has-resource name;", lgraph);
-
-        System.out.println();
-    }
-
+    //TODO need to unify types in rules potentially
     @Test
     public void testTypeVar(){
         MindmapsGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $x isa person;$y isa $type;($x, $y) isa recommendation;";
-        String queryString2 = "match $x isa person;($x, $y) isa recommendation;";
+        String queryString2 = "match $y isa $type;" +
+                "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
+                "{$x has name 'Bob';{$y has name 'Ducatti 1299';} or " +
+                    "{$y has name 'The Good the Bad the Ugly';};} or" +
+                "{$x has name 'Charlie';{$y has name 'Blizzard of Ozz';} or " +
+                    "{$y has name 'Stratocaster';};} or " +
+                "{$x has name 'Denis';{$y has name 'Colour of Magic';} or " +
+                    "{$y has name 'Dorian Gray';};} or"+
+                "{$x has name 'Frank';$y has name 'Nocturnes';} or" +
+                "{$x has name 'Karl Fischer';{$y has name 'Faust';} or " +
+                        "{$y has name 'Nocturnes';};} or " +
+                "{$x has name 'Gary';$y has name 'The Wall';} or" +
+                "{$x has name 'Charlie';{$y has name 'Yngwie Malmsteen';} or " +
+                    "{$y has name 'Cacophony';} or " +
+                    "{$y has name 'Steve Vai';} or " +
+                    "{$y has name 'Black Sabbath';};} or " +
+                "{$x has name 'Gary';$y has name 'Pink Floyd';};";
+
         MatchQuery query = new Query(queryString, lgraph);
-        MatchQuery query2 = new Query(queryString2, lgraph);
+        MatchQuery query2 = lgraph.graql().parse(queryString2);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        //printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
     @Test
     public void testTypeVar2(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $x isa $type;$type id 'university';" +
-                "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland'; select $x, $y;";
-        String queryString2 = "match $x isa university;$y isa country;$y has name 'Poland';" +
-                "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString = "match $x isa $type;" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
+        String queryString2 = "match $y has name 'Poland';" +
+                "{$x isa $type;$type id 'university';$x has name 'Warsaw-Polytechnics';} or" +
+                "{$x isa $type;$type id 'university';$x has name 'University-of-Warsaw';} or" +
+                "{$x isa $type;{$type id 'city';} or {$type id 'geoObject';};$x has name 'Warsaw';} or" +
+                "{$x isa $type;{$type id 'city';} or {$type id 'geoObject';};$x has name 'Wroclaw';} or" +
+                "{$x isa $type;{$type id 'region';} or {$type id 'geoObject';};$x has name 'Masovia';} or" +
+                "{$x isa $type;{$type id 'region';} or {$type id 'geoObject';};$x has name 'Silesia';};";
         MatchQuery query = new Query(queryString, lgraph);
-        MatchQuery query2 = new Query(queryString2, lgraph);
+        MatchQuery query2 = lgraph.graql().parse(queryString2);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(query2));
+    }
+
+    @Test
+    public void testTypeVar3(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type id 'university';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
+        String queryString2 = "match $y has name 'Poland';" +
+                "{$x isa $type;$type id 'university';$x has name 'Warsaw-Polytechnics';} or" +
+                "{$x isa $type;$type id 'university';$x has name 'University-of-Warsaw';};";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = lgraph.graql().parse(queryString2);
 
         Reasoner reasoner = new Reasoner(lgraph);
         printAnswers(reasoner.resolve(query));
-        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(query2));
     }
 
     @Test
     public void testSub(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
-        QueryBuilder qb = lgraph.graql();
         String queryString = "match $x isa $type;$type sub geoObject;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
-        String queryString2 = "match {$x isa city;} or {$x isa region;};$y isa country;$y has name 'Poland';" +
-                "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString2 = "match $x isa $type;{$type id 'region';} or {$type id 'city';} or {$type id 'geoObject';};" +
+                "$y isa country;$y has name 'Poland';(geo-entity: $x, entity-location: $y) isa is-located-in;";
         MatchQuery query = new Query(queryString, lgraph);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query2 = lgraph.graql().parse(queryString2);
 
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
-    //TODO bug with answer unification
-    //TODO getRulesOfConlusion on geo-entity returns a rule!
+    @Test
+    public void testSub2(){
+        MindmapsGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $x isa person;$y isa $type;$type sub entity;($x, $y) isa recommendation;";
+        String queryString2 = "match $x isa person;$y isa $type;($x, $y) isa recommendation;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = lgraph.graql().parse(queryString2);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    //TODO BUG: getRulesOfConclusion on geo-entity returns a rule!
     @Test
     public void testPlaysRole(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
-             "($x, $y) isa is-located-in;select $x, $y;";
+             "($x, $y) isa is-located-in;";
+        String queryString2 = "match $x isa $type;$y isa country;$y has name 'Poland';" +
+                "($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testPlaysRole2(){
+        MindmapsGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
+        String queryString2 = "match $x isa person;$y isa $type;{$type id 'product';} or {$type id 'tag';};($x, $y) isa recommendation;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = lgraph.graql().parse(queryString2);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        //printAnswers(reasoner.resolve(query));
+        printAnswers(reasoner.resolve(query2));
+        //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testHasResource(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type has-resource name;$y isa country;$y has name 'Poland';" +
+                "($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;";
         MatchQuery query = new Query(queryString, lgraph);
@@ -307,12 +365,11 @@ public class ReasonerTest {
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
-    //TODO bug with answer unification
     @Test
-    public void testHasResource(){
+    public void testHasResource2(){
         MindmapsGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $x isa $type;$type has-resource name;$y isa product;($x, $y) isa recommendation;";
-        String queryString2 = "match $x isa $person;$y isa product;($x, $y) isa recommendation;";
+        String queryString2 = "match $x isa $type;$y isa product;($x, $y) isa recommendation;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
 

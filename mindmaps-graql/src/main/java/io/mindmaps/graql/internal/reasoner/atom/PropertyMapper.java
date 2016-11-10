@@ -27,6 +27,8 @@ public class PropertyMapper {
             return map((SubProperty)prop, var, parent);
         else if (prop instanceof PlaysRoleProperty)
             return map((PlaysRoleProperty)prop, var, parent);
+        else if (prop instanceof HasResourceTypeProperty)
+            return map((HasResourceTypeProperty)prop, var, parent);
         else if (prop instanceof IsaProperty)
             return map((IsaProperty)prop, var, parent);
         else if (prop instanceof HasResourceProperty)
@@ -95,18 +97,10 @@ public class PropertyMapper {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getResourceType().getId().orElse("");
-        VarAdmin baseVar = prop.getResourceType();
-        String valueVariable = baseVar.isUserDefinedName() ?
-                baseVar.getName() : varName + "-has-resource-" + UUID.randomUUID().toString();
-
-        //id part
-        if (!baseVar.isUserDefinedName()) {
-            VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
-            atoms.add(AtomicFactory.create(tVar, parent));
-        }
+        //!!!HasResourceType is a special case and it doesn't allow variables as resource types!!!
 
         //isa part
-        VarAdmin resVar = Graql.var(varName).hasResource(Graql.var(valueVariable)).admin();
+        VarAdmin resVar = Graql.var(varName).hasResource(type).admin();
         atoms.add(AtomicFactory.create(resVar, parent));
         return atoms;
     }
