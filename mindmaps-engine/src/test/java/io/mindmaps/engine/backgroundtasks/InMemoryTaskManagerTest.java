@@ -26,7 +26,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static io.mindmaps.engine.backgroundtasks.TaskStatus.*;
+import static io.mindmaps.engine.backgroundtasks.TaskStatus.PAUSED;
+import static io.mindmaps.engine.backgroundtasks.TaskStatus.RUNNING;
+import static io.mindmaps.engine.backgroundtasks.TaskStatus.STOPPED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,13 +48,13 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
         int runCount = task.getRunCount();
 
         UUID uuid = taskManager.scheduleTask(task, 0);
-        assertNotEquals(CREATED, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
 
         // Wait for supervisor thread to mark task as completed
         Thread.sleep(2000);
 
         // Check that task has ran
-        assertEquals(COMPLETED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(TaskStatus.COMPLETED, taskManager.getTaskState(uuid).getStatus());
         assertTrue(task.getRunCount() > runCount);
     }
 
@@ -60,7 +62,7 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
     public void testRecurring() throws Exception {
         TestTask task = new TestTask();
         UUID uuid = taskManager.scheduleRecurringTask(task, 100, 100);
-        assertNotEquals(CREATED, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
 
         // Check that task has repeatedly ran
         Thread.sleep(1100);
@@ -93,14 +95,13 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
     }
 
     @Test
-    public void testRestart() throws Exception {
+    public void testRestart() {
         UUID uuid = taskManager.scheduleTask(new TestTask(), 0);
         taskManager.stopTask(uuid);
-        Thread.sleep(100);
         assertEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
+
         taskManager.restartTask(uuid);
-        Thread.sleep(100);
-        assertEquals(RUNNING, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
