@@ -98,5 +98,6 @@ public abstract class AtomBase implements Atomic{
     }
 
     public abstract Map<String, String> getUnifiers(Atomic parentAtom);
+    public Set<Predicate> getPredicates(){ return new HashSet<>();}
 }
 

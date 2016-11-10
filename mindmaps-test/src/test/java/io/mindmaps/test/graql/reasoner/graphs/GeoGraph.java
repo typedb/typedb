@@ -52,23 +52,19 @@ public class GeoGraph extends TestGraph{
         isLocatedIn = mindmaps.putRelationType("is-located-in")
                 .hasRole(geoEntity).hasRole(entityLocation);
 
-        geographicalObject = mindmaps.putEntityType("geoObject").playsRole(hasKeyTarget);
+        geographicalObject = mindmaps.putEntityType("geoObject")
+                .playsRole(hasKeyTarget)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
 
         continent = mindmaps.putEntityType("continent")
-                .superType(geographicalObject)
-                .playsRole(entityLocation);
+                .superType(geographicalObject);
         country = mindmaps.putEntityType("country")
-                .superType(geographicalObject)
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
+                .superType(geographicalObject);
         region = mindmaps.putEntityType("region")
-                .superType(geographicalObject)
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
+                .superType(geographicalObject);
         city = mindmaps.putEntityType("city")
-                .superType(geographicalObject)
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
+                .superType(geographicalObject);
         university = mindmaps.putEntityType("university")
                         .playsRole(geoEntity)
                         .playsRole(hasKeyTarget);

@@ -32,7 +32,6 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class SNBInferenceTest {
@@ -124,7 +123,6 @@ public class SNBInferenceTest {
                 "{$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};} or " +
                 "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y;";
 
-        printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }

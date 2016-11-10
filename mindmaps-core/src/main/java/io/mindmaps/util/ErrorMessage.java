@@ -157,7 +157,7 @@ public enum ErrorMessage {
     NO_VAL_IN_RELATION("Attempted to return value from a relation atom"),
     NO_TYPE_CONSTRAINTS("Attempted to return constraints from non-relation atom"),
     LOOP_CLAUSE("Unable to find suitable starting atom (loop?)"),
-    NON_ATOMIC_QUERY("Addressed query is not atomic"),
+    NON_ATOMIC_QUERY("Addressed query is not atomic [%s]"),
     MULTI_VALUE_VAR("Multi value variable found [%s] on query construction"),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]"),
     MATERIALIZATION_ERROR("Not enough information available to materialize"),
