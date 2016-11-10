@@ -18,6 +18,7 @@
 
 package io.mindmaps.migration.csv;
 
+import io.mindmaps.migration.base.AbstractMigrator;
 import io.mindmaps.migration.base.io.MigrationLoader;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
@@ -46,7 +47,7 @@ public class Main {
 
         String csvDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
         String csvTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
-        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : CSVMigrator.BATCH_SIZE;
+        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : AbstractMigrator.BATCH_SIZE;
         String delimiterString =  cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.SEPARATOR);
 
         if(delimiterString.toCharArray().length != 1){

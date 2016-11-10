@@ -7,15 +7,15 @@ import java.util.Optional;
 abstract class AbstractFragment implements Fragment{
 
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
-    static final long NUM_INSTANCES_PER_TYPE = 1_000;
-    static final long NUM_INSTANCES_PER_SCOPE = 1_000;
-    static final long NUM_RELATION_PER_CASTING = 1_000;
+    static final long NUM_INSTANCES_PER_TYPE = 100;
+    static final long NUM_INSTANCES_PER_SCOPE = 100;
+    static final long NUM_RELATION_PER_CASTING = 10;
     static final long NUM_SHORTCUT_EDGES_PER_INSTANCE = 10;
-    static final long NUM_SUBTYPES_PER_TYPE = 10;
-    static final long NUM_CASTINGS_PER_INSTANCE = 10;
-    static final long NUM_SCOPES_PER_INSTANCE = 10;
-    static final long NUM_TYPES_PER_ROLE = 10;
-    static final long NUM_ROLES_PER_TYPE = 10;
+    static final long NUM_SUBTYPES_PER_TYPE = 3;
+    static final long NUM_CASTINGS_PER_INSTANCE = 3;
+    static final long NUM_SCOPES_PER_INSTANCE = 3;
+    static final long NUM_TYPES_PER_ROLE = 3;
+    static final long NUM_ROLES_PER_TYPE = 3;
     static final long NUM_ROLES_PER_RELATION = 2;
 
     private final String start;
@@ -62,5 +62,25 @@ abstract class AbstractFragment implements Fragment{
     @Override
     public String toString() {
         return "$" + start + getName() + end.map(e -> "$" + e).orElse("");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AbstractFragment that = (AbstractFragment) o;
+
+        if (start != null ? !start.equals(that.start) : that.start != null) return false;
+        if (end != null ? !end.equals(that.end) : that.end != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = start != null ? start.hashCode() : 0;
+        result = 31 * result + (end != null ? end.hashCode() : 0);
+        return result;
     }
 }

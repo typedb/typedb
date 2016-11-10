@@ -25,10 +25,20 @@ import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.admin.*;
+import io.mindmaps.graql.admin.AskQueryAdmin;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.DeleteQueryAdmin;
+import io.mindmaps.graql.admin.InsertQueryAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.match.MatchQueryBase;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Internal query factory

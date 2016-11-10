@@ -1,0 +1,25 @@
+insert
+
+pokemon isa entity-type
+    plays-role pokemon-with-type
+    has-resource pokedex-no
+    has-resource description
+    has-resource height
+    has-resource weight;
+
+type-id isa resource-type datatype long;
+pokedex-no isa resource-type datatype long;
+description isa resource-type datatype string;
+height isa resource-type datatype long;
+weight isa resource-type datatype long;
+
+pokemon-type isa entity-type
+    has-resource description
+    has-resource type-id
+    plays-role type-of-pokemon;
+
+has-type isa relation-type
+    has-role pokemon-with-type
+    has-role type-of-pokemon;
+pokemon-with-type isa role-type;
+type-of-pokemon isa role-type;

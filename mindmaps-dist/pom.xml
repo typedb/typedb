@@ -45,6 +45,11 @@
         <!--Migrations-->
         <dependency>
             <groupId>io.mindmaps</groupId>
+            <artifactId>migration-sql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
             <artifactId>migration-csv</artifactId>
             <version>${project.version}</version>
         </dependency>

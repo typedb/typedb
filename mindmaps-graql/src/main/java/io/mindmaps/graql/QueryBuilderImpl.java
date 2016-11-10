@@ -18,7 +18,8 @@
 
 package io.mindmaps.graql;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.parser.QueryParser;
@@ -79,7 +80,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      */
     @Override
     public MatchQuery match(Collection<? extends Pattern> patterns) {
-        MatchQuery query = Queries.match(Patterns.conjunction(AdminConverter.getPatternAdmins(patterns)));
+        MatchQuery query = Queries.match(Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns))));
         return graph.map(query::withGraph).orElse(query);
     }
 
@@ -98,7 +99,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      */
     @Override
     public InsertQuery insert(Collection<? extends Var> vars) {
-        ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
+        ImmutableList<VarAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, graph);
     }
 
