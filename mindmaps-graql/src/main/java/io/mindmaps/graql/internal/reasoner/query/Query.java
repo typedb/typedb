@@ -192,7 +192,7 @@ public class Query implements MatchQueryInternal {
     private boolean containsVar(String var) { return getVarSet().contains(var);}
 
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
-    private boolean containsEquivalentAtom(Atomic atom){
+    public boolean containsEquivalentAtom(Atomic atom){
         boolean isContained = false;
         Iterator<Atomic> it = atomSet.iterator();
         while( it.hasNext() && !isContained) {

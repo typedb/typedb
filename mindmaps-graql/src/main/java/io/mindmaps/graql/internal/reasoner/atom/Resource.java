@@ -30,20 +30,6 @@ public class Resource extends Binary{
     public Resource(VarAdmin pattern, Query par) { super(pattern, par);}
     public Resource(Resource a) { super(a);}
 
-    //TODO assumes a single value predicates can be assigned to a variable
-    /*
-    @Override
-    public boolean predicatesEqual(Binary atom){
-        return getParentQuery().getValuePredicate(valueVariable)
-                .equals(atom.getParentQuery().getValuePredicate(atom.valueVariable));
-    }
-
-    @Override
-    public int predicateHashCode(){
-        return getParentQuery().getValuePredicate(this.valueVariable).hashCode();
-    }
-    */
-
     @Override
     protected String extractValueVariableName(VarAdmin var){
         String name = "";

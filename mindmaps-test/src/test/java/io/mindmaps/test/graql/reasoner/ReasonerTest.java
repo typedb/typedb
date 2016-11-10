@@ -428,7 +428,7 @@ public class ReasonerTest {
     @Test
     public void testTypeVariable2(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $x isa $type;$type isa city;"+
+        String queryString = "match $x isa $type;$type id 'city';"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;$y has name 'Poland';select $x, $y;";
         String queryString2 = "match $x isa city;"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in;$y has name 'Poland'; $y isa country;";

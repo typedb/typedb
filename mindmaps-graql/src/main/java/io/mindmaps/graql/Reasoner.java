@@ -206,6 +206,7 @@ public class Reasoner {
                 if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
 
                 QueryAnswers filteredAnswers = answers.filterInComplete(atomicQuery.getSelectedNames());
+                //QueryAnswers filteredAnswers = answers.filterByTypes(atomicQuery.getSelectedNames(), atomicQuery.getVarTypeMap());
                 atomicQuery.getAnswers().addAll(filteredAnswers);
                 recordAnswers(atomicQuery, matAnswers);
             }

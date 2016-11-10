@@ -33,24 +33,6 @@ public class TypeAtom extends Binary{
         super(a);
     }
 
-    /*
-    @Override
-    public boolean predicatesEqual(Binary atom){
-        Query parent = getParentQuery();
-        Predicate predicate = parent.getIdPredicate(valueVariable);
-        Predicate objPredicate = atom.getParentQuery().getIdPredicate(atom.valueVariable);
-        String idPredicate = predicate != null? predicate.getPredicateValue() : "";
-        String objIdPredicate = objPredicate != null? objPredicate.getPredicateValue() : "";
-        return idPredicate.equals(objIdPredicate);
-    }
-
-    @Override
-    public int predicateHashCode(){
-        Predicate predicate = getParentQuery().getIdPredicate(this.valueVariable);
-        return predicate != null? getParentQuery().getIdPredicate(this.valueVariable).hashCode() : 0;
-    }
-    */
-
     @Override
     protected String extractValueVariableName(VarAdmin var) {
         return var.getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).getName();

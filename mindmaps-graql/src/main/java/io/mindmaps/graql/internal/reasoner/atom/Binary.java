@@ -69,22 +69,15 @@ public abstract class Binary extends Atom{
     }
 
     public boolean predicatesEquivalent(Binary atom){
-        return (predicate == null && atom.predicate == null)
-            || ((predicate != null && atom.predicate != null) && predicate.isEquivalent(atom.predicate));
+        Predicate pred = getPredicate();
+        Predicate objPredicate = atom.getPredicate();
+        return (pred  == null && objPredicate == null)
+            || ((pred  != null && objPredicate != null) && pred.isEquivalent(objPredicate));
     }
     public int predicateHashCode(){
         return predicate != null? predicate.hashCode() : 0;
     }
-    /*
-    public boolean predicatesEqual(Binary atom){
-        return getParentQuery().getValuePredicate(valueVariable)
-                .equals(atom.getParentQuery().getValuePredicate(atom.valueVariable));
-    }
 
-    public int predicateHashCode(){
-        return getParentQuery().getValuePredicate(this.valueVariable).hashCode();
-    }
-    */
     @Override
     public boolean isBinary(){ return true;}
 

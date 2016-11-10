@@ -62,6 +62,31 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
                 .collect(Collectors.toSet()));
     }
 
+    public QueryAnswers filterByTypes(Set<String> vars, Map<String, Type> varTypeMap){
+        QueryAnswers results = new QueryAnswers();
+        if(this.isEmpty()) return results;
+        Map<String, Type> filteredMap = new HashMap<>();
+        varTypeMap.forEach( (v, t) -> {
+            if(vars.contains(v)) filteredMap.put(v, t);
+        });
+        if (filteredMap.isEmpty()) return this;
+
+
+        this.forEach(answer -> {
+            boolean isCompatible = true;
+            //Iterator<Map.Entry<String, Concept>> it = answer.entrySet().iterator();
+            Iterator<Map.Entry<String, Type>> it = filteredMap.entrySet().iterator();
+            while( it.hasNext() && isCompatible){
+                Map.Entry<String, Type> entry = it.next();
+                isCompatible = answer.get(entry.getKey()).type().equals(entry.getValue());
+                //Map.Entry<String, Concept> entry = it.next();
+                //isCompatible = filteredMap.get(entry.getKey()).equals(entry.getValue().type());
+            }
+            if (isCompatible) results.add(answer);
+        });
+        return results;
+    }
+
     public QueryAnswers join(QueryAnswers localTuples) {
         if (this.isEmpty() || localTuples.isEmpty())
             return new QueryAnswers();
@@ -143,10 +168,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
 
         Set<Atom> extraTypes =  parentQuery.getTypeConstraints();
         extraTypes.removeAll(childQuery.getTypeConstraints());
-        // Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
         extraTypes.stream().map(t -> (Binary) t).forEach(type -> {
-           //typeConstraints.put(type.getVarName(), type.getType());
-            //if (type.getPredicate() != null)
             Predicate predicate = parentQuery.getIdPredicate(type.getValueVariable());
             if (predicate != null) typeConstraints.put(type.getVarName(), predicate.getPredicateValue());
         });
