@@ -120,11 +120,11 @@ public class MovieGraphFactory {
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
                 .playsRole(productionWithGenre);
 
-        hasResource(production, title);
-        hasResource(production, tmdbVoteCount);
-        hasResource(production, tmdbVoteAverage);
-        hasResource(production, releaseDate);
-        hasResource(production, runtime);
+        production.hasResource(title);
+        production.hasResource(tmdbVoteCount);
+        production.hasResource(tmdbVoteAverage);
+        production.hasResource(releaseDate);
+        production.hasResource(runtime);
 
         movie = mindmapsGraph.putEntityType("movie").superType(production);
 
@@ -133,26 +133,26 @@ public class MovieGraphFactory {
         person = mindmapsGraph.putEntityType("person")
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
-        hasResource(person, gender);
-        hasResource(person, name);
-        hasResource(person, realName);
+        person.hasResource(gender);
+        person.hasResource(name);
+        person.hasResource(realName);
 
         genre = mindmapsGraph.putEntityType("genre").playsRole(genreOfProduction);
 
-        hasResource(genre, name);
+        genre.hasResource(name);
 
         character = mindmapsGraph.putEntityType("character")
                 .playsRole(characterBeingPlayed);
 
-        hasResource(character, name);
+        character.hasResource(name);
 
         mindmapsGraph.putEntityType("award");
         language = mindmapsGraph.putEntityType("language");
 
-        hasResource(language, name);
+        language.hasResource(name);
 
         cluster = mindmapsGraph.putEntityType("cluster").playsRole(clusterOfProduction);
-        hasResource(cluster, name);
+        cluster.hasResource(name);
     }
 
     private static void buildInstances() throws ParseException {
@@ -304,7 +304,7 @@ public class MovieGraphFactory {
     private static void buildRules() {
         // These rules are totally made up for testing purposes and don't work!
         RuleType aRuleType = mindmapsGraph.putRuleType("a-rule-type");
-        hasResource(aRuleType, name);
+        aRuleType.hasResource(name);
 
         Pattern lhs = mindmapsGraph.graql().parsePattern("$x id 'expect-lhs'");
         Pattern rhs = mindmapsGraph.graql().parsePattern("$x id 'expect-rhs'");
@@ -322,15 +322,6 @@ public class MovieGraphFactory {
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
 
         putResource(materialize, name, "materialize-rule");
-    }
-
-    private static void hasResource(Type type, ResourceType<?> resourceType) {
-        RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
-        RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
-        mindmapsGraph.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);
-
-        type.playsRole(owner);
-        resourceType.playsRole(value);
     }
 
     private static <D> void putResource(Instance instance, ResourceType<D> resourceType, D resource) {
