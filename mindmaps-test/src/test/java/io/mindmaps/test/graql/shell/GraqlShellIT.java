@@ -43,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 public class GraqlShellIT extends AbstractRollbackGraphTest {
     private static InputStream trueIn;
@@ -110,10 +111,10 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testMatchQuery() throws Exception {
-        String[] result = testShell("match $x isa type\nexit").split("\r\n?|\n");
+        String[] result = testShell("match $x isa type;\nexit").split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x isa type", result[4]);
+        assertEquals(">>> match $x isa type;", result[4]);
         assertTrue(result.length > 5);
     }
 
@@ -133,11 +134,11 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testInsertOutput() throws Exception {
-        String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\r\n?|\n");
+        String[] result = testShell("insert a-type isa entity-type; $thingy isa a-type;\n").split("\r\n?|\n");
 
         // Expect six lines output - four for the license, one for the query, no results and a new prompt
         assertEquals(6, result.length);
-        assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[4]);
+        assertEquals(">>> insert a-type isa entity-type; $thingy isa a-type;", result[4]);
         assertEquals(">>> ", result[5]);
     }
 
@@ -216,7 +217,10 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testRollback() throws Exception {
-        String[] result = testShell("insert E isa entity-type;\nrollback\nmatch $x isa entity-type'\n").split("\n");
+        // Tinker graph doesn't support rollback
+        assumeFalse(usingTinker());
+
+        String[] result = testShell("insert E isa entity-type;\nrollback\nmatch $x isa entity-type;\n").split("\n");
 
         // Make sure there are no results for match query
         assertEquals(">>> match $x isa entity-type", result[result.length-2]);
@@ -241,7 +245,10 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testRollbackSemicolon() throws Exception {
-        String[] result = testShell("insert E isa entity-type;\nrollback;\nmatch $x isa entity-type\n").split("\n");
+        // Tinker graph doesn't support rollback
+        assumeFalse(usingTinker());
+
+        String[] result = testShell("insert E isa entity-type;\nrollback;\nmatch $x isa entity-type;\n").split("\n");
 
         // Make sure there are no results for match query
         assertEquals(">>> match $x isa entity-type", result[result.length-2]);
@@ -270,6 +277,13 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
         String value = Strings.repeat("really-", 100000) + "long-value";
         String[] result = testShell("insert X isa resource-type datatype string; value '" + value + "' isa X;\nmatch $x isa X;\n").split("\n");
         assertThat(result[result.length-2], allOf(containsString("$x"), containsString(value)));
+    }
+
+    @Test
+    public void testCommitError() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String out = testShell("insert bob isa relation-type;\ncommit;\nmatch $x isa relation-type;\n", err);
+        assertFalse(out, err.toString().isEmpty());
     }
 
     private static String randomString(int length) {
