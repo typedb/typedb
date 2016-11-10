@@ -69,7 +69,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
     private final ThreadLocal<ConceptLog> context = new ThreadLocal<>();
     private final ElementFactory elementFactory;
-    //private final ConceptLog conceptLog;
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
