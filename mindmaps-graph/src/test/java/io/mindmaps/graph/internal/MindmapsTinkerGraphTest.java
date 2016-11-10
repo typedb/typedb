@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class MindmapsTinkerGraphTest extends GraphTestBase{
 
@@ -45,6 +46,8 @@ public class MindmapsTinkerGraphTest extends GraphTestBase{
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> addEntityType(mindmapsGraph)));
         }
+
+        assertTrue(mindmapsGraph.hasCommitted());
 
         futures.forEach(future -> {
             try {

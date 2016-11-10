@@ -268,6 +268,13 @@ public class ConceptTest extends GraphTestBase{
     }
 
     @Test
+    public void WTF(){
+        System.out.println(false == false);
+        System.out.println(true != false);
+        System.out.println(false != false);
+    }
+
+    @Test
     public void  testAsResourceType() {
         Concept concept = mindmapsGraph.putResourceType("Test", ResourceType.DataType.STRING);
         assertTrue(concept.isResourceType());

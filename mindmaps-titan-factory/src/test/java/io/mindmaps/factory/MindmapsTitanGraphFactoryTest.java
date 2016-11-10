@@ -221,6 +221,9 @@ public class MindmapsTitanGraphFactoryTest {
         // Gremlin Indexed Lookup ////////////////////////////////////////////////////
 
         // time the same query multiple times
+        indexGraph = getGraph();
+        createGraphTestVertexCentricIndex("", indexGraph, 1000);
+
         Vertex first = indexGraph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
         List<Object> gremlinIndexedTraversalResult = new ArrayList<>();
         double startTime = System.nanoTime();

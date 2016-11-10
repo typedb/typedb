@@ -28,7 +28,6 @@ import org.junit.Before;
  * Do not commit to this graph, because it is shared between all tests for performance!
  */
 public abstract class AbstractRollbackGraphTest extends AbstractEngineTest {
-
     protected static MindmapsGraphFactory factory;
     protected static MindmapsGraph graph;
 
