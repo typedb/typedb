@@ -123,6 +123,14 @@ public class PokemonGraphFactory{
         description = graph.putResourceType("description", ResourceType.DataType.STRING);
         height = graph.putResourceType("height", ResourceType.DataType.LONG);
         weight = graph.putResourceType("weight", ResourceType.DataType.DOUBLE);
+
+        pokemon.hasResource(name);
+        pokemon.hasResource(pokedexNo);
+        pokemon.hasResource(description);
+        pokemon.hasResource(height);
+        pokemon.hasResource(weight);
+
+        pokemonType.hasResource(name);
     }
 
     private static void buildInstances(MindmapsGraph graph) {
