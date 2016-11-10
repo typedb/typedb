@@ -18,7 +18,9 @@
 
 package io.mindmaps.factory;
 
+import io.mindmaps.exception.GraphRuntimeException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 abstract class AbstractInternalFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements InternalFactory<M, G> {
@@ -33,6 +35,10 @@ abstract class AbstractInternalFactory<M extends AbstractMindmapsGraph<G>, G ext
     private G batchLoadingGraph = null;
 
     AbstractInternalFactory(String keyspace, String engineUrl, String config){
+        if(keyspace == null){
+            throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
+        }
+
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.config = config;
