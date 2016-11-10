@@ -19,8 +19,10 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.exception.GraphRuntimeException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graph.internal.MindmapsTinkerGraph;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
@@ -30,6 +32,8 @@ import org.junit.rules.ExpectedException;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -92,6 +96,17 @@ public class MindmapsTinkerGraphFactoryTest {
     public void testGetTinkerPopGraph(){
         Graph mg1 = tinkerGraphFactory.getTinkerPopGraph(false);
         assertThat(mg1, instanceOf(TinkerGraph.class));
+    }
+
+    @Test
+    public void testGetNullKeySpace(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.NULL_VALUE.getMessage("keyspace"))
+        ));
+
+        tinkerGraphFactory = new TinkerInternalFactory(null, null, null);
+        tinkerGraphFactory.getGraph(false);
     }
 
 }
