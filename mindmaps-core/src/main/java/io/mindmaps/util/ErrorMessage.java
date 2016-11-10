@@ -97,6 +97,7 @@ public enum ErrorMessage {
 
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
+    MATCH_INVALID("cannot match on property of type [%s]"),
     SELECT_VAR_NOT_IN_MATCH("$%s does not appear in match query"),
     NO_ID_SPECIFIED_FOR_HAS_RESOURCE("no id was specified for a resource type in a 'has-resource' property"),
     MULTIPLE_GRAPH("a graph has been specified twice for this query"),

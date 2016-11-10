@@ -20,8 +20,12 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.admin.UniqueVarProperty;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
+import io.mindmaps.util.ErrorMessage;
+
+import java.util.Collection;
 
 public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleFragmentProperty {
 
@@ -64,5 +68,10 @@ public class RhsProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public int hashCode() {
         return rhs.hashCode();
+    }
+
+    @Override
+    public Collection<EquivalentFragmentSet> match(String start) {
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
     }
 }
