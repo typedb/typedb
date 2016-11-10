@@ -70,17 +70,12 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             if(vars.contains(v)) filteredMap.put(v, t);
         });
         if (filteredMap.isEmpty()) return this;
-
-
         this.forEach(answer -> {
             boolean isCompatible = true;
-            //Iterator<Map.Entry<String, Concept>> it = answer.entrySet().iterator();
             Iterator<Map.Entry<String, Type>> it = filteredMap.entrySet().iterator();
             while( it.hasNext() && isCompatible){
                 Map.Entry<String, Type> entry = it.next();
                 isCompatible = answer.get(entry.getKey()).type().equals(entry.getValue());
-                //Map.Entry<String, Concept> entry = it.next();
-                //isCompatible = filteredMap.get(entry.getKey()).equals(entry.getValue().type());
             }
             if (isCompatible) results.add(answer);
         });
@@ -163,10 +158,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         Map<String, String> typeConstraints = new HashMap<>();
 
         //find extra type constraints
-        //TODO revisit bo bez sensu
-        //TODO look only for instance types as we are looking at specific concepts
-
-        Set<Atom> extraTypes =  parentQuery.getTypeConstraints();
+        Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
         extraTypes.removeAll(childQuery.getTypeConstraints());
         extraTypes.stream().map(t -> (Binary) t).forEach(type -> {
             Predicate predicate = parentQuery.getIdPredicate(type.getValueVariable());

@@ -324,14 +324,15 @@ public class Query implements MatchQueryInternal {
             return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
     }
 
-    //TODO cause broken
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
+        /*
         getVarSet().forEach(var -> {
                 Predicate predicate = getIdPredicate(var);
                 if (predicate != null) map.putIfAbsent(var, graph.getType(predicate.getPredicateValue()));
         });
-        //getTypeConstraints().forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
+        */
+        getTypeConstraints().forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
         return map;
     }
 

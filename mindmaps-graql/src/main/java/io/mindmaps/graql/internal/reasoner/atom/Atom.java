@@ -204,23 +204,6 @@ public abstract class Atom extends AtomBase {
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
 
-        //try based on IdPredicates
-        /*
-        Query parentQuery = parentAtom.getParentQuery();
-        getIdPredicates().forEach(sub -> {
-            String chVar = sub.getVarName();
-            String id = sub.getPredicateValue();
-            Set<Atomic> parentSubs = parentQuery.getIdPredicates().stream()
-                    .filter(s -> s.getPredicateValue().equals(id)).collect(Collectors.toSet());
-            String pVar = parentSubs.isEmpty()? "" : parentSubs.iterator().next().getVarName();
-            if (!pVar.isEmpty()) {
-                if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
-                childBVs.remove(chVar);
-                varsToAllocate.remove(pVar);
-            }
-        });
-        */
-
         //try based on roles
         for (String chVar : childBVs) {
             RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
@@ -256,12 +239,6 @@ public abstract class Atom extends AtomBase {
 
     public Set<Atom> getTypeConstraints(){
         Set<Atom> relevantTypes = new HashSet<>();
-        /*
-        getParentQuery().getTypeConstraints().stream()
-                .filter(atom -> containsVar(atom.getVarName()))
-                .forEach(relevantTypes::add);
-                */
-
         //ids from indirect types
         getParentQuery().getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))

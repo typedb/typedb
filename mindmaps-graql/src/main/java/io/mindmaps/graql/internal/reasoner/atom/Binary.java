@@ -63,11 +63,6 @@ public abstract class Binary extends Atom{
                 .filter(at -> at.getVarName().equals(valueVariable)).findFirst().orElse(null) : null;
     }
 
-    public boolean predicatesEqual(Binary atom){
-        return (predicate == null && atom.predicate == null)
-                || ( (predicate != null && atom.predicate != null) && predicate.equals(atom.predicate));
-    }
-
     public boolean predicatesEquivalent(Binary atom){
         Predicate pred = getPredicate();
         Predicate objPredicate = atom.getPredicate();
@@ -86,7 +81,7 @@ public abstract class Binary extends Atom{
         if (!(obj.getClass().equals(this.getClass()))) return false;
         Binary a2 = (Binary) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
-                && this.valueVariable.equals(a2.getValueVariable());//predicatesEqual(a2);
+                && this.valueVariable.equals(a2.getValueVariable());
     }
 
     @Override

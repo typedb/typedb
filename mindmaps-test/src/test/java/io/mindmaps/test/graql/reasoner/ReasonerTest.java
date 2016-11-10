@@ -337,7 +337,9 @@ public class ReasonerTest {
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
+    //TODO loses type variable as non-core types are not unified in rules
     @Test
+    @Ignore
     public void testPlaysRole2(){
         MindmapsGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
@@ -346,9 +348,7 @@ public class ReasonerTest {
         MatchQuery query2 = lgraph.graql().parse(queryString2);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        //printAnswers(reasoner.resolve(query));
-        printAnswers(reasoner.resolve(query2));
-        //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
     @Test

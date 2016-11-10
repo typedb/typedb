@@ -57,9 +57,6 @@ public class InferenceRule {
     }
 
     private void propagateConstraints(Atom parentAtom){
-        //body.addAtomConstraints(parentAtom.getIdPredicates());
-        //head.addAtomConstraints(body.getIdPredicates());
-
         if(parentAtom.isRelation() || parentAtom.isResource()) {
             Set<Atom> types = parentAtom.getTypeConstraints().stream()
                     .filter(type -> !body.containsEquivalentAtom(type))
