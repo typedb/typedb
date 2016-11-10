@@ -78,7 +78,7 @@ public class REST {
         public static final String ACTION = "action";
         public static final String ACTION_INIT = "init";
         public static final String ACTION_QUERY = "query";
-        public static final String ACTION_QUERY_END = "queryEnd";
+        public static final String ACTION_END = "end";
         public static final String ACTION_ERROR = "error";
         public static final String ACTION_QUERY_ABORT = "queryAbort";
         public static final String ACTION_COMMIT = "commit";

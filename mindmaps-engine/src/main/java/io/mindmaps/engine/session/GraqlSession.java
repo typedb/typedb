@@ -42,7 +42,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_END;
 import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CANDIDATES;
 import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 import static io.mindmaps.util.REST.RemoteShell.ERROR;
@@ -166,7 +166,7 @@ class GraqlSession {
                     }
                     sendQueryError(errorMessage);
                 } else {
-                    sendQueryEnd();
+                    sendEnd();
                 }
             }
         });
@@ -186,6 +186,8 @@ class GraqlSession {
             } catch (MindmapsValidationException e) {
                 sendCommitError(e.getMessage());
             }
+
+            sendEnd();
         });
     }
 
@@ -246,8 +248,8 @@ class GraqlSession {
     /**
      * Tell the client that there are no more query results
      */
-    private void sendQueryEnd() {
-        sendJson(Json.object(ACTION, ACTION_QUERY_END));
+    private void sendEnd() {
+        sendJson(Json.object(ACTION, ACTION_END));
     }
 
     /**
@@ -264,7 +266,7 @@ class GraqlSession {
             ));
         }
 
-        sendJson(Json.object(ACTION, ACTION_QUERY_END));
+        sendJson(Json.object(ACTION, ACTION_END));
     }
 
     /**

@@ -286,6 +286,13 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
         assertFalse(out, err.toString().isEmpty());
     }
 
+    @Test
+    public void testCommitErrorExecuteOption() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String out = testShell("", err, "-e", "insert bob isa relation-type;");
+        assertFalse(out, err.toString().isEmpty());
+    }
+
     private static String randomString(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
