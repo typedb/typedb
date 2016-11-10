@@ -364,24 +364,24 @@ public class GraqlShell {
                 switch (matcher.group(1)) {
                     case EDIT_COMMAND:
                         executeQuery(runEditor());
-                        return;
+                        continue;
                     case COMMIT_COMMAND:
                         commit();
-                        return;
+                        continue;
                     case ROLLBACK_COMMAND:
                         rollback();
-                        return;
+                        continue;
                     case CLEAR_COMMAND:
                         console.clearScreen();
-                        return;
+                        continue;
                     case LICENSE_COMMAND:
                         printLicense();
-                        return;
+                        continue;
                     case EXIT_COMMAND:
                         return;
                     case "":
                         // Ignore empty command
-                        return;
+                        continue;
                 }
             }
 

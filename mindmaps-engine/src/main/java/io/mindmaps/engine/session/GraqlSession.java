@@ -39,7 +39,6 @@ import java.util.concurrent.Executors;
 
 import static io.mindmaps.util.REST.RemoteShell.ACTION;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
@@ -273,7 +272,7 @@ class GraqlSession {
      */
     private void sendCommitError(String errorMessage) {
         sendJson(Json.object(
-                ACTION, ACTION_COMMIT,
+                ACTION, ACTION_ERROR,
                 ERROR, errorMessage
         ));
     }
