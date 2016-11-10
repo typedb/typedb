@@ -18,14 +18,20 @@
 
 package io.mindmaps.test.graql.template;
 
+import io.mindmaps.exception.GraqlParsingException;
 import io.mindmaps.graql.Graql;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.*;
 
 import static junit.framework.TestCase.assertEquals;
 
 public class TemplateParserTest {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void oneValueOneLineTest(){
@@ -576,6 +582,13 @@ public class TemplateParserTest {
         data.put("type_id", 124);
 
         assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void testGraqlParsingException(){
+        exception.expect(GraqlParsingException.class);
+        String template = "<<<<<<<";
+        Graql.parseTemplate(template, new HashMap<>());
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
