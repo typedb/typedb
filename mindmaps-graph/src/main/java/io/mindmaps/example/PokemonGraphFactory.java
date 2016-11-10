@@ -189,18 +189,7 @@ public class PokemonGraphFactory{
 
     private static <T> void addResource(MindmapsGraph graph, Entity entity, T s, ResourceType<T> type) {
         Resource<T> resource = graph.putResource(s, type);
-
-        RoleType owner = graph.putRoleType("has-" + type.getId() + "-owner");
-        RoleType value = graph.putRoleType("has-" + type.getId() + "-value");
-        RelationType relationType = graph.putRelationType("has-" + type.getId())
-                .hasRole(owner).hasRole(value);
-
-        entity.type().playsRole(owner);
-        type.playsRole(value);
-
-        graph.addRelation(relationType)
-                .putRolePlayer(owner, entity)
-                .putRolePlayer(value, resource);
+        entity.hasResource(resource);
     }
 
     private static void putTypes(MindmapsGraph graph, Entity pokemon, Entity... entities) {
