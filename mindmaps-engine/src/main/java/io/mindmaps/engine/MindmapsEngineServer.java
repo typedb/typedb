@@ -18,9 +18,13 @@
 package io.mindmaps.engine;
 
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsEngineServerException;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +37,9 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static spark.Spark.*;
 
@@ -71,6 +78,9 @@ public class MindmapsEngineServer {
         new TransactionController();
         new StatusController();
         new BackgroundTasksController();
+
+        // Load system ontology
+        loadSystemOntology();
 
         //Register Exception Handler
         exception(MindmapsEngineServerException.class, (e, request, response) -> {
@@ -124,5 +134,26 @@ public class MindmapsEngineServer {
         LOG.info("\n==================================================");
         LOG.info("\n"+String.format(ConfigProperties.GRAKN_ASCII,address));
         LOG.info("\n==================================================");
+    }
+
+    private static void loadSystemOntology() {
+        MindmapsGraph graph = GraphFactory.getInstance().getGraph("grakn-system");
+        ClassLoader loader = ClassLoader.getSystemClassLoader();
+
+        try {
+            String query = Files.readAllLines(Paths.get(
+                                                loader.getResource("system.gql")
+                                                      .getFile()),
+                                                StandardCharsets.UTF_8)
+                                .stream()
+                                .reduce("", (a, x) -> a+"\n"+x);
+
+            graph.graql()
+                 .parse(query)
+                 .execute();
+            graph.commit();
+        } catch(IOException | MindmapsValidationException e) {
+            e.printStackTrace();
+        }
     }
 }

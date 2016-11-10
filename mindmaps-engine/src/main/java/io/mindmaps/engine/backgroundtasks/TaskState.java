@@ -42,6 +42,7 @@ public class TaskState {
 
     public TaskState(String name) {
         status = TaskStatus.CREATED;
+        statusChangeTime = new Date();
         this.name = name;
     }
 
@@ -57,6 +58,11 @@ public class TaskState {
 
     public String getName() {
         return this.name;
+    }
+
+    public TaskState setStatusChangeTime(Date statusChangeTime) {
+        this.statusChangeTime = statusChangeTime;
+        return this;
     }
 
     public Date getStatusChangeTime() {
