@@ -1,7 +1,6 @@
 package io.mindmaps.graql.internal.gremlin.fragment;
 
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -102,14 +101,6 @@ public class Fragments {
 
     public static ValueFragment value(String start, ValuePredicateAdmin predicate) {
         return new ValueFragment(start, predicate);
-    }
-
-    public static RhsFragment rhs(String start, Pattern rhs) {
-        return new RhsFragment(start, rhs);
-    }
-
-    public static LhsFragment lhs(String start, Pattern lhs) {
-        return new LhsFragment(start, lhs);
     }
 
     public static IsAbstractFragment isAbstract(String start) {

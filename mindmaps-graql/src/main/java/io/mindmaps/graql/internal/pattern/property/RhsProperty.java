@@ -21,13 +21,11 @@ package io.mindmaps.graql.internal.pattern.property;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
-import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
-import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 
-public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleFragmentProperty {
+public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty{
 
     private final Pattern rhs;
 
@@ -47,11 +45,6 @@ public class RhsProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public String getProperty() {
         return rhs.toString();
-    }
-
-    @Override
-    public Fragment getFragment(String start) {
-        return Fragments.rhs(start, rhs);
     }
 
     @Override
