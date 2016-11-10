@@ -134,7 +134,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                 }
                 break;
             default:
-                if (memory.get(IS_LAST_ITERATION)) {
+                if ((Boolean)memory.get(IS_LAST_ITERATION)) {
                     if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                         bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
                     }
@@ -171,7 +171,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() < 3) return false;
-        if (memory.get(IS_LAST_ITERATION)) return true;
+        if ((Boolean)memory.get(IS_LAST_ITERATION)) return true;
 
         final boolean voteToHalt = memory.<Boolean>get(VOTE_TO_HALT);
         if (voteToHalt) {
