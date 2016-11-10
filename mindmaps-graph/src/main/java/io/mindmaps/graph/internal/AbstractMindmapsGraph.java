@@ -73,12 +73,14 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
+    private boolean committed;
 
     public AbstractMindmapsGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
         this.batchLoadingEnabled = batchLoadingEnabled;
+        this.committed = false;
         elementFactory = new ElementFactory(this);
 
         if(initialiseMetaConcepts()) {
@@ -93,6 +95,10 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     @Override
     public String getKeyspace(){
         return keyspace;
+    }
+
+    public boolean hasCommitted(){
+        return committed;
     }
 
     public boolean isBatchLoadingEnabled(){
@@ -657,6 +663,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         } catch (UnsupportedOperationException e){
             LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
         }
+        committed = true;
     }
 
 
