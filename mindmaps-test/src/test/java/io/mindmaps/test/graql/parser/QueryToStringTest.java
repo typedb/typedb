@@ -21,6 +21,7 @@ package io.mindmaps.test.graql.parser;
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ComputeQuery;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.test.AbstractMovieGraphTest;
@@ -101,12 +102,18 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.match(var("x").rhs(and(qb.parsePatterns("$x isa movie;")))));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").rhs(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs(and(qb.parsePatterns("$x isa person;")))));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").lhs(and(qb.parsePatterns("$x isa movie;")))));
+    }
+
+    private void assertValidToString(InsertQuery query){
+        //No need to execute the insert query
+        InsertQuery parsedQuery = qb.parse(query.toString());
+        assertEquals(query.toString(), parsedQuery.toString());
     }
 
     @Test
