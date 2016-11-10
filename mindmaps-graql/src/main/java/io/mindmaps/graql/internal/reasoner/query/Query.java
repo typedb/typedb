@@ -47,11 +47,11 @@ public class Query implements MatchQueryInternal {
     protected final Set<Atomic> atomSet = new HashSet<>();
 
     private final Conjunction<PatternAdmin> pattern;
-    private final Set<String> selectVars;
+    private final Set<String> selectVars = new HashSet<>();;
 
     public Query(MatchQuery query, MindmapsGraph graph) {
         this.graph = graph;
-        this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
+        this.selectVars.addAll(query.admin().getSelectedNames());
         atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         this.pattern = createPattern(atomSet);
     }
@@ -68,11 +68,14 @@ public class Query implements MatchQueryInternal {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph().orElse(null);
-        this.selectVars = Sets.newHashSet(atom.getVarNames());
-        //selectVars.addAll(atom.getParentQuery().getSelectedNames());
+        this.selectVars.addAll(atom.getVarNames());
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
+
+        //Set<String> extraSelects = Sets.newHashSet(atom.getParentQuery().getSelectedNames());
+        //extraSelects.retainAll(getVarSet());
+        //selectVars.addAll(extraSelects);
     }
 
     //alpha-equivalence equality
