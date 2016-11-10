@@ -152,6 +152,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public String toString() {
-        return "insert " + originalVars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        String mq = matchQuery.map(match -> match + "\n").orElse("");
+        return mq + "insert " + originalVars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 }

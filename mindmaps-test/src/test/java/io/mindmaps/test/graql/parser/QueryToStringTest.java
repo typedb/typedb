@@ -21,6 +21,7 @@ package io.mindmaps.test.graql.parser;
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ComputeQuery;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.test.AbstractMovieGraphTest;
@@ -159,6 +160,12 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
     @Test
     public void testRepeatRoleplayerToString() {
         assertEquals("match ($x, $x);", match(var().rel("x").rel("x")).toString());
+    }
+
+    @Test
+    public void testMatchInsertToString() {
+        InsertQuery query = qb.match(var("x").isa("movie")).insert(var("x").has("title", "hello"));
+        assertEquals("match $x isa movie;\ninsert $x has title \"hello\";", query.toString());
     }
 
     @Test(expected=UnsupportedOperationException.class)
