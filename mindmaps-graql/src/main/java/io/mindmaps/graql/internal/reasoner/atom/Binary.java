@@ -1,82 +1,140 @@
-package io.mindmaps.graql.internal.reasoner.atom;
+/*
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
+ *
+ * MindmapsDB is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MindmapsDB is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 
+package io.mindmaps.graql.internal.reasoner.atom;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class Binary extends Atom{
 
-    private String valueVariable;
+    private Predicate predicate = null;
+    protected String valueVariable;
 
     public Binary(VarAdmin pattern) {
         super(pattern);
-        this.valueVariable = extractName(pattern);
+        this.valueVariable = extractValueVariableName(pattern);
+        this.predicate = getPredicate();
     }
 
     public Binary(VarAdmin pattern, Query par) {
         super(pattern, par);
-        this.valueVariable = extractName(pattern);
+        this.valueVariable = extractValueVariableName(pattern);
+        this.predicate = getPredicate();
     }
 
     public Binary(Binary a) {
         super(a);
-        this.valueVariable = extractName(a.getPattern().asVar());
+        this.valueVariable = extractValueVariableName(a.getPattern().asVar());
+        this.predicate = getPredicate();
     }
 
-    protected abstract String extractName(VarAdmin var);
+    protected abstract String extractValueVariableName(VarAdmin var);
+
+    public Predicate getPredicate(){
+        if (predicate != null) return predicate;
+        else
+            return getParentQuery() != null ? getParentQuery().getAtoms().stream()
+                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+                .filter(at -> at.getVarName().equals(valueVariable)).findFirst().orElse(null) : null;
+    }
+
+    private boolean predicatesEquivalent(Binary atom){
+        Predicate pred = getPredicate();
+        Predicate objPredicate = atom.getPredicate();
+        return (pred  == null && objPredicate == null)
+            || ((pred  != null && objPredicate != null) && pred.isEquivalent(objPredicate));
+    }
+    private int predicateHashCode(){
+        return predicate != null? predicate.hashCode() : 0;
+    }
+
+    @Override
+    public boolean isBinary(){ return true;}
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj.getClass().equals(this.getClass()))) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Binary a2 = (Binary) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
                 && this.valueVariable.equals(a2.getValueVariable());
     }
 
     @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.valueVariable.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        return hashCode;
+    public boolean isEquivalent(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Binary a2 = (Binary) obj;
+        return this.typeId.equals(a2.getTypeId())
+                && predicatesEquivalent(a2);
     }
 
     @Override
-    public boolean isEquivalent(Object obj) {
-        if (!(obj.getClass().equals(this.getClass()))) return false;
-        Binary a2 = (Binary) obj;
-        Query parent = getParentQuery();
-        return this.typeId.equals(a2.getTypeId())
-                && parent.getIdPredicate(valueVariable).equals(a2.getParentQuery().getIdPredicate(a2.valueVariable));
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.valueVariable.hashCode();
+        return hashCode;
     }
 
     @Override
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + getParentQuery().getIdPredicate(this.valueVariable).hashCode();
+        hashCode = hashCode * 37 + predicateHashCode();
         return hashCode;
+    }
+    @Override
+    public Set<Predicate> getPredicates(){
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isPredicate).map(atom -> (Predicate) atom)
+                .filter(atom -> atom.getVarName().equals(valueVariable)).collect(Collectors.toSet());
     }
 
     public String getValueVariable(){ return valueVariable;}
 
-    private void setValueVariable(String var){
-        valueVariable = var;
-        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setName(var));
+    public Set<Atom> getLinkedAtoms(){
+        Set<Atom> atoms = new HashSet<>();
+        getParentQuery().getAtoms().stream()
+                .filter(Atomic::isAtom).map(atom -> (Atom) atom)
+                .filter(Atom::isBinary).map(atom -> (Binary) atom)
+                .filter(atom -> atom.getVarName().equals(valueVariable))
+                .forEach(atom -> {
+                    atoms.add(atom);
+                    atoms.addAll(atom.getLinkedAtoms());
+                });
+        return atoms;
     }
+
+    protected abstract void setValueVariable(String var);
 
     @Override
     public Set<String> getVarNames() {
         Set<String> varNames = Sets.newHashSet(getVarName());
-        String valueVariable = extractName(getPattern().asVar());
         if (!valueVariable.isEmpty()) varNames.add(valueVariable);
         return varNames;
     }

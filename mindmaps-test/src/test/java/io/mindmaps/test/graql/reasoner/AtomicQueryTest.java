@@ -62,7 +62,6 @@ public class AtomicQueryTest {
     public void testErrorNonAtomicQuery() {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;";
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(ErrorMessage.NON_ATOMIC_QUERY.getMessage(queryString));
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
     }
 

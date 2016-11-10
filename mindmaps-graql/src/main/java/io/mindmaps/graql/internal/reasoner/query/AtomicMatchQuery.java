@@ -14,8 +14,8 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     final private QueryAnswers answers;
 
-    public AtomicMatchQuery(Atom atom){
-        super(atom);
+    public AtomicMatchQuery(Atom atom, Set<String> vars){
+        super(atom, vars);
         answers = new QueryAnswers();
     }
 

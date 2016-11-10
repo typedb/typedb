@@ -27,7 +27,6 @@ import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 public class GeoInferenceTest {
@@ -49,7 +48,6 @@ public class GeoInferenceTest {
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;\n"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
-        printMatchQueryResults(query.distinct());
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
@@ -65,7 +63,6 @@ public class GeoInferenceTest {
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
-        printMatchQueryResults(query.distinct());
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";

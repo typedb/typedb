@@ -17,10 +17,11 @@
  */
 package io.mindmaps.graql.internal.reasoner.atom;
 
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 
-public class TypeAtom extends Atom{
+public class TypeAtom extends Binary{
 
     public TypeAtom(VarAdmin pattern) {
         super(pattern);
@@ -28,8 +29,17 @@ public class TypeAtom extends Atom{
     public TypeAtom(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-    public TypeAtom(TypeAtom a) {
-        super(a);
+    private TypeAtom(TypeAtom a) { super(a);}
+
+    @Override
+    protected String extractValueVariableName(VarAdmin var) {
+        return var.getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).getName();
+    }
+
+    @Override
+    protected void setValueVariable(String var) {
+        valueVariable = var;
+        atomPattern.asVar().getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).setName(var);
     }
 
     @Override
@@ -41,32 +51,8 @@ public class TypeAtom extends Atom{
     public boolean isType(){ return true;}
 
     @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof TypeAtom)) return false;
-        TypeAtom a2 = (TypeAtom) obj;
-        return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        return hashCode;
-    }
-
-    @Override
-    public boolean isEquivalent(Object obj) {
-        if (!(obj instanceof TypeAtom)) return false;
-        TypeAtom a2 = (TypeAtom) obj;
-        return this.typeId.equals(a2.getTypeId());
-    }
-
-    @Override
-    public int equivalenceHashCode(){
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        return hashCode;
+    public Type getType(){
+        return getPredicate() != null? getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
     }
 }
 

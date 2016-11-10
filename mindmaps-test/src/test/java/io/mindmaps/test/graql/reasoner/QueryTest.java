@@ -50,17 +50,14 @@ public class QueryTest {
 
     @Test
     public void testValuePredicate(){
-        String queryString = "match $x isa person;$x value 'Bob';$x id 'Bob';";
+        String queryString = "match $x isa person;$x value 'Bob';";
 
         Query query = new Query(queryString, graph);
         Atomic vpAtom = AtomicFactory
                 .create(qb.<MatchQuery>parse("match $x value 'Bob';").admin().getPattern().getPatterns().iterator().next());
-        Atomic subAtom = AtomicFactory
-                .create(qb.<MatchQuery>parse("match $x id 'Bob';").admin().getPattern().getPatterns().iterator().next());
         assertTrue(query.containsAtom(vpAtom));
-        assertTrue(query.containsAtom(subAtom));
         assertEquals(query.getValuePredicate("x"), "Bob");
-        assertEquals(query.getIdPredicate("x"), "Bob");
+        assertEquals(query.getIdPredicate("x").getPredicateValue(), "person");
     }
 
     @Test
