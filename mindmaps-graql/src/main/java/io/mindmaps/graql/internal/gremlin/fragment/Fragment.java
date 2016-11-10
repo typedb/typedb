@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -76,6 +77,19 @@ public interface Fragment extends Comparable<Fragment> {
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
     Optional<String> getEnd();
+
+    /**
+     * Get all variable names in the fragment - the start and end (if present)
+     */
+    Stream<String> getVariableNames();
+
+    /**
+     * A starting fragment is a fragment that can start a traversal.
+     * If any other fragment is present that refers to the same variable, the starting fragment can be omitted.
+     */
+    default boolean isStartingFragment() {
+        return false;
+    }
 
     /**
      * @return the fragment's priority

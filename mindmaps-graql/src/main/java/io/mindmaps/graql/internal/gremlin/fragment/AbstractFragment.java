@@ -3,6 +3,9 @@ package io.mindmaps.graql.internal.gremlin.fragment;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Optional;
+import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.util.CommonUtil.optionalToStream;
 
 abstract class AbstractFragment implements Fragment{
 
@@ -50,6 +53,11 @@ abstract class AbstractFragment implements Fragment{
     @Override
     public final Optional<String> getEnd() {
         return end;
+    }
+
+    @Override
+    public Stream<String> getVariableNames() {
+        return Stream.concat(Stream.of(start), optionalToStream(end));
     }
 
     @Override

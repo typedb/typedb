@@ -75,8 +75,22 @@ class ConjunctionQuery {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
 
-        this.equivalentFragmentSets =
+        ImmutableSet<EquivalentFragmentSet> fragmentSets =
                 vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
+
+        // Get all variable names mentioned in non-starting fragments
+        Set<String> names = fragmentSets.stream()
+                .flatMap(EquivalentFragmentSet::getFragments)
+                .filter(fragment -> !fragment.isStartingFragment())
+                .flatMap(Fragment::getVariableNames)
+                .collect(toImmutableSet());
+
+        // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
+        this.equivalentFragmentSets = fragmentSets.stream()
+                .filter(set -> set.getFragments().anyMatch(
+                        fragment -> !(fragment.isStartingFragment() && names.contains(fragment.getStart()))
+                ))
+                .collect(toImmutableSet());
 
         this.sortedFragments = sortFragments();
     }
