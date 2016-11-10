@@ -79,13 +79,20 @@ public class GremlinQuery {
     }
 
     /**
-     * @return a gremlin traversal to execute to find results
+     * Get a close-to-optimal traversal plan to execute this query
      */
-    public GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
+    public GraqlTraversal optimalTraversal() {
         ImmutableSet<ImmutableList<Fragment>> fragments =
                 innerQueries.stream().map(ConjunctionQuery::getSortedFragments).collect(toImmutableSet());
 
-        GraqlTraversal graqlTraversal = GraqlTraversal.create(graph, fragments);
+        return GraqlTraversal.create(graph, fragments);
+    }
+
+    /**
+     * @return a gremlin traversal to execute to find results
+     */
+    public GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
+        GraqlTraversal graqlTraversal = optimalTraversal();
 
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked

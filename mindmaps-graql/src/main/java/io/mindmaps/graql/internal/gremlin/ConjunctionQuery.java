@@ -86,15 +86,15 @@ class ConjunctionQuery {
      */
     Set<List<Fragment>> allFragmentOrders() {
         Collection<List<EquivalentFragmentSet>> fragmentSetPermutations = Collections2.permutations(equivalentFragmentSets);
-        return fragmentSetPermutations.stream().flatMap(fragmentSet -> foo(fragmentSet).stream()).collect(toSet());
+        return fragmentSetPermutations.stream().flatMap(ConjunctionQuery::cartesianProduct).collect(toSet());
     }
 
-    private static Set<List<Fragment>> foo(List<EquivalentFragmentSet> fragmentSets) {
+    private static Stream<List<Fragment>> cartesianProduct(List<EquivalentFragmentSet> fragmentSets) {
         // Get fragments in each set
         List<Set<Fragment>> fragments = fragmentSets.stream()
                 .map(set -> set.getFragments().collect(toSet()))
                 .collect(toList());
-        return Sets.cartesianProduct(fragments);
+        return Sets.cartesianProduct(fragments).stream();
     }
 
     /**
