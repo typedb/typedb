@@ -21,7 +21,6 @@ import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inHasRole;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
-import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.notCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outHasRole;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outIsa;
@@ -42,8 +41,6 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     private static final Fragment yTypeOfX = inIsa("y", "x");
     private static final Fragment xShortcutY = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), "x", "y");
     private static final Fragment yShortcutX = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), "y", "x");
-    private static final Fragment xNotCasting = notCasting("x");
-    private static final Fragment yNotCasting = notCasting("y");
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
 
@@ -132,30 +129,10 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
 
         // Expect all combinations of both disjunctions
         Set<GraqlTraversal> expected = ImmutableSet.of(
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(xShortcutY, xNotCasting, yNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(yShortcutX, xNotCasting, yNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(xShortcutY, yNotCasting, xNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(yShortcutX, yNotCasting, xNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(xNotCasting, xShortcutY, yNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(xNotCasting, yShortcutX, yNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(xNotCasting, yNotCasting, xShortcutY)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(xNotCasting, yNotCasting, yShortcutX)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(yNotCasting, xShortcutY, xNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(yNotCasting, yShortcutX, xNotCasting)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(yNotCasting, xNotCasting, xShortcutY)),
-                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(yNotCasting, xNotCasting, yShortcutX)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(xShortcutY, xNotCasting, yNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(yShortcutX, xNotCasting, yNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(xShortcutY, yNotCasting, xNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(yShortcutX, yNotCasting, xNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(xNotCasting, xShortcutY, yNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(xNotCasting, yShortcutX, yNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(xNotCasting, yNotCasting, xShortcutY)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(xNotCasting, yNotCasting, yShortcutX)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(yNotCasting, xShortcutY, xNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(yNotCasting, yShortcutX, xNotCasting)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(yNotCasting, xNotCasting, xShortcutY)),
-                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(yNotCasting, xNotCasting, yShortcutX))
+                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(xShortcutY)),
+                traversal(ImmutableList.of(xId, xValue), ImmutableList.of(yShortcutX)),
+                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(xShortcutY)),
+                traversal(ImmutableList.of(xValue, xId), ImmutableList.of(yShortcutX))
         );
 
         assertEquals(expected, traversals);
