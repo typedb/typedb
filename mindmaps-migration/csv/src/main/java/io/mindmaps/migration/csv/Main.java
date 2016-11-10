@@ -60,7 +60,11 @@ public class Main {
         File csvDataFile = new File(csvDataFileName);
         File csvTemplate = new File(csvTemplateName);
 
-        if(!csvTemplate.exists() || !csvDataFile.exists()){
+        if(!csvTemplate.exists()){
+            cli.die("Cannot find file: " + csvTemplateName);
+        }
+
+        if(!csvDataFile.exists()){
             cli.die("Cannot find file: " + csvDataFileName);
         }
 
