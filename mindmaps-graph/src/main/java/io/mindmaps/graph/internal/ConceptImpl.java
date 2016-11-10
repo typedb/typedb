@@ -47,6 +47,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * A concept which can represent anything in the graph
@@ -76,7 +77,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     protected void generateInstanceId(V type){
         if(getId() == null){
             String id = getBaseType() + "-" + type.getId() + "-" + UUID.randomUUID().toString();
-            setImmutableProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, id);
+            setImmutableProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, id, getId(), Function.identity());
         }
     }
 
@@ -744,18 +745,18 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         }
     }
 
-    void setImmutableProperty(Schema.ConceptProperty conceptProperty, Object value){
-        if(value == null){
+
+    <X> void setImmutableProperty(Schema.ConceptProperty conceptProperty, X newValue, X foundValue, Function<X, Object> converter){
+        if(newValue == null){
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(conceptProperty.name()));
         }
 
-        if(getProperty(conceptProperty) != null){
-            Object foundValue = getProperty(conceptProperty);
-            if(!foundValue.equals(value)){
-                throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundValue, this, value, conceptProperty.name()));
+        if(foundValue != null){
+            if(!foundValue.equals(newValue)){
+                throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundValue, this, newValue, conceptProperty.name()));
             }
         } else {
-            setProperty(conceptProperty, value);
+            setProperty(conceptProperty, converter.apply(newValue));
         }
     }
     

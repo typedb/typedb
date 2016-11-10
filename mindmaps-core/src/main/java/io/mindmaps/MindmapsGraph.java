@@ -32,6 +32,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -118,7 +119,7 @@ public interface MindmapsGraph extends AutoCloseable{
      * @param type The rule type of this Rule
      * @return a new Rule
      */
-    Rule addRule(String lhs, String rhs, RuleType type);
+    Rule addRule(Pattern lhs, Pattern rhs, RuleType type);
 
     /**
      *

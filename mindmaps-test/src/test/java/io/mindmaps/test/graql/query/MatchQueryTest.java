@@ -23,10 +23,14 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.internal.pattern.property.LhsProperty;
 import io.mindmaps.test.AbstractMovieGraphTest;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -55,6 +59,8 @@ import static io.mindmaps.util.Schema.MetaSchema.ENTITY_TYPE;
 import static io.mindmaps.util.Schema.MetaSchema.RESOURCE_TYPE;
 import static io.mindmaps.util.Schema.MetaSchema.RULE_TYPE;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -66,6 +72,9 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     private QueryBuilder qb;
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
@@ -397,9 +406,14 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        MatchQuery query = qb.match(var("x").lhs("$x id 'expect-lhs';").rhs("$x id 'expect-rhs';"));
-        QueryUtil.assertResultsMatch(query, "x", "a-rule-type", graph.getResourceType("name"), "expectation-rule");
-        assertTrue(query.iterator().next().get("x").asRule().getExpectation());
+        MatchQuery query = qb.match(var("x").lhs(qb.parsePattern("$x id 'expect-lhs'")).rhs(qb.parsePattern("$x id 'expect-rhs'")));
+
+        expectedException.expect(UnsupportedOperationException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.MATCH_INVALID.getMessage(LhsProperty.class.getName()))
+        ));
+
+        query.forEach(r -> {});
     }
 
     @Test

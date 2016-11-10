@@ -18,19 +18,22 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.admin.UniqueVarProperty;
-import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
-import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
+import io.mindmaps.util.ErrorMessage;
 
-public class LhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleFragmentProperty {
+import java.util.Collection;
 
-    private final String lhs;
+public class LhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty{
 
-    public LhsProperty(String lhs) {
+    private final Pattern lhs;
+
+    public LhsProperty(Pattern lhs) {
         this.lhs = lhs;
     }
 
-    public String getLhs() {
+    public Pattern getLhs() {
         return lhs;
     }
 
@@ -41,12 +44,7 @@ public class LhsProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public String getProperty() {
-        return "{" + lhs + "}";
-    }
-
-    @Override
-    public Fragment getFragment(String start) {
-        return Fragments.lhs(start, lhs);
+        return lhs.toString();
     }
 
     @Override
@@ -63,5 +61,10 @@ public class LhsProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public int hashCode() {
         return lhs.hashCode();
+    }
+
+    @Override
+    public Collection<EquivalentFragmentSet> match(String start) {
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
     }
 }

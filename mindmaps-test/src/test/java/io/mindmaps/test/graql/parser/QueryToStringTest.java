@@ -28,6 +28,7 @@ import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
+import static io.mindmaps.graql.Graql.and;
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.lte;
 import static io.mindmaps.graql.Graql.match;
@@ -101,12 +102,18 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.match(var("x").rhs("$x isa movie;")));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").rhs(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs("$x isa person;")));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").lhs(and(qb.parsePatterns("$x isa movie;")))));
+    }
+
+    private void assertValidToString(InsertQuery query){
+        //No need to execute the insert query
+        InsertQuery parsedQuery = qb.parse(query.toString());
+        assertEquals(query.toString(), parsedQuery.toString());
     }
 
     @Test

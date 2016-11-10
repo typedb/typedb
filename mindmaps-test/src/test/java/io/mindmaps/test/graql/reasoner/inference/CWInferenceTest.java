@@ -22,11 +22,13 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
 import org.junit.Test;
 
+import static io.mindmaps.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
 
 
@@ -245,8 +247,8 @@ public class CWInferenceTest {
 
         localGraph.putEntityType("region");
 
-        String R6_LHS = "$x isa region;";
-        String R6_RHS = "$x isa country;";
+        Pattern R6_LHS = and(localGraph.graql().parsePatterns("$x isa region;"));
+        Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
         localGraph.addRule(R6_LHS, R6_RHS, inferenceRule);
 
         localReasoner.linkConceptTypes();

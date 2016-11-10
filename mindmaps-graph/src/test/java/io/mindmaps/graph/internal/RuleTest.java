@@ -21,22 +21,36 @@ package io.mindmaps.graph.internal;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.InvalidConceptValueException;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class RuleTest extends GraphTestBase{
+    private Pattern lhs;
+    private Pattern rhs;
+
+    @Before
+    public void setupRules(){
+        lhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
+        rhs = mindmapsGraph.graql().parsePattern("$x isa entity-type");
+    }
 
     @Test
     public void testType() {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, conceptType);
         assertNotNull(rule.type());
         assertEquals(conceptType, rule.type());
     }
@@ -44,15 +58,22 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testRuleValues() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
-        assertEquals("lhs", rule.getLHS());
-        assertEquals("rhs", rule.getRHS());
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, conceptType);
+        assertEquals(lhs, rule.getLHS());
+        assertEquals(rhs, rule.getRHS());
+
+        expectedException.expect(InvalidConceptValueException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS))
+        ));
+
+        mindmapsGraph.addRule(null, null, conceptType);
     }
 
     @Test
     public void testExpectation() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, conceptType);
         assertFalse(rule.getExpectation());
         rule.setExpectation(true);
         assertTrue(rule.getExpectation());
@@ -61,7 +82,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testMaterialise() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, conceptType);
         assertFalse(rule.isMaterialise());
         rule.setMaterialise(true);
         assertTrue(rule.isMaterialise());
@@ -70,7 +91,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testAddHypothesis() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, conceptType);
         Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
@@ -82,7 +103,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testAddConclusion() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, conceptType);
         Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
@@ -94,7 +115,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testHypothesisTypes(){
         RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, ruleType);
         assertEquals(0, rule.getHypothesisTypes().size());
 
         Type ct1 = mindmapsGraph.putEntityType("A Concept Type 1");
@@ -108,7 +129,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testConclusionTypes(){
         RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
+        Rule rule = mindmapsGraph.addRule(lhs, rhs, ruleType);
         assertEquals(0, rule.getConclusionTypes().size());
 
         Type ct1 = mindmapsGraph.putEntityType("A Concept Type 1");

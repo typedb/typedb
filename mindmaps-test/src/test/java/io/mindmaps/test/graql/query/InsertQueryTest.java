@@ -23,6 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RuleType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
@@ -355,7 +356,21 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertRule() {
-        assertInsert(var("x").isa("a-rule-type").lhs("lhs").rhs("rhs"));
+        String ruleTypeId = "a-rule-type";
+        Pattern lhsPattern = qb.parsePattern("$x isa entity-type");
+        Pattern rhsPattern = qb.parsePattern("$x isa entity-type");
+        Var vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
+        qb.insert(vars).execute();
+
+        RuleType ruleType = graph.getRuleType(ruleTypeId);
+        boolean found = false;
+        for (io.mindmaps.concept.Rule rule : ruleType.instances()) {
+            if(lhsPattern.equals(rule.getLHS()) && rhsPattern.equals(rule.getRHS())){
+                found = true;
+                break;
+            }
+        }
+        assertTrue("Unable to find rule with lhs [" + lhsPattern + "] and rhs [" + rhsPattern + "]", found);
     }
 
     @Test

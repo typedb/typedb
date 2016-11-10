@@ -24,6 +24,9 @@ import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
+import io.mindmaps.graql.Pattern;
+
+import static io.mindmaps.graql.Graql.and;
 
 public class GeoGraph extends TestGraph{
 
@@ -178,9 +181,10 @@ public class GeoGraph extends TestGraph{
     @Override
     protected void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
-        String transitivity_LHS = "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "(geo-entity: $y, entity-location: $z) isa is-located-in;";
-        String transitivity_RHS = "(geo-entity: $x, entity-location: $z) isa is-located-in;";
+        Pattern transitivity_LHS = and(mindmaps.graql().parsePatterns(
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
+        Pattern transitivity_RHS = and(mindmaps.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
         mindmaps.addRule(transitivity_LHS, transitivity_RHS, inferenceRule);
     }
 }

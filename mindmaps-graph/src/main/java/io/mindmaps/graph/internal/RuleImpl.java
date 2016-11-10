@@ -21,6 +21,7 @@ package io.mindmaps.graph.internal;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -31,10 +32,14 @@ import java.util.HashSet;
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(Vertex v, RuleType type, AbstractMindmapsGraph mindmapsGraph, String lhs, String rhs) {
+    RuleImpl(Vertex v, RuleType type, AbstractMindmapsGraph mindmapsGraph, Pattern lhs, Pattern rhs) {
         super(v, type, mindmapsGraph);
-        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);
-        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs);
+
+        //setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);
+        //setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs);
+
+        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
+        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
     }
 
     //TODO: Fill out details on this method
@@ -66,8 +71,8 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return A string representing the left hand side GraQL query.
      */
     @Override
-    public String getLHS() {
-        return getProperty(Schema.ConceptProperty.RULE_LHS);
+    public Pattern getLHS() {
+        return parsePattern(getProperty(Schema.ConceptProperty.RULE_LHS));
     }
 
     /**
@@ -75,8 +80,15 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return A string representing the right hand side GraQL query.
      */
     @Override
-    public String getRHS() {
-        return getProperty(Schema.ConceptProperty.RULE_RHS);
+    public Pattern getRHS() {
+        return parsePattern(getProperty(Schema.ConceptProperty.RULE_RHS));
+    }
+
+    private Pattern parsePattern(String value){
+        if(value == null)
+            return null;
+        else
+            return getMindmapsGraph().graql().parsePattern(value);
     }
 
 

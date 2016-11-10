@@ -132,6 +132,15 @@ public class QueryBuilderImpl implements QueryBuilder{
     }
 
     /**
+     * @param patternString a string representing a pattern
+     * @return a pattern
+     */
+    @Override
+    public Pattern parsePattern(String patternString){
+        return queryParser.parsePattern(patternString);
+    }
+
+    /**
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */

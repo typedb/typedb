@@ -51,6 +51,12 @@ public interface QueryBuilder {
     List<Pattern> parsePatterns(String patternsString);
 
     /**
+     * @param patternString a string representing a pattern
+     * @return a pattern
+     */
+    Pattern parsePattern(String patternString);
+
+    /**
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */

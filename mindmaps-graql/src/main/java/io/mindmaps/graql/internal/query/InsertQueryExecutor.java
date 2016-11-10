@@ -25,6 +25,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
@@ -239,8 +240,8 @@ public class InsertQueryExecutor {
             );
         } else if (type.isRuleType()) {
             return addOrGetInstance(id, type.asRuleType(), graph::getRule, ruleType -> {
-                String lhs = var.getProperty(LhsProperty.class).get().getLhs();
-                String rhs = var.getProperty(RhsProperty.class).get().getRhs();
+                Pattern lhs = var.getProperty(LhsProperty.class).get().getLhs();
+                Pattern rhs = var.getProperty(RhsProperty.class).get().getRhs();
                 return graph.addRule(lhs, rhs, ruleType);
             });
         } else {

@@ -103,14 +103,6 @@ public class Fragments {
         return new ValueFragment(start, predicate);
     }
 
-    public static RhsFragment rhs(String start, String rhs) {
-        return new RhsFragment(start, rhs);
-    }
-
-    public static LhsFragment lhs(String start, String lhs) {
-        return new LhsFragment(start, lhs);
-    }
-
     public static IsAbstractFragment isAbstract(String start) {
         return new IsAbstractFragment(start);
     }

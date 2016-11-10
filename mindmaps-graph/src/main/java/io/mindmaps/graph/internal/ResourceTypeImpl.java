@@ -26,6 +26,7 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,8 +42,9 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph, DataType<D> dataType, boolean isUnique) {
         super(v, type, mindmapsGraph);
-        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType.getName());
-        setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique);
+
+        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
+        setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity());
     }
 
     /**
