@@ -30,6 +30,7 @@ import io.mindmaps.graql.Var;
 import java.util.Collection;
 import java.util.Collections;
 
+import static io.mindmaps.graql.Graql.and;
 import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
@@ -110,8 +111,8 @@ public class InstanceMapper {
     //TODO hypothesis, conclusion, isMaterialize, etc
     private static Var map(Rule rule){
         Var var = base(rule);
-        var = var.lhs(rule.getLHS());
-        var = var.rhs(rule.getRHS());
+        var = var.lhs(and(rule.getLHS()));
+        var = var.rhs(and(rule.getRHS()));
         return var;
     }
 

@@ -18,7 +18,6 @@
 package io.mindmaps.test.migration.export;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.Instance;
@@ -37,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.mindmaps.graql.Graql.and;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
@@ -149,8 +149,8 @@ public abstract class GraphWriterTestBase extends AbstractMindmapsMigratorTest {
     public void assertRuleCopied(Rule rule1, MindmapsGraph two){
         Rule rule2 = getInstanceUniqueByResourcesFromGraph(two, rule1).asRule();
 
-        assertEquals(rule1.getLHS(), rule2.getLHS());
-        assertEquals(rule1.getRHS(), rule2.getRHS());
+        assertEquals(and(rule1.getLHS()), rule2.getLHS());
+        assertEquals(and(rule1.getRHS()), rule2.getRHS());
     }
 
     public void assertOntologiesEqual(MindmapsGraph one, MindmapsGraph two){
