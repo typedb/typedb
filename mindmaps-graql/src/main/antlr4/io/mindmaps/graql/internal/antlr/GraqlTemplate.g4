@@ -60,6 +60,7 @@ expr
  | GREATEREQ expr expr    #greaterEqExpression
  | LESS expr expr         #lessExpression
  | LESSEQ expr expr       #lessEqExpression
+ | STRING                 #stringExpression
  | BOOLEAN                #booleanExpression
  | NULL                   #nullExpression
  | macro                  #macroExpression
@@ -98,6 +99,9 @@ keyword
 | GREATEREQ
 | LESS
 | LESSEQ
+| QUOTE
+| SQOUTE
+| STRING
 ;
 
 FOR         : 'for';
@@ -108,6 +112,7 @@ DO          : 'do';
 IN          : 'in';
 
 NULL        : 'null';
+STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
 BOOLEAN     : TRUE | FALSE;
 TRUE        : 'true';
 FALSE       : 'false';
@@ -125,6 +130,8 @@ LESSEQ      : 'le';
 LPAREN      : '(';
 RPAREN      : ')';
 DOLLAR      : '$';
+QUOTE       : '"';
+SQOUTE      : '\'';
 
 ID          : [a-zA-Z0-9_-]+ ('.' [a-zA-Z0-9_-]+ )*;
 ID_GRAQL    : '$' ID;
@@ -135,3 +142,5 @@ REPLACE     : ID? '<' ID '>' ID? ;
 // hidden channels
 WS          : [ \t\r\n]                  -> channel(1);
 COMMENT     : '#' .*? '\r'? ('\n' | EOF) -> channel(2);
+
+fragment ESCAPE_SEQ : '\\' . ;
