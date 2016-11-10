@@ -83,7 +83,7 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
         Rule rule = graph.getResource("expectation-rule", graph.getResourceType("name")).owner().asRule();
 
         assertJsonEquals(
-                Json.object("id", rule.getId(), "isa", "a-rule-type", "lhs", rule.getLHS(), "rhs", rule.getRHS()),
+                Json.object("id", rule.getId(), "isa", "a-rule-type", "lhs", "{" + rule.getLHS() + "}", "rhs", "{" + rule.getRHS() + "}"),
                 rule
         );
     }
