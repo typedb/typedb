@@ -42,7 +42,7 @@ public class LhsProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public String getProperty() {
-        return "{" + lhs + "}";
+        return lhs.toString();
     }
 
     @Override
