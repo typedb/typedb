@@ -57,7 +57,7 @@ public class Relation extends Atom {
         inferTypeFromRoles();
     }
 
-    public Relation(Relation a) {
+    private Relation(Relation a) {
         super(a);
         castings.addAll(a.getPattern().asVar().getCastings());
         inferTypeFromRoles();
@@ -82,9 +82,9 @@ public class Relation extends Atom {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof Relation)) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Relation a2 = (Relation) obj;
-
         //TODO need to compare roles and roleplayers
         return this.getTypeId().equals(a2.getTypeId()) && this.getVarNames().equals(a2.getVarNames());
     }
@@ -99,7 +99,8 @@ public class Relation extends Atom {
 
     @Override
     public boolean isEquivalent(Object obj) {
-        if (!(obj instanceof Relation)) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Relation a2 = (Relation) obj;
         boolean isEquivalent = this.getTypeId().equals(a2.getTypeId());
 
@@ -112,7 +113,6 @@ public class Relation extends Atom {
             isEquivalent = childRoleConceptMap.containsKey(role) &&
                     childRoleConceptMap.get(role).equals(roleConceptMap.get(role));
         }
-
         return isEquivalent;
     }
 

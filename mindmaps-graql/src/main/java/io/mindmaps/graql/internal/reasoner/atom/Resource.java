@@ -20,24 +20,18 @@ package io.mindmaps.graql.internal.reasoner.atom;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Resource extends Binary{
 
     public Resource(VarAdmin pattern) { super(pattern);}
     public Resource(VarAdmin pattern, Query par) { super(pattern, par);}
-    public Resource(Resource a) { super(a);}
+    private Resource(Resource a) { super(a);}
 
     @Override
     protected String extractValueVariableName(VarAdmin var){
-        String name = "";
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarAdmin resVar = prop.getResource();
-        if (resVar.getValuePredicates().isEmpty() && resVar.isUserDefinedName())
-            name = resVar.getName();
-        return name;
+        return resVar.isUserDefinedName()? resVar.getName() : "";
     }
 
     @Override

@@ -377,7 +377,7 @@ public class Query implements MatchQueryInternal {
         });
     }
 
-    public void addAtomConstraints(Atom atom){
+    private void addAtomConstraints(Atom atom){
         addAtomConstraints(atom.getIdPredicates());
         addAtomConstraints(atom.getValuePredicates());
         addAtomConstraints(atom.getTypeConstraints()

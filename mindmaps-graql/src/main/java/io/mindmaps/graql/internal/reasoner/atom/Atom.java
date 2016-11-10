@@ -17,18 +17,13 @@
  */
 package io.mindmaps.graql.internal.reasoner.atom;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.util.ErrorMessage;
@@ -247,12 +242,6 @@ public abstract class Atom extends AtomBase {
                     relevantTypes.addAll(((Binary)atom).getLinkedAtoms());
                 });
         return relevantTypes;
-    }
-
-    public Set<Atom> getResources(){
-        return getParentQuery().getResources().stream()
-                .filter(atom-> containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
     }
 
     public Map<String, Predicate> getVarSubMap() {

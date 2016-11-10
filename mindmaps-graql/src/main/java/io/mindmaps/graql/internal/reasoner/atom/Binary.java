@@ -20,19 +20,17 @@ package io.mindmaps.graql.internal.reasoner.atom;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class Binary extends Atom{
 
-    protected Predicate predicate = null;
+    private Predicate predicate = null;
     protected String valueVariable;
 
     public Binary(VarAdmin pattern) {
@@ -63,13 +61,13 @@ public abstract class Binary extends Atom{
                 .filter(at -> at.getVarName().equals(valueVariable)).findFirst().orElse(null) : null;
     }
 
-    public boolean predicatesEquivalent(Binary atom){
+    private boolean predicatesEquivalent(Binary atom){
         Predicate pred = getPredicate();
         Predicate objPredicate = atom.getPredicate();
         return (pred  == null && objPredicate == null)
             || ((pred  != null && objPredicate != null) && pred.isEquivalent(objPredicate));
     }
-    public int predicateHashCode(){
+    private int predicateHashCode(){
         return predicate != null? predicate.hashCode() : 0;
     }
 
@@ -78,7 +76,8 @@ public abstract class Binary extends Atom{
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj.getClass().equals(this.getClass()))) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Binary a2 = (Binary) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
                 && this.valueVariable.equals(a2.getValueVariable());
@@ -86,7 +85,8 @@ public abstract class Binary extends Atom{
 
     @Override
     public boolean isEquivalent(Object obj) {
-        if (!(obj.getClass().equals(this.getClass()))) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Binary a2 = (Binary) obj;
         return this.typeId.equals(a2.getTypeId())
                 && predicatesEquivalent(a2);
@@ -97,7 +97,7 @@ public abstract class Binary extends Atom{
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
         hashCode = hashCode * 37 + this.varName.hashCode();
-        hashCode = hashCode * 37 + predicateHashCode();
+        hashCode = hashCode * 37 + this.valueVariable.hashCode();
         return hashCode;
     }
 

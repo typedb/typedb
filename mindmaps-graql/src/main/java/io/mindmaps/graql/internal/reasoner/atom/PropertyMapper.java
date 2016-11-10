@@ -37,14 +37,14 @@ public class PropertyMapper {
             return Sets.newHashSet(AtomicFactory.create(var, parent));
     }
 
-    public static Set<Atomic> map(ValueProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(ValueProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         VarAdmin valueVar = Graql.var(var.getName()).value(prop.getPredicate()).admin();
         atoms.add(AtomicFactory.create(valueVar, parent));
         return atoms;
     }
 
-    public static Set<Atomic> map(IdProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(IdProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getId();
@@ -55,7 +55,7 @@ public class PropertyMapper {
         return atoms;
     }
 
-    public static Set<Atomic> map(SubProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(SubProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getSuperType().getId().orElse("");
@@ -75,7 +75,7 @@ public class PropertyMapper {
         return atoms;
     }
 
-    public static Set<Atomic> map(PlaysRoleProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(PlaysRoleProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getRole().getId().orElse("");
@@ -93,7 +93,7 @@ public class PropertyMapper {
         return atoms;
     }
 
-    public static Set<Atomic> map(HasResourceTypeProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(HasResourceTypeProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getResourceType().getId().orElse("");
@@ -105,7 +105,7 @@ public class PropertyMapper {
         return atoms;
     }
 
-    public static Set<Atomic> map(IsaProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(IsaProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getType().getId().orElse("");
@@ -125,7 +125,7 @@ public class PropertyMapper {
         return atoms;
     }
 
-    public static Set<Atomic> map(HasResourceProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(HasResourceProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getType();

@@ -29,9 +29,7 @@ public class TypeAtom extends Binary{
     public TypeAtom(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-    public TypeAtom(TypeAtom a) {
-        super(a);
-    }
+    private TypeAtom(TypeAtom a) { super(a);}
 
     @Override
     protected String extractValueVariableName(VarAdmin var) {
@@ -54,7 +52,7 @@ public class TypeAtom extends Binary{
 
     @Override
     public Type getType(){
-        return  getPredicate() != null? getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
+        return getPredicate() != null? getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
     }
 }
 

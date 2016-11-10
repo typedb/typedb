@@ -54,7 +54,8 @@ public abstract class Predicate<T> extends AtomBase{
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj.getClass().equals(this.getClass()))) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Predicate a2 = (Predicate) obj;
         return this.getVarName().equals(a2.getVarName())
                 && this.getPredicateValue().equals(a2.getPredicateValue());
@@ -70,7 +71,8 @@ public abstract class Predicate<T> extends AtomBase{
 
     @Override
     public boolean isEquivalent(Object obj){
-        if (!(obj.getClass().equals(this.getClass()))) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Predicate a2 = (Predicate) obj;
         return this.getPredicateValue().equals(a2.getPredicateValue());
     }

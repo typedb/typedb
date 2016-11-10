@@ -29,12 +29,10 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public ValuePredicate(VarAdmin pattern) {
         super(pattern);
     }
-
     public ValuePredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-
-    public ValuePredicate(ValuePredicate pred) {
+    private ValuePredicate(ValuePredicate pred) {
         this(pred.getVarName(), pred.predicate, pred.getParentQuery());
     }
 
@@ -53,8 +51,27 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Predicate a2 = (Predicate) obj;
+        return this.getVarName().equals(a2.getVarName())
+                && this.predicate.getClass().equals(a2.predicate.getClass())
+                && this.getPredicateValue().equals(a2.getPredicateValue());
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.predicate.getClass().hashCode();
+        return hashCode;
+    }
+
+    @Override
     public boolean isEquivalent(Object obj){
-        if (!(obj instanceof ValuePredicate)) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         ValuePredicate a2 = (ValuePredicate) obj;
         return this.predicate.getClass().equals(a2.predicate.getClass()) &&
                 this.getPredicateValue().equals(a2.getPredicateValue());
