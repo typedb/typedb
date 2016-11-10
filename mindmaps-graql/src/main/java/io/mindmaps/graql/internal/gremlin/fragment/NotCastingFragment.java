@@ -23,6 +23,11 @@ class NotCastingFragment extends AbstractFragment {
     }
 
     @Override
+    public boolean isStartingFragment() {
+        return true;
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.NOT_CASTING;
     }

@@ -75,8 +75,22 @@ class ConjunctionQuery {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
 
-        this.equivalentFragmentSets =
+        ImmutableSet<EquivalentFragmentSet> fragmentSets =
                 vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
+
+        // Get all variable names mentioned in non-starting fragments
+        Set<String> names = fragmentSets.stream()
+                .flatMap(EquivalentFragmentSet::getFragments)
+                .filter(fragment -> !fragment.isStartingFragment())
+                .flatMap(Fragment::getVariableNames)
+                .collect(toImmutableSet());
+
+        // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
+        this.equivalentFragmentSets = fragmentSets.stream()
+                .filter(set -> set.getFragments().anyMatch(
+                        fragment -> !(fragment.isStartingFragment() && names.contains(fragment.getStart()))
+                ))
+                .collect(toImmutableSet());
 
         this.sortedFragments = sortFragments();
     }
@@ -86,15 +100,15 @@ class ConjunctionQuery {
      */
     Set<List<Fragment>> allFragmentOrders() {
         Collection<List<EquivalentFragmentSet>> fragmentSetPermutations = Collections2.permutations(equivalentFragmentSets);
-        return fragmentSetPermutations.stream().flatMap(fragmentSet -> foo(fragmentSet).stream()).collect(toSet());
+        return fragmentSetPermutations.stream().flatMap(ConjunctionQuery::cartesianProduct).collect(toSet());
     }
 
-    private static Set<List<Fragment>> foo(List<EquivalentFragmentSet> fragmentSets) {
+    private static Stream<List<Fragment>> cartesianProduct(List<EquivalentFragmentSet> fragmentSets) {
         // Get fragments in each set
         List<Set<Fragment>> fragments = fragmentSets.stream()
                 .map(set -> set.getFragments().collect(toSet()))
                 .collect(toList());
-        return Sets.cartesianProduct(fragments);
+        return Sets.cartesianProduct(fragments).stream();
     }
 
     /**
