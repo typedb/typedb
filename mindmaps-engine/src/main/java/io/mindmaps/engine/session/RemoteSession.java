@@ -42,7 +42,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_INIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_END;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static io.mindmaps.util.REST.RemoteShell.KEYSPACE;
 import static io.mindmaps.util.REST.RemoteShell.OUTPUT_FORMAT;
@@ -98,7 +98,7 @@ public class RemoteSession {
                 case ACTION_QUERY:
                     sessions.get(session).receiveQuery(json);
                     break;
-                case ACTION_QUERY_END:
+                case ACTION_END:
                     sessions.get(session).executeQuery();
                     break;
                 case ACTION_QUERY_ABORT:

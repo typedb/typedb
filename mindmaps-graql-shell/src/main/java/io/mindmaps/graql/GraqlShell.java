@@ -74,7 +74,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION_INIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_END;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 import static io.mindmaps.util.REST.RemoteShell.ERROR;
@@ -138,9 +138,6 @@ public class GraqlShell {
     private CompletableFuture<Json> autocompleteResponse = new CompletableFuture<>();
 
     private boolean waitingQuery = false;
-
-    // The query strings to execute
-    private Optional<List<String>> queryStrings;
 
     /**
      * Run a Graql REPL
@@ -364,24 +361,24 @@ public class GraqlShell {
                 switch (matcher.group(1)) {
                     case EDIT_COMMAND:
                         executeQuery(runEditor());
-                        return;
+                        continue;
                     case COMMIT_COMMAND:
                         commit();
-                        return;
+                        continue;
                     case ROLLBACK_COMMAND:
                         rollback();
-                        return;
+                        continue;
                     case CLEAR_COMMAND:
                         console.clearScreen();
-                        return;
+                        continue;
                     case LICENSE_COMMAND:
                         printLicense();
-                        return;
+                        continue;
                     case EXIT_COMMAND:
                         return;
                     case "":
                         // Ignore empty command
-                        return;
+                        continue;
                 }
             }
 
@@ -436,7 +433,7 @@ public class GraqlShell {
                 String result = json.at(QUERY_RESULT).asString();
                 print(result);
                 break;
-            case ACTION_QUERY_END:
+            case ACTION_END:
                 // Alert the shell that the query has finished, so it can prompt for another query
                 synchronized (this) {
                     notifyAll();
@@ -473,33 +470,36 @@ public class GraqlShell {
     }
 
     private void executeQuery(String queryString) {
-        try {
-            // Split query into chunks
-            Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
+        // Split query into chunks
+        Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
 
-            for (String queryChunk : splitQuery) {
-                sendJson(Json.object(
-                        ACTION, ACTION_QUERY,
-                        QUERY, queryChunk
-                ));
-            }
-
-            sendJson(Json.object(ACTION, ACTION_QUERY_END));
-
-            // Wait for the end of the query results before continuing
-            waitingQuery = true;
-            synchronized (this) {
-                wait();
-            }
-            waitingQuery = false;
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        for (String queryChunk : splitQuery) {
+            sendJson(Json.object(
+                    ACTION, ACTION_QUERY,
+                    QUERY, queryChunk
+            ));
         }
+
+        sendJson(Json.object(ACTION, ACTION_END));
+        waitForEnd();
+    }
+
+    private void waitForEnd() {
+        // Wait until the command is executed before continuing
+        waitingQuery = true;
+        synchronized (this) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        waitingQuery = false;
     }
 
     private void commit() {
         sendJson(Json.object(ACTION, ACTION_COMMIT));
+        waitForEnd();
     }
 
     private void rollback() {
