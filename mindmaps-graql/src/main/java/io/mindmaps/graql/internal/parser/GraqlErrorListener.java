@@ -26,12 +26,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-class GraqlErrorListener extends BaseErrorListener {
+public class GraqlErrorListener extends BaseErrorListener {
 
     private final String[] query;
     private final List<SyntaxError> errors = new ArrayList<>();
 
-    GraqlErrorListener(String query) {
+    public GraqlErrorListener(String query) {
         if (query.isEmpty()) {
             this.query = null;
         } else {
@@ -51,7 +51,7 @@ class GraqlErrorListener extends BaseErrorListener {
         }
     }
 
-    boolean hasErrors() {
+    public boolean hasErrors() {
         return !errors.isEmpty();
     }
 

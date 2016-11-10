@@ -18,8 +18,10 @@
 
 package io.mindmaps.graql.internal.template;
 
+import io.mindmaps.exception.GraqlParsingException;
 import io.mindmaps.graql.internal.antlr.GraqlTemplateLexer;
 import io.mindmaps.graql.internal.antlr.GraqlTemplateParser;
+import io.mindmaps.graql.internal.parser.GraqlErrorListener;
 import io.mindmaps.graql.internal.template.macro.DoubleMacro;
 import io.mindmaps.graql.internal.template.macro.IntMacro;
 import io.mindmaps.graql.internal.template.macro.Macro;
@@ -62,25 +64,39 @@ public class TemplateParser {
      * @return resolved graql query string
      */
     public String parseTemplate(String templateString, Map<String, Object> data){
+        GraqlErrorListener errorListener = new GraqlErrorListener(templateString);
 
-        GraqlTemplateLexer lexer = getLexer(templateString);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        GraqlTemplateParser parser = getParser(tokens);
-        parser.setBuildParseTree(true);
-        ParseTree tree = parser.template();
+        CommonTokenStream tokens = lexGraqlTemplate(templateString, errorListener);
+        ParseTree tree = parseGraqlTemplate(tokens, errorListener);
 
         TemplateVisitor visitor = new TemplateVisitor(tokens, data, macros);
         return visitor.visit(tree).toString();
     }
 
 
-    private GraqlTemplateLexer getLexer(String templateString){
+    private CommonTokenStream lexGraqlTemplate(String templateString, GraqlErrorListener errorListener){
         ANTLRInputStream inputStream = new ANTLRInputStream(templateString);
-        return new GraqlTemplateLexer(inputStream);
+        GraqlTemplateLexer lexer = new GraqlTemplateLexer(inputStream);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(errorListener);
+
+        return new CommonTokenStream(lexer);
     }
 
-    private GraqlTemplateParser getParser(CommonTokenStream tokens){
-        return new GraqlTemplateParser(tokens);
+    private ParseTree parseGraqlTemplate(CommonTokenStream tokens, GraqlErrorListener errorListener){
+        GraqlTemplateParser parser = new GraqlTemplateParser(tokens);
+        parser.setBuildParseTree(true);
+
+        parser.removeErrorListeners();
+        parser.addErrorListener(errorListener);
+
+        ParseTree tree = parser.template();
+
+        if(errorListener.hasErrors()){
+            throw new GraqlParsingException(errorListener.toString());
+        }
+
+        return tree;
     }
 
     /**
