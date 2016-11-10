@@ -24,6 +24,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 
+import io.mindmaps.graql.internal.reasoner.atom.Binary;
 import io.mindmaps.graql.internal.reasoner.atom.Predicate;
 import java.util.Collection;
 import java.util.HashMap;
@@ -61,6 +62,26 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
                 .collect(Collectors.toSet()));
     }
 
+    public QueryAnswers filterByTypes(Set<String> vars, Map<String, Type> varTypeMap){
+        QueryAnswers results = new QueryAnswers();
+        if(this.isEmpty()) return results;
+        Map<String, Type> filteredMap = new HashMap<>();
+        varTypeMap.forEach( (v, t) -> {
+            if(vars.contains(v)) filteredMap.put(v, t);
+        });
+        if (filteredMap.isEmpty()) return this;
+        this.forEach(answer -> {
+            boolean isCompatible = true;
+            Iterator<Map.Entry<String, Type>> it = filteredMap.entrySet().iterator();
+            while( it.hasNext() && isCompatible){
+                Map.Entry<String, Type> entry = it.next();
+                isCompatible = answer.get(entry.getKey()).type().equals(entry.getValue());
+            }
+            if (isCompatible) results.add(answer);
+        });
+        return results;
+    }
+
     public QueryAnswers join(QueryAnswers localTuples) {
         if (this.isEmpty() || localTuples.isEmpty())
             return new QueryAnswers();
@@ -93,7 +114,8 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return unify(unifiers, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
-    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars, Map<String, Concept> valueConstraints, Map<String, Type> typeConstraints){
+    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars,
+                               Map<String, Concept> valueConstraints, Map<String, String> typeConstraints){
         if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(entry -> {
@@ -105,7 +127,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
                 Concept con = entry.get(var);
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
-                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.type()) ) )
+                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId()) ) )
                     isCompatible = false;
                 else
                     answer.put(var, con);
@@ -133,12 +155,14 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         //identify extra subs contribute to/constraining answers
         Map<String, Concept> subVars = new HashMap<>();
         Map<String, Concept> valueConstraints = new HashMap<>();
-        Map<String, Type> typeConstraints = new HashMap<>();
+        Map<String, String> typeConstraints = new HashMap<>();
 
         //find extra type constraints
         Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
-        extraTypes.forEach( type -> {
-           typeConstraints.put(type.getVarName(), type.getType());
+        extraTypes.removeAll(childQuery.getTypeConstraints());
+        extraTypes.stream().map(t -> (Binary) t).forEach(type -> {
+            Predicate predicate = parentQuery.getIdPredicate(type.getValueVariable());
+            if (predicate != null) typeConstraints.put(type.getVarName(), predicate.getPredicateValue());
         });
 
         //find extra subs
@@ -157,6 +181,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         }
 
         QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, valueConstraints, typeConstraints);
-        return unifiedAnswers.filterVars(parentQuery.getSelectedNames());
+        return unifiedAnswers.filterVars(parentQuery.getSelectedNames())
+                             .filterInComplete(parentQuery.getSelectedNames());
     }
 }

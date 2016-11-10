@@ -21,13 +21,9 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.util.ErrorMessage;
@@ -78,6 +74,8 @@ public abstract class Atom extends AtomBase {
     @Override
     public boolean isAtom(){ return true;}
 
+    public boolean isBinary(){return false;}
+
     /**
      * @return true if the atom corresponds to a atom
      * */
@@ -116,8 +114,8 @@ public abstract class Atom extends AtomBase {
                             //Check for any constraints on the variables
                             String chVar = childRoleVarTypeMap.get(role).getKey();
                             String pVar = entry.getValue().getKey();
-                            String chId = child.getBody().getIdPredicate(chVar);
-                            String pId = parent.getIdPredicate(pVar);
+                            String chId = child.getBody().getIdPredicate(chVar).getPredicateValue();
+                            String pId = parent.getIdPredicate(pVar).getPredicateValue();
                             if (!chId.isEmpty() && !pId.isEmpty())
                                 relRelevant &= chId.equals(pId);
                         }
@@ -178,21 +176,6 @@ public abstract class Atom extends AtomBase {
         return atomRecursive;
     }
 
-    public MatchQuery getMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = graph.graql();
-        MatchQuery matchQuery = qb.match(getPattern());
-
-        //add IdPredicates
-        Map<String, Predicate> varSubMap = getVarSubMap();
-        Set<String> selectVars = getVarNames();
-        varSubMap.forEach( (var, sub) -> {
-            Set<PatternAdmin> patterns = new HashSet<>();
-            patterns.add(sub.getPattern());
-            matchQuery.admin().getPattern().getPatterns().add(Patterns.conjunction(patterns));
-        });
-        return matchQuery.admin().select(selectVars);
-    }
-
     public Type getType(){
         if (type == null)
             type = getParentQuery().getGraph().orElse(null).getType(typeId);
@@ -216,21 +199,6 @@ public abstract class Atom extends AtomBase {
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
 
-        //try based on IdPredicates
-        Query parentQuery = parentAtom.getParentQuery();
-        getParentQuery().getIdPredicates().stream().filter(sub -> containsVar(sub.getVarName())).forEach(sub -> {
-            String chVar = sub.getVarName();
-            String id = sub.getPredicateValue();
-            Set<Atomic> parentSubs = parentQuery.getIdPredicates().stream()
-                    .filter(s -> s.getPredicateValue().equals(id)).collect(Collectors.toSet());
-            String pVar = parentSubs.isEmpty()? "" : parentSubs.iterator().next().getVarName();
-            if (!pVar.isEmpty()) {
-                if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
-                childBVs.remove(chVar);
-                varsToAllocate.remove(pVar);
-            }
-        });
-
         //try based on roles
         for (String chVar : childBVs) {
             RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
@@ -245,9 +213,17 @@ public abstract class Atom extends AtomBase {
     }
 
     public Set<Predicate> getIdPredicates() {
-        return getParentQuery().getIdPredicates().stream()
+        Set<Predicate> relevantPredicates = new HashSet<>();
+        getParentQuery().getIdPredicates().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
+                .forEach(relevantPredicates::add);
+        //ids from indirect types
+        getTypeConstraints()
+                .forEach(atom -> {
+                    Predicate predicate = getParentQuery().getIdPredicate(atom.getValueVariable());
+                    if (predicate != null) relevantPredicates.add(predicate);
+                });
+        return relevantPredicates;
     }
 
     public Set<Predicate> getValuePredicates(){
@@ -256,27 +232,17 @@ public abstract class Atom extends AtomBase {
                 .collect(Collectors.toSet());
     }
 
-    public Set<Predicate> getResourceValuePredicates(){
-        Set<String> resVars = getResources().stream()
-                .map(Atom::getValueVariable)
-                .collect(Collectors.toSet());
-        return getParentQuery().getValuePredicates().stream()
-                .filter(atom -> resVars.contains(atom.getVarName()))
-                .collect(Collectors.toSet());
-    }
-
     public Set<Atom> getTypeConstraints(){
-        return getParentQuery().getTypeConstraints().stream()
+        Set<Atom> relevantTypes = new HashSet<>();
+        //ids from indirect types
+        getParentQuery().getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
+                .forEach(atom -> {
+                    relevantTypes.add(atom);
+                    relevantTypes.addAll(((Binary)atom).getLinkedAtoms());
+                });
+        return relevantTypes;
     }
-
-    public Set<Atom> getResources(){
-        return getParentQuery().getResources().stream()
-                .filter(atom-> containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
-    }
-
 
     public Map<String, Predicate> getVarSubMap() {
         Map<String, Predicate> map = new HashMap<>();

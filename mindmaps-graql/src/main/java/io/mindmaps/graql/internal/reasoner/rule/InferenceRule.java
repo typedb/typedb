@@ -6,6 +6,8 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.Binary;
+import io.mindmaps.graql.internal.reasoner.atom.Predicate;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
@@ -55,12 +57,19 @@ public class InferenceRule {
     }
 
     private void propagateConstraints(Atom parentAtom){
-        body.addAtomConstraints(parentAtom.getIdPredicates());
-        head.addAtomConstraints(body.getIdPredicates());
-
         if(parentAtom.isRelation() || parentAtom.isResource()) {
-            head.addAtomConstraints(parentAtom.getTypeConstraints());
-            body.addAtomConstraints(parentAtom.getTypeConstraints());
+            Set<Atom> types = parentAtom.getTypeConstraints().stream()
+                    .filter(type -> !body.containsEquivalentAtom(type))
+                    .collect(Collectors.toSet());
+            Set<Predicate> predicates = new HashSet<>();
+            types.stream().map(type -> (Binary) type)
+                    .filter(type -> type.getPredicate() != null)
+                    .map(Binary::getPredicate)
+                    .forEach(predicates::add);
+            head.addAtomConstraints(predicates);
+            body.addAtomConstraints(predicates);
+            head.addAtomConstraints(types);
+            body.addAtomConstraints(types);
         }
     }
 

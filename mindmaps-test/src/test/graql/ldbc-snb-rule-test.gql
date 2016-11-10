@@ -1,12 +1,19 @@
 insert
 
-
-"R6" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$x has gender 'male';$x has age >=18;
-$y isa product;$y has min-age >=18;
-$z isa country;$z id 'Italy';
-($y, $z) isa made-in;
+$t isa tag;$t has name 'Ludwig van Beethoven';
+($x, $t) isa tagging;
+$y isa product;$y has name 'Nocturnes';
 },
-rhs {($x, $y) isa recommendation};
+rhs {($x, $y) isa recommendation;};
+
+#isa inference-rule,
+#lhs {$x isa person;
+#$x has gender 'male';$x has age >=18;
+#$y isa product;$y has min-age >=18;
+#$z isa country;$z has name 'Italy';
+#($y, $z) isa made-in;
+#},
+#rhs {($x, $y) isa recommendation;};
 

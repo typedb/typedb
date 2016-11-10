@@ -67,8 +67,8 @@ public class AtomicQuery extends Query{
         children.addAll(q.getChildren());
     }
 
-    public AtomicQuery(Atom at) {
-        super(at);
+    public AtomicQuery(Atom at, Set<String> vars) {
+        super(at, vars);
         atom = selectAtoms().iterator().next();
     }
 
@@ -122,7 +122,7 @@ public class AtomicQuery extends Query{
                     .filter(Concept::isResource)
                     .forEach(c -> {
                         Map<String, Concept> answer = new HashMap<>();
-                        answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName())));
+                        answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName()).getPredicateValue()));
                         answer.put(atom.getValueVariable(), c);
                         insertAnswers.add(answer);
                     });

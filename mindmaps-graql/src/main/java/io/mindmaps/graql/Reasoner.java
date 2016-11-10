@@ -55,8 +55,11 @@ public class Reasoner {
         MatchQuery qLHS = qb.match(rule.getLHS());
         MatchQuery qRHS = qb.match(rule.getRHS());
 
-        Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
-        Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
+        //TODO fix this hack
+        Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes().stream()
+                .filter(type -> !type.isRoleType()).collect(Collectors.toSet());
+        Set<Type> conclusionConceptTypes = qRHS.admin().getTypes().stream()
+                .filter(type -> !type.isRoleType()).collect(Collectors.toSet());
 
         hypothesisConceptTypes.forEach(rule::addHypothesis);
         conclusionConceptTypes.forEach(rule::addConclusion);
@@ -117,7 +120,7 @@ public class Reasoner {
 
         answers.forEach( map -> {
             Map<String, Concept> newAns = new HashMap<>(map);
-            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph.getInstance(sub.getPredicateValue())) );
+            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph.getConcept(sub.getPredicateValue())) );
             newAnswers.add(newAns);
         });
 
@@ -141,11 +144,11 @@ public class Reasoner {
                 Iterator<Atom> atIt = atoms.iterator();
 
                 subGoals.add(atomicQuery);
-                AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next());
+                AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next(), atomicQuery.getSelectedNames());
                 atomicQuery.establishRelation(childAtomicQuery);
                 QueryAnswers subs = answerWM(childAtomicQuery, subGoals);
                 while(atIt.hasNext()){
-                    childAtomicQuery = new AtomicMatchQuery(atIt.next());
+                    childAtomicQuery = new AtomicMatchQuery(atIt.next(), atomicQuery.getSelectedNames());
                     atomicQuery.establishRelation(childAtomicQuery);
                     QueryAnswers localSubs = answerWM(childAtomicQuery, subGoals);
                     subs = subs.join(localSubs);
@@ -187,19 +190,19 @@ public class Reasoner {
 
                 subGoals.add(atomicQuery);
                 Atom at = atIt.next();
-                AtomicQuery childAtomicQuery = new AtomicMatchQuery(at);
+                AtomicQuery childAtomicQuery = new AtomicMatchQuery(at, atomicQuery.getSelectedNames());
                 atomicQuery.establishRelation(childAtomicQuery);
                 QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers);
                 while (atIt.hasNext()) {
                     at = atIt.next();
-                    childAtomicQuery = new AtomicMatchQuery(at);
+                    childAtomicQuery = new AtomicMatchQuery(at, atomicQuery.getSelectedNames());
                     atomicQuery.establishRelation(childAtomicQuery);
                     QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers);
                     subs = subs.join(localSubs);
                 }
 
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
-                        .filterVars(atomicQuery.getSelectedNames());
+                                        .filterVars(atomicQuery.getSelectedNames());
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource())
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
@@ -250,10 +253,10 @@ public class Reasoner {
     private QueryAnswers resolveConjunctiveQuery(Query query, boolean materialise) {
         if (!query.isRuleResolvable()) return new QueryAnswers(Sets.newHashSet(query.execute()));
         Iterator<Atom> atIt = query.selectAtoms().iterator();
-        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next());
+        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), query.getSelectedNames());
         QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
         while(atIt.hasNext()){
-            atomicQuery = new AtomicMatchQuery(atIt.next());
+            atomicQuery = new AtomicMatchQuery(atIt.next(), query.getSelectedNames());
             QueryAnswers subAnswers = resolveAtomicQuery(atomicQuery, materialise);
             answers = answers.join(subAnswers);
         }
