@@ -207,28 +207,4 @@ public class TestReasoning extends TestOwlMindMapsBase {
                 "{$iri value 'emartha_cotton_1832';}; select $x;";
         assertEquals(inferRelationMM(isAncestorOfId, megaId), Sets.newHashSet(qb.<MatchQuery>parse(explicitMegaQuery)));
     }
-
-    @Test
-    public void testPerformance(){
-        String eleanorId = "eleanor_pringle_1741";
-        String elisabethId = "elizabeth_clamper_1760";
-        String annId = "ann_lodge_1763";
-        String reeceId = "reece_bright_1993";
-        String megaId = "mega_clamper_1995";
-        String anneId = "anne_archer_1964";
-
-        long startTime = System.currentTimeMillis();
-        IRI hasAncestor = baseIri.resolve("#hasAncestor");
-        IRI isAncestorOf = baseIri.resolve("#isAncestorOf");
-        String hasAncestorId = "op-hasAncestor";
-        String isAncestorOfId = "op-isAncestorOf";
-        assertEquals(inferRelationMM(hasAncestorId, eleanorId).size(), 55);
-        assertEquals(inferRelationMM(hasAncestorId, elisabethId).size(), 52);
-        assertEquals(inferRelationMM(hasAncestorId, annId).size(), 38);
-        assertEquals(inferRelationMM(isAncestorOfId, anneId).size(), 30);
-        assertEquals(inferRelationMM(isAncestorOfId, megaId).size(), 21);
-        assertEquals(inferRelationMM(isAncestorOfId, reeceId).size(), 53);
-        long endTime = System.currentTimeMillis() - startTime;
-        System.out.println("Reasoning time: " + endTime);
-    }
 }
