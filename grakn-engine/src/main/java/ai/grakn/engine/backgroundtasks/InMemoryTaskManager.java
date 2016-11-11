@@ -46,7 +46,7 @@ public class InMemoryTaskManager extends AbstractTaskManager {
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
         //FIXME: get from configz
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::supervisor, 2000, 1000, TimeUnit.MILLISECONDS);
+//        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::supervisor, 2000, 1000, TimeUnit.MILLISECONDS);
     }
 
     public static synchronized InMemoryTaskManager getInstance() {
@@ -159,7 +159,7 @@ public class InMemoryTaskManager extends AbstractTaskManager {
 
 
 
-
+/*
     private void supervisor() {
         taskStorage.entrySet().forEach(x -> {
             // Validity check
@@ -187,7 +187,7 @@ public class InMemoryTaskManager extends AbstractTaskManager {
                 taskStateStorage.put(x.getKey(), state);
             }
         });
-    }
+    } */
 /*
 	@Override
 	public TaskManager pauseTask(UUID uuid, String requesterName, String message) {
