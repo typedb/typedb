@@ -52,7 +52,7 @@ public class TestReasoning extends TestOwlGraknBase {
 
     private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
     private OWLReasoner hermit;
-    private ai.grakn.graql.Reasoner mmReasoner;
+    private ai.grakn.graql.Reasoner graknReasoner;
 
     @Before
     public void loadOwlFiles() throws GraknValidationException {
@@ -60,7 +60,7 @@ public class TestReasoning extends TestOwlGraknBase {
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();
         hermit = new Reasoner(new Configuration(), family);
-        mmReasoner = new ai.grakn.graql.Reasoner(migrator.graph());
+        graknReasoner = new ai.grakn.graql.Reasoner(migrator.graph());
     }
 
     //infer all subjects of relation relationIRI with object 'instanceId'
@@ -95,13 +95,16 @@ public class TestReasoning extends TestOwlGraknBase {
         long mmStartTime = System.currentTimeMillis();
         String subjectRoleId = "owl-subject-" + relationId;
         String objectRoleId = "owl-object-" + relationId;
+
+        // match $x isa tPerson; $x has name $name;
+        // $y has name 'instance';(owl-subject-relationId: $x, owl-object-relationId: $y) isa relationId;
         MatchQuery query = qb.match(
                 var("x").isa("tPerson"),
                 var("y").has(OwlModel.IRI.owlname(), "e"+instanceId),
                 var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
-        QueryAnswers mmAnswers = mmReasoner.resolve(query);
+        QueryAnswers mmAnswers = graknReasoner.resolve(query);
         long mmTime = System.currentTimeMillis() - mmStartTime;
-        System.out.println("MMReasoner answers: " + mmAnswers.size() + " in " + mmTime + " ms");
+        System.out.println("Grakn Reasoner answers: " + mmAnswers.size() + " in " + mmTime + " ms");
         return mmAnswers;
     }
 
@@ -122,7 +125,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'ewalter_whitfield_1863';} or" +
                 "{$y has owl-iri 'ewilliam_whitfield_1852';} or" +
                 "{$y has owl-iri 'egeorge_whitfield_1865';};";
-        assertEquals(mmReasoner.resolve(new Query(queryString2, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)));
+        assertEquals(graknReasoner.resolve(new Query(queryString2, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)));
 
         String queryString3 = "match (owl-subject-op-hasGreatAunt: $x, owl-object-op-hasGreatAunt: $y) isa op-hasGreatAunt;" +
                 "$x has owl-iri 'emary_kate_green_1865'; select $y;";
@@ -131,7 +134,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'esarah_ingelby_1821';} or {$y has owl-iri 'eann_pickard_1809';} or" +
                 "{$y has owl-iri 'esusanna_pickard_1803';} or {$y has owl-iri 'emary_green_1803';} or" +
                 "{$y has owl-iri 'erebecca_green_1800';} or {$y has owl-iri 'eann_green_1806';};";
-        assertEquals(mmReasoner.resolve(new Query(queryString3, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)));
+        assertEquals(graknReasoner.resolve(new Query(queryString3, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)));
 
         IRI hasAncestor = baseIri.resolve("#hasAncestor");
         String hasAncestorId = "op-hasAncestor";
