@@ -223,11 +223,7 @@ class GraqlSession {
     private MatchQuery reasonMatchQuery(MatchQuery query) {
         // Expand match query with reasoner, if there are any rules in the graph
         // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
-        if (!Reasoner.getRules(graph).isEmpty()) {
-            return reasoner.resolveToQuery(query);
-        } else {
-            return query;
-        }
+        return reasoner.resolveToQuery(query);
     }
 
     /**
