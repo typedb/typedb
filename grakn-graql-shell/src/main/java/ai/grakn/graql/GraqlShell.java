@@ -18,17 +18,15 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.internal.shell.GraqlSignalHandler;
-import ai.grakn.graql.internal.shell.ShellCommandCompleter;
-import com.google.common.base.Charsets;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
-import com.google.common.io.CharStreams;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraQLCompleter;
 import ai.grakn.graql.internal.shell.GraqlSignalHandler;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
-import io.mindmaps.util.Version;
+import ai.grakn.util.Version;
+import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import com.google.common.io.CharStreams;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
@@ -71,12 +69,12 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 import static ai.grakn.util.REST.RemoteShell.ERROR;

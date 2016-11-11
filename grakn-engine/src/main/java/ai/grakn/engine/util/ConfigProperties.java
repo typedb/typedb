@@ -19,8 +19,7 @@
 package ai.grakn.engine.util;
 
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.ErrorMessage;
-import io.mindmaps.util.Version;
+import ai.grakn.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
