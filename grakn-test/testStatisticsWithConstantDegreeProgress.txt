@@ -1,0 +1,7 @@
+starting step: 1
+start loading data
+stop loading data
+gremlin count is: 637
+starting to execute: testStatisticsWithConstantDegreeSum.txt
+starting with: 2 threads
+starting repeat: 0

@@ -1,0 +1,2 @@
+current scale - super 10 - nodes 25000
+start generate graph 1478764883s
