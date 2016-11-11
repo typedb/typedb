@@ -2,15 +2,15 @@
   "license": "GPL-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mindmapsdb/mindmapsdb.git"
+    "url": "https://github.com/graknlabs/grakn.git"
   },
-  "name": "mindmapsdb-dashboard",
+  "name": "grakn-dashboard",
   "version": "0.6.0-SNAPSHOT",
   "author": "Denis Igorevich Lobanov",
   "bugs": {
-    "url": "https://github.com/mindmapsdb/mindmapsdb/issues"
+    "url": "https://github.com/graknlabs/grakn/issues"
   },
-  "homepage": "https://github.com/mindmapsdb/mindmapsdb",
+  "homepage": "https://github.com/graknlabs/grakn",
   "dependencies": {
     "animate.css-js": "0.0.9",
     "bootstrap": "^3.3.7",
