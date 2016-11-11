@@ -43,19 +43,16 @@ public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void jsonMigratorMainTest(){
-        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void jsonMainDistributedLoaderTest(){
-        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567");
     }
 
     @Test
     public void jsonMainNoArgsTest() {
-        exit.expectSystemExitWithStatus(1);
         run("json");
     }
 
@@ -87,7 +84,6 @@ public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
-        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
@@ -102,22 +98,19 @@ public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
     }
 
     private void runAndAssertDataCorrect(String... args){
-
-        exit.checkAssertionAfterwards(() -> {
-            EntityType personType = graph.getEntityType("person");
-            assertEquals(1, personType.instances().size());
-
-            Entity person = personType.instances().iterator().next();
-            Entity address = getProperty(person, "has-address").asEntity();
-            Entity streetAddress = getProperty(address, "address-has-street").asEntity();
-
-            Resource number = getResource(streetAddress, "number").asResource();
-            assertEquals(21L, number.getValue());
-
-            Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
-            assertEquals(2, phoneNumbers.size());
-        });
-
         run(args);
+
+        EntityType personType = graph.getEntityType("person");
+        assertEquals(1, personType.instances().size());
+
+        Entity person = personType.instances().iterator().next();
+        Entity address = getProperty(person, "has-address").asEntity();
+        Entity streetAddress = getProperty(address, "address-has-street").asEntity();
+
+        Resource number = getResource(streetAddress, "number").asResource();
+        assertEquals(21L, number.getValue());
+
+        Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
+        assertEquals(2, phoneNumbers.size());
     }
 }

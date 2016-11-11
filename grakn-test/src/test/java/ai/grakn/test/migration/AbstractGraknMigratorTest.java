@@ -60,9 +60,6 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-
     @BeforeClass
     public static void setLogLevel(){
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(Loader.class);

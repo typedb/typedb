@@ -35,39 +35,33 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void csvMainTest(){
-        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void tsvMainTest(){
-        exit.expectSystemExitWithStatus(0);
         String tsvFile = getFile("csv", "pets/data/pets.tsv").getAbsolutePath();
         runAndAssertDataCorrect("-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void spacesMainTest(){
-        exit.expectSystemExitWithStatus(0);
         String tsvFile = getFile("csv", "pets/data/pets.spaces").getAbsolutePath();
         runAndAssertDataCorrect("-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainTestDistributedLoader(){
-        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainDifferentBatchSizeTest(){
-        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void csvMainNoArgsTest(){
-        exit.expectSystemExitWithStatus(1);
         run();
     }
 
@@ -102,7 +96,7 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
     }
 
     private void runAndAssertDataCorrect(String... args){
-        exit.checkAssertionAfterwards(this::assertPetGraphCorrect);
         run(args);
+        assertPetGraphCorrect();
     }
 }

@@ -21,9 +21,6 @@ package ai.grakn.migration.csv;
 import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
-import ai.grakn.migration.base.AbstractMigrator;
-import ai.grakn.migration.base.io.MigrationLoader;
-import ai.grakn.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 
 import java.io.File;
@@ -44,16 +41,17 @@ public class Main {
         return options;
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
+        MigrationCLI.create(args, getOptions()).ifPresent(Main::runCSV);
+    }
 
-        MigrationCLI cli = new MigrationCLI(args, getOptions());
-
+    public static void runCSV(MigrationCLI cli){
         String csvDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
         String csvTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : AbstractMigrator.BATCH_SIZE;
-        String delimiterString =  cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.SEPARATOR);
+        String delimiterString = cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.SEPARATOR);
 
-        if(delimiterString.toCharArray().length != 1){
+        if (delimiterString.toCharArray().length != 1) {
             cli.die("Wrong number of characters in delimiter " + delimiterString);
         }
 
@@ -63,33 +61,32 @@ public class Main {
         File csvDataFile = new File(csvDataFileName);
         File csvTemplate = new File(csvTemplateName);
 
-        if(!csvTemplate.exists()){
+        if (!csvTemplate.exists()) {
             cli.die("Cannot find file: " + csvTemplateName);
         }
 
-        if(!csvDataFile.exists()){
+        if (!csvDataFile.exists()) {
             cli.die("Cannot find file: " + csvDataFileName);
         }
 
         cli.printInitMessage(csvDataFile.getPath());
 
         String template = cli.fileAsString(csvTemplate);
-        try(
+        try (
                 CSVMigrator csvMigrator =
-                    new CSVMigrator(template, csvDataFile).setSeparator(csvDelimiter)
-        ){
+                        new CSVMigrator(template, csvDataFile).setSeparator(csvDelimiter)
+        ) {
 
-            if(cli.hasOption("n")){
+            if (cli.hasOption("n")) {
                 cli.writeToSout(csvMigrator.migrate());
             } else {
                 MigrationLoader.load(cli.getLoader(), batchSize, csvMigrator);
                 cli.printWholeCompletionMessage();
             }
-        }
-        catch (Throwable throwable){
+        } catch (Throwable throwable) {
             cli.die(throwable);
         }
 
-        System.exit(0);
+        cli.initiateShutdown();
     }
 }

@@ -43,6 +43,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
@@ -56,20 +57,16 @@ public class MigrationCLI {
     private static final ConfigProperties properties = ConfigProperties.getInstance();
     private Options defaultOptions = new Options();
     {
-        defaultOptions.addOption("h", "help", false, "print usage message");
-        defaultOptions.addOption("k", "keyspace", true, "keyspace to use");
-        defaultOptions.addOption("u", "uri", true, "uri to engine endpoint");
-        defaultOptions.addOption("n", "no", false, "dry run- write to standard out");
+        defaultOptions.addOption("v", "verbose", false, "Print counts of migrated data.");
+        defaultOptions.addOption("h", "help", false, "Print usage message.");
+        defaultOptions.addOption("k", "keyspace", true, "Grakn graph.");
+        defaultOptions.addOption("u", "uri", true, "Location of Grakn Engine.");
+        defaultOptions.addOption("n", "no", false, "Write to standard out.");
     }
 
     private CommandLine cmd;
 
-    public MigrationCLI(String[] args, Options options){
-        if(!GraknEngineServer.isRunning()){
-            System.out.println(COULD_NOT_CONNECT);
-            System.exit(-1);
-        }
-
+    private MigrationCLI(String[] args, Options options){
         addOptions(options);
         CommandLineParser parser = new DefaultParser();
 
@@ -85,9 +82,21 @@ public class MigrationCLI {
 
         if(cmd.getOptions().length == 0){
             printHelpMessage();
-            exit();
+            throw new IllegalArgumentException("Helping");
         } else if(cmd.getOptions().length == 1 && cmd.hasOption("h")){
-            exit();
+            throw new IllegalArgumentException("Helping");
+        }
+
+        if(!GraknEngineServer.isRunning()){
+            System.out.println(COULD_NOT_CONNECT);
+        }
+    }
+
+    public static Optional<MigrationCLI> create(String[] args, Options options){
+        try {
+            return Optional.of(new MigrationCLI(args, options));
+        } catch (IllegalArgumentException e){
+            return Optional.empty();
         }
     }
 
@@ -126,28 +135,36 @@ public class MigrationCLI {
     }
 
     public void printWholeCompletionMessage(){
-        System.out.println("Migration complete. Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
+        System.out.println("Migration complete.");
 
-        GraknGraph graph = getGraph();
-        QueryBuilder qb = graph.graql();
+        if(hasOption("v")) {
+            System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-        StringBuilder builder = new StringBuilder();
-        builder.append("Graph ontology contains:\n");
-        builder.append("\t ").append(graph.getMetaEntityType().instances().size()).append(" entity types\n");
-        builder.append("\t ").append(graph.getMetaRelationType().instances().size()).append(" relation types\n");
-        builder.append("\t ").append(graph.getMetaRoleType().instances().size()).append(" role types\n");
-        builder.append("\t ").append(graph.getMetaResourceType().instances().size()).append(" resource types\n");
-        builder.append("\t ").append(graph.getMetaRuleType().instances().size()).append(" rule types\n\n");
+            GraknGraph graph = getGraph();
+            QueryBuilder qb = graph.graql();
 
-        builder.append("Graph data contains:\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("relation-type")).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
+            StringBuilder builder = new StringBuilder();
+            builder.append("Graph ontology contains:\n");
+            builder.append("\t ").append(graph.getMetaEntityType().instances().size()).append(" entity types\n");
+            builder.append("\t ").append(graph.getMetaRelationType().instances().size()).append(" relation types\n");
+            builder.append("\t ").append(graph.getMetaRoleType().instances().size()).append(" role types\n");
+            builder.append("\t ").append(graph.getMetaResourceType().instances().size()).append(" resource types\n");
+            builder.append("\t ").append(graph.getMetaRuleType().instances().size()).append(" rule types\n\n");
 
-        System.out.println(builder);
+            builder.append("Graph data contains:\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("relation-type")).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
 
-        graph.close();
+            System.out.println(builder);
+
+            graph.close();
+        }
+    }
+
+    public void initiateShutdown(){
+        System.out.println("Initiating shutdown...");
     }
 
     public String getEngineURI(){
@@ -191,10 +208,6 @@ public class MigrationCLI {
 
     public void addOptions(Options options) {
         options.getOptions().forEach(defaultOptions::addOption);
-    }
-
-    public void exit(){
-        System.exit(1);
     }
 
     public String die(Throwable throwable){

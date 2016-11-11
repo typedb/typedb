@@ -45,8 +45,10 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        MigrationCLI.create(args, options).ifPresent(Main::runOwl);
+    }
 
-        MigrationCLI cli = new MigrationCLI(args, options);
+    public static void runOwl(MigrationCLI cli){
 
         String owlFilename = cli.getRequiredOption("input", "Please specify owl file with the -i option.");
 
@@ -72,6 +74,6 @@ public class Main {
                 migrator.graph().close();
         }
 
-        System.exit(0);
+        cli.initiateShutdown();
     }
 }

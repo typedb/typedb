@@ -33,12 +33,13 @@ public class Main {
     }
 
     public static void main(String[] args){
+        MigrationCLI.create(args, options).ifPresent(Main::runExport);
+    }
 
-        MigrationCLI cli = new MigrationCLI(args, options);
-
+    public static void runExport(MigrationCLI cli){
         if(!cli.hasOption("ontology") && !cli.hasOption("data")) {
             cli.writeToSout("Missing arguments -ontology and/or -data");
-            cli.exit();
+            cli.die("");
         }
 
         cli.writeToSout("Writing graph " + cli.getKeyspace() + " using Grakn Engine " +
@@ -55,6 +56,6 @@ public class Main {
             cli.writeToSout(graphWriter.dumpOntology());
         }
 
-        System.exit(0);
+        cli.initiateShutdown();
     }
 }

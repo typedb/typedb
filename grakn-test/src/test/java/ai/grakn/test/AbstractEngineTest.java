@@ -39,7 +39,7 @@ public abstract class AbstractEngineTest {
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
+        logger.setLevel(Level.OFF);
     }
 
     @BeforeClass

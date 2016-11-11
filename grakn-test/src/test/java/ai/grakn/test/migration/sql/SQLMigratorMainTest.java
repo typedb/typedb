@@ -39,13 +39,12 @@ public class SQLMigratorMainTest extends SQLMigratorTestBase {
     }
 
     @After
-    public void shutdown() throws SQLException {
+    public void stop() throws SQLException {
         connection.close();
     }
 
     @Test
     public void sqlMainTest(){
-        exit.expectSystemExitWithStatus(0);
         runAndAssertDataCorrect("sql", "-t", templateFile,
                 "-driver", DRIVER, "-location", URL,
                 "-pass", PASS, "-user", USER, "-q", query, "-k", graph.getKeyspace());
@@ -107,8 +106,8 @@ public class SQLMigratorMainTest extends SQLMigratorTestBase {
     }
 
     private void runAndAssertDataCorrect(String... args){
-        exit.checkAssertionAfterwards(this::assertPetGraphCorrect);
         run(args);
+        assertPetGraphCorrect();
     }
 
 }

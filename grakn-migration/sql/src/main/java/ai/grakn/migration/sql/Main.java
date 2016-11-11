@@ -44,9 +44,10 @@ public class Main {
     }
 
     public static void main(String[] args){
+        MigrationCLI.create(args, options).ifPresent(Main::runSQL);
+    }
 
-        MigrationCLI cli = new MigrationCLI(args, options);
-
+    public static void runSQL(MigrationCLI cli){
         String jdbcDriver = cli.getRequiredOption("driver", "No driver specified (-driver)");
         String jdbcDBUrl = cli.getRequiredOption("location", "No db specified (-location)");
         String jdbcUser = cli.getRequiredOption("user", "No username specified (-user)");
@@ -68,17 +69,17 @@ public class Main {
 
             SQLMigrator sqlMigrator = new SQLMigrator(sqlQuery, template, connection);
 
-           if(cli.hasOption("n")){
-               cli.writeToSout(sqlMigrator.migrate());
-           } else {
-               MigrationLoader.load(cli.getLoader(), batchSize, sqlMigrator);
-               cli.printWholeCompletionMessage();
-           }
+            if(cli.hasOption("n")){
+                cli.writeToSout(sqlMigrator.migrate());
+            } else {
+                MigrationLoader.load(cli.getLoader(), batchSize, sqlMigrator);
+                cli.printWholeCompletionMessage();
+            }
 
         } catch (Throwable throwable){
             cli.die(throwable);
         }
 
-        System.exit(0);
+        cli.initiateShutdown();
     }
 }
