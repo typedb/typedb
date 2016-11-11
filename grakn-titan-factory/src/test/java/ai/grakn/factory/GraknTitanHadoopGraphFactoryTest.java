@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class GraknTitanHadoopGraphFactoryTest {
-    private final String TEST_CONFIG = "../conf/main/mindmaps-analytics.properties";
+    private final String TEST_CONFIG = "../conf/main/grakn-analytics.properties";
 
     private TitanHadoopInternalFactory factory;
 
@@ -37,7 +37,7 @@ public class GraknTitanHadoopGraphFactoryTest {
     }
 
     @Test(expected=UnsupportedOperationException.class)
-    public void buildMindmapsGraphFromTinker() throws Exception {
+    public void buildGraknGraphFromTinker() throws Exception {
         factory.getGraph(false);
     }
 

@@ -59,7 +59,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknTitanGraphFactoryTest {
-    private static final String TEST_CONFIG = "conf/mindmaps-titan-test.properties";
+    private static final String TEST_CONFIG = "conf/grakn-titan-test.properties";
     private final static String TEST_URI = null;
     private final static String TEST_SHARED = "shared";
     private static final boolean TEST_BATCH_LOADING = false;
@@ -339,7 +339,7 @@ public class GraknTitanGraphFactoryTest {
 
     private void addConcepts(Graph graph) {
         Vertex vertex1 = graph.addVertex();
-        vertex1.property("ITEM_IDENTIFIER", "www.mindmaps.com/action-movie/");
+        vertex1.property("ITEM_IDENTIFIER", "www.grakn.com/action-movie/");
         vertex1.property(Schema.ConceptProperty.VALUE_STRING.name(), "hi there");
 
         Vertex vertex2 = graph.addVertex();
@@ -347,7 +347,7 @@ public class GraknTitanGraphFactoryTest {
     }
 
     private void assertIndexCorrect(Graph graph) {
-        assertTrue(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "www.mindmaps.com/action-movie/").hasNext());
+        assertTrue(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "www.grakn.com/action-movie/").hasNext());
         assertEquals(2, graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
         assertFalse(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "mind").hasNext());
         assertFalse(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "www").hasNext());

@@ -38,8 +38,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class GraknTitanGraphTest {
-    private static final String TEST_CONFIG = "conf/mindmaps-titan-test.properties";
-    private static final String TEST_NAME = "mindmapstest";
+    private static final String TEST_CONFIG = "conf/grakn-titan-test.properties";
+    private static final String TEST_NAME = "grakntest";
     private static final String TEST_URI = null;
     private static final boolean TEST_BATCH_LOADING = false;
     private GraknGraph graknGraph;
