@@ -28,7 +28,7 @@
     <version>0.6.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
-    <url>http://grakn.ai/platform.html</url>
+    <url>https://grakn.ai/pages/platform/index.html</url>
     <modules>
         <module>grakn-graph</module>
         <module>grakn-titan-factory</module>
@@ -79,6 +79,11 @@
         <owl-api.version>5.0.2</owl-api.version>
         <systen-rules.version>1.16.0</systen-rules.version>
     </properties>
+
+    <organization>
+      <name>Grakn Labs Ltd</name>
+      <url>https://grakn.ai</url>
+    </organization>
 
     <licenses>
         <license>
@@ -240,12 +245,20 @@
                 <version>2.9.1</version>
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
+                    <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
+                    <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">{organizationName}</a>. All rights reserved.]]></bottom>
                 </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
                         <goals>
                             <goal>jar</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>attach-aggregate-javadocs</id>
+                        <goals>
+                            <goal>aggregate-jar</goal>
                         </goals>
                     </execution>
                 </executions>
