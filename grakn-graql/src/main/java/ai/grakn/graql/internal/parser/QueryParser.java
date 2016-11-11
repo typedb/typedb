@@ -22,13 +22,10 @@ import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import com.google.common.collect.ImmutableMap;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import io.mindmaps.graql.internal.antlr.GraqlLexer;
-import io.mindmaps.graql.internal.antlr.GraqlParser;
+import ai.grakn.graql.internal.antlr.GraqlLexer;
+import ai.grakn.graql.internal.antlr.GraqlParser;
+import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenFactory;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -49,14 +46,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static ai.grakn.graql.Graql.average;
-import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.group;
-import static ai.grakn.graql.Graql.max;
-import static ai.grakn.graql.Graql.median;
-import static ai.grakn.graql.Graql.min;
-import static ai.grakn.graql.Graql.sum;
 
 /**
  * Class for parsing query strings into valid queries

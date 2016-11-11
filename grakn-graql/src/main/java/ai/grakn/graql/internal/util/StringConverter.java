@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.util;
 
+import ai.grakn.graql.internal.antlr.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.util.HashSet;

@@ -19,20 +19,14 @@
 package ai.grakn.graql.internal.template;
 
 import ai.grakn.exception.GraqlParsingException;
+import ai.grakn.graql.internal.antlr.GraqlTemplateLexer;
+import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.parser.GraqlErrorListener;
 import ai.grakn.graql.internal.template.macro.DoubleMacro;
 import ai.grakn.graql.internal.template.macro.EqualsMacro;
-import ai.grakn.graql.internal.template.macro.IntMacro;
-import ai.grakn.graql.internal.template.macro.NoescpMacro;
-import ai.grakn.exception.GraqlParsingException;
-import io.mindmaps.graql.internal.antlr.GraqlTemplateLexer;
-import io.mindmaps.graql.internal.antlr.GraqlTemplateParser;
-import ai.grakn.graql.internal.parser.GraqlErrorListener;
-import ai.grakn.graql.internal.template.macro.DoubleMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
 import ai.grakn.graql.internal.template.macro.Macro;
 import ai.grakn.graql.internal.template.macro.NoescpMacro;
-import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;

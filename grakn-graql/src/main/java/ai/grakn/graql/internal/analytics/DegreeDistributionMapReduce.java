@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.io.Serializable;
 import java.util.*;
 
-class DegreeDistributionMapReduce extends MindmapsMapReduce<Set<String>> {
+class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
     public DegreeDistributionMapReduce() {
     }

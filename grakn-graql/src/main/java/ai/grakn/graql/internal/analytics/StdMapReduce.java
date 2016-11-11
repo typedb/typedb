@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class StdMapReduce extends MindmapsMapReduce<Map<String, Double>> {
+public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
 
     public static final String MEMORY_KEY = "std";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";

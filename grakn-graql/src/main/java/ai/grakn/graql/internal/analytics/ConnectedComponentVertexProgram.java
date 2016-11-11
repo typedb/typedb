@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<String> {
+public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> {
 
     private static final int MAX_ITERATION = 100;
     private static final String MIN_STRING = "0";

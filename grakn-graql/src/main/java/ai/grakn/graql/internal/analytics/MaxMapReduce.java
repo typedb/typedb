@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class MaxMapReduce extends MindmapsMapReduce<Number> {
+public class MaxMapReduce extends GraknMapReduce<Number> {
 
     public static final String MEMORY_KEY = "max";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";

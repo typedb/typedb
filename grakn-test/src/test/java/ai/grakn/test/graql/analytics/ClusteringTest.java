@@ -27,7 +27,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
-import ai.grakn.graql.internal.analytics.MindmapsVertexProgram;
+import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -87,7 +87,7 @@ public class ClusteringTest extends AbstractGraphTest {
 
         keyspace = graph.getKeyspace();
 
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);

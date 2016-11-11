@@ -21,8 +21,6 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -38,7 +36,7 @@ import java.util.Set;
  * This class implements quick select algorithm to find the median.
  */
 
-public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
+public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     public static final int MAX_ITERATION = 40;
     private static final String RESOURCE_DATA_TYPE = "medianVertexProgram.resourceDataType";

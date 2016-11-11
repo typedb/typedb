@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collections;
 import java.util.Set;
 
-public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
+public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     public static final String DEGREE = "medianVertexProgram.degree";

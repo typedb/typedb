@@ -25,7 +25,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.graql.internal.analytics.MindmapsVertexProgram;
+import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -72,7 +72,7 @@ public class StatisticsTest extends AbstractGraphTest {
 
         keyspace = graph.getKeyspace();
 
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
     }
 

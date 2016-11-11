@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.template;
 
-import io.mindmaps.graql.internal.antlr.GraqlTemplateBaseVisitor;
-import io.mindmaps.graql.internal.antlr.GraqlTemplateParser;
+import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
+import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.template.macro.Macro;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -34,9 +34,9 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static ai.grakn.graql.internal.template.Value.concat;
-import static ai.grakn.graql.internal.template.Value.identity;
 import static ai.grakn.graql.internal.template.Value.format;
 import static ai.grakn.graql.internal.template.Value.formatVar;
+import static ai.grakn.graql.internal.template.Value.identity;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 

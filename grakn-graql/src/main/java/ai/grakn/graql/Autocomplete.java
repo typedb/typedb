@@ -19,10 +19,10 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
-import com.google.common.collect.ImmutableSet;
 import ai.grakn.concept.Concept;
-import io.mindmaps.graql.internal.antlr.GraqlLexer;
+import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.Token;
