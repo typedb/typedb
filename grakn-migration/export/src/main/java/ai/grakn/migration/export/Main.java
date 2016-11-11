@@ -41,7 +41,7 @@ public class Main {
             cli.exit();
         }
 
-        cli.writeToSout("Writing graph " + cli.getKeyspace() + " using MM Engine " +
+        cli.writeToSout("Writing graph " + cli.getKeyspace() + " using Grakn Engine " +
                 cli.getEngineURI() + " to System.out");
 
         GraknGraph graph = cli.getGraph();

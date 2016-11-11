@@ -19,7 +19,7 @@ package ai.grakn.migration.owl;
 
 /**
  * Enumerate default/predefined elements that need to be created
- * in MM regardless of the ontology being migrated.
+ * in Grakn regardless of the ontology being migrated.
  * 
  * @author borislav 
  *

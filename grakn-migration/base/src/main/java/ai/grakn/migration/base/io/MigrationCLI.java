@@ -121,7 +121,7 @@ public class MigrationCLI {
 
     public void printInitMessage(String dataToMigrate){
         System.out.println("Migrating data " + dataToMigrate +
-                " using MM Engine " + getEngineURI() +
+                " using Grakn Engine " + getEngineURI() +
                 " into graph " + getKeyspace());
     }
 

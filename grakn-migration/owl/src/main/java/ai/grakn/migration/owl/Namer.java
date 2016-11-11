@@ -32,7 +32,7 @@ import ai.grakn.concept.ResourceType;
  * </p>
  * <p>
  * The implementation is not configurable: future work may provide for configuring prefixes, 
- * or some mapping schema from OWL to MM prefixes, including the standard OWL/RDF prefixes
+ * or some mapping schema from OWL to Grakn prefixes, including the standard OWL/RDF prefixes
  * etc. Such mapping schema should be based on some practical experience with the migration tool.
  * </p>
  * @author borislav
@@ -53,19 +53,19 @@ public interface Namer {
         return fromIri(IRI.create(iriAsString));
     }
     /**
-     * Generate the name of a MM entity from the IRI of an OWL individual
+     * Generate the name of a Grakn entity from the IRI of an OWL individual
      */
     default String individualEntityName(IRI individualIri) {
         return "e" + fromIri(individualIri);
     }
     /**
-     * Generate the name of a MM entity type from the IRI of an OWL class
+     * Generate the name of a Grakn entity type from the IRI of an OWL class
      */
     default String classEntityTypeName(IRI classIri) {
         return "t" + fromIri(classIri);
     }
     /**
-     * Generate the name of a MM relation type from the IRI of an OWL object property
+     * Generate the name of a Grakn relation type from the IRI of an OWL object property
      */
     default String objectPropertyName(IRI propIri) {
         return "op-" + fromIri(propIri);
