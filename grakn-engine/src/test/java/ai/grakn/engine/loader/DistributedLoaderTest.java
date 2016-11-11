@@ -19,7 +19,7 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
@@ -46,7 +46,7 @@ import static ai.grakn.graql.Graql.parsePatterns;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class DistributedLoaderTest extends MindmapsEngineTestBase{
+public class DistributedLoaderTest extends GraknEngineTestBase {
 
     private final Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
 

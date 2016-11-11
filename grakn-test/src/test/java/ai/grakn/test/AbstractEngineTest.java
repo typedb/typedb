@@ -20,7 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.engine.MindmapsEngineServer;
+import ai.grakn.engine.GraknEngineServer;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.BeforeClass;
@@ -49,7 +49,7 @@ public abstract class AbstractEngineTest {
                 startEmbeddedCassandra();
             }
 
-            MindmapsEngineServer.start();
+            GraknEngineServer.start();
 
             sleep(5000);
         }

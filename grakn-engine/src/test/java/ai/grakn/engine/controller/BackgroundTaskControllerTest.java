@@ -20,10 +20,8 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import com.jayway.restassured.http.ContentType;
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.TestTask;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +30,7 @@ import static com.jayway.restassured.RestAssured.put;
 import static com.jayway.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.*;
 
-public class BackgroundTaskControllerTest extends MindmapsEngineTestBase {
+public class BackgroundTaskControllerTest extends GraknEngineTestBase {
     private TaskManager taskManager;
     private String singleTask;
 

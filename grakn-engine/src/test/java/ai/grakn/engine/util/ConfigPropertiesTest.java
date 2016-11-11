@@ -36,14 +36,14 @@ public class ConfigPropertiesTest {
 
     @Test
     public void testConfRelativePath(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,"../conf/test/tinker/mindmaps-engine.properties");
-        assertTrue(ConfigProperties.getInstance().getConfigFilePath().equals(System.getProperty("user.dir")+"/../conf/test/tinker/mindmaps-engine.properties"));
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,"../conf/test/tinker/grakn-engine.properties");
+        assertTrue(ConfigProperties.getInstance().getConfigFilePath().equals(System.getProperty("user.dir")+"/../conf/test/tinker/grakn-engine.properties"));
     }
 
     @Test
     public void testConfAbsolutePath(){
-        String projectDir = System.getProperty("user.dir").substring(0,System.getProperty("user.dir").length()-"mindmaps-engine".length());
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,projectDir+"conf/test/tinker/mindmaps-engine.properties");
-        assertTrue(ConfigProperties.getInstance().getConfigFilePath().equals(projectDir+"conf/test/tinker/mindmaps-engine.properties"));
+        String projectDir = System.getProperty("user.dir").substring(0,System.getProperty("user.dir").length()-"grakn-engine".length());
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,projectDir+"conf/test/tinker/grakn-engine.properties");
+        assertTrue(ConfigProperties.getInstance().getConfigFilePath().equals(projectDir+"conf/test/tinker/grakn-engine.properties"));
     }
 }

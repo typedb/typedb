@@ -38,21 +38,21 @@ public class GraknEngineRunningTest {
     }
 
     @Test
-    public void mindmapsEngineRunning() throws InterruptedException {
-        MindmapsEngineServer.start();
+    public void graknEngineRunning() throws InterruptedException {
+        GraknEngineServer.start();
 
         Thread.sleep(5000);
 
-        boolean running = MindmapsEngineServer.isRunning();
+        boolean running = GraknEngineServer.isRunning();
         assertTrue(running);
 
-        MindmapsEngineServer.stop();
+        GraknEngineServer.stop();
         Thread.sleep(5000);
     }
 
     @Test
-    public void mindmapsEngineNotRunning(){
-        boolean running = MindmapsEngineServer.isRunning();
+    public void graknEngineNotRunning(){
+        boolean running = GraknEngineServer.isRunning();
         assertFalse(running);
     }
 }

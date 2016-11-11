@@ -20,19 +20,17 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.MindmapsEngineTestBase;
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.GraknEngineTestBase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.UUID;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class PostProcessingTaskTest extends MindmapsEngineTestBase {
+public class PostProcessingTaskTest extends GraknEngineTestBase {
     private InMemoryTaskManager taskManager;
 
     @Before

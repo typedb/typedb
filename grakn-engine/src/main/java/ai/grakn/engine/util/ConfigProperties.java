@@ -36,9 +36,9 @@ import java.util.Properties;
 public class ConfigProperties {
 
     //Test Configs
-    public static final String TEST_CONFIG_FILE = "../conf/test/tinker/mindmaps-engine.properties";
+    public static final String TEST_CONFIG_FILE = "../conf/test/tinker/grakn-engine.properties";
 
-    public static final String DEFAULT_CONFIG_FILE = "../conf/main/mindmaps-engine.properties";
+    public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn-engine.properties";
     public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
@@ -70,10 +70,10 @@ public class ConfigProperties {
 
     public static final String PROJECT_VERSION = "project.version";
 
-    public static final String CURRENT_DIR_SYSTEM_PROPERTY = "mindmaps.dir";
-    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "mindmaps.conf";
-    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY = "mindmaps.log.file";
-    public static final String LOG_LEVEL_SYSTEM_PROPERTY = "mindmaps.log.level";
+    public static final String CURRENT_DIR_SYSTEM_PROPERTY = "grakn.dir";
+    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "grakn.conf";
+    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY = "grakn.log.file";
+    public static final String LOG_LEVEL_SYSTEM_PROPERTY = "grakn.log.level";
 
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
@@ -114,7 +114,7 @@ public class ConfigProperties {
 
 
     /**
-     * Check if the JVM argument "-Dmindmaps.conf" (which represents the path to the config file to use) is set.
+     * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
      * If it is not set, it sets it to the default one.
      */
     private void setConfigFilePath() {
@@ -127,8 +127,8 @@ public class ConfigProperties {
     /**
      * Check if the JVM argument "-Dlogback.configurationFile" is set.
      * If it is not set, it sets it to the default one.
-     * It also sets the -Dmindmaps.log.file system property equal to the one specified in mindmaps-engine.properties.
-     * The mindmaps.log.file property will be used by logback.xml
+     * It also sets the -Dgrakn.log.file system property equal to the one specified in grakn-engine.properties.
+     * The grakn.log.file property will be used by logback.xml
      */
     private void initialiseLogger() {
         if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
@@ -146,7 +146,7 @@ public class ConfigProperties {
 
     /**
      * Set Grakn logging level.
-     * If the -Dmindmaps.log.level is set, that value will be used,
+     * If the -Dgrakn.log.level is set, that value will be used,
      * otherwise it will be used the one specified in the config file.
      */
     private void setLogLevel() {
@@ -174,7 +174,7 @@ public class ConfigProperties {
     // Getters
 
     /**
-     * @return The path to the mindmaps.log file in use.
+     * @return The path to the grakn.log file in use.
      */
     public String getLogFilePath() {
         return System.getProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY);
@@ -215,7 +215,7 @@ public class ConfigProperties {
     }
 
     /**
-     * @return The path to the config file currently in use. Default: /conf/main/mindmaps-engine.properties
+     * @return The path to the config file currently in use. Default: /conf/main/grakn-engine.properties
      */
     String getConfigFilePath() {
         if (configFilePath == null) setConfigFilePath();

@@ -44,7 +44,7 @@ import static spark.Spark.*;
  * Main class in charge to start a web server and all the REST controllers.
  */
 
-public class MindmapsEngineServer {
+public class GraknEngineServer {
 
     private static ConfigProperties prop = ConfigProperties.getInstance();
     private static Logger LOG = null;
@@ -55,7 +55,7 @@ public class MindmapsEngineServer {
 
     public static void start() {
 
-        LOG = LoggerFactory.getLogger(MindmapsEngineServer.class);
+        LOG = LoggerFactory.getLogger(GraknEngineServer.class);
 
         // Set host name
         ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
@@ -79,7 +79,7 @@ public class MindmapsEngineServer {
         //Register Exception Handler
         exception(GraknEngineServerException.class, (e, request, response) -> {
             response.status(((GraknEngineServerException) e).getStatus());
-            response.body("New exception: "+e.getMessage()+" - Please refer to mindmaps.log file for full stack trace.");
+            response.body("New exception: "+e.getMessage()+" - Please refer to grakn.log file for full stack trace.");
         });
 
         // This method will block until all the controllers are ready to serve requests

@@ -21,7 +21,7 @@ package ai.grakn.engine.loader;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.Pattern;
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.parsePatterns;
 
-public class BlockingLoaderTest extends MindmapsEngineTestBase {
+public class BlockingLoaderTest extends GraknEngineTestBase {
 
     private String graphName;
     private BlockingLoader loader;

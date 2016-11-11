@@ -48,7 +48,7 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="ai.grakn.engine.MindmapsEngineServer" level="INFO">
+    <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 

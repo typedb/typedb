@@ -30,7 +30,7 @@ import com.jayway.restassured.http.ContentType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -45,7 +45,7 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CommitLogControllerTest extends MindmapsEngineTestBase {
+public class CommitLogControllerTest extends GraknEngineTestBase {
     public final String KEYSPACE = "test";
     private Cache cache;
 

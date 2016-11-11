@@ -28,7 +28,7 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -45,7 +45,7 @@ import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
 
-public class PostProcessingTest extends MindmapsEngineTestBase{
+public class PostProcessingTest extends GraknEngineTestBase {
     private PostProcessing postProcessing;
     private GraknGraph graknGraph;
     private Cache cache;

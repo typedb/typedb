@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.loader.TransactionState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.REST;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class TransactionControllerTest extends MindmapsEngineTestBase{
+public class TransactionControllerTest extends GraknEngineTestBase {
 
     private String graphName;
 
@@ -52,7 +52,7 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
     public void insertValidQuery() {
         Json exampleInsertQuery = Json.array("insert $x isa Man;");
         String transactionUUID = given().body(exampleInsertQuery.toString()).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 5 && !status.equals("FINISHED")) {
@@ -72,7 +72,7 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
     public void insertInvalidQuery() {
         Json exampleInvalidInsertQuery = Json.array("insert id ?Cdcs;w4. '' ervalue;");
         String transactionUUID = given().body(exampleInvalidInsertQuery.toString()).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 10 && !status.equals("ERROR")) {
@@ -92,7 +92,7 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
     public void checkLoaderStateTest() {
         String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
         given().body(exampleInvalidInsertQuery).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
         JSONObject resultObj = new JSONObject(get(REST.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
         assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
         assertTrue(resultObj.has(TransactionState.State.ERROR.name()));

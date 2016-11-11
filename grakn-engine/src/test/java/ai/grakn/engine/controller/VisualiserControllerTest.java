@@ -22,7 +22,7 @@ import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.response.Response;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.util.REST;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -38,7 +38,7 @@ import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class VisualiserControllerTest extends MindmapsEngineTestBase{
+public class VisualiserControllerTest extends GraknEngineTestBase {
 
     private static String graphName = "specialtestgraph";
     private String entityId;

@@ -20,7 +20,7 @@ package ai.grakn.migration.base.io;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.MindmapsEngineServer;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.engine.loader.Loader;
 import com.google.common.io.Files;
@@ -65,7 +65,7 @@ public class MigrationCLI {
     private CommandLine cmd;
 
     public MigrationCLI(String[] args, Options options){
-        if(!MindmapsEngineServer.isRunning()){
+        if(!GraknEngineServer.isRunning()){
             System.out.println(COULD_NOT_CONNECT);
             System.exit(-1);
         }

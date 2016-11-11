@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import ai.grakn.engine.MindmapsEngineTestBase;
+import ai.grakn.engine.GraknEngineTestBase;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
+public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     private InMemoryTaskManager taskManager;
     private static long TASK_DELAY = 100000;
 

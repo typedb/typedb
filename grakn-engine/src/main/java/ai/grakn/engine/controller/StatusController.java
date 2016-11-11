@@ -20,8 +20,6 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.REST;
-import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.json.JSONObject;
@@ -38,7 +36,7 @@ import static spark.Spark.get;
 
 
 @Path("/status")
-@Api(value = "/status", description = "Endpoints used to retrieve all the info about the current instance of MindmapsDB")
+@Api(value = "/status", description = "Endpoints used to retrieve all the info about the current instance of Grakn")
 @Produces({"application/json"})
 public class StatusController {
 
