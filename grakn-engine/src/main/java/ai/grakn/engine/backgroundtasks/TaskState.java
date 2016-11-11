@@ -39,7 +39,8 @@ public class TaskState {
     private Boolean recurring;
     private long interval;
     private Map<String, Object> pauseState;
-
+    private Throwable failure = null;
+    
     public TaskState(String name) {
         status = TaskStatus.CREATED;
         this.name = name;
@@ -142,5 +143,18 @@ public class TaskState {
     public TaskState setPauseState(Map<String, Object> pauseState) {
         this.pauseState = pauseState;
         return this;
+    }
+    
+    public boolean isFailed() {
+    	return this.failure != null;
+    }
+    
+    public Throwable failure() {
+    	return this.failure;
+    }
+    
+    public TaskState failure(Throwable failure) {
+    	this.failure = failure;
+    	return this;
     }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
@@ -32,6 +33,7 @@ import ai.grakn.graql.internal.reasoner.atom.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +56,10 @@ public class Reasoner {
         MatchQuery qRHS = qb.match(rule.getRHS());
 
         //TODO fix this hack
-        Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes().stream()
-                .filter(type -> !type.isRoleType()).collect(Collectors.toSet());
-        Set<Type> conclusionConceptTypes = qRHS.admin().getTypes().stream()
-                .filter(type -> !type.isRoleType()).collect(Collectors.toSet());
+        Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes()
+            .stream().filter(type -> !type.isRoleType()).collect(Collectors.toSet());
+        Set<Type> conclusionConceptTypes = qRHS.admin().getTypes()
+            .stream().filter(type -> !type.isRoleType()).collect(Collectors.toSet());
 
         hypothesisConceptTypes.forEach(rule::addHypothesis);
         conclusionConceptTypes.forEach(rule::addConclusion);
@@ -82,9 +84,22 @@ public class Reasoner {
      */
     public void linkConceptTypes() {
         Set<Rule> rules = getRules(graph);
+        LOG.debug(rules.size() + " rules initialized...");
+        Set<Rule> linkedRules = new HashSet<>();
         rules.stream()
                 .filter(rule -> rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty())
-                .forEach(this::linkConceptTypes);
+                .forEach(rule -> {
+                    linkConceptTypes(rule);
+                    linkedRules.add(rule);
+                });
+        if(!linkedRules.isEmpty()) {
+            try {
+                graph.commit();
+            } catch (GraknValidationException e) {
+                LOG.debug(e.getMessage());
+            }
+        }
+        LOG.debug(linkedRules.size() + " rules linked...");
     }
 
     private void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
@@ -249,7 +264,8 @@ public class Reasoner {
     }
 
     private QueryAnswers resolveConjunctiveQuery(Query query, boolean materialise) {
-        if (!query.isRuleResolvable()) return new QueryAnswers(Sets.newHashSet(query.execute()));
+        if (!query.isRuleResolvable())
+            return new QueryAnswers(Sets.newHashSet(query.execute()));
         Iterator<Atom> atIt = query.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), query.getSelectedNames());
         QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
@@ -279,7 +295,7 @@ public class Reasoner {
         return answers;
     }
 
-    public QueryAnswers  resolve(MatchQuery inputQuery) { return resolve(inputQuery, false);}
+    public QueryAnswers resolve(MatchQuery inputQuery) { return resolve(inputQuery, false);}
 
     /**
      * Resolve a given query using the rule base
@@ -287,7 +303,10 @@ public class Reasoner {
      * @return MatchQuery with answers
      */
     public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
-        return new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
+        if (!Reasoner.getRules(graph).isEmpty())
+            return new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
+        else
+            return inputQuery;
     }
 
     public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, false);}

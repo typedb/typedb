@@ -29,7 +29,7 @@
         <dependency>
             <groupId>net.sourceforge.owlapi</groupId>
             <artifactId>owlapi-distribution</artifactId>
-            <version>5.0.2</version>
+            <version>${owl-api.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>

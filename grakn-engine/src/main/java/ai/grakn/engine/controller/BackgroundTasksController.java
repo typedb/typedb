@@ -61,10 +61,10 @@ public class BackgroundTasksController {
         get(ALL_BACKGROUND_TASKS_URI, this::getAllTasks);
         get(BACKGROUND_TASKS_BY_STATUS + TASK_STATUS_PARAMETER, this::getTasks);
         get(BACKGROUND_TASK_STATUS + UUID_PARAMETER, this::getTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_PAUSE, this::pauseTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESUME, this::resumeTask);
+//        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_PAUSE, this::pauseTask);
+//        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESUME, this::resumeTask);
         put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_STOP, this::stopTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESTART, this::restartTask);
+//        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESTART, this::restartTask);
     }
 
     @GET
@@ -111,7 +111,7 @@ public class BackgroundTasksController {
             throw new GraknEngineServerException(500, e);
         }
     }
-
+/*
     @PUT
     @Path("/task/:uuid/pause")
     @ApiOperation(value = "Pause a running task.")
@@ -139,7 +139,7 @@ public class BackgroundTasksController {
             throw new GraknEngineServerException(500, e);
         }
     }
-
+*/
     @PUT
     @Path("/task/:uuid/stop")
     @ApiOperation(value = "Stop a running or paused task.")
@@ -153,7 +153,7 @@ public class BackgroundTasksController {
             throw new GraknEngineServerException(500, e);
         }
     }
-
+/*
     @PUT
     @Path("/task/:uuid/restart")
     @ApiOperation(value = "Restart a stopped or paused task.")
@@ -166,5 +166,5 @@ public class BackgroundTasksController {
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
-    }
+    } */
 }

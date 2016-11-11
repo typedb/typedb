@@ -33,7 +33,7 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
-            <version>3.2.1</version>
+            <version>${orientdb-gremlin-core.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.PAUSED;
+//import static ai.grakn.engine.backgroundtasks.TaskStatus.PAUSED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
@@ -72,7 +72,7 @@ public class BackgroundTaskControllerTest extends GraknEngineTestBase {
                 .then().statusCode(200)
                 .and().body("status", equalTo(COMPLETED.toString()));
     }
-
+/*
     @Test
     public void testPauseResume() {
         String uuid = taskManager.scheduleTask(new TestTask(), 1000).toString();
@@ -120,4 +120,5 @@ public class BackgroundTaskControllerTest extends GraknEngineTestBase {
                                                   equalTo(RUNNING.toString()),
                                                   equalTo(COMPLETED.toString())));
     }
+    */
 }
