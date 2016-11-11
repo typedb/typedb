@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * A graph factory which provides a mindmaps graph with a tinker graph backend.
+ * A graph factory which provides a grakn graph with a tinker graph backend.
  */
 class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TinkerInternalFactory.class);
@@ -41,7 +41,7 @@ class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, Ti
     }
 
     @Override
-    GraknTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
+    GraknTinkerGraph buildGraknGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
         return new GraknTinkerGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 

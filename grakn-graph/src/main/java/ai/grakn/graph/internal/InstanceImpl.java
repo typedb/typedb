@@ -41,8 +41,8 @@ import java.util.stream.Collectors;
  * @param <V> The type of the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
-    InstanceImpl(Vertex v, V type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    InstanceImpl(Vertex v, V type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
         generateInstanceId(type);
     }
 
@@ -56,10 +56,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getMindmapsGraph().getConceptLog().putConcept(casting);
+            getGraknGraph().getConceptLog().putConcept(casting);
 
             for(RelationImpl relation : relations) {
-                getMindmapsGraph().getConceptLog().putConcept(relation);
+                getGraknGraph().getConceptLog().putConcept(relation);
                 relation.cleanUp();
             }
 
@@ -151,11 +151,11 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Relation hasResource(Resource resource){
         ResourceType type = resource.type();
 
-        RelationType hasResource = getMindmapsGraph().putRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
+        RelationType hasResource = getGraknGraph().putRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
 
-        Relation relation = getMindmapsGraph().addRelation(hasResource);
+        Relation relation = getGraknGraph().addRelation(hasResource);
         relation.putRolePlayer(hasResourceTarget, this);
         relation.putRolePlayer(hasResourceValue, resource);
 

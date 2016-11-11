@@ -24,7 +24,7 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.graph.internal.GraknComputerImpl;
 
 /**
- * A client for creating a mindmaps graph from a running engine.
+ * A client for creating a ai graph from a running engine.
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */

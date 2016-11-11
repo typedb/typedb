@@ -21,10 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.RelationType;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,10 +43,10 @@ public class RelationTypeTest extends GraphTestBase{
     @Before
     public void setUp() throws ConceptException {
         //Building
-        relationType = mindmapsGraph.putRelationType("relationType");
-        role1 = mindmapsGraph.putRoleType("role1");
-        role2 = mindmapsGraph.putRoleType("role2");
-        role3 = mindmapsGraph.putRoleType("role3");
+        relationType = graknGraph.putRelationType("relationType");
+        role1 = graknGraph.putRoleType("role1");
+        role2 = graknGraph.putRoleType("role2");
+        role3 = graknGraph.putRoleType("role3");
 
         relationType.hasRole(role1);
         relationType.hasRole(role2);
@@ -58,21 +55,21 @@ public class RelationTypeTest extends GraphTestBase{
 
     @Test
     public void updateBaseTypeCheck(){
-        RelationType relationType = mindmapsGraph.putRelationType("Test");
-        RelationType relationType2 = mindmapsGraph.putRelationType("Test");
+        RelationType relationType = graknGraph.putRelationType("Test");
+        RelationType relationType2 = graknGraph.putRelationType("Test");
         assertEquals(relationType, relationType2);
     }
 
     @Test
     public void overrideFail(){
-        RoleType original = mindmapsGraph.putRoleType("Role Type");
+        RoleType original = graknGraph.putRoleType("Role Type");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.ID_ALREADY_TAKEN.getMessage(original.getId(), original.toString()))
         ));
 
-        mindmapsGraph.putRelationType(original.getId());
+        graknGraph.putRelationType(original.getId());
     }
 
     @Test
@@ -86,9 +83,9 @@ public class RelationTypeTest extends GraphTestBase{
 
     @Test
     public void testRoleType(){
-        RelationType c1 = mindmapsGraph.putRelationType("c1");
-        RoleType c2 = mindmapsGraph.putRoleType("c2");
-        RoleType c3 = mindmapsGraph.putRoleType("c3");
+        RelationType c1 = graknGraph.putRelationType("c1");
+        RoleType c2 = graknGraph.putRoleType("c2");
+        RoleType c3 = graknGraph.putRoleType("c3");
         assertNull(c2.relationType());
 
         c1.hasRole(c2);

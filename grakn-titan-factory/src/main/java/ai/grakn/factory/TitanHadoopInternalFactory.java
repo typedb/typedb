@@ -45,7 +45,7 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    AbstractGraknGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, boolean batchLoading) {
+    AbstractGraknGraph<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph, boolean batchLoading) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_GRAPH.getMessage(HadoopGraph.class.getName()));
     }
 

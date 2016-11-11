@@ -23,7 +23,7 @@ import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
- * A mindmaps graph which uses a Tinkergraph backend.
+ * A grakn graph which uses a Tinkergraph backend.
  * Primarily used for testing
  */
 public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {

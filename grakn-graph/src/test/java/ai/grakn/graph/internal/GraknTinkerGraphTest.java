@@ -43,7 +43,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> addEntityType(mindmapsGraph)));
+            futures.add(pool.submit(() -> addEntityType(graknGraph)));
         }
 
         futures.forEach(future -> {
@@ -54,7 +54,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
             }
         });
 
-        assertEquals(108, ((AbstractGraknGraph<Graph>) mindmapsGraph).getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(108, ((AbstractGraknGraph<Graph>) graknGraph).getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
         graknGraph.putEntityType(UUID.randomUUID().toString());
@@ -69,13 +69,13 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        AbstractGraknGraph transcation = (AbstractGraknGraph) mindmapsGraph;
+        AbstractGraknGraph transcation = (AbstractGraknGraph) graknGraph;
         transcation.putEntityType(UUID.randomUUID().toString());
         assertEquals(9, transcation.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                GraknGraph innerTranscation = mindmapsGraph;
+                GraknGraph innerTranscation = graknGraph;
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }
@@ -93,10 +93,10 @@ public class GraknTinkerGraphTest extends GraphTestBase{
 
     @Test
     public void testClear(){
-        mindmapsGraph.putEntityType("entity type");
-        assertNotNull(mindmapsGraph.getEntityType("entity type"));
-        mindmapsGraph.clear();
-        assertNull(mindmapsGraph.getEntityType("entity type"));
-        assertNotNull(mindmapsGraph.getMetaEntityType());
+        graknGraph.putEntityType("entity type");
+        assertNotNull(graknGraph.getEntityType("entity type"));
+        graknGraph.clear();
+        assertNull(graknGraph.getEntityType("entity type"));
+        assertNotNull(graknGraph.getMetaEntityType());
     }
 }

@@ -34,7 +34,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 public class FactoryBuilderTest {
-    private final static String TEST_CONFIG = "../conf/test/tinker/mindmaps-tinker.properties";
+    private final static String TEST_CONFIG = "../conf/test/tinker/grakn-tinker.properties";
     private final static String KEYSPACE = "keyspace";
     private final static String ENGINE_URL = "rubbish";
 
@@ -49,7 +49,7 @@ public class FactoryBuilderTest {
     }
 
     @Test
-    public void testBuildMindmapsFactory(){
+    public void testBuildGraknFactory(){
         InternalFactory mgf = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
         assertThat(mgf, instanceOf(TinkerInternalFactory.class));
     }

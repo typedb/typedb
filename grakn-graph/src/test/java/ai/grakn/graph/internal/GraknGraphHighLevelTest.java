@@ -69,14 +69,14 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     @Before
     public void buildGraphAccessManager(){
-        type = mindmapsGraph.putEntityType("Test");
-        relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("relationType");
-        role1 = (RoleTypeImpl) mindmapsGraph.putRoleType("role1");
-        role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("role2");
-        role3 = (RoleTypeImpl) mindmapsGraph.putRoleType("role3");
-        rolePlayer1 = (InstanceImpl) mindmapsGraph.addEntity(type);
-        rolePlayer2 = (InstanceImpl) mindmapsGraph.addEntity(type);
-        rolePlayer3 = (InstanceImpl) mindmapsGraph.addEntity(type);
+        type = graknGraph.putEntityType("Test");
+        relationType = (RelationTypeImpl) graknGraph.putRelationType("relationType");
+        role1 = (RoleTypeImpl) graknGraph.putRoleType("role1");
+        role2 = (RoleTypeImpl) graknGraph.putRoleType("role2");
+        role3 = (RoleTypeImpl) graknGraph.putRoleType("role3");
+        rolePlayer1 = (InstanceImpl) graknGraph.addEntity(type);
+        rolePlayer2 = (InstanceImpl) graknGraph.addEntity(type);
+        rolePlayer3 = (InstanceImpl) graknGraph.addEntity(type);
     }
 
     //---------------------------------------------Higher Level Functionality-------------------------------------------
@@ -91,25 +91,25 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).
                 putRolePlayer(role2, rolePlayer2).
                 putRolePlayer(role3, rolePlayer3);
 
         //Checking it
         //Counts
-        assertEquals(20, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(34, mindmapsGraph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(20, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(34, graknGraph.getTinkerPopGraph().traversal().E().toList().size());
 
         assertion.getMappingCasting().forEach(casting ->{
-            Edge edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).inE(Schema.EdgeLabel.CASTING.getLabel()).next();
+            Edge edge = graknGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).inE(Schema.EdgeLabel.CASTING.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(Schema.EdgeProperty.ROLE_TYPE.name()).value().toString());
-            edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+            edge = graknGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(Schema.EdgeProperty.ROLE_TYPE.name()).value().toString());
         });
 
         //First Check if Roles are set correctly.
-        GraphTraversal<Vertex, Vertex> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(relationType.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_ROLE.getLabel());
+        GraphTraversal<Vertex, Vertex> traversal = graknGraph.getTinkerPopGraph().traversal().V(relationType.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_ROLE.getLabel());
         List<Vertex> relationType_to_roles = traversal.toList();
 
         boolean rolesCorrect = true;
@@ -123,25 +123,25 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(rolesCorrect);
 
         //Check Roles and Role Players lead to castings
-        Vertex casting1 = mindmapsGraph.getTinkerPopGraph().traversal().V(role1.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting1_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer1.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting1 = graknGraph.getTinkerPopGraph().traversal().V(role1.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting1_copy = graknGraph.getTinkerPopGraph().traversal().V(rolePlayer1.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting1, casting1_copy);
 
-        Vertex casting2 = mindmapsGraph.getTinkerPopGraph().traversal().V(role2.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting2_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer2.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting2 = graknGraph.getTinkerPopGraph().traversal().V(role2.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting2_copy = graknGraph.getTinkerPopGraph().traversal().V(rolePlayer2.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting2, casting2_copy);
 
-        Vertex casting3 = mindmapsGraph.getTinkerPopGraph().traversal().V(role3.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting3_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer3.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting3 = graknGraph.getTinkerPopGraph().traversal().V(role3.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting3_copy = graknGraph.getTinkerPopGraph().traversal().V(rolePlayer3.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting3, casting3_copy);
 
         assertNotEquals(casting1, casting2);
         assertNotEquals(casting1, casting3);
 
         //Check all castings go to the same assertion and check assertion
-        Vertex assertion1 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting1.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
-        Vertex assertion2 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting2.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
-        Vertex assertion3 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting3.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion1 = graknGraph.getTinkerPopGraph().traversal().V(casting1.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion2 = graknGraph.getTinkerPopGraph().traversal().V(casting2.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion3 = graknGraph.getTinkerPopGraph().traversal().V(casting3.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
 
         assertEquals(assertion1, assertion2);
         assertEquals(assertion2, assertion3);
@@ -170,18 +170,18 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl relationConcept1 = (RelationImpl) mindmapsGraph.addRelation(relationType).
+        RelationImpl relationConcept1 = (RelationImpl) graknGraph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, rolePlayer2).putRolePlayer(role3, null);
 
         //Checking it
         //Counts
-        long value = mindmapsGraph.getTinkerPopGraph().traversal().V().count().next();
+        long value = graknGraph.getTinkerPopGraph().traversal().V().count().next();
         assertEquals(19, value);
-        value = mindmapsGraph.getTinkerPopGraph().traversal().E().count().next();
+        value = graknGraph.getTinkerPopGraph().traversal().E().count().next();
         assertEquals(27, value);
 
         //First Check if Roles are set correctly.
-        GraphTraversal<Vertex, Vertex> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(relationType.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_ROLE.getLabel());
+        GraphTraversal<Vertex, Vertex> traversal = graknGraph.getTinkerPopGraph().traversal().V(relationType.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_ROLE.getLabel());
         List<Vertex> relationType_to_roles = traversal.toList();
 
         boolean rolesCorrect = true;
@@ -195,19 +195,19 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(rolesCorrect);
 
         //Check Roles and Role Players lead to castings
-        Vertex casting1 = mindmapsGraph.getTinkerPopGraph().traversal().V(role1.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting1_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer1.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting1 = graknGraph.getTinkerPopGraph().traversal().V(role1.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting1_copy = graknGraph.getTinkerPopGraph().traversal().V(rolePlayer1.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting1, casting1_copy);
 
-        Vertex casting2 = mindmapsGraph.getTinkerPopGraph().traversal().V(role2.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting2_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer2.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting2 = graknGraph.getTinkerPopGraph().traversal().V(role2.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting2_copy = graknGraph.getTinkerPopGraph().traversal().V(rolePlayer2.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting2, casting2_copy);
 
         assertNotEquals(casting1, casting2);
 
         //Check all castings go to the same assertion
-        Vertex assertion1 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting1.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
-        Vertex assertion2 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting2.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion1 = graknGraph.getTinkerPopGraph().traversal().V(casting1.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion2 = graknGraph.getTinkerPopGraph().traversal().V(casting2.id()).in(Schema.EdgeLabel.CASTING.getLabel()).next();
 
         assertEquals(assertion1, assertion2);
         assertEquals(relationConcept1.getBaseIdentifier(), assertion1.id());
@@ -233,7 +233,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
                 containsString(ErrorMessage.ROLE_IS_NULL.getMessage(rolePlayer1))
         ));
 
-        mindmapsGraph.addRelation(relationType).putRolePlayer(null, rolePlayer1);
+        graknGraph.addRelation(relationType).putRolePlayer(null, rolePlayer1);
     }
 
     @Test
@@ -242,19 +242,19 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         roleMap.put(role1, rolePlayer1);
         roleMap.put(role2, rolePlayer2);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, rolePlayer2);
-        Relation relationFound = mindmapsGraph.getRelation(relationType, roleMap);
+        Relation relationFound = graknGraph.getRelation(relationType, roleMap);
         assertEquals(assertion, relationFound);
 
         assertion.getMappingCasting().forEach(casting -> {
-            Edge edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).inE(Schema.EdgeLabel.CASTING.getLabel()).next();
+            Edge edge = graknGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).inE(Schema.EdgeLabel.CASTING.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(Schema.EdgeProperty.ROLE_TYPE.name()).value().toString());
-            edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+            edge = graknGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(Schema.EdgeProperty.ROLE_TYPE.name()).value().toString());
         });
 
-        RelationImpl relationFound2 = (RelationImpl) mindmapsGraph.getRelation(relationType, roleMap);
+        RelationImpl relationFound2 = (RelationImpl) graknGraph.getRelation(relationType, roleMap);
         assertEquals(Schema.BaseType.RELATION.name(), relationFound2.getBaseType());
         assertThat(relationFound2, instanceOf(Relation.class));
     }
@@ -263,34 +263,34 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
     public void testAddLargeAndMultipleRelationships(){
 
         //Actual Concepts To Appear Linked In Graph
-        Type relationType = mindmapsGraph.putEntityType("Relation Type");
-        RelationTypeImpl cast = (RelationTypeImpl) mindmapsGraph.putRelationType("Cast");
-        EntityType roleType = mindmapsGraph.putEntityType("Role Type");
-        EntityType type = mindmapsGraph.putEntityType("Concept Type");
-        RoleTypeImpl feature = (RoleTypeImpl) mindmapsGraph.putRoleType("Feature");
-        RoleTypeImpl actor = (RoleTypeImpl) mindmapsGraph.putRoleType("Actor");
-        EntityType movie = mindmapsGraph.putEntityType("Movie");
-        EntityType person = mindmapsGraph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) mindmapsGraph.addEntity(person);
-        InstanceImpl godfather = (InstanceImpl) mindmapsGraph.addEntity(movie);
-        EntityType genre = mindmapsGraph.putEntityType("Genre");
-        RoleTypeImpl movieOfGenre = (RoleTypeImpl) mindmapsGraph.putRoleType("Movie of Genre");
-        RoleTypeImpl movieGenre = (RoleTypeImpl) mindmapsGraph.putRoleType("Movie Genre");
-        InstanceImpl crime = (InstanceImpl) mindmapsGraph.addEntity(genre);
-        RelationTypeImpl movieHasGenre = (RelationTypeImpl) mindmapsGraph.putRelationType("Movie Has Genre");
+        Type relationType = graknGraph.putEntityType("Relation Type");
+        RelationTypeImpl cast = (RelationTypeImpl) graknGraph.putRelationType("Cast");
+        EntityType roleType = graknGraph.putEntityType("Role Type");
+        EntityType type = graknGraph.putEntityType("Concept Type");
+        RoleTypeImpl feature = (RoleTypeImpl) graknGraph.putRoleType("Feature");
+        RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
+        EntityType movie = graknGraph.putEntityType("Movie");
+        EntityType person = graknGraph.putEntityType("Person");
+        InstanceImpl pacino = (InstanceImpl) graknGraph.addEntity(person);
+        InstanceImpl godfather = (InstanceImpl) graknGraph.addEntity(movie);
+        EntityType genre = graknGraph.putEntityType("Genre");
+        RoleTypeImpl movieOfGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie of Genre");
+        RoleTypeImpl movieGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie Genre");
+        InstanceImpl crime = (InstanceImpl) graknGraph.addEntity(genre);
+        RelationTypeImpl movieHasGenre = (RelationTypeImpl) graknGraph.putRelationType("Movie Has Genre");
 
         //Construction
         cast.hasRole(feature);
         cast.hasRole(actor);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(cast).
+        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(cast).
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
         Map<RoleType, Instance> roleMap = new HashMap<>();
         roleMap.clear();
         roleMap.put(movieOfGenre, godfather);
         roleMap.put(movieGenre, crime);
-        mindmapsGraph.addRelation(movieHasGenre).
+        graknGraph.addRelation(movieHasGenre).
                 putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
         movieHasGenre.hasRole(movieOfGenre);
@@ -298,8 +298,8 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
         //Validation
         //Counts
-        assertEquals(37, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(52, mindmapsGraph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(37, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(52, graknGraph.getTinkerPopGraph().traversal().E().toList().size());
 
         assertEdgeCountOfVertex(type, Schema.EdgeLabel.ISA, 0, 1);
         assertEdgeCountOfVertex(relationType, Schema.EdgeLabel.ISA, 0, 1);
@@ -334,7 +334,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertEdgeCountOfVertex(godfather, Schema.EdgeLabel.ROLE_PLAYER, 2, 0);
 
         //More Specific Checks
-        List<Vertex> assertionsTypes = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).in(Schema.EdgeLabel.CASTING.getLabel()).out(Schema.EdgeLabel.ISA.getLabel()).toList();
+        List<Vertex> assertionsTypes = graknGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).in(Schema.EdgeLabel.CASTING.getLabel()).out(Schema.EdgeLabel.ISA.getLabel()).toList();
         assertEquals(2, assertionsTypes.size());
         
         List<Object> assertTypeIds = assertionsTypes.stream().map(Vertex::id).collect(Collectors.toList());
@@ -342,7 +342,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(assertTypeIds.contains(cast.getBaseIdentifier()));
         assertTrue(assertTypeIds.contains(movieHasGenre.getBaseIdentifier()));
 
-        List<Vertex> collection = mindmapsGraph.getTinkerPopGraph().traversal().V(cast.getBaseIdentifier(), movieHasGenre.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).out(Schema.EdgeLabel.CASTING.getLabel()).out().toList();
+        List<Vertex> collection = graknGraph.getTinkerPopGraph().traversal().V(cast.getBaseIdentifier(), movieHasGenre.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).out(Schema.EdgeLabel.CASTING.getLabel()).out().toList();
         assertEquals(8, collection.size());
 
         HashSet<Object> uniqueCollection = new HashSet<>();
@@ -359,10 +359,10 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(uniqueCollection.contains(movieGenre.getBaseIdentifier()));
         assertTrue(uniqueCollection.contains(crime.getBaseIdentifier()));
 
-        mindmapsGraph.getRelation(movieHasGenre, roleMap);
-        mindmapsGraph.getRelation(movieHasGenre, roleMap);
-        mindmapsGraph.getRelation(movieHasGenre, roleMap);
-        mindmapsGraph.getRelation(movieHasGenre, roleMap);
+        graknGraph.getRelation(movieHasGenre, roleMap);
+        graknGraph.getRelation(movieHasGenre, roleMap);
+        graknGraph.getRelation(movieHasGenre, roleMap);
+        graknGraph.getRelation(movieHasGenre, roleMap);
 
         assertEquals(Schema.BaseType.ENTITY.name(), pacino.getBaseType());
         for(CastingImpl casting: assertion.getMappingCasting()){
@@ -371,7 +371,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     }
     private void assertEdgeCountOfVertex(Concept concept , Schema.EdgeLabel type, int inCount, int outCount){
-        Vertex v= mindmapsGraph.getTinkerPopGraph().traversal().V(((ConceptImpl) concept).getBaseIdentifier()).next();
+        Vertex v= graknGraph.getTinkerPopGraph().traversal().V(((ConceptImpl) concept).getBaseIdentifier()).next();
         assertEquals(inCount, getIteratorCount(v.edges(Direction.IN, type.getLabel())));
         assertEquals(outCount, getIteratorCount(v.edges(Direction.OUT, type.getLabel())));
     }
@@ -388,30 +388,30 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
     //------------------------------------ hasAssertion
     @Test
     public void hasRelationComplexTestMultipleRelations(){
-        RelationTypeImpl cast = (RelationTypeImpl) mindmapsGraph.putRelationType("Cast");
-        EntityType type = mindmapsGraph.putEntityType("Concept Type");
-        RoleTypeImpl feature = (RoleTypeImpl) mindmapsGraph.putRoleType("Feature");
-        RoleTypeImpl actor = (RoleTypeImpl) mindmapsGraph.putRoleType("Actor");
-        EntityType movie = mindmapsGraph.putEntityType("Movie");
-        EntityType person = mindmapsGraph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) mindmapsGraph.addEntity(person);
-        InstanceImpl godfather = (InstanceImpl) mindmapsGraph.addEntity(movie);
-        EntityType genre = mindmapsGraph.putEntityType("Genre");
-        RoleTypeImpl movieOfGenre = (RoleTypeImpl) mindmapsGraph.putRoleType("Movie of Genre");
-        RoleTypeImpl movieGenre = (RoleTypeImpl) mindmapsGraph.putRoleType("Movie Genre");
-        InstanceImpl crime = (InstanceImpl) mindmapsGraph.addEntity(genre);
-        RelationTypeImpl movieHasGenre = (RelationTypeImpl) mindmapsGraph.putRelationType("Movie Has Genre");
+        RelationTypeImpl cast = (RelationTypeImpl) graknGraph.putRelationType("Cast");
+        EntityType type = graknGraph.putEntityType("Concept Type");
+        RoleTypeImpl feature = (RoleTypeImpl) graknGraph.putRoleType("Feature");
+        RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
+        EntityType movie = graknGraph.putEntityType("Movie");
+        EntityType person = graknGraph.putEntityType("Person");
+        InstanceImpl pacino = (InstanceImpl) graknGraph.addEntity(person);
+        InstanceImpl godfather = (InstanceImpl) graknGraph.addEntity(movie);
+        EntityType genre = graknGraph.putEntityType("Genre");
+        RoleTypeImpl movieOfGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie of Genre");
+        RoleTypeImpl movieGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie Genre");
+        InstanceImpl crime = (InstanceImpl) graknGraph.addEntity(genre);
+        RelationTypeImpl movieHasGenre = (RelationTypeImpl) graknGraph.putRelationType("Movie Has Genre");
 
-        mindmapsGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
-        mindmapsGraph.addRelation(movieHasGenre).putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
+        graknGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
+        graknGraph.addRelation(movieHasGenre).putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
         //Validation
         HashMap<RoleType, Instance> roleMap = new HashMap<>();
         roleMap.put(feature, godfather);
         roleMap.put(actor, pacino);
-        assertNotNull(mindmapsGraph.getRelation(cast, roleMap));
+        assertNotNull(graknGraph.getRelation(cast, roleMap));
         roleMap.put(actor, null);
-        assertNull(mindmapsGraph.getRelation(cast, roleMap));
+        assertNull(graknGraph.getRelation(cast, roleMap));
 
         assertEquals(godfather, pacino.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).iterator().next());
         assertTrue(godfather.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).contains(pacino));
@@ -419,9 +419,9 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         roleMap.clear();
         roleMap.put(movieOfGenre, godfather);
         roleMap.put(movieGenre, crime);
-        assertNotNull(mindmapsGraph.getRelation(movieHasGenre, roleMap));
+        assertNotNull(graknGraph.getRelation(movieHasGenre, roleMap));
         roleMap.put(actor, null);
-        assertNull(mindmapsGraph.getRelation(cast, roleMap));
+        assertNull(graknGraph.getRelation(cast, roleMap));
         assertEquals(cast.getBaseType(), Schema.BaseType.RELATION_TYPE.name());
         assertEquals(feature.getBaseType(), Schema.BaseType.ROLE_TYPE.name());
         assertEquals(actor.getBaseType(), Schema.BaseType.ROLE_TYPE.name());
@@ -436,7 +436,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void hasRelationComplexMissingRolePlayersTest(){
-        RelationType relationType2 = mindmapsGraph.putRelationType("relationType2");
+        RelationType relationType2 = graknGraph.putRelationType("relationType2");
 
         Map<RoleType, Instance> roleMap = new HashMap<>();
         roleMap.put(role1, null);
@@ -446,24 +446,24 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        Relation relation = mindmapsGraph.addRelation(relationType).
+        Relation relation = graknGraph.addRelation(relationType).
                 putRolePlayer(role1, null).putRolePlayer(role2, rolePlayer2).putRolePlayer(role3, null);
 
-        assertNotNull(mindmapsGraph.getRelation(relationType, roleMap));
-        assertNull(mindmapsGraph.getRelation(relationType2, roleMap));
+        assertNotNull(graknGraph.getRelation(relationType, roleMap));
+        assertNull(graknGraph.getRelation(relationType2, roleMap));
     }
 
     @Test
     public void addRolePlayerToExistingRelation(){
-        RelationType cast = mindmapsGraph.putRelationType("Cast");
-        RoleType feature = mindmapsGraph.putRoleType("Feature");
-        RoleType actor = mindmapsGraph.putRoleType("Actor");
-        EntityType movie = mindmapsGraph.putEntityType("Movie");
-        EntityType person = mindmapsGraph.putEntityType("Person");
-        Instance pacino = mindmapsGraph.addEntity(person);
-        Instance godfather = mindmapsGraph.addEntity(movie);
+        RelationType cast = graknGraph.putRelationType("Cast");
+        RoleType feature = graknGraph.putRoleType("Feature");
+        RoleType actor = graknGraph.putRoleType("Actor");
+        EntityType movie = graknGraph.putEntityType("Movie");
+        EntityType person = graknGraph.putEntityType("Person");
+        Instance pacino = graknGraph.addEntity(person);
+        Instance godfather = graknGraph.addEntity(movie);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(cast).
+        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(cast).
                 putRolePlayer(feature, null).putRolePlayer(actor, pacino);
         assertion.putRolePlayer(feature, godfather);
         assertEquals(2, assertion.getMappingCasting().size());
@@ -473,20 +473,20 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void testPutShortcutEdge(){
-        RelationTypeImpl cast = (RelationTypeImpl) mindmapsGraph.putRelationType("Cast");
-        EntityType type = mindmapsGraph.putEntityType("Concept Type");
-        RoleTypeImpl feature = (RoleTypeImpl) mindmapsGraph.putRoleType("Feature");
-        RoleTypeImpl actor = (RoleTypeImpl) mindmapsGraph.putRoleType("Actor");
-        EntityType movie = mindmapsGraph.putEntityType("Movie");
-        EntityType person = mindmapsGraph.putEntityType("Person");
-        InstanceImpl<?, ?> pacino = (InstanceImpl) mindmapsGraph.addEntity(person);
-        InstanceImpl<?, ?> godfather = (InstanceImpl) mindmapsGraph.addEntity(movie);
-        RoleType actor2 = mindmapsGraph.putRoleType("Actor 2");
-        RoleType actor3 = mindmapsGraph.putRoleType("Actor 3");
-        RoleType character = mindmapsGraph.putRoleType("Character");
-        Instance thing = mindmapsGraph.addEntity(type);
+        RelationTypeImpl cast = (RelationTypeImpl) graknGraph.putRelationType("Cast");
+        EntityType type = graknGraph.putEntityType("Concept Type");
+        RoleTypeImpl feature = (RoleTypeImpl) graknGraph.putRoleType("Feature");
+        RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
+        EntityType movie = graknGraph.putEntityType("Movie");
+        EntityType person = graknGraph.putEntityType("Person");
+        InstanceImpl<?, ?> pacino = (InstanceImpl) graknGraph.addEntity(person);
+        InstanceImpl<?, ?> godfather = (InstanceImpl) graknGraph.addEntity(movie);
+        RoleType actor2 = graknGraph.putRoleType("Actor 2");
+        RoleType actor3 = graknGraph.putRoleType("Actor 3");
+        RoleType character = graknGraph.putRoleType("Character");
+        Instance thing = graknGraph.addEntity(type);
 
-        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(cast).
+        RelationImpl relation = (RelationImpl) graknGraph.addRelation(cast).
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino).putRolePlayer(actor2, pacino);
 
         Set<EdgeImpl> edges = pacino.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT);
@@ -504,7 +504,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(pacinoToOthers.contains(godfather));
         assertTrue(pacinoToOthers.contains(pacino));
 
-        mindmapsGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor3, pacino).putRolePlayer(character, thing);
+        graknGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor3, pacino).putRolePlayer(character, thing);
 
         godfatherToOthers = godfather.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);
         pacinoToOthers = pacino.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);
@@ -518,7 +518,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(pacinoToOthers.contains(pacino));
         assertTrue(pacinoToOthers.contains(thing));
 
-        mindmapsGraph.getTinkerPopGraph().traversal().V(pacino.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).iterator().next().getBaseIdentifier()).next().remove();
+        graknGraph.getTinkerPopGraph().traversal().V(pacino.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).iterator().next().getBaseIdentifier()).next().remove();
 
         godfatherToOthers = godfather.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);
         pacinoToOthers = pacino.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);
@@ -558,31 +558,31 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void testCollapsedCasting(){
-        RelationTypeImpl cast = (RelationTypeImpl) mindmapsGraph.putRelationType("Cast");
-        EntityType type = mindmapsGraph.putEntityType("Concept Type");
-        RoleType feature = mindmapsGraph.putRoleType("Feature");
-        RoleTypeImpl actor = (RoleTypeImpl) mindmapsGraph.putRoleType("Actor");
-        EntityType movie = mindmapsGraph.putEntityType("Movie");
-        EntityType person = mindmapsGraph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) mindmapsGraph.addEntity(person);
-        InstanceImpl godfather = (InstanceImpl) mindmapsGraph.addEntity(movie);
-        InstanceImpl godfather2 = (InstanceImpl) mindmapsGraph.addEntity(movie);
-        InstanceImpl godfather3 = (InstanceImpl) mindmapsGraph.addEntity(movie);
+        RelationTypeImpl cast = (RelationTypeImpl) graknGraph.putRelationType("Cast");
+        EntityType type = graknGraph.putEntityType("Concept Type");
+        RoleType feature = graknGraph.putRoleType("Feature");
+        RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
+        EntityType movie = graknGraph.putEntityType("Movie");
+        EntityType person = graknGraph.putEntityType("Person");
+        InstanceImpl pacino = (InstanceImpl) graknGraph.addEntity(person);
+        InstanceImpl godfather = (InstanceImpl) graknGraph.addEntity(movie);
+        InstanceImpl godfather2 = (InstanceImpl) graknGraph.addEntity(movie);
+        InstanceImpl godfather3 = (InstanceImpl) graknGraph.addEntity(movie);
 
-        mindmapsGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
-        mindmapsGraph.addRelation(cast).putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
-        mindmapsGraph.addRelation(cast).putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
+        graknGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
+        graknGraph.addRelation(cast).putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
+        graknGraph.addRelation(cast).putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
 
-        Vertex pacinoVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(pacino.getBaseIdentifier()).next();
-        Vertex godfatherVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).next();
-        Vertex godfather2Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather2.getBaseIdentifier()).next();
-        Vertex godfather3Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather3.getBaseIdentifier()).next();
+        Vertex pacinoVertex = graknGraph.getTinkerPopGraph().traversal().V(pacino.getBaseIdentifier()).next();
+        Vertex godfatherVertex = graknGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).next();
+        Vertex godfather2Vertex = graknGraph.getTinkerPopGraph().traversal().V(godfather2.getBaseIdentifier()).next();
+        Vertex godfather3Vertex = graknGraph.getTinkerPopGraph().traversal().V(godfather3.getBaseIdentifier()).next();
 
-        assertEquals(3, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).count().next().intValue());
-        assertEquals(4, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).count().next().intValue());
-        assertEquals(7, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.ENTITY.name()).count().next().intValue());
-        assertEquals(5, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.ROLE_TYPE.name()).count().next().intValue());
-        assertEquals(2, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION_TYPE.name()).count().next().intValue());
+        assertEquals(3, graknGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).count().next().intValue());
+        assertEquals(4, graknGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).count().next().intValue());
+        assertEquals(7, graknGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.ENTITY.name()).count().next().intValue());
+        assertEquals(5, graknGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.ROLE_TYPE.name()).count().next().intValue());
+        assertEquals(2, graknGraph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION_TYPE.name()).count().next().intValue());
 
         Iterator<Edge> pacinoCastings = pacinoVertex.edges(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER.getLabel());
         Iterator<Edge> godfatherCastings = godfatherVertex.edges(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER.getLabel());
@@ -594,7 +594,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         checkEdgeCount(1, godfather2Castings);
         checkEdgeCount(1, godfather3Castings);
 
-        Vertex actorVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(pacino.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).out(Schema.EdgeLabel.ISA.getLabel()).next();
+        Vertex actorVertex = graknGraph.getTinkerPopGraph().traversal().V(pacino.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).out(Schema.EdgeLabel.ISA.getLabel()).next();
 
         assertEquals(actor.getBaseIdentifier(), actorVertex.id());
     }
@@ -611,10 +611,10 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
     @Test
     public void testGraqlQuery(){
         String entityType = Schema.MetaSchema.ENTITY_TYPE.getId();
-        EntityType type1 = mindmapsGraph.putEntityType("Concept Type ");
-        EntityType type2 = mindmapsGraph.putEntityType("Concept Type 1");
+        EntityType type1 = graknGraph.putEntityType("Concept Type ");
+        EntityType type2 = graknGraph.putEntityType("Concept Type 1");
 
-        List<Map<String, Concept>> results = mindmapsGraph.graql().match(var("x").isa(entityType)).execute();
+        List<Map<String, Concept>> results = graknGraph.graql().match(var("x").isa(entityType)).execute();
         System.out.println();
 
         boolean found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type1)));

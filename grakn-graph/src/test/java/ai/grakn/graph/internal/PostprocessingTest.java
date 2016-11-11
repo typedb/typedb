@@ -23,12 +23,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -55,18 +50,18 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Before
     public void buildGraphAccessManager(){
-        roleType1 = mindmapsGraph.putRoleType("role 1");
-        roleType2 = mindmapsGraph.putRoleType("role 2");
-        relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = mindmapsGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        instance1 = (InstanceImpl) mindmapsGraph.addEntity(thing);
-        instance2 = (InstanceImpl) mindmapsGraph.addEntity(thing);
-        instance3 = (InstanceImpl) mindmapsGraph.addEntity(thing);
-        instance4 = (InstanceImpl) mindmapsGraph.addEntity(thing);
+        roleType1 = graknGraph.putRoleType("role 1");
+        roleType2 = graknGraph.putRoleType("role 2");
+        relationType = graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        EntityType thing = graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        instance1 = (InstanceImpl) graknGraph.addEntity(thing);
+        instance2 = (InstanceImpl) graknGraph.addEntity(thing);
+        instance3 = (InstanceImpl) graknGraph.addEntity(thing);
+        instance4 = (InstanceImpl) graknGraph.addEntity(thing);
 
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
-        assertEquals(2, mindmapsGraph.getTinkerPopGraph().traversal().E().
+        assertEquals(2, graknGraph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
     }
 
@@ -77,15 +72,15 @@ public class PostprocessingTest extends GraphTestBase{
         buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
         assertEquals(3, instance1.castings().size());
 
-        mindmapsGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
+        graknGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
         assertEquals(1, instance1.castings().size());
     }
 
     private void buildDuplicateCastingWithNewRelation(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
-        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
+        RelationImpl relation = (RelationImpl) graknGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
-        Vertex castingVertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
         castingVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
@@ -101,7 +96,7 @@ public class PostprocessingTest extends GraphTestBase{
 
     private void putFakeShortcutEdge(RelationType relationType, Relation relation, RoleType fromRole, InstanceImpl fromInstance, RoleType toRole, InstanceImpl toInstance){
         Edge tinkerEdge = fromInstance.getVertex().addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
-        EdgeImpl edge = new EdgeImpl(tinkerEdge, mindmapsGraph);
+        EdgeImpl edge = new EdgeImpl(tinkerEdge, graknGraph);
 
         edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, relationType.getId());
         edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId());
@@ -129,23 +124,23 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(2, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
 
-        assertEquals(6, mindmapsGraph.getTinkerPopGraph().traversal().E().
+        assertEquals(6, graknGraph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
-        mindmapsGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
+        graknGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
 
-        assertEquals(4, mindmapsGraph.getTinkerPopGraph().traversal().E().
+        assertEquals(4, graknGraph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
     }
 
     @Test
     public void testMergingResourcesSimple(){
-        ResourceType resourceType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Create fake resources
         Set<Object> resourceIds = new HashSet<>();
@@ -159,7 +154,7 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(5, resourceType.instances().size());
 
         //Fix duplicates
-        mindmapsGraph.fixDuplicateResources(resourceIds);
+        graknGraph.fixDuplicateResources(resourceIds);
 
         //Check we no longer have duplicates
         assertEquals(3, resourceType.instances().size());
@@ -167,14 +162,14 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingResourcesWithRelations(){
-        RoleType roleEntity = mindmapsGraph.putRoleType("A Entity Role Type");
-        RoleType roleResource = mindmapsGraph.putRoleType("A Resource Role Type");
-        RelationType relationType = mindmapsGraph.putRelationType("A Relation Type").hasRole(roleEntity).hasRole(roleResource);
-        ResourceType<String> resourceType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).playsRole(roleResource);
-        EntityType entityType = mindmapsGraph.putEntityType("An Entity Type").playsRole(roleEntity);
-        Entity e1 = mindmapsGraph.addEntity(entityType);
-        Entity e2 = mindmapsGraph.addEntity(entityType);
-        Entity e3 = mindmapsGraph.addEntity(entityType);
+        RoleType roleEntity = graknGraph.putRoleType("A Entity Role Type");
+        RoleType roleResource = graknGraph.putRoleType("A Resource Role Type");
+        RelationType relationType = graknGraph.putRelationType("A Relation Type").hasRole(roleEntity).hasRole(roleResource);
+        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).playsRole(roleResource);
+        EntityType entityType = graknGraph.putEntityType("An Entity Type").playsRole(roleEntity);
+        Entity e1 = graknGraph.addEntity(entityType);
+        Entity e2 = graknGraph.addEntity(entityType);
+        Entity e3 = graknGraph.addEntity(entityType);
 
         //Create fake resources
         Set<Object> resourceIds = new HashSet<>();
@@ -191,23 +186,23 @@ public class PostprocessingTest extends GraphTestBase{
         resourceIds.add(r3.getBaseIdentifier());
 
         //Give resources some relationships
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e2); //Absorb
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e2); //Don't Absorb
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
+        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
+        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
+        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e2); //Absorb
+        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e2); //Don't Absorb
+        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
 
         //Check everything is broken
         assertEquals(5, resourceType.instances().size());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(6, mindmapsGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(6, graknGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().values().contains(e1)));
 
         //Now fix everything
-        mindmapsGraph.fixDuplicateResources(resourceIds);
+        graknGraph.fixDuplicateResources(resourceIds);
 
         //Check everything is in order
         assertEquals(3, resourceType.instances().size());
@@ -226,19 +221,19 @@ public class PostprocessingTest extends GraphTestBase{
         assertTrue(foundR1.ownerInstances().contains(e1));
         assertTrue(foundR1.ownerInstances().contains(e2));
 
-        assertEquals(4, mindmapsGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(4, graknGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
     }
 
 
     private ResourceImpl createFakeResource(ResourceType type, String value){
         String index = ResourceImpl.generateResourceIndex(type.getId(), value);
-        Vertex resourceVertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+        Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type).getVertex());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(), index);
         resourceVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
 
-        return new ResourceImpl(resourceVertex, type, mindmapsGraph);
+        return new ResourceImpl(resourceVertex, type, graknGraph);
     }
 }

@@ -38,7 +38,7 @@ import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
 
 /**
- * A client for creating a mindmaps graph from a running engine.
+ * A client for creating a grakn graph from a running engine.
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
@@ -54,7 +54,7 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
 
     /**
      *
-     * @return A new or existing mindmaps graph with the defined name
+     * @return A new or existing grakn graph with the defined name
      */
     public GraknGraph getGraph(){
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.DEFAULT);
@@ -63,7 +63,7 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
 
     /**
      *
-     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
+     * @return A new or existing grakn graph with the defined name connecting to the specified remote uri with batch loading enabled
      */
     public GraknGraph getGraphBatchLoading(){
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.BATCH);
@@ -71,7 +71,7 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
     }
 
     /**
-     * @return A new or existing mindmaps graph compute with the defined name
+     * @return A new or existing grakn graph compute with the defined name
      */
     public GraknComputer getGraphComputer() {
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
@@ -83,7 +83,7 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
      *
      * @param engineUrl The remote uri fo where engine is located
      * @param graphType The type of graph to produce, default, batch, or compute
-     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
+     * @return A new or existing grakn graph with the defined name connecting to the specified remote uri
      */
     protected static ConfigureFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
         try {
@@ -92,13 +92,13 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
 
             //TODO: We should make config handling generic rather than through files. Using a temp file here is a bit strange
             //Creating Temp File
-            File file = File.createTempFile("mindmaps-config", ".tmp");
+            File file = File.createTempFile("grakn-config", ".tmp");
             String path = file.getAbsolutePath();
             BufferedWriter bw = new BufferedWriter(new FileWriter(file));
             bw.write(config);
             bw.close();
 
-            //Creating the actual mindmaps graph using reflection to identify the factory
+            //Creating the actual grakn graph using reflection to identify the factory
             FileInputStream fis = new FileInputStream(path);
             PropertyResourceBundle bundle = new PropertyResourceBundle(fis);
             fis.close();

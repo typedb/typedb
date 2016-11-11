@@ -47,23 +47,23 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Before
     public void buildGraph() throws GraknValidationException {
-        husband = mindmapsGraph.putRoleType("Husband");
-        wife = mindmapsGraph.putRoleType("Wife");
-        RoleType driver = mindmapsGraph.putRoleType("Driver");
-        RoleType driven = mindmapsGraph.putRoleType("Driven");
+        husband = graknGraph.putRoleType("Husband");
+        wife = graknGraph.putRoleType("Wife");
+        RoleType driver = graknGraph.putRoleType("Driver");
+        RoleType driven = graknGraph.putRoleType("Driven");
 
-        marriage = mindmapsGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
-        mindmapsGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
+        marriage = graknGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
+        graknGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
 
-        person = mindmapsGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
-        man = mindmapsGraph.putEntityType("Man").superType(person);
-        woman = mindmapsGraph.putEntityType("Woman").superType(person);
-        car = mindmapsGraph.putEntityType("Car");
+        person = graknGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
+        man = graknGraph.putEntityType("Man").superType(person);
+        woman = graknGraph.putEntityType("Woman").superType(person);
+        car = graknGraph.putEntityType("Car");
 
-        alice = mindmapsGraph.addEntity(woman);
-        bob = mindmapsGraph.addEntity(man);
-        relation = mindmapsGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
-        mindmapsGraph.commit();
+        alice = graknGraph.addEntity(woman);
+        bob = graknGraph.addEntity(man);
+        relation = graknGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
+        graknGraph.commit();
     }
 
     @Test
@@ -75,7 +75,7 @@ public class OntologyMutationTest extends GraphTestBase{
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(woman.getId(), alice.getId(), wife.getId()))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
     @Test
@@ -98,7 +98,7 @@ public class OntologyMutationTest extends GraphTestBase{
                         rolePlayers.split(",").length, roles))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
     @Test
@@ -110,7 +110,7 @@ public class OntologyMutationTest extends GraphTestBase{
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(man.getId(), bob.getId(), husband.getId()))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
     @Test
@@ -122,7 +122,7 @@ public class OntologyMutationTest extends GraphTestBase{
                 containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(man.getId()))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
 }

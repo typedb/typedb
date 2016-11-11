@@ -43,7 +43,7 @@ class FactoryBuilder {
             ResourceBundle bundle = new PropertyResourceBundle(fis);
             fis.close();
 
-            return getMindmapsGraphFactory(bundle.getString(FACTORY), keyspace, engineUrl, config);
+            return getGraknGraphFactory(bundle.getString(FACTORY), keyspace, engineUrl, config);
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(config), e);
         } catch(MissingResourceException e){
@@ -53,11 +53,11 @@ class FactoryBuilder {
 
     /**
      *
-     * @param factoryType The string defining which factory should be used for creating the mindmaps graph.
-     *                    A valid example includes: io.mindmaps.factory.TinkerInternalFactory
+     * @param factoryType The string defining which factory should be used for creating the grakn graph.
+     *                    A valid example includes: ai.grakn.factory.TinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    private static InternalFactory getMindmapsGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
+    private static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
         String key = factoryType + keyspace;
         if(!openFactories.containsKey(key)) {
             InternalFactory internalFactory;

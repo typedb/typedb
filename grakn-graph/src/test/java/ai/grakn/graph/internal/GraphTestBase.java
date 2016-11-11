@@ -27,18 +27,18 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class GraphTestBase {
-    protected AbstractGraknGraph mindmapsGraph;
+    protected AbstractGraknGraph graknGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUpGraph() {
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     }
 
     @After
     public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 }

@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
  */
 class CastingImpl extends ConceptImpl {
 
-    CastingImpl(Vertex v, RoleType type,  AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    CastingImpl(Vertex v, RoleType type,  AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
         generateInstanceId(type);
     }
 
@@ -74,7 +74,7 @@ class CastingImpl extends ConceptImpl {
      */
     public CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         String hash;
-        if(getMindmapsGraph().isBatchLoadingEnabled())
+        if(getGraknGraph().isBatchLoadingEnabled())
             hash = "CastingBaseId_" + this.getBaseIdentifier() + UUID.randomUUID().toString();
         else
             hash = generateNewHash(role, rolePlayer);

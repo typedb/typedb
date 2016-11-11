@@ -29,7 +29,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 
 /**
- * A class which loads sample data into a mindmaps graph
+ * A class which loads sample data into a grakn graph
  */
 public class PokemonGraphFactory{
     private static EntityType pokemon;

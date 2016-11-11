@@ -59,7 +59,7 @@ public class GraknComputerImpl implements GraknComputer {
     }
 
     /**
-     * @return A graph compute supported by this mindmaps graph
+     * @return A graph compute supported by this grakn graph
      */
     @SuppressWarnings("unchecked")
     protected Class<? extends GraphComputer> getGraphComputer(String graphComputerType) {

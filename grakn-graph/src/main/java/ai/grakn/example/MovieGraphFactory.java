@@ -37,7 +37,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 /**
- * A class which loads sample data into a mindmaps graph
+ * A class which loads sample data into a grakn graph
  */
 public class MovieGraphFactory {
     private static GraknGraph graknGraph;

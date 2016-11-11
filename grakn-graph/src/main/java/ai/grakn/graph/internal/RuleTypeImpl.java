@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Currently supported rules include Constraint Rules and Inference Rules.
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
-    RuleTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    RuleTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 }

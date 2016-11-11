@@ -37,8 +37,8 @@ import java.util.*;
  * A relation represents and instance of a relation type which concept how different entities relate to one another.
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
-    RelationImpl(Vertex v, RelationType type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    RelationImpl(Vertex v, RelationType type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 
     /**
@@ -139,24 +139,24 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             Resource<Object> resource = instance.asResource();
             if(resource.type().isUnique()) {
 
-                GraphTraversal traversal = getMindmapsGraph().getTinkerTraversal().
+                GraphTraversal traversal = getGraknGraph().getTinkerTraversal().
                         has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resource.getId()).
                         out(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
-                    ConceptImpl foundNeighbour = getMindmapsGraph().getElementFactory().buildUnknownConcept((Vertex) traversal.next());
+                    ConceptImpl foundNeighbour = getGraknGraph().getElementFactory().buildUnknownConcept((Vertex) traversal.next());
                     throw new ConceptNotUniqueException(resource, foundNeighbour.asInstance());
                 }
             }
         }
 
         //Do the actual put of the role and role player
-        if(getMindmapsGraph().isBatchLoadingEnabled()) {
+        if(getGraknGraph().isBatchLoadingEnabled()) {
             return addNewRolePlayer(null, roleType, instance);
         } else {
             Map<RoleType, Instance> roleMap = rolePlayers();
             roleMap.put(roleType, instance);
-            Relation otherRelation = getMindmapsGraph().getRelation(type(), roleMap);
+            Relation otherRelation = getGraknGraph().getRelation(type(), roleMap);
 
             if(otherRelation == null){
                 return addNewRolePlayer(roleMap, roleType, instance);
@@ -178,9 +178,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     private Relation addNewRolePlayer(Map<RoleType, Instance> roleMap, RoleType roleType, Instance instance){
         if(instance != null)
-            getMindmapsGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
+            getGraknGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
 
-        if(getMindmapsGraph().isBatchLoadingEnabled()){
+        if(getGraknGraph().isBatchLoadingEnabled()){
             setHash(null);
         } else {
             setHash(roleMap);
@@ -209,9 +209,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         // tracking
         rolePlayers.forEach(r -> {
             if(r != null)
-                getMindmapsGraph().getConceptLog().putConcept((ConceptImpl) r);
+                getGraknGraph().getConceptLog().putConcept((ConceptImpl) r);
         });
-        this.getMappingCasting().forEach(c -> getMindmapsGraph().getConceptLog().putConcept(c));
+        this.getMappingCasting().forEach(c -> getGraknGraph().getConceptLog().putConcept(c));
 
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null )){

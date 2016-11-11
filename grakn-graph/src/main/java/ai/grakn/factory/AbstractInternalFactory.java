@@ -28,8 +28,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected final String engineUrl;
     protected final String config;
 
-    protected M mindmapsGraph = null;
-    private M batchLoadingMindmapsGraph = null;
+    protected M graknGraph = null;
+    private M batchLoadingGraknGraph = null;
 
     protected G graph = null;
     private G batchLoadingGraph = null;
@@ -46,25 +46,25 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
     abstract boolean isClosed(G innerGraph);
 
-    abstract M buildMindmapsGraphFromTinker(G graph, boolean batchLoading);
+    abstract M buildGraknGraphFromTinker(G graph, boolean batchLoading);
 
     abstract G buildTinkerPopGraph();
 
     @Override
     public synchronized M getGraph(boolean batchLoading){
         if(batchLoading){
-            batchLoadingMindmapsGraph = getGraph(batchLoadingMindmapsGraph, batchLoadingGraph, batchLoading);
-            return batchLoadingMindmapsGraph;
+            batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, batchLoadingGraph, batchLoading);
+            return batchLoadingGraknGraph;
         } else {
-            mindmapsGraph = getGraph(mindmapsGraph, graph, batchLoading);
-            return mindmapsGraph;
+            graknGraph = getGraph(graknGraph, graph, batchLoading);
+            return graknGraph;
         }
     }
-    protected M getGraph(M mindmapsGraph, G graph, boolean batchLoading){
-        if(mindmapsGraph == null || isClosed(mindmapsGraph)){
-            mindmapsGraph = buildMindmapsGraphFromTinker(getTinkerPopGraph(graph), batchLoading);
+    protected M getGraph(M graknGraph, G graph, boolean batchLoading){
+        if(graknGraph == null || isClosed(graknGraph)){
+            graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(graph), batchLoading);
         }
-        return mindmapsGraph;
+        return graknGraph;
     }
 
     @Override
@@ -84,8 +84,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         return graph;
     }
 
-    private boolean isClosed(M mindmapsGraph) {
-        G innerGraph = mindmapsGraph.getTinkerPopGraph();
+    private boolean isClosed(M graknGraph) {
+        G innerGraph = graknGraph.getTinkerPopGraph();
         return isClosed(innerGraph);
     }
 }
