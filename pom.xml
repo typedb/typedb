@@ -80,6 +80,11 @@
         <systen-rules.version>1.16.0</systen-rules.version>
     </properties>
 
+    <organization>
+      <name>Grakn Labs Ltd</name>
+      <url>https://grakn.ai</url>
+    </organization>
+
     <licenses>
         <license>
             <name>GNU General Public License Version 3 (GPLv3)</name>
@@ -240,6 +245,8 @@
                 <version>2.9.1</version>
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
+                    <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
+                    <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">{organizationName}</a>. All rights reserved.]]></bottom>
                 </configuration>
                 <executions>
                     <execution>
