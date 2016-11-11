@@ -56,7 +56,7 @@ public interface TaskManager {
      * @param message Optional String denoting the reason for stopping the task; used for status reporting and may be null.
      * @return Instance of the class implementing TaskManager.
      */
-    TaskManager pauseTask(UUID uuid, String requesterName, String message);
+ //   TaskManager pauseTask(UUID uuid, String requesterName, String message);
 
     /**
      * Resume a previously Paused task to continue execution from where it left off. It is not guaranteed that the process
@@ -69,7 +69,7 @@ public interface TaskManager {
      * @param message Optional String denoting the reason for stopping the task; used for status reporting and may be null.
      * @return Instance of the class implementing TaskManager.
      */
-    TaskManager resumeTask(UUID uuid, String requesterName, String message);
+//    TaskManager resumeTask(UUID uuid, String requesterName, String message);
 
     /**
      * Restart a previously Paused, Stopped or Dead task; this call causes the Tasks .restart() method to be called to
@@ -81,7 +81,7 @@ public interface TaskManager {
      * @param message Optional String denoting the reason for stopping the task; used for status reporting and may be null.
      * @return Instance of the class implementing TaskManager.
      */
-    TaskManager restartTask(UUID uuid, String requesterName, String message);
+//    TaskManager restartTask(UUID uuid, String requesterName, String message);
 
     /**
      * Return the full TaskState object for a given task, containing full task metadata including the status change messages
