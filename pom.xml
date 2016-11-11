@@ -52,7 +52,7 @@
         <antlr.version>4.5</antlr.version>
         <jline.version>2.12</jline.version>
         <commons-cli.version>1.3</commons-cli.version>
-        <spark-core.version>2.5</spark-core.version>
+        <spark-core.version>2.5.1</spark-core.version>
         <json.version>20160212</json.version>
         <halbuilder-standard.version>4.0.1</halbuilder-standard.version>
         <rest-assured.version>2.7.0</rest-assured.version>
