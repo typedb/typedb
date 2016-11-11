@@ -19,16 +19,12 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.concept.Resource;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import ai.grakn.migration.sql.SQLMigrator;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
 import org.jooq.exception.DataAccessException;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import static junit.framework.TestCase.assertEquals;
@@ -38,7 +34,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
 
     @Test
     public void singleTableTest() throws SQLException {
-        String template = AbstractMindmapsMigratorTest.getFileAsString("sql", "pets/template.gql");
+        String template = AbstractGraknMigratorTest.getFileAsString("sql", "pets/template.gql");
         String query = "SELECT * FROM pet";
 
         try(Connection connection = setupExample("pets")){

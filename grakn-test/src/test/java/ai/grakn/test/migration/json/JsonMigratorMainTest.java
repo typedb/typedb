@@ -23,9 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.migration.json.Main;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
-import ai.grakn.migration.json.Main;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +31,7 @@ import java.util.Collection;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
+public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
 
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();;
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();

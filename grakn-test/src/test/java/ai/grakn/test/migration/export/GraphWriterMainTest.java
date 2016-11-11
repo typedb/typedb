@@ -20,14 +20,11 @@ package ai.grakn.test.migration.export;
 
 import ai.grakn.example.PokemonGraphFactory;
 import ai.grakn.migration.export.Main;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
-import ai.grakn.example.PokemonGraphFactory;
-import ai.grakn.migration.export.Main;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import org.junit.Before;
 import org.junit.Test;
 
-public class GraphWriterMainTest extends AbstractMindmapsMigratorTest {
+public class GraphWriterMainTest extends AbstractGraknMigratorTest {
 
     @Before
     public void start() {

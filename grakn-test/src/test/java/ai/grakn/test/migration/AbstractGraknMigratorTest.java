@@ -18,15 +18,13 @@
 
 package ai.grakn.test.migration;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import com.google.common.io.Files;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.ResourceType.DataType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.loader.BlockingLoader;
@@ -36,6 +34,9 @@ import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import com.google.common.io.Files;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
@@ -53,9 +54,8 @@ import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import ai.grakn.concept.ResourceType.DataType;
 
-public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
+public class AbstractGraknMigratorTest extends AbstractGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -78,7 +78,7 @@ public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
     }
 
     protected static File getFile(String component, String fileName){
-        return new File(AbstractMindmapsMigratorTest.class.getResource(component + "/" + fileName).getPath());
+        return new File(AbstractGraknMigratorTest.class.getResource(component + "/" + fileName).getPath());
     }
 
     protected void migrate(Migrator migrator){

@@ -39,12 +39,12 @@ public class TailRecursionGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(int n, int m) {
-        RoleType Qfrom = mindmaps.getRoleType("Q-from");
-        RoleType Qto = mindmaps.getRoleType("Q-to");
+        RoleType Qfrom = graknGraph.getRoleType("Q-from");
+        RoleType Qto = graknGraph.getRoleType("Q-to");
 
-        EntityType aEntity = mindmaps.getEntityType("a-entity");
-        EntityType bEntity = mindmaps.getEntityType("b-entity");
-        RelationType Q = mindmaps.getRelationType("Q");
+        EntityType aEntity = graknGraph.getEntityType("a-entity");
+        EntityType bEntity = graknGraph.getEntityType("b-entity");
+        RelationType Q = graknGraph.getRelationType("Q");
 
         String a0Id = putEntity("a0", aEntity).getId();
         String[][] bInstancesIds = new String[m + 2][n + 2];
@@ -53,13 +53,13 @@ public class TailRecursionGraph extends TestGraph {
                 bInstancesIds[i][j] = putEntity("b" + i + j, bEntity).getId();
 
         for (int j = 1; j <= n; j++) {
-            mindmaps.addRelation(Q)
-                    .putRolePlayer(Qfrom, mindmaps.getInstance(a0Id))
-                    .putRolePlayer(Qto, mindmaps.getInstance(bInstancesIds[1][j]));
+            graknGraph.addRelation(Q)
+                    .putRolePlayer(Qfrom, graknGraph.getInstance(a0Id))
+                    .putRolePlayer(Qto, graknGraph.getInstance(bInstancesIds[1][j]));
             for (int i = 1; i <= m; i++) {
-                mindmaps.addRelation(Q)
-                        .putRolePlayer(Qfrom, mindmaps.getInstance(bInstancesIds[i][j]))
-                        .putRolePlayer(Qto, mindmaps.getInstance(bInstancesIds[i + 1][j]));
+                graknGraph.addRelation(Q)
+                        .putRolePlayer(Qfrom, graknGraph.getInstance(bInstancesIds[i][j]))
+                        .putRolePlayer(Qto, graknGraph.getInstance(bInstancesIds[i + 1][j]));
             }
         }
     }

@@ -40,32 +40,32 @@ public class MatrixGraphII extends TestGraph{
     }
 
     private void buildExtensionalDB(int n, int m) {
-        RoleType Qfrom = mindmaps.getRoleType("Q-from");
-        RoleType Qto = mindmaps.getRoleType("Q-to");
+        RoleType Qfrom = graknGraph.getRoleType("Q-from");
+        RoleType Qto = graknGraph.getRoleType("Q-to");
 
-        EntityType aEntity = mindmaps.getEntityType("a-entity");
-        RelationType Q = mindmaps.getRelationType("Q");
+        EntityType aEntity = graknGraph.getEntityType("a-entity");
+        RelationType Q = graknGraph.getRelationType("Q");
         String[][] aInstancesIds = new String[n+1][m+1];
-        Instance aInst = putEntity("a", mindmaps.getEntityType("entity"));
+        Instance aInst = putEntity("a", graknGraph.getEntityType("entity"));
         for(int i = 1 ; i <= n ;i++)
             for(int j = 1 ; j <= m ;j++)
                 aInstancesIds[i][j] = putEntity("a" + i + "," + j, aEntity).getId();
 
-        mindmaps.addRelation(Q)
+        graknGraph.addRelation(Q)
                 .putRolePlayer(Qfrom, aInst)
-                .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[1][1]));
+                .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[1][1]));
 
         for(int i = 1 ; i <= n ; i++) {
             for (int j = 1; j <= m; j++) {
                 if ( i < n ) {
-                    mindmaps.addRelation(Q)
-                            .putRolePlayer(Qfrom, mindmaps.getInstance(aInstancesIds[i][j]))
-                            .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[i+1][j]));
+                    graknGraph.addRelation(Q)
+                            .putRolePlayer(Qfrom, graknGraph.getInstance(aInstancesIds[i][j]))
+                            .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[i+1][j]));
                 }
                 if ( j < m){
-                    mindmaps.addRelation(Q)
-                            .putRolePlayer(Qfrom, mindmaps.getInstance(aInstancesIds[i][j]))
-                            .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[i][j+1]));
+                    graknGraph.addRelation(Q)
+                            .putRolePlayer(Qfrom, graknGraph.getInstance(aInstancesIds[i][j]))
+                            .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[i][j+1]));
                 }
             }
         }

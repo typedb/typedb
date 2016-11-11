@@ -43,12 +43,12 @@ public class PathGraph extends TestGraph {
     protected void buildExtensionalDB(int n, int children) {
         long startTime = System.currentTimeMillis();
 
-        EntityType vertex = mindmaps.getEntityType("vertex");
-        EntityType startVertex = mindmaps.getEntityType("start-vertex");
-        RoleType arcFrom = mindmaps.getRoleType("arc-from");
-        RoleType arcTo = mindmaps.getRoleType("arc-to");
+        EntityType vertex = graknGraph.getEntityType("vertex");
+        EntityType startVertex = graknGraph.getEntityType("start-vertex");
+        RoleType arcFrom = graknGraph.getRoleType("arc-from");
+        RoleType arcTo = graknGraph.getRoleType("arc-to");
 
-        RelationType arc = mindmaps.getRelationType("arc");
+        RelationType arc = graknGraph.getRelationType("arc");
         putEntity("a0", startVertex);
 
         for(int i = 1 ; i <= n ;i++) {
@@ -61,7 +61,7 @@ public class PathGraph extends TestGraph {
         }
 
         for (int j = 0; j < children; j++) {
-            mindmaps.addRelation(arc)
+            graknGraph.addRelation(arc)
                     .putRolePlayer(arcFrom, getInstance("a0"))
                     .putRolePlayer(arcTo, getInstance("a1," + j));
         }
@@ -70,7 +70,7 @@ public class PathGraph extends TestGraph {
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
-                    mindmaps.addRelation(arc)
+                    graknGraph.addRelation(arc)
                             .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
                             .putRolePlayer(arcTo, getInstance("a" + (i + 1) + "," + (j * children + c)));
 

@@ -18,14 +18,13 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class SQLMigratorTestBase extends AbstractMindmapsMigratorTest {
+public class SQLMigratorTestBase extends AbstractGraknMigratorTest {
 
     public static final String USER = "test";
     public static final String PASS = "";

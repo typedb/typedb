@@ -1,7 +1,7 @@
 insert
 
 $uni-cambridge isa university, has name "University of Cambridge";
-$mindmaps isa company, has name "Mindmaps";
+$grakn isa company, has name "Grakn";
 $cambridge isa city, has name "Cambridge";
 $london isa city, has name "London";
 $uk isa country, has name "UK";
@@ -19,7 +19,7 @@ $forum1 isa forum, has name "forum1";
 
 (acquaintance1: $bob, acquaintance2: $charlie) isa knows;
 (located-subject: $uni-cambridge, subject-location: $cambridge) isa resides;
-(located-subject: $mindmaps, subject-location: $london) isa resides;
+(located-subject: $grakn, subject-location: $london) isa resides;
 (member-location: $cambridge, container-location: $uk) isa sublocate;
 (member-location: $london, container-location: $uk) isa sublocate;
 (member-location: $uk, container-location: $europe) isa sublocate;

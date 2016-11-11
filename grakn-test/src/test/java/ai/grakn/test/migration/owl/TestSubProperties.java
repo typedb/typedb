@@ -32,7 +32,7 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import java.util.Map;
 import java.util.Set;
 
-public class TestSubProperties extends TestOwlMindMapsBase {
+public class TestSubProperties extends TestOwlGraknBase {
 	private IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
 	private OWLOntology shakespeare = null;
 	

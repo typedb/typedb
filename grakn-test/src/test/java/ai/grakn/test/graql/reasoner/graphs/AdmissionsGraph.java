@@ -89,86 +89,86 @@ public class AdmissionsGraph extends TestGraph{
 
     @Override
     protected void buildOntology() {
-        TOEFLtarget= mindmaps.putRoleType("has-TOEFL-owner");
-        TOEFLvalue = mindmaps.putRoleType("has-TOEFL-value");
-        TOEFLrelation = mindmaps.putRelationType("has-TOEFL")
+        TOEFLtarget= graknGraph.putRoleType("has-TOEFL-owner");
+        TOEFLvalue = graknGraph.putRoleType("has-TOEFL-value");
+        TOEFLrelation = graknGraph.putRelationType("has-TOEFL")
                 .hasRole(TOEFLtarget).hasRole(TOEFLvalue);
-        TOEFL = mindmaps.putResourceType("TOEFL", ResourceType.DataType.LONG).playsRole(TOEFLvalue);
+        TOEFL = graknGraph.putResourceType("TOEFL", ResourceType.DataType.LONG).playsRole(TOEFLvalue);
 
-        GREtarget= mindmaps.putRoleType("has-GRE-owner");
-        GREvalue = mindmaps.putRoleType("has-GRE-value");
-        GRErelation = mindmaps.putRelationType("has-GRE")
+        GREtarget= graknGraph.putRoleType("has-GRE-owner");
+        GREvalue = graknGraph.putRoleType("has-GRE-value");
+        GRErelation = graknGraph.putRelationType("has-GRE")
                 .hasRole(GREtarget).hasRole(GREvalue);
-        GRE = mindmaps.putResourceType("GRE", ResourceType.DataType.LONG).playsRole(GREvalue);
+        GRE = graknGraph.putResourceType("GRE", ResourceType.DataType.LONG).playsRole(GREvalue);
 
-        vGREtarget= mindmaps.putRoleType("has-vGRE-owner");
-        vGREvalue = mindmaps.putRoleType("has-vGRE-value");
-        vGRErelation = mindmaps.putRelationType("has-vGRE")
+        vGREtarget= graknGraph.putRoleType("has-vGRE-owner");
+        vGREvalue = graknGraph.putRoleType("has-vGRE-value");
+        vGRErelation = graknGraph.putRelationType("has-vGRE")
                 .hasRole(vGREtarget).hasRole(vGREvalue);
-        vGRE = mindmaps.putResourceType("vGRE", ResourceType.DataType.LONG).playsRole(vGREvalue);
+        vGRE = graknGraph.putResourceType("vGRE", ResourceType.DataType.LONG).playsRole(vGREvalue);
 
-        GPRtarget= mindmaps.putRoleType("has-GPR-owner");
-        GPRvalue = mindmaps.putRoleType("has-GPR-value");
-        GPRrelation = mindmaps.putRelationType("has-GPR")
+        GPRtarget= graknGraph.putRoleType("has-GPR-owner");
+        GPRvalue = graknGraph.putRoleType("has-GPR-value");
+        GPRrelation = graknGraph.putRelationType("has-GPR")
                 .hasRole(GPRtarget).hasRole(GPRvalue);
-        GPR = mindmaps.putResourceType("GPR", ResourceType.DataType.DOUBLE).playsRole(GPRvalue);
+        GPR = graknGraph.putResourceType("GPR", ResourceType.DataType.DOUBLE).playsRole(GPRvalue);
 
-        specialHonoursTarget= mindmaps.putRoleType("has-specialHonours-owner");
-        specialHonoursValue = mindmaps.putRoleType("has-specialHonours-value");
-        specialHonoursRelation = mindmaps.putRelationType("has-specialHonours")
+        specialHonoursTarget= graknGraph.putRoleType("has-specialHonours-owner");
+        specialHonoursValue = graknGraph.putRoleType("has-specialHonours-value");
+        specialHonoursRelation = graknGraph.putRelationType("has-specialHonours")
                 .hasRole(specialHonoursTarget).hasRole(specialHonoursValue);
-        specialHonours = mindmaps.putResourceType("specialHonours", ResourceType.DataType.STRING)
+        specialHonours = graknGraph.putResourceType("specialHonours", ResourceType.DataType.STRING)
                 .playsRole(specialHonoursValue);
 
-        considerGPRtarget= mindmaps.putRoleType("has-considerGPR-owner");
-        considerGPRvalue = mindmaps.putRoleType("has-considerGPR-value");
-        considerGPRrelation = mindmaps.putRelationType("has-considerGPR")
+        considerGPRtarget= graknGraph.putRoleType("has-considerGPR-owner");
+        considerGPRvalue = graknGraph.putRoleType("has-considerGPR-value");
+        considerGPRrelation = graknGraph.putRelationType("has-considerGPR")
                 .hasRole(considerGPRtarget).hasRole(considerGPRvalue);
-        considerGPR = mindmaps.putResourceType("considerGPR", ResourceType.DataType.STRING).playsRole(considerGPRvalue);
+        considerGPR = graknGraph.putResourceType("considerGPR", ResourceType.DataType.STRING).playsRole(considerGPRvalue);
 
-        transcriptTarget = mindmaps.putRoleType("has-transcript-owner");
-        transcriptValue = mindmaps.putRoleType("has-transcript-value");
-        transcriptRelation = mindmaps.putRelationType("has-transcript")
+        transcriptTarget = graknGraph.putRoleType("has-transcript-owner");
+        transcriptValue = graknGraph.putRoleType("has-transcript-value");
+        transcriptRelation = graknGraph.putRelationType("has-transcript")
                 .hasRole(transcriptTarget).hasRole(transcriptValue);
-        transcript = mindmaps.putResourceType("transcript", ResourceType.DataType.STRING)
+        transcript = graknGraph.putResourceType("transcript", ResourceType.DataType.STRING)
                 .playsRole(transcriptValue);
 
-        priorGraduateWorkTarget = mindmaps.putRoleType("has-priorGraduateWork-owner");
-        priorGraduateWorkValue = mindmaps.putRoleType("has-priorGraduateWork-value");
-        priorGraduateWorkRelation = mindmaps.putRelationType("has-priorGraduateWork")
+        priorGraduateWorkTarget = graknGraph.putRoleType("has-priorGraduateWork-owner");
+        priorGraduateWorkValue = graknGraph.putRoleType("has-priorGraduateWork-value");
+        priorGraduateWorkRelation = graknGraph.putRelationType("has-priorGraduateWork")
                 .hasRole(priorGraduateWorkTarget).hasRole(priorGraduateWorkValue);
-        priorGraduateWork = mindmaps.putResourceType("priorGraduateWork", ResourceType.DataType.STRING)
+        priorGraduateWork = graknGraph.putResourceType("priorGraduateWork", ResourceType.DataType.STRING)
                 .playsRole(priorGraduateWorkValue);
 
-        languageRequirementTarget = mindmaps.putRoleType("has-languageRequirement-owner");
-        languageRequirementValue = mindmaps.putRoleType("has-languageRequirement-value");
-        languageRequirementRelation = mindmaps.putRelationType("has-languageRequirement")
+        languageRequirementTarget = graknGraph.putRoleType("has-languageRequirement-owner");
+        languageRequirementValue = graknGraph.putRoleType("has-languageRequirement-value");
+        languageRequirementRelation = graknGraph.putRelationType("has-languageRequirement")
                 .hasRole(languageRequirementTarget).hasRole(languageRequirementValue);
-        languageRequirement= mindmaps.putResourceType("languageRequirement", ResourceType.DataType.STRING)
+        languageRequirement= graknGraph.putResourceType("languageRequirement", ResourceType.DataType.STRING)
                 .playsRole(languageRequirementValue);
 
-        degreeOriginTarget = mindmaps.putRoleType("has-degreeOrigin-owner");
-        degreeOriginValue = mindmaps.putRoleType("has-degreeOrigin-value");
-        degreeOriginRelation = mindmaps.putRelationType("has-degreeOrigin")
+        degreeOriginTarget = graknGraph.putRoleType("has-degreeOrigin-owner");
+        degreeOriginValue = graknGraph.putRoleType("has-degreeOrigin-value");
+        degreeOriginRelation = graknGraph.putRelationType("has-degreeOrigin")
                 .hasRole(degreeOriginTarget).hasRole(degreeOriginValue);
-        degreeOrigin = mindmaps.putResourceType("degreeOrigin", ResourceType.DataType.STRING)
+        degreeOrigin = graknGraph.putResourceType("degreeOrigin", ResourceType.DataType.STRING)
                 .playsRole(degreeOriginValue);
 
-        admissionStatusTarget = mindmaps.putRoleType("has-admissionStatus-owner");
-        admissionStatusValue = mindmaps.putRoleType("has-admissionStatus-value");
-        admissionStatusRelation = mindmaps.putRelationType("has-admissionStatus")
+        admissionStatusTarget = graknGraph.putRoleType("has-admissionStatus-owner");
+        admissionStatusValue = graknGraph.putRoleType("has-admissionStatus-value");
+        admissionStatusRelation = graknGraph.putRelationType("has-admissionStatus")
                 .hasRole(admissionStatusTarget).hasRole(admissionStatusValue);
-        admissionStatus = mindmaps.putResourceType("admissionStatus", ResourceType.DataType.STRING)
+        admissionStatus = graknGraph.putResourceType("admissionStatus", ResourceType.DataType.STRING)
                 .playsRole(admissionStatusValue);
 
-        decisionTypeTarget = mindmaps.putRoleType("has-decisionType-owner");
-        decisionTypeValue = mindmaps.putRoleType("has-decisionType-value");
-        decisionTypeRelation = mindmaps.putRelationType("has-decisionType")
+        decisionTypeTarget = graknGraph.putRoleType("has-decisionType-owner");
+        decisionTypeValue = graknGraph.putRoleType("has-decisionType-value");
+        decisionTypeRelation = graknGraph.putRelationType("has-decisionType")
                 .hasRole(decisionTypeTarget).hasRole(decisionTypeValue);
-        decisionType = mindmaps.putResourceType("decisionType", ResourceType.DataType.STRING)
+        decisionType = graknGraph.putResourceType("decisionType", ResourceType.DataType.STRING)
                 .playsRole(decisionTypeValue);
 
-        applicant = mindmaps.putEntityType("applicant")
+        applicant = graknGraph.putEntityType("applicant")
                 .playsRole(TOEFLtarget)
                 .playsRole(GREtarget)
                 .playsRole(vGREtarget)
@@ -236,7 +236,7 @@ public class AdmissionsGraph extends TestGraph{
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/admission-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            mindmaps.graql().parse(query).execute();
+            graknGraph.graql().parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();

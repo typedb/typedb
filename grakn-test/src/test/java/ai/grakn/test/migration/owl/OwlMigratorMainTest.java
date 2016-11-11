@@ -22,11 +22,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.migration.owl.Main;
-import ai.grakn.migration.owl.OwlModel;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -35,7 +31,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class OwlMigratorMainTest extends TestOwlMindMapsBase{
+public class OwlMigratorMainTest extends TestOwlGraknBase {
 
     @Test
     public void owlMainFileTest(){

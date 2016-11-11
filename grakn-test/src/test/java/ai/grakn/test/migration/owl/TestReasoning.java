@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
-public class TestReasoning extends TestOwlMindMapsBase {
+public class TestReasoning extends TestOwlGraknBase {
 
     private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
     private OWLReasoner hermit;

@@ -38,7 +38,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class TestGraph {
-    protected GraknGraph mindmaps;
+    protected GraknGraph graknGraph;
     private final static String filePath = "src/test/graql/";
     private final static String defaultKey = "name";
 
@@ -48,19 +48,19 @@ public class TestGraph {
     private static RoleType hasKeyValue;
 
     public TestGraph(){
-        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
         commit();
     }
 
     public TestGraph(String primaryKeyId, String... files) {
-        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);
         commit();
     }
 
-    public GraknGraph graph(){ return mindmaps;}
+    public GraknGraph graph(){ return graknGraph;}
 
     public static GraknGraph getGraph() {
         return new TestGraph().graph();
@@ -73,7 +73,7 @@ public class TestGraph {
         System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
-        QueryBuilder qb = mindmaps.graql();
+        QueryBuilder qb = graknGraph.graql();
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
@@ -86,7 +86,7 @@ public class TestGraph {
 
     protected void commit(){
         try {
-            mindmaps.commit();
+            graknGraph.commit();
         } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
@@ -101,11 +101,11 @@ public class TestGraph {
     }
 
     private void addPrimaryKey(String keyName){
-        hasKeyTarget = mindmaps.putRoleType("has-" + keyName + "-owner");
-        hasKeyValue = mindmaps.putRoleType("has-" + keyName + "-value");
-        hasKeyRelation = mindmaps.putRelationType("has-" + keyName)
+        hasKeyTarget = graknGraph.putRoleType("has-" + keyName + "-owner");
+        hasKeyValue = graknGraph.putRoleType("has-" + keyName + "-value");
+        hasKeyRelation = graknGraph.putRelationType("has-" + keyName)
                 .hasRole(hasKeyTarget).hasRole(hasKeyValue);
-        key = mindmaps.putResourceType(keyName, ResourceType.DataType.STRING).playsRole(hasKeyValue);
+        key = graknGraph.putResourceType(keyName, ResourceType.DataType.STRING).playsRole(hasKeyValue);
     }
 
     protected void buildOntology(){}
@@ -114,7 +114,7 @@ public class TestGraph {
     protected void buildRules(){}
 
     protected Instance getInstance(String id){
-        Set<Instance> instances = mindmaps.getResourcesByValue(id)
+        Set<Instance> instances = graknGraph.getResourcesByValue(id)
                 .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
@@ -122,15 +122,15 @@ public class TestGraph {
     }
 
     protected Instance putEntity(String id, EntityType type) {
-        Instance inst = mindmaps.addEntity(type);
+        Instance inst = graknGraph.addEntity(type);
         putResource(inst, key, id, hasKeyRelation, hasKeyTarget, hasKeyValue);
         return inst;
     }
 
     protected <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
                                         RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-        mindmaps.addRelation(relationType)
+        Resource resourceInstance = graknGraph.putResource(resource, resourceType);
+        graknGraph.addRelation(relationType)
                 .putRolePlayer(targetRole, instance)
                 .putRolePlayer(valueRole, resourceInstance);
     }

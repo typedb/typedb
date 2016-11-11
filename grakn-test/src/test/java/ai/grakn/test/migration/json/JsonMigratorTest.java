@@ -19,14 +19,12 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
-import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -37,7 +35,7 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class JsonMigratorTest extends AbstractMindmapsMigratorTest {
+public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
     @Test
     public void testMigrateSimpleSchemaData() {

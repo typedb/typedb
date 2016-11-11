@@ -20,13 +20,10 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import com.google.common.io.Files;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.csv.CSVMigrator;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -41,7 +38,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-public class CSVMigratorTest extends AbstractMindmapsMigratorTest {
+public class CSVMigratorTest extends AbstractGraknMigratorTest {
 
     @Test
     public void multiFileMigrateGraphPersistenceTest(){

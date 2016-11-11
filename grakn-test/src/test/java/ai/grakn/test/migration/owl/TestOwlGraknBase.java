@@ -27,13 +27,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.owl.OwlModel;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.migration.owl.OwlModel;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import org.junit.Before;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -50,7 +44,7 @@ import ai.grakn.migration.owl.OWLMigrator;
  * @author borislav
  *
  */
-public class TestOwlMindMapsBase extends AbstractMindmapsMigratorTest {
+public class TestOwlGraknBase extends AbstractGraknMigratorTest {
     protected OWLOntologyManager manager;
     protected OWLMigrator migrator;
 

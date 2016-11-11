@@ -23,8 +23,8 @@ CASSANDRA_STARTUP_TIMEOUT_S=60
 SLEEP_INTERVAL_S=2
 NODETOOL=`dirname $path`/nodetool
 
-CASSANDRA_PS=/tmp/mindmaps-cassandra.pid
-ENGINE_PS=/tmp/mindmaps-engine.pid
+CASSANDRA_PS=/tmp/grakn-cassandra.pid
+ENGINE_PS=/tmp/grakn-engine.pid
 
 # from titan
 wait_for_cassandra() {
@@ -91,7 +91,7 @@ start)
         # engine has not already started
         echo -n "Starting engine"
         SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.engine.MindmapsEngineServer &
+        java -cp "`dirname $path`/../lib/*" -Dgrakn.dir=$SCRIPTPATH ai.grakn.engine.GraknEngineServer &
         echo $!>$ENGINE_PS
         wait_for_engine
     fi

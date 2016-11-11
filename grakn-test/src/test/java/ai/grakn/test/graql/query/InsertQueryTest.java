@@ -101,7 +101,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertSub() {
-        assertInsert(var("x").id("http://mindmaps.io/cool-movie").sub("movie"));
+        assertInsert(var("x").id("http://graknGraph.io/cool-movie").sub("movie"));
     }
 
     @Test

@@ -42,22 +42,22 @@ public class AbstractGraph extends TestGraph{
 
     @Override
     protected void buildOntology() {
-        relRoleA = mindmaps.putRoleType("rel-roleA");
-        relRoleB = mindmaps.putRoleType("rel-roleB");
-        rel = mindmaps.putRelationType("rel").hasRole(relRoleA).hasRole(relRoleB);
+        relRoleA = graknGraph.putRoleType("rel-roleA");
+        relRoleB = graknGraph.putRoleType("rel-roleB");
+        rel = graknGraph.putRelationType("rel").hasRole(relRoleA).hasRole(relRoleB);
 
-        RELRoleA = mindmaps.putRoleType("REL-roleA");
-        RELRoleB = mindmaps.putRoleType("REL-roleB");
-        REL = mindmaps.putRelationType("REL").hasRole(RELRoleA).hasRole(RELRoleB);
+        RELRoleA = graknGraph.putRoleType("REL-roleA");
+        RELRoleB = graknGraph.putRoleType("REL-roleB");
+        REL = graknGraph.putRelationType("REL").hasRole(RELRoleA).hasRole(RELRoleB);
 
-        P = mindmaps.putEntityType("P").playsRole(RELRoleA).playsRole(RELRoleB);
-        Q = mindmaps.putEntityType("Q").playsRole(RELRoleB).playsRole(RELRoleA);
-        p = mindmaps.putEntityType("p").playsRole(relRoleA).playsRole(RELRoleA);
-        q = mindmaps.putEntityType("q").playsRole(relRoleB).playsRole(RELRoleB);
-        r = mindmaps.putEntityType("r").playsRole(relRoleA).playsRole(RELRoleA);
-        s = mindmaps.putEntityType("s").playsRole(relRoleB).playsRole(RELRoleB);
-        u = mindmaps.putEntityType("u").playsRole(relRoleA).playsRole(RELRoleA);
-        t = mindmaps.putEntityType("t").playsRole(relRoleB).playsRole(RELRoleB);
+        P = graknGraph.putEntityType("P").playsRole(RELRoleA).playsRole(RELRoleB);
+        Q = graknGraph.putEntityType("Q").playsRole(RELRoleB).playsRole(RELRoleA);
+        p = graknGraph.putEntityType("p").playsRole(relRoleA).playsRole(RELRoleA);
+        q = graknGraph.putEntityType("q").playsRole(relRoleB).playsRole(RELRoleB);
+        r = graknGraph.putEntityType("r").playsRole(relRoleA).playsRole(RELRoleA);
+        s = graknGraph.putEntityType("s").playsRole(relRoleB).playsRole(RELRoleB);
+        u = graknGraph.putEntityType("u").playsRole(relRoleA).playsRole(RELRoleA);
+        t = graknGraph.putEntityType("t").playsRole(relRoleB).playsRole(RELRoleB);
     }
 
     @Override
@@ -69,36 +69,36 @@ public class AbstractGraph extends TestGraph{
 
     @Override
     protected void  buildRelations() {
-        mindmaps.addRelation(rel)
+        graknGraph.addRelation(rel)
                 .putRolePlayer(relRoleA, instanceU)
                 .putRolePlayer(relRoleB, instanceT);
-        mindmaps.addRelation(REL)
+        graknGraph.addRelation(REL)
                 .putRolePlayer(RELRoleA, instanceU)
                 .putRolePlayer(RELRoleB, instanceP);
 
     }
     @Override
     protected void buildRules() {
-        RuleType inferenceRule = mindmaps.getMetaRuleInference();
+        RuleType inferenceRule = graknGraph.getMetaRuleInference();
 
-        Pattern R1_LHS = and(mindmaps.graql().parsePatterns("$x isa p;$y isa q;($x, $y) isa rel;"));
-        Pattern R1_RHS = and(mindmaps.graql().parsePatterns("$x isa Q;"));
-        mindmaps.addRule(R1_LHS, R1_RHS, inferenceRule);
+        Pattern R1_LHS = and(graknGraph.graql().parsePatterns("$x isa p;$y isa q;($x, $y) isa rel;"));
+        Pattern R1_RHS = and(graknGraph.graql().parsePatterns("$x isa Q;"));
+        graknGraph.addRule(R1_LHS, R1_RHS, inferenceRule);
 
-        Pattern R2_LHS = and(mindmaps.graql().parsePatterns("$x isa r;"));
-        Pattern R2_RHS = and(mindmaps.graql().parsePatterns("$x isa p;"));
-        mindmaps.addRule(R2_LHS, R2_RHS, inferenceRule);
+        Pattern R2_LHS = and(graknGraph.graql().parsePatterns("$x isa r;"));
+        Pattern R2_RHS = and(graknGraph.graql().parsePatterns("$x isa p;"));
+        graknGraph.addRule(R2_LHS, R2_RHS, inferenceRule);
 
-        Pattern R3_LHS = and(mindmaps.graql().parsePatterns("$x isa s;"));
-        Pattern R3_RHS = and(mindmaps.graql().parsePatterns("$x isa p;"));
-        mindmaps.addRule(R3_LHS, R3_RHS, inferenceRule);
+        Pattern R3_LHS = and(graknGraph.graql().parsePatterns("$x isa s;"));
+        Pattern R3_RHS = and(graknGraph.graql().parsePatterns("$x isa p;"));
+        graknGraph.addRule(R3_LHS, R3_RHS, inferenceRule);
 
-        Pattern R4_LHS = and(mindmaps.graql().parsePatterns("$x isa t;"));
-        Pattern R4_RHS = and(mindmaps.graql().parsePatterns("$x isa q;"));
-        mindmaps.addRule(R4_LHS, R4_RHS, inferenceRule);
+        Pattern R4_LHS = and(graknGraph.graql().parsePatterns("$x isa t;"));
+        Pattern R4_RHS = and(graknGraph.graql().parsePatterns("$x isa q;"));
+        graknGraph.addRule(R4_LHS, R4_RHS, inferenceRule);
 
-        Pattern R5_LHS = and(mindmaps.graql().parsePatterns("$x isa u;"));
-        Pattern R5_RHS = and(mindmaps.graql().parsePatterns("$x isa r;"));
-        mindmaps.addRule(R5_LHS, R5_RHS, inferenceRule);
+        Pattern R5_LHS = and(graknGraph.graql().parsePatterns("$x isa u;"));
+        Pattern R5_RHS = and(graknGraph.graql().parsePatterns("$x isa r;"));
+        graknGraph.addRule(R5_LHS, R5_RHS, inferenceRule);
     }
 }

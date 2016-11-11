@@ -28,7 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.migration.export.GraphWriter;
 import ai.grakn.test.AbstractEngineTest;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import junit.framework.Assert;
@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
-public abstract class GraphWriterTestBase extends AbstractMindmapsMigratorTest {
+public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
     protected GraknGraph copy;
     protected GraphWriter writer;

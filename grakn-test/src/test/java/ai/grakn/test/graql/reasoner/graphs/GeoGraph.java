@@ -47,25 +47,25 @@ public class GeoGraph extends TestGraph{
 
     @Override
     protected void buildOntology() {
-        geoEntity = mindmaps.putRoleType("geo-entity");
-        entityLocation = mindmaps.putRoleType("entity-location");
-        isLocatedIn = mindmaps.putRelationType("is-located-in")
+        geoEntity = graknGraph.putRoleType("geo-entity");
+        entityLocation = graknGraph.putRoleType("entity-location");
+        isLocatedIn = graknGraph.putRelationType("is-located-in")
                 .hasRole(geoEntity).hasRole(entityLocation);
 
-        geographicalObject = mindmaps.putEntityType("geoObject")
+        geographicalObject = graknGraph.putEntityType("geoObject")
                 .playsRole(hasKeyTarget)
                 .playsRole(geoEntity)
                 .playsRole(entityLocation);
 
-        continent = mindmaps.putEntityType("continent")
+        continent = graknGraph.putEntityType("continent")
                 .superType(geographicalObject);
-        country = mindmaps.putEntityType("country")
+        country = graknGraph.putEntityType("country")
                 .superType(geographicalObject);
-        region = mindmaps.putEntityType("region")
+        region = graknGraph.putEntityType("region")
                 .superType(geographicalObject);
-        city = mindmaps.putEntityType("city")
+        city = graknGraph.putEntityType("city")
                 .superType(geographicalObject);
-        university = mindmaps.putEntityType("university")
+        university = graknGraph.putEntityType("university")
                         .playsRole(geoEntity)
                         .playsRole(hasKeyTarget);
     }
@@ -104,83 +104,83 @@ public class GeoGraph extends TestGraph{
 
     @Override
     protected void buildRelations() {
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, PW)
                 .putRolePlayer(entityLocation, Warsaw);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, UW)
                 .putRolePlayer(entityLocation, Warsaw);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Imperial)
                 .putRolePlayer(entityLocation, London);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, UCL)
                 .putRolePlayer(entityLocation, London);
 
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Warsaw)
                 .putRolePlayer(entityLocation, Masovia);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Masovia)
                 .putRolePlayer(entityLocation, Poland);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Wroclaw)
                 .putRolePlayer(entityLocation, Silesia);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Silesia)
                 .putRolePlayer(entityLocation, Poland);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Poland)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, London)
                 .putRolePlayer(entityLocation, GreaterLondon);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, GreaterLondon)
                 .putRolePlayer(entityLocation, England);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, England)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Munich)
                 .putRolePlayer(entityLocation, Bavaria);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Bavaria)
                 .putRolePlayer(entityLocation, Germany);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Germany)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Milan)
                 .putRolePlayer(entityLocation, Lombardy);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Lombardy)
                 .putRolePlayer(entityLocation, Italy);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Italy)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Paris)
                 .putRolePlayer(entityLocation, IleDeFrance);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, IleDeFrance)
                 .putRolePlayer(entityLocation, France);
-        mindmaps.addRelation(isLocatedIn)
+        graknGraph.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, France)
                 .putRolePlayer(entityLocation, Europe);
     }
 
     @Override
     protected void buildRules() {
-        RuleType inferenceRule = mindmaps.getMetaRuleInference();
-        Pattern transitivity_LHS = and(mindmaps.graql().parsePatterns(
+        RuleType inferenceRule = graknGraph.getMetaRuleInference();
+        Pattern transitivity_LHS = and(graknGraph.graql().parsePatterns(
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
-        Pattern transitivity_RHS = and(mindmaps.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        mindmaps.addRule(transitivity_LHS, transitivity_RHS, inferenceRule);
+        Pattern transitivity_RHS = and(graknGraph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
+        graknGraph.addRule(transitivity_LHS, transitivity_RHS, inferenceRule);
     }
 }

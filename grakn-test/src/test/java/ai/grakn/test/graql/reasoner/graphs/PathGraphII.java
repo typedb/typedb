@@ -41,31 +41,31 @@ public class PathGraphII extends TestGraph {
     private void buildExtensionalDB(int n, int m) {
         long startTime = System.currentTimeMillis();
 
-        EntityType vertex = mindmaps.getEntityType("vertex");
-        EntityType startVertex = mindmaps.getEntityType("start-vertex");
-        RoleType arcFrom = mindmaps.getRoleType("arc-from");
-        RoleType arcTo = mindmaps.getRoleType("arc-to");
+        EntityType vertex = graknGraph.getEntityType("vertex");
+        EntityType startVertex = graknGraph.getEntityType("start-vertex");
+        RoleType arcFrom = graknGraph.getRoleType("arc-from");
+        RoleType arcTo = graknGraph.getRoleType("arc-to");
 
-        RelationType arc = mindmaps.getRelationType("arc");
+        RelationType arc = graknGraph.getRelationType("arc");
         putEntity("a0", startVertex);
 
         for(int i = 0 ; i < n ;i++)
             for(int j = 0; j < m; j++)
                 putEntity("a" + i +"," + j, vertex);
 
-        mindmaps.addRelation(arc)
+        graknGraph.addRelation(arc)
                 .putRolePlayer(arcFrom, getInstance("a0"))
                 .putRolePlayer(arcTo, getInstance("a0,0"));
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
                 if (j < n - 1) {
-                    mindmaps.addRelation(arc)
+                    graknGraph.addRelation(arc)
                             .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
                             .putRolePlayer(arcTo, getInstance("a" + i + "," + (j + 1)));
                 }
                 if (i < m - 1) {
-                    mindmaps.addRelation(arc)
+                    graknGraph.addRelation(arc)
                             .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
                             .putRolePlayer(arcTo, getInstance("a" + (i + 1) + "," + j));
                 }

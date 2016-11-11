@@ -39,19 +39,19 @@ public class NguyenGraph extends TestGraph{
     }
 
     private void buildExtensionalDB(int n) {
-        RoleType Rfrom = mindmaps.getRoleType("R-rA");
-        RoleType Rto = mindmaps.getRoleType("R-rB");
-        RoleType Qfrom = mindmaps.getRoleType("Q-rA");
-        RoleType Qto = mindmaps.getRoleType("Q-rB");
-        RoleType Pfrom = mindmaps.getRoleType("P-rA");
-        RoleType Pto = mindmaps.getRoleType("P-rB");
+        RoleType Rfrom = graknGraph.getRoleType("R-rA");
+        RoleType Rto = graknGraph.getRoleType("R-rB");
+        RoleType Qfrom = graknGraph.getRoleType("Q-rA");
+        RoleType Qto = graknGraph.getRoleType("Q-rB");
+        RoleType Pfrom = graknGraph.getRoleType("P-rA");
+        RoleType Pto = graknGraph.getRoleType("P-rB");
 
-        EntityType entity = mindmaps.getEntityType("entity");
-        EntityType aEntity = mindmaps.getEntityType("a-entity");
-        EntityType bEntity = mindmaps.getEntityType("b-entity");
-        RelationType R = mindmaps.getRelationType("R");
-        RelationType P = mindmaps.getRelationType("P");
-        RelationType Q = mindmaps.getRelationType("Q");
+        EntityType entity = graknGraph.getEntityType("entity");
+        EntityType aEntity = graknGraph.getEntityType("a-entity");
+        EntityType bEntity = graknGraph.getEntityType("b-entity");
+        RelationType R = graknGraph.getRelationType("R");
+        RelationType P = graknGraph.getRelationType("P");
+        RelationType Q = graknGraph.getRelationType("Q");
 
         String cId = putEntity("c", entity).getId();
         String dId = putEntity("d", entity).getId();
@@ -66,31 +66,31 @@ public class NguyenGraph extends TestGraph{
             bInstancesIds[i] = putEntity("b" + i, bEntity).getId();
         }
 
-        mindmaps.addRelation(R)
-                .putRolePlayer(Rfrom, mindmaps.getInstance(dId))
-                .putRolePlayer(Rto, mindmaps.getInstance(eId));
+        graknGraph.addRelation(R)
+                .putRolePlayer(Rfrom, graknGraph.getInstance(dId))
+                .putRolePlayer(Rto, graknGraph.getInstance(eId));
 
-        mindmaps.addRelation(P)
-                .putRolePlayer(Pfrom, mindmaps.getInstance(cId))
-                .putRolePlayer(Pto, mindmaps.getInstance(dId));
+        graknGraph.addRelation(P)
+                .putRolePlayer(Pfrom, graknGraph.getInstance(cId))
+                .putRolePlayer(Pto, graknGraph.getInstance(dId));
 
-        mindmaps.addRelation(Q)
-                .putRolePlayer(Qfrom, mindmaps.getInstance(eId))
-                .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[0]));
+        graknGraph.addRelation(Q)
+                .putRolePlayer(Qfrom, graknGraph.getInstance(eId))
+                .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[0]));
 
         for(int i = 0 ; i <= n ;i++){
-            mindmaps.addRelation(P)
-                    .putRolePlayer(Pfrom, mindmaps.getInstance(bInstancesIds[i]))
-                    .putRolePlayer(Pto, mindmaps.getInstance(cId));
-            mindmaps.addRelation(P)
-                    .putRolePlayer(Pfrom, mindmaps.getInstance(cId))
-                    .putRolePlayer(Pto, mindmaps.getInstance(bInstancesIds[i]));
-            mindmaps.addRelation(Q)
-                    .putRolePlayer(Qfrom, mindmaps.getInstance(aInstancesIds[i]))
-                    .putRolePlayer(Qto, mindmaps.getInstance(bInstancesIds[i]));
-            mindmaps.addRelation(Q)
-                    .putRolePlayer(Qfrom, mindmaps.getInstance(bInstancesIds[i]))
-                    .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[i+1]));
+            graknGraph.addRelation(P)
+                    .putRolePlayer(Pfrom, graknGraph.getInstance(bInstancesIds[i]))
+                    .putRolePlayer(Pto, graknGraph.getInstance(cId));
+            graknGraph.addRelation(P)
+                    .putRolePlayer(Pfrom, graknGraph.getInstance(cId))
+                    .putRolePlayer(Pto, graknGraph.getInstance(bInstancesIds[i]));
+            graknGraph.addRelation(Q)
+                    .putRolePlayer(Qfrom, graknGraph.getInstance(aInstancesIds[i]))
+                    .putRolePlayer(Qto, graknGraph.getInstance(bInstancesIds[i]));
+            graknGraph.addRelation(Q)
+                    .putRolePlayer(Qfrom, graknGraph.getInstance(bInstancesIds[i]))
+                    .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[i+1]));
         }
     }
 }

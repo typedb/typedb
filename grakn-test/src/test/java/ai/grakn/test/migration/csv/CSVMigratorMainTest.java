@@ -18,13 +18,12 @@
 
 package ai.grakn.test.migration.csv;
 
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import ai.grakn.migration.csv.Main;
-import ai.grakn.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
+public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();

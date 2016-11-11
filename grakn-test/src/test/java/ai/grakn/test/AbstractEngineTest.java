@@ -34,7 +34,7 @@ import static java.lang.Thread.sleep;
  * Abstract test class that automatically starts the backend and engine and provides a method to get a graph factory
  */
 public abstract class AbstractEngineTest {
-    private static final String CONFIG = System.getProperty("mindmaps.test-profile");
+    private static final String CONFIG = System.getProperty("graknGraph.test-profile");
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
 
     private static void hideLogs() {

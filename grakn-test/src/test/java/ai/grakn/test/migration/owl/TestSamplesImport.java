@@ -28,13 +28,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.migration.owl.OwlModel;
 
 /**
  * Load and verify the ontology from the test sample resources. 
@@ -42,7 +37,7 @@ import ai.grakn.migration.owl.OwlModel;
  * @author borislav
  *
  */
-public class TestSamplesImport extends TestOwlMindMapsBase {
+public class TestSamplesImport extends TestOwlGraknBase {
     
     @Test
     public void testShoppingOntology()  {       
