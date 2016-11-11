@@ -89,23 +89,23 @@ public class TestReasoning extends TestOwlGraknBase {
         return new QueryAnswers(OWLanswers);
     }
 
-    private QueryAnswers inferRelationMM(String relationId, String instanceId) {
+    private QueryAnswers inferRelationGrakn(String relationId, String instanceId) {
         QueryBuilder qb = migrator.graph().graql();
 
-        long mmStartTime = System.currentTimeMillis();
+        long gknStartTime = System.currentTimeMillis();
         String subjectRoleId = "owl-subject-" + relationId;
         String objectRoleId = "owl-object-" + relationId;
 
-        // match $x isa tPerson; $x has name $name;
-        // $y has name 'instance';(owl-subject-relationId: $x, owl-object-relationId: $y) isa relationId;
+        //match $x isa tPerson; $x has name $name;
+        //$y has name 'instance';(owl-subject-relationId: $x, owl-object-relationId: $y) isa relationId;
         MatchQuery query = qb.match(
                 var("x").isa("tPerson"),
                 var("y").has(OwlModel.IRI.owlname(), "e"+instanceId),
                 var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
-        QueryAnswers mmAnswers = graknReasoner.resolve(query);
-        long mmTime = System.currentTimeMillis() - mmStartTime;
-        System.out.println("Grakn Reasoner answers: " + mmAnswers.size() + " in " + mmTime + " ms");
-        return mmAnswers;
+        QueryAnswers gknAnswers = graknReasoner.resolve(query);
+        long gknTime = System.currentTimeMillis() - gknStartTime;
+        System.out.println("Grakn Reasoner answers: " + gknAnswers.size() + " in " + gknTime + " ms");
+        return gknAnswers;
     }
 
     @Test
@@ -115,7 +115,7 @@ public class TestReasoning extends TestOwlGraknBase {
         String hasGreatUncleId = "op-hasGreatUncle";
         String explicitQuery = "match $x isa tPerson;" +
                 "{$x has owl-iri 'erichard_john_bright_1962';} or {$x has owl-iri 'erobert_david_bright_1965';};";
-        assertEquals(inferRelationMM(hasGreatUncleId, richardId), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertEquals(inferRelationGrakn(hasGreatUncleId, richardId), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
 
         String queryString2 = "match (owl-subject-op-hasGreatUncle: $x, owl-object-op-hasGreatUncle: $y) isa op-hasGreatUncle;" +
                 "$x has owl-iri 'eethel_archer_1912'; select $y;";
@@ -141,7 +141,7 @@ public class TestReasoning extends TestOwlGraknBase {
         String isAncestorOfId = "op-isAncestorOf";
 
         String eleanorId = "eleanor_pringle_1741";
-        assertEquals(inferRelationOWL(hasAncestor, eleanorId, hermit), inferRelationMM(hasAncestorId, eleanorId));
+        assertEquals(inferRelationOWL(hasAncestor, eleanorId, hermit), inferRelationGrakn(hasAncestorId, eleanorId));
 
         String elisabethId = "elizabeth_clamper_1760";
         String explicitElisabethQuery = "match $x isa tPerson, has owl-iri $iri;" +
@@ -172,7 +172,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$iri value 'erobert_david_bright_1965';} or {$iri value 'esheila_cleife_1949';} or" +
                 "{$iri value 'ejohn_archer_1835';} or {$iri value 'eelizabeth_archer_1843';} or" +
                 "{$iri value 'enorman_james_archer_1909';} or {$iri value 'ereece_bright_1993';}; select $x;";
-        QueryAnswers elisabethAnswers = inferRelationMM(hasAncestorId, elisabethId);
+        QueryAnswers elisabethAnswers = inferRelationGrakn(hasAncestorId, elisabethId);
         assertEquals(elisabethAnswers, Sets.newHashSet(qb.<MatchQuery>parse(explicitElisabethQuery)));
 
         String anneId = "anne_archer_1964";
@@ -192,7 +192,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$iri value 'ehumphrey_archer_1726';} or {$iri value 'ejohn_archer_1804';} or" +
                 "{$iri value 'ejames_whitfield_1792';} or {$iri value 'eann_norton_1799';} or" +
                 "{$iri value 'ewilliam_lock';} or {$iri value 'esarah_lockey_1848';}; select $x;";
-        assertEquals(inferRelationMM(isAncestorOfId, anneId), Sets.newHashSet(qb.<MatchQuery>parse(explicitAnneQuery)));
+        assertEquals(inferRelationGrakn(isAncestorOfId, anneId), Sets.newHashSet(qb.<MatchQuery>parse(explicitAnneQuery)));
 
         String megaId = "mega_clamper_1995";
         String explicitMegaQuery = "match $x isa tPerson, has owl-iri $iri;" +
@@ -207,6 +207,6 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$iri value 'esusanna_wife_of_william_cotton';} or {$iri value 'ejohn_cotton_1778';} or" +
                 "{$iri value 'eelizabeth_blanchard_1807';} or {$iri value 'ejames_dickens_1774';} or" +
                 "{$iri value 'emartha_cotton_1832';}; select $x;";
-        assertEquals(inferRelationMM(isAncestorOfId, megaId), Sets.newHashSet(qb.<MatchQuery>parse(explicitMegaQuery)));
+        assertEquals(inferRelationGrakn(isAncestorOfId, megaId), Sets.newHashSet(qb.<MatchQuery>parse(explicitMegaQuery)));
     }
 }
