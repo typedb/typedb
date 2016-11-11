@@ -18,13 +18,9 @@
 
 package ai.grakn.migration.csv;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
-import ai.grakn.migration.base.AbstractMigrator;
-import ai.grakn.migration.base.io.MigrationLoader;
-import ai.grakn.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 
 import java.io.File;
@@ -46,9 +42,10 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        MigrationCLI.create(args, getOptions()).ifPresent(Main::runCSV);
+    }
 
-        MigrationCLI cli = new MigrationCLI(args, getOptions());
-
+    public static void runCSV(MigrationCLI cli){
         String csvDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
         String csvTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : AbstractMigrator.BATCH_SIZE;

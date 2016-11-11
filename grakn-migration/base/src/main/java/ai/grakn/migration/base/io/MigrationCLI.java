@@ -43,6 +43,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
@@ -65,12 +66,7 @@ public class MigrationCLI {
 
     private CommandLine cmd;
 
-    public MigrationCLI(String[] args, Options options){
-        if(!GraknEngineServer.isRunning()){
-            System.out.println(COULD_NOT_CONNECT);
-            System.exit(-1);
-        }
-
+    private MigrationCLI(String[] args, Options options){
         addOptions(options);
         CommandLineParser parser = new DefaultParser();
 
@@ -86,11 +82,21 @@ public class MigrationCLI {
 
         if(cmd.getOptions().length == 0){
             printHelpMessage();
-            die("");
-//            exit();
+            throw new IllegalArgumentException("Helping");
         } else if(cmd.getOptions().length == 1 && cmd.hasOption("h")){
-            die("");
-//            exit();
+            throw new IllegalArgumentException("Helping");
+        }
+
+        if(!GraknEngineServer.isRunning()){
+            System.out.println(COULD_NOT_CONNECT);
+        }
+    }
+
+    public static Optional<MigrationCLI> create(String[] args, Options options){
+        try {
+            return Optional.of(new MigrationCLI(args, options));
+        } catch (IllegalArgumentException e){
+            return Optional.empty();
         }
     }
 
@@ -203,10 +209,6 @@ public class MigrationCLI {
     public void addOptions(Options options) {
         options.getOptions().forEach(defaultOptions::addOption);
     }
-
-//    public void exit(){
-//        System.exit(1);
-//    }
 
     public String die(Throwable throwable){
         return die(ExceptionUtils.getFullStackTrace(throwable));

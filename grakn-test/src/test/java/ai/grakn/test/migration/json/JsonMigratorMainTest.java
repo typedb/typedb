@@ -25,7 +25,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.migration.json.Main;
 import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;

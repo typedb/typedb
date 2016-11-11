@@ -43,13 +43,11 @@ public class GraphWriterMainTest extends AbstractGraknMigratorTest {
     
     @Test
     public void exportNoArgsTest(){
-        exception.expect(RuntimeException.class);
         runAndAssertDataCorrect("export", "ontology");
     }
 
     @Test
     public void exportOnlyHelpMessageTest(){
-        exception.expect(RuntimeException.class);
         runAndAssertDataCorrect("export", "-h");
     }
 

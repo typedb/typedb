@@ -39,9 +39,10 @@ public class Main {
     }
 
     public static void main(String[] args){
+        MigrationCLI.create(args, options).ifPresent(Main::runJson);
+    }
 
-        MigrationCLI cli = new MigrationCLI(args, options);
-
+    public static void runJson(MigrationCLI cli){
         String jsonDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
         String jsonTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : JsonMigrator.BATCH_SIZE;

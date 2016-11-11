@@ -62,7 +62,6 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void csvMainNoArgsTest(){
-        exception.expect(RuntimeException.class);
         run();
     }
 
