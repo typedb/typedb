@@ -38,7 +38,7 @@ public class Main {
 
         if(!cli.hasOption("ontology") && !cli.hasOption("data")) {
             cli.writeToSout("Missing arguments -ontology and/or -data");
-            cli.exit();
+            cli.die("");
         }
 
         cli.writeToSout("Writing graph " + cli.getKeyspace() + " using Grakn Engine " +
@@ -55,6 +55,6 @@ public class Main {
             cli.writeToSout(graphWriter.dumpOntology());
         }
 
-        System.exit(0);
+        cli.initiateShutdown();
     }
 }

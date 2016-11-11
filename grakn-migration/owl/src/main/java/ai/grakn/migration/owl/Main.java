@@ -72,6 +72,6 @@ public class Main {
                 migrator.graph().close();
         }
 
-        System.exit(0);
+        cli.initiateShutdown();
     }
 }

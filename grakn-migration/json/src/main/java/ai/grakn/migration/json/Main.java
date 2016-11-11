@@ -73,6 +73,6 @@ public class Main {
             cli.die(throwable);
         }
 
-        System.exit(0);
+        cli.initiateShutdown();
     }
 }

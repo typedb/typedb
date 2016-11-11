@@ -31,11 +31,6 @@ public class GraphWriterMainTest extends AbstractGraknMigratorTest {
         PokemonGraphFactory.loadGraph(graph);
     }
 
-    @Before
-    public void expectExit(){
-        exit.expectSystemExitWithStatus(0);
-    }
-
     @Test
     public void exportOntologyToSystemOutTest(){
         runAndAssertDataCorrect("export", "-ontology", "-keyspace", graph.getKeyspace());
@@ -48,13 +43,13 @@ public class GraphWriterMainTest extends AbstractGraknMigratorTest {
     
     @Test
     public void exportNoArgsTest(){
-        exit.expectSystemExitWithStatus(1);
+        exception.expect(RuntimeException.class);
         runAndAssertDataCorrect("export", "ontology");
     }
 
     @Test
     public void exportOnlyHelpMessageTest(){
-        exit.expectSystemExitWithStatus(1);
+        exception.expect(RuntimeException.class);
         runAndAssertDataCorrect("export", "-h");
     }
 

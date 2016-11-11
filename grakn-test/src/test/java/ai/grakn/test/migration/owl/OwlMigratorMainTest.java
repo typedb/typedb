@@ -36,7 +36,6 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     @Test
     public void owlMainFileTest(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        exit.expectSystemExitWithStatus(0);
         runAndataCorrect("owl", "-input", owlFile, "-keyspace", graph.getKeyspace());
     }
 
@@ -59,33 +58,31 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     }
 
     public void runAndataCorrect(String... args){
-        exit.checkAssertionAfterwards(() -> {
-            graph = factory.getGraph();
-
-            EntityType top = graph.getEntityType("tThing");
-            EntityType type = graph.getEntityType("tAuthor");
-            assertNotNull(type);
-            assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
-            assertNotNull(type.superType());
-            assertEquals("tPerson", type.superType().getId());
-            assertEquals(top, type.superType().superType());
-            assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
-            assertNotEquals(0, type.instances().size());
-
-            assertTrue(
-                    type.instances().stream()
-                            .flatMap(inst -> inst.asEntity()
-                                    .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
-                            .anyMatch(s -> s.getValue().equals("eShakespeare"))
-            );
-            final Entity author = getEntity("eShakespeare");
-            assertNotNull(author);
-            final Entity work = getEntity("eHamlet");
-            assertNotNull(work);
-            assertRelationBetweenInstancesExists(work, author, "op-wrote");
-            assertTrue(!Reasoner.getRules(graph).isEmpty());
-        });
-
         run(args);
+
+        graph = factory.getGraph();
+
+        EntityType top = graph.getEntityType("tThing");
+        EntityType type = graph.getEntityType("tAuthor");
+        assertNotNull(type);
+        assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
+        assertNotNull(type.superType());
+        assertEquals("tPerson", type.superType().getId());
+        assertEquals(top, type.superType().superType());
+        assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
+        assertNotEquals(0, type.instances().size());
+
+        assertTrue(
+                type.instances().stream()
+                        .flatMap(inst -> inst.asEntity()
+                                .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
+                        .anyMatch(s -> s.getValue().equals("eShakespeare"))
+        );
+        final Entity author = getEntity("eShakespeare");
+        assertNotNull(author);
+        final Entity work = getEntity("eHamlet");
+        assertNotNull(work);
+        assertRelationBetweenInstancesExists(work, author, "op-wrote");
+        assertTrue(!Reasoner.getRules(graph).isEmpty());
     }
 }

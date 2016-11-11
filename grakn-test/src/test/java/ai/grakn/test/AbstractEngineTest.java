@@ -23,6 +23,9 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+//import org.apache.cassandra.db.commitlog.CommitLog;
+//import org.apache.cassandra.net.MessagingService;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.util.UUID;
@@ -39,7 +42,7 @@ public abstract class AbstractEngineTest {
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
+        logger.setLevel(Level.OFF);
     }
 
     @BeforeClass
@@ -53,6 +56,16 @@ public abstract class AbstractEngineTest {
 
             sleep(5000);
         }
+    }
+
+    @AfterClass
+    public static void shutdown() throws Exception {
+//        MessagingService.instance().shutdown();
+//
+//        CommitLog.instance.shutdownBlocking();
+//        CommitLog.instance.sync(true);
+
+        GraknEngineServer.stop();
     }
 
     protected static GraknGraphFactory factoryWithNewKeyspace() {

@@ -97,7 +97,9 @@ public class BlockingLoader extends Loader {
      */
     private void insertQueriesInOneTransaction(String name, Collection<InsertQuery> queries) {
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name)) {
+        System.out.println("GRAPH OPENED");
+        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name);
+        try {
             for (int i = 0; i < repeatCommits; i++) {
                 try {
 
@@ -123,6 +125,11 @@ public class BlockingLoader extends Loader {
             LOG.error(e.getMessage() + ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
         } finally {
             transactionsSemaphore.release();
+            try {
+                ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
