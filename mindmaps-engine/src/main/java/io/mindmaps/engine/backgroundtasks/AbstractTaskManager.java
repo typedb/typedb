@@ -18,11 +18,10 @@
 
 package io.mindmaps.engine.backgroundtasks;
 
+import io.mindmaps.exception.MindmapsValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 
@@ -32,150 +31,181 @@ public abstract class AbstractTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(AbstractTaskManager.class);
     private static String STATUS_MESSAGE_SCHEDULED = "Task scheduled.";
 
-    public UUID scheduleTask(BackgroundTask task, long delay) {
+    public String scheduleTask(BackgroundTask task, long delay) {
         TaskState state = new TaskState(task.getClass().getName())
                 .setRecurring(false)
                 .setDelay(delay)
                 .setStatus(SCHEDULED)
                 .setStatusChangeMessage(STATUS_MESSAGE_SCHEDULED)
-                .setStatusChangedBy(InMemoryTaskManager.class.getName())
-                .setQueuedTime(new Date());
+                .setStatusChangedBy(InMemoryTaskManager.class.getName());
 
-        UUID uuid = saveNewState(state);
-        executeSingle(uuid, task, delay);
-        return uuid;
+        try {
+            String id = saveNewState(state);
+            executeSingle(id, task, delay);
+            return id;
+        } catch(MindmapsValidationException e) {
+            LOG.error("Could not schedule task "+state.getName()+" the error was: "+e.getMessage());
+        }
+
+        return null;
     }
 
-    public UUID scheduleRecurringTask(BackgroundTask task, long delay, long interval) {
+    public String scheduleRecurringTask(BackgroundTask task, long delay, long interval) {
         TaskState state = new TaskState(task.getClass().getName())
                 .setRecurring(true)
                 .setDelay(delay)
                 .setInterval(interval);
 
-        UUID uuid = saveNewState(state);
-        executeRecurring(uuid, task, delay, interval);
-        return uuid;
+        try {
+            String id = saveNewState(state);
+            executeRecurring(id, task, delay, interval);
+            return id;
+        } catch(MindmapsValidationException e) {
+            LOG.error("Could not schedule task "+state.getName()+" the error was: "+e.getMessage());
+        }
+
+        return null;
     }
 
-    public TaskManager stopTask(UUID uuid, String requesterName, String message) {
-        TaskState state = getTaskState(uuid);
-        state.setStatus(TaskStatus.STOPPED)
-             .setStatusChangeMessage(message)
-             .setStatusChangedBy(requesterName);
-        uuid = updateTaskState(uuid, state);
+    public TaskManager stopTask(String id, String requesterName, String message) {
+        TaskState state = getTaskState(id);
 
-        ScheduledFuture<BackgroundTask> future = getTaskExecutionStatus(uuid);
         try {
+            ScheduledFuture<BackgroundTask> future = getTaskExecutionStatus(id);
+
             if (!future.isDone())
                 instantiateTask(state.getName()).stop();
 
             future.cancel(true);
+
+            // Update state
+            state = getTaskState(id);
+            state.setStatus(STOPPED)
+                    .setStatusChangeMessage(message)
+                    .setStatusChangedBy(requesterName);
+            updateTaskState(id, state);
+
         } catch(ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            LOG.error("Could not run .stop() on task "+state.getName()+" id: "+uuid.toString()+" the error was: "+e.getMessage());
+            LOG.error("Could not run .stop() on task "+state.getName()+" id: "+id+" the error was: "+e.getMessage());
+        } catch(MindmapsValidationException e) {
+            LOG.error("Could not update state for task "+state.getName()+" id: "+id+" the error was: "+e.getMessage());
         }
 
         return this;
     }
 
-    public TaskManager pauseTask(UUID uuid, String requesterName, String message) {
-        TaskState state = getTaskState(uuid);
+    public TaskManager pauseTask(String id, String requesterName, String message) {
+        TaskState state = getTaskState(id);
         TaskStatus status = state.getStatus();
 
         if(status == SCHEDULED || status == RUNNING) {
             // Mark task state as paused.
             state.setStatus(PAUSED)
-                    .setStatusChangeMessage(message)
-                    .setStatusChangedBy(requesterName);
+                 .setStatusChangeMessage(message)
+                 .setStatusChangedBy(requesterName);
 
-            ScheduledFuture<BackgroundTask> future = getTaskExecutionStatus(uuid);
+            ScheduledFuture<BackgroundTask> future = getTaskExecutionStatus(id);
             try {
                 // Call tasks .pause() method if it's still running.
                 if (status == RUNNING && (!future.isDone()))
                     state.setPauseState(future.get().pause());
 
                 future.cancel(true);
+                updateTaskState(id, state);
+
             } catch (InterruptedException | ExecutionException e) {
-                LOG.error(e.getMessage());
+                LOG.error("Could not pause task "+state.getName()+" id: "+id+" the error was: "+e.getMessage());
+            } catch (MindmapsValidationException e) {
+                LOG.error("Could not update state for task"+state.getName()+" id: "+id+" the error was: "+e.getMessage());
             }
 
-            updateTaskState(uuid, state);
         } else {
             LOG.warn("Ignoring pause request from: "+Thread.currentThread().getStackTrace()[2].toString()+
-                     " for task "+uuid.toString()+
+                     " for task "+id+
                      " because its status is "+state.getStatus());
         }
 
         return this;
     }
 
-    public TaskManager resumeTask(UUID uuid, String requesterName, String message) {
-        TaskState state = getTaskState(uuid);
+    public TaskManager resumeTask(String id, String requesterName, String message) {
+        TaskState state = getTaskState(id);
         if(state.getStatus() != PAUSED) {
            LOG.warn("Ignoring resume request from: "+Thread.currentThread().getStackTrace()[2].toString()+
-                     " for task "+uuid.toString()+
+                     " for task "+id+
                      " because its status is "+state.getStatus());
             return this;
         }
 
-        state.setStatus(RUNNING)
-            .setStatusChangeMessage(message)
-            .setStatusChangedBy(requesterName);
-        uuid = updateTaskState(uuid, state);
+        state.setStatus(SCHEDULED)
+             .setStatusChangeMessage(message)
+             .setStatusChangedBy(requesterName);
 
         try {
+            id = updateTaskState(id, state);
+
             BackgroundTask task = instantiateTask(state.getName());
             task.resume(state.getPauseState());
 
             if(state.getRecurring())
-                executeRecurring(uuid, task, state.getDelay(), state.getInterval());
+                executeRecurring(id, task, state.getDelay(), state.getInterval());
             else
-                executeSingle(uuid, task, state.getDelay());
+                executeSingle(id, task, state.getDelay());
 
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            LOG.error("Unable to resume task "+uuid.toString()+" the error was: "+e.getMessage());
+            LOG.error("Unable to resume task "+id+" the error was: "+e.getMessage());
+        } catch (MindmapsValidationException e) {
+            LOG.error("Unable to update state for task "+state.getName()+" id: "+id+" the error was: "+e.getMessage());
         }
 
         return this;
     }
 
-    public TaskManager restartTask(UUID uuid, String requesterName, String message) {
-        TaskState state = getTaskState(uuid);
+    public TaskManager restartTask(String id, String requesterName, String message) {
+        TaskState state = getTaskState(id);
         TaskStatus status = state.getStatus();
         if(status == SCHEDULED || status == CREATED || status == RUNNING) {
             LOG.warn(Thread.currentThread().getStackTrace()[2].toString()+" tried to call restartTask() on a "+status.toString()+" task. IGNORING.");
             return this;
         }
 
+        state.setStatus(SCHEDULED)
+             .setStatusChangeMessage(message)
+             .setStatusChangedBy(requesterName);
+
         try {
+            // Update status message
+            updateTaskState(id, state);
+
             // Clean up etc
             BackgroundTask task = instantiateTask(state.getName());
             task.restart();
 
             // Start it up again
             if(state.getRecurring())
-                executeRecurring(uuid, task, state.getDelay(), state.getInterval());
+                executeRecurring(id, task, state.getDelay(), state.getInterval());
             else
-                executeSingle(uuid, task, state.getDelay());
+                executeSingle(id, task, state.getDelay());
 
-            // Update status message
-            state.setStatus(SCHEDULED)
-                 .setStatusChangeMessage(message)
-                 .setStatusChangedBy(requesterName);
-            updateTaskState(uuid, state);
-        } catch(ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            LOG.error("Unable to start task "+uuid.toString()+" the error was: "+e.getMessage());
+        } catch(ClassNotFoundException | InstantiationException | IllegalAccessException | MindmapsValidationException e) {
+            LOG.error("Unable to start task "+id+" the error was: "+e.getMessage());
         }
 
         return this;
     }
 
-    protected abstract UUID saveNewState(TaskState state);
-    protected abstract UUID updateTaskState(UUID uuid, TaskState state);
+    protected abstract String saveNewState(TaskState state) throws MindmapsValidationException;
+    protected abstract String updateTaskState(String id, TaskState state) throws MindmapsValidationException;
 
-    protected abstract ScheduledFuture<BackgroundTask> getTaskExecutionStatus(UUID uuid);
+    protected abstract ScheduledFuture<BackgroundTask> getTaskExecutionStatus(String id);
 
-    protected abstract void executeSingle(UUID uuid, BackgroundTask task, long delay);
-    protected abstract void executeRecurring(UUID uuid, BackgroundTask task, long delay, long interval);
+    protected abstract void executeSingle(String id, BackgroundTask task, long delay);
+    protected abstract void executeRecurring(String id, BackgroundTask task, long delay, long interval);
 
-    protected abstract BackgroundTask instantiateTask(String className) throws ClassNotFoundException, InstantiationException, IllegalAccessException;
+
+    private BackgroundTask instantiateTask(String className) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+        Class<?> c = Class.forName(className);
+        return (BackgroundTask) c.newInstance();
+    }
+
 }

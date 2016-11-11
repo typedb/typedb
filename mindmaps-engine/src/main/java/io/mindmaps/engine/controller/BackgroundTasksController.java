@@ -35,7 +35,6 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.util.UUID;
 
 import static io.mindmaps.util.REST.Request.*;
 import static io.mindmaps.util.REST.WebPath.ALL_BACKGROUND_TASKS_URI;
@@ -55,11 +54,11 @@ public class BackgroundTasksController {
 
         get(ALL_BACKGROUND_TASKS_URI, this::getAllTasks);
         get(BACKGROUND_TASKS_BY_STATUS + TASK_STATUS_PARAMETER, this::getTasks);
-        get(BACKGROUND_TASK_STATUS + UUID_PARAMETER, this::getTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_PAUSE, this::pauseTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESUME, this::resumeTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_STOP, this::stopTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESTART, this::restartTask);
+        get(BACKGROUND_TASK_STATUS + ID_PARAMETER, this::getTask);
+        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_PAUSE, this::pauseTask);
+        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_RESUME, this::resumeTask);
+        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_STOP, this::stopTask);
+        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_RESTART, this::restartTask);
     }
 
     @GET
@@ -92,13 +91,13 @@ public class BackgroundTasksController {
 
     @GET
     @Path("/task/:uuid")
-    @ApiOperation(value = "Get the state of a specific task by its UUID.", produces = "application/json")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
+    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
+            String id = request.params(ID_PARAMETER);
             JSONObject result = new JSONObject()
-                    .put("status", taskManager.getTaskState(uuid).getStatus());
+                    .put("status", taskManager.getTaskState(id).getStatus());
 
             response.type("application/json");
             return result.toString();
@@ -110,11 +109,11 @@ public class BackgroundTasksController {
     @PUT
     @Path("/task/:uuid/pause")
     @ApiOperation(value = "Pause a running task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String pauseTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.pauseTask(uuid, this.getClass().getName(), null);
+            String id = request.params(ID_PARAMETER);
+            taskManager.pauseTask(id, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
             throw new MindmapsEngineServerException(500, e);
@@ -124,11 +123,11 @@ public class BackgroundTasksController {
     @PUT
     @Path("/task/:uuid/resume")
     @ApiOperation(value = "Resume a paused task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String resumeTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.resumeTask(uuid, this.getClass().getName(), null);
+            String id = request.params(ID_PARAMETER);
+            taskManager.resumeTask(id, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
             throw new MindmapsEngineServerException(500, e);
@@ -138,11 +137,11 @@ public class BackgroundTasksController {
     @PUT
     @Path("/task/:uuid/stop")
     @ApiOperation(value = "Stop a running or paused task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String stopTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.stopTask(uuid, this.getClass().getName(), null);
+            String id = request.params(ID_PARAMETER);
+            taskManager.stopTask(id, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
             throw new MindmapsEngineServerException(500, e);
@@ -152,11 +151,11 @@ public class BackgroundTasksController {
     @PUT
     @Path("/task/:uuid/restart")
     @ApiOperation(value = "Restart a stopped or paused task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String restartTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.restartTask(uuid, this.getClass().getName(), null);
+            String id = request.params(ID_PARAMETER);
+            taskManager.restartTask(id, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
             throw new MindmapsEngineServerException(500, e);

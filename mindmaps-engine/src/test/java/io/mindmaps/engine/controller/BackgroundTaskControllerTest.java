@@ -72,7 +72,7 @@ public class BackgroundTaskControllerTest extends MindmapsEngineTestBase {
 
     @Test
     public void testPauseResume() {
-        String uuid = taskManager.scheduleTask(new TestTask(), 1000).toString();
+        String uuid = taskManager.scheduleTask(new TestTask(), 10000).toString();
 
         // Pause task.
         put("/backgroundtasks/task/"+uuid+"/pause").then().statusCode(200);
@@ -90,8 +90,7 @@ public class BackgroundTaskControllerTest extends MindmapsEngineTestBase {
         get("/backgroundtasks/task/"+uuid)
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
-                .and().body("status", anyOf(equalTo(RUNNING.toString()),
-                                                  equalTo(COMPLETED.toString())));
+                .and().body("status", equalTo(SCHEDULED.toString()));
     }
 
     @Test

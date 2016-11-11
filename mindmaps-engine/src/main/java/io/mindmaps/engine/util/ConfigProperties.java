@@ -77,6 +77,7 @@ public class ConfigProperties {
 
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
+    public static final String SYSTEM_KEYSPACE = "system.keyspace";
 
 
     private Logger LOG;

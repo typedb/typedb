@@ -24,17 +24,24 @@ scheduled-task has-resource delay,
                has-resource task-name,
                has-resource process-state;
 
+scheduled-task plays-role status-of-task-owner,
+               plays-role task-executing-hostname-owner,
+               plays-role task-recurrence-owner;
+
 # Other entities.
 
 task-status isa entity-type;
 task-status-value isa resource-type, datatype string;
 task-status has-resource task-status-value;
+task-status plays-role status-of-task-value;
 
 executing-hostname isa entity-type;
 executing-hostname-value isa resource-type, datatype string;
 executing-hostname has-resource executing-hostname-value;
+executing-hostname plays-role task-executing-hostname-value;
 
 task-is-recurring isa entity-type;
+task-is-recurring plays-role task-recurrence-value;
 
 # Relations
 status-of-task isa relation-type;
