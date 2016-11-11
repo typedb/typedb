@@ -26,6 +26,11 @@ import ai.grakn.engine.backgroundtasks.TestTask;
 import org.junit.Before;
 import org.junit.Test;
 
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.PAUSED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static com.jayway.restassured.RestAssured.put;
 import static com.jayway.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.*;
