@@ -591,8 +591,33 @@ public class TemplateParserTest {
         Graql.parseTemplate(template, new HashMap<>());
     }
 
+    @Test
+    public void quotesTest(){
+        String template = "insert thing has quotes \"in quotes\"";
+        assertParseEquals(template, new HashMap<>(), template);
+    }
+
+    @Test
+    public void doubleQuotesInSingleQuotesTest(){
+        String template = "insert thing has quotes \"'in' quotes\"";
+        assertParseEquals(template, new HashMap<>(), template);
+    }
+
+    @Test
+    public void singleQuotesInSingleQuotesTest(){
+        String template = "insert thing has quotes '\"in\" quotes'";
+        assertParseEquals(template, new HashMap<>(), template);
+    }
+
+    @Test
+    public void escapedDoubleQuotesInDoubleQuotesTest(){
+        String template = "insert thing has quotes \"\\\"in\\\" quotes\"";
+        assertParseEquals(template, new HashMap<>(), template);
+    }
+
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
         String result = Graql.parseTemplate(template, data);
+        System.out.println(result);
         assertEquals(expected, result);
     }
 }
