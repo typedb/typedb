@@ -26,9 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.PAUSED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -67,9 +65,21 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
         // Check that task has repeatedly ran
         Thread.sleep(1100);
         int runCount = task.getRunCount();
-        System.out.println("task run count: "+Integer.toString(runCount));
         assertTrue(runCount >= 10);
     }
+
+    @Test
+    public void testTaskStateRaceCondition() {
+        for (int i = 0; i < 100000 ; i++) {
+            UUID uuid = taskManager.scheduleTask(new TestTask(), 0);
+            taskManager.stopTask(uuid, null, null);
+            assertEquals( STOPPED, taskManager.getTaskState(uuid).getStatus());
+
+            taskManager.restartTask(uuid, null, null);
+            assertNotEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
+        }
+     }
+
 
     @Test
     public void testStop() {
@@ -91,7 +101,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
         taskManager.pauseTask(uuid);
         assertEquals(PAUSED, taskManager.getTaskState(uuid).getStatus());
         taskManager.resumeTask(uuid);
-        assertEquals(RUNNING, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(SCHEDULED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test

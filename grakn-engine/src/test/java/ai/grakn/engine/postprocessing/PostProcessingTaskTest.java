@@ -66,7 +66,7 @@ public class PostProcessingTaskTest extends GraknEngineTestBase {
         Assert.assertEquals(TaskStatus.PAUSED, taskManager.getTaskState(uuid).getStatus());
 
         taskManager.resumeTask(uuid);
-        Assert.assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
+        Assert.assertEquals(TaskStatus.SCHEDULED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
