@@ -1,3 +1,21 @@
+<!--
+  ~ Grakn - A Distributed Semantic Database
+  ~ Copyright (C) 2016  Grakn Labs Limited
+  ~
+  ~ Grakn is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ Grakn is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+  -->
+
 <configuration debug="false">
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -5,11 +23,11 @@
         </encoder>
     </appender>
     <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${mindmaps.log.file}</file>
+        <file>${grakn.log.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
             <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${mindmaps.log.file}-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <fileNamePattern>${grakn.log.file}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
@@ -26,16 +44,16 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.mindmaps" level="${mindmaps.log.level}">
+    <logger name="ai.grakn" level="${grakn.log.level}">
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.mindmaps.engine.MindmapsEngineServer" level="INFO">
+    <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->
-    <!--<logger name="io.mindmaps.engine.postprocessing.PostProcessing" level="DEBUG">-->
+    <!--<logger name="ai.grakn.engine.postprocessing.PostProcessing" level="DEBUG">-->
         <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 

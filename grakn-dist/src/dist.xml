@@ -1,0 +1,145 @@
+<!--
+  ~ Grakn - A Distributed Semantic Database
+  ~ Copyright (C) 2016  Grakn Labs Limited
+  ~
+  ~ Grakn is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ Grakn is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+  -->
+
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+    <id>bin</id>
+    <formats>
+        <format>tar.gz</format>
+        <format>zip</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <directory>${project.parent.basedir}</directory>
+            <includes>
+                <include>CHANGELOG</include>
+                <include>LICENSE.txt</include>
+                <include>readme.html</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>src</outputDirectory>
+            <directory>${project.parent.basedir}/</directory>
+            <includes>
+                <include>pom.xml</include>
+                <include>LICENSE.txt</include>
+                <include>grakn-core/**</include>
+                <include>grakn-dashboard/**</include>
+                <include>grakn-dist/**</include>
+                <include>grakn-engine/**</include>
+                <include>grakn-graph/**</include>
+                <include>grakn-graql/**</include>
+                <include>grakn-graql-shell/**</include>
+                <include>grakn-migration/**</include>
+                <include>grakn-orientdb-factory/**</include>
+                <include>grakn-test/**</include>
+                <include>grakn-titan-factory/**</include>
+            </includes>
+            <excludes>
+                <exclude>**/target/</exclude>
+                <exclude>grakn-dashboard/node_modules/</exclude>
+                <exclude>grakn-dashboard/static/dashboard.js</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>docs/api</outputDirectory>
+            <directory>${project.parent.basedir}/target/apidocs/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>bin</outputDirectory>
+            <directory>${basedir}/src/bin/</directory>
+            <includes>
+                <include>*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>conf</outputDirectory>
+            <directory>${basedir}/src/conf/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>examples</outputDirectory>
+            <directory>${basedir}/src/examples/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>conf</outputDirectory>
+            <directory>${project.parent.basedir}/conf/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>assets</outputDirectory>
+            <directory>${project.parent.basedir}/grakn-dashboard/static</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>logs</outputDirectory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>db/cassandra/data</outputDirectory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>db/cassandra/commitlog</outputDirectory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>db/cassandra/saved_caches</outputDirectory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>*:*:jar:*</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+
+</assembly>

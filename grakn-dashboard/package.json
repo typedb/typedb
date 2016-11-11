@@ -1,0 +1,53 @@
+{
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/graknlabs/grakn.git"
+  },
+  "name": "grakn-dashboard",
+  "version": "0.6.0-SNAPSHOT",
+  "author": "Denis Igorevich Lobanov",
+  "bugs": {
+    "url": "https://github.com/graknlabs/grakn/issues"
+  },
+  "homepage": "https://github.com/graknlabs/grakn",
+  "dependencies": {
+    "animate.css-js": "0.0.9",
+    "bootstrap": "^3.3.7",
+    "codemirror": "^5.19.0",
+    "jquery": "^3.1.0",
+    "jquery-ui": "^1.12.0",
+    "pace-progress": "^1.0.2",
+    "prismjs": "^1.5.1",
+    "underscore": "1.8",
+    "vis": "4.10",
+    "vue": "^1.0.26",
+    "vue-router": "^0.7.13"
+  },
+  "devDependencies": {
+    "ava": "^0.16.0",
+    "babel-plugin-transform-runtime": "^6.12.0",
+    "babel-preset-es2015": "^6.13.2",
+    "babelify": "^7.3.0",
+    "browserify": "^13.1.0",
+    "vueify": "^8.7.0"
+  },
+  "browserify": {
+    "transform": [
+      "babelify"
+    ]
+  },
+  "scripts": {
+    "preinstall": "npm install browserify vueify babelify",
+    "test": "ava"
+  },
+  "ava": {
+    "files": [
+      "test/*.js"
+    ],
+    "require": [
+      "babel-register"
+    ],
+    "babel": "inherit"
+  }
+}

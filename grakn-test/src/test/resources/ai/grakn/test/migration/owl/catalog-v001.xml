@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  ~ Grakn - A Distributed Semantic Database
+  ~ Copyright (C) 2016  Grakn Labs Limited
+  ~
+  ~ Grakn is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ Grakn is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+  -->
+
+<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <uri id="Imports Wizard Entry" name="http://www.co-ode.org/roberts/family-tree.owl" uri="family-ontology.owl"/>
+    <uri id="Imports Wizard Entry" name="http://www.co-ode.org/roberts/family-tree-instances.owl" uri="family-instances.owl"/>
+    <uri id="Imports Wizard Entry" name="http://www.semanticweb.org/kasper/ontologies/2016/9/untitled-ontology-4" uri="family-instances.owl"/>
+    <group id="Folder Repository, directory=, recursive=true, Auto-Update=true, version=2" prefer="public" xml:base="">
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="http://www.co-ode.org/roberts/family-instances-full.owl" uri="family-instances-full.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="http://www.co-ode.org/roberts/family-instances.owl" uri="family-instances.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="http://www.co-ode.org/roberts/family-ontology.owl" uri="family-ontology.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="duplicate:http://www.co-ode.org/roberts/family-tree.owl" uri="family-big.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="duplicate:http://www.co-ode.org/roberts/family-tree.owl" uri="familyII.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="duplicate:http://www.co-ode.org/roberts/family-tree.owl" uri="family-tree.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="http://www.semanticweb.org/kasper/ontologies/2016/9/test.owl" uri="test.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="http://www.workingontologist.org/Examples/Chapter3/Product.owl" uri="Product.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl" uri="shakespeare.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475503634075" name="http://www.workingontologist.org/Examples/Chapter5/Shopping.owl" uri="Shopping.owl"/>
+    </group>
+</catalog>
