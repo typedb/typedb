@@ -18,16 +18,12 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.MindmapsEngineTestBase;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.response.Response;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.MindmapsEngineTestBase;
-import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -44,7 +40,7 @@ public class RemoteShellControllerTest extends MindmapsEngineTestBase {
     @Before
     public void setUp() throws Exception {
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(graphName);
 
         EntityType man = graph.putEntityType("Man");
         entityId = graph.addEntity(man).getId();

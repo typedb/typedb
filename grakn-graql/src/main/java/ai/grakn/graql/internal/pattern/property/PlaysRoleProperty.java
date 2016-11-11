@@ -23,13 +23,9 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -81,7 +77,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     }
 
     @Override
-    public void delete(MindmapsGraph graph, Concept concept) {
+    public void delete(GraknGraph graph, Concept concept) {
         String roleId = role.getId().orElseThrow(() -> failDelete(this));
         concept.asType().deletePlaysRole(graph.getRoleType(roleId));
     }

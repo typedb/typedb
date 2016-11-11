@@ -18,16 +18,12 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.google.common.collect.ImmutableMap;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.factory.GraphFactory;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.printer.Printers;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -41,24 +37,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
-import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
-import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
-import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
-
 /**
  * Web socket for running a Graql shell
  */
 @WebSocket
 public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
-    private final Function<String, MindmapsGraph> getGraph;
+    private final Function<String, GraknGraph> getGraph;
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
 
     private static final ImmutableMap<String, Printer> printers =
@@ -71,7 +56,7 @@ public class RemoteSession {
         this(GraphFactory.getInstance()::getGraph);
     }
 
-    public RemoteSession(Function<String, MindmapsGraph> getGraph) {
+    public RemoteSession(Function<String, GraknGraph> getGraph) {
         this.getGraph = getGraph;
     }
 
@@ -132,7 +117,7 @@ public class RemoteSession {
         String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
         String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
         Printer printer = printers.getOrDefault(outputFormat, Printers.graql());
-        MindmapsGraph graph = getGraph.apply(keyspace);
+        GraknGraph graph = getGraph.apply(keyspace);
         GraqlSession graqlSession = new GraqlSession(session, graph, printer);
         sessions.put(session, graqlSession);
     }

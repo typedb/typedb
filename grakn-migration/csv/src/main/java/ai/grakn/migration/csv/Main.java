@@ -29,7 +29,7 @@ import org.apache.commons.cli.Options;
 import java.io.File;
 
 /**
- * Main program to migrate CSV files into a Mindmaps graph. For use from a command line.
+ * Main program to migrate CSV files into a Grakn graph. For use from a command line.
  * Expected arguments are the CSV file and the Graql template.
  * Additionally, delimiter, batch size, location of engine and graph name can be provided.
  */

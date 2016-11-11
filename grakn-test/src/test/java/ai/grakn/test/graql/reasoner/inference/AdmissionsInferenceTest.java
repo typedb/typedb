@@ -18,19 +18,16 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.Test;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 
@@ -38,7 +35,7 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testConditionalAdmission() {
-        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -53,7 +50,7 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testDeniedAdmission() {
-        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -67,7 +64,7 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testProvisionalAdmission() {
-        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -81,7 +78,7 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testWaitForTranscriptAdmission() {
-        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -95,7 +92,7 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testFullStatusAdmission() {
-        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -110,7 +107,7 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testAdmissions() {
-        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 

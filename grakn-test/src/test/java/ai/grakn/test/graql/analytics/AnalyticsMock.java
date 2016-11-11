@@ -18,13 +18,9 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsComputer;
-import ai.grakn.factory.MindmapsGraphFactoryMock;
-import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsComputer;
-import ai.grakn.factory.MindmapsGraphFactoryMock;
+import ai.grakn.Grakn;
+import ai.grakn.GraknComputer;
+import ai.grakn.factory.GraknGraphFactoryMock;
 import ai.grakn.graql.internal.analytics.Analytics;
 
 import java.util.Set;
@@ -48,8 +44,8 @@ public class AnalyticsMock extends Analytics {
     }
 
     @Override
-    protected MindmapsComputer getGraphComputer() {
-        MindmapsGraphFactoryMock factory = new MindmapsGraphFactoryMock(keyspace, Mindmaps.DEFAULT_URI);
+    protected GraknComputer getGraphComputer() {
+        GraknGraphFactoryMock factory = new GraknGraphFactoryMock(keyspace, Grakn.DEFAULT_URI);
         return factory.getGraphComputer(numberOfWorkers);
     }
 }

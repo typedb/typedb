@@ -18,13 +18,11 @@
 
 package ai.grakn.test;
 
-import ai.grakn.MindmapsGraphFactory;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.MindmapsEngineServer;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraphFactory;
-import ai.grakn.engine.MindmapsEngineServer;
 import org.junit.BeforeClass;
 
 import java.util.UUID;
@@ -57,14 +55,14 @@ public abstract class AbstractEngineTest {
         }
     }
 
-    protected static MindmapsGraphFactory factoryWithNewKeyspace() {
+    protected static GraknGraphFactory factoryWithNewKeyspace() {
         String keyspace;
         if (usingOrientDB()) {
             keyspace = "memory";
         } else {
             keyspace = UUID.randomUUID().toString().replaceAll("-", "");
         }
-        return Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace);
+        return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
     }
 
     private static void startEmbeddedCassandra() {

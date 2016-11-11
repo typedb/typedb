@@ -34,7 +34,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * A vertex program specific to Mindmaps with common method implementations.
+ * A vertex program specific to Grakn with common method implementations.
  */
 public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
 

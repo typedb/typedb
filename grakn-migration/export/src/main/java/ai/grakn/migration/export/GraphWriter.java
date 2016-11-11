@@ -17,7 +17,7 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -35,10 +35,10 @@ public class GraphWriter {
 
     private static final String EOL = ";\n";
 
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
     private final List<String> reserved = Arrays.asList("inference-rule", "constraint-rule");
 
-    public GraphWriter(MindmapsGraph graph){
+    public GraphWriter(GraknGraph graph){
         this.graph = graph;
     }
 

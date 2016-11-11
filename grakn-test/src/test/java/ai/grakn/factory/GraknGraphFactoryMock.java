@@ -17,27 +17,26 @@
  */
 
 package ai.grakn.factory;
-import ai.grakn.MindmapsComputer;
-import ai.grakn.MindmapsComputer;
+import ai.grakn.GraknComputer;
 import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  *
  */
-public class MindmapsGraphFactoryMock extends MindmapsGraphFactoryPersistent {
+public class GraknGraphFactoryMock extends GraknGraphFactoryPersistent {
     private final String keyspace;
     private final String uri;
 
-    public MindmapsGraphFactoryMock(String keyspace, String uri) {
+    public GraknGraphFactoryMock(String keyspace, String uri) {
         super(keyspace.toLowerCase(), uri);
         this.keyspace = keyspace;
         this.uri = uri;
     }
 
-    public MindmapsComputer getGraphComputer(int numberOfWorkers) {
+    public GraknComputer getGraphComputer(int numberOfWorkers) {
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
-        return new MindmapsComputerMock(graph, configuredFactory.graphComputer, numberOfWorkers);
+        return new GraknComputerMock(graph, configuredFactory.graphComputer, numberOfWorkers);
     }
 }

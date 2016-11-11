@@ -22,10 +22,8 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +46,7 @@ public class OntologyMutationTest extends GraphTestBase{
     private Relation relation;
 
     @Before
-    public void buildGraph() throws MindmapsValidationException {
+    public void buildGraph() throws GraknValidationException {
         husband = mindmapsGraph.putRoleType("Husband");
         wife = mindmapsGraph.putRoleType("Wife");
         RoleType driver = mindmapsGraph.putRoleType("Driver");
@@ -69,10 +67,10 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void testDeletePlaysRole() throws MindmapsValidationException {
+    public void testDeletePlaysRole() throws GraknValidationException {
         person.deletePlaysRole(wife);
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(woman.getId(), alice.getId(), wife.getId()))
         ));
@@ -81,7 +79,7 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void testDeleteHasRole() throws MindmapsValidationException {
+    public void testDeleteHasRole() throws GraknValidationException {
         marriage.deleteHasRole(husband);
 
         String roles = "";
@@ -93,7 +91,7 @@ public class OntologyMutationTest extends GraphTestBase{
                 rolePlayers = rolePlayers + entry.getValue().getId() + ",";
         }
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), marriage.getId(),
                         roles.split(",").length, roles,
@@ -104,10 +102,10 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void testChangeSuperTypeOfEntityType() throws MindmapsValidationException {
+    public void testChangeSuperTypeOfEntityType() throws GraknValidationException {
         man.superType(car);
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(man.getId(), bob.getId(), husband.getId()))
         ));
@@ -116,10 +114,10 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void testChangeIsAbstract() throws MindmapsValidationException{
+    public void testChangeIsAbstract() throws GraknValidationException {
         man.setAbstract(true);
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(man.getId()))
         ));

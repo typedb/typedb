@@ -18,13 +18,11 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -37,11 +35,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A traversal over a Mindmaps graph, representing one of many ways to execute a {@code MatchQuery}.
+ * A traversal over a Grakn graph, representing one of many ways to execute a {@code MatchQuery}.
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  */
@@ -53,14 +50,14 @@ public class GraqlTraversal {
     //             |            |
     //             V            V
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
 
-    private GraqlTraversal(MindmapsGraph graph, Set<? extends List<Fragment>> fragments) {
+    private GraqlTraversal(GraknGraph graph, Set<? extends List<Fragment>> fragments) {
         this.graph = graph;
         this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(CommonUtil.toImmutableSet());
     }
 
-    public static GraqlTraversal create(MindmapsGraph graph, Set<? extends List<Fragment>> fragments) {
+    public static GraqlTraversal create(GraknGraph graph, Set<? extends List<Fragment>> fragments) {
         return new GraqlTraversal(graph, fragments);
     }
 

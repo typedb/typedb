@@ -24,10 +24,10 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
-import ai.grakn.Mindmaps;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.Grakn;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Methods to deal with persisting values to a Mindmaps graph during OLAP computations. Each spark executor is thread
+ * Methods to deal with persisting values to a Grakn graph during OLAP computations. Each spark executor is thread
  * bound and responsible for a subset of the vertices in the graph. Therefore, an instance of the graph can be held in
  * each executor and the mutations from multiple vertices committed as batches. The need to delete relations in a
  * separate iterations from when new relations are added can also be facilitated.
@@ -56,7 +56,7 @@ public class BulkResourceMutate<T> {
     private static final int numberOfRetries = 10;
 
     private int batchSize = 100;
-    private MindmapsGraph graph;
+    private GraknGraph graph;
     private int currentNumberOfVertices = 0;
     private String resourceTypeId;
     private final String keyspace;
@@ -119,7 +119,7 @@ public class BulkResourceMutate<T> {
         currentNumberOfVertices = 0;
     }
 
-    private void persistResources() throws MindmapsValidationException {
+    private void persistResources() throws GraknValidationException {
         if (resourcesToPersist.isEmpty()){
             LOGGER.debug("Nothing to persist");
             return;
@@ -190,7 +190,7 @@ public class BulkResourceMutate<T> {
 
     private void initialiseGraph() {
         if (graph == null) {
-            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
             graph.rollback();
             refreshOntologyElements();
         }

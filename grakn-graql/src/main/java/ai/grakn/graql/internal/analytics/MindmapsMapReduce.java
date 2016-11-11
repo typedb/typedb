@@ -30,7 +30,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * A map reduce task specific to Mindmaps with common method implementations.
+ * A map reduce task specific to Grakn with common method implementations.
  */
 public abstract class MindmapsMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {

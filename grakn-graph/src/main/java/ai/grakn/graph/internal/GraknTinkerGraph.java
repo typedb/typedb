@@ -18,25 +18,33 @@
 
 package ai.grakn.graph.internal;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
-public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
-    public MindmapsTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
-        super(graph, name, engineUrl, batchLoading);
+/**
+ * A mindmaps graph which uses a Tinkergraph backend.
+ * Primarily used for testing
+ */
+public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
+    public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){
+        super(tinkerGraph, name, engineUrl, batchLoading);
     }
 
     @Override
-    public void clear() {
-        TitanGraph titanGraph = getTinkerPopGraph();
-        titanGraph.close();
-        TitanCleanup.clear(titanGraph);
+    public void clear(){
+        super.clear();
         EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
+        initialiseMetaConcepts();
     }
 
     @Override
-    protected void closeGraphTransaction() throws Exception {
-        getTinkerPopGraph().tx().close();
+    public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
+        return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
+    }
+
+    @Override
+    public void rollback(){
+        throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
     }
 }

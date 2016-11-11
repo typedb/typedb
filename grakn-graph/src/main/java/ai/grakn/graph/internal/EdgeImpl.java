@@ -26,9 +26,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 class EdgeImpl {
     private Edge edge;
-    private final AbstractMindmapsGraph mindmapsGraph;
+    private final AbstractGraknGraph mindmapsGraph;
 
-    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, AbstractMindmapsGraph mindmapsGraph){
+    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, AbstractGraknGraph mindmapsGraph){
         edge = e;
         this.mindmapsGraph = mindmapsGraph;
     }

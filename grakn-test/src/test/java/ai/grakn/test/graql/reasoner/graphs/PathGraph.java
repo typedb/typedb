@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -36,7 +36,7 @@ public class PathGraph extends TestGraph {
         commit();
     }
 
-    public static MindmapsGraph getGraph(int n, int children) {
+    public static GraknGraph getGraph(int n, int children) {
         return new PathGraph(n, children).graph();
     }
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -49,5 +49,5 @@ public interface InsertQueryAdmin extends InsertQuery {
     /**
      * @return the graph set on this query, if it was provided one
      */
-    Optional<MindmapsGraph> getGraph();
+    Optional<GraknGraph> getGraph();
 }

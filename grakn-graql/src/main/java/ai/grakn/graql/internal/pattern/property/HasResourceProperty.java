@@ -18,19 +18,16 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
@@ -94,7 +91,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    void checkValidProperty(MindmapsGraph graph, VarAdmin var) {
+    void checkValidProperty(GraknGraph graph, VarAdmin var) {
         if (graph.getResourceType(resourceType) == null) {
             throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
         }
@@ -108,7 +105,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public void delete(MindmapsGraph graph, Concept concept) {
+    public void delete(GraknGraph graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate = resource.getValuePredicates().stream().findAny();
 
         resources(concept).stream()

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import com.google.common.collect.ImmutableCollection;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
@@ -73,7 +73,7 @@ public class Queries {
      * @param graph the graph to execute on
      * @param vars a collection of Vars to insert
      */
-    public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, Optional<MindmapsGraph> graph) {
+    public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, Optional<GraknGraph> graph) {
         return new InsertQueryImpl(vars, Optional.empty(), graph);
     }
 
@@ -81,11 +81,11 @@ public class Queries {
         return new DeleteQueryImpl(deleters, matchQuery);
     }
 
-    public static ComputeQuery compute(Optional<MindmapsGraph> graph, String computeMethod) {
+    public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod) {
         return new ComputeQueryImpl(graph, computeMethod, new HashSet<>(), new HashSet<>());
     }
 
-    public static ComputeQuery compute(Optional<MindmapsGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
+    public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         return new ComputeQueryImpl(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
 

@@ -30,7 +30,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
- * Class dedicated to talking with Mindmaps Engine. Currently used to retrieve factory config and submit commit logs
+ * Class dedicated to talking with Grakn Engine. Currently used to retrieve factory config and submit commit logs
  */
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);

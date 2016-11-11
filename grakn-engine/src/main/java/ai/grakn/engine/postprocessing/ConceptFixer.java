@@ -18,9 +18,8 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.GraknGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,13 +30,13 @@ class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
     private static final int MAX_RETRY = 10;
 
-    public static void checkCasting(Cache cache, MindmapsGraph graph, String castingId){
+    public static void checkCasting(Cache cache, GraknGraph graph, String castingId){
         boolean notDone = true;
         int retry = 0;
 
         while(notDone) {
             try {
-                if (((AbstractMindmapsGraph)graph).fixDuplicateCasting(castingId)) {
+                if (((AbstractGraknGraph)graph).fixDuplicateCasting(castingId)) {
                     graph.commit();
                 }
                 cache.deleteJobCasting(graph.getKeyspace(), castingId);
@@ -54,13 +53,13 @@ class ConceptFixer {
         }
     }
 
-    public static void checkResources(Cache cache, MindmapsGraph graph, Set<String> resourceIds){
+    public static void checkResources(Cache cache, GraknGraph graph, Set<String> resourceIds){
         boolean notDone = true;
         int retry = 0;
 
         while(notDone) {
             try {
-                if (((AbstractMindmapsGraph)graph).fixDuplicateResources(resourceIds)) {
+                if (((AbstractGraknGraph)graph).fixDuplicateResources(resourceIds)) {
                     graph.commit();
                 }
                 resourceIds.forEach(resourceId -> cache.deleteJobResource(graph.getKeyspace(), resourceId));

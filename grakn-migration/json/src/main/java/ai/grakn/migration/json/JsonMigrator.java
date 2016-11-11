@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Migrator for migrating JSON data into Mindmaps instances
+ * Migrator for migrating JSON data into Grakn instances
  */
 public class JsonMigrator extends AbstractMigrator {
 

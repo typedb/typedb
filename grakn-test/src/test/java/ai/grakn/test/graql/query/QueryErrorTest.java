@@ -18,21 +18,17 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.AbstractMovieGraphTest;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static ai.grakn.graql.Graql.id;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
@@ -136,9 +132,9 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testExceptionWhenNoHasResourceRelation() throws MindmapsValidationException {
+    public void testExceptionWhenNoHasResourceRelation() throws GraknValidationException {
         // Create a fresh graph, with no has-resource between person and name
-        MindmapsGraph empty = factoryWithNewKeyspace().getGraph();
+        GraknGraph empty = factoryWithNewKeyspace().getGraph();
 
         QueryBuilder emptyQb = empty.graql();
         emptyQb.insert(
@@ -146,7 +142,7 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
                 Graql.id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
-        exception.expect(MindmapsValidationException.class);
+        exception.expect(GraknValidationException.class);
         exception.expectMessage(allOf(
                 containsString("person"),
                 containsString("name")

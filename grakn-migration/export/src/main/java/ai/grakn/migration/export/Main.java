@@ -17,9 +17,7 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.MindmapsGraph;
-import ai.grakn.migration.base.io.MigrationCLI;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 
@@ -46,7 +44,7 @@ public class Main {
         cli.writeToSout("Writing graph " + cli.getKeyspace() + " using MM Engine " +
                 cli.getEngineURI() + " to System.out");
 
-        MindmapsGraph graph = cli.getGraph();
+        GraknGraph graph = cli.getGraph();
         GraphWriter graphWriter = new GraphWriter(graph);
 
         if(cli.hasOption("ontology")){

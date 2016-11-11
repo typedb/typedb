@@ -18,13 +18,13 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Mindmaps;
+import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.MindmapsVertexProgram;
@@ -34,22 +34,10 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import ai.grakn.Mindmaps;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.graql.internal.analytics.MindmapsVertexProgram;
-import ai.grakn.graql.internal.analytics.BulkResourceMutate;
-import ai.grakn.test.AbstractGraphTest;
-import ai.grakn.util.Schema;
+import ai.grakn.exception.GraknValidationException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -243,11 +231,11 @@ public class ClusteringTest extends AbstractGraphTest {
     private void refreshGraph() throws Exception {
         //TODO: Get rid of this method.
         // We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractMindmapsGraph) graph).getTinkerPopGraph().close();
+        ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
         graph = factory.getGraph();
     }
 
-    private void addOntologyAndEntities() throws MindmapsValidationException {
+    private void addOntologyAndEntities() throws GraknValidationException {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -343,11 +331,11 @@ public class ClusteringTest extends AbstractGraphTest {
                 .playsRole(resourceValue7));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
-    private void addResourceRelations() throws MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+    private void addResourceRelations() throws GraknValidationException {
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
         Entity entity1 = graph.getEntity(entityId1);
         Entity entity2 = graph.getEntity(entityId2);
@@ -420,6 +408,6 @@ public class ClusteringTest extends AbstractGraphTest {
         graph.putResource(0.8, graph.getResourceType(resourceType6));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 }

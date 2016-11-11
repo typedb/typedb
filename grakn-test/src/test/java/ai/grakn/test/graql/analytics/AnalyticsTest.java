@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -28,26 +28,12 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.test.AbstractGraphTest;
-import ai.grakn.util.Schema;
+import ai.grakn.exception.GraknValidationException;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -98,7 +84,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm sub has been inferred
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, graph.getKeyspace()).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
         Collection<Resource<?>> degrees = graph.getEntity(foofoo).resources();
         assertTrue(degrees.iterator().next().getValue().equals(0L));
     }
@@ -230,7 +216,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         ));
     }
 
-    private static void checkDegrees(MindmapsGraph graph, Map<String, Long> correctDegrees) {
+    private static void checkDegrees(GraknGraph graph, Map<String, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
             Instance instance = graph.getInstance(entry.getKey());
             // TODO: when shortcut edges are removed properly during concurrent deletion revert code
@@ -317,7 +303,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         }
 
         //TODO: Get rid of this close. We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractMindmapsGraph) graph).getTinkerPopGraph().close();
+        ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
         computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
 
         // compute degrees on all types, again and again ...
@@ -340,7 +326,7 @@ public class AnalyticsTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testDegreeIsCorrect() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrect() throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -464,7 +450,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         // check degrees are correct
         graph = factory.getGraph();
-        MindmapsGraph finalGraph = graph;
+        GraknGraph finalGraph = graph;
         referenceDegrees.entrySet().forEach(entry -> {
             Instance instance = finalGraph.getInstance(entry.getKey());
             if (instance.isEntity()) {
@@ -498,7 +484,7 @@ public class AnalyticsTest extends AbstractGraphTest {
                 allConcepts.add(r.getId())));
 
         // check degrees are correct
-        MindmapsGraph finalGraph1 = graph;
+        GraknGraph finalGraph1 = graph;
         referenceDegrees.entrySet().forEach(entry -> {
             Instance instance = finalGraph1.getInstance(entry.getKey());
             if (instance.isEntity()) {
@@ -521,7 +507,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
     @Test
     public void testDegreeIsPersistedInPresenceOfOtherResource()
-            throws MindmapsValidationException, ExecutionException, InterruptedException {
+            throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -596,7 +582,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
     @Test
     public void testDegreeIsCorrectAssertionAboutAssertion()
-            throws MindmapsValidationException, ExecutionException, InterruptedException {
+            throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -680,7 +666,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
     @Test
     public void testDegreeIsCorrectTernaryRelationships()
-            throws MindmapsValidationException, ExecutionException, InterruptedException {
+            throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -719,7 +705,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
     @Test
     public void testDegreeIsCorrectOneRoleplayerMultipleRoles()
-            throws MindmapsValidationException, ExecutionException, InterruptedException {
+            throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -763,7 +749,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
     @Test
     public void testDegreeIsCorrectMissingRoleplayer()
-            throws MindmapsValidationException, ExecutionException, InterruptedException {
+            throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -804,7 +790,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
     @Test
     public void testDegreeIsCorrectRoleplayerWrongType()
-            throws MindmapsValidationException, ExecutionException, InterruptedException {
+            throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -853,7 +839,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
     @Test
     public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes()
-            throws MindmapsValidationException, ExecutionException, InterruptedException {
+            throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -888,7 +874,7 @@ public class AnalyticsTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testComputingUsingDegreeResource() throws MindmapsValidationException {
+    public void testComputingUsingDegreeResource() throws GraknValidationException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -921,7 +907,7 @@ public class AnalyticsTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testNullResourceDoesntBreakAnalytics() throws MindmapsValidationException {
+    public void testNullResourceDoesntBreakAnalytics() throws GraknValidationException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 

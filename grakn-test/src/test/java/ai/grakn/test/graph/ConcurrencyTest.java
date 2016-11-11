@@ -18,16 +18,13 @@
 
 package ai.grakn.test.graph;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.RelationType;
 import ai.grakn.test.AbstractRollbackGraphTest;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.exception.GraknValidationException;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -51,7 +48,7 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
     private final static String ENTITY_TYPE = "Entity Type";
     private final static String RELATION_TYPE = "Relation Type";
 
-    static void createOntology(MindmapsGraph graph) throws MindmapsValidationException {
+    static void createOntology(GraknGraph graph) throws GraknValidationException {
         RoleType role1 = graph.putRoleType(ROLE_1);
         RoleType role2 = graph.putRoleType(ROLE_2);
         graph.putEntityType(ENTITY_TYPE).playsRole(role1).playsRole(role2);
@@ -59,14 +56,14 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
         graph.commit();
     }
 
-    private static void assertResults(MindmapsGraph graph) {
+    private static void assertResults(GraknGraph graph) {
         assertEquals(2, graph.getEntityType(ENTITY_TYPE).instances().size());
         assertEquals(1, graph.getRelationType(RELATION_TYPE).instances().size());
     }
 
     @Ignore //TODO: Change this test. This was ignored because duplicates can no longer be created via putInstance methods
     @Test
-    public void testWritingTheSameDataSequentially() throws MindmapsValidationException, InterruptedException {
+    public void testWritingTheSameDataSequentially() throws GraknValidationException, InterruptedException {
         createOntology(graph);
         writeData(graph);
         assertEquals(2, graph.getEntityType(ENTITY_TYPE).instances().size());
@@ -83,7 +80,7 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
         }
         assertResults(graph);
     }
-    private static void writeData(MindmapsGraph graph) throws MindmapsValidationException {
+    private static void writeData(GraknGraph graph) throws GraknValidationException {
         EntityType entityType = graph.getEntityType(ENTITY_TYPE);
         RelationType relationType = graph.getRelationType(RELATION_TYPE);
         RoleType role1 = graph.getRoleType(ROLE_1);
@@ -98,7 +95,7 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
 
     @Ignore //TODO: Change this test. This was ignored because duplicates can no longer be created via putInstance methods
     @Test
-    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite()  throws ExecutionException, InterruptedException, MindmapsValidationException {
+    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite()  throws ExecutionException, InterruptedException, GraknValidationException {
         // TODO: Fix this test in tinkergraph
         assumeFalse(usingTinker());
 
@@ -113,12 +110,12 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
 
     @Ignore // TODO: Fix this test
     @Test
-    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailure() throws ExecutionException, InterruptedException, MindmapsValidationException {
+    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailure() throws ExecutionException, InterruptedException, GraknValidationException {
         createOntology(graph);
         concurrentWriteSuper(graph);
         assertResults(graph);
     }
-    private static void concurrentWriteSuper(MindmapsGraph graph) throws ExecutionException, InterruptedException {
+    private static void concurrentWriteSuper(GraknGraph graph) throws ExecutionException, InterruptedException {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
@@ -135,7 +132,7 @@ public class ConcurrencyTest extends AbstractRollbackGraphTest {
         assertEquals(20, numFinished);
     }
 
-    private static void concurrentWrite(MindmapsGraph graph){
+    private static void concurrentWrite(GraknGraph graph){
         final int MAX_FAILURE_COUNT = 10;
         boolean doneWriting = false;
         int failureCount = 0;

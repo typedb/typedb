@@ -18,20 +18,14 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -78,7 +72,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public void delete(MindmapsGraph graph, Concept concept) {
+    public void delete(GraknGraph graph, Concept concept) {
         String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
         concept.asRelation().deleteScope(graph.getInstance(scopeId));
     }

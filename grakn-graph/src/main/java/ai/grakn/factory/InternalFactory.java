@@ -18,18 +18,18 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  * The interface used to build new graphs from different vendors.
  * Adding new vendor support means implementing this interface.
  */
-interface InternalFactory<M extends MindmapsGraph, T extends Graph> {
+interface InternalFactory<M extends GraknGraph, T extends Graph> {
     /**
      *
      * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
-     * @return An instance of Mindmaps graph
+     * @return An instance of Grakn graph
      */
     M getGraph(boolean batchLoading);
 

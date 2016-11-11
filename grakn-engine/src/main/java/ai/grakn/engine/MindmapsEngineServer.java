@@ -27,7 +27,7 @@ import ai.grakn.engine.controller.StatusController;
 import ai.grakn.engine.controller.TransactionController;
 import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.MindmapsEngineServerException;
+import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +36,7 @@ import spark.Spark;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
-import java.net.URLConnection;
 
 import static spark.Spark.*;
 
@@ -80,8 +77,8 @@ public class MindmapsEngineServer {
         new BackgroundTasksController();
 
         //Register Exception Handler
-        exception(MindmapsEngineServerException.class, (e, request, response) -> {
-            response.status(((MindmapsEngineServerException) e).getStatus());
+        exception(GraknEngineServerException.class, (e, request, response) -> {
+            response.status(((GraknEngineServerException) e).getStatus());
             response.body("New exception: "+e.getMessage()+" - Please refer to mindmaps.log file for full stack trace.");
         });
 
@@ -97,7 +94,7 @@ public class MindmapsEngineServer {
 
     /**
      * Check if Mindmamps Engine has been started
-     * @return true if Mindmaps Engine running, false otherwise
+     * @return true if Grakn Engine running, false otherwise
      */
     public static boolean isRunning(){
         try {
@@ -121,7 +118,7 @@ public class MindmapsEngineServer {
 
     /**
      * Method that prints a welcome message, listening address and path to the LOG that will be used.
-     * @param host Host address to which Mindmaps Engine is bound to
+     * @param host Host address to which Grakn Engine is bound to
      * @param port Web server port number
      * @param logFilePath Path to the LOG file.
      */

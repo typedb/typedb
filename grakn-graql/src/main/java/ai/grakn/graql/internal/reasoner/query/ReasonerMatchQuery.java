@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 
@@ -30,12 +30,12 @@ public class ReasonerMatchQuery extends Query{
 
     final private QueryAnswers answers;
 
-    public ReasonerMatchQuery(MatchQuery query, MindmapsGraph graph){
+    public ReasonerMatchQuery(MatchQuery query, GraknGraph graph){
         super(query, graph);
         answers = new QueryAnswers();
     }
 
-    public ReasonerMatchQuery(MatchQuery query, MindmapsGraph graph, QueryAnswers ans){
+    public ReasonerMatchQuery(MatchQuery query, GraknGraph graph, QueryAnswers ans){
         super(query, graph);
         answers = new QueryAnswers(ans);
     }

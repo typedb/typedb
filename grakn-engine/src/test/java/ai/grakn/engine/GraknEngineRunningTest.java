@@ -28,7 +28,7 @@ import java.util.Properties;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
 
-public class MindmapsEngineRunningTest {
+public class GraknEngineRunningTest {
 
     @Before
     public void setCorrectProperties(){

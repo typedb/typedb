@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 
@@ -39,7 +39,7 @@ public interface MatchQueryAdmin extends MatchQuery {
      * @param graph the graph to use to get types from
      * @return all concept types referred to explicitly in the query
      */
-    Set<Type> getTypes(MindmapsGraph graph);
+    Set<Type> getTypes(GraknGraph graph);
 
     /**
      * @return all concept types referred to explicitly in the query
@@ -54,7 +54,7 @@ public interface MatchQueryAdmin extends MatchQuery {
     /**
      * @return the graph the query operates on, if one was provided
      */
-    Optional<MindmapsGraph> getGraph();
+    Optional<GraknGraph> getGraph();
 
     /**
      * @return all selected variable names in the query

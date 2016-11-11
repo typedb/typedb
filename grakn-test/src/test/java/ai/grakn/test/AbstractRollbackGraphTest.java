@@ -18,8 +18,8 @@
 
 package ai.grakn.test;
 
-import ai.grakn.MindmapsGraph;
-import ai.grakn.MindmapsGraphFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 
@@ -29,8 +29,8 @@ import org.junit.Before;
  */
 public abstract class AbstractRollbackGraphTest extends AbstractEngineTest {
 
-    protected static MindmapsGraphFactory factory;
-    protected static MindmapsGraph graph;
+    protected static GraknGraphFactory factory;
+    protected static GraknGraph graph;
 
     @Before
     public void createGraph() {

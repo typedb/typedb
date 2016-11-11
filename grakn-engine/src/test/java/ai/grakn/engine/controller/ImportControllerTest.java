@@ -18,13 +18,12 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.response.Response;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.engine.MindmapsEngineTestBase;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.util.REST;
 import mjson.Json;
@@ -124,7 +123,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
     }
 
     private void importOntology(String ontologyFile, String graphNameParam){
-        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphNameParam);
+        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphNameParam);
 
         List<String> lines = null;
         try {
@@ -136,7 +135,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
         Graql.parse(query).withGraph(graph).execute();
         try {
             graph.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             e.printStackTrace();
         }
     }

@@ -19,9 +19,8 @@
 package ai.grakn.test.graql.reasoner.graphs;
 
 import ai.grakn.concept.RelationType;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 
 import static com.google.common.math.IntMath.pow;
@@ -37,7 +36,7 @@ public class PathGraphSymmetric extends TestGraph{
         commit();
     }
 
-    public static MindmapsGraph getGraph(int n, int m) {
+    public static GraknGraph getGraph(int n, int m) {
         return new PathGraphSymmetric(n, m).graph();
     }
     protected void buildExtensionalDB(int n, int children) {

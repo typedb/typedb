@@ -21,19 +21,11 @@ package ai.grakn.migration.base.io;
 import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.migration.base.Migrator;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.engine.loader.BlockingLoader;
-import ai.grakn.engine.loader.Loader;
-import ai.grakn.migration.base.Migrator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.Reader;
+import ai.grakn.GraknGraph;
 
 public class MigrationLoader {
 
-    public static void load(MindmapsGraph graph, Migrator migrator){
+    public static void load(GraknGraph graph, Migrator migrator){
         load(new BlockingLoader(graph.getKeyspace()), migrator);
     }
 

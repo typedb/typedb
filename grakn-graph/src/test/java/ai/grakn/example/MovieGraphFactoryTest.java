@@ -18,16 +18,14 @@
 
 package ai.grakn.example;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
@@ -50,29 +48,29 @@ import static org.junit.Assert.assertTrue;
 public class MovieGraphFactoryTest {
 
     private static Graph graph;
-    private static MindmapsGraph mindmapsGraph;
+    private static GraknGraph graknGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void setUp() throws IOException{
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-        graph = ((AbstractMindmapsGraph)mindmapsGraph).getTinkerPopGraph();
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        MovieGraphFactory.loadGraph(graknGraph);
+        graph = ((AbstractGraknGraph) graknGraph).getTinkerPopGraph();
     }
 
     @Test
     public void failToLoad(){
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.putRelationType("fake");
+        GraknGraph graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage())
         ));
 
-        MovieGraphFactory.loadGraph(mindmapsGraph);
+        MovieGraphFactory.loadGraph(graknGraph);
     }
 
     @Test(expected=InvocationTargetException.class)
@@ -99,28 +97,28 @@ public class MovieGraphFactoryTest {
 
     @Test
     public void testGraphHasMovie() {
-        EntityType movie = mindmapsGraph.getEntityType("movie");
-        assertTrue(movie.superType().equals(mindmapsGraph.getEntityType("production")));
+        EntityType movie = graknGraph.getEntityType("movie");
+        assertTrue(movie.superType().equals(graknGraph.getEntityType("production")));
     }
 
     @Test
     public void testGraphHasTvShow() {
-        EntityType tvShow = mindmapsGraph.getEntityType("tv-show");
-        assertTrue(tvShow.superType().equals(mindmapsGraph.getEntityType("production")));
+        EntityType tvShow = graknGraph.getEntityType("tv-show");
+        assertTrue(tvShow.superType().equals(graknGraph.getEntityType("production")));
     }
 
     @Test
     public void testGodfatherHasResource() {
-        ResourceType tmdbVoteCount = mindmapsGraph.getResourceType("tmdb-vote-count");
-        ResourceType title = mindmapsGraph.getResourceType("title");
-        Entity godfather = mindmapsGraph.getResource("Godfather", title).owner().asEntity();
+        ResourceType tmdbVoteCount = graknGraph.getResourceType("tmdb-vote-count");
+        ResourceType title = graknGraph.getResourceType("title");
+        Entity godfather = graknGraph.getResource("Godfather", title).owner().asEntity();
         Stream<Resource<?>> resources = godfather.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(tmdbVoteCount) && r.getValue().equals(1000L)));
     }
 
     @Test
     public void testRulesExists() {
-        RuleType ruleType = mindmapsGraph.getRuleType("a-rule-type");
+        RuleType ruleType = graknGraph.getRuleType("a-rule-type");
         assertEquals(2, ruleType.instances().size());
     }
 }

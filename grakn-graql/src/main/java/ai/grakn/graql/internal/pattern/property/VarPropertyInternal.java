@@ -18,18 +18,13 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -43,7 +38,7 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a match query
      */
-    void checkValid(MindmapsGraph graph, VarAdmin var) throws IllegalStateException;
+    void checkValid(GraknGraph graph, VarAdmin var) throws IllegalStateException;
 
     /**
      * Check if the given property can be inserted
@@ -68,7 +63,7 @@ public interface VarPropertyInternal extends VarProperty {
      * @param graph the graph to operate on
      * @param concept the concept to delete properties of
      */
-    void delete(MindmapsGraph graph, Concept concept) throws IllegalStateException;
+    void delete(GraknGraph graph, Concept concept) throws IllegalStateException;
 
     @Override
     default Stream<VarAdmin> getInnerVars() {

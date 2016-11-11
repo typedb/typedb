@@ -18,8 +18,8 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.MindmapsGraph;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraknValidationException;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-public class MindmapsTinkerGraphTest extends GraphTestBase{
+public class GraknTinkerGraphTest extends GraphTestBase{
 
     @Test
     public void testMultithreading(){
@@ -54,13 +54,13 @@ public class MindmapsTinkerGraphTest extends GraphTestBase{
             }
         });
 
-        assertEquals(108, ((AbstractMindmapsGraph<Graph>) mindmapsGraph).getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(108, ((AbstractGraknGraph<Graph>) mindmapsGraph).getTinkerPopGraph().traversal().V().toList().size());
     }
-    private void addEntityType(MindmapsGraph mindmapsGraph){
-        mindmapsGraph.putEntityType(UUID.randomUUID().toString());
+    private void addEntityType(GraknGraph graknGraph){
+        graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
-            mindmapsGraph.commit();
-        } catch (MindmapsValidationException e) {
+            graknGraph.commit();
+        } catch (GraknValidationException e) {
             e.printStackTrace();
         }
     }
@@ -69,13 +69,13 @@ public class MindmapsTinkerGraphTest extends GraphTestBase{
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        AbstractMindmapsGraph transcation = (AbstractMindmapsGraph) mindmapsGraph;
+        AbstractGraknGraph transcation = (AbstractGraknGraph) mindmapsGraph;
         transcation.putEntityType(UUID.randomUUID().toString());
         assertEquals(9, transcation.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                MindmapsGraph innerTranscation = mindmapsGraph;
+                GraknGraph innerTranscation = mindmapsGraph;
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }

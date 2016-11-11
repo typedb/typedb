@@ -17,20 +17,14 @@
  */
 package ai.grakn.migration.owl;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Resource;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.concept.Entity;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -49,7 +43,7 @@ import java.util.function.Supplier;
  * 
  * <p>
  * The OWL migrator is the main driver an OWL migration process: configure with the ontology to migrate, the
- * target Mindmaps graph and instance and hit go with the {@link OWLMigrator#migrate()}
+ * target Grakn graph and instance and hit go with the {@link OWLMigrator#migrate()}
  * </p>
  *
  * @author Borislav Iordanov
@@ -59,7 +53,7 @@ public class OWLMigrator {
     
     private Namer namer;
     private OWLOntology ontology;
-    private MindmapsGraph graph;
+    private GraknGraph graph;
 
     private <T> T eval(Supplier<T> f) {
         return f.get();
@@ -87,16 +81,16 @@ public class OWLMigrator {
         return this.ontology;
     }
     
-    public OWLMigrator graph(MindmapsGraph graph) {
+    public OWLMigrator graph(GraknGraph graph) {
         this.graph = graph;
         return this;
     }
     
-    public MindmapsGraph graph() {
+    public GraknGraph graph() {
         return graph;
     }
     
-    public void migrate() throws MindmapsValidationException {
+    public void migrate() throws GraknValidationException {
         OwlMindmapsGraphStoringVisitor visitor = new OwlMindmapsGraphStoringVisitor(this);
         visitor.prepareOWL();
         ontology.axioms().forEach(ax -> {

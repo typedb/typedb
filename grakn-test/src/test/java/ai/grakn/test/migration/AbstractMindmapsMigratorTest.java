@@ -31,7 +31,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.test.AbstractGraphTest;
@@ -98,7 +98,7 @@ public class AbstractMindmapsMigratorTest extends AbstractGraphTest {
                     .execute();
 
             graph.commit();
-        } catch (IOException |MindmapsValidationException e){
+        } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }
     }

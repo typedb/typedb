@@ -23,9 +23,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -35,7 +32,7 @@ import java.util.HashSet;
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(Vertex v, RuleType type, AbstractMindmapsGraph mindmapsGraph, Pattern lhs, Pattern rhs) {
+    RuleImpl(Vertex v, RuleType type, AbstractGraknGraph mindmapsGraph, Pattern lhs, Pattern rhs) {
         super(v, type, mindmapsGraph);
 
         //setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);

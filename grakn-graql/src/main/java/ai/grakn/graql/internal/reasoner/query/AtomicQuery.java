@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -28,23 +28,13 @@ import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Relation;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.Relation;
 import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
-import ai.grakn.util.ErrorMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static ai.grakn.graql.internal.reasoner.Utility.computeRoleCombinations;
 
 public class AtomicQuery extends Query{
 
@@ -53,12 +43,12 @@ public class AtomicQuery extends Query{
 
     final private Set<AtomicQuery> children = new HashSet<>();
 
-    public AtomicQuery(String rhs, MindmapsGraph graph){
+    public AtomicQuery(String rhs, GraknGraph graph){
         super(rhs, graph);
         atom = selectAtoms().iterator().next();
     }
 
-    public AtomicQuery(MatchQuery query, MindmapsGraph graph){
+    public AtomicQuery(MatchQuery query, GraknGraph graph){
         super(query, graph);
         atom = selectAtoms().iterator().next();
     }

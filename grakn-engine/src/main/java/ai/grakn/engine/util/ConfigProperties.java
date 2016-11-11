@@ -31,7 +31,7 @@ import java.util.Properties;
 
 
 /**
- * Singleton class used to read config file and make all the settings available to the Mindmaps Engine classes.
+ * Singleton class used to read config file and make all the settings available to the Grakn Engine classes.
  */
 
 public class ConfigProperties {
@@ -146,7 +146,7 @@ public class ConfigProperties {
     }
 
     /**
-     * Set Mindmaps logging level.
+     * Set Grakn logging level.
      * If the -Dmindmaps.log.level is set, that value will be used,
      * otherwise it will be used the one specified in the config file.
      */
@@ -156,7 +156,7 @@ public class ConfigProperties {
     }
 
     /**
-     * Compute the number of threads available to determine the size of all the Mindmaps Engine thread pools.
+     * Compute the number of threads available to determine the size of all the Grakn Engine thread pools.
      * If the loader.threads param is set to 0 in the config file, the number of threads will be set
      * equal to the number of available processor to the current JVM.
      */

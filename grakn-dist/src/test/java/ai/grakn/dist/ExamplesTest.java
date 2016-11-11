@@ -18,8 +18,8 @@
 
 package ai.grakn.dist;
 
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph graph = Mindmaps.factory("in-memory", "my-graph").getGraph();
+        GraknGraph graph = Grakn.factory("in-memory", "my-graph").getGraph();
         qb = graph.graql();
     }
 

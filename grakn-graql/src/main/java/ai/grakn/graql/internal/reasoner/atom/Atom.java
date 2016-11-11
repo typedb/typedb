@@ -17,7 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
@@ -133,7 +133,7 @@ public abstract class Atom extends AtomBase {
 
     public Set<Rule> getApplicableRules() {
         Set<Rule> children = new HashSet<>();
-        MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+        GraknGraph graph = getParentQuery().getGraph().orElse(null);
         Type type = getType();
         //TODO change if we allow for Types having null type
         if (type == null) {

@@ -25,9 +25,9 @@ import org.apache.commons.cli.Options;
 import java.io.File;
 
 /**
- * Main program to migrate a JSON schema and data into a Mindmaps graph. For use from a command line.
- * Expected arguments are the JSON schema files and the Mindmaps graph name.
- * Additionally, JSON data file or directory of files may be provided as well as the URL of Mindmaps engine.
+ * Main program to migrate a JSON schema and data into a Grakn graph. For use from a command line.
+ * Expected arguments are the JSON schema files and the Grakn graph name.
+ * Additionally, JSON data file or directory of files may be provided as well as the URL of Grakn engine.
  */
 public class Main {
 

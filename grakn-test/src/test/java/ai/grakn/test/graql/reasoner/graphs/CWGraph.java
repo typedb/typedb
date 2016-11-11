@@ -18,21 +18,15 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
 
 public class CWGraph extends TestGraph {
     private static EntityType person, criminal, weapon, rocket, missile, country;
@@ -58,7 +52,7 @@ public class CWGraph extends TestGraph {
 
     private static Instance colonelWest, Nono, America, Tomahawk;
 
-    public static MindmapsGraph getGraph() {
+    public static GraknGraph getGraph() {
         return new CWGraph().graph();
     }
 

@@ -18,21 +18,15 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +38,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class TestGraph {
-    protected MindmapsGraph mindmaps;
+    protected GraknGraph mindmaps;
     private final static String filePath = "src/test/graql/";
     private final static String defaultKey = "name";
 
@@ -54,24 +48,24 @@ public class TestGraph {
     private static RoleType hasKeyValue;
 
     public TestGraph(){
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
         commit();
     }
 
     public TestGraph(String primaryKeyId, String... files) {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);
         commit();
     }
 
-    public MindmapsGraph graph(){ return mindmaps;}
+    public GraknGraph graph(){ return mindmaps;}
 
-    public static MindmapsGraph getGraph() {
+    public static GraknGraph getGraph() {
         return new TestGraph().graph();
     }
-    public static MindmapsGraph getGraph(String primaryKeyId, String... files) {
+    public static GraknGraph getGraph(String primaryKeyId, String... files) {
         return new TestGraph(primaryKeyId, files).graph();
     }
 
@@ -93,7 +87,7 @@ public class TestGraph {
     protected void commit(){
         try {
             mindmaps.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
     }

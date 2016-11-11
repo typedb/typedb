@@ -18,7 +18,7 @@
 
 package ai.grakn;
 
-import ai.grakn.graph.internal.MindmapsTinkerGraph;
+import ai.grakn.graph.internal.GraknTinkerGraph;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -27,18 +27,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class MindmapsTest {
+public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Mindmaps.factory(Mindmaps.IN_MEMORY, "test").getGraph(), instanceOf(MindmapsTinkerGraph.class));
+        assertThat(Grakn.factory(Grakn.IN_MEMORY, "test").getGraph(), instanceOf(GraknTinkerGraph.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        MindmapsGraph test1 = Mindmaps.factory(Mindmaps.IN_MEMORY, "test1").getGraph();
-        MindmapsGraph test11 = Mindmaps.factory(Mindmaps.IN_MEMORY, "test1").getGraph();
-        MindmapsGraph test2 = Mindmaps.factory(Mindmaps.IN_MEMORY, "test2").getGraph();
+        GraknGraph test1 = Grakn.factory(Grakn.IN_MEMORY, "test1").getGraph();
+        GraknGraph test11 = Grakn.factory(Grakn.IN_MEMORY, "test1").getGraph();
+        GraknGraph test2 = Grakn.factory(Grakn.IN_MEMORY, "test2").getGraph();
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -46,15 +46,15 @@ public class MindmapsTest {
 
     @Test
     public void testInMemoryClear(){
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, "default").getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "default").getGraph();
         graph.clear();
-        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY, "default").getGraph();
+        graph =  Grakn.factory(Grakn.IN_MEMORY, "default").getGraph();
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
 
     @Test
     public void testComputer(){
-        assertThat(Mindmaps.factory(Mindmaps.IN_MEMORY, "bob").getGraphComputer(), instanceOf(MindmapsComputer.class));
+        assertThat(Grakn.factory(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
     }
 }

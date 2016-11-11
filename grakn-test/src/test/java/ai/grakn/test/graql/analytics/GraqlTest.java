@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Mindmaps;
+import ai.grakn.Grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -33,19 +33,8 @@ import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
-import ai.grakn.Mindmaps;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.graql.internal.analytics.MindmapsVertexProgram;
-import ai.grakn.test.AbstractGraphTest;
-import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,7 +48,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.id;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -97,7 +85,7 @@ public class GraqlTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testGraqlCount() throws MindmapsValidationException, InterruptedException, ExecutionException {
+    public void testGraqlCount() throws GraknValidationException, InterruptedException, ExecutionException {
         addOntologyAndEntities();
         assertEquals(instanceIds.size(), ((Long) qb.parse("compute count;").execute()).longValue());
         assertEquals(3L, ((Long) qb.parse("compute count in thing, thing;").execute()).longValue());
@@ -161,7 +149,7 @@ public class GraqlTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testStatisticsMethods() throws MindmapsValidationException {
+    public void testStatisticsMethods() throws GraknValidationException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -204,7 +192,7 @@ public class GraqlTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testConnectedComponents() throws MindmapsValidationException {
+    public void testConnectedComponents() throws GraknValidationException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -220,7 +208,7 @@ public class GraqlTest extends AbstractGraphTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testNonResourceTypeAsSubgraphForAnalytics() throws MindmapsValidationException {
+    public void testNonResourceTypeAsSubgraphForAnalytics() throws GraknValidationException {
         graph.putEntityType(thing);
         graph.commit();
 
@@ -228,7 +216,7 @@ public class GraqlTest extends AbstractGraphTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testErrorWhenNoSubgrapForAnalytics() throws MindmapsValidationException {
+    public void testErrorWhenNoSubgrapForAnalytics() throws GraknValidationException {
         qb.parse("compute sum;").execute();
         qb.parse("compute min;").execute();
         qb.parse("compute max;").execute();
@@ -237,7 +225,7 @@ public class GraqlTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testAnalyticsDoesNotCommitByMistake() throws MindmapsValidationException {
+    public void testAnalyticsDoesNotCommitByMistake() throws GraknValidationException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -260,7 +248,7 @@ public class GraqlTest extends AbstractGraphTest {
         });
     }
 
-    private void addOntologyAndEntities() throws MindmapsValidationException {
+    private void addOntologyAndEntities() throws GraknValidationException {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -292,6 +280,6 @@ public class GraqlTest extends AbstractGraphTest {
                 relationId12, relationId23, relationId24);
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 }

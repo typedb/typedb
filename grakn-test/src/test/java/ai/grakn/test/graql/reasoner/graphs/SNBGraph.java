@@ -18,12 +18,11 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.MindmapsGraph;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 
 public class SNBGraph extends TestGraph{
 
-    public static MindmapsGraph getGraph() {
+    public static GraknGraph getGraph() {
         return new SNBGraph().graph();
     }
 

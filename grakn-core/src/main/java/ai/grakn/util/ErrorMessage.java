@@ -70,15 +70,15 @@ public enum ErrorMessage {
     CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to ['%s']"),
     INVALID_COMPUTER("The graph computer ['%s'] is not supported"),
     CONFIG_IGNORED("The config parameter ['%s'] with value ['%s'] is ignored for this implementation"),
-    CANNOT_PRODUCE_MINDMAPS_GRAPH("Cannot produce a Mindmaps graph using the backend ['%s']"),
+    CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn graph using the backend ['%s']"),
 
     //--------------------------------------------- Client Errors
-    INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot proceed."),
+    INVALID_ENGINE_RESPONSE("Grakn Engine located at ['%s'] returned response ['%s'], cannot proceed."),
     INVALID_FACTORY("Graph Factory ['%s'] is not valid"),
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. " +
             "Cannot produce graph"),
-    CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the expected response, due to ['%s']"),
-    COULD_NOT_REACH_ENGINE("Could not reach Mindmaps engine at [%s]"),
+    CONFIG_NOT_FOUND("Grakn Engine located at ['%s'] did not return the expected response, due to ['%s']"),
+    COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_GRAPH("no graph provided"),

@@ -19,8 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.graql.admin.AskQueryAdmin;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graql.admin.AskQueryAdmin;
+import ai.grakn.GraknGraph;
 
 /**
  * A query that will return whether a match query can be found in the graph.
@@ -33,7 +32,7 @@ public interface AskQuery extends Query<Boolean> {
      * @param graph the graph to execute the query on
      * @return a new AskQuery with the graph set
      */
-    AskQuery withGraph(MindmapsGraph graph);
+    AskQuery withGraph(GraknGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

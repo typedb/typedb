@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
 
-    private static MindmapsGraph graph;
+    private static GraknGraph graph;
     private static QueryBuilder qb;
 
     @BeforeClass
@@ -103,7 +103,7 @@ public class QueryTest {
 
     @Test
     public void testAlphaEquivalence2() {
-        MindmapsGraph lgraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
+        GraknGraph lgraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
 
         String queryString = "match $X id 'a'; (ancestor-friend: $X, person: $Y), isa Ancestor-friend; select $Y;";
         String queryString2 = "match $X id 'a'; (person: $X, ancestor-friend: $Y), isa Ancestor-friend; select $Y;";
@@ -116,7 +116,7 @@ public class QueryTest {
 
     @Test
     public void testAlphaEquivalence3() {
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
 
         String queryString = "match $y id 'Poland'; $y isa country; (geo-entity: $y1, entity-location: $y), isa is-located-in; select $y1;";
         String queryString2 = "match $y id 'Poland'; $x isa city; (geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country; select $x;";
@@ -153,7 +153,7 @@ public class QueryTest {
 
     @Test
     public void testUnification(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String parentQueryString = "match (entity-location: $y, geo-entity: $y1), isa is-located-in; select $y1, $y;";
         String childQueryString = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
 

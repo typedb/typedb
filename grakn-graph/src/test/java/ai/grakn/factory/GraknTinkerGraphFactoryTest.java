@@ -18,10 +18,10 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.graph.internal.MindmapsTinkerGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
-public class MindmapsTinkerGraphFactoryTest {
+public class GraknTinkerGraphFactoryTest {
     private InternalFactory tinkerGraphFactory;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -51,9 +51,9 @@ public class MindmapsTinkerGraphFactoryTest {
 
     @Test
     public void testBuildTinkerGraph() throws Exception {
-        MindmapsGraph graph = tinkerGraphFactory.getGraph(false);
-        assertThat(graph, instanceOf(MindmapsTinkerGraph.class));
-        assertThat(graph, instanceOf(AbstractMindmapsGraph.class));
+        GraknGraph graph = tinkerGraphFactory.getGraph(false);
+        assertThat(graph, instanceOf(GraknTinkerGraph.class));
+        assertThat(graph, instanceOf(AbstractGraknGraph.class));
 
         try {
             graph.close();
@@ -64,27 +64,27 @@ public class MindmapsTinkerGraphFactoryTest {
 
     @Test
     public void testFactorySingleton(){
-        MindmapsGraph graph1 = tinkerGraphFactory.getGraph(false);
-        MindmapsGraph graph1_copy = tinkerGraphFactory.getGraph(false);
+        GraknGraph graph1 = tinkerGraphFactory.getGraph(false);
+        GraknGraph graph1_copy = tinkerGraphFactory.getGraph(false);
 
-        MindmapsGraph graph2 = tinkerGraphFactory.getGraph(true);
-        MindmapsGraph graph2_copy = tinkerGraphFactory.getGraph(true);
+        GraknGraph graph2 = tinkerGraphFactory.getGraph(true);
+        GraknGraph graph2_copy = tinkerGraphFactory.getGraph(true);
 
         assertEquals(graph1, graph1_copy);
         assertEquals(graph2, graph2_copy);
 
         assertNotEquals(graph1, graph2);
 
-        TinkerGraph tinkerGraph1 = ((MindmapsTinkerGraph) graph1).getTinkerPopGraph();
-        TinkerGraph tinkerGraph2 = ((MindmapsTinkerGraph) graph2).getTinkerPopGraph();
+        TinkerGraph tinkerGraph1 = ((GraknTinkerGraph) graph1).getTinkerPopGraph();
+        TinkerGraph tinkerGraph2 = ((GraknTinkerGraph) graph2).getTinkerPopGraph();
 
         assertEquals(tinkerGraph1, tinkerGraph2);
     }
 
     @Test
     public void testSimpleBuild(){
-        MindmapsTinkerGraph mg1 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph(true);
-        MindmapsTinkerGraph mg2 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph(false);
+        GraknTinkerGraph mg1 = (GraknTinkerGraph) tinkerGraphFactory.getGraph(true);
+        GraknTinkerGraph mg2 = (GraknTinkerGraph) tinkerGraphFactory.getGraph(false);
 
         assertTrue(mg1.isBatchLoadingEnabled());
         assertFalse(mg2.isBatchLoadingEnabled());

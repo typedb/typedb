@@ -18,18 +18,13 @@
 
 package ai.grakn.migration.base.io;
 
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.MindmapsEngineServer;
 import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.engine.loader.Loader;
 import com.google.common.io.Files;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.engine.MindmapsEngineServer;
-import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.engine.loader.DistributedLoader;
-import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -56,7 +51,7 @@ import static java.util.stream.Collectors.joining;
 
 public class MigrationCLI {
 
-    private static final String COULD_NOT_CONNECT  = "Could not connect to Mindmaps Engine. Have you run 'mindmaps.sh start'?";
+    private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'mindmaps.sh start'?";
 
     private static final ConfigProperties properties = ConfigProperties.getInstance();
     private Options defaultOptions = new Options();
@@ -133,7 +128,7 @@ public class MigrationCLI {
     public void printWholeCompletionMessage(){
         System.out.println("Migration complete. Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-        MindmapsGraph graph = getGraph();
+        GraknGraph graph = getGraph();
         QueryBuilder qb = graph.graql();
 
         StringBuilder builder = new StringBuilder();
@@ -156,7 +151,7 @@ public class MigrationCLI {
     }
 
     public String getEngineURI(){
-        return cmd.getOptionValue("u", Mindmaps.DEFAULT_URI);
+        return cmd.getOptionValue("u", Grakn.DEFAULT_URI);
     }
 
     public String getKeyspace(){
@@ -185,13 +180,13 @@ public class MigrationCLI {
     }
 
     public Loader getLoader(){
-        return getEngineURI().equals(Mindmaps.DEFAULT_URI)
+        return getEngineURI().equals(Grakn.DEFAULT_URI)
                 ? new BlockingLoader(getKeyspace())
                 : new DistributedLoader(getKeyspace(), Collections.singleton(getEngineURI()));
     }
 
-    public MindmapsGraph getGraph(){
-        return Mindmaps.factory(getEngineURI(), getKeyspace()).getGraph();
+    public GraknGraph getGraph(){
+        return Grakn.factory(getEngineURI(), getKeyspace()).getGraph();
     }
 
     public void addOptions(Options options) {

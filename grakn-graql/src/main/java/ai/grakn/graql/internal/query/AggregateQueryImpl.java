@@ -18,17 +18,12 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.admin.MatchQueryAdmin;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -48,7 +43,7 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public AggregateQuery<T> withGraph(MindmapsGraph graph) {
+    public AggregateQuery<T> withGraph(GraknGraph graph) {
         return new AggregateQueryImpl<>(matchQuery.withGraph(graph).admin(), aggregate);
     }
 

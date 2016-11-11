@@ -23,13 +23,9 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -64,10 +60,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return (T) this;
     }
 
-    private final AbstractMindmapsGraph mindmapsGraph;
+    private final AbstractGraknGraph mindmapsGraph;
     private Vertex vertex;
 
-    ConceptImpl(Vertex v, V type, AbstractMindmapsGraph mindmapsGraph){
+    ConceptImpl(Vertex v, V type, AbstractGraknGraph mindmapsGraph){
         this.vertex = v;
         this.mindmapsGraph = mindmapsGraph;
         type(type);
@@ -643,7 +639,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The mindmaps graph this concept is bound to.
      */
-    protected AbstractMindmapsGraph getMindmapsGraph() {return mindmapsGraph;}
+    protected AbstractGraknGraph getMindmapsGraph() {return mindmapsGraph;}
 
     //--------- Create Links -------//
     /**

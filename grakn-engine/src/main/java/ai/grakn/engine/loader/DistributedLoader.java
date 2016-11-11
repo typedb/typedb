@@ -46,7 +46,7 @@ import java.util.concurrent.Semaphore;
 import static ai.grakn.engine.loader.TransactionState.State;
 
 /**
- * RESTLoader that distributes computation to multiple Mindmaps Engine instances
+ * RESTLoader that distributes computation to multiple Grakn Engine instances
  */
 public class DistributedLoader extends Loader {
 

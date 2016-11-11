@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -26,7 +27,6 @@ import ai.grakn.concept.Type;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -124,7 +124,7 @@ public class Utility {
      * @param graph graph
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, String fromRoleId, String toRoleId, MindmapsGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, String fromRoleId, String toRoleId, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
@@ -142,7 +142,7 @@ public class Utility {
      * @param graph graph
      * @return rule instance
      */
-    public static Rule createReflexiveRule(RelationType relType, MindmapsGraph graph){
+    public static Rule createReflexiveRule(RelationType relType, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
@@ -161,7 +161,7 @@ public class Utility {
      * @return rule instance
      */
     public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<String, String> roleMappings,
-                                             MindmapsGraph graph){
+                                             GraknGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
         if (parentArity != childArity || parentArity != roleMappings.size())
@@ -180,7 +180,7 @@ public class Utility {
     }
 
     public static Rule createPropertyChainRule(RelationType relation, String fromRoleId, String toRoleId,
-                                             LinkedHashMap<RelationType, Pair<String, String>> chain, MindmapsGraph graph){
+                                             LinkedHashMap<RelationType, Pair<String, String>> chain, GraknGraph graph){
         Stack<String> varNames = new Stack<>();
         varNames.push("x");
         Set<VarAdmin> bodyVars = new HashSet<>();

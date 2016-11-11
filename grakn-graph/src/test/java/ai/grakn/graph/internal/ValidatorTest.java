@@ -24,7 +24,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Test;
 
@@ -92,7 +92,7 @@ public class ValidatorTest extends GraphTestBase{
         boolean exceptionThrown = false;
         try {
             mindmapsGraph.validateGraph();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             e.printStackTrace();
             exceptionThrown = true;
         }
@@ -114,7 +114,7 @@ public class ValidatorTest extends GraphTestBase{
         boolean failure = false;
         try {
             mindmapsGraph.validateGraph();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             failure = true;
         }
         assertTrue(failure);
@@ -209,7 +209,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void testValidateAfterManualAssertionDelete() throws MindmapsValidationException {
+    public void testValidateAfterManualAssertionDelete() throws GraknValidationException {
         mindmapsGraph.initialiseMetaConcepts();
 
         // ontology
@@ -257,7 +257,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void testRoleTypeCanPlayRoleIfAbstract() throws MindmapsValidationException {
+    public void testRoleTypeCanPlayRoleIfAbstract() throws GraknValidationException {
         RoleType role1 = mindmapsGraph.putRoleType("role1").setAbstract(true);
         RoleType role2 = mindmapsGraph.putRoleType("role2").setAbstract(true);
         mindmapsGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
@@ -265,7 +265,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void testNormalRelationshipWithTwoPlaysRole() throws MindmapsValidationException {
+    public void testNormalRelationshipWithTwoPlaysRole() throws GraknValidationException {
         RoleType characterBeingPlayed = mindmapsGraph.putRoleType("Character being played");
         RoleType personPlayingCharacter = mindmapsGraph.putRoleType("Person Playing Char");
         RelationType playsChar = mindmapsGraph.putRelationType("Plays Char").hasRole(characterBeingPlayed).hasRole(personPlayingCharacter);

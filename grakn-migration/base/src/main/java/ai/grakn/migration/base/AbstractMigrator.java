@@ -61,7 +61,7 @@ public abstract class AbstractMigrator implements Migrator {
     }
 
     /**
-     * Test if an object is a valid Mindmaps value
+     * Test if an object is a valid Grakn value
      * @param value object to check
      * @return if the value is valid
      */

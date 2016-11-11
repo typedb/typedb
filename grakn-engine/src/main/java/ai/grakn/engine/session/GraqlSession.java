@@ -18,21 +18,15 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.Autocomplete;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Reasoner;
 import com.google.common.base.Splitter;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.graql.Autocomplete;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.Reasoner;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -60,7 +54,7 @@ import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
  */
 class GraqlSession {
     private final Session session;
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
     private final Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
     private final Reasoner reasoner;
@@ -74,7 +68,7 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, MindmapsGraph graph, Printer printer) {
+    GraqlSession(Session session, GraknGraph graph, Printer printer) {
         this.session = session;
         this.graph = graph;
         this.printer = printer;
@@ -189,7 +183,7 @@ class GraqlSession {
         queryExecutor.submit(() -> {
             try {
                 graph.commit();
-            } catch (MindmapsValidationException e) {
+            } catch (GraknValidationException e) {
                 sendCommitError(e.getMessage());
             }
 

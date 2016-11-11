@@ -20,7 +20,6 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.util.ErrorMessage;
@@ -37,11 +36,11 @@ import java.util.regex.Pattern;
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
 
-    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
     }
 
-    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph, DataType<D> dataType, boolean isUnique) {
+    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph, DataType<D> dataType, boolean isUnique) {
         super(v, type, mindmapsGraph);
 
         setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);

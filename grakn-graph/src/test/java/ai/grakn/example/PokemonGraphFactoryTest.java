@@ -18,15 +18,13 @@
 
 package ai.grakn.example;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
@@ -45,28 +43,28 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
 public class PokemonGraphFactoryTest {
-    private MindmapsGraph mindmapsGraph;
+    private GraknGraph graknGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setup() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        PokemonGraphFactory.loadGraph(mindmapsGraph);
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        PokemonGraphFactory.loadGraph(graknGraph);
     }
 
     @Test
     public void failToLoad(){
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.putRelationType("fake");
+        GraknGraph graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage())
         ));
 
-        PokemonGraphFactory.loadGraph(mindmapsGraph);
+        PokemonGraphFactory.loadGraph(graknGraph);
     }
 
     @Test(expected=InvocationTargetException.class)
@@ -78,35 +76,35 @@ public class PokemonGraphFactoryTest {
 
     @Test
     public void testGraphExists() {
-        assertNotNull(mindmapsGraph);
+        assertNotNull(graknGraph);
     }
 
     @Test
     public void testGraphHasPokemon() {
-        Entity bulbasaur = mindmapsGraph.getResourcesByValue("Bulbasaur").iterator().next().ownerInstances().iterator().next().asEntity();
-        assertTrue(bulbasaur.type().equals(mindmapsGraph.getEntityType("pokemon")));
+        Entity bulbasaur = graknGraph.getResourcesByValue("Bulbasaur").iterator().next().ownerInstances().iterator().next().asEntity();
+        assertTrue(bulbasaur.type().equals(graknGraph.getEntityType("pokemon")));
     }
 
     @Test
     public void testGraphHasPokemonType() {
-        Entity poison = mindmapsGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
-        assertTrue(poison.type().equals(mindmapsGraph.getEntityType("pokemon-type")));
+        Entity poison = graknGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
+        assertTrue(poison.type().equals(graknGraph.getEntityType("pokemon-type")));
     }
 
     @Test
     public void testBulbasaurHasResource() {
-        ResourceType<Long> pokedexNo = mindmapsGraph.getResourceType("pokedex-no");
-        Entity bulbasaur = mindmapsGraph.getResourcesByValue("Bulbasaur").iterator().next().ownerInstances().iterator().next().asEntity();
+        ResourceType<Long> pokedexNo = graknGraph.getResourceType("pokedex-no");
+        Entity bulbasaur = graknGraph.getResourcesByValue("Bulbasaur").iterator().next().ownerInstances().iterator().next().asEntity();
         Stream<Resource<?>> resources = bulbasaur.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(pokedexNo) && r.getValue().equals(1L)));
     }
 
     @Test
     public void testTypeIsSuperEffective() {
-        RelationType relationType = mindmapsGraph.getRelationType("super-effective");
-        RoleType role = mindmapsGraph.getRoleType("defending-type");
-        Entity poison = mindmapsGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
-        Entity grass = mindmapsGraph.getResourcesByValue("grass").iterator().next().ownerInstances().iterator().next().asEntity();
+        RelationType relationType = graknGraph.getRelationType("super-effective");
+        RoleType role = graknGraph.getRoleType("defending-type");
+        Entity poison = graknGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
+        Entity grass = graknGraph.getResourcesByValue("grass").iterator().next().ownerInstances().iterator().next().asEntity();
         Stream<Relation> relations = poison.relations().stream();
         assertTrue(relations.anyMatch(r -> r.type().equals(relationType)
                 && r.rolePlayers().get(role).equals(grass)));

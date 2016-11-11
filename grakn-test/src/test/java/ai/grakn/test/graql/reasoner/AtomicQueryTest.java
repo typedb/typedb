@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
@@ -31,20 +31,8 @@ import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.AskQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
-import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -58,7 +46,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertTrue;
 
 public class AtomicQueryTest {
-    private static MindmapsGraph graph;
+    private static GraknGraph graph;
     private static QueryBuilder qb;
 
     @org.junit.Rule
@@ -120,7 +108,7 @@ public class AtomicQueryTest {
     @Test
     @Ignore
     public void testUnification(){
-        MindmapsGraph localGraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
+        GraknGraph localGraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", localGraph);
         AtomicQuery childQuery = new AtomicQuery("match ($X, $Y) isa Friend; $Y has name 'd'; select $X;", localGraph);
 

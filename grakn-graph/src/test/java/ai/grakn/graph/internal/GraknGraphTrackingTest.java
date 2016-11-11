@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
  *
  */
 
-public class MindmapsGraphTrackingTest extends GraphTestBase{
+public class GraknGraphTrackingTest extends GraphTestBase{
     private Set<ConceptImpl> modifiedConcepts;
     private Stack<Concept> newConcepts;
 

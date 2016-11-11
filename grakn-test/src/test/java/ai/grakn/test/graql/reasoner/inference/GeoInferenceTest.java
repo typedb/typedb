@@ -18,16 +18,12 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 
 public class GeoInferenceTest {
 
-    private static MindmapsGraph graph;
+    private static GraknGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 

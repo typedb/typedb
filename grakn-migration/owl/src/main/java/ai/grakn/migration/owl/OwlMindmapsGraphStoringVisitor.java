@@ -72,10 +72,10 @@ import static ai.grakn.graql.internal.reasoner.Utility.createTransitiveRule;
 /**
  * <p>
  * This is the main class processing an OWL ontology file. It implements the OWLAPI visitor interfaces
- * to traverse all axioms and entities in the ontology and convert them into equivalent Mindmaps elements.
+ * to traverse all axioms and entities in the ontology and convert them into equivalent Grakn elements.
  * </p>
  * <p>
- * TODO - a lot of the logical more advanced axioms are skipped for now, waiting for the Mindmaps reasoning engine
+ * TODO - a lot of the logical more advanced axioms are skipped for now, waiting for the Grakn reasoning engine
  * to mature a bit. 
  * </p>
  * 
@@ -342,7 +342,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         }
         catch (ConceptException ex) {
             if (ex.getMessage().contains("The Relation with the provided role players already exists"))
-                System.err.println("[WARN] Mindmaps does not support multiple values per data property/resource, ignoring axiom " + axiom);
+                System.err.println("[WARN] Grakn does not support multiple values per data property/resource, ignoring axiom " + axiom);
             else
                 ex.printStackTrace(System.err);
             return null;

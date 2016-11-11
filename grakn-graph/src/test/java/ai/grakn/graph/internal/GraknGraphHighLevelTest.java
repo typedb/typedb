@@ -20,12 +20,10 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.Mindmaps;
+import ai.grakn.Grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
@@ -58,7 +56,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MindmapsGraphHighLevelTest extends GraphTestBase{
+public class GraknGraphHighLevelTest extends GraphTestBase{
 
     private EntityType type;
     private RelationTypeImpl relationType;
@@ -531,7 +529,7 @@ public class MindmapsGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void testPutRelationSimple(){
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraphBatchLoading();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraphBatchLoading();
 
         EntityType type = graph.putEntityType("Test");
         RoleType actor = graph.putRoleType("Actor");

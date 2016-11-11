@@ -18,13 +18,11 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 
 import java.io.IOException;
@@ -85,7 +83,7 @@ public class AdmissionsGraph extends TestGraph{
     private static RelationType decisionTypeRelation;
     private static ResourceType<String> decisionType;
 
-    public static MindmapsGraph getGraph() {
+    public static GraknGraph getGraph() {
         return new AdmissionsGraph().graph();
     }
 

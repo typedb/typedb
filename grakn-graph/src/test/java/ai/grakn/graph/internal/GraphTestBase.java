@@ -18,8 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.Mindmaps;
-import ai.grakn.Mindmaps;
+import ai.grakn.Grakn;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,14 +27,14 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class GraphTestBase {
-    protected AbstractMindmapsGraph mindmapsGraph;
+    protected AbstractGraknGraph mindmapsGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUpGraph() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     }
 
     @After

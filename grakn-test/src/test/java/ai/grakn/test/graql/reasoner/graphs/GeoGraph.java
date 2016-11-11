@@ -18,16 +18,13 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.graql.Pattern;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graql.Pattern;
 
 import static ai.grakn.graql.Graql.and;
 
@@ -44,7 +41,7 @@ public class GeoGraph extends TestGraph{
     private static Instance Poland, England, Germany, France, Italy;
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
-    public static MindmapsGraph getGraph() {
+    public static GraknGraph getGraph() {
         return new GeoGraph().graph();
     }
 

@@ -22,9 +22,9 @@ import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.ErrorMessage;
 import mjson.Json;
@@ -125,7 +125,7 @@ public class RESTLoader {
 
         loadingJobs.incrementAndGet();
 
-        try(AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name)) {
+        try(AbstractGraknGraph graph = (AbstractGraknGraph) GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
 
                 try {
@@ -140,7 +140,7 @@ public class RESTLoader {
                     finishedJobs.incrementAndGet();
                     return;
 
-                } catch (MindmapsValidationException e) {
+                } catch (GraknValidationException e) {
                     //If it's a validation exception there is no point in re-trying
                     LOG.error("Input batch: {}", inserts);
                     LOG.error("Caused Exception: {}", ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));

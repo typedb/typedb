@@ -18,12 +18,11 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.engine.MindmapsEngineTestBase;
 import ai.grakn.engine.loader.TransactionState;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.json.JSONObject;
@@ -44,7 +43,7 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
     @Before
     public void setUp() throws Exception {
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         graph.putEntityType("Man");
         graph.commit();
     }

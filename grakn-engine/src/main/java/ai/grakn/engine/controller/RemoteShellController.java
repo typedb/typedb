@@ -18,11 +18,11 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.MindmapsEngineServerException;
+import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
@@ -83,7 +83,7 @@ public class RemoteShellController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
             JSONObject responseObj = new JSONObject();
             responseObj.put(REST.Response.ROLES_JSON_FIELD, new JSONArray(graph.getMetaRoleType().instances().stream().map(Concept::getId).toArray()));
             responseObj.put(REST.Response.ENTITIES_JSON_FIELD, new JSONArray(graph.getMetaEntityType().instances().stream().map(Concept::getId).toArray()));
@@ -92,7 +92,7 @@ public class RemoteShellController {
 
             return responseObj.toString();
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -113,13 +113,13 @@ public class RemoteShellController {
 
         Printer printer = Printers.graql();
 
-        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             return graph.graql().parse(req.queryParams(REST.Request.QUERY_FIELD))
                     .resultsString(printer)
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500,e);
+            throw new GraknEngineServerException(500,e);
         }
     }
 

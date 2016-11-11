@@ -22,13 +22,10 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.Collection;
@@ -86,7 +83,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public void checkValidProperty(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+    public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
         type.getIdOnly().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
             throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getId()));
         });

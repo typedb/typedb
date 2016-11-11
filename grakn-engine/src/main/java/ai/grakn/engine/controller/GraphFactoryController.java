@@ -20,10 +20,7 @@ package ai.grakn.engine.controller;
 
 
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.MindmapsEngineServerException;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.MindmapsEngineServerException;
+import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import org.slf4j.Logger;
@@ -37,7 +34,7 @@ import static spark.Spark.get;
 
 
 /**
- * REST controller used by MindmapsGraphFactoryPersistent to retrieve graph configuration for a given graph name.
+ * REST controller used by GraknGraphFactoryPersistent to retrieve graph configuration for a given graph name.
  */
 
 public class GraphFactoryController {
@@ -67,7 +64,7 @@ public class GraphFactoryController {
                 }
                 return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
             } catch (IOException e) {
-                throw new MindmapsEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
+                throw new GraknEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
             }
         });
 

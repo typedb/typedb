@@ -18,11 +18,7 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -38,7 +34,7 @@ public class MatrixGraph extends TestGraph{
         commit();
     }
 
-    public static MindmapsGraph getGraph(int n, int m) {
+    public static GraknGraph getGraph(int n, int m) {
         return new MatrixGraph(n, m).graph();
     }
 

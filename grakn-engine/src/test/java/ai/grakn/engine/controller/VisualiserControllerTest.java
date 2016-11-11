@@ -20,10 +20,9 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.response.Response;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.engine.MindmapsEngineTestBase;
-import ai.grakn.factory.GraphFactory;
 import ai.grakn.util.REST;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -48,7 +47,7 @@ public class VisualiserControllerTest extends MindmapsEngineTestBase{
 
     @Before
     public void setUp() throws Exception {
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(graphName);
         EntityType man = graph.putEntityType("Man");
         entityId = graph.addEntity(man).getId();
         graph.commit();

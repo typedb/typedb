@@ -18,21 +18,15 @@
 
 package ai.grakn.example;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraknValidationException;
 
 /**
  * A class which loads sample data into a mindmaps graph
@@ -79,22 +73,22 @@ public class PokemonGraphFactory{
         throw new UnsupportedOperationException();
     }
 
-    public static void loadGraph(MindmapsGraph mindmapsGraph) {
-        buildGraph(mindmapsGraph);
+    public static void loadGraph(GraknGraph graknGraph) {
+        buildGraph(graknGraph);
         try {
-            mindmapsGraph.commit();
-        } catch (MindmapsValidationException e) {
+            graknGraph.commit();
+        } catch (GraknValidationException e) {
             throw new RuntimeException(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage(), e);
         }
     }
 
-    private static void buildGraph(MindmapsGraph graph) {
+    private static void buildGraph(GraknGraph graph) {
         buildOntology(graph);
         buildRelations(graph);
         buildInstances(graph);
     }
 
-    private static void buildOntology(MindmapsGraph graph) {
+    private static void buildOntology(GraknGraph graph) {
 
         ancestor = graph.putRoleType("ancestor");
         descendent = graph.putRoleType("descendent");
@@ -131,7 +125,7 @@ public class PokemonGraphFactory{
         weight = graph.putResourceType("weight", ResourceType.DataType.DOUBLE);
     }
 
-    private static void buildInstances(MindmapsGraph graph) {
+    private static void buildInstances(GraknGraph graph) {
         Entity bulbasaur = graph.addEntity(pokemon);
         addResource(graph, bulbasaur, "Bulbasaur", name);
         addResource(graph,bulbasaur,1L,pokedexNo);
@@ -193,7 +187,7 @@ public class PokemonGraphFactory{
                 .putRolePlayer(ancestor, charmeleon);
     }
 
-    private static <T> void addResource(MindmapsGraph graph, Entity entity, T s, ResourceType<T> type) {
+    private static <T> void addResource(GraknGraph graph, Entity entity, T s, ResourceType<T> type) {
         Resource<T> resource = graph.putResource(s, type);
 
         RoleType owner = graph.putRoleType("has-" + type.getId() + "-owner");
@@ -209,7 +203,7 @@ public class PokemonGraphFactory{
                 .putRolePlayer(value, resource);
     }
 
-    private static void putTypes(MindmapsGraph graph, Entity pokemon, Entity... entities) {
+    private static void putTypes(GraknGraph graph, Entity pokemon, Entity... entities) {
         for (Entity entity : entities) {
             graph.addRelation(hasType)
                     .putRolePlayer(pokemonWithType,pokemon)
@@ -217,7 +211,7 @@ public class PokemonGraphFactory{
         }
     }
 
-    private static void buildRelations(MindmapsGraph graph) {
+    private static void buildRelations(GraknGraph graph) {
         normal = graph.addEntity(pokemonType);
         addResource(graph, normal, "normal", name);
         fighting = graph.addEntity(pokemonType);
@@ -277,7 +271,7 @@ public class PokemonGraphFactory{
         putSuper(graph,grass,ice);
     }
 
-    private static void putSuper(MindmapsGraph graph, Entity defend, Entity attack) {
+    private static void putSuper(GraknGraph graph, Entity defend, Entity attack) {
         graph.addRelation(superEffective)
                 .putRolePlayer(defendingType,defend)
                 .putRolePlayer(attackingType,attack);

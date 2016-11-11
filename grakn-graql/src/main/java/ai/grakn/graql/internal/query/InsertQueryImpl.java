@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.GraknGraph;
 import com.google.common.collect.ImmutableCollection;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.InsertQuery;
@@ -45,7 +45,7 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableList;
 class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryAdmin> matchQuery;
-    private final Optional<MindmapsGraph> graph;
+    private final Optional<GraknGraph> graph;
     private final ImmutableCollection<VarAdmin> originalVars;
     private final ImmutableCollection<VarAdmin> vars;
 
@@ -56,7 +56,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
      * @param matchQuery the match query to insert for each result
      * @param graph the graph to execute on
      */
-    InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<MindmapsGraph> graph) {
+    InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<GraknGraph> graph) {
         // match query and graph should never both be present (should get graph from inner match query)
         assert(!matchQuery.isPresent() || !graph.isPresent());
 
@@ -74,7 +74,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public InsertQuery withGraph(MindmapsGraph graph) {
+    public InsertQuery withGraph(GraknGraph graph) {
         return matchQuery.map(
                 m -> Queries.insert(vars, m.withGraph(graph).admin())
         ).orElseGet(
@@ -102,7 +102,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<Concept> stream() {
-        MindmapsGraph theGraph =
+        GraknGraph theGraph =
                 getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theGraph);
@@ -126,7 +126,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Set<Type> getTypes() {
-        MindmapsGraph theGraph =
+        GraknGraph theGraph =
                 getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
         Set<Type> types = vars.stream()
@@ -146,7 +146,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Optional<MindmapsGraph> getGraph() {
+    public Optional<GraknGraph> getGraph() {
         return matchQuery.map(MatchQueryAdmin::getGraph).orElse(graph);
     }
 

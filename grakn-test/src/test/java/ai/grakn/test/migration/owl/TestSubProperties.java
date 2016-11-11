@@ -18,7 +18,7 @@
 
 package ai.grakn.test.migration.owl;
 
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import org.junit.Assert;
 import org.junit.Before;
@@ -37,7 +37,7 @@ public class TestSubProperties extends TestOwlMindMapsBase {
 	private OWLOntology shakespeare = null;
 	
 	@Before
-	public void loadShakespeare() throws MindmapsValidationException {
+	public void loadShakespeare() throws GraknValidationException {
         shakespeare = loadOntologyFromResource("owl", "shakespeare.owl");
         migrator.ontology(shakespeare).graph(graph).migrate();
         migrator.graph().commit();

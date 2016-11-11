@@ -26,14 +26,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +35,9 @@ import org.slf4j.LoggerFactory;
  */
 final class ElementFactory {
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
-    private final AbstractMindmapsGraph mindmapsGraph;
+    private final AbstractGraknGraph mindmapsGraph;
 
-    ElementFactory(AbstractMindmapsGraph mindmapsGraph){
+    ElementFactory(AbstractGraknGraph mindmapsGraph){
         this.mindmapsGraph = mindmapsGraph;
     }
 
@@ -190,7 +182,7 @@ final class ElementFactory {
         return conceptType;
     }
 
-    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractMindmapsGraph mindmapsGraph){
+    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph mindmapsGraph){
         return new EdgeImpl(edge, mindmapsGraph);
     }
 }

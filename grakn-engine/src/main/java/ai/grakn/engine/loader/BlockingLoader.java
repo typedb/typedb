@@ -19,13 +19,11 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.engine.postprocessing.Cache;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.engine.postprocessing.Cache;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 
@@ -99,7 +97,7 @@ public class BlockingLoader extends Loader {
      */
     private void insertQueriesInOneTransaction(String name, Collection<InsertQuery> queries) {
 
-        try(MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
                 try {
 
@@ -109,10 +107,10 @@ public class BlockingLoader extends Loader {
                     // commit the transaction
                     graph.commit();
 
-                    cache.addJobCasting(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
-                    cache.addJobResource(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
+                    cache.addJobCasting(graphName, ((AbstractGraknGraph) graph).getModifiedCastingIds());
+                    cache.addJobResource(graphName, ((AbstractGraknGraph) graph).getModifiedCastingIds());
                     return;
-                } catch (MindmapsValidationException e) {
+                } catch (GraknValidationException e) {
                     //If it's a validation exception there is no point in re-trying
                     LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                     return;

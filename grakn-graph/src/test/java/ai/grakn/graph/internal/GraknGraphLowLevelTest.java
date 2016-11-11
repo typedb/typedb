@@ -24,17 +24,12 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -54,7 +49,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class MindmapsGraphLowLevelTest extends GraphTestBase{
+public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testPutConcept() throws Exception {
@@ -362,7 +357,7 @@ public class MindmapsGraphLowLevelTest extends GraphTestBase{
     }
 
     @Test
-    public void testComplexDelete() throws MindmapsValidationException {
+    public void testComplexDelete() throws GraknValidationException {
         RoleType roleType1 = mindmapsGraph.putRoleType("roleType 1");
         RoleType roleType2 = mindmapsGraph.putRoleType("roleType 2");
         RoleType roleType3 = mindmapsGraph.putRoleType("roleType 3");

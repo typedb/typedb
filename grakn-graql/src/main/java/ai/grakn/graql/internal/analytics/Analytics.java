@@ -18,21 +18,17 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.MindmapsComputer;
+import ai.grakn.Grakn;
+import ai.grakn.GraknComputer;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Pattern;
 import com.google.common.collect.Sets;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsComputer;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.graql.Pattern;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -51,7 +47,7 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 
 /**
- * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer
+ * OLAP computations that can be applied to a Grakn Graph. The current implementation uses the SparkGraphComputer
  * with a Hadoop graph that connects directly to cassandra and de-serialises vertices.
  */
 
@@ -72,7 +68,7 @@ public class Analytics {
     private final Set<String> statisticsResourceTypes = new HashSet<>();
 
     /**
-     * Create a graph computer from a Mindmaps Graph. The computer operates on the instances of the types provided in
+     * Create a graph computer from a Grakn Graph. The computer operates on the instances of the types provided in
      * the <code>subtypes</code> argument. All subtypes of the given types are included when deciding whether to
      * include an instance.
      *
@@ -81,7 +77,7 @@ public class Analytics {
      */
     public Analytics(String keySpace, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         this.keySpace = keySpace;
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
         // make sure we don't accidentally commit anythin
         // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
@@ -150,7 +146,7 @@ public class Analytics {
      * @return the number of instances
      */
     public long count() {
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         if (!selectedTypesHaveInstance()) return 0L;
         ComputerResult result = computer.compute(new CountMapReduce(subtypes));
         Map<String, Long> count = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -171,7 +167,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MinMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> min = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -192,7 +188,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MaxMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -213,7 +209,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new SumMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -234,7 +230,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MeanMapReduce(statisticsResourceTypes, dataType));
         Map<String, Map<String, Double>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -256,7 +252,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(
                 new MedianVertexProgram(allSubtypes, statisticsResourceTypes, dataType));
         return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
@@ -276,7 +272,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new StdMapReduce(statisticsResourceTypes, dataType));
         Map<String, Map<String, Double>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -294,7 +290,7 @@ public class Analytics {
      */
     public Map<String, Set<String>> connectedComponents() {
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterMemberMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -307,7 +303,7 @@ public class Analytics {
      */
     public Map<String, Long> connectedComponentsSize() {
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -325,7 +321,7 @@ public class Analytics {
             mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
             waitOnMutateResourceOntology(connectedComponent);
 
-            MindmapsComputer computer = getGraphComputer();
+            GraknComputer computer = getGraphComputer();
             ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes, keySpace),
                     new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
             return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -339,7 +335,7 @@ public class Analytics {
      * @return a map from each instance to its degree
      */
     public Map<Long, Set<String>> degrees() {
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes),
                 new DegreeDistributionMapReduce(subtypes));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -360,7 +356,7 @@ public class Analytics {
         mutateResourceOntology(resourceType, ResourceType.DataType.LONG);
         waitOnMutateResourceOntology(resourceType);
 
-        MindmapsComputer computer = getGraphComputer();
+        GraknComputer computer = getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(subtypes, keySpace));
     }
 
@@ -380,7 +376,7 @@ public class Analytics {
      * @param resourceDataType the datatype of the resource type
      */
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
 
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
 
@@ -390,7 +386,7 @@ public class Analytics {
 
         try {
             graph.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()), e);
         }
 
@@ -405,7 +401,7 @@ public class Analytics {
      * @param resourceTypeId the resource the plays role edges must point to
      */
     private void waitOnMutateResourceOntology(String resourceTypeId) {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
 
         for (int i = 0; i < numberOfOntologyChecks; i++) {
             boolean isOntologyComplete = true;
@@ -471,7 +467,7 @@ public class Analytics {
 
     private boolean selectedResourceTypesHaveInstance(Set<String> statisticsResourceTypes) {
 
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
         List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
                 .map(type -> var("x").has(type)).collect(Collectors.toList());
@@ -484,7 +480,7 @@ public class Analytics {
     private boolean selectedTypesHaveInstance() {
         if (subtypes.isEmpty()) return false;
 
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
         List<Pattern> checkSubtypes = subtypes.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
@@ -492,7 +488,7 @@ public class Analytics {
         return graph.graql().match(or(checkSubtypes)).ask().execute();
     }
 
-    protected MindmapsComputer getGraphComputer() {
-        return Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+    protected GraknComputer getGraphComputer() {
+        return Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
     }
 }

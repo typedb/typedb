@@ -18,27 +18,20 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.Mindmaps;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.Cache;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import com.jayway.restassured.http.ContentType;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.MindmapsEngineTestBase;
-import ai.grakn.engine.postprocessing.Cache;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import org.junit.After;
@@ -92,12 +85,12 @@ public class CommitLogControllerTest extends MindmapsEngineTestBase {
     }
 
     @Test
-    public void testCommitLogSubmission() throws MindmapsValidationException {
+    public void testCommitLogSubmission() throws GraknValidationException {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsGraph bob = Mindmaps.factory(Mindmaps.DEFAULT_URI, BOB).getGraph();
-        MindmapsGraph tim = Mindmaps.factory(Mindmaps.DEFAULT_URI, TIM).getGraph();
+        GraknGraph bob = Grakn.factory(Grakn.DEFAULT_URI, BOB).getGraph();
+        GraknGraph tim = Grakn.factory(Grakn.DEFAULT_URI, TIM).getGraph();
 
         addSomeData(bob);
 
@@ -112,8 +105,8 @@ public class CommitLogControllerTest extends MindmapsEngineTestBase {
         assertEquals(2, cache.getCastingJobs(TIM).size());
         assertEquals(1, cache.getResourceJobs(TIM).size());
 
-        Mindmaps.factory(Mindmaps.DEFAULT_URI, BOB).getGraph().clear();
-        Mindmaps.factory(Mindmaps.DEFAULT_URI, TIM).getGraph().clear();
+        Grakn.factory(Grakn.DEFAULT_URI, BOB).getGraph().clear();
+        Grakn.factory(Grakn.DEFAULT_URI, TIM).getGraph().clear();
 
         assertEquals(0, cache.getCastingJobs(BOB).size());
         assertEquals(0, cache.getCastingJobs(TIM).size());
@@ -121,13 +114,13 @@ public class CommitLogControllerTest extends MindmapsEngineTestBase {
         assertEquals(0, cache.getResourceJobs(TIM).size());
 
         cache.getResourceJobs(BOB).forEach(resourceId -> {
-            Concept concept = ((AbstractMindmapsGraph) bob).getConceptByBaseIdentifier(resourceId);
+            Concept concept = ((AbstractGraknGraph) bob).getConceptByBaseIdentifier(resourceId);
             assertTrue(concept.isResource());
         });
 
     }
 
-    private void addSomeData(MindmapsGraph graph) throws MindmapsValidationException {
+    private void addSomeData(GraknGraph graph) throws GraknValidationException {
         RoleType role1 = graph.putRoleType("Role 1");
         RoleType role2 = graph.putRoleType("Role 2");
         RelationType relationType = graph.putRelationType("A Relation Type").hasRole(role1).hasRole(role2);

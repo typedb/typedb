@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
@@ -32,21 +32,9 @@ import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.ANSI;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
-import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.query.Queries;
-import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.graql.internal.util.AdminConverter;
 
 import java.util.Arrays;
@@ -94,7 +82,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
      * @param order how to order the resulting stream
      * @return a stream of results
      */
-    Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order);
+    Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order);
 
     @Override
     default Stream<Map<String, Concept>> stream() {
@@ -102,7 +90,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
     }
 
     @Override
-    default MatchQuery withGraph(MindmapsGraph graph) {
+    default MatchQuery withGraph(GraknGraph graph) {
         return new MatchQueryGraph(graph, this);
     }
 

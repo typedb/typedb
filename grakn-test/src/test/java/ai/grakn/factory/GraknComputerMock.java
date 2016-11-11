@@ -18,26 +18,25 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.MindmapsComputerImpl;
-import ai.grakn.graph.internal.MindmapsComputerImpl;
+import ai.grakn.graph.internal.GraknComputerImpl;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  *
  */
-public class MindmapsComputerMock extends MindmapsComputerImpl {
+public class GraknComputerMock extends GraknComputerImpl {
     private final Graph graph;
     private final String graphComputerType;
     private int numberOfWorkers;
 
-    public MindmapsComputerMock(Graph graph, String graphComputerType) {
+    public GraknComputerMock(Graph graph, String graphComputerType) {
         super(graph, graphComputerType);
         this.graph = graph;
         this.graphComputerType = graphComputerType;
     }
 
-    public MindmapsComputerMock(Graph graph, String graphComputerType, int numberOfWorkers) {
+    public GraknComputerMock(Graph graph, String graphComputerType, int numberOfWorkers) {
         super(graph, graphComputerType);
         this.numberOfWorkers = numberOfWorkers;
         this.graph = graph;

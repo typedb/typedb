@@ -18,11 +18,9 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.MatchQueryAdmin;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -124,7 +122,7 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param graph the graph to execute the query on
      * @return a new MatchQuery with the graph set
      */
-    MatchQuery withGraph(MindmapsGraph graph);
+    MatchQuery withGraph(GraknGraph graph);
 
     /**
      * @param limit the maximum number of results the query should return

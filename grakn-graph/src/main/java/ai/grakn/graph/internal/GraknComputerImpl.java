@@ -18,8 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.MindmapsComputer;
-import ai.grakn.MindmapsComputer;
+import ai.grakn.GraknComputer;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -29,11 +28,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.concurrent.ExecutionException;
 
-public class MindmapsComputerImpl implements MindmapsComputer {
+public class GraknComputerImpl implements GraknComputer {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputer;
 
-    public MindmapsComputerImpl(Graph graph, String graphComputerType) {
+    public GraknComputerImpl(Graph graph, String graphComputerType) {
         this.graph = graph;
         this.graphComputer = getGraphComputer(graphComputerType);
     }

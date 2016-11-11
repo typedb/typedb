@@ -17,24 +17,20 @@
  */
 package ai.grakn.graql.internal.reasoner.atom;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 
 import java.util.*;
-
-import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRoleTypes;
 
 public class Relation extends Atom {
 
@@ -136,7 +132,7 @@ public class Relation extends Atom {
         if (t != null)
             return !t.getRulesOfConclusion().isEmpty();
         else{
-            MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+            GraknGraph graph = getParentQuery().getGraph().orElse(null);
             Set<Rule> rules = Reasoner.getRules(graph);
             return rules.stream()
                     .flatMap(rule -> rule.getConclusionTypes().stream())
@@ -155,7 +151,7 @@ public class Relation extends Atom {
 
     private Set<RoleType> getExplicitRoleTypes(){
         Set<RoleType> roleTypes = new HashSet<>();
-        MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+        GraknGraph graph = getParentQuery().getGraph().orElse(null);
         castings.stream()
                 .filter(c -> c.getRoleType().isPresent())
                 .filter(c -> c.getRoleType().get().getId().isPresent())
@@ -223,7 +219,7 @@ public class Relation extends Atom {
         Map<String, Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
 
-        MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
+        GraknGraph graph =  getParentQuery().getGraph().orElse(null);
         Type relType = getType();
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -267,7 +263,7 @@ public class Relation extends Atom {
     private Map<RoleType, Pair<String, Type>> computeRoleVarTypeMap() {
         Map<RoleType, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null || getType() == null) return roleVarTypeMap;
-        MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
+        GraknGraph graph =  getParentQuery().getGraph().orElse(null);
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<String> allocatedVars = new HashSet<>();
         Set<RoleType> allocatedRoles = new HashSet<>();

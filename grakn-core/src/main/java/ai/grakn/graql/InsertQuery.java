@@ -18,11 +18,9 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.InsertQueryAdmin;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.InsertQueryAdmin;
 
 /**
  * A query for inserting data.
@@ -40,7 +38,7 @@ public interface InsertQuery extends Query<Void>, Streamable<Concept> {
      * @param graph the graph to execute the query on
      * @return a new InsertQuery with the graph set
      */
-    InsertQuery withGraph(MindmapsGraph graph);
+    InsertQuery withGraph(GraknGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

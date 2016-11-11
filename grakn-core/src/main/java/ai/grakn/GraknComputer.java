@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 /**
  * Encapsulates a tinkerpop graph computer and provides methods to execute OLAP tasks.
  */
-public interface MindmapsComputer {
+public interface GraknComputer {
 
     /**
      * Execute the given vertex program using a graph computer.

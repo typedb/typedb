@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
+import ai.grakn.GraknGraph;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -36,7 +36,7 @@ public class CWInferenceTest {
 
     @Test
     public void testWeapon() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa weapon;";
@@ -53,7 +53,7 @@ public class CWInferenceTest {
 
     @Test
     public void testAlignment() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $z isa country;$z has alignment 'hostile';";
@@ -67,7 +67,7 @@ public class CWInferenceTest {
 
     @Test
     public void testTransactionQuery() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
@@ -92,7 +92,7 @@ public class CWInferenceTest {
 
     @Test
     public void testTransactionQuery2() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction;";
@@ -120,7 +120,7 @@ public class CWInferenceTest {
 
     @Test
     public void testQuery() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa criminal;";
@@ -150,7 +150,7 @@ public class CWInferenceTest {
 
     @Test
     public void testQueryWithOr() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match {$x isa criminal;} or {$x has nationality 'American';$x isa person;};";
@@ -180,7 +180,7 @@ public class CWInferenceTest {
 
     @Test
     public void testVarSub() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match" +
@@ -210,7 +210,7 @@ public class CWInferenceTest {
 
     @Test
     public void testVarSub2() {
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match" +
@@ -240,7 +240,7 @@ public class CWInferenceTest {
 
     @Test
     public void testGraphCase() {
-        MindmapsGraph localGraph = CWGraph.getGraph();
+        GraknGraph localGraph = CWGraph.getGraph();
         Reasoner localReasoner = new Reasoner(localGraph);
         QueryBuilder lqb = localGraph.graql();
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.internal.reasoner.Utility;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -34,8 +34,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static ai.grakn.graql.internal.reasoner.Utility.subtractSets;
 
 public class QueryAnswers extends HashSet<Map<String, Concept>> {
 
@@ -147,7 +145,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      */
     public static QueryAnswers getUnifiedAnswers(AtomicQuery parentQuery, AtomicQuery childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        MindmapsGraph graph = childQuery.getGraph().orElse(null);
+        GraknGraph graph = childQuery.getGraph().orElse(null);
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 

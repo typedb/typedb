@@ -26,7 +26,7 @@ import ai.grakn.concept.ResourceType;
 
 /**
  * <p>
- * A <code>Namer</code> provides functions to generate Mindmaps ontology names (IDs for
+ * A <code>Namer</code> provides functions to generate Grakn ontology names (IDs for
  * types, relations, roles etc.) from OWL ontology elements. All methods have default
  * implementations.
  * </p>
@@ -71,7 +71,7 @@ public interface Namer {
         return "op-" + fromIri(propIri);
     }
     /**
-     * Make a name/id for the Mindmaps <code>RelationType</code> representing
+     * Make a name/id for the Grakn <code>RelationType</code> representing
      * a relation b/w an entity (OWL individual) and its resource (the OWL data property)
      */
     default String resourceRelation(IRI dataPropertyIRI) {
@@ -81,7 +81,7 @@ public interface Namer {
      * Make a name for the role type corresponding to the object (i.e. range) of an OWL object
      * property.
      *  
-     * @param relationId The id of the Mindmaps <code>RelationType</code>.
+     * @param relationId The id of the Grakn <code>RelationType</code>.
      */
     default String objectRole(String relationId) {
         return OwlModel.OBJECT.owlname() + "-" + relationId;
@@ -90,7 +90,7 @@ public interface Namer {
      * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
      * property.
      *  
-     * @param relationId The id of the Mindmaps <code>RelationType</code>.
+     * @param relationId The id of the Grakn <code>RelationType</code>.
      */
     default String subjectRole(String relationId) {
         return OwlModel.SUBJECT.owlname() + "-" + relationId;

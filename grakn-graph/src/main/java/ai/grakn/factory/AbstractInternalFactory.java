@@ -18,13 +18,12 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-abstract class AbstractInternalFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements InternalFactory<M, G> {
+abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<M, G> {
     protected final String keyspace;
     protected final String engineUrl;
     protected final String config;

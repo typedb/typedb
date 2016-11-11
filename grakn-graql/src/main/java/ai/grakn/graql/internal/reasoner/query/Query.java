@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -28,44 +29,33 @@ import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.internal.query.match.MatchOrder;
 import ai.grakn.graql.internal.query.match.MatchQueryInternal;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Predicate;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.Utility.createFreshVariable;
-
 public class Query implements MatchQueryInternal {
 
-    protected final MindmapsGraph graph;
+    protected final GraknGraph graph;
     protected final Set<Atomic> atomSet = new HashSet<>();
 
     private final Conjunction<PatternAdmin> pattern;
     private final Set<String> selectVars;
 
-    public Query(MatchQuery query, MindmapsGraph graph) {
+    public Query(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         this.pattern = createPattern(atomSet);
     }
 
-    public Query(String query, MindmapsGraph graph) {
+    public Query(String query, GraknGraph graph) {
         this(graph.graql().<MatchQuery>parse(query), graph);
     }
 
@@ -111,7 +101,7 @@ public class Query implements MatchQueryInternal {
     public String toString() { return getMatchQuery().toString();}
 
     @Override
-    public Set<Type> getTypes(MindmapsGraph graph){ return getMatchQuery().admin().getTypes(graph);}
+    public Set<Type> getTypes(GraknGraph graph){ return getMatchQuery().admin().getTypes(graph);}
 
     @Override
     public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
@@ -123,12 +113,12 @@ public class Query implements MatchQueryInternal {
     public MatchQuery select(Set<String> vars){ return this;}
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order) {
         return getMatchQuery().stream();
     }
 
     @Override
-    public Optional<MindmapsGraph> getGraph(){ return Optional.of(graph);}
+    public Optional<GraknGraph> getGraph(){ return Optional.of(graph);}
 
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}

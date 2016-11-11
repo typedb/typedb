@@ -19,10 +19,10 @@
 package ai.grakn.exception;
 
 /**
- * Thrown when a mindmaps validation rule is broken. {@see io.mindmaps.core.implementation.Validator} for more details
+ * Thrown when a grakn validation rule is broken. {@see ai.grakn.core.implementation.Validator} for more details
  */
-public class MindmapsValidationException extends Exception{
-    public MindmapsValidationException(String error) {
+public class GraknValidationException extends Exception{
+    public GraknValidationException(String error) {
         super(error);
     }
 }

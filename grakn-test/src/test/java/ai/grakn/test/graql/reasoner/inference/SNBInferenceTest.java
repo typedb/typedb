@@ -18,20 +18,14 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 
 public class SNBInferenceTest {
 
-    private static MindmapsGraph graph;
+    private static GraknGraph graph;
     private static QueryBuilder qb;
     private static Reasoner reasoner;
 
@@ -92,7 +86,7 @@ public class SNBInferenceTest {
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
-                "$x isa company, has name 'Mindmaps';" +
+                "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
@@ -106,7 +100,7 @@ public class SNBInferenceTest {
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
-                "$x isa company, has name 'Mindmaps';" +
+                "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));

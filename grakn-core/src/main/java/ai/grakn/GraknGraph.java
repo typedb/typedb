@@ -18,14 +18,6 @@
 
 package ai.grakn;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -38,7 +30,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -48,9 +40,9 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A thread bound mindmaps graph
+ * A thread bound grakn graph
  */
-public interface MindmapsGraph extends AutoCloseable{
+public interface GraknGraph extends AutoCloseable{
     //------------------------------------- Concept Construction ----------------------------------
 
     /**
@@ -321,9 +313,9 @@ public interface MindmapsGraph extends AutoCloseable{
 
     /**
      * Validates and attempts to commit the graph. An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
-     * @throws MindmapsValidationException is thrown when a structural validation fails.
+     * @throws GraknValidationException is thrown when a structural validation fails.
      */
-    void commit() throws MindmapsValidationException;
+    void commit() throws GraknValidationException;
 
     /**
      * Resets the current transaction without commiting.

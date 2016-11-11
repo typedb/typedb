@@ -18,14 +18,13 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.MindmapsTitanGraph;
+import ai.grakn.graph.internal.GraknTitanGraph;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graph.internal.MindmapsTitanGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -59,7 +58,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MindmapsTitanGraphFactoryTest {
+public class GraknTitanGraphFactoryTest {
     private static final String TEST_CONFIG = "conf/mindmaps-titan-test.properties";
     private final static String TEST_URI = null;
     private final static String TEST_SHARED = "shared";
@@ -80,7 +79,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         titanGraphFactory = new TitanInternalFactory(TEST_SHARED, TEST_URI, TEST_CONFIG);
 
-        sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+        sharedGraph = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
 
         int max = 1000;
         noIndexGraph = getGraph();
@@ -108,8 +107,8 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testSimpleBuild(){
-        MindmapsTitanGraph mg1 = (MindmapsTitanGraph) titanGraphFactory.getGraph(true);
-        MindmapsTitanGraph mg2 = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
+        GraknTitanGraph mg1 = (GraknTitanGraph) titanGraphFactory.getGraph(true);
+        GraknTitanGraph mg2 = (GraknTitanGraph) titanGraphFactory.getGraph(false);
 
         assertTrue(mg1.isBatchLoadingEnabled());
         assertFalse(mg2.isBatchLoadingEnabled());
@@ -158,11 +157,11 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testSingleton(){
-        MindmapsGraph mg1 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
-        MindmapsGraph mg2 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        GraknGraph mg1 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        GraknGraph mg2 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
 
-        Graph graph1 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
-        Graph graph2 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+        Graph graph1 = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+        Graph graph2 = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
 
         assertEquals(mg1, mg2);
         assertEquals(graph1, graph2);
@@ -295,7 +294,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
-                MindmapsTitanGraph graph = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
+                GraknTitanGraph graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
                 assertFalse(graph.getTinkerPopGraph().isClosed());
                 graph.putEntityType("A Thing");
                 graph.close();
@@ -319,12 +318,12 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testGraphNotClosed(){
-        MindmapsTitanGraph graph = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
+        GraknTitanGraph graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
         graph.close();
 
-        graph = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
+        graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
     }
@@ -333,7 +332,7 @@ public class MindmapsTitanGraphFactoryTest {
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString();
         titanGraphFactory = new TitanInternalFactory(name, TEST_URI, TEST_CONFIG);
-        Graph graph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+        Graph graph = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;
     }

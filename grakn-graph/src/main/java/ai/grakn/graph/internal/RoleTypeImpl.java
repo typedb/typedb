@@ -35,10 +35,10 @@ import java.util.Set;
  * An ontological element which defines a role which can be played in a relation type.
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    RoleTypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractMindmapsGraph mindmapsGraph) {
+    RoleTypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractGraknGraph mindmapsGraph) {
         super(v, type, isImplicit, mindmapsGraph);
     }
-    RoleTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+    RoleTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
     }
 

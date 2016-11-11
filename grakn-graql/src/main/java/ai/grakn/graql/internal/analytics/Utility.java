@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public class Utility {
     /**
-     * The Mindmaps type property on a given Tinkerpop vertex.
+     * The Grakn type property on a given Tinkerpop vertex.
      *
      * @param vertex the Tinkerpop vertex
      * @return the type
@@ -34,7 +34,7 @@ public class Utility {
     }
 
     /**
-     * Whether the Tinkerpop vertex has a Mindmaps type property reserved for analytics.
+     * Whether the Tinkerpop vertex has a Grakn type property reserved for analytics.
      *
      * @param vertex the Tinkerpop vertex
      * @return if the type is reserved or not
@@ -45,7 +45,7 @@ public class Utility {
 
     /**
      * The state of the vertex in the database. This may detect ghost nodes and allow them to be excluded from
-     * computations. If the vertex is alive it is likely to be a valid Mindmaps concept.
+     * computations. If the vertex is alive it is likely to be a valid Grakn concept.
      *
      * @return if the vertex is alive
      */

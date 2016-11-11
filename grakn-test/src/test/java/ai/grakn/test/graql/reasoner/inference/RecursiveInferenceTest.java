@@ -18,21 +18,18 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.test.graql.reasoner.graphs.PathGraph;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphII;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
 import ai.grakn.test.graql.reasoner.graphs.MatrixGraph;
 import ai.grakn.test.graql.reasoner.graphs.MatrixGraphII;
 import ai.grakn.test.graql.reasoner.graphs.NguyenGraph;
-import ai.grakn.test.graql.reasoner.graphs.PathGraph;
-import ai.grakn.test.graql.reasoner.graphs.PathGraphII;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphSymmetric;
 import ai.grakn.test.graql.reasoner.graphs.TailRecursionGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
@@ -42,7 +39,6 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
@@ -50,7 +46,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test
     public void testTransitivity() {
-        MindmapsGraph graph = TestGraph.getGraph("index", "transitivity-test.gql");
+        GraknGraph graph = TestGraph.getGraph("index", "transitivity-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -69,7 +65,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testRecursivity()
     {
-        MindmapsGraph graph = TestGraph.getGraph("name", "recursivity-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "recursivity-test.gql");
         Reasoner reasoner = new Reasoner(graph);
     }
 
@@ -77,7 +73,7 @@ public class RecursiveInferenceTest {
     /**from Bancilhon - An Amateur's Introduction to Recursive Query Processing Strategies p. 25*/
     @Test
     public void testAncestor() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -97,7 +93,7 @@ public class RecursiveInferenceTest {
     /**as above but both directions*/
     @Test
     public void testAncestorPrime() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -115,7 +111,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testAncestor2() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -136,7 +132,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testAncestor2Prime() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -163,7 +159,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -181,7 +177,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriendPrime() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -197,7 +193,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend2() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -215,7 +211,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend2Prime() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -235,7 +231,7 @@ public class RecursiveInferenceTest {
     @Test
     @Ignore
     public void testSameGeneration(){
-        MindmapsGraph graph = TestGraph.getGraph("name", "recursivity-sg-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "recursivity-sg-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -252,7 +248,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Query Processing: The power of logic p. 18*/
     @Test
     public void testTC() {
-        MindmapsGraph graph = TestGraph.getGraph("index", "recursivity-tc-test.gql");
+        GraknGraph graph = TestGraph.getGraph("index", "recursivity-tc-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -268,7 +264,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testReachability(){
-        MindmapsGraph graph = TestGraph.getGraph("index", "reachability-test.gql");
+        GraknGraph graph = TestGraph.getGraph("index", "reachability-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -291,7 +287,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testReachabilitySymmetric(){
-        MindmapsGraph graph = TestGraph.getGraph("index", "reachability-test-symmetric.gql");
+        GraknGraph graph = TestGraph.getGraph("index", "reachability-test-symmetric.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -310,7 +306,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testMatrix(){
         final int N = 5;
-        MindmapsGraph graph = MatrixGraph.getGraph(N, N);
+        GraknGraph graph = MatrixGraph.getGraph(N, N);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -327,7 +323,7 @@ public class RecursiveInferenceTest {
     public void testTailRecursion(){
         final int N = 10;
         final int M = 5;
-        MindmapsGraph graph = TailRecursionGraph.getGraph(N, M);
+        GraknGraph graph = TailRecursionGraph.getGraph(N, M);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -344,7 +340,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testNguyen(){
         final int N = 9;
-        MindmapsGraph graph = NguyenGraph.getGraph(N);
+        GraknGraph graph = NguyenGraph.getGraph(N);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -362,7 +358,7 @@ public class RecursiveInferenceTest {
     @Ignore
     public void testNguyen2(){
         final int N = 9;
-        MindmapsGraph graph = NguyenGraph.getGraph(N);
+        GraknGraph graph = NguyenGraph.getGraph(N);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -378,7 +374,7 @@ public class RecursiveInferenceTest {
     /**test 6.6 from Cao p.76*/
     @Test
     public void testSameGenerationCao(){
-        MindmapsGraph graph = TestGraph.getGraph("name", "same-generation-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "same-generation-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -398,7 +394,7 @@ public class RecursiveInferenceTest {
     public void testMatrixII(){
         final int N = 5;
         final int M = 5;
-        MindmapsGraph graph = MatrixGraphII.getGraph(N, M);
+        GraknGraph graph = MatrixGraphII.getGraph(N, M);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -415,7 +411,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPath(){
         final int N = 3;
-        MindmapsGraph graph = PathGraph.getGraph(N, 3);
+        GraknGraph graph = PathGraph.getGraph(N, 3);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -431,7 +427,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathPrime(){
         final int N = 3;
-        MindmapsGraph graph = PathGraph.getGraph(N, 3);
+        GraknGraph graph = PathGraph.getGraph(N, 3);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -448,7 +444,7 @@ public class RecursiveInferenceTest {
     @Ignore
     public void testPathSymmetric(){
         final int N = 3;
-        MindmapsGraph graph = PathGraphSymmetric.getGraph(N, 3);
+        GraknGraph graph = PathGraphSymmetric.getGraph(N, 3);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -465,7 +461,7 @@ public class RecursiveInferenceTest {
     /**modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 3;
-        MindmapsGraph graph = PathGraphII.getGraph(N, N);
+        GraknGraph graph = PathGraphII.getGraph(N, N);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -482,7 +478,7 @@ public class RecursiveInferenceTest {
     /**modified test 6.10 from Cao p. 82*/
     public void testPathIIPrime(){
         final int N = 3;
-        MindmapsGraph graph = PathGraphII.getGraph(N, N);
+        GraknGraph graph = PathGraphII.getGraph(N, N);
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -498,7 +494,7 @@ public class RecursiveInferenceTest {
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
     @Test
     public void testReverseSameGeneration(){
-        MindmapsGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
@@ -513,7 +509,7 @@ public class RecursiveInferenceTest {
     }
     @Test
     public void testReverseSameGeneration2() {
-        MindmapsGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
+        GraknGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 

@@ -20,8 +20,6 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.util.Schema;
 import ai.grakn.util.ErrorMessage;
@@ -48,11 +46,11 @@ import java.util.function.Function;
  * @param <V> The type of the instances of this concept type.
  */
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
-    TypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractMindmapsGraph mindmapsGraph) {
+    TypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractGraknGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
         setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
     }
-    TypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+    TypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
     }
 

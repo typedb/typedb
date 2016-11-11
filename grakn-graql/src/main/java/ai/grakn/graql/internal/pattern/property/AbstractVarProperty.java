@@ -18,12 +18,11 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 
@@ -32,7 +31,7 @@ import java.util.stream.Stream;
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
-    public final void checkValid(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+    public final void checkValid(GraknGraph graph, VarAdmin var) throws IllegalStateException {
         checkValidProperty(graph, var);
 
         getTypes().map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream).forEach(typeId -> {
@@ -42,7 +41,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
         });
     }
 
-    void checkValidProperty(MindmapsGraph graph, VarAdmin var) {
+    void checkValidProperty(GraknGraph graph, VarAdmin var) {
 
     }
 
@@ -51,7 +50,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
-    public void delete(MindmapsGraph graph, Concept concept) {
+    public void delete(GraknGraph graph, Concept concept) {
         throw failDelete(this);
     }
 

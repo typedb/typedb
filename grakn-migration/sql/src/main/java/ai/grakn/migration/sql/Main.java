@@ -28,7 +28,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 
 /**
- * Main program to migrate an SQL database to a Mindmaps graph.
+ * Main program to migrate an SQL database to a Grakn graph.
  * Expected arguments include the JDBC driver information and template.
  */
 public class Main {

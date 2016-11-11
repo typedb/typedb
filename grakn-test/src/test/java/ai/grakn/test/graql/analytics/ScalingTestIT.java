@@ -18,25 +18,18 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraphFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.Mindmaps;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.MindmapsGraphFactory;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.loader.DistributedLoader;
-import ai.grakn.exception.MindmapsValidationException;
-import ai.grakn.graph.internal.AbstractMindmapsGraph;
-import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.AbstractScalingTest;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -74,7 +67,7 @@ import static org.junit.Assert.assertFalse;
  * These tests are used for generating a report of the performance of analytics. In order to run them on a machine use
  * this maven command: mvn test -Dtest=ScalingTestIT -DfailIfNoTests=false -Pscaling
  *
- * NB: Mindmaps must be running on a machine already and you may need to significantly increase the size of the java
+ * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
 public class ScalingTestIT extends AbstractScalingTest {
@@ -83,7 +76,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             {"localhost"};
 
     String keyspace;
-    private MindmapsGraphFactory factory;
+    private GraknGraphFactory factory;
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
@@ -112,7 +105,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
         // get a random keyspace
         factory = factoryWithNewKeyspace();
-        MindmapsGraph graph = factory.getGraph();
+        GraknGraph graph = factory.getGraph();
         keyspace = graph.getKeyspace();
 
         headers = new ArrayList<>();
@@ -122,12 +115,12 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     @After
     public void cleanGraph() {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         graph.clear();
     }
 
     @Test
-    public void countIT() throws InterruptedException, ExecutionException, MindmapsValidationException, IOException {
+    public void countIT() throws InterruptedException, ExecutionException, GraknValidationException, IOException {
         CSVPrinter printer = createCSVPrinter("countIT.txt");
 
         PrintWriter writer = null;
@@ -161,7 +154,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                 Long countTime = 0L;
 
-                MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+                GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
                 for (int i = 0; i < REPEAT; i++) {
                     writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
@@ -193,7 +186,7 @@ public class ScalingTestIT extends AbstractScalingTest {
     }
 
     @Test
-    public void persistConstantIncreasingLoadIT() throws InterruptedException, MindmapsValidationException, ExecutionException, IOException {
+    public void persistConstantIncreasingLoadIT() throws InterruptedException, GraknValidationException, ExecutionException, IOException {
         CSVPrinter printerWrite = createCSVPrinter("persistConstantIncreasingLoadITWrite.txt");
         CSVPrinter printerMutate = createCSVPrinter("persistConstantIncreasingLoadITMutate.txt");
 
@@ -227,7 +220,7 @@ public class ScalingTestIT extends AbstractScalingTest {
                     addNodes(CURRENT_KEYSPACE, 0, graphSize);
                     writer.println("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
 
-                    MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
+                    GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
                     writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                     Analytics computer = new AnalyticsMock(CURRENT_KEYSPACE, new HashSet<>(), new HashSet<>(), workerNumber);
@@ -249,7 +242,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                     writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
-                    graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
+                    graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
                     writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                     writer.println("mutate degree");
@@ -296,14 +289,14 @@ public class ScalingTestIT extends AbstractScalingTest {
         addNodes(keyspace, 0, MAX_SIZE);
 
         //TODO: Get rid of this close. We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractMindmapsGraph) factory.getGraph()).getTinkerPopGraph().close();
+        ((AbstractGraknGraph) factory.getGraph()).getTinkerPopGraph().close();
 
         Analytics computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        MindmapsGraph graph = factory.getGraph();
+        GraknGraph graph = factory.getGraph();
         EntityType thing = graph.getEntityType("thing");
         Collection<Entity> things = thing.instances();
 
@@ -318,7 +311,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         addEdges(keyspace, MAX_SIZE);
 
         //TODO: Get rid of this close. We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractMindmapsGraph) factory.getGraph()).getTinkerPopGraph().close();
+        ((AbstractGraknGraph) factory.getGraph()).getTinkerPopGraph().close();
 
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
@@ -390,7 +383,7 @@ public class ScalingTestIT extends AbstractScalingTest {
      * median(g) = S*N
      */
     @Test
-    public void testStatisticsWithConstantDegree() throws IOException, MindmapsValidationException {
+    public void testStatisticsWithConstantDegree() throws IOException, GraknValidationException {
         int totalSteps = NUM_DIVS;
         int nodesPerStep = MAX_SIZE/NUM_DIVS/2;
         int v_m = totalSteps*nodesPerStep;
@@ -542,7 +535,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     }
 
-    private void addNodes(String keyspace, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {
+    private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
         // batch in the nodes
         DistributedLoader distributedLoader = new DistributedLoader(keyspace,
                 Arrays.asList(HOST_NAME));
@@ -579,8 +572,8 @@ public class ScalingTestIT extends AbstractScalingTest {
         distributedLoader.waitToFinish();
     }
 
-    private void simpleOntology(String keyspace) throws MindmapsValidationException {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+    private void simpleOntology(String keyspace) throws GraknValidationException {
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.putEntityType("thing");
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
@@ -589,9 +582,9 @@ public class ScalingTestIT extends AbstractScalingTest {
         graph.commit();
     }
 
-    private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
+    private Set<String> makeSuperNodes(String keyspace) throws GraknValidationException {
         // make the supernodes
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.getEntityType("thing");
         RoleType relation1 = graph.getRoleType("relation1");
         RoleType relation2 = graph.getRoleType("relation2");

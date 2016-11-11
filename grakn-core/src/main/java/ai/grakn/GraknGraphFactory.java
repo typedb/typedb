@@ -21,22 +21,22 @@ package ai.grakn;
 /**
  * A factory instance which produces graphs bound to the same persistence layer and keyspace.
  */
-public interface MindmapsGraphFactory {
+public interface GraknGraphFactory {
     /**
      *
-     * @return A new or existing mindmaps graph
+     * @return A new or existing grakn graph
      */
-    MindmapsGraph getGraph();
+    GraknGraph getGraph();
 
     /**
      *
-     * @return A new or existing mindmaps graph with batch loading enabled
+     * @return A new or existing grakn graph with batch loading enabled
      */
-    MindmapsGraph getGraphBatchLoading();
+    GraknGraph getGraphBatchLoading();
 
     /**
      *
-     * @return A new or existing mindmaps graph computer
+     * @return A new or existing grakn graph computer
      */
-    MindmapsComputer getGraphComputer();
+    GraknComputer getGraphComputer();
 }

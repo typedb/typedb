@@ -18,17 +18,13 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.Queries;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.internal.template.macro.Macro;
 import ai.grakn.graql.internal.util.AdminConverter;
@@ -46,14 +42,14 @@ import java.util.stream.Stream;
 /**
  * A starting point for creating queries.
  * <p>
- * A {@code QueryBuiler} is constructed with a {@code MindmapsGraph}. All operations are performed using this
+ * A {@code QueryBuiler} is constructed with a {@code GraknGraph}. All operations are performed using this
  * graph. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  */
 public class QueryBuilderImpl implements QueryBuilder{
 
-    private final Optional<MindmapsGraph> graph;
+    private final Optional<GraknGraph> graph;
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
 
@@ -63,7 +59,7 @@ public class QueryBuilderImpl implements QueryBuilder{
         templateParser = TemplateParser.create();
     }
 
-    public QueryBuilderImpl(MindmapsGraph graph) {
+    public QueryBuilderImpl(GraknGraph graph) {
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();

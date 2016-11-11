@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import com.orientechnologies.orient.core.metadata.schema.OImmutableClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
-import ai.grakn.graph.internal.MindmapsOrientDBGraph;
+import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class OrientDBInternalFactory extends AbstractInternalFactory<MindmapsOrientDBGraph, OrientGraph> {
+public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrientDBGraph, OrientGraph> {
     private final Logger LOG = LoggerFactory.getLogger(OrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;
     private static final String KEY_TYPE = "keytype";
@@ -52,8 +52,8 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<MindmapsOri
     }
 
     @Override
-    MindmapsOrientDBGraph buildMindmapsGraphFromTinker(OrientGraph graph, boolean batchLoading) {
-        return new MindmapsOrientDBGraph(graph, super.keyspace, super.engineUrl, batchLoading);
+    GraknOrientDBGraph buildMindmapsGraphFromTinker(OrientGraph graph, boolean batchLoading) {
+        return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override

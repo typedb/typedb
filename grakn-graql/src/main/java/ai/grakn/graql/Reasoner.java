@@ -24,17 +24,13 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +38,12 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswers.getUnifiedAnswers;
-
 public class Reasoner {
 
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
     private final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
-    public Reasoner(MindmapsGraph graph) {
+    public Reasoner(GraknGraph graph) {
         this.graph = graph;
         linkConceptTypes();
     }
@@ -69,7 +63,7 @@ public class Reasoner {
         conclusionConceptTypes.forEach(rule::addConclusion);
     }
 
-    public static Set<Rule> getRules(MindmapsGraph graph) {
+    public static Set<Rule> getRules(GraknGraph graph) {
         Set<Rule> rules = new HashSet<>();
         QueryBuilder qb = graph.graql();
         MatchQuery sq = qb.parse("match $x isa inference-rule;");

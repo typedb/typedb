@@ -18,11 +18,9 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 
 public class NguyenGraph extends TestGraph{
@@ -36,7 +34,7 @@ public class NguyenGraph extends TestGraph{
         commit();
     }
 
-    public static MindmapsGraph getGraph(int n) {
+    public static GraknGraph getGraph(int n) {
         return new NguyenGraph(n).graph();
     }
 

@@ -94,7 +94,7 @@ import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
 @WebSocket
 public class GraqlShell {
     private static final String LICENSE_PROMPT = "\n" +
-            "MindmapsDB  Copyright (C) 2016  Mindmaps Research Ltd \n" +
+            "MindmapsDB  Copyright (C) 2016  Grakn Research Ltd \n" +
             "This is free software, and you are welcome to redistribute it \n" +
             "under certain conditions; type 'license' for details.\n";
 

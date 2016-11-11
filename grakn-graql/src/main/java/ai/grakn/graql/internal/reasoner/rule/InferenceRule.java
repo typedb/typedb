@@ -22,13 +22,10 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Binary;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.Binary;
 import ai.grakn.graql.internal.reasoner.atom.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -40,8 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.Utility.createFreshVariable;
-
 public class InferenceRule {
 
     private final Query body;
@@ -49,7 +44,7 @@ public class InferenceRule {
 
     private final Rule rule;
 
-    public InferenceRule(Rule rl, MindmapsGraph graph){
+    public InferenceRule(Rule rl, GraknGraph graph){
         this.rule = rl;
         QueryBuilder qb = graph.graql();
         body = new Query(qb.match(rule.getLHS()), graph);

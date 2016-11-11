@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.exception.MindmapsEngineServerException;
+import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
@@ -91,7 +91,7 @@ public class BackgroundTasksController {
             response.type("application/json");
             return result;
         } catch(Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -108,7 +108,7 @@ public class BackgroundTasksController {
             response.type("application/json");
             return result.toString();
         } catch(Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -122,7 +122,7 @@ public class BackgroundTasksController {
             taskManager.pauseTask(uuid, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -136,7 +136,7 @@ public class BackgroundTasksController {
             taskManager.resumeTask(uuid, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -150,7 +150,7 @@ public class BackgroundTasksController {
             taskManager.stopTask(uuid, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -164,7 +164,7 @@ public class BackgroundTasksController {
             taskManager.restartTask(uuid, this.getClass().getName(), null);
             return "";
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 }

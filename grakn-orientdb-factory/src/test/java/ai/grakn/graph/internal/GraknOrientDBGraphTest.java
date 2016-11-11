@@ -18,9 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.MindmapsGraph;
-import ai.grakn.factory.OrientDBInternalFactory;
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.factory.OrientDBInternalFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -39,32 +37,32 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class MindmapsOrientDBGraphTest {
+public class GraknOrientDBGraphTest {
     private static final String TEST_NAME = "mindmapstest";
     private static final String TEST_URI = "memory";
     private static final boolean TEST_BATCH_LOADING = false;
-    private MindmapsGraph mindmapsGraph;
+    private GraknGraph graknGraph;
 
     @Before
     public void setup(){
-        mindmapsGraph = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null).getGraph(TEST_BATCH_LOADING);
+        graknGraph = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        mindmapsGraph.clear();
+        graknGraph.clear();
     }
 
     @Test
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        mindmapsGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
+        graknGraph.putEntityType(UUID.randomUUID().toString());
+        assertEquals(9, graknGraph.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                MindmapsGraph innerTranscation = this.mindmapsGraph;
+                GraknGraph innerTranscation = this.graknGraph;
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }
@@ -77,17 +75,17 @@ public class MindmapsOrientDBGraphTest {
             }
         });
 
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
+        assertEquals(9, graknGraph.getTinkerTraversal().toList().size());
     }
 
     @Ignore
     @Test
     public void testRollback() {
-        assertNull(mindmapsGraph.getEntityType("X"));
-        mindmapsGraph.putEntityType("X");
-        assertNotNull(mindmapsGraph.getEntityType("X"));
-        mindmapsGraph.rollback();
-        assertNull(mindmapsGraph.getEntityType("X"));
+        assertNull(graknGraph.getEntityType("X"));
+        graknGraph.putEntityType("X");
+        assertNotNull(graknGraph.getEntityType("X"));
+        graknGraph.rollback();
+        assertNull(graknGraph.getEntityType("X"));
     }
 
 }

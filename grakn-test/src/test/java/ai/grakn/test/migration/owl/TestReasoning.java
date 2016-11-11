@@ -20,14 +20,13 @@ package ai.grakn.test.migration.owl;
 
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.MindmapsValidationException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
@@ -56,7 +55,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
     private ai.grakn.graql.Reasoner mmReasoner;
 
     @Before
-    public void loadOwlFiles() throws MindmapsValidationException {
+    public void loadOwlFiles() throws GraknValidationException {
         OWLOntology family = loadOntologyFromResource("owl", "family.owl");
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();

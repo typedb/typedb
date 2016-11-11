@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.GraknGraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import ai.grakn.MindmapsGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
@@ -60,14 +60,14 @@ import static ai.grakn.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
  */
 public class InsertQueryExecutor {
 
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
     private final Collection<VarAdmin> vars;
     private final Map<String, Concept> concepts = new HashMap<>();
     private final Stack<String> visitedVars = new Stack<>();
     private final ImmutableMap<String, List<VarAdmin>> varsByName;
     private final ImmutableMap<String, List<VarAdmin>> varsById;
 
-    InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsGraph graph) {
+    InsertQueryExecutor(Collection<VarAdmin> vars, GraknGraph graph) {
         this.vars = vars;
         this.graph = graph;
 
@@ -112,7 +112,7 @@ public class InsertQueryExecutor {
         return concept;
     }
 
-    public MindmapsGraph getGraph() {
+    public GraknGraph getGraph() {
         return graph;
     }
 
@@ -253,8 +253,8 @@ public class InsertQueryExecutor {
      * Put an instance of a type which may or may not have an ID specified
      * @param id the ID of the instance to create, or empty to not specify an ID
      * @param type the type of the instance
-     * @param getInstance a 'get' method on a MindmapsGraph, such as graph::getEntity
-     * @param addInstance an 'add' method on a MindmapsGraph such a graph::addEntity
+     * @param getInstance a 'get' method on a GraknGraph, such as graph::getEntity
+     * @param addInstance an 'add' method on a GraknGraph such a graph::addEntity
      * @param <T> the class of the type of the instance, e.g. EntityType
      * @param <S> the class of the instance, e.g. Entity
      * @return an instance of the specified type, with the given ID if one was specified

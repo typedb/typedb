@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.MindmapsGraph;
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
 
 public class GraphFactory {
@@ -39,10 +39,10 @@ public class GraphFactory {
         graphBatchConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
     }
 
-    public synchronized MindmapsGraph getGraph(String keyspace) {
+    public synchronized GraknGraph getGraph(String keyspace) {
         return FactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
     }
-    public synchronized MindmapsGraph getGraphBatchLoading(String keyspace) {
+    public synchronized GraknGraph getGraphBatchLoading(String keyspace) {
         return FactoryBuilder.getFactory(keyspace, null, graphBatchConfig).getGraph(true);
     }
 }

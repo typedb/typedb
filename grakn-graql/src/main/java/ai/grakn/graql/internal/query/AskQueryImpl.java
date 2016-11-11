@@ -21,11 +21,8 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.AskQueryAdmin;
-import ai.grakn.MindmapsGraph;
-import ai.grakn.graql.AskQuery;
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.admin.AskQueryAdmin;
 
 import java.util.stream.Stream;
 
@@ -59,7 +56,7 @@ class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public AskQuery withGraph(MindmapsGraph graph) {
+    public AskQuery withGraph(GraknGraph graph) {
         return new AskQueryImpl(matchQuery.withGraph(graph));
     }
 

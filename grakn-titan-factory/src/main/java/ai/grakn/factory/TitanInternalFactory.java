@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.MindmapsTitanGraph;
+import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.EdgeLabel;
@@ -29,9 +29,6 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import ai.grakn.graph.internal.MindmapsTitanGraph;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
@@ -46,7 +43,7 @@ import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-class TitanInternalFactory extends AbstractInternalFactory<MindmapsTitanGraph, TitanGraph> {
+class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
     protected final Logger LOG = LoggerFactory.getLogger(TitanInternalFactory.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
@@ -60,8 +57,8 @@ class TitanInternalFactory extends AbstractInternalFactory<MindmapsTitanGraph, T
     }
 
     @Override
-    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, boolean batchLoading) {
-        return new MindmapsTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
+    GraknTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, boolean batchLoading) {
+        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override
