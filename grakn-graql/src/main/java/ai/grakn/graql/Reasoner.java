@@ -264,10 +264,8 @@ public class Reasoner {
     }
 
     private QueryAnswers resolveConjunctiveQuery(Query query, boolean materialise) {
-        if (!query.isRuleResolvable()){
-            System.out.println("Query not rule-resolvable");
+        if (!query.isRuleResolvable())
             return new QueryAnswers(Sets.newHashSet(query.execute()));
-        }
         Iterator<Atom> atIt = query.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), query.getSelectedNames());
         QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
@@ -305,12 +303,10 @@ public class Reasoner {
      * @return MatchQuery with answers
      */
     public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
-        if (!Reasoner.getRules(graph).isEmpty()) {
-            System.out.println("No rules found, returning original query.");
+        if (!Reasoner.getRules(graph).isEmpty())
             return new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
-        } else {
+        else
             return inputQuery;
-        }
     }
 
     public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, false);}
