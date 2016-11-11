@@ -93,8 +93,7 @@ public class BackgroundTaskControllerTest extends GraknEngineTestBase {
         get("/backgroundtasks/task/"+uuid)
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
-                .and().body("status", anyOf(equalTo(RUNNING.toString()),
-                                                  equalTo(COMPLETED.toString())));
+                .and().body("status", equalTo(SCHEDULED.toString()));
     }
 
     @Test

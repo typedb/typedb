@@ -60,7 +60,6 @@ public abstract class AbstractTaskManager implements TaskManager {
         state.setStatus(TaskStatus.STOPPED)
              .setStatusChangeMessage(message)
              .setStatusChangedBy(requesterName);
-        uuid = updateTaskState(uuid, state);
 
         ScheduledFuture<BackgroundTask> future = getTaskExecutionStatus(uuid);
         try {
@@ -68,6 +67,7 @@ public abstract class AbstractTaskManager implements TaskManager {
                 instantiateTask(state.getName()).stop();
 
             future.cancel(true);
+            updateTaskState(uuid, state);
         } catch(ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             LOG.error("Could not run .stop() on task "+state.getName()+" id: "+uuid.toString()+" the error was: "+e.getMessage());
         }
@@ -115,7 +115,7 @@ public abstract class AbstractTaskManager implements TaskManager {
             return this;
         }
 
-        state.setStatus(TaskStatus.RUNNING)
+        state.setStatus(TaskStatus.SCHEDULED)
             .setStatusChangeMessage(message)
             .setStatusChangedBy(requesterName);
         uuid = updateTaskState(uuid, state);

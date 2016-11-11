@@ -109,12 +109,18 @@ public class InMemoryTaskManager extends AbstractTaskManager {
     }
 
     protected void executeSingle(UUID uuid, BackgroundTask task, long delay) {
+        if(delay < 100)
+            delay = 100;
+
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) executorService.schedule(
                 runTask(uuid, task::start), delay, TimeUnit.MILLISECONDS);
         taskStorage.put(uuid, f);
     }
 
     protected void executeRecurring(UUID uuid, BackgroundTask task, long delay, long interval) {
+        if(delay < 100)
+            delay = 100;
+
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) executorService.scheduleAtFixedRate(
                 runTask(uuid, task::start), delay, interval, TimeUnit.MILLISECONDS);
         taskStorage.put(uuid, f);
