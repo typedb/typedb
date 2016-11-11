@@ -1,7 +1,7 @@
 Migration
 =====
 
-This component provides the ability to move from various other storage format to a Mindmaps graph.
+This component provides the ability to move from various other storage format to a Grakn graph.
 
 OWL Migration
 ----
@@ -16,7 +16,7 @@ To migrate an OWL schema:
 Optionally you can provide:
 ```
 -graph <graph name>
--engine <Mindmaps engine URL>"
+-engine <Grakn engine URL>"
 ```
 
 CSV migration
@@ -29,7 +29,7 @@ To migrate a CSV schema and data:
 
 Optionally you can provide:
 ```
--engine <Mindmaps engine URL>
+-engine <Grakn engine URL>
 -as <name of this entity type>"
 ```
 
@@ -44,5 +44,5 @@ To migrate an SQL database and data:
 
 Optionally you can provide:
 ```
--engine <Mindmaps engine URL>
+-engine <Grakn engine URL>
 ```

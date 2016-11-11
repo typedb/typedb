@@ -51,7 +51,7 @@ import static java.util.stream.Collectors.joining;
 
 public class MigrationCLI {
 
-    private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'mindmaps.sh start'?";
+    private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn.sh start'?";
 
     private static final ConfigProperties properties = ConfigProperties.getInstance();
     private Options defaultOptions = new Options();

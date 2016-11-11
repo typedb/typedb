@@ -94,7 +94,7 @@ public class GraqlShellTest {
     @Test
     public void testDefaultKeyspace() throws IOException {
         testShell("");
-        assertEquals("mindmaps", client.getKeyspace());
+        assertEquals("grakn", client.getKeyspace());
     }
 
     @Test

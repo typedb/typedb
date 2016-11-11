@@ -91,7 +91,7 @@ public class OWLMigrator {
     }
     
     public void migrate() throws GraknValidationException {
-        OwlMindmapsGraphStoringVisitor visitor = new OwlMindmapsGraphStoringVisitor(this);
+        OwlGraknGraphStoringVisitor visitor = new OwlGraknGraphStoringVisitor(this);
         visitor.prepareOWL();
         ontology.axioms().forEach(ax -> {
             ax.accept(visitor); 
@@ -99,7 +99,7 @@ public class OWLMigrator {
         graph.commit();
     }
 
-    public ResourceType.DataType<?> owlBuiltInToMindmapsDatatype(OWL2Datatype propertyType) {
+    public ResourceType.DataType<?> owlBuiltInToGraknDatatype(OWL2Datatype propertyType) {
         if (propertyType == OWL2Datatype.XSD_BOOLEAN)
             return ResourceType.DataType.BOOLEAN;
         else if (propertyType == OWL2Datatype.XSD_FLOAT || 
@@ -229,8 +229,8 @@ public class OWLMigrator {
                 .findFirst();
             return ax.isPresent() ? ax.get().getRange().asOWLDatatype().getBuiltInDatatype() : null;
         });
-        ResourceType.DataType<?> mindmapsType = propertyType == null ? ResourceType.DataType.STRING : owlBuiltInToMindmapsDatatype(propertyType);
-        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), mindmapsType);
+        ResourceType.DataType<?> graknType = propertyType == null ? ResourceType.DataType.STRING : owlBuiltInToGraknDatatype(propertyType);
+        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), graknType);
         return resourceType;        
     }   
 }

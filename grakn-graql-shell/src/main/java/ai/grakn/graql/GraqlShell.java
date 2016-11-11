@@ -92,13 +92,13 @@ import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
 @WebSocket
 public class GraqlShell {
     private static final String LICENSE_PROMPT = "\n" +
-            "MindmapsDB  Copyright (C) 2016  Grakn Research Ltd \n" +
+            "Grakn  Copyright (C) 2016  Grakn Labs \n" +
             "This is free software, and you are welcome to redistribute it \n" +
             "under certain conditions; type 'license' for details.\n";
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    private static final String DEFAULT_KEYSPACE = "mindmaps";
+    private static final String DEFAULT_KEYSPACE = "grakn";
     private static final String DEFAULT_URI = "localhost:4567";
     private static final String DEFAULT_OUTPUT_FORMAT = "graql";
 
