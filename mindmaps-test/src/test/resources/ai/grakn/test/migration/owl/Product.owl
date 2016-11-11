@@ -1,0 +1,221 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:mfg="http://www.workingontologist.org/Examples/Chapter3/Product.owl#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:daml="http://www.daml.org/2001/03/daml+oil#"
+  xml:base="http://www.workingontologist.org/Examples/Chapter3/Product.owl">
+  <owl:Ontology rdf:about="">
+    <owl:versionInfo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Created with TopBraid Spreadsheet converter</owl:versionInfo>
+  </owl:Ontology>
+  <owl:Class rdf:ID="Product"/>
+  <owl:DatatypeProperty rdf:ID="Product_SKU">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >SKU</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="Product_Product_Line">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product Line</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="Product_Manufacture_Location">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Manufacture Location</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="Product_Available">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Available</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="Product_Division">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Division</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="Product_ModelNo">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >ModelNo</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="Product_ID">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >ID</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+  </owl:DatatypeProperty>
+  <mfg:Product rdf:ID="Product2">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 2</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >2</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >ZX-3P</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Manufacturing support</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Paper machine</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Sacramento</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >KD5243</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >4</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product6">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 6</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >6</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >B-1431</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Control Engineering</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Active sensor</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Seoul</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >KK3945</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >0</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product1">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 1</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >1</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >ZX-3</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Manufacturing support</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Papermachine</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Sacramento</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >FB3524</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >23</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product7">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 7</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >7</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >DBB-12</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Accessories</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Monitor</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Hong Kong</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >ND5520</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >100</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product9">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 9</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >9</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >SPX-1234</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Safety</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Safety</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >valve</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Cleveland</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >OP5333</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product4">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 4</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >4</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >B-1430</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Control Engineering</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Feedback line</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Elizabeth</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >KS4520</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >23</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product8">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 8</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >8</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >SP-1234</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Safety</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Safety</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >valve</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Cleveland</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >HI4554</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product5">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 5</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >5</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >B-1430X</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Control Engineering</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Feedback line</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Elizabeth</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >CL5934</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >14</mfg:Product_Available>
+  </mfg:Product>
+  <mfg:Product rdf:ID="Product3">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Product 3</rdfs:label>
+    <mfg:Product_ID rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >3</mfg:Product_ID>
+    <mfg:Product_ModelNo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >ZX-3S</mfg:Product_ModelNo>
+    <mfg:Product_Division rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Manufacturing support</mfg:Product_Division>
+    <mfg:Product_Product_Line rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Paper machine</mfg:Product_Product_Line>
+    <mfg:Product_Manufacture_Location rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Sacramento</mfg:Product_Manufacture_Location>
+    <mfg:Product_SKU rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >IL4028</mfg:Product_SKU>
+    <mfg:Product_Available rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >34</mfg:Product_Available>
+  </mfg:Product>
+</rdf:RDF>
+
+<!-- Created with TopBraid Composer -->
