@@ -22,21 +22,16 @@ import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraQLCompleter;
 import ai.grakn.graql.internal.shell.GraqlSignalHandler;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
-import ai.grakn.util.Version;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
+import ai.grakn.util.GraknVersion;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -44,12 +39,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import sun.misc.Signal;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -66,22 +56,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
-import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
-import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
-import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
-import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
-import static ai.grakn.util.REST.RemoteShell.ERROR;
-import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
-import static ai.grakn.util.REST.RemoteShell.QUERY;
-import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
+import static ai.grakn.util.REST.RemoteShell.*;
 import static ai.grakn.util.REST.WebPath.IMPORT_DATA_URI;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
@@ -144,7 +119,7 @@ public class GraqlShell {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        runShell(args, Version.VERSION, HISTORY_FILENAME, new GraqlClientImpl());
+        runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClientImpl());
     }
 
     public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {

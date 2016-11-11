@@ -19,7 +19,7 @@
 package ai.grakn.engine.util;
 
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Version;
+import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +100,7 @@ public class ConfigProperties {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        prop.put(PROJECT_VERSION, Version.VERSION);
+        prop.put(PROJECT_VERSION, GraknVersion.VERSION);
         initialiseLogger();
         setLogLevel();
         computeThreadsNumber();
