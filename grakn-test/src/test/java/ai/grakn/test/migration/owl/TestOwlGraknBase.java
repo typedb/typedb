@@ -38,7 +38,7 @@ import ai.grakn.migration.owl.OWLMigrator;
 
 /**
  * Base class for OWL migrator unit tests: create and holds OWL manager and
- * MM graph, statically because they don't need to be re-initialized on a per
+ * Grakn graph, statically because they don't need to be re-initialized on a per
  * test basis.
  * 
  * @author borislav
