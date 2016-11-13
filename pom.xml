@@ -246,7 +246,7 @@
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
-                    <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">{organizationName}</a>. All rights reserved.]]></bottom>
+                    <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
                 </configuration>
                 <executions>
                     <execution>
