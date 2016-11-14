@@ -1,16 +1,17 @@
-package io.mindmaps.test.graql.analytics;
+package ai.grakn.test.graql.analytics;
 
+import ai.grakn.Grakn;
+import ai.grakn.concept.*;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.mindmaps.Mindmaps;
-import io.mindmaps.concept.*;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
-import io.mindmaps.test.AbstractGraphTest;
-import io.mindmaps.util.Schema;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,7 +57,7 @@ public class ShortestPathTest extends AbstractGraphTest {
 
         keyspace = graph.getKeyspace();
 
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
     }
 
@@ -165,7 +166,7 @@ public class ShortestPathTest extends AbstractGraphTest {
                 resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
     }
 
-    private void addOntologyAndEntities() throws MindmapsValidationException {
+    private void addOntologyAndEntities() throws GraknValidationException {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -267,11 +268,11 @@ public class ShortestPathTest extends AbstractGraphTest {
                 .playsRole(resourceValue7));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
-    private void addResourceRelations() throws MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+    private void addResourceRelations() throws GraknValidationException {
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
         Entity entity1 = graph.getEntity(entityId1);
         Entity entity2 = graph.getEntity(entityId2);
@@ -345,6 +346,6 @@ public class ShortestPathTest extends AbstractGraphTest {
         graph.putResource(0.8, graph.getResourceType(resourceType6));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 }

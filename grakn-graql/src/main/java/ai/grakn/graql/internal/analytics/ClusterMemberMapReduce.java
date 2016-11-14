@@ -39,10 +39,13 @@ class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
-        if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-            emitter.emit(vertex.value((String)persistentProperties.get(CLUSTER_LABEL)),
+        if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
+                vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
+            emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
                     Collections.singleton(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name())));
+            return;
         }
+        emitter.emit(NullObject.instance(), Collections.emptySet());
     }
 
     @Override
@@ -70,6 +73,7 @@ class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     public Map<Serializable, Set<String>> generateFinalResult(Iterator<KeyValue<Serializable, Set<String>>> keyValues) {
         final Map<Serializable, Set<String>> clusterPopulation = new HashMap<>();
         keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }
 }

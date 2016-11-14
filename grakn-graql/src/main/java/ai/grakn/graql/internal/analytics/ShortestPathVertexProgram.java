@@ -1,26 +1,26 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.analytics;
+package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -33,7 +33,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class ShortestPathVertexProgram extends MindmapsVertexProgram<Tuple> {
+public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private static final int MAX_ITERATION = 100;
 
@@ -103,7 +103,7 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<Tuple> {
                         messenger.sendMessage(messageScopeIn, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 1));
                         messenger.sendMessage(messageScopeOut, Pair.with(MESSAGE_FROM_ASSERTION, 2));
                     }
-                    // send message from the starting vertex
+                    // send message from the source vertex
                     String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
                     if (persistentProperties.get(START_ID).equals(id)) {
                         LOGGER.debug("Found starting vertex");
@@ -140,7 +140,6 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<Tuple> {
                                 messenger.sendMessage(messageScopeIn, Pair.with(fromVertex, 1));
                             else
                                 messenger.sendMessage(messageScopeOut, Pair.with(fromVertex, 2));
-//                            vertex.property(FROM_VERTEX, "");
                             LOGGER.debug("This is a casting node connected to source vertex");
                             break;
                         }
@@ -220,41 +219,7 @@ public class ShortestPathVertexProgram extends MindmapsVertexProgram<Tuple> {
             }
             if (messageSentIn && messageSentOut) break;
         }
-//        memory.and(VOTE_TO_HALT, false);
     }
-//
-//    private void update(Vertex vertex, Messenger<Tuple> messenger, Memory memory, boolean isCasting) {
-//        if (messenger.receiveMessages().hasNext()) {
-//            String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
-//            LOGGER.debug("Considering vertex " + id);
-//
-////            if (vertex.property(FROM_VERTEX).isPresent()) {
-////                LOGGER.debug("FromVertex exists");
-////            } else {
-//            String fromVertex = messenger.receiveMessages().next();
-//            if (persistentProperties.get(END_ID).equals(id)) {
-//                memory.or(FOUND_DESTINATION, true);
-//                memory.set(NEXT_DESTINATION, fromVertex);
-//                LOGGER.debug("Found the destination vertex");
-//                return;
-//            }
-//
-//            if (isCasting) {
-//                String message = messenger.receiveMessages().next();
-//                messenger.sendMessage(messageScopeIn, message);
-//                messenger.sendMessage(messageScopeOut, message);
-//                vertex.property(FROM_VERTEX, "");
-//                LOGGER.debug("This is a casting vertex");
-//            } else {
-//                vertex.property(FROM_VERTEX, fromVertex);
-//                messenger.sendMessage(messageScopeIn, id);
-//                messenger.sendMessage(messageScopeOut, id);
-//                LOGGER.debug("FromVertex added");
-//            }
-//            memory.and(VOTE_TO_HALT, false);
-////            }
-//        }
-//    }
 
     @Override
     public boolean terminate(final Memory memory) {

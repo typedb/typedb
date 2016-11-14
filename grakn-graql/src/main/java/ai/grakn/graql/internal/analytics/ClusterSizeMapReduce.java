@@ -44,7 +44,9 @@ class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
             emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)), 1L);
+            return;
         }
+        emitter.emit(NullObject.instance(), 0L);
     }
 
     @Override
@@ -69,6 +71,7 @@ class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     public Map<Serializable, Long> generateFinalResult(Iterator<KeyValue<Serializable, Long>> keyValues) {
         final Map<Serializable, Long> clusterPopulation = new HashMap<>();
         keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }
 }

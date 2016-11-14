@@ -33,14 +33,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
@@ -83,7 +76,8 @@ public class Analytics {
         // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
         try {
             graph.rollback();
-        } catch (UnsupportedOperationException ignored){}
+        } catch (UnsupportedOperationException ignored) {
+        }
 
         // fetch all the types
         Set<Type> subtypes = subTypeIds.stream().map((id) -> {
@@ -284,6 +278,30 @@ public class Analytics {
     }
 
     /**
+     * Compute the shortest path between two vertices.
+     *
+     * @return a shortest path: a list of vertex ids along the path (including the two given vertices)
+     */
+    public List<String> shortestPath(String sourceId, String destinationId) {
+        if (!verticesExistInSubgraph(sourceId, destinationId))
+            throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
+        GraknComputer computer = getGraphComputer();
+        ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypes, sourceId, destinationId),
+                new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.FOUND_IN_ITERATION));
+        Map<Integer, Set<String>> map = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+
+        List<String> path = new ArrayList<>();
+        path.add(sourceId);
+        path.addAll(map.entrySet().stream()
+                .sorted(Comparator.comparingInt(pair -> -1 * pair.getKey()))
+                .map(pair -> pair.getValue().iterator().next())
+                .collect(Collectors.toList()));
+        path.add(destinationId);
+
+        return path;
+    }
+
+    /**
      * Compute the number of connected components.
      *
      * @return a map of set, each set contains all the vertex ids belonging to one connected component
@@ -408,7 +426,8 @@ public class Analytics {
             // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             try {
                 graph.rollback();
-            } catch (UnsupportedOperationException ignored){}
+            } catch (UnsupportedOperationException ignored) {
+            }
 
             ResourceType resource = graph.getResourceType(resourceTypeId);
             if (resource == null) continue;
@@ -490,5 +509,14 @@ public class Analytics {
 
     protected GraknComputer getGraphComputer() {
         return Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
+    }
+
+    protected boolean verticesExistInSubgraph(String... ids) {
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
+        for (String id : ids) {
+            Concept concept = graph.getInstance(id);
+            if (concept == null || !subtypes.contains(concept.type().getId())) return false;
+        }
+        return true;
     }
 }
