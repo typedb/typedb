@@ -52,13 +52,6 @@ public interface Relation extends Instance {
 
     /**
      *
-     * @param resourceTypes Resource Types of the resources attached to this entity
-     * @return A collection of resources attached to this Instance.
-     */
-    Collection<Resource<?>> resources(ResourceType ... resourceTypes);
-
-    /**
-     *
      * @return A list of the Instances which scope this Relation
      */
     Collection<Instance> scopes();

@@ -18,8 +18,6 @@
 
 package ai.grakn.concept;
 
-import java.util.Collection;
-
 /**
  * An instance of Entity Type which represents some data in the graph.
  */
@@ -31,11 +29,4 @@ public interface Entity extends Instance{
      * @return The Entity Type of this Entity
      */
     EntityType type();
-
-    /**
-     *
-     * @param resourceTypes Resource Types of the resources attached to this entity
-     * @return A collection of resources attached to this Instance.
-     */
-    Collection<Resource<?>> resources(ResourceType ... resourceTypes);
 }
