@@ -20,8 +20,7 @@ package ai.grakn.test.graql.parser;
 
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.parser.QueryParser;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,12 +32,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 import static ai.grakn.graql.Graql.parsePatterns;
+import static ai.grakn.graql.Graql.withoutGraph;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class QueryParserFragmentsTest {
 
@@ -92,6 +90,20 @@ public class QueryParserFragmentsTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(allOf(containsString("3"), containsString("isa"), not(containsString("^"))));
         patterns.next().admin().asVar();
+    }
+
+    @Test
+    public void testParseInfiniteMatchInsert() throws IOException {
+        InputStream stream = new InfiniteStream("#TRAP COMMENT\n", "match $x isa person; insert ($x, $y) isa has-cast;");
+
+        Iterator<Object> objects = QueryParser.create(withoutGraph()).parseBatchLoad(stream).iterator();
+
+        assertEquals("match", objects.next());
+        assertEquals("$x isa person", objects.next().toString());
+        assertEquals("insert", objects.next());
+        assertTrue(((VarAdmin) objects.next()).isRelation());
+        assertEquals("match", objects.next());
+        assertTrue(objects.hasNext());
     }
 
     class InfiniteStream extends InputStream {
