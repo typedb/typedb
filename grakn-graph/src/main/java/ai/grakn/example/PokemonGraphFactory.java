@@ -126,7 +126,7 @@ public class PokemonGraphFactory{
     }
 
     private static void buildInstances(GraknGraph graph) {
-        Entity bulbasaur = graph.addEntity(pokemon);
+        Entity bulbasaur = pokemon.addEntity();
         addResource(graph, bulbasaur, "Bulbasaur", name);
         addResource(graph,bulbasaur,1L,pokedexNo);
         addResource(graph,bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
@@ -134,29 +134,29 @@ public class PokemonGraphFactory{
         addResource(graph,bulbasaur,69d,weight);
         putTypes(graph,bulbasaur, poison, grass);
 
-        Entity ivysaur = graph.addEntity(pokemon);
+        Entity ivysaur = pokemon.addEntity();
         addResource(graph, ivysaur, "Ivysaur", name);
         addResource(graph,ivysaur,2L,pokedexNo);
         addResource(graph,ivysaur,"When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",description);
         addResource(graph,ivysaur,10L,height);
         addResource(graph,ivysaur,130d,weight);
         putTypes(graph,ivysaur, poison, grass);
-        graph.addRelation(evolution)
+        evolution.addRelation()
                 .putRolePlayer(descendent,ivysaur)
                 .putRolePlayer(ancestor,bulbasaur);
 
-        Entity venusaur = graph.addEntity(pokemon);
+        Entity venusaur = pokemon.addEntity();
         addResource(graph, venusaur, "Venusaur", name);
         addResource(graph,venusaur,3L,pokedexNo);
         addResource(graph,venusaur,"The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",description);
         addResource(graph,venusaur,20L,height);
         addResource(graph,venusaur,1000d,weight);
         putTypes(graph,venusaur, poison, grass);
-        graph.addRelation(evolution)
+        evolution.addRelation()
                 .putRolePlayer(descendent,venusaur)
                 .putRolePlayer(ancestor,ivysaur);
 
-        Entity charmander = graph.addEntity(pokemon);
+        Entity charmander = pokemon.addEntity();
         addResource(graph, charmander, "Charmander", name);
         addResource(graph,charmander,4L,pokedexNo);
         addResource(graph,charmander,"Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",description);
@@ -164,31 +164,31 @@ public class PokemonGraphFactory{
         addResource(graph,charmander,85d,weight);
         putTypes(graph,charmander, fire);
 
-        Entity charmeleon = graph.addEntity(pokemon);
+        Entity charmeleon = pokemon.addEntity();
         addResource(graph, charmeleon, "Charmeleon", name);
         addResource(graph,charmeleon,5L,pokedexNo);
         addResource(graph,charmeleon,"When it swings its burning tail, it elevates the temperature to unbearably high levels.",description);
         addResource(graph,charmeleon,11L,height);
         addResource(graph,charmeleon,190d,weight);
         putTypes(graph,charmeleon, fire);
-        graph.addRelation(evolution)
+        evolution.addRelation()
                 .putRolePlayer(descendent,charmeleon)
                 .putRolePlayer(ancestor, charmander);
 
-        Entity charizard = graph.addEntity(pokemon);
+        Entity charizard = pokemon.addEntity();
         addResource(graph, charizard, "Charizard", name);
         addResource(graph,charizard,6L,pokedexNo);
         addResource(graph,charizard,"Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",description);
         addResource(graph,charizard,17L,height);
         addResource(graph,charizard,905d,weight);
         putTypes(graph,charizard, fire, flying);
-        graph.addRelation(evolution)
+        evolution.addRelation()
                 .putRolePlayer(descendent,charizard)
                 .putRolePlayer(ancestor, charmeleon);
     }
 
     private static <T> void addResource(GraknGraph graph, Entity entity, T s, ResourceType<T> type) {
-        Resource<T> resource = graph.putResource(s, type);
+        Resource<T> resource = type.putResource(s);
 
         RoleType owner = graph.putRoleType("has-" + type.getId() + "-owner");
         RoleType value = graph.putRoleType("has-" + type.getId() + "-value");
@@ -198,59 +198,59 @@ public class PokemonGraphFactory{
         entity.type().playsRole(owner);
         type.playsRole(value);
 
-        graph.addRelation(relationType)
+        relationType.addRelation()
                 .putRolePlayer(owner, entity)
                 .putRolePlayer(value, resource);
     }
 
     private static void putTypes(GraknGraph graph, Entity pokemon, Entity... entities) {
         for (Entity entity : entities) {
-            graph.addRelation(hasType)
+            hasType.addRelation()
                     .putRolePlayer(pokemonWithType,pokemon)
                     .putRolePlayer(typeOfPokemon,entity);
         }
     }
 
     private static void buildRelations(GraknGraph graph) {
-        normal = graph.addEntity(pokemonType);
+        normal = pokemonType.addEntity();
         addResource(graph, normal, "normal", name);
-        fighting = graph.addEntity(pokemonType);
+        fighting = pokemonType.addEntity();
         addResource(graph, fighting, "fighting", name);
-        flying = graph.addEntity(pokemonType);
+        flying = pokemonType.addEntity();
         addResource(graph, flying, "flying", name);
-        poison = graph.addEntity(pokemonType);
+        poison = pokemonType.addEntity();
         addResource(graph, poison, "poison", name);
-        ground = graph.addEntity(pokemonType);
+        ground = pokemonType.addEntity();
         addResource(graph, ground, "ground", name);
-        rock = graph.addEntity(pokemonType);
+        rock = pokemonType.addEntity();
         addResource(graph, rock, "rock", name);
-        bug = graph.addEntity(pokemonType);
+        bug = pokemonType.addEntity();
         addResource(graph, bug, "bug", name);
-        ghost = graph.addEntity(pokemonType);
+        ghost = pokemonType.addEntity();
         addResource(graph, ghost, "ghost", name);
-        steel = graph.addEntity(pokemonType);
+        steel = pokemonType.addEntity();
         addResource(graph, steel, "steel", name);
-        fire = graph.addEntity(pokemonType);
+        fire = pokemonType.addEntity();
         addResource(graph, fire, "fire", name);
-        water = graph.addEntity(pokemonType);
+        water = pokemonType.addEntity();
         addResource(graph, water, "water", name);
-        grass = graph.addEntity(pokemonType);
+        grass = pokemonType.addEntity();
         addResource(graph, grass, "grass", name);
-        electric = graph.addEntity(pokemonType);
+        electric = pokemonType.addEntity();
         addResource(graph, electric, "electric", name);
-        psychic = graph.addEntity(pokemonType);
+        psychic = pokemonType.addEntity();
         addResource(graph, psychic, "psychic", name);
-        ice = graph.addEntity(pokemonType);
+        ice = pokemonType.addEntity();
         addResource(graph, ice, "ice", name);
-        dragon = graph.addEntity(pokemonType);
+        dragon = pokemonType.addEntity();
         addResource(graph, dragon, "dragon", name);
-        dark = graph.addEntity(pokemonType);
+        dark = pokemonType.addEntity();
         addResource(graph, dark, "dark", name);
-        fairy = graph.addEntity(pokemonType);
+        fairy = pokemonType.addEntity();
         addResource(graph, fairy, "fairy", name);
-        unknown = graph.addEntity(pokemonType);
+        unknown = pokemonType.addEntity();
         addResource(graph, unknown, "unknown", name);
-        shadow = graph.addEntity(pokemonType);
+        shadow = pokemonType.addEntity();
         addResource(graph, shadow, "shadow", name);
 
         putSuper(graph,normal,fighting);
@@ -272,7 +272,7 @@ public class PokemonGraphFactory{
     }
 
     private static void putSuper(GraknGraph graph, Entity defend, Entity attack) {
-        graph.addRelation(superEffective)
+        superEffective.addRelation()
                 .putRolePlayer(defendingType,defend)
                 .putRolePlayer(attackingType,attack);
     }

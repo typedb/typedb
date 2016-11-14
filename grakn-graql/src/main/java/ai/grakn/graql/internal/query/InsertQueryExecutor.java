@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -231,18 +232,18 @@ public class InsertQueryExecutor {
         } else if (typeId.equals(Schema.MetaSchema.RULE_TYPE.getId())) {
             return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
-            return addOrGetInstance(id, type.asEntityType(), graph::getEntity, graph::addEntity);
+            return addOrGetInstance(id, type.asEntityType(), graph::getEntity, type.asEntityType()::addEntity);
         } else if (type.isRelationType()) {
-            return addOrGetInstance(id, type.asRelationType(), graph::getRelation, graph::addRelation);
+            return addOrGetInstance(id, type.asRelationType(), graph::getRelation, type.asRelationType()::addRelation);
         } else if (type.isResourceType()) {
             return addOrGetInstance(id, type.asResourceType(), graph::getResource,
-                    resourceType -> graph.putResource(getValue(var), resourceType)
+                    () -> type.asResourceType().putResource(getValue(var))
             );
         } else if (type.isRuleType()) {
-            return addOrGetInstance(id, type.asRuleType(), graph::getRule, ruleType -> {
+            return addOrGetInstance(id, type.asRuleType(), graph::getRule, () -> {
                 Pattern lhs = var.getProperty(LhsProperty.class).get().getLhs();
                 Pattern rhs = var.getProperty(RhsProperty.class).get().getRhs();
-                return graph.addRule(lhs, rhs, ruleType);
+                return type.asRuleType().addRule(lhs, rhs);
             });
         } else {
             throw new RuntimeException("Unrecognized type " + type.getId());
@@ -260,11 +261,11 @@ public class InsertQueryExecutor {
      * @return an instance of the specified type, with the given ID if one was specified
      */
     private <T extends Type, S extends Instance> S addOrGetInstance(
-            Optional<String> id, T type, Function<String, S> getInstance, Function<T, S> addInstance
+            Optional<String> id, T type, Function<String, S> getInstance, Supplier<S> addInstance
     ) {
         return id.map(getInstance).orElseGet(() -> {
                 if (id.isPresent()) throw new IllegalStateException(INSERT_INSTANCE_WITH_ID.getMessage(id.get()));
-                return addInstance.apply(type);
+                return addInstance.get();
         });
     }
 

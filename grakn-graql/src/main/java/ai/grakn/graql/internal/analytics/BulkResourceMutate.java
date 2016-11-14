@@ -148,9 +148,9 @@ public class BulkResourceMutate<T> {
             // if there are no resources at all make a new one
             if (relations.isEmpty()) {
                 LOGGER.debug("Persisting a new assertion");
-                Resource<T> resource = graph.putResource(value, resourceType);
+                Resource<T> resource = resourceType.putResource(value);
 
-                graph.addRelation(relationType)
+                relationType.addRelation()
                         .putRolePlayer(resourceOwner, instance)
                         .putRolePlayer(resourceValue, resource);
 
@@ -170,9 +170,9 @@ public class BulkResourceMutate<T> {
 //                graph.getRelation(relations.get(0).getId()).delete();
                 relations.forEach(Concept::delete);
 
-                Resource<T> resource = graph.putResource(value, resourceType);
+                Resource<T> resource = resourceType.putResource(value);
 
-                graph.addRelation(relationType)
+                relationType.addRelation()
                         .putRolePlayer(resourceOwner, instance)
                         .putRolePlayer(resourceValue, resource);
             } else LOGGER.debug("Correct assertion already exists");

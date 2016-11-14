@@ -253,36 +253,31 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     @Override
-    public Entity addEntity(EntityType type) {
-        return elementFactory.buildEntity(addVertex(Schema.BaseType.ENTITY), type);
-    }
-
-    @Override
     public EntityType putEntityType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.ENTITY_TYPE, getMetaEntityType()).asEntityType();
     }
+
     private TypeImpl putConceptType(String itemIdentifier, Schema.BaseType baseType, Type metaType) {
         return elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType), metaType);
     }
-
     @Override
     public RelationType putRelationType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.RELATION_TYPE, getMetaRelationType()).asRelationType();
     }
+
     RelationType putRelationTypeImplicit(String itemIdentifier) {
         Vertex v = putVertex(itemIdentifier, Schema.BaseType.RELATION_TYPE);
         return elementFactory.buildRelationTypeImplicit(v, getMetaRelationType());
     }
-
     @Override
     public RoleType putRoleType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.ROLE_TYPE, getMetaRoleType()).asRoleType();
     }
+
     RoleType putRoleTypeImplicit(String itemIdentifier) {
         Vertex v = putVertex(itemIdentifier, Schema.BaseType.ROLE_TYPE);
         return elementFactory.buildRoleTypeImplicit(v, getMetaRoleType());
     }
-
     @Override
     public <V> ResourceType<V> putResourceType(String id, ResourceType.DataType<V> dataType) {
         return elementFactory.buildResourceType(
@@ -302,6 +297,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     @Override
+    public RuleType putRuleType(String itemIdentifier) {
+        return putConceptType(itemIdentifier, Schema.BaseType.RULE_TYPE, getMetaRuleType()).asRuleType();
+    }
+
+    public Entity addEntity(EntityType type) {
+        return elementFactory.buildEntity(addVertex(Schema.BaseType.ENTITY), type);
+    }
+
     public <V> Resource<V> putResource(V value, ResourceType<V> type) {
         Resource<V> resource = getResource(value, type);
         if(resource == null){
@@ -310,17 +313,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return resource;
     }
 
-    @Override
-    public RuleType putRuleType(String itemIdentifier) {
-        return putConceptType(itemIdentifier, Schema.BaseType.RULE_TYPE, getMetaRuleType()).asRuleType();
-    }
-
-    @Override
     public Rule addRule(Pattern lhs, Pattern rhs, RuleType type) {
         return elementFactory.buildRule(addVertex(Schema.BaseType.RULE), type, lhs, rhs);
     }
 
-    @Override
     public Relation addRelation(RelationType type) {
         RelationImpl relation = elementFactory.buildRelation(addVertex(Schema.BaseType.RELATION), type);
         relation.setHash(null);
