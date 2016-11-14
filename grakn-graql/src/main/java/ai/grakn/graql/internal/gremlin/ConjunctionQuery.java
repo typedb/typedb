@@ -26,29 +26,15 @@ import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.util.ErrorMessage;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
-import static java.util.Comparator.naturalOrder;
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -70,7 +56,6 @@ class ConjunctionQuery {
     private final Set<VarAdmin> vars;
 
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
-    private final ImmutableList<Fragment> sortedFragments;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
@@ -99,7 +84,10 @@ class ConjunctionQuery {
                 ))
                 .collect(CommonUtil.toImmutableSet());
 
-        this.sortedFragments = sortFragments();
+    }
+
+    ImmutableSet<EquivalentFragmentSet> getEquivalentFragmentSets() {
+        return equivalentFragmentSets;
     }
 
     /**
@@ -125,70 +113,6 @@ class ConjunctionQuery {
         return vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeIds().stream());
-    }
-
-    ImmutableList<Fragment> getSortedFragments() {
-        return sortedFragments;
-    }
-
-    /**
-     * Sort the fragments describing the query, such that every property is represented in the fragments and the
-     * fragments are ordered by priority in order to perform the query quickly.
-     *
-     * There will be one list of fragments for every connected component of the query.
-     *
-     * @return a set of list of fragments, sorted by priority.
-     */
-    private ImmutableList<Fragment> sortFragments() {
-        // Sort fragments using a topological sort, such that each fragment leads to the next.
-        // fragments are also sorted by "priority" to improve the performance of the search
-
-        // Maintain a map of fragments grouped by starting variable for fast lookup
-        Map<String, Set<Fragment>> fragmentMap = streamFragments().collect(groupingBy(Fragment::getStart, toSet()));
-
-        // Track properties and fragments that have been used
-        Set<Fragment> remainingFragments = streamFragments().collect(toSet());
-        Set<EquivalentFragmentSet> remainingTraversals = Sets.newHashSet(equivalentFragmentSets);
-        Set<EquivalentFragmentSet> matchedTraversals = new HashSet<>();
-
-        // Result set of fragments (one entry in the set for each connected part of the query)
-        List<Fragment> sortedFragments = new ArrayList<>();
-
-        while (!remainingTraversals.isEmpty()) {
-            // Traversal is started from the highest priority fragment
-            Optional<Fragment> optionalFragment = remainingFragments.stream().min(naturalOrder());
-            Fragment highestFragment = optionalFragment.orElseThrow(
-                    () -> new RuntimeException(ErrorMessage.FAILED_TO_BUILD_TRAVERSAL.getMessage())
-            );
-            String start = highestFragment.getStart();
-
-            // A queue of reachable fragments, with the highest priority fragments always on top
-            PriorityQueue<Fragment> reachableFragments = new PriorityQueue<>(fragmentMap.get(start));
-
-            while (!reachableFragments.isEmpty()) {
-                // Take highest priority fragment from reachable fragments
-                Fragment fragment = reachableFragments.poll();
-                EquivalentFragmentSet equivalentFragmentSet = fragment.getEquivalentFragmentSet();
-
-                // Only choose one fragment from each pattern
-                if (matchedTraversals.contains(equivalentFragmentSet)) continue;
-
-                remainingFragments.remove(fragment);
-                remainingTraversals.remove(equivalentFragmentSet);
-                matchedTraversals.add(equivalentFragmentSet);
-                sortedFragments.add(fragment);
-
-                // If the fragment has a variable at the end, then fragments starting at that variable are reachable
-                fragment.getEnd().ifPresent(
-                        end -> {
-                            Set<Fragment> fragments = fragmentMap.remove(end);
-                            if (fragments != null) reachableFragments.addAll(fragments);
-                        }
-                );
-            }
-        }
-
-        return ImmutableList.copyOf(sortedFragments);
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {
@@ -224,10 +148,4 @@ class ConjunctionQuery {
         }
     }
 
-    /**
-     * @return a stream of Fragments in this query
-     */
-    private Stream<Fragment> streamFragments() {
-        return equivalentFragmentSets.stream().flatMap(EquivalentFragmentSet::getFragments);
-    }
 }

@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -39,6 +38,7 @@ abstract class AbstractFragment implements Fragment{
     static final long NUM_TYPES_PER_ROLE = 3;
     static final long NUM_ROLES_PER_TYPE = 3;
     static final long NUM_ROLES_PER_RELATION = 2;
+    static final long NUM_RESOURCES_PER_VALUE = 2;
 
     private final String start;
     private final Optional<String> end;

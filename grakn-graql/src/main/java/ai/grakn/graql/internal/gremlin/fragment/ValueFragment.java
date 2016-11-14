@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import ai.grakn.util.Schema;
@@ -58,7 +57,7 @@ class ValueFragment extends AbstractFragment {
     @Override
     public long fragmentCost(long previousCost) {
         if (predicate.isSpecific()) {
-            return 1;
+            return NUM_RESOURCES_PER_VALUE;
         } else {
             return previousCost;
         }
