@@ -34,6 +34,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected G graph = null;
     private G batchLoadingGraph = null;
 
+    private Boolean lastGraphBuiltBatchLoading = null;
+
     AbstractInternalFactory(String keyspace, String engineUrl, String config){
         if(keyspace == null){
             throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
@@ -54,13 +56,35 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     public synchronized M getGraph(boolean batchLoading){
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, batchLoadingGraph, batchLoading);
+            lastGraphBuiltBatchLoading = true;
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, graph, batchLoading);
+            lastGraphBuiltBatchLoading = false;
             return graknGraph;
         }
     }
     protected M getGraph(M graknGraph, G graph, boolean batchLoading){
+        //This checks if the previous graph built with this factory is the same as the one we trying to build now.
+        if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
+            //This then checks if the previous graph built has undergone a commit
+            boolean hasCommitted = false;
+            if(lastGraphBuiltBatchLoading) {
+                hasCommitted = batchLoadingGraknGraph.hasCommitted();
+            } else {
+                hasCommitted = graknGraph.hasCommitted();
+            }
+
+            //Closes the graph to force a full refresh if the other graph has committed
+            if(hasCommitted){
+                try {
+                    graknGraph.getTinkerPopGraph().close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
         if(graknGraph == null || isClosed(graknGraph)){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(graph), batchLoading);
         }

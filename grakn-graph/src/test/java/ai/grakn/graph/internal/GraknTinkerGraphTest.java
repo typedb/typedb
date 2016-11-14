@@ -32,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -54,14 +55,12 @@ public class GraknTinkerGraphTest extends GraphTestBase{
 
             }
         });
-
         assertEquals(108, ((AbstractGraknGraph<Graph>) graknGraph).getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
             graknGraph.commit();
-            assertTrue(((AbstractGraknGraph<Graph>) graknGraph).hasCommitted());
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }
@@ -101,4 +100,13 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         assertNull(graknGraph.getEntityType("entity type"));
         assertNotNull(graknGraph.getMetaEntityType());
     }
+
+    @Test
+    public void testCommitted() throws GraknValidationException {
+        assertFalse(graknGraph.hasCommitted());
+        graknGraph.putEntityType("Thing");
+        graknGraph.commit();
+        assertTrue(graknGraph.hasCommitted());
+    }
+
 }

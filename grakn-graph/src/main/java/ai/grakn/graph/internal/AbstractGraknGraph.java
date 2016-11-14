@@ -81,7 +81,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         this.keyspace = keyspace;
         this.engine = engine;
         this.batchLoadingEnabled = batchLoadingEnabled;
-        this.committed = false;
         elementFactory = new ElementFactory(this);
 
         if(initialiseMetaConcepts()) {
@@ -91,6 +90,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
                 throw new RuntimeException(ErrorMessage.CREATING_ONTOLOGY_ERROR.getMessage(e.getMessage()));
             }
         }
+
+        this.committed = false;
     }
 
     @Override
@@ -664,6 +665,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         } catch (UnsupportedOperationException e){
             LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
         }
+        committed = true;
     }
 
 
