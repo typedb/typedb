@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraknTinkerGraphTest extends GraphTestBase{
 
@@ -60,6 +61,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
             graknGraph.commit();
+            assertTrue(((AbstractGraknGraph<Graph>) graknGraph).hasCommitted());
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }

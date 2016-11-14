@@ -74,12 +74,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
+    private boolean committed;
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
         this.batchLoadingEnabled = batchLoadingEnabled;
+        this.committed = false;
         elementFactory = new ElementFactory(this);
 
         if(initialiseMetaConcepts()) {
@@ -94,6 +96,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public String getKeyspace(){
         return keyspace;
+    }
+
+    public boolean hasCommitted(){
+        return committed;
     }
 
     public boolean isBatchLoadingEnabled(){
