@@ -31,7 +31,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.atom.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;

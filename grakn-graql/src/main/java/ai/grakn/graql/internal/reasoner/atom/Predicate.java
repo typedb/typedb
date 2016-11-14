@@ -20,9 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.Map;
 

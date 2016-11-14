@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;

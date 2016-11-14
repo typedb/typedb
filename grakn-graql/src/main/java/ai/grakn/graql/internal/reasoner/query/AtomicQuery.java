@@ -38,7 +38,6 @@ import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
 import java.util.*;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
-import org.apache.tinkerpop.shaded.minlog.Log;
 
 public class AtomicQuery extends Query{
 

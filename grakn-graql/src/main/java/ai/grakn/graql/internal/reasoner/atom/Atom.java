@@ -202,10 +202,10 @@ public abstract class Atom extends AtomBase {
         //try based on roles
         for (String chVar : childBVs) {
             RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
+            //map to empty if no var matching
             String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
-            if (pVar.isEmpty())
+            if (pVar.isEmpty() && !varsToAllocate.isEmpty())
                 pVar = varsToAllocate.iterator().next();
-
             if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
             varsToAllocate.remove(pVar);
         }
