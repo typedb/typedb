@@ -537,4 +537,15 @@ public class ReasonerTest {
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
+
+    @Test
+    public void testUnspecifiedCastings2(){
+        GraknGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match (geo-entity: $x);";
+        String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
 }
