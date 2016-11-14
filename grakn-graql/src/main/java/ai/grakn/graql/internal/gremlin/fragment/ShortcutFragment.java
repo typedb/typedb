@@ -18,8 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -63,11 +61,6 @@ class ShortcutFragment extends AbstractFragment {
         String type = relationType.map(rt -> ":" + idToString(rt)).orElse("");
         String end = roleEnd.map(re -> " " + idToString(re)).orElse("");
         return "-[" + start + "shortcut" + type + end + "]->";
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.EDGE_RELATION;
     }
 
     @Override

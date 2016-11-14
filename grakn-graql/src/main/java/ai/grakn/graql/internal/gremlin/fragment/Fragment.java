@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -47,7 +45,7 @@ import java.util.stream.Stream;
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code EquivalentFragmentSet} describing the {@code Query}.
  */
-public interface Fragment extends Comparable<Fragment> {
+public interface Fragment {
 
     /**
      * @return the EquivalentFragmentSet that contains this Fragment
@@ -91,11 +89,6 @@ public interface Fragment extends Comparable<Fragment> {
     default boolean isStartingFragment() {
         return false;
     }
-
-    /**
-     * @return the fragment's priority
-     */
-    FragmentPriority getPriority();
 
     long fragmentCost(long previousCost);
 }

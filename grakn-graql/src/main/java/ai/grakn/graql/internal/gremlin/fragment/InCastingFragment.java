@@ -18,13 +18,9 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import ai.grakn.util.Schema;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
-import static ai.grakn.util.Schema.EdgeLabel.CASTING;
 
 class InCastingFragment extends AbstractFragment {
 
@@ -40,11 +36,6 @@ class InCastingFragment extends AbstractFragment {
     @Override
     public String getName() {
         return "<-[casting]-";
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.EDGE_UNBOUNDED;
     }
 
     @Override

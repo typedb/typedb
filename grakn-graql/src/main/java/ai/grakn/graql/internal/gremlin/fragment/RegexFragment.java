@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -42,11 +41,6 @@ class RegexFragment extends AbstractFragment {
     @Override
     public String getName() {
         return "[regex:" + valueToString(regex) + "]";
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.VALUE_NONSPECIFIC;
     }
 
     @Override

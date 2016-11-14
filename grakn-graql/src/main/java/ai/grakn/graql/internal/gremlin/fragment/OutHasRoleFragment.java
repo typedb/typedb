@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -38,11 +37,6 @@ class OutHasRoleFragment extends AbstractFragment {
     @Override
     public String getName() {
         return "-[has-role]->";
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.EDGE_BOUNDED;
     }
 
     @Override

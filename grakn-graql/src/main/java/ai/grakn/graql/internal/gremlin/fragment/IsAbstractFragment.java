@@ -18,13 +18,9 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import ai.grakn.util.Schema;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
-import static ai.grakn.util.Schema.ConceptProperty.IS_ABSTRACT;
 
 class IsAbstractFragment extends AbstractFragment {
 
@@ -40,11 +36,6 @@ class IsAbstractFragment extends AbstractFragment {
     @Override
     public String getName() {
         return "[is-abstract]";
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.VALUE_NONSPECIFIC;
     }
 
     @Override

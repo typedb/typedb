@@ -80,13 +80,6 @@ abstract class AbstractFragment implements Fragment{
     }
 
     @Override
-    public final int compareTo(@SuppressWarnings("NullableProblems") Fragment other) {
-        // Don't want to use Jetbrain's @NotNull annotation
-        if (this == other) return 0;
-        return getPriority().compareTo(other.getPriority());
-    }
-
-    @Override
     public String toString() {
         return "$" + start + getName() + end.map(e -> "$" + e).orElse("");
     }
