@@ -99,7 +99,6 @@ public class GraqlTraversal {
             depth += 1;
             numTraversalAttempts *= numFragments;
             numFragments -= 1;
-            System.out.println(depth);
         }
 
         long cost = 1;
