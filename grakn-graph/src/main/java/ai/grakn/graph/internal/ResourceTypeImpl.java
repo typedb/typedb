@@ -72,6 +72,12 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         return setProperty(Schema.ConceptProperty.REGEX, regex);
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public Resource<D> putResource(D value) {
+        return getGraknGraph().putResource(value, this);
+    }
+
     /**
      * @return The data type which instances of this resource must conform to.
      */
