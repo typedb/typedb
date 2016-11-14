@@ -1,4 +1,10 @@
-Version 0.6.0
+Version 0.6.1
+- Engine loader fixes that help load the film data set.
+- New import file (#586)
+
+
+Version v0.6.0
+- 0.6.0 release
 - disable brackground task supervisor temporarily
 - Aggregate Javadocs. Organization links in header/footer. (#588)
 - Removing System exit (#585)
