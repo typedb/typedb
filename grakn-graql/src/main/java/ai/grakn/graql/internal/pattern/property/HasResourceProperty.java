@@ -124,13 +124,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
      */
     private Collection<Resource<?>> resources(Concept concept) {
         // Get resources attached to a concept
-        // This method is necessary because the 'resource' method appears in 3 separate interfaces
-        if (concept.isEntity()) {
-            return concept.asEntity().resources();
-        } else if (concept.isRelation()) {
-            return concept.asRelation().resources();
-        } else if (concept.isRule()) {
-            return concept.asRule().resources();
+        if (concept.isInstance()) {
+            return concept.asInstance().resources();
         } else {
             return new HashSet<>();
         }

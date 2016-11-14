@@ -18,11 +18,10 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.concept.ResourceType;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -57,20 +56,14 @@ class QueryUtil {
             assertNotNull(result);
 
             String resourceValue = result.getId();
-            //Dumb flow due to resources not being in Instance interface
-            for (ResourceType resourceType : resourceTypes) {
-                Collection<Resource<?>> foundResources;
-                if(result.isEntity()){
-                    foundResources = result.asEntity().resources(resourceType);
-                } else if(result.isRule()){
-                    foundResources = result.asRule().resources(resourceType);
-                } else {
-                    break;
-                }
 
-                if(!foundResources.isEmpty()) {
-                    resourceValue = foundResources.iterator().next().getValue().toString();
-                    break;
+            for (ResourceType resourceType : resourceTypes) {
+                if(result.isInstance()){
+                    Collection<Resource<?>> foundResources = result.asInstance().resources(resourceType);
+                    if(!foundResources.isEmpty()) {
+                        resourceValue = foundResources.iterator().next().getValue().toString();
+                        break;
+                    }
                 }
             }
 
