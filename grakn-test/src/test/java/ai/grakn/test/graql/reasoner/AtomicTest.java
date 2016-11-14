@@ -183,7 +183,7 @@ public class AtomicTest {
         Utility.computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
 
         Collection<Relation> rels = new LinkedList<>();
-        roleMaps.forEach( map -> rels.add(new Relation(relTypeId, map, null)));
+        roleMaps.forEach( map -> rels.add(new Relation(null, relTypeId, map, null)));
     }
 
     @Test
@@ -208,7 +208,7 @@ public class AtomicTest {
         Utility.computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
 
         Collection<Relation> rels = new LinkedList<>();
-        roleMaps.forEach( map -> rels.add(new Relation(relTypeId, map, null)));
+        roleMaps.forEach( map -> rels.add(new Relation(null, relTypeId, map, null)));
     }
 
     @Test

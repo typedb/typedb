@@ -153,7 +153,7 @@ public class Query implements MatchQueryInternal {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
-    public Set<Atomic> getAtoms() { return Sets.newHashSet(atomSet); /*return new HashSet<>(atomSet);*/}
+    public Set<Atomic> getAtoms() { return Sets.newHashSet(atomSet);}
     public Set<Predicate> getIdPredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)

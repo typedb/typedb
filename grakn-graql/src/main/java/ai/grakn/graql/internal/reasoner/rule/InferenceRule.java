@@ -18,15 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.Binary;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.atom.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
@@ -34,13 +39,14 @@ import ai.grakn.util.ErrorMessage;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class InferenceRule {
 
     private final Query body;
-    private final AtomicQuery head;
+    private AtomicQuery head;
 
     private final Rule rule;
 
@@ -90,11 +96,31 @@ public class InferenceRule {
         }
     }
 
+    private void rewriteHead(Atom parentAtom){
+        if(parentAtom.isRelation() && parentAtom.isUserDefinedName()){
+            Atomic childAtom = getRuleConclusionAtom();
+            VarAdmin var = childAtom.getPattern().asVar();
+            Var relVar = Graql.var(childAtom.getVarName());
+            if (var.getType().isPresent()) relVar.isa(var.getType().orElse(null));
+            var.getCastings().forEach( c -> {
+                VarAdmin rolePlayer = c.getRolePlayer();
+                Optional<VarAdmin> roleType = c.getRoleType();
+                if (roleType.isPresent())
+                    relVar.rel(roleType.get(), rolePlayer);
+                else
+                    relVar.rel(rolePlayer);
+            });
+            head = new AtomicQuery((Atom) AtomicFactory.create(relVar.admin(), body), new HashSet<>());
+        }
+    }
+
     /**
      * propagate variables to child via a relation atom (atom variables are bound)
      * @param parentAtom   parent atom (atom) being resolved (subgoal)
      */
-    private void unifyViaAtom(Atomic parentAtom) {
+    private void unifyViaAtom(Atom parentAtom) {
+        rewriteHead(parentAtom);
+
         Atomic childAtom = getRuleConclusionAtom();
         Query parent = parentAtom.getParentQuery();
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);

@@ -28,6 +28,8 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -50,8 +52,8 @@ public class Relation extends Atom {
         inferTypeFromRoles();
     }
 
-    public Relation(String id, Map<String, String> roleMap, Query par){
-        super(constructRelation(id, roleMap), par);
+    public Relation(String name, String id, Map<String, String> roleMap, Query par){
+        super(constructRelation(name, id, roleMap), par);
         castings.addAll(getPattern().asVar().getCastings());
         inferTypeFromRoles();
     }
@@ -68,8 +70,13 @@ public class Relation extends Atom {
     }
 
     //rolePlayer-roleType
-    public static VarAdmin constructRelation(String id, Map<String, String> roleMap) {
-        Var var = Graql.var().isa(id);
+    public static VarAdmin constructRelation(String name, String id, Map<String, String> roleMap) {
+        Var var;
+        if (name != null && !name.isEmpty())
+            var = Graql.var(name);
+        else
+            var = Graql.var();
+        var.isa(id);
         roleMap.forEach( (player, role) -> {
             if (role == null)
                 var.rel(player);
@@ -179,6 +186,7 @@ public class Relation extends Atom {
 
     @Override
     public void unify(String from, String to) {
+        super.unify(from, to);
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (var.equals(from)) {
@@ -192,6 +200,7 @@ public class Relation extends Atom {
 
     @Override
     public void unify (Map<String, String> mappings) {
+        super.unify(mappings);
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (mappings.containsKey(var) ) {
@@ -206,6 +215,12 @@ public class Relation extends Atom {
 
     @Override
     public Set<String> getVarNames(){
+        Set<String> vars = getUnifiableNames();
+        if (isUserDefinedName()) vars.add(getVarName());
+        return vars;
+    }
+    @Override
+    public Set<String> getUnifiableNames(){
         Set<String> vars = new HashSet<>();
         castings.forEach(c -> vars.add(c.getRolePlayer().getName()));
         return vars;
@@ -311,9 +326,11 @@ public class Relation extends Atom {
         Map<String, String> roleMap = new HashMap<>();
         roleVarTypeMap.forEach( (r, tp) -> roleMap.put(tp.getKey(), r.getId()));
         getVarNames().stream()
+                    .filter(var -> !var.equals(getVarName()))
                     .filter(var -> !roleMap.containsKey(var))
                     .forEach( var -> roleMap.put(var, null));
-        atomPattern = constructRelation(typeId, roleMap);
+        //pattern mutation!
+        atomPattern = constructRelation(isUserDefinedName()? varName : "", typeId, roleMap);
         castings.addAll(getPattern().asVar().getCastings());
 
         return roleVarTypeMap;
@@ -333,5 +350,14 @@ public class Relation extends Atom {
                 roleVarTypeMap = computeRoleVarTypeMap();
         }
         return roleVarTypeMap;
+    }
+
+    @Override
+    public Map<String, String> getUnifiers(Atomic parentAtom) {
+        Map<String, String> unifiers = super.getUnifiers(parentAtom);
+        if (parentAtom.isUserDefinedName()
+            && !this.getVarName().equals(parentAtom.getVarName()))
+            unifiers.put(this.getVarName(), parentAtom.getVarName());
+        return unifiers;
     }
 }

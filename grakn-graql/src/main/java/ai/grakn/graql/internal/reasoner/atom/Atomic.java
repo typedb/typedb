@@ -36,6 +36,8 @@ public interface Atomic extends Cloneable{
     boolean isEquivalent(Object obj);
     int equivalenceHashCode();
 
+    default boolean isUserDefinedName(){ return false;}
+
     /**
      * @return true if the atom can be resolved by a rule (atom exists in one of the rule's head)
      */
@@ -82,5 +84,14 @@ public interface Atomic extends Cloneable{
     void unify(Map<String, String> unifiers);
 
     String getVarName();
+
+    /**
+     * @return all addressable variable names in the atom
+     */
     Set<String> getVarNames();
+
+    /**
+     * @return all variable names that may potentially require unification
+     */
+    Set<String> getUnifiableNames();
 }

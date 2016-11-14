@@ -193,8 +193,8 @@ public abstract class Atom extends AtomBase {
         if (!(parentAtom instanceof Atom))
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
 
-        Set<String> varsToAllocate = parentAtom.getVarNames();
-        Set<String> childBVs = getVarNames();
+        Set<String> varsToAllocate = parentAtom.getUnifiableNames();
+        Set<String> childBVs = getUnifiableNames();
         Map<String, String> unifiers = new HashMap<>();
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
