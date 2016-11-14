@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.graql.Pattern;
+
 import java.util.Collection;
 
 /**
@@ -25,6 +27,14 @@ import java.util.Collection;
  * Currently supported rules include Constraint Rules and Inference Rules.
  */
 public interface RuleType extends Type {
+    //------------------------------------- Modifiers ----------------------------------
+    /**
+     * @param lhs A string representing the left hand side Graql query.
+     * @param rhs A string representing the right hand side Graql query.
+     * @return a new Rule
+     */
+    Rule addRule(Pattern lhs, Pattern rhs);
+
     //---- Inherited Methods
     /**
      *

@@ -66,6 +66,12 @@ public interface ResourceType<D> extends Type {
      */
     ResourceType<D> setRegex(String regex);
 
+    /**
+     * @param value A value for the Resource which is unique to it's type
+     * @return new or existing Resource of this type with the provided value.
+     */
+    Resource<D> putResource(D value);
+
     //------------------------------------- Accessors ---------------------------------
     /**
      *
