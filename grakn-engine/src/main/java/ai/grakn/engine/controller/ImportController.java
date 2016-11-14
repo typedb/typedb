@@ -26,7 +26,7 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
@@ -47,11 +47,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static ai.grakn.graql.Graql.parsePatterns;
 import static spark.Spark.*;
 
 
@@ -65,16 +67,13 @@ public class ImportController {
     private ScheduledExecutorService checkLoadingExecutor = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture printingState;
 
-    //TODO: Use redis for caching LRU
-    private Map<String, String> entitiesMap;
-    //TODO: add relations to relationsList when they are referring to relations that have not been inserted yet
-    private ArrayList<Var> relationsList;
-
     private AtomicLong processedEntities = new AtomicLong();
     private AtomicLong processedRelations = new AtomicLong();
     private AtomicBoolean loadingInProgress = new AtomicBoolean(false);
-    private long totalPatterns;
-    private long independentPatterns;
+
+    private static final String INSERT_KEYWORD = "insert";
+    private static final String MATCH_KEYWORD = "match";
+
 
     private String defaultGraphName;
 
@@ -92,8 +91,6 @@ public class ImportController {
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
 
-        entitiesMap = new ConcurrentHashMap<>();
-        relationsList = new ArrayList<>();
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
     }
 
@@ -150,7 +147,7 @@ public class ImportController {
             if (!(new File(pathToFile)).exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            initialiseLoading(pathToFile);
+            initialiseLoading();
 
             Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(graphName)));
 
@@ -162,44 +159,43 @@ public class ImportController {
             throw new GraknEngineServerException(500, e);
         }
 
-        return "Total patterns found [" + totalPatterns + "]. \n" +
-                " -[" + independentPatterns + "] entities \n" +
-                " -[" + (totalPatterns - independentPatterns) + "] relations/resources \n" +
-                "Loading successfully STARTED. \n";
+        return "Loading successfully STARTED. \n";
     }
 
-    private void initialiseLoading(String pathToFile) throws FileNotFoundException {
-        totalPatterns = parsePatterns(new FileInputStream(pathToFile))
-                .count();
-
-        independentPatterns = parsePatterns(new FileInputStream(pathToFile))
-                .filter(pattern -> isIndependentEntity(pattern.admin().asVar()))
-                .count();
-
+    private void initialiseLoading() {
         printingState = checkLoadingExecutor.scheduleAtFixedRate(this::checkLoadingStatus, 10, 10, TimeUnit.SECONDS);
-
         processedEntities.set(0);
         processedRelations.set(0);
     }
 
     private void checkLoadingStatus() {
         LOG.info("===== Import from file in progress ====");
-        LOG.info("Processed Entities: " + processedEntities + "/" + independentPatterns);
-        LOG.info("Processed Relations: " + processedRelations + "/" + (totalPatterns - independentPatterns));
+        LOG.info("Processed Entities: " + processedEntities);
+        LOG.info("Processed Relations: " + processedRelations);
         LOG.info("=======================================");
     }
 
-    private boolean isIndependentEntity(Var var) {
-        return (!var.admin().isRelation() && var.admin().getType().isPresent());
-    }
+
+    // This method works under the following assumption:
+    // - all entities insert statements are before the relation ones
 
     private void importDataFromFile(String dataFile, Loader loaderParam) {
         LOG.info("Data loading started.");
         try {
-            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(), loaderParam));
-            loaderParam.waitToFinish();
-            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(), loaderParam));
-            loaderParam.waitToFinish();
+            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(new FileInputStream(dataFile)).iterator();
+            if (batchIterator.hasNext()) {
+                Object var = batchIterator.next();
+                // -- ENTITIES --
+                while (var.equals(INSERT_KEYWORD)) {
+                    var = consumeInsertEntity(batchIterator, loaderParam);
+                }
+                loaderParam.waitToFinish();
+
+                // ---- RELATIONS --- //
+                while (var.equals(MATCH_KEYWORD)) {
+                    var = consumeInsertRelation(batchIterator,loaderParam);
+                }
+            }
             printingState.cancel(true);
             processedEntities.set(0);
             processedRelations.set(0);
@@ -211,47 +207,48 @@ public class ImportController {
         }
     }
 
-    private void consumeEntity(Var var, Loader loader) {
-        if (!entitiesMap.containsKey(var.admin().getName()) && isIndependentEntity(var)) {
-            if (var.admin().isUserDefinedName()) {
-                // Some variable might not have an explicit ID defined, in that case we generate explicitly one and we save it into our cache
-                // so that we can refer to it.
-                String varId = (var.admin().getId().isPresent()) ? var.admin().getId().get() : UUID.randomUUID().toString();
-                entitiesMap.put(var.admin().getName(), varId);
-                // We force the ID of the current var to be the one computed by this controller.
-                loader.add(Graql.insert(var.admin().id(varId)));
-            } else {
-                loader.add(Graql.insert(var));
-            }
-            processedEntities.incrementAndGet();
+    private Object consumeInsertEntity(Iterator<Object> batchIterator, Loader loader) {
+        Object var = null;
+        List<Var> insertQuery = new ArrayList<>();
+        while (batchIterator.hasNext()) {
+            var = batchIterator.next();
+            if (var instanceof Var) {
+                insertQuery.add(((Var) var));
+                processedEntities.incrementAndGet();
+            } else
+                break;
         }
+        loader.add(Graql.insert(insertQuery));
+
+        return var;
     }
 
-    private void consumeRelationAndResource(Var var, Loader loader) {
-        boolean ready = false;
+    private Object consumeInsertRelation(Iterator<Object> batchIterator, Loader loader) {
+        Object var = null;
+        List<Var> insertQueryMatch = new ArrayList<>();
+        while (batchIterator.hasNext()) {
+            var = batchIterator.next();
+            if (var instanceof Var) {
+                insertQueryMatch.add(((Var) var));
+            } else
+                break;
+        }
+        List<Var> insertQuery;
+        if (!var.equals(INSERT_KEYWORD))
+            throw new GraknEngineServerException(500, "Match statement not followed by any Insert.");
 
-        if (var.admin().isRelation()) {
-            ready = true;
-            //If one of the role players is defined using a variable name and the variable name is not in our cache we cannot insert the relation.
-            for (VarAdmin.Casting x : var.admin().getCastings()) {
-                //If one of the role players is referring to a variable we check to have that var in the entities map cache.
-                if (x.getRolePlayer().admin().isUserDefinedName()) {
-                    if (entitiesMap.containsKey(x.getRolePlayer().getName()))
-                        x.getRolePlayer().id(entitiesMap.get(x.getRolePlayer().getName()));
-                    else ready = false;
-                }
-            }
-        } else {
-            // if it is not a relation and the isa is not specified it is probably a resource referring to an existing entity.
-            if (!var.admin().getType().isPresent()) {
-                ready = true;
-            }
+        insertQuery = new ArrayList<>();
+        while (batchIterator.hasNext()) {
+            var = batchIterator.next();
+            if (var instanceof Var) {
+                insertQuery.add(((Var) var));
+            } else
+                break;
         }
 
-        if (ready) {
-            processedRelations.incrementAndGet();
-            loader.add(Graql.insert(var));
-        }
+        loader.add(Graql.match(insertQueryMatch).insert(insertQuery));
+        processedRelations.incrementAndGet();
 
+        return var;
     }
 }
