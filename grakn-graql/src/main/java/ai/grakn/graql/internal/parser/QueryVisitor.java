@@ -28,6 +28,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.Order;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -539,8 +540,12 @@ class QueryVisitor extends GraqlBaseVisitor {
         return Long.valueOf(integer.getText());
     }
 
-    private boolean getOrder(TerminalNode order) {
-        return order.getText().equals("asc");
+    private Order getOrder(TerminalNode order) {
+        if (order.getText().equals("asc")) {
+            return Order.asc;
+        } else {
+            return Order.desc;
+        }
     }
 
     private ResourceType.DataType getDatatype(TerminalNode datatype) {

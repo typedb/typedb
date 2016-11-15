@@ -19,23 +19,24 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Order;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.ANSI;
+import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.internal.util.AdminConverter;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -147,7 +148,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
     }
 
     @Override
-    default MatchQuery orderBy(String varName, boolean asc) {
-        return new MatchQueryOrder(this, new MatchOrderImpl(varName, asc));
+    default MatchQuery orderBy(String varName, Order order) {
+        return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
     }
 }
