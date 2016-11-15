@@ -217,7 +217,8 @@ public class Reasoner {
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
                                         .filterVars(atomicQuery.getSelectedNames());
                 QueryAnswers newAnswers = new QueryAnswers();
-                if (atom.isResource())
+                if (atom.isResource()
+                        || atom.isRelation() && atom.isUserDefinedName())
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
                 if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
 

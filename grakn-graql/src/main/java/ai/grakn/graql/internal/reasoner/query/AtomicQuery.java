@@ -19,7 +19,9 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -35,6 +37,8 @@ import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import javafx.util.Pair;
+import org.apache.tinkerpop.shaded.minlog.Log;
 
 public class AtomicQuery extends Query{
 
@@ -109,22 +113,30 @@ public class AtomicQuery extends Query{
      * materialise the query provided all variables are mapped
      */
     private QueryAnswers materialiseComplete() {
+        Atom atom = selectAtoms().iterator().next();
         QueryAnswers insertAnswers = new QueryAnswers();
-        if( getAtoms().stream()
-                .filter(Atomic::isPredicate)
-                .collect(Collectors.toSet()).size() < getVarSet().size()) {
-            throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage());
-        }
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
-            insert.stream()
-                    .filter(Concept::isResource)
-                    .forEach(c -> {
-                        Map<String, Concept> answer = new HashMap<>();
-                        answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName()).getPredicateValue()));
-                        answer.put(atom.getValueVariable(), c);
-                        insertAnswers.add(answer);
-                    });
+            Set<Concept> insertedConcepts = insert.stream().collect(Collectors.toSet());
+            if (atom.isUserDefinedName()) {
+                insertedConcepts.stream()
+                        .filter(c -> c.isResource() || c.isRelation())
+                        .forEach(c -> {
+                            Map<String, Concept> answer = new HashMap<>();
+                            if (c.isResource()) {
+                                answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName()).getPredicateValue()));
+                                answer.put(atom.getValueVariable(), c);
+                            } else if (c.isRelation()) {
+                                Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers();
+                                answer.put(atom.getVarName(), c);
+                                Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
+                                roleplayers.entrySet().forEach(entry -> {
+                                    answer.put(roleMap.get(entry.getKey()).getKey(), entry.getValue());
+                                });
+                            }
+                            insertAnswers.add(answer);
+                        });
+            }
         }
         return insertAnswers;
     }
@@ -153,7 +165,8 @@ public class AtomicQuery extends Query{
 
             removeAtom(atom);
             roleMaps.forEach( map -> {
-                Relation relationWithRoles = new Relation(relTypeId, map, this.parent);
+                //TODO doesn't update core atom
+                Relation relationWithRoles = new Relation(atom.getVarName(), relTypeId, map, this);
                 addAtom(relationWithRoles);
                 insertAnswers.addAll(materialiseComplete());
                 removeAtom(relationWithRoles);

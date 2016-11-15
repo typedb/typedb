@@ -160,7 +160,7 @@ public enum ErrorMessage {
     NON_ATOMIC_QUERY("Addressed query is not atomic [%s]"),
     MULTI_VALUE_VAR("Multi value variable found [%s] on query construction"),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]"),
-    MATERIALIZATION_ERROR("Not enough information available to materialize"),
+    MATERIALIZATION_ERROR("Not enough information available to materialize query [%s]"),
     ANSWER_ERROR("Answer method called on an instance with no answers"),
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms"),

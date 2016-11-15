@@ -55,7 +55,7 @@ public class TestGraph {
 
     public TestGraph(String primaryKeyId, String... files) {
         graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        addPrimaryKey(primaryKeyId);
+        if (primaryKeyId != null) addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);
         commit();
     }

@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.RelationType;
@@ -494,10 +495,34 @@ public class ReasonerTest {
     @Test
     public void testRelationVariable(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $r($x, $y);";
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString2 = "match $r(geo-entity: $x, entity-location: $y) isa is-located-in;";
         MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        Utility.printAnswers(reasoner.resolve(query));
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers2 = reasoner.resolve(query2);
+        answers2.forEach(answer -> {
+            assert(answer.size() == 3);
+        });
+        assertTrue(answers.size() == answers2.size());
+    }
+
+    @Test
+    public void testRelationVariable2(){
+        GraknGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match ($x, $y) isa is-located-in;";
+        String queryString2 = "match $r($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers2 = reasoner.resolve(query2);
+        answers2.forEach(answer -> {
+            assert(answer.size() == 3);
+        });
+        assertTrue(answers.size() == answers2.size());
     }
 }
