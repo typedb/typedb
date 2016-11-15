@@ -19,19 +19,29 @@
 package ai.grakn.engine.backgroundtasks;
 
 public enum TaskStatus {
-	/**
-	 * Save task in the graph, but not plans to run it yet - initial state.
-	 */
+    /**
+     * Save task in the graph, but not plans to run it yet - initial state.
+     */
     CREATED,
     /**
      * Scheduled for execution. For example, if one instance of the Engine server schedules it,
      * other instances won't.
      */
     SCHEDULED,
+    /**
+     * Currently executing task.
+     */
     RUNNING,
-//    PAUSED,
+    /**
+     * The task has successfully completed execution.
+     */
     COMPLETED,
+    /**
+     * The task has been stopped on request.
+     */
     STOPPED,
-    FAILED,
-    DEAD
+    /**
+     * The task has failed to execute.
+     */
+    FAILED
 }

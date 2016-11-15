@@ -18,40 +18,42 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import java.util.Map;
+import org.json.JSONObject;
+
+import java.util.function.Consumer;
 
 /**
  * Interface which all tasks that wish to be scheduled for later execution as background tasks must implement.
  */
 public interface BackgroundTask {
     /**
-     * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.,
+     * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
+     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
+     *                       the task to resume from this point should it crash.
      */
-    void start();
+    void start(Consumer<String> saveCheckpoint, JSONObject configuration);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
-     * Task should stop execution immediately and may be killed after this method exits.
+     * Task should stop gracefully.
+     *
+     * TODO: Should we allow start() to be called after stop()?
      */
     void stop();
 
     /**
      * Called to suspend the execution of a currently running task. The object may be destroyed after this call.
-     * @return Map<> that will be passed to resume() to resume the task.
+     *
+     * TODO: stop running
      */
-    Map<String, Object> pause();
+    void pause();
 
     /**
-     * Called to restore state necessary for execution to a previously suspended point by pause() however resume() itself
-     * should not aim to resume execution as this will be accomplished by a subsequent call to start().
-     * @param m Map<> as returned by pause()
+     * This method may be called when resuming from a paused state or recovering from a crash or failure of any kind.
+     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
+     *                       the task to resume from this point should it crash.
+     * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
      */
-    void resume(Map<String, Object> m);
+    void resume(Consumer<String> saveCheckpoint, String lastCheckpoint);
 
-    /**
-     * Called to restart a task regardless of where it is in its execution. The task should clean up any internal state
-     * and perform any actions necessary in order to successfully complete its execution as if it was starting from a
-     * clean state.
-     */
-    void restart();
 }

@@ -18,7 +18,7 @@
 package ai.grakn.engine;
 
 
-import ai.grakn.engine.controller.BackgroundTasksController;
+import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.ImportController;
@@ -77,7 +77,7 @@ public class GraknEngineServer {
         new CommitLogController();
         new TransactionController();
         new StatusController();
-        new BackgroundTasksController();
+        new TasksController();
 
         //If no route gets resolved throw 404
         get("*", (request, response) -> {
