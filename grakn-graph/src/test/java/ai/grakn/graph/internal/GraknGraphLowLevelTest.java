@@ -101,8 +101,8 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("reltype");
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role");
         EntityType thing = graknGraph.putEntityType("thing");
-        InstanceImpl rolePlayer = (InstanceImpl) graknGraph.addEntity(thing);
-        RelationImpl relation = (RelationImpl) graknGraph.addRelation(relationType);
+        InstanceImpl rolePlayer = (InstanceImpl) thing.addEntity();
+        RelationImpl relation = (RelationImpl) relationType.addRelation();
         CastingImpl casting = graknGraph.putCasting(role, rolePlayer, relation);
 
         //Check it
@@ -125,8 +125,8 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("reltype");
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role");
         EntityType thing = graknGraph.putEntityType("thing");
-        InstanceImpl rolePlayer = (InstanceImpl) graknGraph.addEntity(thing);
-        RelationImpl relation = (RelationImpl) graknGraph.addRelation(relationType);
+        InstanceImpl rolePlayer = (InstanceImpl) thing.addEntity();
+        RelationImpl relation = (RelationImpl) relationType.addRelation();
         CastingImpl casting1 = graknGraph.putCasting(role, rolePlayer, relation);
         CastingImpl casting2 = graknGraph.putCasting(role, rolePlayer, relation);
         assertEquals(casting1, casting2);
@@ -152,8 +152,8 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("RelationType");
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("role");
         EntityType thing = graknGraph.putEntityType("thing");
-        InstanceImpl rolePlayer = (InstanceImpl) graknGraph.addEntity(thing);
-        RelationImpl relation = (RelationImpl) graknGraph.addRelation(relationType);
+        InstanceImpl rolePlayer = (InstanceImpl) thing.addEntity();
+        RelationImpl relation = (RelationImpl) relationType.addRelation();
 
         //First Casting
         makeArtificialCasting(role, rolePlayer, relation);
@@ -176,10 +176,10 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RoleTypeImpl role1 = (RoleTypeImpl) graknGraph.putRoleType("Role1");
         RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role2");
 
-        InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) graknGraph.addEntity(type);
-        InstanceImpl<?, ?> rolePlayer2 = (InstanceImpl) graknGraph.addEntity(type);
+        InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) type.addEntity();
+        InstanceImpl<?, ?> rolePlayer2 = (InstanceImpl) type.addEntity();
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) relationType.addRelation().
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, null);
         CastingImpl casting1 = graknGraph.putCasting(role1, rolePlayer1, assertion);
         CastingImpl casting2 = graknGraph.putCasting(role2, rolePlayer2, assertion);
@@ -201,9 +201,9 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         ResourceType type = graknGraph.putResourceType("Parent", ResourceType.DataType.STRING);
         ResourceType type2 = graknGraph.putResourceType("Parent 2", ResourceType.DataType.STRING);
 
-        Resource c1 = graknGraph.putResource("Bob", type);
-        Resource c2 = graknGraph.putResource("Bob", type2);
-        Resource c3 = graknGraph.putResource("Bob", type);
+        Resource c1 = type.putResource("Bob");
+        Resource c2 = type2.putResource("Bob");
+        Resource c3 = type.putResource("Bob");
 
         assertEquals(2, graknGraph.getResourcesByValue("Bob").size());
         assertTrue(graknGraph.getResourcesByValue("Bob").contains(c1));
@@ -217,14 +217,14 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
     public void testGetConceptInstance(){
         assertNull(graknGraph.getEntity("Bob"));
         EntityType type = graknGraph.putEntityType("Parent");
-        Instance c2 = graknGraph.addEntity(type);
+        Instance c2 = type.addEntity();
         assertEquals(c2, graknGraph.getEntity(c2.getId()));
     }
 
     @Test
     public void testGetRelation(){
         RelationType relationType = graknGraph.putRelationType("Hello");
-        Relation c1 = graknGraph.addRelation(relationType);
+        Relation c1 = relationType.addRelation();
         assertEquals(c1, graknGraph.getRelation(c1.getId()));
         assertNull(graknGraph.getResourceType("BOB"));
     }
@@ -269,7 +269,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         assertNull(graknGraph.getResource("Bob"));
         ResourceType type = graknGraph.putResourceType("Type", ResourceType.DataType.STRING);
         ResourceType type2 = graknGraph.putResourceType("Type 2", ResourceType.DataType.STRING);
-        Resource c2 = graknGraph.putResource("1", type);
+        Resource c2 = type.putResource("1");
         assertEquals(c2, graknGraph.getResourcesByValue("1").iterator().next());
         assertEquals(1, graknGraph.getResourcesByValue("1").size());
         assertEquals(c2, graknGraph.getResource("1", type));
@@ -349,9 +349,9 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RelationType b = graknGraph.putRelationType("b");
         ResourceType<String> c = graknGraph.putResourceType("c", ResourceType.DataType.STRING);
 
-        Entity instanceA = graknGraph.addEntity(a);
-        Relation instanceB = graknGraph.addRelation(b);
-        graknGraph.putResource("1", c);
+        Entity instanceA = a.addEntity();
+        Relation instanceB = b.addRelation();
+        c.putResource("1");
 
         assertEquals(instanceA, graknGraph.getInstance(instanceA.getId()));
     }
@@ -368,16 +368,16 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RelationType relationType1 = graknGraph.putRelationType("relation type 1").hasRole(roleType1).hasRole(roleType2);
         RelationType relationType2 = graknGraph.putRelationType("relation type 2").hasRole(roleType3).hasRole(roleType4);
 
-        Entity entity1 = graknGraph.addEntity(entityType);
-        Entity entity2 = graknGraph.addEntity(entityType);
-        Entity entity3 = graknGraph.addEntity(entityType);
-        Entity entity4 = graknGraph.addEntity(entityType);
-        Entity entity5 = graknGraph.addEntity(entityType);
+        Entity entity1 = entityType.addEntity();
+        Entity entity2 = entityType.addEntity();
+        Entity entity3 = entityType.addEntity();
+        Entity entity4 = entityType.addEntity();
+        Entity entity5 = entityType.addEntity();
 
-        graknGraph.addRelation(relationType1).putRolePlayer(roleType1, entity1).putRolePlayer(roleType2, entity2);
-        graknGraph.addRelation(relationType1).putRolePlayer(roleType1, entity1).putRolePlayer(roleType2, entity3);
-        graknGraph.addRelation(relationType2).putRolePlayer(roleType3, entity1).putRolePlayer(roleType4, entity4);
-        graknGraph.addRelation(relationType2).putRolePlayer(roleType3, entity1).putRolePlayer(roleType4, entity5);
+        relationType1.addRelation().putRolePlayer(roleType1, entity1).putRolePlayer(roleType2, entity2);
+        relationType1.addRelation().putRolePlayer(roleType1, entity1).putRolePlayer(roleType2, entity3);
+        relationType2.addRelation().putRolePlayer(roleType3, entity1).putRolePlayer(roleType4, entity4);
+        relationType2.addRelation().putRolePlayer(roleType3, entity1).putRolePlayer(roleType4, entity5);
 
         graknGraph.commit();
 

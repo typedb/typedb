@@ -54,12 +54,12 @@ public class PostprocessingTest extends GraphTestBase{
         roleType2 = graknGraph.putRoleType("role 2");
         relationType = graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
         EntityType thing = graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        instance1 = (InstanceImpl) graknGraph.addEntity(thing);
-        instance2 = (InstanceImpl) graknGraph.addEntity(thing);
-        instance3 = (InstanceImpl) graknGraph.addEntity(thing);
-        instance4 = (InstanceImpl) graknGraph.addEntity(thing);
+        instance1 = (InstanceImpl) thing.addEntity();
+        instance2 = (InstanceImpl) thing.addEntity();
+        instance3 = (InstanceImpl) thing.addEntity();
+        instance4 = (InstanceImpl) thing.addEntity();
 
-        graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
         assertEquals(2, graknGraph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
@@ -77,7 +77,7 @@ public class PostprocessingTest extends GraphTestBase{
     }
 
     private void buildDuplicateCastingWithNewRelation(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
-        RelationImpl relation = (RelationImpl) graknGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
+        RelationImpl relation = (RelationImpl) relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
         Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
@@ -167,9 +167,9 @@ public class PostprocessingTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("A Relation Type").hasRole(roleEntity).hasRole(roleResource);
         ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).playsRole(roleResource);
         EntityType entityType = graknGraph.putEntityType("An Entity Type").playsRole(roleEntity);
-        Entity e1 = graknGraph.addEntity(entityType);
-        Entity e2 = graknGraph.addEntity(entityType);
-        Entity e3 = graknGraph.addEntity(entityType);
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+        Entity e3 = entityType.addEntity();
 
         //Create fake resources
         Set<Object> resourceIds = new HashSet<>();
@@ -186,11 +186,11 @@ public class PostprocessingTest extends GraphTestBase{
         resourceIds.add(r3.getBaseIdentifier());
 
         //Give resources some relationships
-        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
-        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
-        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e2); //Absorb
-        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e2); //Don't Absorb
-        graknGraph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
+        relationType.addRelation().putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
+        relationType.addRelation().putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
+        relationType.addRelation().putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e2); //Absorb
+        relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e2); //Don't Absorb
+        relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
 
         //Check everything is broken
         assertEquals(5, resourceType.instances().size());

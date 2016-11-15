@@ -50,7 +50,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testType() {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = graknGraph.addRule(lhs, rhs, conceptType);
+        Rule rule = conceptType.addRule(lhs, rhs);
         assertNotNull(rule.type());
         assertEquals(conceptType, rule.type());
     }
@@ -58,7 +58,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testRuleValues() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = graknGraph.addRule(lhs, rhs, conceptType);
+        Rule rule = conceptType.addRule(lhs, rhs);
         assertEquals(lhs, rule.getLHS());
         assertEquals(rhs, rule.getRHS());
 
@@ -67,13 +67,13 @@ public class RuleTest extends GraphTestBase{
                 containsString(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS))
         ));
 
-        graknGraph.addRule(null, null, conceptType);
+        conceptType.addRule(null, null);
     }
 
     @Test
     public void testExpectation() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = graknGraph.addRule(lhs, rhs, conceptType);
+        Rule rule = conceptType.addRule(lhs, rhs);
         assertFalse(rule.getExpectation());
         rule.setExpectation(true);
         assertTrue(rule.getExpectation());
@@ -82,7 +82,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testMaterialise() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = graknGraph.addRule(lhs, rhs, conceptType);
+        Rule rule = conceptType.addRule(lhs, rhs);
         assertFalse(rule.isMaterialise());
         rule.setMaterialise(true);
         assertTrue(rule.isMaterialise());
@@ -91,7 +91,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testAddHypothesis() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = graknGraph.addRule(lhs, rhs, conceptType);
+        Rule rule = conceptType.addRule(lhs, rhs);
         Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = graknGraph.putEntityType("A Concept Type 1");
         Type type2 = graknGraph.putEntityType("A Concept Type 2");
@@ -103,7 +103,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testAddConclusion() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = graknGraph.addRule(lhs, rhs, conceptType);
+        Rule rule = conceptType.addRule(lhs, rhs);
         Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = graknGraph.putEntityType("A Concept Type 1");
         Type type2 = graknGraph.putEntityType("A Concept Type 2");
@@ -115,7 +115,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testHypothesisTypes(){
         RuleType ruleType = graknGraph.putRuleType("A Rule Type");
-        Rule rule = graknGraph.addRule(lhs, rhs, ruleType);
+        Rule rule = ruleType.addRule(lhs, rhs);
         assertEquals(0, rule.getHypothesisTypes().size());
 
         Type ct1 = graknGraph.putEntityType("A Concept Type 1");
@@ -129,7 +129,7 @@ public class RuleTest extends GraphTestBase{
     @Test
     public void testConclusionTypes(){
         RuleType ruleType = graknGraph.putRuleType("A Rule Type");
-        Rule rule = graknGraph.addRule(lhs, rhs, ruleType);
+        Rule rule = ruleType.addRule(lhs, rhs);
         assertEquals(0, rule.getConclusionTypes().size());
 
         Type ct1 = graknGraph.putEntityType("A Concept Type 1");

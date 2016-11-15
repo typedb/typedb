@@ -41,7 +41,7 @@ public class ResourceTest extends GraphTestBase{
     @Test
     public void testDataType() throws Exception {
         ResourceType resourceType = graknGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
-        Resource resource = graknGraph.putResource("resource", resourceType);
+        Resource resource = resourceType.putResource("resource");
         assertEquals(ResourceType.DataType.STRING, resource.dataType());
     }
 
@@ -52,22 +52,22 @@ public class ResourceTest extends GraphTestBase{
         RelationType hasResource = graknGraph.putRelationType("Has Resource");
         RoleType resourceRole = graknGraph.putRoleType("Resource Role");
         RoleType actorRole = graknGraph.putRoleType("Actor");
-        Instance pacino = graknGraph.addEntity(randomThing);
-        Instance jennifer = graknGraph.addEntity(randomThing);
-        Instance bob = graknGraph.addEntity(randomThing);
-        Instance alice = graknGraph.addEntity(randomThing);
-        Resource birthDate = graknGraph.putResource("10/10/10", resourceType);
+        Instance pacino = randomThing.addEntity();
+        Instance jennifer = randomThing.addEntity();
+        Instance bob = randomThing.addEntity();
+        Instance alice = randomThing.addEntity();
+        Resource birthDate = resourceType.putResource("10/10/10");
         hasResource.hasRole(resourceRole).hasRole(actorRole);
 
         assertEquals(0, birthDate.ownerInstances().size());
 
-        graknGraph.addRelation(hasResource).
+        hasResource.addRelation().
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, pacino);
-        graknGraph.addRelation(hasResource).
+        hasResource.addRelation().
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, jennifer);
-        graknGraph.addRelation(hasResource).
+        hasResource.addRelation().
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, bob);
-        graknGraph.addRelation(hasResource).
+        hasResource.addRelation().
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, alice);
 
         assertEquals(4, birthDate.ownerInstances().size());
@@ -84,15 +84,15 @@ public class ResourceTest extends GraphTestBase{
         ResourceType<Double> doubles = graknGraph.putResourceType("Double Type", ResourceType.DataType.DOUBLE);
         ResourceType<Boolean> booleans = graknGraph.putResourceType("Boolean Type", ResourceType.DataType.BOOLEAN);
 
-        Resource<String> resource1 = graknGraph.putResource("1", strings);
-        Resource<Long> resource2 = graknGraph.putResource(1L, longs);
-        Resource<Double> resource3 = graknGraph.putResource(1.0, doubles);
-        Resource<Boolean> resource4 = graknGraph.putResource(true, booleans);
+        Resource<String> resource1 = strings.putResource("1");
+        Resource<Long> resource2 = longs.putResource(1L);
+        Resource<Double> resource3 = doubles.putResource(1.0);
+        Resource<Boolean> resource4 = booleans.putResource(true);
 
-        Resource<String> resource5 = graknGraph.putResource("5", strings);
-        Resource<Long> resource6 = graknGraph.putResource(1L, longs);
-        Resource<Double> resource7 = graknGraph.putResource(1.0, doubles);
-        Resource<Boolean> resource8 = graknGraph.putResource(true, booleans);
+        Resource<String> resource5 = strings.putResource("5");
+        Resource<Long> resource6 = longs.putResource(1L);
+        Resource<Double> resource7 = doubles.putResource(1.0);
+        Resource<Boolean> resource8 = booleans.putResource(true);
 
         assertEquals("1", graknGraph.getResource(resource1.getId()).getValue());
         assertEquals(1L, graknGraph.getResource(resource2.getId()).getValue());
@@ -117,20 +117,20 @@ public class ResourceTest extends GraphTestBase{
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()))
         ));
-        graknGraph.putResource("Invalid Thing", longResourceType);
+        longResourceType.putResource("Invalid Thing");
     }
 
     @Test
     public void datatypeTest2(){
         ResourceType<Double> doubleResourceType = graknGraph.putResourceType("doubleType", ResourceType.DataType.DOUBLE);
-        Resource thing = graknGraph.putResource(2.0, doubleResourceType);
+        Resource thing = doubleResourceType.putResource(2.0);
         assertEquals(2.0, thing.getValue());
     }
 
     @Test
     public void testToString() {
         ResourceType<String> concept = graknGraph.putResourceType("a", ResourceType.DataType.STRING);
-        Resource<String> concept2 = graknGraph.putResource("concept2", concept);
+        Resource<String> concept2 = concept.putResource("concept2");
         assertTrue(concept2.toString().contains("Value"));
     }
 
@@ -141,7 +141,7 @@ public class ResourceTest extends GraphTestBase{
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_DATATYPE.getMessage("1", String.class.getName()))
         ));
-        graknGraph.putResource(1L, stringResourceType);
+        stringResourceType.putResource(1L);
     }
 
     @Test
@@ -154,34 +154,34 @@ public class ResourceTest extends GraphTestBase{
 
         //Create Resources
         ResourceType primaryKeyType = graknGraph.putResourceTypeUnique("My Primary Key", ResourceType.DataType.STRING).playsRole(primaryKeyRole);
-        Resource pimaryKey1 = graknGraph.putResource("A Primary Key 1", primaryKeyType);
-        Resource pimaryKey2 = graknGraph.putResource("A Primary Key 2", primaryKeyType);
+        Resource pimaryKey1 = primaryKeyType.putResource("A Primary Key 1");
+        Resource pimaryKey2 = primaryKeyType.putResource("A Primary Key 2");
 
         //Create Entities
         EntityType entityType = graknGraph.putEntityType("My Entity Type").playsRole(entityRole);
-        Entity entity1 = graknGraph.addEntity(entityType);
-        Entity entity2 = graknGraph.addEntity(entityType);
-        Entity entity3 = graknGraph.addEntity(entityType);
+        Entity entity1 = entityType.addEntity();
+        Entity entity2 = entityType.addEntity();
+        Entity entity3 = entityType.addEntity();
 
         //Link Entities to resources
         assertNull(pimaryKey1.owner());
-        graknGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity1);
+        hasPrimaryKey.addRelation().putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity1);
         assertEquals(entity1, pimaryKey1.owner());
 
-        graknGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey2).putRolePlayer(entityRole, entity2);
+        hasPrimaryKey.addRelation().putRolePlayer(primaryKeyRole, pimaryKey2).putRolePlayer(entityRole, entity2);
 
         expectedException.expect(ConceptNotUniqueException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.RESOURCE_TYPE_UNIQUE.getMessage(pimaryKey1.getId(), entity1.getId()))
         ));
 
-        graknGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity3);
+        hasPrimaryKey.addRelation().putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity3);
     }
 
     @Test
     public void testNonUniqueResource(){
         ResourceType resourceType = graknGraph.putResourceType("A resourceType", ResourceType.DataType.STRING);
-        Resource resource = graknGraph.putResource("A Thing", resourceType);
+        Resource resource = resourceType.putResource("A Thing");
         assertNull(resource.owner());
     }
 }

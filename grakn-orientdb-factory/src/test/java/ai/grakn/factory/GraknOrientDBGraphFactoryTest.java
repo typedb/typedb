@@ -80,9 +80,9 @@ public class GraknOrientDBGraphFactoryTest {
         assertNotNull(graknGraph.getMetaEntityType());
 
         EntityType entityType = graknGraph.putEntityType("My Entity Type");
-        graknGraph.addEntity(entityType);
-        graknGraph.addEntity(entityType);
-        graknGraph.addEntity(entityType);
+        entityType.addEntity();
+        entityType.addEntity();
+        entityType.addEntity();
         graknGraph.commit();
         assertEquals(12, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
 

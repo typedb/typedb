@@ -84,7 +84,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
         // add primitive edges in as many ways as possible
         c1.superType(c2);
 
-        c3 = graknGraph.addEntity(c2);
+        c3 = c2.addEntity();
         newConcepts.push(c3);
 
         // verify the concepts that we expected are returned in the set
@@ -98,7 +98,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("entityType");
         // add concepts to rootGraph
         newConcepts.push(
-                graknGraph.addEntity(entityType));
+                entityType.addEntity());
         Type type = graknGraph.putEntityType("test subject id");
 
         // delete some concepts
@@ -113,7 +113,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
     public void testDeleteConceptFromPrimitiveEdgeWithinTransaction() throws ConceptException {
         // add concepts and edge to rootGraph
         EntityType type = graknGraph.putEntityType("a type");
-        Instance instance = graknGraph.addEntity(type);
+        Instance instance = type.addEntity();
 
         // delete a concept
         newConcepts.push(type);

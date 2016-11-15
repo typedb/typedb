@@ -63,22 +63,22 @@ public class ValidatorTest extends GraphTestBase{
         RoleType actor = graknGraph.putRoleType("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
         EntityType person = graknGraph.putEntityType("Person");
-        Instance pacino = graknGraph.addEntity(person);
-        Instance godfather = graknGraph.addEntity(movie);
+        Instance pacino = person.addEntity();
+        Instance godfather = movie.addEntity();
         EntityType genre = graknGraph.putEntityType("Genre");
         RoleType movieOfGenre = graknGraph.putRoleType("Movie of Genre");
         RoleType movieGenre = graknGraph.putRoleType("Movie Genre");
-        Instance crime = graknGraph.addEntity(genre);
+        Instance crime = genre.addEntity();
         RelationType movieHasGenre = graknGraph.putRelationType("Movie Has Genre");
 
         //Construction
         cast.hasRole(feature);
         cast.hasRole(actor);
 
-        graknGraph.addRelation(cast).
+        cast.addRelation().
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
-        graknGraph.addRelation(movieHasGenre).
+        movieHasGenre.addRelation().
                 putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
         movieHasGenre.hasRole(movieOfGenre);
@@ -105,10 +105,10 @@ public class ValidatorTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("kicks");
         RoleType kicker = graknGraph.putRoleType("kicker");
         RoleType kickee = graknGraph.putRoleType("kickee");
-        Instance kyle = graknGraph.addEntity(fakeType);
-        Instance icke = graknGraph.addEntity(fakeType);
+        Instance kyle = fakeType.addEntity();
+        Instance icke = fakeType.addEntity();
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) relationType.addRelation().
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
 
         boolean failure = false;
@@ -155,10 +155,10 @@ public class ValidatorTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("kicks");
         RoleType kicker = graknGraph.putRoleType("kicker");
         RoleType kickee = graknGraph.putRoleType("kickee");
-        InstanceImpl kyle = (InstanceImpl) graknGraph.addEntity(fakeType);
-        InstanceImpl icke = (InstanceImpl) graknGraph.addEntity(fakeType);
+        InstanceImpl kyle = (InstanceImpl) fakeType.addEntity();
+        InstanceImpl icke = (InstanceImpl) fakeType.addEntity();
 
-        graknGraph.addRelation(relationType).
+        relationType.addRelation().
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
 
         Validator validator = new Validator(graknGraph);
@@ -174,10 +174,10 @@ public class ValidatorTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("kicks");
         RoleType kicker = graknGraph.putRoleType("kicker");
         RoleType kickee = graknGraph.putRoleType("kickee");
-        Instance kyle = graknGraph.addEntity(fakeType);
-        Instance icke = graknGraph.addEntity(fakeType);
+        Instance kyle = fakeType.addEntity();
+        Instance icke = fakeType.addEntity();
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) relationType.addRelation().
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
         CastingImpl casting = (CastingImpl) assertion.getMappingCasting().toArray()[0];
         Validator validator = new Validator(graknGraph);
@@ -191,7 +191,7 @@ public class ValidatorTest extends GraphTestBase{
         EntityType x2 = graknGraph.putEntityType("x2");
         EntityType x3 = graknGraph.putEntityType("x3");
         EntityType x4 = graknGraph.putEntityType("x4");
-        Instance x5 = graknGraph.addEntity(x1);
+        Instance x5 = x1.addEntity();
 
         x1.setAbstract(true);
         x4.setAbstract(true);
@@ -223,13 +223,13 @@ public class ValidatorTest extends GraphTestBase{
         movie.playsRole(feature);
 
         // add a single movie
-        Instance godfather = graknGraph.addEntity(movie);
+        Instance godfather = movie.addEntity();
 
         // add many random actors
         int n = 100;
         for (int i=0; i < n; i++) {
-            Instance newPerson = graknGraph.addEntity(person);
-            graknGraph.addRelation(cast).
+            Instance newPerson = person.addEntity();
+            cast.addRelation().
                     putRolePlayer(actor, newPerson).putRolePlayer(feature, godfather);
         }
 
@@ -273,10 +273,10 @@ public class ValidatorTest extends GraphTestBase{
         EntityType person = graknGraph.putEntityType("person").playsRole(characterBeingPlayed).playsRole(personPlayingCharacter);
         EntityType character = graknGraph.putEntityType("character").playsRole(characterBeingPlayed);
 
-        Entity matt = graknGraph.addEntity(person);
-        Entity walker = graknGraph.addEntity(character);
+        Entity matt = person.addEntity();
+        Entity walker = character.addEntity();
 
-        graknGraph.addRelation(playsChar).
+        playsChar.addRelation().
                 putRolePlayer(personPlayingCharacter, matt).
                 putRolePlayer(characterBeingPlayed, walker);
 

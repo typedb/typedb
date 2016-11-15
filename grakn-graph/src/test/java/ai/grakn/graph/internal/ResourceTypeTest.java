@@ -77,17 +77,17 @@ public class ResourceTypeTest extends GraphTestBase{
     @Test
     public void testRegexInstance(){
         resourceType.setRegex("[abc]");
-        graknGraph.putResource("a", resourceType);
+        resourceType.putResource("a");
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(allOf(
                 containsString("regular expressions")
         ));
-        graknGraph.putResource("1", resourceType);
+        resourceType.putResource("1");
     }
 
     @Test
     public void testRegexInstanceChangeRegexWithInstances(){
-        Resource<String> thing = graknGraph.putResource("1", resourceType);
+        Resource<String> thing = resourceType.putResource("1");
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.toString()))

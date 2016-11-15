@@ -155,7 +155,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         RoleType hasResourceTarget = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
         RoleType hasResourceValue = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
 
-        Relation relation = getGraknGraph().addRelation(hasResource);
+        Relation relation = hasResource.addRelation();
         relation.putRolePlayer(hasResourceTarget, this);
         relation.putRolePlayer(hasResourceValue, resource);
 

@@ -49,9 +49,9 @@ public class CastingTest extends GraphTestBase{
     public void setUp() {
         role = (RoleTypeImpl) graknGraph.putRoleType("Role");
         EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("A thing");
-        rolePlayer = (InstanceImpl) graknGraph.addEntity(conceptType);
+        rolePlayer = (InstanceImpl) conceptType.addEntity();
         RelationTypeImpl relationType = (RelationTypeImpl) graknGraph.putRelationType("A type");
-        relation = (RelationImpl) graknGraph.addRelation(relationType);
+        relation = (RelationImpl) relationType.addRelation();
         casting = graknGraph.putCasting(role, rolePlayer, relation);
     }
 
@@ -64,7 +64,7 @@ public class CastingTest extends GraphTestBase{
 
         EntityType type = graknGraph.putEntityType("Another entity type");
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
-        InstanceImpl rolePlayer = (InstanceImpl) graknGraph.addEntity(type);
+        InstanceImpl rolePlayer = (InstanceImpl) type.addEntity();
         CastingImpl casting2 = graknGraph.putCasting(role, rolePlayer, relation);
         assertNotEquals(casting, casting2);
     }
@@ -128,7 +128,7 @@ public class CastingTest extends GraphTestBase{
         RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
         RelationTypeImpl genericRelation = (RelationTypeImpl) graknGraph.putRelationType("gr");
         RelationTypeImpl resourceType = (RelationTypeImpl) graknGraph.putRelationType("rt");
-        RelationImpl relationValue = (RelationImpl) graknGraph.addRelation(resourceType);
+        RelationImpl relationValue = (RelationImpl) resourceType.addRelation();
 
         relation.addEdge(genericRelation, Schema.EdgeLabel.ISA);
         relationValue.addEdge(resourceType, Schema.EdgeLabel.ISA);
