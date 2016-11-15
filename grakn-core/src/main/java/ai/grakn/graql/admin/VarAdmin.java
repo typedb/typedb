@@ -138,18 +138,4 @@ public interface VarAdmin extends PatternAdmin, Var {
      */
     Set<RelationPlayer> getRelationPlayers();
 
-    /**
-     * A pair of role type and role player (where the role type may not be present)
-     */
-    interface RelationPlayer {
-        /**
-         * @return the role type, if specified
-         */
-        Optional<VarAdmin> getRoleType();
-
-        /**
-         * @return the role player
-         */
-        VarAdmin getRolePlayer();
-    }
 }

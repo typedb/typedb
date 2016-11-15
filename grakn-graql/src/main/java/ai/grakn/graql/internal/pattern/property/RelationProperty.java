@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Relation;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -55,13 +56,13 @@ import static java.util.stream.Collectors.toSet;
 
 public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
-    private final ImmutableMultiset<VarAdmin.RelationPlayer> relationPlayers;
+    private final ImmutableMultiset<RelationPlayer> relationPlayers;
 
-    public RelationProperty(ImmutableMultiset<VarAdmin.RelationPlayer> relationPlayers) {
+    public RelationProperty(ImmutableMultiset<RelationPlayer> relationPlayers) {
         this.relationPlayers = relationPlayers;
     }
 
-    public Stream<VarAdmin.RelationPlayer> getRelationPlayers() {
+    public Stream<RelationPlayer> getRelationPlayers() {
         return relationPlayers.stream();
     }
 
@@ -114,7 +115,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Stream<VarAdmin> getTypes() {
-        return relationPlayers.stream().map(VarAdmin.RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override
@@ -127,7 +128,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         });
     }
 
-    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(String start, String castingName, VarAdmin.RelationPlayer relationPlayer) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(String start, String castingName, RelationPlayer relationPlayer) {
         Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
         if (roleType.isPresent()) {
@@ -191,7 +192,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
 
         Set<String> roleTypes = relationPlayers.stream()
-                .map(VarAdmin.RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
+                .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
                 .map(VarAdmin::getIdOnly).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
@@ -246,7 +247,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param relation the concept representing the relation
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, VarAdmin.RelationPlayer relationPlayer) {
+    private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
         VarAdmin roleVar = relationPlayer.getRoleType().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
         );

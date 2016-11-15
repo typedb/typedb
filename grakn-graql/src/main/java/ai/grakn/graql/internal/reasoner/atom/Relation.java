@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -37,7 +38,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 
 public class Relation extends Atom {
 
-    private final Set<VarAdmin.RelationPlayer> relationPlayers = new HashSet<>();
+    private final Set<RelationPlayer> relationPlayers = new HashSet<>();
     private Map<RoleType, Pair<String, Type>> roleVarTypeMap = null;
     private Map<String, Pair<Type, RoleType>> varTypeRoleMap = null;
 
@@ -198,7 +199,7 @@ public class Relation extends Atom {
 
     public boolean hasExplicitRoleTypes(){
         boolean rolesDefined = false;
-        Iterator<VarAdmin.RelationPlayer> it = relationPlayers.iterator();
+        Iterator<RelationPlayer> it = relationPlayers.iterator();
         while (it.hasNext() && !rolesDefined)
             rolesDefined = it.next().getRoleType().isPresent();
         return rolesDefined;
@@ -226,7 +227,7 @@ public class Relation extends Atom {
     @Override
     public boolean containsVar(String name) {
         boolean varFound = false;
-        Iterator<VarAdmin.RelationPlayer> it = relationPlayers.iterator();
+        Iterator<RelationPlayer> it = relationPlayers.iterator();
         while(it.hasNext() && !varFound)
             varFound = it.next().getRolePlayer().getName().equals(name);
         return varFound;
@@ -290,7 +291,7 @@ public class Relation extends Atom {
         for (String var : vars) {
             Type type = varTypeMap.get(var);
             String roleTypeId = "";
-            for(VarAdmin.RelationPlayer c : relationPlayers) {
+            for(RelationPlayer c : relationPlayers) {
                 if (c.getRolePlayer().getName().equals(var))
                     roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }

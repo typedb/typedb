@@ -349,7 +349,7 @@ class VarImpl implements VarAdmin {
         return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
     }
 
-    public Set<VarAdmin.RelationPlayer> getRelationPlayers() {
+    public Set<ai.grakn.graql.admin.RelationPlayer> getRelationPlayers() {
         return getProperties(RelationProperty.class).flatMap(RelationProperty::getRelationPlayers).collect(toSet());
     }
 
@@ -437,14 +437,14 @@ class VarImpl implements VarAdmin {
         return builder.toString();
     }
 
-    private Var addCasting(VarAdmin.RelationPlayer relationPlayer) {
+    private Var addCasting(ai.grakn.graql.admin.RelationPlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        Stream<VarAdmin.RelationPlayer> oldCastings = relationProperty
+        Stream<ai.grakn.graql.admin.RelationPlayer> oldCastings = relationProperty
                 .map(RelationProperty::getRelationPlayers)
                 .orElse(Stream.empty());
 
-        ImmutableMultiset<VarAdmin.RelationPlayer> relationPlayers =
+        ImmutableMultiset<ai.grakn.graql.admin.RelationPlayer> relationPlayers =
                 Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
         relationProperty.ifPresent(properties::remove);
@@ -508,7 +508,7 @@ class VarImpl implements VarAdmin {
     /**
      * A casting is the pairing of roletype and roleplayer in a relation, where the roletype may be unknown
      */
-    public class RelationPlayer implements VarAdmin.RelationPlayer {
+    public class RelationPlayer implements ai.grakn.graql.admin.RelationPlayer {
         private final Optional<VarAdmin> roleType;
         private final VarAdmin rolePlayer;
 
