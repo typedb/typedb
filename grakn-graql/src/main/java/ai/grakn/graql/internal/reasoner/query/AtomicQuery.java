@@ -76,7 +76,8 @@ public class AtomicQuery extends Query{
 
     @Override
     public boolean equals(Object obj){
-        if (!(obj instanceof AtomicQuery)) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         AtomicQuery a2 = (AtomicQuery) obj;
         return this.isEquivalent(a2);
     }

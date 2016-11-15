@@ -78,7 +78,8 @@ public class Query implements MatchQueryInternal {
     //alpha-equivalence equality
     @Override
     public boolean equals(Object obj){
-        if (!(obj instanceof Query)) return false;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
         Query a2 = (Query) obj;
         return this.isEquivalent(a2);
     }

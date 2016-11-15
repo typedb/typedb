@@ -67,9 +67,6 @@ public abstract class Binary extends Atom{
         return (pred  == null && objPredicate == null)
             || ((pred  != null && objPredicate != null) && pred.isEquivalent(objPredicate));
     }
-    private int predicateHashCode(){
-        return predicate != null? predicate.hashCode() : 0;
-    }
 
     @Override
     public boolean isBinary(){ return true;}
@@ -105,9 +102,10 @@ public abstract class Binary extends Atom{
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + predicateHashCode();
+        hashCode = hashCode * 37 + (predicate != null? predicate.equivalenceHashCode() : 0);
         return hashCode;
     }
+
     @Override
     public Set<Predicate> getPredicates(){
         return getParentQuery().getAtoms().stream()

@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.util.ErrorMessage;
@@ -69,7 +70,9 @@ public class AtomicQueryTest {
     public void testCopyConstructor(){
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        assert(atomicQuery.equals(new AtomicQuery(atomicQuery)));
+        AtomicQuery copy = new AtomicQuery(atomicQuery);
+        assert(atomicQuery.equals(copy));
+        assert(atomicQuery.hashCode() == copy.hashCode());
     }
 
     @Test
@@ -130,7 +133,26 @@ public class AtomicQueryTest {
                 "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
         AtomicQuery parentQuery = new AtomicQuery(queryString, graph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, graph);
-        assertTrue(parentQuery.isEquivalent(childQuery));
+        assertTrue(parentQuery.equals(childQuery));
+        assertTrue(parentQuery.hashCode() == childQuery.hashCode());
+    }
+
+    @Test
+    public void testResourceEquivalence2() {
+        GraknGraph lgraph = AdmissionsGraph.getGraph();
+        String queryString = "match $x isa $x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680;" +
+                "$x has GRE $x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45;" +
+                "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 id 'applicant';" +
+                "$x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45 value > 1099;";
+
+        String queryString2 = "match $x isa $x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6;" +
+                "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
+                "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 id 'applicant';" +
+                "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
+        AtomicQuery parentQuery = new AtomicQuery(queryString, lgraph);
+        AtomicQuery childQuery = new AtomicQuery(queryString2, lgraph);
+        assertTrue(parentQuery.equals(childQuery));
+        assertTrue(parentQuery.hashCode() == childQuery.hashCode());
     }
 
     private static Concept getConcept(String id){
