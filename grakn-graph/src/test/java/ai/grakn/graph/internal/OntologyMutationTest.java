@@ -60,9 +60,9 @@ public class OntologyMutationTest extends GraphTestBase{
         woman = graknGraph.putEntityType("Woman").superType(person);
         car = graknGraph.putEntityType("Car");
 
-        alice = graknGraph.addEntity(woman);
-        bob = graknGraph.addEntity(man);
-        relation = graknGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
+        alice = woman.addEntity();
+        bob = man.addEntity();
+        relation = marriage.addRelation().putRolePlayer(wife, alice).putRolePlayer(husband, bob);
         graknGraph.commit();
     }
 

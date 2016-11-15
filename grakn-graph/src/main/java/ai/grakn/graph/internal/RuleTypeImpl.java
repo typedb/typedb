@@ -22,6 +22,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
@@ -35,6 +36,7 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
 
     @Override
     public Rule addRule(Pattern lhs, Pattern rhs) {
-        return getGraknGraph().addRule(lhs, rhs, this);
+        return addInstance(Schema.BaseType.RULE, (vertex, type) ->
+                getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
     }
 }

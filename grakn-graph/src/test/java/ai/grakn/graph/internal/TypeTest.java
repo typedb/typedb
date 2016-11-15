@@ -265,8 +265,8 @@ public class TypeTest extends GraphTestBase{
         Type type = graknGraph.putEntityType("A Concept Type");
         RuleType ruleType = graknGraph.putRuleType("A Rule Type");
         assertEquals(0, type.getRulesOfHypothesis().size());
-        Rule rule1 = graknGraph.addRule(lhs, rhs, ruleType).addHypothesis(type);
-        Rule rule2 = graknGraph.addRule(lhs, rhs, ruleType).addHypothesis(type);
+        Rule rule1 = ruleType.addRule(lhs, rhs).addHypothesis(type);
+        Rule rule2 = ruleType.addRule(lhs, rhs).addHypothesis(type);
         assertEquals(2, type.getRulesOfHypothesis().size());
         assertTrue(type.getRulesOfHypothesis().contains(rule1));
         assertTrue(type.getRulesOfHypothesis().contains(rule2));
@@ -279,8 +279,8 @@ public class TypeTest extends GraphTestBase{
         Type type = graknGraph.putEntityType("A Concept Type");
         RuleType ruleType = graknGraph.putRuleType("A Rule Type");
         assertEquals(0, type.getRulesOfConclusion().size());
-        Rule rule1 = graknGraph.addRule(lhs, rhs, ruleType).addConclusion(type);
-        Rule rule2 = graknGraph.addRule(lhs, rhs, ruleType).addConclusion(type);
+        Rule rule1 = ruleType.addRule(lhs, rhs).addConclusion(type);
+        Rule rule2 = ruleType.addRule(lhs, rhs).addConclusion(type);
         assertEquals(2, type.getRulesOfConclusion().size());
         assertTrue(type.getRulesOfConclusion().contains(rule1));
         assertTrue(type.getRulesOfConclusion().contains(rule2));
@@ -310,7 +310,7 @@ public class TypeTest extends GraphTestBase{
         assertNull(graknGraph.getConcept("1"));
 
         toDelete = graknGraph.putEntityType("2");
-        Instance instance = graknGraph.addEntity(toDelete);
+        Instance instance = toDelete.addEntity();
 
         boolean conceptExceptionThrown = false;
         try{
@@ -325,11 +325,11 @@ public class TypeTest extends GraphTestBase{
     public void testGetInstances(){
         EntityType entityType = graknGraph.putEntityType("Entity");
         RoleType actor = graknGraph.putRoleType("Actor");
-        graknGraph.addEntity(entityType);
+        entityType.addEntity();
         EntityType production = graknGraph.putEntityType("Production");
         EntityType movie = graknGraph.putEntityType("Movie").superType(production);
-        Instance musicVideo = graknGraph.addEntity(production);
-        Instance godfather = graknGraph.addEntity(movie);
+        Instance musicVideo = production.addEntity();
+        Instance godfather = movie.addEntity();
 
         Collection<? extends Concept> types = graknGraph.getMetaType().instances();
         Collection<? extends Concept> data = production.instances();

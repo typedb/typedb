@@ -47,8 +47,8 @@ public class EntityTest extends GraphTestBase{
     public void testDeleteScope() throws ConceptException {
         EntityType entityType = graknGraph.putEntityType("entity type");
         RelationType relationType = graknGraph.putRelationType("RelationType");
-        Instance scope = graknGraph.addEntity(entityType);
-        Relation relation = graknGraph.addRelation(relationType);
+        Instance scope = entityType.addEntity();
+        Relation relation = relationType.addRelation();
         relation.scope(scope);
         scope.delete();
         assertNull(graknGraph.getConceptByBaseIdentifier(((ConceptImpl) scope).getBaseIdentifier()));
@@ -58,13 +58,13 @@ public class EntityTest extends GraphTestBase{
     public void testGetCastings(){
         RelationType relationType = graknGraph.putRelationType("rel type");
         EntityType entityType = graknGraph.putEntityType("entity type");
-        InstanceImpl rolePlayer1 = (InstanceImpl) graknGraph.addEntity(entityType);
+        InstanceImpl rolePlayer1 = (InstanceImpl) entityType.addEntity();
         assertEquals(0, rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.CASTING).size());
 
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role");
         RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
-        Relation relation = graknGraph.addRelation(relationType);
-        Relation relation2 = graknGraph.addRelation(relationType);
+        Relation relation = relationType.addRelation();
+        Relation relation2 = relationType.addRelation();
         CastingImpl casting1 = graknGraph.putCasting(role, rolePlayer1, (RelationImpl) relation);
         CastingImpl casting2 = graknGraph.putCasting(role2, rolePlayer1, (RelationImpl) relation2);
 
@@ -84,14 +84,14 @@ public class EntityTest extends GraphTestBase{
         RoleType role1 = graknGraph.putRoleType("role1");
         RoleType role2 = graknGraph.putRoleType("role2");
         RoleType role3 = graknGraph.putRoleType("role3");
-        Instance rolePlayer1 = graknGraph.addEntity(type);
-        Instance rolePlayer2 = graknGraph.addEntity(type);
-        Instance rolePlayer3 = graknGraph.addEntity(type);
+        Instance rolePlayer1 = type.addEntity();
+        Instance rolePlayer2 = type.addEntity();
+        Instance rolePlayer3 = type.addEntity();
 
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        graknGraph.addRelation(relationType).
+        relationType.addRelation().
                 putRolePlayer(role1, rolePlayer1).
                 putRolePlayer(role2, rolePlayer2).
                 putRolePlayer(role3, rolePlayer3);
@@ -113,12 +113,12 @@ public class EntityTest extends GraphTestBase{
         RoleType role1 = graknGraph.putRoleType("role1");
         RoleType role2 = graknGraph.putRoleType("role2");
         RoleType role3 = graknGraph.putRoleType("role3");
-        Instance rolePlayer1 = graknGraph.addEntity(type);
+        Instance rolePlayer1 = type.addEntity();
 
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        graknGraph.addRelation(relationType).
+        relationType.addRelation().
                 putRolePlayer(role1, rolePlayer1).
                 putRolePlayer(role2, null).
                 putRolePlayer(role3, null);
@@ -144,19 +144,19 @@ public class EntityTest extends GraphTestBase{
         RoleType musical = graknGraph.putRoleType("Musical");
         RoleType actor = graknGraph.putRoleType("Actor");
         RoleType singer = graknGraph.putRoleType("Singer");
-        Instance pacino = graknGraph.addEntity(entityType);
-        Instance godfather = graknGraph.addEntity(entityType);
-        Instance godfather2 = graknGraph.addEntity(entityType);
-        Instance godfather3 = graknGraph.addEntity(entityType);
-        Instance godfather4 = graknGraph.addEntity(entityType);
+        Instance pacino = entityType.addEntity();
+        Instance godfather = entityType.addEntity();
+        Instance godfather2 = entityType.addEntity();
+        Instance godfather3 = entityType.addEntity();
+        Instance godfather4 = entityType.addEntity();
 
         castActing.hasRole(actor).hasRole(feature);
         castSinging.hasRole(singer).hasRole(musical);
 
-        Relation relation1 = graknGraph.addRelation(castActing).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
-        Relation relation2 = graknGraph.addRelation(castActing).putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
-        Relation relation3 = graknGraph.addRelation(castActing).putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
-        Relation relation4 = graknGraph.addRelation(castActing).putRolePlayer(feature, godfather4).putRolePlayer(singer, pacino);
+        Relation relation1 = castActing.addRelation().putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
+        Relation relation2 = castActing.addRelation().putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
+        Relation relation3 = castActing.addRelation().putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
+        Relation relation4 = castActing.addRelation().putRolePlayer(feature, godfather4).putRolePlayer(singer, pacino);
 
         assertEquals(4, pacino.relations().size());
         assertEquals(1, godfather.relations().size());
@@ -194,24 +194,24 @@ public class EntityTest extends GraphTestBase{
         RoleType resourceRole = graknGraph.putRoleType("Resource Role");
         RoleType actorRole = graknGraph.putRoleType("Actor");
 
-        Entity pacino = graknGraph.addEntity(randomThing);
-        Resource birthplace = graknGraph.putResource("a place", resourceType);
-        Resource age = graknGraph.putResource("100", resourceType);
-        Resource family = graknGraph.putResource("people", resourceType);
-        Resource birthDate = graknGraph.putResource("10/10/10", resourceType);
+        Entity pacino = randomThing.addEntity();
+        Resource birthplace = resourceType.putResource("a place");
+        Resource age = resourceType.putResource("100");
+        Resource family = resourceType.putResource("people");
+        Resource birthDate = resourceType.putResource("10/10/10");
         hasResource.hasRole(resourceRole).hasRole(actorRole);
 
-        Resource randomResource = graknGraph.putResource("Random 1", resourceType2);
-        Resource randomResource2 = graknGraph.putResource("Random 2", resourceType2);
+        Resource randomResource = resourceType2.putResource("Random 1");
+        Resource randomResource2 = resourceType2.putResource("Random 2");
 
         assertEquals(0, birthDate.ownerInstances().size());
-        graknGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthDate);
-        graknGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthplace);
-        graknGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, age);
-        graknGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, family);
+        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthDate);
+        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthplace);
+        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, age);
+        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, family);
 
-        graknGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource);
-        graknGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource2);
+        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource);
+        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource2);
 
         assertEquals(1, birthDate.ownerInstances().size());
         assertEquals(6, pacino.resources().size());
@@ -236,10 +236,10 @@ public class EntityTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("Has Resource");
         RuleType ruleType = graknGraph.putRuleType("Rule Type");
 
-        Entity entity = graknGraph.addEntity(entityType);
-        Resource resource = graknGraph.putResource("A resource thing", resourceType);
-        Relation relation = graknGraph.addRelation(relationType);
-        Rule rule = graknGraph.addRule(lhs, rhs, ruleType);
+        Entity entity = entityType.addEntity();
+        Resource resource = resourceType.putResource("A resource thing");
+        Relation relation = relationType.addRelation();
+        Rule rule = ruleType.addRule(lhs, rhs);
 
         assertTrue(entity.getId().startsWith(Schema.BaseType.ENTITY.name() + "-" + entity.type().getId() + "-"));
         assertTrue(resource.getId().startsWith(Schema.BaseType.RESOURCE.name() + "-" + resource.type().getId() + "-"));
@@ -254,8 +254,8 @@ public class EntityTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
         entityType.hasResource(resourceType);
 
-        Entity entity = graknGraph.addEntity(entityType);
-        Resource resource = graknGraph.putResource("A resource thing", resourceType);
+        Entity entity = entityType.addEntity();
+        Resource resource = resourceType.putResource("A resource thing");
 
         Relation relation = entity.hasResource(resource);
         assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relation.type().getId());

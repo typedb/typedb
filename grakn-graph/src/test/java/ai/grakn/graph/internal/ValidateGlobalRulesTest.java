@@ -54,10 +54,10 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationType hunts = graknGraph.putRelationType("hunts");
         RoleTypeImpl witcher = (RoleTypeImpl) graknGraph.putRoleType("witcher");
         RoleTypeImpl monster = (RoleTypeImpl) graknGraph.putRoleType("monster");
-        Instance geralt = graknGraph.addEntity(hunter);
-        InstanceImpl werewolf = (InstanceImpl) graknGraph.addEntity(wolf);
+        Instance geralt = hunter.addEntity();
+        InstanceImpl werewolf = (InstanceImpl) wolf.addEntity();
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(hunts).
+        RelationImpl assertion = (RelationImpl) hunts.addRelation().
                 putRolePlayer(witcher, geralt).putRolePlayer(monster, werewolf);
         for (CastingImpl casting : assertion.getMappingCasting()) {
             assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
@@ -154,13 +154,13 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType hunter = graknGraph.putRoleType("hunter");
         RoleType monster = graknGraph.putRoleType("monster");
         RoleType creature = graknGraph.putRoleType("creature");
-        Instance cathulu = graknGraph.addEntity(fakeType);
-        Instance werewolf = graknGraph.addEntity(fakeType);
-        Instance cartman = graknGraph.addEntity(fakeType);
+        Instance cathulu = fakeType.addEntity();
+        Instance werewolf = fakeType.addEntity();
+        Instance cartman = fakeType.addEntity();
         RelationType kills = graknGraph.putRelationType("kills");
         RelationType naps = graknGraph.putRelationType("naps").hasRole(napper);
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(kills).
+        RelationImpl assertion = (RelationImpl) kills.addRelation().
                 putRolePlayer(hunter, cartman).putRolePlayer(monster, werewolf).putRolePlayer(creature, cathulu);
 
         kills.hasRole(monster);
@@ -170,7 +170,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         kills.hasRole(creature);
         assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion));
 
-        RelationImpl assertion2 = (RelationImpl) graknGraph.addRelation(naps).putRolePlayer(hunter, cathulu);
+        RelationImpl assertion2 = (RelationImpl) naps.addRelation().putRolePlayer(hunter, cathulu);
         assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion2));
     }
 
@@ -198,10 +198,10 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("relationType").setAbstract(true);
         RelationType hasCast = graknGraph.putRelationType("has cast").superType(relationType).hasRole(r1).hasRole(r2);
 
-        Entity e1 = graknGraph.addEntity(entityType);
-        Entity e2 = graknGraph.addEntity(entityType);
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
 
-        graknGraph.addRelation(hasCast).putRolePlayer(r1, e1).putRolePlayer(r2, e2);
+        hasCast.addRelation().putRolePlayer(r1, e1).putRolePlayer(r2, e2);
 
         assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges((TypeImpl) relationType));
     }

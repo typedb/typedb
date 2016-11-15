@@ -19,7 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -27,16 +26,16 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.MoreThanOneConceptException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryBuilderImpl;
 import ai.grakn.util.ErrorMessage;
@@ -229,7 +228,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
-    private Vertex addVertex(Schema.BaseType baseType){
+    public Vertex addVertex(Schema.BaseType baseType){
         Vertex v = getTinkerPopGraph().addVertex(baseType.name());
         return v;
     }
@@ -299,28 +298,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public RuleType putRuleType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.RULE_TYPE, getMetaRuleType()).asRuleType();
-    }
-
-    public Entity addEntity(EntityType type) {
-        return elementFactory.buildEntity(addVertex(Schema.BaseType.ENTITY), type);
-    }
-
-    public <V> Resource<V> putResource(V value, ResourceType<V> type) {
-        Resource<V> resource = getResource(value, type);
-        if(resource == null){
-            resource = elementFactory.buildResource(addVertex(Schema.BaseType.RESOURCE), type, value);
-        }
-        return resource;
-    }
-
-    public Rule addRule(Pattern lhs, Pattern rhs, RuleType type) {
-        return elementFactory.buildRule(addVertex(Schema.BaseType.RULE), type, lhs, rhs);
-    }
-
-    public Relation addRelation(RelationType type) {
-        RelationImpl relation = elementFactory.buildRelation(addVertex(Schema.BaseType.RELATION), type);
-        relation.setHash(null);
-        return relation;
     }
 
     //------------------------------------ Lookup
@@ -907,7 +884,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
 
         //Relation was not found so create a new one
-        Relation relation = addRelation(relationType);
+        Relation relation = relationType.addRelation();
         rolePlayers.entrySet().forEach(entry -> relation.putRolePlayer(entry.getKey(), entry.getValue()));
     }
 

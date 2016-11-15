@@ -75,7 +75,13 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
-        return getGraknGraph().putResource(value, this);
+        Resource<D> resource = getGraknGraph().getResource(value, this);
+        if(resource == null){
+            resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->
+                    getGraknGraph().getElementFactory().buildResource(vertex, type, value));
+        }
+        return resource;
+
     }
 
     /**

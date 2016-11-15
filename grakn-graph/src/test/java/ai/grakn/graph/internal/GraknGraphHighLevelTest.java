@@ -74,9 +74,9 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         role1 = (RoleTypeImpl) graknGraph.putRoleType("role1");
         role2 = (RoleTypeImpl) graknGraph.putRoleType("role2");
         role3 = (RoleTypeImpl) graknGraph.putRoleType("role3");
-        rolePlayer1 = (InstanceImpl) graknGraph.addEntity(type);
-        rolePlayer2 = (InstanceImpl) graknGraph.addEntity(type);
-        rolePlayer3 = (InstanceImpl) graknGraph.addEntity(type);
+        rolePlayer1 = (InstanceImpl) type.addEntity();
+        rolePlayer2 = (InstanceImpl) type.addEntity();
+        rolePlayer3 = (InstanceImpl) type.addEntity();
     }
 
     //---------------------------------------------Higher Level Functionality-------------------------------------------
@@ -91,7 +91,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) relationType.addRelation().
                 putRolePlayer(role1, rolePlayer1).
                 putRolePlayer(role2, rolePlayer2).
                 putRolePlayer(role3, rolePlayer3);
@@ -170,7 +170,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl relationConcept1 = (RelationImpl) graknGraph.addRelation(relationType).
+        RelationImpl relationConcept1 = (RelationImpl) relationType.addRelation().
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, rolePlayer2).putRolePlayer(role3, null);
 
         //Checking it
@@ -233,7 +233,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
                 containsString(ErrorMessage.ROLE_IS_NULL.getMessage(rolePlayer1))
         ));
 
-        graknGraph.addRelation(relationType).putRolePlayer(null, rolePlayer1);
+        relationType.addRelation().putRolePlayer(null, rolePlayer1);
     }
 
     @Test
@@ -242,7 +242,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         roleMap.put(role1, rolePlayer1);
         roleMap.put(role2, rolePlayer2);
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) relationType.addRelation().
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, rolePlayer2);
         Relation relationFound = graknGraph.getRelation(relationType, roleMap);
         assertEquals(assertion, relationFound);
@@ -271,26 +271,26 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
         EntityType person = graknGraph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) graknGraph.addEntity(person);
-        InstanceImpl godfather = (InstanceImpl) graknGraph.addEntity(movie);
+        InstanceImpl pacino = (InstanceImpl) person.addEntity();
+        InstanceImpl godfather = (InstanceImpl) movie.addEntity();
         EntityType genre = graknGraph.putEntityType("Genre");
         RoleTypeImpl movieOfGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie of Genre");
         RoleTypeImpl movieGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie Genre");
-        InstanceImpl crime = (InstanceImpl) graknGraph.addEntity(genre);
+        InstanceImpl crime = (InstanceImpl) genre.addEntity();
         RelationTypeImpl movieHasGenre = (RelationTypeImpl) graknGraph.putRelationType("Movie Has Genre");
 
         //Construction
         cast.hasRole(feature);
         cast.hasRole(actor);
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(cast).
+        RelationImpl assertion = (RelationImpl) cast.addRelation().
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
         Map<RoleType, Instance> roleMap = new HashMap<>();
         roleMap.clear();
         roleMap.put(movieOfGenre, godfather);
         roleMap.put(movieGenre, crime);
-        graknGraph.addRelation(movieHasGenre).
+        movieHasGenre.addRelation().
                 putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
         movieHasGenre.hasRole(movieOfGenre);
@@ -394,16 +394,16 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
         EntityType person = graknGraph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) graknGraph.addEntity(person);
-        InstanceImpl godfather = (InstanceImpl) graknGraph.addEntity(movie);
+        InstanceImpl pacino = (InstanceImpl) person.addEntity();
+        InstanceImpl godfather = (InstanceImpl) movie.addEntity();
         EntityType genre = graknGraph.putEntityType("Genre");
         RoleTypeImpl movieOfGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie of Genre");
         RoleTypeImpl movieGenre = (RoleTypeImpl) graknGraph.putRoleType("Movie Genre");
-        InstanceImpl crime = (InstanceImpl) graknGraph.addEntity(genre);
+        InstanceImpl crime = (InstanceImpl) genre.addEntity();
         RelationTypeImpl movieHasGenre = (RelationTypeImpl) graknGraph.putRelationType("Movie Has Genre");
 
-        graknGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
-        graknGraph.addRelation(movieHasGenre).putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
+        cast.addRelation().putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
+        movieHasGenre.addRelation().putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
         //Validation
         HashMap<RoleType, Instance> roleMap = new HashMap<>();
@@ -446,7 +446,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        Relation relation = graknGraph.addRelation(relationType).
+        Relation relation = relationType.addRelation().
                 putRolePlayer(role1, null).putRolePlayer(role2, rolePlayer2).putRolePlayer(role3, null);
 
         assertNotNull(graknGraph.getRelation(relationType, roleMap));
@@ -460,10 +460,10 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         RoleType actor = graknGraph.putRoleType("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
         EntityType person = graknGraph.putEntityType("Person");
-        Instance pacino = graknGraph.addEntity(person);
-        Instance godfather = graknGraph.addEntity(movie);
+        Instance pacino = person.addEntity();
+        Instance godfather = movie.addEntity();
 
-        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(cast).
+        RelationImpl assertion = (RelationImpl) cast.addRelation().
                 putRolePlayer(feature, null).putRolePlayer(actor, pacino);
         assertion.putRolePlayer(feature, godfather);
         assertEquals(2, assertion.getMappingCasting().size());
@@ -479,14 +479,14 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
         EntityType person = graknGraph.putEntityType("Person");
-        InstanceImpl<?, ?> pacino = (InstanceImpl) graknGraph.addEntity(person);
-        InstanceImpl<?, ?> godfather = (InstanceImpl) graknGraph.addEntity(movie);
+        InstanceImpl<?, ?> pacino = (InstanceImpl) person.addEntity();
+        InstanceImpl<?, ?> godfather = (InstanceImpl) movie.addEntity();
         RoleType actor2 = graknGraph.putRoleType("Actor 2");
         RoleType actor3 = graknGraph.putRoleType("Actor 3");
         RoleType character = graknGraph.putRoleType("Character");
-        Instance thing = graknGraph.addEntity(type);
+        Instance thing = type.addEntity();
 
-        RelationImpl relation = (RelationImpl) graknGraph.addRelation(cast).
+        RelationImpl relation = (RelationImpl) cast.addRelation().
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino).putRolePlayer(actor2, pacino);
 
         Set<EdgeImpl> edges = pacino.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT);
@@ -504,7 +504,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(pacinoToOthers.contains(godfather));
         assertTrue(pacinoToOthers.contains(pacino));
 
-        graknGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor3, pacino).putRolePlayer(character, thing);
+        cast.addRelation().putRolePlayer(feature, godfather).putRolePlayer(actor3, pacino).putRolePlayer(character, thing);
 
         godfatherToOthers = godfather.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);
         pacinoToOthers = pacino.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);
@@ -536,21 +536,21 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         RoleType actor2 = graph.putRoleType("Actor 2");
         RoleType actor3 = graph.putRoleType("Actor 3");
         RelationType cast = graph.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
-        Instance pacino = graph.addEntity(type);
-        Instance thing = graph.addEntity(type);
-        Instance godfather = graph.addEntity(type);
+        Instance pacino = type.addEntity();
+        Instance thing = type.addEntity();
+        Instance godfather = type.addEntity();
 
-        Instance pacino2 = graph.addEntity(type);
-        Instance thing2 = graph.addEntity(type);
-        Instance godfather2 = graph.addEntity(type);
+        Instance pacino2 = type.addEntity();
+        Instance thing2 = type.addEntity();
+        Instance godfather2 = type.addEntity();
 
         assertEquals(0, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
-        RelationImpl relation = (RelationImpl) graph.addRelation(cast).
+        RelationImpl relation = (RelationImpl) cast.addRelation().
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
         assertEquals(1, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
         assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
 
-        relation = (RelationImpl) graph.addRelation(cast).
+        relation = (RelationImpl) cast.addRelation().
                 putRolePlayer(actor, pacino2).putRolePlayer(actor2, thing2).putRolePlayer(actor3, godfather2);
 
         assertTrue(relation.getIndex().startsWith("RelationBaseId_" + String.valueOf(relation.getBaseIdentifier())));
@@ -564,14 +564,14 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         RoleTypeImpl actor = (RoleTypeImpl) graknGraph.putRoleType("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
         EntityType person = graknGraph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) graknGraph.addEntity(person);
-        InstanceImpl godfather = (InstanceImpl) graknGraph.addEntity(movie);
-        InstanceImpl godfather2 = (InstanceImpl) graknGraph.addEntity(movie);
-        InstanceImpl godfather3 = (InstanceImpl) graknGraph.addEntity(movie);
+        InstanceImpl pacino = (InstanceImpl) person.addEntity();
+        InstanceImpl godfather = (InstanceImpl) movie.addEntity();
+        InstanceImpl godfather2 = (InstanceImpl) movie.addEntity();
+        InstanceImpl godfather3 = (InstanceImpl) movie.addEntity();
 
-        graknGraph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
-        graknGraph.addRelation(cast).putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
-        graknGraph.addRelation(cast).putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
+        cast.addRelation().putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
+        cast.addRelation().putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
+        cast.addRelation().putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
 
         Vertex pacinoVertex = graknGraph.getTinkerPopGraph().traversal().V(pacino.getBaseIdentifier()).next();
         Vertex godfatherVertex = graknGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).next();
