@@ -199,16 +199,18 @@ public abstract class Atom extends AtomBase {
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
 
-        //try based on roles
-        for (String chVar : childBVs) {
-            RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
-            //map to empty if no var matching
-            String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
-            if (pVar.isEmpty() && !varsToAllocate.isEmpty())
-                pVar = varsToAllocate.iterator().next();
-            if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
-            varsToAllocate.remove(pVar);
-        }
+        //find child->parent var mappings based on roles
+        childBVs.forEach(chVar -> {
+            if(!varsToAllocate.isEmpty()) {
+                RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
+                //map to empty if no var matching
+                String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
+                if (pVar.isEmpty())
+                    pVar = varsToAllocate.iterator().next();
+                if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
+                varsToAllocate.remove(pVar);
+            }
+        });
         return unifiers;
     }
 
