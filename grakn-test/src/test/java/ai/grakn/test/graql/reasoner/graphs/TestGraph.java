@@ -122,15 +122,15 @@ public class TestGraph {
     }
 
     protected Instance putEntity(String id, EntityType type) {
-        Instance inst = graknGraph.addEntity(type);
+        Instance inst = type.addEntity();
         putResource(inst, key, id, hasKeyRelation, hasKeyTarget, hasKeyValue);
         return inst;
     }
 
     protected <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
                                         RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = graknGraph.putResource(resource, resourceType);
-        graknGraph.addRelation(relationType)
+        Resource resourceInstance = resourceType.putResource(resource);
+        relationType.addRelation()
                 .putRolePlayer(targetRole, instance)
                 .putRolePlayer(valueRole, resourceInstance);
     }

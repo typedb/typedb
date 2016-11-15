@@ -43,7 +43,7 @@ public class RemoteShellControllerTest extends GraknEngineTestBase {
         GraknGraph graph = GraphFactory.getInstance().getGraph(graphName);
 
         EntityType man = graph.putEntityType("Man");
-        entityId = graph.addEntity(man).getId();
+        entityId = man.addEntity().getId();
         graph.commit();
     }
 

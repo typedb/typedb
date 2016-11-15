@@ -142,9 +142,9 @@ public class OWLMigrator {
         RelationType hasIriRelation = graph.putRelationType(namer.resourceRelation(hasIriResourceId))
                 .hasRole(hasIriOwner).hasRole(hasIriValue);
 
-        Entity entity = graph.addEntity(type);
-        Resource resourceInstance = graph.putResource(id, iriResource);
-        graph.addRelation(hasIriRelation)
+        Entity entity = type.addEntity();
+        Resource resourceInstance = iriResource.putResource(id);
+        hasIriRelation.addRelation()
                 .putRolePlayer(hasIriOwner, entity)
                 .putRolePlayer(hasIriValue, resourceInstance);
         return entity;
