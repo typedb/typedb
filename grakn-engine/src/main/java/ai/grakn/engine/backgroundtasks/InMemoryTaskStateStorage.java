@@ -1,0 +1,125 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.engine.backgroundtasks;
+
+import javafx.util.Pair;
+import org.json.JSONObject;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class InMemoryTaskStateStorage implements TaskStateStorage {
+    private static InMemoryTaskStateStorage instance = null;
+
+    private Map<String, TaskState> storage;
+
+    private InMemoryTaskStateStorage() {
+        storage = new ConcurrentHashMap<>();
+    }
+
+    public static synchronized InMemoryTaskStateStorage getInstance() {
+        if(instance == null)
+            instance = new InMemoryTaskStateStorage();
+        return instance;
+    }
+
+    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
+        if(taskName == null || createdBy == null || runAt == null || recurring == null)
+            return null;
+
+        TaskState state = new TaskState(taskName);
+        state.creator(createdBy)
+             .runAt(runAt)
+             .isRecurring(recurring)
+             .interval(interval);
+
+        if(configuration != null)
+             state.configuration(configuration);
+        else
+            state.configuration(new JSONObject());
+
+        String id = UUID.randomUUID().toString();
+        storage.put(id, state);
+
+        return id;
+    }
+
+    public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
+                            Throwable failure, String checkpoint, JSONObject configuration) {
+        if(id == null || status == null)
+            return;
+
+        TaskState state = storage.get(id);
+        synchronized (state) {
+            state.status(status);
+
+            if(statusChangeBy != null)
+                state.statusChangedBy(statusChangeBy);
+            if(executingHostname != null)
+                state.executingHostname(executingHostname);
+            if(failure != null)
+                state.failure(failure);
+            if(checkpoint != null)
+                state.checkpoint(checkpoint);
+            if(configuration != null)
+                state.configuration(configuration);
+        }
+    }
+
+    public TaskState getState(String id) {
+        if(id == null || !storage.containsKey(id))
+            return null;
+
+        TaskState state = storage.get(id);
+        TaskState newState = null;
+
+        synchronized (state) {
+            try {
+                newState = state.clone();
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return newState;
+    }
+
+    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy) {
+        Set<Pair<String, TaskState>> res = new HashSet<>();
+        for(Map.Entry<String, TaskState> x: storage.entrySet()) {
+            TaskState state = x.getValue();
+
+            // AND
+            if(taskStatus != null && state.status() != taskStatus)
+                continue;
+            if(taskClassName != null && !Objects.equals(state.taskClassName(), taskClassName))
+                continue;
+            if(createdBy != null && !Objects.equals(state.creator(), createdBy))
+                continue;
+
+            res.add(new Pair<>(x.getKey(), getState(x.getKey())));
+        }
+
+        return res;
+    }
+
+    public void clear() {
+        storage.clear();
+    }
+}
