@@ -22,10 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class IdPredicate extends Predicate<String>{
 

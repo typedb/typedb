@@ -28,8 +28,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -283,6 +281,7 @@ public class Relation extends Atom {
         Set<String> allocatedVars = new HashSet<>();
         Set<RoleType> allocatedRoles = new HashSet<>();
 
+        //explicit role types from castings
         castings.forEach( c -> {
             String var = c.getRolePlayer().getName();
             String roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");

@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
@@ -26,8 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswers.getUnifiedAnswers;
 
 public class AtomicMatchQuery extends AtomicQuery{
 

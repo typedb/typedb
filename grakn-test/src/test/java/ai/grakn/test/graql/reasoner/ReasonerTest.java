@@ -198,9 +198,7 @@ public class ReasonerTest {
         MatchQuery query2 = new Query(queryString2, lgraph);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        Utility.printAnswers(reasoner.resolve(query));
-        Utility.printAnswers(reasoner.resolve(query2));
-        //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
     @Test
@@ -290,7 +288,6 @@ public class ReasonerTest {
         MatchQuery query2 = lgraph.graql().parse(queryString2);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        Utility.printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(query2));
     }
 
@@ -524,5 +521,27 @@ public class ReasonerTest {
             assert(answer.size() == 3);
         });
         assertTrue(answers.size() == answers2.size());
+    }
+
+    @Test
+    public void testUnspecifiedCastings(){
+        GraknGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match (geo-entity: $x) isa is-located-in;";
+        String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testUnspecifiedCastings2(){
+        GraknGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match (geo-entity: $x);";
+        String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 }

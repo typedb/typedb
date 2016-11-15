@@ -20,9 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class Resource extends Binary{
 
