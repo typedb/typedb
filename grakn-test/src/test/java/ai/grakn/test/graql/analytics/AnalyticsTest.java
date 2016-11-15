@@ -302,8 +302,6 @@ public class AnalyticsTest extends AbstractGraphTest {
             }
         }
 
-        //TODO: Get rid of this close. We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
         computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
 
         // compute degrees on all types, again and again ...
@@ -903,6 +901,9 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         // compute count
         analytics = new Analytics(graph.getKeyspace(), Collections.singleton("degree"), new HashSet<>());
+
+        //Not sure why the above seems to be closing the graph now.
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
         Assert.assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
     }
 

@@ -74,6 +74,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
+    private boolean committed;
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
@@ -89,11 +90,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
                 throw new RuntimeException(ErrorMessage.CREATING_ONTOLOGY_ERROR.getMessage(e.getMessage()));
             }
         }
+
+        this.committed = false;
     }
 
     @Override
     public String getKeyspace(){
         return keyspace;
+    }
+
+    public boolean hasCommitted(){
+        return committed;
     }
 
     public boolean isBatchLoadingEnabled(){
@@ -658,6 +665,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         } catch (UnsupportedOperationException e){
             LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
         }
+        committed = true;
     }
 
 
