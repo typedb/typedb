@@ -91,45 +91,7 @@ public abstract class Atom extends AtomBase {
      * */
     public boolean isResource(){ return false;}
 
-    private boolean checkRuleApplicable(InferenceRule child) {
-        boolean relRelevant = true;
-        Query parent = getParentQuery();
-        Atom childAtom = child.getRuleConclusionAtom();
-
-        if (isRelation()) {
-            Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
-            //Check for role compatibility
-            Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
-            for (Map.Entry<RoleType, Pair<String, Type>> entry : parentRoleVarTypeMap.entrySet()) {
-                RoleType role = entry.getKey();
-                Type pType = entry.getValue().getValue();
-                if (pType != null) {
-                    //vars can be matched by role types
-                    if (childRoleVarTypeMap.containsKey(role)) {
-                        Type chType = childRoleVarTypeMap.get(role).getValue();
-                        //check type compatibility
-                        if (chType != null) {
-                            relRelevant &= pType.equals(chType) || chType.subTypes().contains(pType);
-
-                            //Check for any constraints on the variables
-                            String chVar = childRoleVarTypeMap.get(role).getKey();
-                            String pVar = entry.getValue().getKey();
-                            String chId = child.getBody().getIdPredicate(chVar).getPredicateValue();
-                            String pId = parent.getIdPredicate(pVar).getPredicateValue();
-                            if (!chId.isEmpty() && !pId.isEmpty())
-                                relRelevant &= chId.equals(pId);
-                        }
-                    }
-                }
-            }
-        }
-        else if (isResource()) {
-            String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
-            String parentVal = parent.getValuePredicate(getValueVariable());
-            relRelevant = parentVal.isEmpty() || parentVal.equals(childVal);
-        }
-        return relRelevant;
-    }
+    protected boolean isRuleApplicable(InferenceRule child) { return true; }
 
     public Set<Rule> getApplicableRules() {
         Set<Rule> children = new HashSet<>();
@@ -146,7 +108,7 @@ public abstract class Atom extends AtomBase {
             Collection<Rule> rulesFromType = type.getRulesOfConclusion();
             rulesFromType.forEach(rule -> {
                 InferenceRule child = new InferenceRule(rule, graph);
-                boolean ruleRelevant = checkRuleApplicable(child);
+                boolean ruleRelevant = isRuleApplicable(child);
                 if (ruleRelevant) children.add(rule);
             });
         }
