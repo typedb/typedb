@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -199,9 +198,7 @@ public class ReasonerTest {
         MatchQuery query2 = new Query(queryString2, lgraph);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        printAnswers(reasoner.resolve(query));
-        printAnswers(reasoner.resolve(query2));
-        //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
     @Test
@@ -291,7 +288,6 @@ public class ReasonerTest {
         MatchQuery query2 = lgraph.graql().parse(queryString2);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(query2));
     }
 
