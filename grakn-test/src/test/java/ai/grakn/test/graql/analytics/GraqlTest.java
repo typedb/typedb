@@ -25,7 +25,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
@@ -33,8 +35,6 @@ import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -164,17 +163,17 @@ public class GraqlTest extends AbstractGraphTest {
         ResourceType<Long> resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG)
                 .playsRole(resourceValue);
         EntityType thing = graph.putEntityType("thing").playsRole(resourceOwner);
-        Entity theResourceOwner = graph.addEntity(thing);
+        Entity theResourceOwner = thing.addEntity();
 
-        graph.addRelation(relationType)
+        relationType.addRelation()
                 .putRolePlayer(resourceOwner, theResourceOwner)
-                .putRolePlayer(resourceValue, graph.putResource(1L, resource));
-        graph.addRelation(relationType)
+                .putRolePlayer(resourceValue, resource.putResource(1L));
+        relationType.addRelation()
                 .putRolePlayer(resourceOwner, theResourceOwner)
-                .putRolePlayer(resourceValue, graph.putResource(2L, resource));
-        graph.addRelation(relationType)
+                .putRolePlayer(resourceValue, resource.putResource(2L));
+        relationType.addRelation()
                 .putRolePlayer(resourceOwner, theResourceOwner)
-                .putRolePlayer(resourceValue, graph.putResource(3L, resource));
+                .putRolePlayer(resourceValue, resource.putResource(3L));
 
         graph.commit();
 
@@ -252,10 +251,10 @@ public class GraqlTest extends AbstractGraphTest {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
-        Entity entity1 = graph.addEntity(entityType1);
-        Entity entity2 = graph.addEntity(entityType1);
-        Entity entity3 = graph.addEntity(entityType1);
-        Entity entity4 = graph.addEntity(entityType2);
+        Entity entity1 = entityType1.addEntity();
+        Entity entity2 = entityType1.addEntity();
+        Entity entity3 = entityType1.addEntity();
+        Entity entity4 = entityType2.addEntity();
         entityId1 = entity1.getId();
         entityId2 = entity2.getId();
         entityId3 = entity3.getId();
@@ -267,13 +266,13 @@ public class GraqlTest extends AbstractGraphTest {
         entityType2.playsRole(role1).playsRole(role2);
         RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
-        relationId12 = graph.addRelation(relationType)
+        relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity2).getId();
-        relationId23 = graph.addRelation(relationType)
+        relationId23 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity3).getId();
-        relationId24 = graph.addRelation(relationType)
+        relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity4).getId();
         instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,

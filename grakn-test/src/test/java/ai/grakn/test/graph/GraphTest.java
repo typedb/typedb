@@ -33,11 +33,11 @@ public class GraphTest extends AbstractRollbackGraphTest {
         assertNotNull(graph.getRoleType(related2));
         assertNotNull(graph.getRelationType(related));
 
-        String e1 = graph.addEntity(graph.getEntityType(thing)).getId();
+        String e1 = graph.getEntityType(thing).addEntity().getId();
         graph.commit();
 
         graph = factory.getGraphBatchLoading();
-        String e2 = graph.addEntity(graph.getEntityType(thing)).getId();
+        String e2 = graph.getEntityType(thing).addEntity().getId();
         graph.commit();
 
         graph = factory.getGraph();
@@ -45,7 +45,7 @@ public class GraphTest extends AbstractRollbackGraphTest {
         graph.commit();
 
         graph = factory.getGraphBatchLoading();
-        String r1 = graph.addRelation(graph.getRelationType(related))
+        String r1 = graph.getRelationType(related).addRelation()
                 .putRolePlayer(graph.getRoleType(related1),graph.getEntity(e1))
                 .putRolePlayer(graph.getRoleType(related2),graph.getEntity(e2)).getId();
         graph.commit();

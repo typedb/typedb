@@ -54,6 +54,12 @@ public interface EntityType extends Type{
      */
     EntityType deletePlaysRole(RoleType roleType);
 
+    /**
+     *
+     * @return a new empty entity.
+     */
+    Entity addEntity();
+
     //------------------------------------- Accessors ----------------------------------
     /**
      *

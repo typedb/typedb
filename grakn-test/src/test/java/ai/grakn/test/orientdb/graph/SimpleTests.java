@@ -63,9 +63,9 @@ public class SimpleTests extends AbstractRollbackGraphTest {
         assertNotNull(rel);
 
         //Create Some Data
-        Entity e1 = graknGraph.addEntity(et1);
-        Entity e2 = graknGraph.addEntity(et2);
-        graknGraph.addRelation(rel).putRolePlayer(role1, e1).putRolePlayer(role2, e2);
+        Entity e1 = et1.addEntity();
+        Entity e2 = et2.addEntity();
+        rel.addRelation().putRolePlayer(role1, e1).putRolePlayer(role2, e2);
 
         graknGraph.commit();
 

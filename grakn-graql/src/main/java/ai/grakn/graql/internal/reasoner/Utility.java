@@ -133,7 +133,7 @@ public class Utility {
         VarAdmin endVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "z").rel(toRoleId, "y").admin();
         VarAdmin headVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
-        return graph.addRule(body, headVar, graph.getMetaRuleInference());
+        return graph.getMetaRuleInference().addRule(body, headVar);
     }
 
     /**
@@ -149,7 +149,7 @@ public class Utility {
 
         Var body = Graql.var().isa(relType.getId()).rel("x").rel("y");
         Var head = Graql.var().isa(relType.getId()).rel("x").rel("x");
-        return graph.addRule(body, head, graph.getMetaRuleInference());
+        return graph.getMetaRuleInference().addRule(body, head);
     }
 
     /**
@@ -176,7 +176,7 @@ public class Utility {
             childVar.rel(childRoleId, varName);
             vars.add(varName);
         });
-        return graph.addRule(childVar, parentVar, graph.getMetaRuleInference());
+        return graph.getMetaRuleInference().addRule(childVar, parentVar);
     }
 
     public static Rule createPropertyChainRule(RelationType relation, String fromRoleId, String toRoleId,
@@ -194,7 +194,7 @@ public class Utility {
         });
 
         Var headVar = Graql.var().isa(relation.getId()).rel(fromRoleId, "x").rel(toRoleId, varNames.peek());
-        return graph.addRule(Patterns.conjunction(bodyVars), headVar, graph.getMetaRuleInference());
+        return graph.getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
 
     public static boolean checkTypesCompatible(Type aType, Type bType) {

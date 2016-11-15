@@ -24,6 +24,13 @@ import java.util.Collection;
  * A Relation Type is an ontological element used to concept how entity types relate to one another.
  */
 public interface RelationType extends Type {
+    //------------------------------------- Modifiers ----------------------------------
+    /**
+     *
+     * @return a new empty relation.
+     */
+    Relation addRelation();
+
     //------------------------------------- Accessors ----------------------------------
     /**
      *

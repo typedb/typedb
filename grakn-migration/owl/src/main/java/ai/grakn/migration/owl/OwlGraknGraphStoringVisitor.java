@@ -305,7 +305,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         Entity subject = migrator.entity(axiom.getSubject().asOWLNamedIndividual());
         Entity object = migrator.entity(axiom.getObject().asOWLNamedIndividual());
         RelationType relationType = migrator.relation(axiom.getProperty().asOWLObjectProperty());       
-        return migrator.graph().addRelation(relationType)
+        return relationType.addRelation()
                  .putRolePlayer(migrator.subjectRole(relationType), subject)
                  .putRolePlayer(migrator.objectRole(relationType), object);
     }
@@ -326,12 +326,12 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             value = Long.parseLong(valueAsString);
         else if (resourceType.getDataType() == ResourceType.DataType.DOUBLE)
             value = Double.parseDouble(valueAsString);
-        Resource resource = migrator.graph().putResource(value, resourceType);
+        Resource resource = resourceType.putResource(value);
         RelationType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());
         RoleType entityRole = migrator.entityRole(entity.type(), resource.type());
         RoleType resourceRole = migrator.resourceRole(resource.type());
         try {       
-            return migrator.graph().addRelation(propertyRelation)
+            return propertyRelation.addRelation()
                      .putRolePlayer(entityRole, entity)
                      .putRolePlayer(resourceRole, resource);
         }
@@ -354,9 +354,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         @SuppressWarnings("unchecked")
         ResourceType<String> resourceType = (ResourceType<String>)visit(axiom.getProperty());
         Entity entity = migrator.entity((OWLNamedIndividual)axiom.getSubject());
-        Resource<String> resource = migrator.graph().putResource(value.get().getLiteral(), resourceType);
+        Resource<String> resource = resourceType.putResource(value.get().getLiteral());
         RelationType propertyRelation = migrator.relation(axiom.getProperty());
-        return migrator.graph().addRelation(propertyRelation)
+        return propertyRelation.addRelation()
                  .putRolePlayer(migrator.entityRole(entity.type(), resource.type()), entity)
                  .putRolePlayer(migrator.resourceRole(resource.type()), resource);
     }

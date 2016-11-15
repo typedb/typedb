@@ -72,12 +72,12 @@ public class PostProcessingTest extends GraknEngineTestBase {
         RoleType roleType2 = graknGraph.putRoleType("role 2");
         RelationType relationType = graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
         EntityType thing = graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        Instance instance1 = graknGraph.addEntity(thing);
-        Instance instance2 = graknGraph.addEntity(thing);
-        Instance instance3 = graknGraph.addEntity(thing);
-        Instance instance4 = graknGraph.addEntity(thing);
+        Instance instance1 = thing.addEntity();
+        Instance instance2 = thing.addEntity();
+        Instance instance3 = thing.addEntity();
+        Instance instance4 = thing.addEntity();
 
-        graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
         //Record Needed Ids
         String relationTypeId = relationType.getId();
@@ -112,7 +112,7 @@ public class PostProcessingTest extends GraknEngineTestBase {
         RelationType relationType = graknGraph.getRelationType(relationTypeId);
         Instance otherInstance = graknGraph.getInstance(otherInstanceId);
         RoleType otherRoleType = graknGraph.getRoleType(otherRoleTypeId);
-        Relation relation = graknGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
+        Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
         String relationId = relation.getId();
 
         graknGraph.commit();
@@ -151,7 +151,7 @@ public class PostProcessingTest extends GraknEngineTestBase {
         //Create Graph With Duplicate Resources
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
-        Resource<String> resource = graph.putResource(value, resourceType);
+        Resource<String> resource = resourceType.putResource(value);
         graph.commit();
         assertEquals(1, resourceType.instances().size());
         waitForCache(false, keyspace, 1);

@@ -249,7 +249,7 @@ public class CWInferenceTest {
 
         Pattern R6_LHS = and(localGraph.graql().parsePatterns("$x isa region;"));
         Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
-        localGraph.addRule(R6_LHS, R6_RHS, inferenceRule);
+        inferenceRule.addRule(R6_LHS, R6_RHS);
 
         localReasoner.linkConceptTypes();
         String queryString = "match $x isa criminal;";

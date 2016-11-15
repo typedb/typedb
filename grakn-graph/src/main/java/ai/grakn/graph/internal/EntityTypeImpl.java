@@ -30,4 +30,9 @@ class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
     EntityTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
         super(v, type, graknGraph);
     }
+
+    @Override
+    public Entity addEntity() {
+        return getGraknGraph().addEntity(this);
+    }
 }

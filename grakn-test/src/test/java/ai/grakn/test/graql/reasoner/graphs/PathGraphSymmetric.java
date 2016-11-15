@@ -18,9 +18,9 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.concept.RelationType;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 
 import static com.google.common.math.IntMath.pow;
@@ -60,7 +60,7 @@ public class PathGraphSymmetric extends TestGraph{
         }
 
         for (int j = 0; j < children; j++) {
-            graknGraph.addRelation(arc)
+            arc.addRelation()
                     .putRolePlayer(arcFrom, getInstance("a0"))
                     .putRolePlayer(arcTo, getInstance("a1," + j));
         }
@@ -69,7 +69,7 @@ public class PathGraphSymmetric extends TestGraph{
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
-                    graknGraph.addRelation(arc)
+                    arc.addRelation()
                             .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
                             .putRolePlayer(arcTo, getInstance("a" + (i + 1) + "," + (j * children + c)));
 

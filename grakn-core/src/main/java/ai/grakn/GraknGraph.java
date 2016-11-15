@@ -31,7 +31,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -95,37 +94,6 @@ public interface GraknGraph extends AutoCloseable{
      */
     RoleType putRoleType(String id);
 
-    /**
-     *
-     * @param type The type of this Entity
-     * @return A new entity.
-     */
-    Entity addEntity(EntityType type);
-
-    /**
-     *
-     * @param <V> The data type of both the ResourceType and the Resource.
-     *           Supported types include: String, Long, Double, Boolean.
-     * @param value A value for the Resource which is unique to it's type
-     * @param type The resource type of this resource.
-     * @return new or existing Resource with the provided value.
-     */
-    <V> Resource<V> putResource(V value, ResourceType<V> type);
-
-    /**
-     * @param lhs A string representing the left hand side Graql query.
-     * @param rhs A string representing the right hand side Graql query.
-     * @param type The rule type of this Rule
-     * @return a new Rule
-     */
-    Rule addRule(Pattern lhs, Pattern rhs, RuleType type);
-
-    /**
-     *
-     * @param type The relation type of this Relation
-     * @return A new empty relation.
-     */
-    Relation addRelation(RelationType type);
     //------------------------------------- Concept Lookup ----------------------------------
     /**
      *

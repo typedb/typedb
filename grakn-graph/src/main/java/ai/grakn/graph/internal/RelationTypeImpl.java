@@ -40,6 +40,11 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         super(v, type, graknGraph);
     }
 
+    @Override
+    public Relation addRelation() {
+        return getGraknGraph().addRelation(this);
+    }
+
     /**
      *
      * @return A list of the Role Types which make up this Relation Type.

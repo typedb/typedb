@@ -66,29 +66,29 @@ public class NguyenGraph extends TestGraph{
             bInstancesIds[i] = putEntity("b" + i, bEntity).getId();
         }
 
-        graknGraph.addRelation(R)
+        R.addRelation()
                 .putRolePlayer(Rfrom, graknGraph.getInstance(dId))
                 .putRolePlayer(Rto, graknGraph.getInstance(eId));
 
-        graknGraph.addRelation(P)
+        P.addRelation()
                 .putRolePlayer(Pfrom, graknGraph.getInstance(cId))
                 .putRolePlayer(Pto, graknGraph.getInstance(dId));
 
-        graknGraph.addRelation(Q)
+        Q.addRelation()
                 .putRolePlayer(Qfrom, graknGraph.getInstance(eId))
                 .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[0]));
 
         for(int i = 0 ; i <= n ;i++){
-            graknGraph.addRelation(P)
+            P.addRelation()
                     .putRolePlayer(Pfrom, graknGraph.getInstance(bInstancesIds[i]))
                     .putRolePlayer(Pto, graknGraph.getInstance(cId));
-            graknGraph.addRelation(P)
+            P.addRelation()
                     .putRolePlayer(Pfrom, graknGraph.getInstance(cId))
                     .putRolePlayer(Pto, graknGraph.getInstance(bInstancesIds[i]));
-            graknGraph.addRelation(Q)
+            Q.addRelation()
                     .putRolePlayer(Qfrom, graknGraph.getInstance(aInstancesIds[i]))
                     .putRolePlayer(Qto, graknGraph.getInstance(bInstancesIds[i]));
-            graknGraph.addRelation(Q)
+            Q.addRelation()
                     .putRolePlayer(Qfrom, graknGraph.getInstance(bInstancesIds[i]))
                     .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[i+1]));
         }

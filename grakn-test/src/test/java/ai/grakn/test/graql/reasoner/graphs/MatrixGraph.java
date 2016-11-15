@@ -61,20 +61,20 @@ public class MatrixGraph extends TestGraph{
                 bInstancesIds[i][j] = putEntity("b" + i + j, bEntity).getId();
 
         for (int i = 0; i < m; i++) {
-            graknGraph.addRelation(R1)
+            R1.addRelation()
                     .putRolePlayer(R1from, graknGraph.getInstance(aInstancesIds[i]))
                     .putRolePlayer(R1to, graknGraph.getInstance(aInstancesIds[i + 1]));
         }
 
         for(int j = 1 ; j <= n ;j++) {
-            graknGraph.addRelation(R2)
+            R2.addRelation()
                     .putRolePlayer(R2from, graknGraph.getInstance(aInstancesIds[0]))
                     .putRolePlayer(R2to, graknGraph.getInstance(bInstancesIds[1][j]));
-            graknGraph.addRelation(R2)
+            R2.addRelation()
                     .putRolePlayer(R2from, graknGraph.getInstance(bInstancesIds[m-1][j]))
                     .putRolePlayer(R2to, graknGraph.getInstance(aInstancesIds[m]));
             for (int i = 1; i < m - 1; i++) {
-                graknGraph.addRelation(R2)
+                R2.addRelation()
                         .putRolePlayer(R2from, graknGraph.getInstance(bInstancesIds[i][j]))
                         .putRolePlayer(R2to, graknGraph.getInstance(bInstancesIds[i+1][j]));
             }
