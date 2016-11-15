@@ -232,15 +232,15 @@ public class InsertQueryExecutor {
         } else if (typeId.equals(Schema.MetaSchema.RULE_TYPE.getId())) {
             return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
-            return addOrGetInstance(id, type.asEntityType(), graph::getEntity, type.asEntityType()::addEntity);
+            return addOrGetInstance(id, graph::getEntity, type.asEntityType()::addEntity);
         } else if (type.isRelationType()) {
-            return addOrGetInstance(id, type.asRelationType(), graph::getRelation, type.asRelationType()::addRelation);
+            return addOrGetInstance(id, graph::getRelation, type.asRelationType()::addRelation);
         } else if (type.isResourceType()) {
-            return addOrGetInstance(id, type.asResourceType(), graph::getResource,
+            return addOrGetInstance(id, graph::getResource,
                     () -> type.asResourceType().putResource(getValue(var))
             );
         } else if (type.isRuleType()) {
-            return addOrGetInstance(id, type.asRuleType(), graph::getRule, () -> {
+            return addOrGetInstance(id, graph::getRule, () -> {
                 Pattern lhs = var.getProperty(LhsProperty.class).get().getLhs();
                 Pattern rhs = var.getProperty(RhsProperty.class).get().getRhs();
                 return type.asRuleType().addRule(lhs, rhs);
@@ -253,7 +253,6 @@ public class InsertQueryExecutor {
     /**
      * Put an instance of a type which may or may not have an ID specified
      * @param id the ID of the instance to create, or empty to not specify an ID
-     * @param type the type of the instance
      * @param getInstance a 'get' method on a GraknGraph, such as graph::getEntity
      * @param addInstance an 'add' method on a GraknGraph such a graph::addEntity
      * @param <T> the class of the type of the instance, e.g. EntityType
@@ -261,7 +260,7 @@ public class InsertQueryExecutor {
      * @return an instance of the specified type, with the given ID if one was specified
      */
     private <T extends Type, S extends Instance> S addOrGetInstance(
-            Optional<String> id, T type, Function<String, S> getInstance, Supplier<S> addInstance
+            Optional<String> id, Function<String, S> getInstance, Supplier<S> addInstance
     ) {
         return id.map(getInstance).orElseGet(() -> {
                 if (id.isPresent()) throw new IllegalStateException(INSERT_INSTANCE_WITH_ID.getMessage(id.get()));
