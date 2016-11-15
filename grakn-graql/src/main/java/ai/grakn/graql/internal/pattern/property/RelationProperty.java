@@ -184,7 +184,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @return a EquivalentFragmentSet that indicates two castings are unique
      */
     private EquivalentFragmentSet makeDistinctCastingPattern(String casting, String otherCastingId) {
-        return EquivalentFragmentSet.create(distinctCasting(casting, otherCastingId));
+        return EquivalentFragmentSet.create(
+                distinctCasting(casting, otherCastingId),
+                distinctCasting(otherCastingId, casting)
+        );
     }
 
     @Override

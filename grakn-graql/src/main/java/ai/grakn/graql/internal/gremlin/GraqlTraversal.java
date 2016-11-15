@@ -33,6 +33,7 @@ import org.javatuples.Pair;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -148,25 +149,33 @@ public class GraqlTraversal {
 
         if (depth == 0) return baseCase;
 
-        // Try every fragment
-        return fragments(fragmentSets).map(fragment -> {
+        Comparator<Pair<Long, List<Fragment>>> byCost = comparing(Pair::getValue0);
 
-            // Calculate the new costs, fragment sets and variable names when using this fragment
-            long newCost = fragmentCost(fragment, cost, names);
+        // Try every fragment that has its dependencies met, then select the lowest cost fragment
+        return fragments(fragmentSets)
+                .filter(fragment -> names.containsAll(fragment.getDependencies()))
+                .map(fragment -> findPlanWithFragment(fragment, fragmentSets, names, cost, depth))
+                .min(byCost)
+                .orElse(baseCase);
+    }
 
-            EquivalentFragmentSet fragmentSet = fragment.getEquivalentFragmentSet();
-            Set<EquivalentFragmentSet> newFragmentSets = Sets.difference(fragmentSets, ImmutableSet.of(fragmentSet));
+    private static Pair<Long, List<Fragment>> findPlanWithFragment(
+            Fragment fragment, Set<EquivalentFragmentSet> fragmentSets, Set<String> names, long cost, long depth
+    ) {
+        // Calculate the new costs, fragment sets and variable names when using this fragment
+        long newCost = fragmentCost(fragment, cost, names);
 
-            Set<String> newNames = Sets.union(names, fragment.getVariableNames().collect(toSet()));
+        EquivalentFragmentSet fragmentSet = fragment.getEquivalentFragmentSet();
+        Set<EquivalentFragmentSet> newFragmentSets = Sets.difference(fragmentSets, ImmutableSet.of(fragmentSet));
 
-            // Recursively find a plan
-            Pair<Long, List<Fragment>> pair = findPlan(newFragmentSets, newNames, newCost, depth - 1);
+        Set<String> newNames = Sets.union(names, fragment.getVariableNames().collect(toSet()));
 
-            // Add this fragment and this cost and return
-            pair.getValue1().add(fragment);
-            return pair.setAt0(pair.getValue0() + newCost);
+        // Recursively find a plan
+        Pair<Long, List<Fragment>> pair = findPlan(newFragmentSets, newNames, newCost, depth - 1);
 
-        }).min(comparing(Pair::getValue0)).orElse(baseCase);
+        // Add this fragment and cost and return
+        pair.getValue1().add(fragment);
+        return pair.setAt0(pair.getValue0() + newCost);
     }
 
     /**

@@ -23,6 +23,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -76,6 +77,11 @@ public interface Fragment {
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
     Optional<String> getEnd();
+
+    /**
+     * @return the variable names that this fragment requires to have already been visited
+     */
+    Set<String> getDependencies();
 
     /**
      * Get all variable names in the fragment - the start and end (if present)

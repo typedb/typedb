@@ -19,8 +19,10 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
@@ -72,6 +74,11 @@ abstract class AbstractFragment implements Fragment{
     @Override
     public final Optional<String> getEnd() {
         return end;
+    }
+
+    @Override
+    public Set<String> getDependencies() {
+        return ImmutableSet.of();
     }
 
     @Override

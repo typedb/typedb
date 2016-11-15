@@ -18,9 +18,12 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Set;
 
 class DistinctCastingFragment extends AbstractFragment {
 
@@ -34,6 +37,11 @@ class DistinctCastingFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         traversal.where(P.neq(otherCastingName));
+    }
+
+    @Override
+    public Set<String> getDependencies() {
+        return ImmutableSet.of(otherCastingName);
     }
 
     @Override
