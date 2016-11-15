@@ -20,12 +20,22 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 public class Resource extends Binary{
 
     public Resource(VarAdmin pattern) { super(pattern);}
     public Resource(VarAdmin pattern, Query par) { super(pattern, par);}
     private Resource(Resource a) { super(a);}
+
+    @Override
+    protected boolean isRuleApplicable(InferenceRule child) {
+        Query parent = getParentQuery();
+        Atom childAtom = child.getRuleConclusionAtom();
+        String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
+        String parentVal = parent.getValuePredicate(getValueVariable());
+        return parentVal.isEmpty() || parentVal.equals(childVal);
+    }
 
     @Override
     protected String extractValueVariableName(VarAdmin var){

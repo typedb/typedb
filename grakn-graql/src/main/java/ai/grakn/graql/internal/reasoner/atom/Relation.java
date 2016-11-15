@@ -28,9 +28,12 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import javafx.util.Pair;
 
 import java.util.*;
+
+import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 
 public class Relation extends Atom {
 
@@ -130,6 +133,53 @@ public class Relation extends Atom {
 
     @Override
     public boolean isRelation(){ return true;}
+
+    @Override
+    protected boolean isRuleApplicable(InferenceRule child) {
+        boolean ruleRelevant = true;
+        Query parent = getParentQuery();
+        Atom childAtom = child.getRuleConclusionAtom();
+
+        Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
+        Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
+
+        Iterator<Map.Entry<RoleType, Pair<String, Type>>> it = parentRoleVarTypeMap.entrySet().iterator();
+        while(it.hasNext() && ruleRelevant){
+            Map.Entry<RoleType, Pair<String, Type>> entry = it.next();
+            RoleType parentRole = entry.getKey();
+
+            //check roletypes compatible
+            Iterator<RoleType> childRolesIt = childRoleVarTypeMap.keySet().iterator();
+            //if child roles are unspecified then compatible
+            boolean roleCompatible = !childRolesIt.hasNext();
+            while(childRolesIt.hasNext() && !roleCompatible){
+                roleCompatible = checkTypesCompatible(parentRole, childRolesIt.next());
+            }
+            ruleRelevant = roleCompatible;
+
+            //check type compatibility
+            Type pType = entry.getValue().getValue();
+            if (pType != null && ruleRelevant) {
+                //vars can be matched by role types
+                if (childRoleVarTypeMap.containsKey(parentRole)) {
+                    Type chType = childRoleVarTypeMap.get(parentRole).getValue();
+                    //check type compatibility
+                    if (chType != null) {
+                        ruleRelevant = checkTypesCompatible(pType, chType);
+
+                        //Check for any constraints on the variables
+                        String chVar = childRoleVarTypeMap.get(parentRole).getKey();
+                        String pVar = entry.getValue().getKey();
+                        String chId = child.getBody().getIdPredicate(chVar).getPredicateValue();
+                        String pId = parent.getIdPredicate(pVar).getPredicateValue();
+                        if (!chId.isEmpty() && !pId.isEmpty())
+                            ruleRelevant &= chId.equals(pId);
+                    }
+                }
+            }
+        }
+        return ruleRelevant;
+    }
 
     @Override
     public boolean isRuleResolvable() {

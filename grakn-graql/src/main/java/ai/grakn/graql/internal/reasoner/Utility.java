@@ -197,8 +197,9 @@ public class Utility {
         return graph.getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
 
-    public static boolean checkTypesCompatible(Type aType, Type bType) {
-        return aType.equals(bType) || aType.subTypes().contains(bType) || bType.subTypes().contains(aType);
+    //check whether child is compatible with parent, i.e. whether if child is true parent is also true
+    public static boolean checkTypesCompatible(Type parent, Type child) {
+        return parent.equals(child) || parent.subTypes().contains(child);
     }
 
     public static <T> Set<T> subtractSets(Set<T> A, Set<T> B){
