@@ -229,8 +229,6 @@ export default {
                 else
                     this.selectedProps.push(p);
 
-                console.log("ehi proprieta' "+JSON.stringify(this.selectedProps));
-
                 visualiser.setDisplayProperties(this.nodeType, this.selectedProps);
             },
 

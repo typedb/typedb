@@ -102,7 +102,6 @@ public class ConfigProperties {
         }
         prop.put(PROJECT_VERSION, GraknVersion.VERSION);
         initialiseLogger();
-        setLogLevel();
         computeThreadsNumber();
         LOG.info("Project directory in use: [" + getProjectPath() + "]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
@@ -135,6 +134,8 @@ public class ConfigProperties {
             System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
 
         System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY, getPath(LOGGING_FILE_PATH));
+
+        setLogLevel();
 
         if (!(new File(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY))).exists()) {
             LoggerFactory.getLogger(ConfigProperties.class).error(ErrorMessage.NO_LOG_CONFIG_FILE.getMessage(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY)));

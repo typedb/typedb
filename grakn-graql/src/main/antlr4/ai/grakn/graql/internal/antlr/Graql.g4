@@ -88,6 +88,7 @@ value          : STRING  # valueString
 // These rules are used for parsing streams of patterns separated by semicolons
 insert         : 'insert' ;
 patternSep     : pattern ';' ;
+batchPattern   : 'match' | 'insert' | patternSep ;
 
 id             : ID | STRING ;
 
