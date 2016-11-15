@@ -19,7 +19,6 @@
 package ai.grakn.concept;
 
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Pattern;
 
 import java.util.Collection;
 
@@ -69,13 +68,6 @@ public interface Rule extends Instance{
      * @return
      */
     Boolean isMaterialise();
-
-    /**
-     *
-     * @param resourceTypes Resource Types of the resources attached to this entity
-     * @return A collection of resources attached to this Instance.
-     */
-    Collection<Resource<?>> resources(ResourceType ... resourceTypes);
 
     //------------------------------------- Edge Handling ----------------------------------
     /**
