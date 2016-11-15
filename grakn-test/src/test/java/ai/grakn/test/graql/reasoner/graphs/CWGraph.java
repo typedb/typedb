@@ -150,17 +150,17 @@ public class CWGraph extends TestGraph {
     @Override
     protected void buildRelations() {
         //Enemy(Nono, America)
-        graknGraph.addRelation(isEnemyOf)
+        isEnemyOf.addRelation()
                 .putRolePlayer(enemySource, Nono)
                 .putRolePlayer(enemyTarget, America);
 
         //Owns(Nono, Missile)
-        graknGraph.addRelation(owns)
+        owns.addRelation()
                 .putRolePlayer(owner, Nono)
                 .putRolePlayer(ownedItem, Tomahawk);
 
         //isPaidBy(West, Nono)
-        graknGraph.addRelation(isPaidBy)
+        isPaidBy.addRelation()
                 .putRolePlayer(payee, colonelWest)
                 .putRolePlayer(payer, Nono);
 
@@ -178,13 +178,13 @@ public class CWGraph extends TestGraph {
 
         Pattern R1_RHS = Graql.and(graknGraph.graql().parsePatterns("$x isa criminal;"));
 
-        graknGraph.addRule(R1_LHS, R1_RHS, inferenceRule);
+        inferenceRule.addRule(R1_LHS, R1_RHS);
 
         //R2: "Missiles are a kind of a weapon"
         Pattern R2_LHS = Graql.and(graknGraph.graql().parsePatterns("$x isa missile;"));
         Pattern R2_RHS = Graql.and(graknGraph.graql().parsePatterns("$x isa weapon;"));
 
-        graknGraph.addRule(R2_LHS, R2_RHS, inferenceRule);
+        inferenceRule.addRule(R2_LHS, R2_RHS);
 
         //R3: "If a country is an enemy of America then it is hostile"
         Pattern R3_LHS = Graql.and(
@@ -193,13 +193,13 @@ public class CWGraph extends TestGraph {
                 "$y isa country;$y has name 'America';"));
         Pattern R3_RHS = Graql.and(graknGraph.graql().parsePatterns("$x has alignment 'hostile';"));
 
-        graknGraph.addRule(R3_LHS, R3_RHS, inferenceRule);
+        inferenceRule.addRule(R3_LHS, R3_RHS);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
         Pattern R4_LHS = Graql.and(graknGraph.graql().parsePatterns("$x isa rocket;$x has propulsion 'gsp';"));
         Pattern R4_RHS = Graql.and(graknGraph.graql().parsePatterns("$x isa missile;"));
 
-        graknGraph.addRule(R4_LHS, R4_RHS, inferenceRule);
+        inferenceRule.addRule(R4_LHS, R4_RHS);
 
         Pattern R5_LHS = Graql.and(
                 graknGraph.graql().parsePatterns("$x isa person;" +
@@ -210,6 +210,6 @@ public class CWGraph extends TestGraph {
 
         Pattern R5_RHS = Graql.and(graknGraph.graql().parsePatterns("(seller: $x, buyer: $y, transaction-item: $z) isa transaction;"));
 
-        graknGraph.addRule(R5_LHS, R5_RHS, inferenceRule);
+        inferenceRule.addRule(R5_LHS, R5_RHS);
     }
 }

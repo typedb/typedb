@@ -53,11 +53,11 @@ public class TailRecursionGraph extends TestGraph {
                 bInstancesIds[i][j] = putEntity("b" + i + j, bEntity).getId();
 
         for (int j = 1; j <= n; j++) {
-            graknGraph.addRelation(Q)
+            Q.addRelation()
                     .putRolePlayer(Qfrom, graknGraph.getInstance(a0Id))
                     .putRolePlayer(Qto, graknGraph.getInstance(bInstancesIds[1][j]));
             for (int i = 1; i <= m; i++) {
-                graknGraph.addRelation(Q)
+                Q.addRelation()
                         .putRolePlayer(Qfrom, graknGraph.getInstance(bInstancesIds[i][j]))
                         .putRolePlayer(Qto, graknGraph.getInstance(bInstancesIds[i + 1][j]));
             }

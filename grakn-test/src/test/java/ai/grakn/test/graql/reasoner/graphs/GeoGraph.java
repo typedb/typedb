@@ -104,72 +104,72 @@ public class GeoGraph extends TestGraph{
 
     @Override
     protected void buildRelations() {
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, PW)
                 .putRolePlayer(entityLocation, Warsaw);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, UW)
                 .putRolePlayer(entityLocation, Warsaw);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Imperial)
                 .putRolePlayer(entityLocation, London);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, UCL)
                 .putRolePlayer(entityLocation, London);
 
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Warsaw)
                 .putRolePlayer(entityLocation, Masovia);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Masovia)
                 .putRolePlayer(entityLocation, Poland);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Wroclaw)
                 .putRolePlayer(entityLocation, Silesia);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Silesia)
                 .putRolePlayer(entityLocation, Poland);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Poland)
                 .putRolePlayer(entityLocation, Europe);
 
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, London)
                 .putRolePlayer(entityLocation, GreaterLondon);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, GreaterLondon)
                 .putRolePlayer(entityLocation, England);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, England)
                 .putRolePlayer(entityLocation, Europe);
 
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Munich)
                 .putRolePlayer(entityLocation, Bavaria);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Bavaria)
                 .putRolePlayer(entityLocation, Germany);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Germany)
                 .putRolePlayer(entityLocation, Europe);
 
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Milan)
                 .putRolePlayer(entityLocation, Lombardy);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Lombardy)
                 .putRolePlayer(entityLocation, Italy);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Italy)
                 .putRolePlayer(entityLocation, Europe);
 
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Paris)
                 .putRolePlayer(entityLocation, IleDeFrance);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, IleDeFrance)
                 .putRolePlayer(entityLocation, France);
-        graknGraph.addRelation(isLocatedIn)
+        isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, France)
                 .putRolePlayer(entityLocation, Europe);
     }
@@ -181,6 +181,6 @@ public class GeoGraph extends TestGraph{
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
         Pattern transitivity_RHS = and(graknGraph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        graknGraph.addRule(transitivity_LHS, transitivity_RHS, inferenceRule);
+        inferenceRule.addRule(transitivity_LHS, transitivity_RHS);
     }
 }

@@ -53,19 +53,19 @@ public class PathGraphII extends TestGraph {
             for(int j = 0; j < m; j++)
                 putEntity("a" + i +"," + j, vertex);
 
-        graknGraph.addRelation(arc)
+        arc.addRelation()
                 .putRolePlayer(arcFrom, getInstance("a0"))
                 .putRolePlayer(arcTo, getInstance("a0,0"));
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
                 if (j < n - 1) {
-                    graknGraph.addRelation(arc)
+                    arc.addRelation()
                             .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
                             .putRolePlayer(arcTo, getInstance("a" + i + "," + (j + 1)));
                 }
                 if (i < m - 1) {
-                    graknGraph.addRelation(arc)
+                    arc.addRelation()
                             .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
                             .putRolePlayer(arcTo, getInstance("a" + (i + 1) + "," + j));
                 }

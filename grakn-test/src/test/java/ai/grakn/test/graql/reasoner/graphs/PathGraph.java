@@ -61,7 +61,7 @@ public class PathGraph extends TestGraph {
         }
 
         for (int j = 0; j < children; j++) {
-            graknGraph.addRelation(arc)
+            arc.addRelation()
                     .putRolePlayer(arcFrom, getInstance("a0"))
                     .putRolePlayer(arcTo, getInstance("a1," + j));
         }
@@ -70,7 +70,7 @@ public class PathGraph extends TestGraph {
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
-                    graknGraph.addRelation(arc)
+                    arc.addRelation()
                             .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
                             .putRolePlayer(arcTo, getInstance("a" + (i + 1) + "," + (j * children + c)));
 

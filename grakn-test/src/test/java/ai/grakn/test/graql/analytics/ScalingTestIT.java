@@ -591,7 +591,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         RelationType related = graph.getRelationType("related");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
-            superNodes.add(graph.addEntity(thing).getId());
+            superNodes.add(thing.addEntity().getId());
         }
         graph.commit();
         return superNodes;

@@ -75,7 +75,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.putEntityType("person").playsRole(owner);
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
         EntityType dog = graph.putEntityType("dog").superType(animal);
-        String foofoo = graph.addEntity(dog).getId();
+        String foofoo = dog.addEntity().getId();
         graph.commit();
 
         // set subgraph
@@ -106,9 +106,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph = factory.getGraph();
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
-        graph.addEntity(thing).getId();
-        graph.addEntity(thing).getId();
-        graph.addEntity(anotherThing).getId();
+        thing.addEntity().getId();
+        thing.addEntity().getId();
+        anotherThing.addEntity().getId();
         graph.commit();
         graph.close();
 
@@ -140,10 +140,10 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
-        String entity1 = graph.addEntity(thing).getId();
-        String entity2 = graph.addEntity(thing).getId();
-        String entity3 = graph.addEntity(thing).getId();
-        String entity4 = graph.addEntity(anotherThing).getId();
+        String entity1 = thing.addEntity().getId();
+        String entity2 = thing.addEntity().getId();
+        String entity3 = thing.addEntity().getId();
+        String entity4 = anotherThing.addEntity().getId();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -152,17 +152,17 @@ public class AnalyticsTest extends AbstractGraphTest {
         RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = graph.addRelation(related)
+        String id1 = related.addRelation()
                 .putRolePlayer(role1, graph.getInstance(entity1))
                 .putRolePlayer(role2, graph.getInstance(entity2))
                 .getId();
 
-        String id2 = graph.addRelation(related)
+        String id2 = related.addRelation()
                 .putRolePlayer(role1, graph.getInstance(entity2))
                 .putRolePlayer(role2, graph.getInstance(entity3))
                 .getId();
 
-        String id3 = graph.addRelation(related)
+        String id3 = related.addRelation()
                 .putRolePlayer(role1, graph.getInstance(entity2))
                 .putRolePlayer(role2, graph.getInstance(entity4))
                 .getId();
@@ -242,10 +242,10 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
-        String entity1 = graph.addEntity(thing).getId();
-        String entity2 = graph.addEntity(thing).getId();
-        String entity3 = graph.addEntity(thing).getId();
-        String entity4 = graph.addEntity(anotherThing).getId();
+        String entity1 = thing.addEntity().getId();
+        String entity2 = thing.addEntity().getId();
+        String entity3 = thing.addEntity().getId();
+        String entity4 = anotherThing.addEntity().getId();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -254,17 +254,17 @@ public class AnalyticsTest extends AbstractGraphTest {
         RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = graph.addRelation(related)
+        String id1 = related.addRelation()
                 .putRolePlayer(role1, graph.getInstance(entity1))
                 .putRolePlayer(role2, graph.getInstance(entity2))
                 .getId();
 
-        String id2 = graph.addRelation(related)
+        String id2 = related.addRelation()
                 .putRolePlayer(role1, graph.getInstance(entity2))
                 .putRolePlayer(role2, graph.getInstance(entity3))
                 .getId();
 
-        String id3 = graph.addRelation(related)
+        String id3 = related.addRelation()
                 .putRolePlayer(role1, graph.getInstance(entity2))
                 .putRolePlayer(role2, graph.getInstance(entity4))
                 .getId();
@@ -342,13 +342,13 @@ public class AnalyticsTest extends AbstractGraphTest {
                 graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
 
         // add data to the graph
-        Entity coco = graph.addEntity(animal);
-        Entity dave = graph.addEntity(person);
-        Resource coconut = graph.putResource("coconut", name);
-        Resource stinky = graph.putResource("stinky", altName);
-        Relation daveOwnsCoco = graph.addRelation(mansBestFriend).putRolePlayer(owner, dave).putRolePlayer(pet, coco);
-        Relation cocoName = graph.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, coconut);
-        Relation cocoAltName = graph.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, stinky);
+        Entity coco = animal.addEntity();
+        Entity dave = person.addEntity();
+        Resource coconut = name.putResource("coconut");
+        Resource stinky = altName.putResource("stinky");
+        Relation daveOwnsCoco = mansBestFriend.addRelation().putRolePlayer(owner, dave).putRolePlayer(pet, coco);
+        Relation cocoName = hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, coconut);
+        Relation cocoAltName = hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, stinky);
 
         // manually compute the degree for small graph
         Map<String, Long> subGraphReferenceDegrees = new HashMap<>();
@@ -428,9 +428,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.addEntity(animal);
-        Entity dave = graph.addEntity(person);
-        Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
+        Entity coco = animal.addEntity();
+        Entity dave = person.addEntity();
+        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
         // manual degrees
@@ -519,9 +519,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.addEntity(animal);
-        Entity dave = graph.addEntity(person);
-        Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
+        Entity coco = animal.addEntity();
+        Entity dave = person.addEntity();
+        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
         // manual degrees
@@ -532,7 +532,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         // create a decoy resource using same relationship
         ResourceType<Long> decoyResourceType = graph.putResourceType("decoy-resource", ResourceType.DataType.LONG);
-        Resource<Long> decoyResource = graph.putResource(100L, decoyResourceType);
+        Resource<Long> decoyResource = decoyResourceType.putResource(100L);
 
         animal.hasResource(decoyResourceType);
         coco.hasResource(decoyResource);
@@ -605,16 +605,16 @@ public class AnalyticsTest extends AbstractGraphTest {
         mansBestFriend.playsRole(ownership);
 
         // add data to the graph
-        Entity coco = graph.addEntity(animal);
-        Entity dave = graph.addEntity(person);
-        Resource coconut = graph.putResource("coconut", name);
-        Resource stinky = graph.putResource("stinky", altName);
-        Relation daveOwnsCoco = graph.addRelation(mansBestFriend)
+        Entity coco = animal.addEntity();
+        Entity dave = person.addEntity();
+        Resource coconut = name.putResource("coconut");
+        Resource stinky = altName.putResource("stinky");
+        Relation daveOwnsCoco = mansBestFriend.addRelation()
                 .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
-        graph.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, coconut);
-        graph.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, stinky);
-        Resource sd = graph.putResource("01/01/01", startDate);
-        Relation ownsFrom = graph.addRelation(hasOwnershipResource)
+        hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, coconut);
+        hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, stinky);
+        Resource sd = startDate.putResource("01/01/01");
+        Relation ownsFrom = hasOwnershipResource.addRelation()
                 .putRolePlayer(ownershipResource, sd).putRolePlayer(ownership, daveOwnsCoco);
 
         // manually compute the degree
@@ -681,12 +681,12 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType person = graph.putEntityType("person").playsRole(actor);
         EntityType character = graph.putEntityType("character").playsRole(characterBeingPlayed);
 
-        Entity godfather = graph.addEntity(movie);
-        Entity marlonBrando = graph.addEntity(person);
+        Entity godfather = movie.addEntity();
+        Entity marlonBrando = person.addEntity();
         String marlonId = marlonBrando.getId();
-        Entity donVitoCorleone = graph.addEntity(character);
+        Entity donVitoCorleone = character.addEntity();
 
-        Relation relation = graph.addRelation(hasCast)
+        Relation relation = hasCast.addRelation()
                 .putRolePlayer(productionWithCast, godfather)
                 .putRolePlayer(actor, marlonBrando)
                 .putRolePlayer(characterBeingPlayed, donVitoCorleone);
@@ -717,10 +717,10 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.addEntity(animal);
-        Entity dave = graph.addEntity(person);
+        Entity coco = animal.addEntity();
+        Entity dave = person.addEntity();
 
-        Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
+        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .putRolePlayer(pet, coco)
                 .putRolePlayer(owner, dave)
                 .putRolePlayer(breeder, dave);
@@ -761,9 +761,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.addEntity(animal);
-        Entity dave = graph.addEntity(person);
-        Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
+        Entity coco = animal.addEntity();
+        Entity dave = person.addEntity();
+        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
         // manual degrees
@@ -803,12 +803,12 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
-        Entity beast = graph.addEntity(dog);
-        Entity coco = graph.addEntity(cat);
-        Entity dave = graph.addEntity(person);
-        Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
+        Entity beast = dog.addEntity();
+        Entity coco = cat.addEntity();
+        Entity dave = person.addEntity();
+        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .putRolePlayer(owner, dave).putRolePlayer(breeder, dave).putRolePlayer(pet, coco);
-        Relation daveBreedsAndOwnsBeast = graph.addRelation(mansBestFriend)
+        Relation daveBreedsAndOwnsBeast = mansBestFriend.addRelation()
                 .putRolePlayer(owner, dave).putRolePlayer(breeder, dave).putRolePlayer(pet, beast);
 
         // manual degrees
@@ -849,9 +849,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
-        Entity coco = graph.addEntity(cat);
-        Entity dave = graph.addEntity(person);
-        graph.addRelation(mansBestFriend)
+        Entity coco = cat.addEntity();
+        Entity dave = person.addEntity();
+        mansBestFriend.addRelation()
                 .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
 
         // validate
@@ -884,9 +884,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
-        Entity coco = graph.addEntity(cat);
-        Entity dave = graph.addEntity(person);
-        graph.addRelation(mansBestFriend)
+        Entity coco = cat.addEntity();
+        Entity dave = person.addEntity();
+        mansBestFriend.addRelation()
                 .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
 
         // validate
@@ -924,8 +924,8 @@ public class AnalyticsTest extends AbstractGraphTest {
                 .hasRole(degreeValue);
         thing.playsRole(degreeOwner);
 
-        Entity thisThing = graph.addEntity(thing);
-        graph.addRelation(relationType).putRolePlayer(degreeOwner, thisThing);
+        Entity thisThing = thing.addEntity();
+        relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
         graph.commit();
 
         Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
