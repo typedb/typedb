@@ -25,6 +25,7 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -37,6 +38,7 @@ import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -49,7 +51,6 @@ import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
-import ai.grakn.graql.internal.pattern.property.LhsProperty;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -63,7 +64,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
@@ -213,7 +213,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roleplayer) {
-        return addCasting(new RelationPlayer(roleplayer.admin()));
+        return addCasting(new RelationPlayerImpl(roleplayer.admin()));
     }
 
     @Override
@@ -233,7 +233,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        return addCasting(new RelationPlayer(roletype.admin(), roleplayer.admin()));
+        return addCasting(new RelationPlayerImpl(roletype.admin(), roleplayer.admin()));
     }
 
     @Override
@@ -508,7 +508,7 @@ class VarImpl implements VarAdmin {
     /**
      * A casting is the pairing of roletype and roleplayer in a relation, where the roletype may be unknown
      */
-    public class RelationPlayer implements ai.grakn.graql.admin.RelationPlayer {
+    public class RelationPlayerImpl implements RelationPlayer {
         private final Optional<VarAdmin> roleType;
         private final VarAdmin rolePlayer;
 
@@ -516,7 +516,7 @@ class VarImpl implements VarAdmin {
          * A casting without a role type specified
          * @param rolePlayer the role player of the casting
          */
-        RelationPlayer(VarAdmin rolePlayer) {
+        RelationPlayerImpl(VarAdmin rolePlayer) {
             this.roleType = Optional.empty();
             this.rolePlayer = rolePlayer;
         }
@@ -525,7 +525,7 @@ class VarImpl implements VarAdmin {
          * @param roletype the role type of the casting
          * @param rolePlayer the role player of the casting
          */
-        RelationPlayer(VarAdmin roletype, VarAdmin rolePlayer) {
+        RelationPlayerImpl(VarAdmin roletype, VarAdmin rolePlayer) {
             this.roleType = Optional.of(roletype);
             this.rolePlayer = rolePlayer;
         }
@@ -550,7 +550,7 @@ class VarImpl implements VarAdmin {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            RelationPlayer casting = (RelationPlayer) o;
+            RelationPlayerImpl casting = (RelationPlayerImpl) o;
 
             if (!roleType.equals(casting.roleType)) return false;
             return rolePlayer.equals(casting.rolePlayer);
