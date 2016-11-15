@@ -130,7 +130,6 @@ public class ClusteringTest extends AbstractGraphTest {
         for (int i = 0; i < 3; i++) {
             computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
             sizeMapPersist = computer.connectedComponentsAndPersist();
-            refreshGraph();
             assertEquals(1, sizeMapPersist.size());
             assertEquals(7L, sizeMapPersist.values().iterator().next().longValue());
             final String finalClusterLabel = clusterLabel;
@@ -176,8 +175,6 @@ public class ClusteringTest extends AbstractGraphTest {
         for (int i = 0; i < 2; i++) {
             computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
             sizeMapPersist = computer.connectedComponentsAndPersist();
-            //TODO: Get rid of this refresh.
-            refreshGraph();
 
             Map<Long, Integer> populationCount01 = new HashMap<>();
             sizeMapPersist.values().forEach(value -> populationCount01.put(value,
@@ -212,8 +209,6 @@ public class ClusteringTest extends AbstractGraphTest {
             computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
             sizeMapPersist = computer.connectedComponentsAndPersist();
-            //TODO: Get rid of this refresh.
-            refreshGraph();
 
             assertEquals(17, sizeMapPersist.size());
             memberMap.values().stream()
@@ -226,13 +221,6 @@ public class ClusteringTest extends AbstractGraphTest {
                         assertEquals(id, resources.get(0).asResource().getValue());
                     });
         }
-    }
-
-    private void refreshGraph() throws Exception {
-        //TODO: Get rid of this method.
-        // We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
-        graph = factory.getGraph();
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
