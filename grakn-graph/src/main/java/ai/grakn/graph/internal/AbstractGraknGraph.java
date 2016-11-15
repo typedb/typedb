@@ -229,7 +229,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
-    private Vertex addVertex(Schema.BaseType baseType){
+    public Vertex addVertex(Schema.BaseType baseType){
         Vertex v = getTinkerPopGraph().addVertex(baseType.name());
         return v;
     }

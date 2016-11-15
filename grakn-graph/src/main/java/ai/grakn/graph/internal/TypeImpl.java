@@ -18,16 +18,16 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.InvalidConceptTypeException;
-import ai.grakn.util.Schema;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.InvalidConceptTypeException;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -52,6 +53,17 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     }
     TypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
         super(v, type, graknGraph);
+    }
+
+    /**
+     *
+     * @param instanceBaseType The base type of the instances of this type
+     * @param producer The factory method to produce the instance
+     * @return The instance required
+     */
+    protected V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
+        Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
+        return producer.apply(instanceVertex, getThis());
     }
 
     /**
