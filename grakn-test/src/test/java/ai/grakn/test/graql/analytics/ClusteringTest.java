@@ -24,7 +24,6 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -130,6 +129,7 @@ public class ClusteringTest extends AbstractGraphTest {
         for (int i = 0; i < 3; i++) {
             computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
             sizeMapPersist = computer.connectedComponentsAndPersist();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
             assertEquals(1, sizeMapPersist.size());
             assertEquals(7L, sizeMapPersist.values().iterator().next().longValue());
             final String finalClusterLabel = clusterLabel;
@@ -175,6 +175,7 @@ public class ClusteringTest extends AbstractGraphTest {
         for (int i = 0; i < 2; i++) {
             computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
             sizeMapPersist = computer.connectedComponentsAndPersist();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
             Map<Long, Integer> populationCount01 = new HashMap<>();
             sizeMapPersist.values().forEach(value -> populationCount01.put(value,
@@ -209,6 +210,7 @@ public class ClusteringTest extends AbstractGraphTest {
             computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                     resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
             sizeMapPersist = computer.connectedComponentsAndPersist();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
             assertEquals(17, sizeMapPersist.size());
             memberMap.values().stream()
@@ -375,7 +377,7 @@ public class ClusteringTest extends AbstractGraphTest {
                 .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
         relationType5.addRelation()
                 .putRolePlayer(resourceOwner5, entity4)
-                .putRolePlayer(resourceValue5, graph.getResourceType(resourceType6).putResource(-7L));
+                .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
 
         RelationType relationType6 = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceType6));
         relationType6.addRelation()

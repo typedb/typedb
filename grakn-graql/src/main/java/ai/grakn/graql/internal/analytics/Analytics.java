@@ -33,7 +33,16 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
@@ -278,7 +287,8 @@ public class Analytics {
     }
 
     /**
-     * Compute the shortest path between two vertices.
+     * Compute the shortest path between two vertices. If there are more than one shortest path, an arbitrary path
+     * is returned.
      *
      * @return a shortest path: a list of vertex ids along the path (including the two given vertices)
      */

@@ -170,11 +170,11 @@ public class ShortestPathTest extends AbstractGraphTest {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
-        Entity entity1 = graph.addEntity(entityType1);
-        Entity entity2 = graph.addEntity(entityType1);
-        Entity entity3 = graph.addEntity(entityType1);
-        Entity entity4 = graph.addEntity(entityType2);
-        Entity entity5 = graph.addEntity(entityType1);
+        Entity entity1 = entityType1.addEntity();
+        Entity entity2 = entityType1.addEntity();
+        Entity entity3 = entityType1.addEntity();
+        Entity entity4 = entityType2.addEntity();
+        Entity entity5 = entityType1.addEntity();
 
         entityId1 = entity1.getId();
         entityId2 = entity2.getId();
@@ -188,16 +188,16 @@ public class ShortestPathTest extends AbstractGraphTest {
         entityType2.playsRole(role1).playsRole(role2);
         RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
-        relationId12 = graph.addRelation(relationType)
+        relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity2).getId();
-        relationId13 = graph.addRelation(relationType)
+        relationId13 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity3).getId();
-        relationId24 = graph.addRelation(relationType)
+        relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity4).getId();
-        relationId34 = graph.addRelation(relationType)
+        relationId34 = relationType.addRelation()
                 .putRolePlayer(role1, entity3)
                 .putRolePlayer(role2, entity4).getId();
         instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
@@ -278,7 +278,6 @@ public class ShortestPathTest extends AbstractGraphTest {
         Entity entity2 = graph.getEntity(entityId2);
         Entity entity3 = graph.getEntity(entityId3);
         Entity entity4 = graph.getEntity(entityId4);
-        Entity entity5 = graph.getEntity(entityId5);
 
         RoleType resourceOwner1 = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceType1));
         RoleType resourceOwner2 = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceType2));
@@ -295,55 +294,55 @@ public class ShortestPathTest extends AbstractGraphTest {
         RoleType resourceValue6 = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceType6));
 
         RelationType relationType1 = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceType1));
-        graph.addRelation(relationType1)
+        relationType1.addRelation()
                 .putRolePlayer(resourceOwner1, entity1)
-                .putRolePlayer(resourceValue1, graph.putResource(1.2, graph.getResourceType(resourceType1)));
-        graph.addRelation(relationType1)
+                .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.2));
+        relationType1.addRelation()
                 .putRolePlayer(resourceOwner1, entity1)
-                .putRolePlayer(resourceValue1, graph.putResource(1.5, graph.getResourceType(resourceType1)));
-        graph.addRelation(relationType1)
+                .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.5));
+        relationType1.addRelation()
                 .putRolePlayer(resourceOwner1, entity3)
-                .putRolePlayer(resourceValue1, graph.putResource(1.8, graph.getResourceType(resourceType1)));
+                .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.8));
 
         RelationType relationType2 = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceType2));
-        graph.addRelation(relationType2)
+        relationType2.addRelation()
                 .putRolePlayer(resourceOwner2, entity1)
-                .putRolePlayer(resourceValue2, graph.putResource(4L, graph.getResourceType(resourceType2)));
-        graph.addRelation(relationType2)
+                .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(4L));
+        relationType2.addRelation()
                 .putRolePlayer(resourceOwner2, entity1)
-                .putRolePlayer(resourceValue2, graph.putResource(-1L, graph.getResourceType(resourceType2)));
-        graph.addRelation(relationType2)
+                .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(-1L));
+        relationType2.addRelation()
                 .putRolePlayer(resourceOwner2, entity4)
-                .putRolePlayer(resourceValue2, graph.putResource(0L, graph.getResourceType(resourceType2)));
+                .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(0L));
 
         RelationType relationType5 = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceType5));
-        graph.addRelation(relationType5)
+        relationType5.addRelation()
                 .putRolePlayer(resourceOwner5, entity1)
-                .putRolePlayer(resourceValue5, graph.putResource(-7L, graph.getResourceType(resourceType5)));
-        graph.addRelation(relationType5)
+                .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+        relationType5.addRelation()
                 .putRolePlayer(resourceOwner5, entity2)
-                .putRolePlayer(resourceValue5, graph.putResource(-7L, graph.getResourceType(resourceType5)));
-        graph.addRelation(relationType5)
+                .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+        relationType5.addRelation()
                 .putRolePlayer(resourceOwner5, entity4)
-                .putRolePlayer(resourceValue5, graph.putResource(-7L, graph.getResourceType(resourceType5)));
+                .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
 
         RelationType relationType6 = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceType6));
-        graph.addRelation(relationType6)
+        relationType6.addRelation()
                 .putRolePlayer(resourceOwner6, entity1)
-                .putRolePlayer(resourceValue6, graph.putResource(7.5, graph.getResourceType(resourceType6)));
-        graph.addRelation(relationType6)
+                .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+        relationType6.addRelation()
                 .putRolePlayer(resourceOwner6, entity2)
-                .putRolePlayer(resourceValue6, graph.putResource(7.5, graph.getResourceType(resourceType6)));
-        graph.addRelation(relationType6)
+                .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+        relationType6.addRelation()
                 .putRolePlayer(resourceOwner6, entity4)
-                .putRolePlayer(resourceValue6, graph.putResource(7.5, graph.getResourceType(resourceType6)));
+                .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
 
         // some resources in, but not connect them to any instances
-        graph.putResource(2.8, graph.getResourceType(resourceType1));
-        graph.putResource(-5L, graph.getResourceType(resourceType2));
-        graph.putResource(100L, graph.getResourceType(resourceType3));
-        graph.putResource(10L, graph.getResourceType(resourceType5));
-        graph.putResource(0.8, graph.getResourceType(resourceType6));
+        graph.getResourceType(resourceType1).putResource(2.8);
+        graph.getResourceType(resourceType2).putResource(-5L);
+        graph.getResourceType(resourceType3).putResource(100L);
+        graph.getResourceType(resourceType5).putResource(10L);
+        graph.getResourceType(resourceType6).putResource(0.8);
 
         graph.commit();
         graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();

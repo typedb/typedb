@@ -902,7 +902,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         // compute count
         analytics = new Analytics(graph.getKeyspace(), Collections.singleton("degree"), new HashSet<>());
 
-        //Not sure why the above seems to be closing the graph now.
+        // need to reopen the graph because we have made changes on the batch graph
         graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
         Assert.assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
     }
