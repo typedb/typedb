@@ -27,7 +27,7 @@ import ai.grakn.graql.internal.template.macro.DoubleMacro;
 import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
 import ai.grakn.graql.internal.template.macro.LongMacro;
-import ai.grakn.graql.internal.template.macro.Macro;
+import ai.grakn.graql.macro.Macro;
 import ai.grakn.graql.internal.template.macro.NoescpMacro;
 import ai.grakn.graql.internal.template.macro.StringMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;

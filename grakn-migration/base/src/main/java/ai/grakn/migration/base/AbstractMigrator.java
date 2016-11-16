@@ -21,7 +21,7 @@ package ai.grakn.migration.base;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilderImpl;
-import ai.grakn.graql.internal.template.macro.Macro;
+import ai.grakn.graql.macro.Macro;
 
 import java.util.Iterator;
 import java.util.Map;

@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.template.TemplateParser;
-import ai.grakn.graql.internal.template.macro.Macro;
+import ai.grakn.graql.macro.Macro;
 import ai.grakn.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
@@ -164,6 +164,7 @@ public class QueryBuilderImpl implements QueryBuilder{
         queryParser.registerAggregate(name, aggregateMethod);
     }
 
+    @Override
     public void registerMacro(Macro macro){
         templateParser.registerMacro(macro.name(), macro);
     }

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.internal.template.Value;
+import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ public class LongMacro implements Macro<Long> {
     private static final int numberArguments = 1;
 
     @Override
-    public Long apply(List<Value> values) {
+    public Long apply(List<Object> values) {
         if(values.size() != numberArguments){
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
