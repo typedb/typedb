@@ -567,13 +567,18 @@ public class GraqlShell {
 
     private void sendJson(Json json) {
         try {
-            websocketExecutor.submit(() -> {
+            WebSocketException we = websocketExecutor.submit(() -> {
                 try {
                     session.getRemote().sendString(json.toString());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
+                } catch (WebSocketException e) {
+                    return e;
                 }
+                return null;
             }).get();
+
+            if (we != null) throw we;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
