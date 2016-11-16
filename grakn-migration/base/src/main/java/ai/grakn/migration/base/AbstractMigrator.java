@@ -43,9 +43,13 @@ public abstract class AbstractMigrator implements Migrator {
         return this;
     }
 
+    /**
+     * @param template a string representing a templated graql query
+     * @param data data used in the template
+     * @return an insert query
+     */
     protected InsertQuery template(String template, Map<String, Object> data){
-        String templated = queryBuilder.parseTemplate(template, data);
-        return queryBuilder.parse(templated);
+        return (InsertQuery) queryBuilder.parseTemplate(template, data);
     }
 
     /**

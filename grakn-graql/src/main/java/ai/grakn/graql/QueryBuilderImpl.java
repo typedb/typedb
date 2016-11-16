@@ -155,8 +155,8 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @return a resolved graql query
      */
     @Override
-    public String parseTemplate(String template, Map<String, Object> data){
-        return templateParser.parseTemplate(template, data);
+    public <T extends Query<?>> T parseTemplate(String template, Map<String, Object> data){
+        return parse(templateParser.parseTemplate(template, data));
     }
 
     @Override

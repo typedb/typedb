@@ -34,8 +34,8 @@ public class MacroTest {
 
     @Test
     public void noescpMacroOneVarTest(){
-        String template = "this is a @noescp(value)";
-        String expected = "this is a whale";
+        String template = "insert $this isa @noescp(value);";
+        String expected = "insert $this0 isa whale;";
 
         Map<String, Object> data = Collections.singletonMap("value", "whale");
 
@@ -44,12 +44,12 @@ public class MacroTest {
 
     @Test
     public void noescpMacroMultiVarTest(){
-        String template = "My first name is @noescp(firstname) and my last name is @noescp(lastname)";
-        String expected = "My first name is Phil and my last name is Collins";
+        String template = "insert $x has fn @noescp(firstname) has ln @noescp(lastname);";
+        String expected = "insert $x0 has fn 4 has ln 5;";
 
         Map<String, Object> data = new HashMap<>();
-        data.put("firstname", "Phil");
-        data.put("lastname", "Collins");
+        data.put("firstname", "4");
+        data.put("lastname", "5");
 
         assertParseEquals(template, data, expected);
     }
@@ -64,8 +64,8 @@ public class MacroTest {
 
     @Test
     public void intMacroTest(){
-        String template = "this is an int @int(value)";
-        String expected = "this is an int 4";
+        String template = "insert $x value @int(value);";
+        String expected = "insert $x0 value 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
@@ -80,8 +80,8 @@ public class MacroTest {
 
     @Test
     public void doubleMacroTest(){
-        String template = "this is a double @double(value)";
-        String expected = "this is a double 4.0";
+        String template = "insert $x value @double(value);";
+        String expected = "insert $x0 value 4.0;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
@@ -96,8 +96,8 @@ public class MacroTest {
 
     @Test
     public void equalsMacroTest(){
-        String template = "@equals(this that)";
-        String expected = "true";
+        String template = "insert $x value @equals(this that);";
+        String expected = "insert $x0 value true;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("this", "50");
@@ -105,8 +105,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "@equals(this notThat)";
-        expected = "false";
+        template = "insert $x value @equals(this notThat);";
+        expected = "insert $x0 value false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -114,8 +114,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "@equals(this notThat)";
-        expected = "false";
+        template = "insert $x value @equals(this notThat);";
+        expected = "insert $x0 value false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -123,8 +123,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "@equals(this that those)";
-        expected = "true";
+        template = "insert $x value @equals(this that those);";
+        expected = "insert $x0 value true;";
 
         data = new HashMap<>();
         data.put("this", 50);
@@ -133,8 +133,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "@equals(this that notThat)";
-        expected = "false";
+        template = "insert $x value @equals(this that notThat);";
+        expected = "insert $x0 value false;";
 
         data = new HashMap<>();
         data.put("this", 50);
@@ -151,15 +151,15 @@ public class MacroTest {
 
     @Test
     public void macroInArgumentTest(){
-        String template = "if (@equals(this that)) do { equals } else { not }";
-        String expected = " equals";
+        String template = "if (@equals(this that)) do { insert $this isa equals; } else { insert $this isa not; }";
+        String expected = "insert $this0 isa equals;";
         Map<String, Object> data = new HashMap<>();
         data.put("this", "50");
         data.put("that", "50");
 
         assertParseEquals(template, data, expected);
 
-        expected = " not";
+        expected = "insert $this0 isa not;";
         data = new HashMap<>();
         data.put("this", "50");
         data.put("that", "500");
@@ -168,7 +168,7 @@ public class MacroTest {
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        String result = Graql.parseTemplate(template, data);
+        String result = Graql.parseTemplate(template, data).toString();
         assertEquals(expected, result);
     }
 }
