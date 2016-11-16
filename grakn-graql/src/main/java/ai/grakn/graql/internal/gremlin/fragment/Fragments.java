@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -136,6 +135,10 @@ public class Fragments {
 
     public static NotCastingFragment notCasting(String start) {
         return new NotCastingFragment(start);
+    }
+
+    public static Fragment neq(String start, String other) {
+        return new NeqFragment(start, other);
     }
 
     @SuppressWarnings("unchecked")

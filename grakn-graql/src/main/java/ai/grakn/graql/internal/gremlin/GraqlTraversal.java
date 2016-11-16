@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -122,6 +123,10 @@ public class GraqlTraversal {
             Pair<Long, List<Fragment>> pair = findPlan(fragmentSets, names, cost, depth);
             cost = pair.getValue0();
             List<Fragment> newFragments = Lists.reverse(pair.getValue1());
+
+            if (newFragments.isEmpty()) {
+                throw new RuntimeException(ErrorMessage.FAILED_TO_BUILD_TRAVERSAL.getMessage());
+            }
 
             newFragments.forEach(fragment -> {
                 fragmentSets.remove(fragment.getEquivalentFragmentSet());
