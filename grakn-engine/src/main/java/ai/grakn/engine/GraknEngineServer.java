@@ -29,9 +29,6 @@ import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.core.util.StatusPrinter;
-import ch.qos.logback.core.util.SystemInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -41,7 +38,11 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import static spark.Spark.*;
+import static spark.Spark.awaitInitialization;
+import static spark.Spark.exception;
+import static spark.Spark.ipAddress;
+import static spark.Spark.port;
+import static spark.Spark.staticFiles;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -78,11 +79,6 @@ public class GraknEngineServer {
         new TransactionController();
         new StatusController();
         new BackgroundTasksController();
-
-        //If no route gets resolved throw 404
-        get("*", (request, response) -> {
-            throw new GraknEngineServerException(404, "Page or resource not found.");
-        });
 
         //Register Exception Handler
         exception(GraknEngineServerException.class, (e, request, response) -> {
