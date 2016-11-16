@@ -20,22 +20,31 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.javatuples.Pair;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A traversal over a Grakn graph, representing one of many ways to execute a {@code MatchQuery}.
@@ -52,13 +61,121 @@ public class GraqlTraversal {
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
     private final GraknGraph graph;
 
+    // TODO: Find a better way to represent these values
+    // Just a pretend big number
+    private static final long NUM_VERTICES_ESTIMATE = 1_000;
+
+    private static final long MAX_TRAVERSAL_ATTEMPTS = 1_000;
+
     private GraqlTraversal(GraknGraph graph, Set<? extends List<Fragment>> fragments) {
         this.graph = graph;
-        this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(CommonUtil.toImmutableSet());
+        this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
     }
 
     public static GraqlTraversal create(GraknGraph graph, Set<? extends List<Fragment>> fragments) {
         return new GraqlTraversal(graph, fragments);
+    }
+
+    /**
+     * Create a semi-optimal traversal plan using a greedy approach
+     * @param graph the graph to use
+     * @param innerQueries a collection of inner queries that the traversal must execute
+     * @return a semi-optimal traversal plan
+     */
+    static GraqlTraversal semiOptimal(GraknGraph graph, Collection<ConjunctionQuery> innerQueries) {
+
+        // Find a semi-optimal way to execute each conjunction
+        Set<? extends List<Fragment>> fragments = innerQueries.stream()
+                .map(GraqlTraversal::semiOptimalConjunction)
+                .collect(toImmutableSet());
+
+        return GraqlTraversal.create(graph, fragments);
+    }
+
+    /**
+     * Create a semi-optimal plan using a greedy approach to execute a single conjunction
+     * @param query the conjunction query to find a traversal plan
+     * @return a semi-optimal traversal plan to execute the given conjunction
+     */
+    private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query) {
+
+        Set<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(query.getEquivalentFragmentSets());
+        Set<String> names = new HashSet<>();
+
+        // This list is constructed over the course of the algorithm
+        List<Fragment> fragments = new ArrayList<>();
+
+        long numFragments = fragments(fragmentSets).count();
+        long depth = 1;
+        long numTraversalAttempts = numFragments;
+
+        // Calculate the depth to descend in the tree, based on how many plans we want to evaluate
+        while (numFragments > 0 && numTraversalAttempts < MAX_TRAVERSAL_ATTEMPTS) {
+            depth += 1;
+            numTraversalAttempts *= numFragments;
+            numFragments -= 1;
+        }
+
+        long cost = 1;
+
+        while (!fragmentSets.isEmpty()) {
+            Pair<Long, List<Fragment>> pair = findPlan(fragmentSets, names, cost, depth);
+            cost = pair.getValue0();
+            List<Fragment> newFragments = Lists.reverse(pair.getValue1());
+
+            newFragments.forEach(fragment -> {
+                fragmentSets.remove(fragment.getEquivalentFragmentSet());
+                fragment.getVariableNames().forEach(names::add);
+            });
+            fragments.addAll(newFragments);
+        }
+
+        return fragments;
+    }
+
+    /**
+     * Find a traversal plan that will satisfy the given equivalent fragment sets
+     * @param fragmentSets a set of equivalent fragment sets describing part of a query
+     * @param names a set of names that have already been encountered while executing the query
+     * @param cost the cost of the query plan so far
+     * @param depth the maximum depth the plan is allowed to descend in the tree
+     * @return a pair, containing the cost of the plan and a list of fragments comprising the traversal plan
+     */
+    private static Pair<Long, List<Fragment>> findPlan(
+            Set<EquivalentFragmentSet> fragmentSets, Set<String> names, long cost, long depth
+    ) {
+        // Base case
+        Pair<Long, List<Fragment>> baseCase = Pair.with(cost, Lists.newArrayList());
+
+        if (depth == 0) return baseCase;
+
+        Comparator<Pair<Long, List<Fragment>>> byCost = comparing(Pair::getValue0);
+
+        // Try every fragment that has its dependencies met, then select the lowest cost fragment
+        return fragments(fragmentSets)
+                .filter(fragment -> names.containsAll(fragment.getDependencies()))
+                .map(fragment -> findPlanWithFragment(fragment, fragmentSets, names, cost, depth))
+                .min(byCost)
+                .orElse(baseCase);
+    }
+
+    private static Pair<Long, List<Fragment>> findPlanWithFragment(
+            Fragment fragment, Set<EquivalentFragmentSet> fragmentSets, Set<String> names, long cost, long depth
+    ) {
+        // Calculate the new costs, fragment sets and variable names when using this fragment
+        long newCost = fragmentCost(fragment, cost, names);
+
+        EquivalentFragmentSet fragmentSet = fragment.getEquivalentFragmentSet();
+        Set<EquivalentFragmentSet> newFragmentSets = Sets.difference(fragmentSets, ImmutableSet.of(fragmentSet));
+
+        Set<String> newNames = Sets.union(names, fragment.getVariableNames().collect(toSet()));
+
+        // Recursively find a plan
+        Pair<Long, List<Fragment>> pair = findPlan(newFragmentSets, newNames, newCost, depth - 1);
+
+        // Add this fragment and cost and return
+        pair.getValue1().add(fragment);
+        return pair.setAt0(pair.getValue0() + newCost);
     }
 
     /**
@@ -144,41 +261,38 @@ public class GraqlTraversal {
      */
     public long getComplexity() {
 
-        // TODO: Find a better way to represent these values
-        // Just a pretend big number
-        long NUM_VERTICES_ESTIMATE = 1_000;
-
-        Set<String> names = new HashSet<>();
-
         long totalCost = 0;
 
         for (List<Fragment> list : fragments) {
-            long currentCost;
-            long previousCost = 1;
+            Set<String> names = new HashSet<>();
+
+            long cost = 1;
             long listCost = 0;
 
             for (Fragment fragment : list) {
-                String start = fragment.getStart();
-
-                if (names.contains(start)) {
-                    currentCost = fragment.fragmentCost(previousCost);
-                } else {
-                    // Restart traversal, meaning we are navigating from all vertices
-                    // The constant '1' cost is to discourage constant restarting, even when indexed
-                    currentCost = fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost + 1;
-                }
-
-                names.add(start);
-                fragment.getEnd().ifPresent(names::add);
-
-                listCost += currentCost;
-                previousCost = currentCost;
+                cost = fragmentCost(fragment, cost, names);
+                fragment.getVariableNames().forEach(names::add);
+                listCost += cost;
             }
 
             totalCost += listCost;
         }
 
         return totalCost;
+    }
+
+    private static long fragmentCost(Fragment fragment, long previousCost, Set<String> names) {
+        if (names.contains(fragment.getStart())) {
+            return fragment.fragmentCost(previousCost);
+        } else {
+            // Restart traversal, meaning we are navigating from all vertices
+            // The constant '1' cost is to discourage constant restarting, even when indexed
+            return fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost + 1;
+        }
+    }
+
+    private static Stream<Fragment> fragments(Set<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSets.stream().flatMap(EquivalentFragmentSet::getFragments);
     }
 
     @Override

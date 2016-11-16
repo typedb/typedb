@@ -19,9 +19,10 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
@@ -39,6 +40,7 @@ abstract class AbstractFragment implements Fragment{
     static final long NUM_TYPES_PER_ROLE = 3;
     static final long NUM_ROLES_PER_TYPE = 3;
     static final long NUM_ROLES_PER_RELATION = 2;
+    static final long NUM_RESOURCES_PER_VALUE = 2;
 
     private final String start;
     private final Optional<String> end;
@@ -75,15 +77,13 @@ abstract class AbstractFragment implements Fragment{
     }
 
     @Override
-    public Stream<String> getVariableNames() {
-        return Stream.concat(Stream.of(start), optionalToStream(end));
+    public Set<String> getDependencies() {
+        return ImmutableSet.of();
     }
 
     @Override
-    public final int compareTo(@SuppressWarnings("NullableProblems") Fragment other) {
-        // Don't want to use Jetbrain's @NotNull annotation
-        if (this == other) return 0;
-        return getPriority().compareTo(other.getPriority());
+    public Stream<String> getVariableNames() {
+        return Stream.concat(Stream.of(start), optionalToStream(end));
     }
 
     @Override

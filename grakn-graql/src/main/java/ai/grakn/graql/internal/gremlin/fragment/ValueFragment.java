@@ -19,9 +19,7 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -47,18 +45,9 @@ class ValueFragment extends AbstractFragment {
     }
 
     @Override
-    public FragmentPriority getPriority() {
-        if (predicate.isSpecific()) {
-            return FragmentPriority.VALUE_SPECIFIC;
-        } else {
-            return FragmentPriority.VALUE_NONSPECIFIC;
-        }
-    }
-
-    @Override
     public long fragmentCost(long previousCost) {
         if (predicate.isSpecific()) {
-            return 1;
+            return NUM_RESOURCES_PER_VALUE;
         } else {
             return previousCost;
         }

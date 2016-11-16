@@ -21,13 +21,12 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.query.match.MatchOrder;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import ai.grakn.graql.admin.VarAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -38,7 +37,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -75,17 +73,14 @@ public class GremlinQuery {
         this.names = names;
         this.order = order;
 
-        innerQueries = patterns.stream().map(p -> new ConjunctionQuery(p)).collect(toList());
+        innerQueries = patterns.stream().map(ConjunctionQuery::new).collect(toList());
     }
 
     /**
      * Get a close-to-optimal traversal plan to execute this query
      */
     public GraqlTraversal optimalTraversal() {
-        ImmutableSet<ImmutableList<Fragment>> fragments =
-                innerQueries.stream().map(ConjunctionQuery::getSortedFragments).collect(toImmutableSet());
-
-        return GraqlTraversal.create(graph, fragments);
+        return GraqlTraversal.semiOptimal(graph, innerQueries);
     }
 
     /**

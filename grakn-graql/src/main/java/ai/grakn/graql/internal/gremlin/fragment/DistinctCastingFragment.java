@@ -18,11 +18,12 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Set;
 
 class DistinctCastingFragment extends AbstractFragment {
 
@@ -39,13 +40,13 @@ class DistinctCastingFragment extends AbstractFragment {
     }
 
     @Override
-    public String getName() {
-        return "[distinct-casting:$" + otherCastingName + "]";
+    public Set<String> getDependencies() {
+        return ImmutableSet.of(otherCastingName);
     }
 
     @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.DISTINCT_CASTING;
+    public String getName() {
+        return "[distinct-casting:$" + otherCastingName + "]";
     }
 
     @Override

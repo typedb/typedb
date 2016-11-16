@@ -38,7 +38,6 @@ import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Collection;
@@ -556,12 +555,5 @@ class QueryVisitor extends GraqlBaseVisitor {
             default:
                 throw new RuntimeException("Unrecognized datatype " + datatype.getText());
         }
-    }
-
-    private String getOriginalText(ParserRuleContext ctx) {
-        int start = ctx.start.getStartIndex();
-        int stop = ctx.stop.getStopIndex();
-        Interval interval = new Interval(start, stop);
-        return ctx.start.getInputStream().getText(interval);
     }
 }

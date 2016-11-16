@@ -19,9 +19,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -44,11 +41,6 @@ class DataTypeFragment extends AbstractFragment {
     @Override
     public String getName() {
         return "[datatype:" + dataType.getName() + "]";
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.VALUE_NONSPECIFIC;
     }
 
     @Override
