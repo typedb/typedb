@@ -23,8 +23,8 @@ import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.AbstractRollbackGraphTest;
 import com.google.common.base.Strings;
 import mjson.Json;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -51,15 +51,15 @@ public class GraqlShellTest extends AbstractRollbackGraphTest {
     private static String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
-    @BeforeClass
-    public static void setUpClass() throws Exception {
+    @Before
+    public void setIO() throws Exception {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
     }
 
-    @AfterClass
-    public static void resetIO() {
+    @After
+    public void resetIO() {
         System.setIn(trueIn);
         System.setOut(trueOut);
         System.setErr(trueErr);
