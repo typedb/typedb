@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.internal.template.Value;
 import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.graql.macro.Macro;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -32,18 +32,17 @@ import java.util.List;
  */
 public class DateMacro implements Macro<String> {
 
-
     @Override
-    public String apply(List<Value> values) {
+    public String apply(List<Object> values) {
         if(values.size() != 2 && values.size() != 3){
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
-        String originalDate = values.get(0).asString();
-        String originalFormat = values.get(1).asString();
-        String newFormat = values.size() == 3 ? values.get(2).asString() : null;
+        String originalDate = values.get(0).toString();
+        String originalFormat = values.get(1).toString();
+        String newFormat = values.size() == 3 ? values.get(2).toString() : null;
 
-        return StringConverter.valueToString(covertDateFormat(originalDate, originalFormat, newFormat));
+        return StringConverter.valueToString(convertDateFormat(originalDate, originalFormat, newFormat));
     }
 
     @Override
@@ -51,7 +50,7 @@ public class DateMacro implements Macro<String> {
         return "date";
     }
 
-    private String covertDateFormat(String originalDate, String originalFormat, String newFormat){
+    private String convertDateFormat(String originalDate, String originalFormat, String newFormat){
         originalFormat = removeQuotes(originalFormat);
 
         SimpleDateFormat originalDateFormat = new SimpleDateFormat(originalFormat);

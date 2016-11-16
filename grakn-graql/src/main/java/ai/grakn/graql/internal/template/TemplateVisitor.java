@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.template;
 
 import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
-import ai.grakn.graql.internal.template.macro.Macro;
+import ai.grakn.graql.macro.Macro;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
@@ -34,9 +34,6 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static ai.grakn.graql.internal.template.Value.concat;
-import static ai.grakn.graql.internal.template.Value.format;
-import static ai.grakn.graql.internal.template.Value.formatVar;
-import static ai.grakn.graql.internal.template.Value.identity;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -157,7 +154,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     public Value visitMacro(GraqlTemplateParser.MacroContext ctx){
         String macro = ctx.ID_MACRO().getText().replace("@", "");
 
-        List<Value> values = ctx.expr().stream().map(this::visit).collect(toList());
+        List<Object> values = ctx.expr().stream().map(this::visit).map(Value::getValue).collect(toList());
         return new Value(macros.get(macro).apply(values));
     }
 
@@ -317,8 +314,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     @Override
     public Value visitReplaceStatement(GraqlTemplateParser.ReplaceStatementContext ctx) {
 
-        Function<Value, String> formatToApply = ctx.DOLLAR() != null ? formatVar :
-                                                ctx.macro() != null ? identity : format;
+        Function<Value, String> formatToApply = ctx.DOLLAR() != null ? Value::formatVar :
+                                                ctx.macro() != null ? Value::identity : Value::format;
 
         Value replaced = ctx.macro() != null ? this.visit(ctx.macro()) : resolveReplace(ctx.REPLACE());
         String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";
