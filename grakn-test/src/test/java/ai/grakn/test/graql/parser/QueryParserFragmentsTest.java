@@ -54,7 +54,7 @@ public class QueryParserFragmentsTest {
 
         VarAdmin var2 = patterns.next().admin().asVar();
         assertTrue(var2.isRelation());
-        assertEquals(2, var2.getCastings().size());
+        assertEquals(2, var2.getRelationPlayers().size());
 
         VarAdmin var3 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var3.toString());
@@ -74,7 +74,7 @@ public class QueryParserFragmentsTest {
 
         VarAdmin var2 = patterns.next().admin().asVar();
         assertTrue(var2.isRelation());
-        assertEquals(2, var2.getCastings().size());
+        assertEquals(2, var2.getRelationPlayers().size());
 
         assertFalse(patterns.hasNext());
     }

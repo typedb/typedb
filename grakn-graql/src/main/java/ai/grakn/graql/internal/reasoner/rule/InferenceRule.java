@@ -101,7 +101,7 @@ public class InferenceRule {
             VarAdmin var = childAtom.getPattern().asVar();
             Var relVar = Graql.var(childAtom.getVarName());
             if (var.getType().isPresent()) relVar.isa(var.getType().orElse(null));
-            var.getCastings().forEach( c -> {
+            var.getRelationPlayers().forEach(c -> {
                 VarAdmin rolePlayer = c.getRolePlayer();
                 Optional<VarAdmin> roleType = c.getRoleType();
                 if (roleType.isPresent())

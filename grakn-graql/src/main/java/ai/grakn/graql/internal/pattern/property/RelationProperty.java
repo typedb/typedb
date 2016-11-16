@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Relation;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -55,37 +56,37 @@ import static java.util.stream.Collectors.toSet;
 
 public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
-    private final ImmutableMultiset<VarAdmin.Casting> castings;
+    private final ImmutableMultiset<RelationPlayer> relationPlayers;
 
-    public RelationProperty(ImmutableMultiset<VarAdmin.Casting> castings) {
-        this.castings = castings;
+    public RelationProperty(ImmutableMultiset<RelationPlayer> relationPlayers) {
+        this.relationPlayers = relationPlayers;
     }
 
-    public Stream<VarAdmin.Casting> getCastings() {
-        return castings.stream();
+    public Stream<RelationPlayer> getRelationPlayers() {
+        return relationPlayers.stream();
     }
 
     @Override
     public void buildString(StringBuilder builder) {
-        builder.append("(").append(castings.stream().map(Object::toString).collect(joining(", "))).append(")");
+        builder.append("(").append(relationPlayers.stream().map(Object::toString).collect(joining(", "))).append(")");
     }
 
     @Override
     public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        castings.forEach(casting -> {
-            Optional<VarAdmin> roleType = casting.getRoleType();
+        relationPlayers.forEach(relationPlayer -> {
+            Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
             if (roleType.isPresent()) {
                 Optional<String> roleTypeId = roleType.get().getIdOnly();
 
                 if (roleTypeId.isPresent()) {
-                    shortcutTraversal.addRel(roleTypeId.get(), casting.getRolePlayer().getName());
+                    shortcutTraversal.addRel(roleTypeId.get(), relationPlayer.getRolePlayer().getName());
                 } else {
                     shortcutTraversal.setInvalid();
                 }
 
             } else {
-                shortcutTraversal.addRel(casting.getRolePlayer().getName());
+                shortcutTraversal.addRel(relationPlayer.getRolePlayer().getName());
             }
         });
     }
@@ -94,12 +95,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public Collection<EquivalentFragmentSet> match(String start) {
         Collection<String> castingNames = new HashSet<>();
 
-        ImmutableSet<EquivalentFragmentSet> traversals = castings.stream().flatMap(casting -> {
+        ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers.stream().flatMap(relationPlayer -> {
 
             String castingName = UUID.randomUUID().toString();
             castingNames.add(castingName);
 
-            return equivalentFragmentSetFromCasting(start, castingName, casting);
+            return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
         }).collect(toImmutableSet());
 
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
@@ -114,26 +115,26 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Stream<VarAdmin> getTypes() {
-        return castings.stream().map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override
     public Stream<VarAdmin> getInnerVars() {
-        return castings.stream().flatMap(casting -> {
+        return relationPlayers.stream().flatMap(relationPlayer -> {
             Stream.Builder<VarAdmin> builder = Stream.builder();
-            builder.add(casting.getRolePlayer());
-            casting.getRoleType().ifPresent(builder::add);
+            builder.add(relationPlayer.getRolePlayer());
+            relationPlayer.getRoleType().ifPresent(builder::add);
             return builder.build();
         });
     }
 
-    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(String start, String castingName, VarAdmin.Casting casting) {
-        Optional<VarAdmin> roleType = casting.getRoleType();
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(String start, String castingName, RelationPlayer relationPlayer) {
+        Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
         if (roleType.isPresent()) {
-            return addRelatesPattern(start, castingName, roleType.get(), casting.getRolePlayer());
+            return addRelatesPattern(start, castingName, roleType.get(), relationPlayer.getRolePlayer());
         } else {
-            return addRelatesPattern(start, castingName, casting.getRolePlayer());
+            return addRelatesPattern(start, castingName, relationPlayer.getRolePlayer());
         }
     }
 
@@ -193,8 +194,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
 
-        Set<String> roleTypes = castings.stream()
-                .map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream)
+        Set<String> roleTypes = relationPlayers.stream()
+                .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
                 .map(VarAdmin::getIdOnly).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
@@ -241,21 +242,21 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Relation relation = concept.asRelation();
-        castings.forEach(casting -> addCasting(insertQueryExecutor, relation, casting));
+        relationPlayers.forEach(relationPlayer -> addRoleplayer(insertQueryExecutor, relation, relationPlayer));
     }
 
     /**
      * Add a roleplayer to the given relation
      * @param relation the concept representing the relation
-     * @param casting a casting between a role type and role player
+     * @param relationPlayer a casting between a role type and role player
      */
-    private void addCasting(InsertQueryExecutor insertQueryExecutor, Relation relation, VarAdmin.Casting casting) {
-        VarAdmin roleVar = casting.getRoleType().orElseThrow(
+    private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
+        VarAdmin roleVar = relationPlayer.getRoleType().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
         );
 
         RoleType roleType = insertQueryExecutor.getConcept(roleVar).asRoleType();
-        Instance roleplayer = insertQueryExecutor.getConcept(casting.getRolePlayer()).asInstance();
+        Instance roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
         relation.putRolePlayer(roleType, roleplayer);
     }
 
@@ -266,12 +267,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         RelationProperty that = (RelationProperty) o;
 
-        return castings.equals(that.castings);
+        return relationPlayers.equals(that.relationPlayers);
 
     }
 
     @Override
     public int hashCode() {
-        return castings.hashCode();
+        return relationPlayers.hashCode();
     }
 }

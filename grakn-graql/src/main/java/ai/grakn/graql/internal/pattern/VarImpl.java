@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -49,34 +50,6 @@ import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
-import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
-import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
-import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.LhsProperty;
-import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
-import ai.grakn.graql.internal.pattern.property.RegexProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.pattern.property.RhsProperty;
-import ai.grakn.graql.internal.pattern.property.ValueFlagProperty;
-import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.graql.internal.util.StringConverter;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -90,11 +63,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.eq;
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
-import static ai.grakn.util.ErrorMessage.CONFLICTING_PROPERTIES;
-import static ai.grakn.util.ErrorMessage.SET_GENERATED_VARIABLE_NAME;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
@@ -244,7 +212,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roleplayer) {
-        return addCasting(new Casting(roleplayer.admin()));
+        return addCasting(new RelationPlayerImpl(roleplayer.admin()));
     }
 
     @Override
@@ -264,7 +232,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        return addCasting(new Casting(roletype.admin(), roleplayer.admin()));
+        return addCasting(new RelationPlayerImpl(roletype.admin(), roleplayer.admin()));
     }
 
     @Override
@@ -380,8 +348,8 @@ class VarImpl implements VarAdmin {
         return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
     }
 
-    public Set<VarAdmin.Casting> getCastings() {
-        return getProperties(RelationProperty.class).flatMap(RelationProperty::getCastings).collect(toSet());
+    public Set<ai.grakn.graql.admin.RelationPlayer> getRelationPlayers() {
+        return getProperties(RelationProperty.class).flatMap(RelationProperty::getRelationPlayers).collect(toSet());
     }
 
     @Override
@@ -468,19 +436,19 @@ class VarImpl implements VarAdmin {
         return builder.toString();
     }
 
-    private Var addCasting(VarAdmin.Casting casting) {
+    private Var addCasting(ai.grakn.graql.admin.RelationPlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        Stream<VarAdmin.Casting> oldCastings = relationProperty
-                .map(RelationProperty::getCastings)
+        Stream<ai.grakn.graql.admin.RelationPlayer> oldCastings = relationProperty
+                .map(RelationProperty::getRelationPlayers)
                 .orElse(Stream.empty());
 
-        ImmutableMultiset<VarAdmin.Casting> castings =
-                Stream.concat(oldCastings, Stream.of(casting)).collect(CommonUtil.toImmutableMultiset());
+        ImmutableMultiset<ai.grakn.graql.admin.RelationPlayer> relationPlayers =
+                Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
         relationProperty.ifPresent(properties::remove);
 
-        properties.add(new RelationProperty(castings));
+        properties.add(new RelationProperty(relationPlayers));
 
         return this;
     }
@@ -536,63 +504,4 @@ class VarImpl implements VarAdmin {
         return result;
     }
 
-    /**
-     * A casting is the pairing of roletype and roleplayer in a relation, where the roletype may be unknown
-     */
-    public class Casting implements VarAdmin.Casting {
-        private final Optional<VarAdmin> roleType;
-        private final VarAdmin rolePlayer;
-
-        /**
-         * A casting without a role type specified
-         * @param rolePlayer the role player of the casting
-         */
-        Casting(VarAdmin rolePlayer) {
-            this.roleType = Optional.empty();
-            this.rolePlayer = rolePlayer;
-        }
-
-        /**
-         * @param roletype the role type of the casting
-         * @param rolePlayer the role player of the casting
-         */
-        Casting(VarAdmin roletype, VarAdmin rolePlayer) {
-            this.roleType = Optional.of(roletype);
-            this.rolePlayer = rolePlayer;
-        }
-
-        @Override
-        public Optional<VarAdmin> getRoleType() {
-            return roleType;
-        }
-
-        @Override
-        public VarAdmin getRolePlayer() {
-            return rolePlayer;
-        }
-
-        @Override
-        public String toString() {
-            return getRoleType().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Casting casting = (Casting) o;
-
-            if (!roleType.equals(casting.roleType)) return false;
-            return rolePlayer.equals(casting.rolePlayer);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = roleType.hashCode();
-            result = 31 * result + rolePlayer.hashCode();
-            return result;
-        }
-    }
 }

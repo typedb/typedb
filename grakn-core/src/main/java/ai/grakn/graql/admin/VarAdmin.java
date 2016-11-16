@@ -134,22 +134,8 @@ public interface VarAdmin extends PatternAdmin, Var {
     Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
 
     /**
-     * @return all castings described on this relation (that is, pairs of role types and role players)
+     * @return all role types and role players described for this relation
      */
-    Set<Casting> getCastings();
+    Set<RelationPlayer> getRelationPlayers();
 
-    /**
-     * A casting, a pair of role type and role player (where the role type may not be present)
-     */
-    interface Casting {
-        /**
-         * @return the role type, if specified
-         */
-        Optional<VarAdmin> getRoleType();
-
-        /**
-         * @return the role player
-         */
-        VarAdmin getRolePlayer();
-    }
 }

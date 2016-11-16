@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -37,31 +38,31 @@ import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 
 public class Relation extends Atom {
 
-    private final Set<VarAdmin.Casting> castings = new HashSet<>();
+    private final Set<RelationPlayer> relationPlayers = new HashSet<>();
     private Map<RoleType, Pair<String, Type>> roleVarTypeMap = null;
     private Map<String, Pair<Type, RoleType>> varTypeRoleMap = null;
 
     public Relation(VarAdmin pattern) {
         super(pattern);
-        castings.addAll(pattern.getCastings());
+        relationPlayers.addAll(pattern.getRelationPlayers());
         inferTypeFromRoles();
     }
 
     public Relation(VarAdmin pattern, Query par) {
         super(pattern, par);
-        castings.addAll(pattern.getCastings());
+        relationPlayers.addAll(pattern.getRelationPlayers());
         inferTypeFromRoles();
     }
 
     public Relation(String name, String id, Map<String, String> roleMap, Query par){
         super(constructRelation(name, id, roleMap), par);
-        castings.addAll(getPattern().asVar().getCastings());
+        relationPlayers.addAll(getPattern().asVar().getRelationPlayers());
         inferTypeFromRoles();
     }
 
     private Relation(Relation a) {
         super(a);
-        castings.addAll(a.getPattern().asVar().getCastings());
+        relationPlayers.addAll(a.getPattern().asVar().getRelationPlayers());
         inferTypeFromRoles();
     }
 
@@ -198,7 +199,7 @@ public class Relation extends Atom {
 
     public boolean hasExplicitRoleTypes(){
         boolean rolesDefined = false;
-        Iterator<VarAdmin.Casting> it = castings.iterator();
+        Iterator<RelationPlayer> it = relationPlayers.iterator();
         while (it.hasNext() && !rolesDefined)
             rolesDefined = it.next().getRoleType().isPresent();
         return rolesDefined;
@@ -207,7 +208,7 @@ public class Relation extends Atom {
     private Set<RoleType> getExplicitRoleTypes(){
         Set<RoleType> roleTypes = new HashSet<>();
         GraknGraph graph = getParentQuery().getGraph().orElse(null);
-        castings.stream()
+        relationPlayers.stream()
                 .filter(c -> c.getRoleType().isPresent())
                 .filter(c -> c.getRoleType().get().getId().isPresent())
                 .map( c -> graph.getRoleType(c.getRoleType().orElse(null).getId().orElse("")))
@@ -226,7 +227,7 @@ public class Relation extends Atom {
     @Override
     public boolean containsVar(String name) {
         boolean varFound = false;
-        Iterator<VarAdmin.Casting> it = castings.iterator();
+        Iterator<RelationPlayer> it = relationPlayers.iterator();
         while(it.hasNext() && !varFound)
             varFound = it.next().getRolePlayer().getName().equals(name);
         return varFound;
@@ -235,7 +236,7 @@ public class Relation extends Atom {
     @Override
     public void unify(String from, String to) {
         super.unify(from, to);
-        castings.forEach(c -> {
+        relationPlayers.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (var.equals(from)) {
                 c.getRolePlayer().setName(to);
@@ -249,7 +250,7 @@ public class Relation extends Atom {
     @Override
     public void unify (Map<String, String> mappings) {
         super.unify(mappings);
-        castings.forEach(c -> {
+        relationPlayers.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (mappings.containsKey(var) ) {
                 String target = mappings.get(var);
@@ -270,7 +271,7 @@ public class Relation extends Atom {
     @Override
     public Set<String> getUnifiableNames(){
         Set<String> vars = new HashSet<>();
-        castings.forEach(c -> vars.add(c.getRolePlayer().getName()));
+        relationPlayers.forEach(c -> vars.add(c.getRolePlayer().getName()));
         return vars;
     }
 
@@ -290,7 +291,7 @@ public class Relation extends Atom {
         for (String var : vars) {
             Type type = varTypeMap.get(var);
             String roleTypeId = "";
-            for(VarAdmin.Casting c : castings) {
+            for(RelationPlayer c : relationPlayers) {
                 if (c.getRolePlayer().getName().equals(var))
                     roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }
@@ -332,7 +333,7 @@ public class Relation extends Atom {
         Set<RoleType> allocatedRoles = new HashSet<>();
 
         //explicit role types from castings
-        castings.forEach( c -> {
+        relationPlayers.forEach(c -> {
             String var = c.getRolePlayer().getName();
             String roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             Type type = varTypeMap.get(var);
@@ -380,7 +381,7 @@ public class Relation extends Atom {
                     .forEach( var -> roleMap.put(var, null));
         //pattern mutation!
         atomPattern = constructRelation(isUserDefinedName()? varName : "", typeId, roleMap);
-        castings.addAll(getPattern().asVar().getCastings());
+        relationPlayers.addAll(getPattern().asVar().getRelationPlayers());
 
         return roleVarTypeMap;
     }
