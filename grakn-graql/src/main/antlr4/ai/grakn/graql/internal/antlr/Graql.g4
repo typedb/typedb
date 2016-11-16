@@ -60,6 +60,7 @@ property       : 'isa' variable                   # isa
                | 'is-abstract'                    # isAbstract
                | 'datatype' DATATYPE              # propDatatype
                | 'regex' REGEX                    # propRegex
+               | '!=' variable                    # propNeq
                ;
 
 casting        : variable (':' variable)?

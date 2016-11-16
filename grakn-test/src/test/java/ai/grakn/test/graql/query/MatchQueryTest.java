@@ -18,9 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.concept.ResourceType;
-import ai.grakn.test.AbstractMovieGraphTest;
-import com.google.common.collect.Lists;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.MatchQuery;
@@ -29,6 +26,7 @@ import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,31 +40,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.all;
-import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.any;
-import static ai.grakn.graql.Graql.contains;
-import static ai.grakn.graql.Graql.eq;
-import static ai.grakn.graql.Graql.gt;
-import static ai.grakn.graql.Graql.gte;
-import static ai.grakn.graql.Graql.id;
-import static ai.grakn.graql.Graql.lt;
-import static ai.grakn.graql.Graql.lte;
-import static ai.grakn.graql.Graql.neq;
-import static ai.grakn.graql.Graql.or;
-import static ai.grakn.graql.Graql.regex;
-import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.Graql.*;
 import static ai.grakn.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RESOURCE_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RULE_TYPE;
+import static ai.grakn.util.Schema.MetaSchema.*;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class MatchQueryTest extends AbstractMovieGraphTest {
@@ -538,6 +518,21 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
         // We expect there to be a result for every pair of concepts
         assertEquals(numConcepts * numConcepts, pairs.stream().count());
+    }
+
+    @Test
+    public void testMatchAllDistinctPairs() {
+        long numConcepts = qb.match(var("x")).stream().count();
+        MatchQuery pairs = qb.match(var("x").neq("y"));
+
+        // Make sure there are no castings in results
+        assertFalse(pairs.stream()
+                .flatMap(result -> result.values().stream())
+                .anyMatch(concept -> concept.getId().startsWith("CASTING-"))
+        );
+
+        // We expect there to be a result for every distinct pair of concepts
+        assertEquals(numConcepts * (numConcepts - 1), pairs.stream().count());
     }
 
     @Test

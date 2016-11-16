@@ -23,7 +23,6 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
@@ -35,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -68,21 +68,29 @@ class ConjunctionQuery {
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =
-                vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(CommonUtil.toImmutableSet());
+                vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         // Get all variable names mentioned in non-starting fragments
         Set<String> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::getFragments)
                 .filter(fragment -> !fragment.isStartingFragment())
                 .flatMap(Fragment::getVariableNames)
-                .collect(CommonUtil.toImmutableSet());
+                .collect(toImmutableSet());
+
+        // Get all dependencies fragments have on certain variables existing
+        Set<String> dependencies = fragmentSets.stream()
+                .flatMap(EquivalentFragmentSet::getFragments)
+                .flatMap(fragment -> fragment.getDependencies().stream())
+                .collect(toImmutableSet());
+
+        Set<String> validNames = Sets.difference(names, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         this.equivalentFragmentSets = fragmentSets.stream()
                 .filter(set -> set.getFragments().anyMatch(
-                        fragment -> !(fragment.isStartingFragment() && names.contains(fragment.getStart()))
+                        fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.getStart())
                 ))
-                .collect(CommonUtil.toImmutableSet());
+                .collect(toImmutableSet());
 
     }
 

@@ -339,6 +339,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public UnaryOperator<Var> visitPropNeq(GraqlParser.PropNeqContext ctx) {
+        return var -> var.neq(visitVariable(ctx.variable()));
+    }
+
+    @Override
     public UnaryOperator<Var> visitCasting(GraqlParser.CastingContext ctx) {
         if (ctx.variable().size() == 1) {
             return var -> var.rel(visitVariable(ctx.variable(0)));

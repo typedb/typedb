@@ -20,8 +20,6 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.admin.VarAdmin;
 
 /**
  * A wildcard variable to refers to a concept in a query.
@@ -242,6 +240,20 @@ public interface Var extends Pattern {
      * @return this
      */
     Var rhs(Pattern rhs);
+
+    /**
+     * Specify that the variable is different to another variable
+     * @param varName the variable name that this variable should not be equal to
+     * @return this
+     */
+    Var neq(String varName);
+
+    /**
+     * Specify that the variable is different to another variable
+     * @param var the variable that this variable should not be equal to
+     * @return this
+     */
+    Var neq(Var var);
 
     /**
      * @return an Admin class to allow inspection of this Var

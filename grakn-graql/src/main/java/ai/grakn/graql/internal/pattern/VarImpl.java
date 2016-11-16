@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -258,6 +259,16 @@ class VarImpl implements VarAdmin {
     @Override
     public Var rhs(Pattern rhs) {
         return addProperty(new RhsProperty(rhs));
+    }
+
+    @Override
+    public Var neq(String varName) {
+        return neq(Graql.var(varName));
+    }
+
+    @Override
+    public Var neq(Var var) {
+        return addProperty(new NeqProperty(var.admin()));
     }
 
     @Override
