@@ -34,7 +34,7 @@ public class Resource extends Binary{
         Atom childAtom = child.getRuleConclusionAtom();
         String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
         String parentVal = parent.getValuePredicate(getValueVariable());
-        return parentVal.isEmpty() || parentVal.equals(childVal);
+        return parentVal.isEmpty() || childVal.isEmpty() || parentVal.equals(childVal);
     }
 
     @Override
