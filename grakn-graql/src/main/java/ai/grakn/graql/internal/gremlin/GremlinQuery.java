@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,6 +52,8 @@ import static java.util.stream.Collectors.toList;
  * maintain any requested ordering.
  */
 public class GremlinQuery {
+
+    protected final Logger LOG = LoggerFactory.getLogger(GremlinQuery.class);
 
     private final GraknGraph graph;
     private final Collection<ConjunctionQuery> innerQueries;
@@ -88,6 +92,9 @@ public class GremlinQuery {
      */
     public GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
         GraqlTraversal graqlTraversal = optimalTraversal();
+
+        LOG.debug("Created query plan");
+        LOG.debug(graqlTraversal.toString());
 
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
