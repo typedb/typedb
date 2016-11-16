@@ -6,7 +6,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import java.util.Optional;
 
 /**
- * A casting is the pairing of roletype and roleplayer in a relation, where the roletype may be unknown
+ * A pair of role type and role player (where the role type may not be present)
  */
 class RelationPlayerImpl implements RelationPlayer {
     private final Optional<VarAdmin> roleType;
