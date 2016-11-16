@@ -43,9 +43,7 @@ public class AdmissionsInferenceTest {
         Query query = new Query(queryString, graph);
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
 
-        Utility.printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test

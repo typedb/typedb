@@ -140,11 +140,18 @@ public class Reasoner {
         return newAnswers;
     }
 
-    private QueryAnswers answerWM(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals){
+    private QueryAnswers answerWM(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers){
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
-        atomicQuery.DBlookup();
+        boolean queryVisited = matAnswers.containsKey(atomicQuery);
 
         if(queryAdmissible) {
+            if (!queryVisited){
+                atomicQuery.DBlookup();
+                recordAnswers(atomicQuery, matAnswers);
+            }
+            else
+                atomicQuery.memoryLookup(matAnswers);
+
             Atom atom = atomicQuery.getAtom();
             Set<Rule> rules = atom.getApplicableRules();
             for (Rule rl : rules) {
@@ -158,12 +165,10 @@ public class Reasoner {
 
                 subGoals.add(atomicQuery);
                 AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next(), atomicQuery.getSelectedNames());
-                atomicQuery.establishRelation(childAtomicQuery);
-                QueryAnswers subs = answerWM(childAtomicQuery, subGoals);
+                QueryAnswers subs = answerWM(childAtomicQuery, subGoals, matAnswers);
                 while(atIt.hasNext()){
                     childAtomicQuery = new AtomicMatchQuery(atIt.next(), atomicQuery.getSelectedNames());
-                    atomicQuery.establishRelation(childAtomicQuery);
-                    QueryAnswers localSubs = answerWM(childAtomicQuery, subGoals);
+                    QueryAnswers localSubs = answerWM(childAtomicQuery, subGoals, matAnswers);
                     subs = subs.join(localSubs);
                 }
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
@@ -171,10 +176,13 @@ public class Reasoner {
                 QueryAnswers newAnswers = new QueryAnswers();
                 newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
                 if (!newAnswers.isEmpty()) answers = newAnswers;
-                QueryAnswers filteredAnswers = answers.filterInComplete(atomicQuery.getSelectedNames());
-                atomicQuery.getAnswers().addAll(filteredAnswers);
+                atomicQuery.getAnswers().addAll(answers);
+                recordAnswers(atomicQuery, matAnswers);
             }
         }
+        else
+            atomicQuery.memoryLookup(matAnswers);
+
         return atomicQuery.getAnswers();
     }
 
@@ -240,7 +248,7 @@ public class Reasoner {
             propagateAnswers(matAnswers);
         }
         else
-            answerWM(atomicQuery, subGoals);
+            answerWM(atomicQuery, subGoals, matAnswers);
     }
 
     private QueryAnswers resolveAtomicQuery(AtomicQuery atomicQuery, boolean materialise) {
@@ -310,5 +318,18 @@ public class Reasoner {
             return inputQuery;
     }
 
-    public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, false);}
+    /**
+     * Materialised by default, BC reasoning
+     * @param inputQuery
+     * @return query with answers
+     */
+    public MatchQuery resolveToQuery(MatchQuery inputQuery) {
+        MatchQuery outputQuery = resolveToQuery(inputQuery, true);
+        try {
+            graph.commit();
+        } catch (GraknValidationException e) {
+            LOG.debug(e.getMessage());
+        }
+        return outputQuery;
+    }
 }
