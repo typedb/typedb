@@ -79,8 +79,8 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
     @Override
     public int equivalenceHashCode() {
-        int hashCode = super.hashCode();
-        hashCode = hashCode * 37 + this.predicate.getClass().hashCode();
+        int hashCode = super.equivalenceHashCode();
+        hashCode = hashCode * 37 + this.predicate.getClass().getName().hashCode();
         return hashCode;
     }
 
