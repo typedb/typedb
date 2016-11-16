@@ -81,7 +81,7 @@ public class Analytics {
         this.keySpace = keySpace;
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
-        // make sure we don't accidentally commit anythin
+        // make sure we don't accidentally commit anything
         // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
         try {
             graph.rollback();
