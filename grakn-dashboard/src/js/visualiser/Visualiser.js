@@ -353,7 +353,8 @@ export default class Visualiser {
     generateLabel(type, properties, label) {
         if (type in this.displayProperties)
             return this.displayProperties[type].reduce((l, x) => {
-                return (l.length ? l + "\n" : l) + x + ": " + properties[x].label
+                let value = (properties[x]===undefined) ? "" : properties[x].label;
+                return (l.length ? l + "\n" : l) + x + ": " + value
             }, "");
         else
             return label;

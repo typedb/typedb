@@ -60,8 +60,7 @@ public class VisualiserController {
     private String defaultGraphName;
     private int separationDegree;
     private final int MATCH_QUERY_FIXED_DEGREE = 0;
-    //TODO: implement a pagination system instead of liming the result with hard-coded limit.
-    private final int SAFETY_LIMIT = 500;
+    //TODO: implement a pagination system.
 
     public VisualiserController() {
 
@@ -137,7 +136,6 @@ public class VisualiserController {
             LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
             MatchQuery matchQuery = graph.graql().parse(req.queryParams(REST.Request.QUERY_FIELD));
             Collection<Map<String, Concept>> graqlResultsList = matchQuery
-                    .limit(SAFETY_LIMIT)
                     .stream().collect(Collectors.toList());
             LOG.debug("Done querying.");
 
