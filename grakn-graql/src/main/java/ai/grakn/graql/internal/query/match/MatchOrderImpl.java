@@ -32,11 +32,11 @@ import static ai.grakn.util.Schema.ConceptProperty.VALUE_STRING;
 class MatchOrderImpl implements MatchOrder {
 
     private final String var;
-    private final boolean asc;
+    private final ai.grakn.graql.Order order;
 
-    MatchOrderImpl(String var, boolean asc) {
+    MatchOrderImpl(String var, ai.grakn.graql.Order order) {
         this.var = var;
-        this.asc = asc;
+        this.order = order;
     }
 
     @Override
@@ -49,7 +49,15 @@ class MatchOrderImpl implements MatchOrder {
         // Order by VALUE properties
         traversal.select(var)
                 .values(VALUE_BOOLEAN.name(), VALUE_LONG.name(), VALUE_DOUBLE.name(), VALUE_STRING.name())
-                .order().by(asc ? Order.incr : Order.decr);
+                .order().by(toTinkerOrder(order));
+    }
+
+    private Order toTinkerOrder(ai.grakn.graql.Order order) {
+        if (order == ai.grakn.graql.Order.asc) {
+            return Order.incr;
+        } else {
+            return Order.decr;
+        }
     }
 
     @Override

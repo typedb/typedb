@@ -25,6 +25,7 @@ import ai.grakn.concept.Concept;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Order.asc;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -107,16 +108,16 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @return a new MatchQuery with the given ordering
      */
     default MatchQuery orderBy(String varName) {
-        return orderBy(varName, true);
+        return orderBy(varName, asc);
     }
 
     /**
      * Order the results by degree
      * @param varName the variable name to order the results by
-     * @param asc whether to use ascending order
+     * @param order the ordering to use
      * @return a new MatchQuery with the given ordering
      */
-    MatchQuery orderBy(String varName, boolean asc);
+    MatchQuery orderBy(String varName, Order order);
 
     /**
      * @param graph the graph to execute the query on

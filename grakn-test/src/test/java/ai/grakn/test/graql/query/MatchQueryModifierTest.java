@@ -18,14 +18,12 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.concept.ResourceType;
-import ai.grakn.test.AbstractMovieGraphTest;
-import com.google.common.collect.Lists;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.AbstractMovieGraphTest;
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,6 +38,8 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.Order.asc;
+import static ai.grakn.graql.Order.desc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -55,14 +55,14 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
 
     @Test
     public void testOffsetQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie").has("name", var("n"))).orderBy("n", false).offset(4);
+        MatchQuery query = qb.match(var("x").isa("movie").has("name", var("n"))).orderBy("n", desc).offset(4);
 
         assertResultsOrderedByValue(query, "n", false);
     }
 
     @Test
     public void testLimitQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie").has("title", var("t"))).orderBy("t", true).offset(1).limit(3);
+        MatchQuery query = qb.match(var("x").isa("movie").has("title", var("t"))).orderBy("t", asc).offset(1).limit(3);
 
         assertResultsOrderedByValue(query, "t", true);
         assertEquals(3, query.stream().count());
@@ -77,7 +77,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
                         var("y").isa("person").has("name", "Marlon Brando"),
                         var("y").isa("genre").has("name", "crime")
                 )
-        ).orderBy("v", false);
+        ).orderBy("v", desc);
 
         assertOrderedResultsMatch(query, "x", "movie", "Godfather", "Godfather", "Apocalypse Now");
     }
@@ -101,7 +101,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
 
     @Test
     public void testValueOrderedQuery() {
-        MatchQuery query = qb.match(var("the-movie").isa("movie").has("title", var("n"))).orderBy("n", false);
+        MatchQuery query = qb.match(var("the-movie").isa("movie").has("title", var("n"))).orderBy("n", desc);
 
         assertResultsOrderedByValue(query, "n", false);
 
@@ -111,7 +111,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
 
     @Test
     public void testVoteCountOrderedQuery() {
-        MatchQuery query = qb.match(var("z").isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", false);
+        MatchQuery query = qb.match(var("z").isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", desc);
 
         // Make sure movies are in the correct order
         assertOrderedResultsMatch(query, "z", "movie", "Godfather", "Hocus Pocus", "Apocalypse Now", "The Muppets");
@@ -126,7 +126,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
                         var("y").isa("genre").has("name", "crime"),
                         var("y").isa("person").has("name", "Marlon Brando")
                 )
-        ).select("x").orderBy("t", false).distinct();
+        ).select("x").orderBy("t", desc).distinct();
 
         assertOrderedResultsMatch(query, "x", "movie", "Heat", "Godfather", "Apocalypse Now");
     }

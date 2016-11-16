@@ -18,12 +18,6 @@
 
 package ai.grakn.test.graql.parser;
 
-import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.test.AbstractMovieGraphTest;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
@@ -39,6 +33,8 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.test.AbstractMovieGraphTest;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,6 +62,7 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.parse;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.Order.desc;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
 import static ai.grakn.util.Schema.MetaSchema.RELATION_TYPE;
 import static ai.grakn.util.Schema.MetaSchema.ROLE_TYPE;
@@ -209,7 +206,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testOrderQuery() {
-        MatchQuery expected = qb.match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", false);
+        MatchQuery expected = qb.match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", desc);
         MatchQuery parsed = qb.parse("match $x isa movie, has release-date $r; order by $r desc;");
         assertOrderedQueriesEqual(expected, parsed);
     }
