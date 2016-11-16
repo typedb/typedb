@@ -98,18 +98,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
      * Get all instances with the same resources
      */
     public Collection<Instance> getInstancesByResources(GraknGraph graph, Instance instance){
-        Collection<Resource<?>> resources = Collections.EMPTY_SET;
-        if(instance instanceof Resource){
-            return Collections.singleton(getResourceFromGraph(graph, instance.asResource()));
-        } else if(instance instanceof Entity){
-            resources = instance.asEntity().resources();
-        } else if (instance instanceof Relation){
-            resources = instance.asRelation().resources();
-        } else if(instance instanceof Rule){
-            resources = instance.asRule().resources();
-        }
-
-        return resources.stream()
+        return instance.resources().stream()
                 .map(r -> getResourceFromGraph(graph, r))
                 .map(Resource::ownerInstances)
                 .flatMap(Collection::stream)
