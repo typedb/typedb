@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.template;
 
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Graql;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -184,6 +183,30 @@ public class MacroTest {
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
+    }
+
+    @Test
+    public void convertDateFormatMacroTest(){
+        String template = "insert $x value @date(date \"mm/dd/yyyy\" \"dd/mm/yyyy\");";
+        String expected = "insert $x0 value \"09\\/10\\/1993\";";
+
+        assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
+    }
+
+    @Test
+    public void convertDateToEpochMacroTest(){
+        String template = "insert $x value @date(date \"mm/dd/yyyy\");";
+        String expected = "insert $x0 value \"726538200000\";";
+
+        assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void wrongDateFormatTest(){
+        String template = "insert $x value @date(date \"this is not a format\");";
+        String expected = "insert $x0 value \"726538200000\";";
+
+        assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){

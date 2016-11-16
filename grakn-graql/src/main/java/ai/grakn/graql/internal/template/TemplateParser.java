@@ -22,6 +22,7 @@ import ai.grakn.exception.GraqlParsingException;
 import ai.grakn.graql.internal.antlr.GraqlTemplateLexer;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.parser.GraqlErrorListener;
+import ai.grakn.graql.internal.template.macro.DateMacro;
 import ai.grakn.graql.internal.template.macro.DoubleMacro;
 import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
@@ -111,5 +112,6 @@ public class TemplateParser {
         registerMacro("equals", new EqualsMacro());
         registerMacro("string", new StringMacro());
         registerMacro("long", new LongMacro());
+        registerMacro("date", new DateMacro());
     }
 }
