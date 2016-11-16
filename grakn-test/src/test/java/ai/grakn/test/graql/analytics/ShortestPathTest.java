@@ -1,31 +1,9 @@
-/*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
- *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Grakn is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- */
-
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.*;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
@@ -33,31 +11,19 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
+
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.id;
-import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class ClusteringTest extends AbstractGraphTest {
+public class ShortestPathTest extends AbstractGraphTest {
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
@@ -74,6 +40,11 @@ public class ClusteringTest extends AbstractGraphTest {
     private String entityId2;
     private String entityId3;
     private String entityId4;
+    private String entityId5;
+    private String relationId12;
+    private String relationId13;
+    private String relationId24;
+    private String relationId34;
     private List<String> instanceIds;
 
     String keyspace;
@@ -88,141 +59,111 @@ public class ClusteringTest extends AbstractGraphTest {
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
-        logger.setLevel(Level.DEBUG);
     }
 
-    @Ignore //TODO: Stabalise this test. It fails way too often.
-    @Test
-    public void testConnectedComponent() throws Exception {
+    @Test(expected = IllegalStateException.class)
+    public void testShortestPathExceptionIdNotFound() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
         // test on an empty graph
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
+        computer.shortestPath(entityId1, entityId2);
+    }
 
-        Map<String, Long> sizeMap = computer.connectedComponentsSize();
-        assertTrue(sizeMap.isEmpty());
-        Map<String, Set<String>> memberMap = computer.connectedComponents();
-        assertTrue(memberMap.isEmpty());
-        Map<String, Long> sizeMapPersist = computer.connectedComponentsAndPersist();
-        assertTrue(sizeMapPersist.isEmpty());
+    @Test(expected = IllegalStateException.class)
+    public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        addOntologyAndEntities();
+        computer = new Analytics(keyspace, Sets.newHashSet(thing, related), new HashSet<>());
+        computer.shortestPath(entityId1, entityId4);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testShortestPathExceptionPathNotFound() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        addOntologyAndEntities();
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        assertEquals(0L, computer.count());
+        computer.shortestPath(entityId1, entityId5);
+    }
 
-        // add something, test again
+    @Test
+    public void testShortestPath() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        List<String> correctPath;
+        List<String> result;
         addOntologyAndEntities();
 
+        // directly connected vertices
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        sizeMap = computer.connectedComponentsSize();
-        assertEquals(1, sizeMap.size());
-        assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
-
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        memberMap = computer.connectedComponents();
-        assertEquals(1, memberMap.size());
-        assertEquals(7, memberMap.values().iterator().next().size());
-        String clusterLabel = memberMap.keySet().iterator().next();
-
-        long count = computer.count();
-        for (int i = 0; i < 3; i++) {
-            computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-            sizeMapPersist = computer.connectedComponentsAndPersist();
-            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-            assertEquals(1, sizeMapPersist.size());
-            assertEquals(7L, sizeMapPersist.values().iterator().next().longValue());
-            final String finalClusterLabel = clusterLabel;
-            instanceIds.forEach(id -> {
-                Instance instance = graph.getInstance(id);
-                Collection<Resource<?>> resources = null;
-                if (instance.isEntity()) {
-                    resources = instance.asEntity().resources();
-                } else if (instance.isRelation()) {
-                    resources = instance.asRelation().resources();
-                }
-                assertNotNull(resources);
-                assertEquals(1, resources.size());
-                assertEquals(finalClusterLabel, resources.iterator().next().getValue());
-            });
-            assertEquals(count, computer.count());
+        result = computer.shortestPath(entityId1, relationId12);
+        correctPath = Lists.newArrayList(entityId1, relationId12);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+        result = computer.shortestPath(relationId12, entityId1);
+        Collections.reverse(result);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
         }
 
-        // add different resources. This may change existing cluster labels.
+        // entities connected by a relation
+        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
+        result = computer.shortestPath(entityId1, entityId2);
+        correctPath = Lists.newArrayList(entityId1, relationId12, entityId2);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+        result = computer.shortestPath(entityId2, entityId1);
+        Collections.reverse(result);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+
+        // only one path exists with given subtypes
+        computer = new Analytics(keyspace, Sets.newHashSet(thing, related), new HashSet<>());
+        result = computer.shortestPath(entityId2, entityId3);
+        correctPath = Lists.newArrayList(entityId2, relationId12, entityId1, relationId13, entityId3);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+        result = computer.shortestPath(entityId3, entityId2);
+        Collections.reverse(result);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+
+        computer = new Analytics(keyspace, Sets.newHashSet(thing, related), new HashSet<>());
+        result = computer.shortestPath(entityId1, entityId2);
+        correctPath = Lists.newArrayList(entityId1, relationId12, entityId2);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+        result = computer.shortestPath(entityId2, entityId1);
+        Collections.reverse(result);
+        assertEquals(correctPath.size(), result.size());
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(correctPath.get(i), result.get(i));
+        }
+
+        // add different resources.
         addResourceRelations();
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        sizeMap = computer.connectedComponentsSize();
-        Map<Long, Integer> populationCount00 = new HashMap<>();
-        sizeMap.values().forEach(value -> populationCount00.put(value,
-                populationCount00.containsKey(value) ? populationCount00.get(value) + 1 : 1));
-        assertEquals(5, populationCount00.get(1L).intValue()); // 5 resources are not connected to anything
-        assertEquals(1, populationCount00.get(27L).intValue());
-
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        memberMap = computer.connectedComponents();
-        assertEquals(6, memberMap.size());
-        Map<Integer, Integer> populationCount1 = new HashMap<>();
-        memberMap.values().forEach(value -> populationCount1.put(value.size(),
-                populationCount1.containsKey(value.size()) ? populationCount1.get(value.size()) + 1 : 1));
-        assertEquals(5, populationCount1.get(1).intValue());
-        assertEquals(1, populationCount1.get(27).intValue());
-        clusterLabel = memberMap.entrySet().stream()
-                .filter(entry -> entry.getValue().size() != 1)
-                .findFirst().get().getKey();
-
-        count = computer.count();
-        for (int i = 0; i < 2; i++) {
-            computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-            sizeMapPersist = computer.connectedComponentsAndPersist();
-            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
-            Map<Long, Integer> populationCount01 = new HashMap<>();
-            sizeMapPersist.values().forEach(value -> populationCount01.put(value,
-                    populationCount01.containsKey(value) ? populationCount01.get(value) + 1 : 1));
-            assertEquals(6, sizeMapPersist.size());
-            assertEquals(5, populationCount01.get(1L).intValue());
-            assertEquals(1, populationCount01.get(27L).intValue());
-            final String finalClusterLabel = clusterLabel;
-            memberMap.values().stream()
-                    .filter(set -> set.size() != 1)
-                    .flatMap(Collection::stream)
-                    .forEach(id -> {
-                        List<Concept> resources = graph.graql()
-                                .match(id(id).has(Analytics.connectedComponent, var("x")))
-                                .get("x").collect(Collectors.toList());
-                        assertEquals(1, resources.size());
-                        assertEquals(finalClusterLabel, resources.get(0).asResource().getValue());
-                    });
-            assertEquals(count, computer.count());
-        }
-
-
-        // test on subtypes. This will change existing cluster labels.
         computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
                 resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
-        sizeMap = computer.connectedComponentsSize();
-        assertEquals(17, sizeMap.size());
-        sizeMap.values().forEach(value -> assertEquals(1L, value.longValue()));
-        memberMap = computer.connectedComponents();
-        assertEquals(17, memberMap.size());
-        for (int i = 0; i < 2; i++) {
-            computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
-                    resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
-            sizeMapPersist = computer.connectedComponentsAndPersist();
-            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
-            assertEquals(17, sizeMapPersist.size());
-            memberMap.values().stream()
-                    .flatMap(Collection::stream)
-                    .forEach(id -> {
-                        List<Concept> resources = graph.graql()
-                                .match(id(id).has(Analytics.connectedComponent, var("x")))
-                                .get("x").collect(Collectors.toList());
-                        assertEquals(1, resources.size());
-                        assertEquals(id, resources.get(0).asResource().getValue());
-                    });
-        }
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
@@ -233,10 +174,13 @@ public class ClusteringTest extends AbstractGraphTest {
         Entity entity2 = entityType1.addEntity();
         Entity entity3 = entityType1.addEntity();
         Entity entity4 = entityType2.addEntity();
+        Entity entity5 = entityType1.addEntity();
+
         entityId1 = entity1.getId();
         entityId2 = entity2.getId();
         entityId3 = entity3.getId();
         entityId4 = entity4.getId();
+        entityId5 = entity5.getId();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -244,17 +188,20 @@ public class ClusteringTest extends AbstractGraphTest {
         entityType2.playsRole(role1).playsRole(role2);
         RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
-        String relationId12 = relationType.addRelation()
+        relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity2).getId();
-        String relationId23 = relationType.addRelation()
-                .putRolePlayer(role1, entity2)
+        relationId13 = relationType.addRelation()
+                .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity3).getId();
-        String relationId24 = relationType.addRelation()
+        relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity4).getId();
+        relationId34 = relationType.addRelation()
+                .putRolePlayer(role1, entity3)
+                .putRolePlayer(role2, entity4).getId();
         instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
-                relationId12, relationId23, relationId24);
+                relationId12, relationId13, relationId24, relationId34);
 
         List<ResourceType> resourceTypeList = new ArrayList<>();
         resourceTypeList.add(graph.putResourceType(resourceType1, ResourceType.DataType.DOUBLE));
@@ -388,7 +335,7 @@ public class ClusteringTest extends AbstractGraphTest {
                 .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
         relationType6.addRelation()
                 .putRolePlayer(resourceOwner6, entity4)
-                .putRolePlayer(resourceValue6,  graph.getResourceType(resourceType6).putResource(7.5));
+                .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
 
         // some resources in, but not connect them to any instances
         graph.getResourceType(resourceType1).putResource(2.8);
