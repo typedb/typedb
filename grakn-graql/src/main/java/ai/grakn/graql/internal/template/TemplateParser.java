@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.parser.GraqlErrorListener;
 import ai.grakn.graql.internal.template.macro.DoubleMacro;
 import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
+import ai.grakn.graql.internal.template.macro.LongMacro;
 import ai.grakn.graql.internal.template.macro.Macro;
 import ai.grakn.graql.internal.template.macro.NoescpMacro;
 import ai.grakn.graql.internal.template.macro.StringMacro;
@@ -109,5 +110,6 @@ public class TemplateParser {
         registerMacro("double", new DoubleMacro());
         registerMacro("equals", new EqualsMacro());
         registerMacro("string", new StringMacro());
+        registerMacro("long", new LongMacro());
     }
 }
