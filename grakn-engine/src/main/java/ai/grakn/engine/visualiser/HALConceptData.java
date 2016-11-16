@@ -30,7 +30,6 @@ import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
-import ai.grakn.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +42,7 @@ import java.util.Set;
  * Class used to build the HAL representation of a given concept.
  */
 
-public class HALConcept {
+public class HALConceptData {
 
     private RepresentationFactory factory;
 
@@ -51,15 +50,13 @@ public class HALConcept {
 
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
-    private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
+    private final Logger LOG = LoggerFactory.getLogger(HALConceptData.class);
     private final static String ROOT_CONCEPT = "type";
     private final static String ISA_EDGE = "isa";
     private final static String SUB_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
-    private final static String HAS_ROLE_EDGE = "has-role";
-    private final static String PLAYS_ROLE_EDGE = "plays-role";
 
     // - State properties
 
@@ -71,7 +68,7 @@ public class HALConcept {
     private boolean embedType;
     private Set<String> typesInQuery = null;
 
-    public HALConcept(Concept concept, int separationDegree, boolean embedTypeParam, Set<String> typesInQuery) {
+    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<String> typesInQuery) {
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
@@ -263,89 +260,6 @@ public class HALConcept {
             }
         });
     }
-
-
-    // ------ Functions to navigate the ontology ------
-
-
-    public HALConcept(Concept concept) {
-
-        //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
-        resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
-        resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
-
-        factory = new StandardRepresentationFactory();
-        typesInQuery = new HashSet<>();
-        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
-        embedType = true;
-
-        handleConceptOntology(halResource, concept);
-
-    }
-
-    private void handleConceptOntology(Representation halResource, Concept concept) {
-
-
-        generateStateAndLinks(halResource, concept);
-        embedType(halResource, concept);
-
-        if (concept.isRelationType()) {
-            relationTypeOntology(halResource, concept.asRelationType());
-        } else if (concept.isRoleType()) {
-            roleTypeOntology(halResource, concept.asRoleType());
-        } else if (concept.isType()) {
-            attachRolesPlayed(halResource, concept.asType().playsRoles());
-        }
-
-        if (concept.isType())
-            concept.asType().subTypes().forEach(instance -> {
-                // let's not put the current type in its own embedded
-                if (!instance.getId().equals(concept.getId())) {
-                    Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
-                            .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-                    generateStateAndLinks(instanceResource, instance);
-                    halResource.withRepresentation(SUB_EDGE, instanceResource);
-                }
-            });
-    }
-
-    private void roleTypeOntology(Representation halResource, RoleType roleType) {
-        roleType.playedByTypes().forEach(type -> {
-            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId())
-                    .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-            generateStateAndLinks(roleRepresentation, type);
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
-        });
-
-        RelationType relType = roleType.relationType();
-        Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId())
-                .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-        generateStateAndLinks(roleRepresentation, relType);
-        halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
-
-        attachRolesPlayed(halResource, roleType.playsRoles());
-    }
-
-    private void relationTypeOntology(Representation halResource, RelationType relationType) {
-        relationType.hasRoles().forEach(role -> {
-            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId())
-                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(roleRepresentation, role);
-            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
-        });
-        attachRolesPlayed(halResource, relationType.playsRoles());
-    }
-
-    private void attachRolesPlayed(Representation halResource, Collection<RoleType> roles) {
-        roles.forEach(role -> {
-            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId())
-                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(roleRepresentation, role);
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
-        });
-    }
-
-    //-------------------------------
 
     public String render() {
         return halResource.toString(RepresentationFactory.HAL_JSON);
