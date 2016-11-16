@@ -167,6 +167,16 @@ public class MacroTest {
         assertParseEquals(template, data, expected);
     }
 
+    @Test
+    public void stringMacroTest(){
+        String template = "insert $this isa @string(value);";
+        String expected = "insert $this0 isa \"1000\";";
+
+        Map<String, Object> data = Collections.singletonMap("value", 1000);
+
+        assertParseEquals(template, data, expected);
+    }
+
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
         String result = Graql.parseTemplate(template, data).toString();
         assertEquals(expected, result);

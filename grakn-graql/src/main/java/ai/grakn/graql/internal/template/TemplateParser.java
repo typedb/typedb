@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
 import ai.grakn.graql.internal.template.macro.Macro;
 import ai.grakn.graql.internal.template.macro.NoescpMacro;
+import ai.grakn.graql.internal.template.macro.StringMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -103,10 +104,10 @@ public class TemplateParser {
      * Register the default macros that can be used by the visitor
      */
     private void registerDefaultMacros(){
-
         registerMacro("noescp", new NoescpMacro());
         registerMacro("int", new IntMacro());
         registerMacro("double", new DoubleMacro());
         registerMacro("equals", new EqualsMacro());
+        registerMacro("string", new StringMacro());
     }
 }
