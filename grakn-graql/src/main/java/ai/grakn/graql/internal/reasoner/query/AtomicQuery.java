@@ -127,7 +127,9 @@ public class AtomicQuery extends Query{
                                 answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName()).getPredicateValue()));
                                 answer.put(atom.getValueVariable(), c);
                             } else if (c.isRelation()) {
-                                Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers();
+                                Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers()
+                                        .entrySet().stream().filter( entry -> entry.getValue() != null)
+                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                                 answer.put(atom.getVarName(), c);
                                 Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
                                 roleplayers.entrySet().forEach(entry -> {
