@@ -21,8 +21,7 @@ package ai.grakn.test.graql.shell;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.AbstractGraphTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -38,24 +37,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class GraqlShellWriteTest extends AbstractGraphTest {
-    private static InputStream trueIn;
-    private static PrintStream trueOut;
-    private static PrintStream trueErr;
     private static String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        trueIn = System.in;
-        trueOut = System.out;
-        trueErr = System.err;
-    }
-
-    @AfterClass
-    public static void resetIO() {
-        System.setIn(trueIn);
-        System.setOut(trueOut);
-        System.setErr(trueErr);
+    @After
+    public void resetIO() {
+        System.setIn(null);
+        System.setOut(null);
+        System.setErr(null);
     }
 
     @Test
@@ -122,7 +111,7 @@ public class GraqlShellWriteTest extends AbstractGraphTest {
             
             GraqlShell.runShell(newArgs, expectedVersion, historyFile, new GraqlClientImpl());
         } catch (Exception e) {
-            System.setErr(trueErr);
+            System.setErr(null);
             e.printStackTrace();
             err.flush();
             fail(berr.toString());
