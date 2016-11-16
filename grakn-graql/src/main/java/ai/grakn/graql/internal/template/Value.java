@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.internal.template;
 
+import ai.grakn.graql.internal.util.StringConverter;
+
 import java.util.List;
 import java.util.function.Function;
 
@@ -111,14 +113,7 @@ public class Value {
 
     // FORMATS
 
-    public static Function<Value, String> format = (val) -> {
-        if(val.isString()){
-            return "\"" + val + "\"";
-        }
-
-        return val.toString();
-    };
-
+    public static Function<Value, String> format = (val) -> StringConverter.valueToString(val.value);
     public static Function<Value, String> formatVar = (var) -> {
         String variable = var.toString();
         if(variable.contains(" ")){
@@ -127,7 +122,6 @@ public class Value {
 
         return variable;
     };
-
     public static Function<Value, String> identity = Value::toString;
 
     @Override

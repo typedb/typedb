@@ -83,9 +83,9 @@ public interface QueryBuilder {
     /**
      * @param template a string representing a templated graql query
      * @param data data to use in template
-     * @return a resolved graql query
+     * @return a query, the type will depend on the type of template.
      */
-    String parseTemplate(String template, Map<String, Object> data);
+    <T extends Query<?>> T  parseTemplate(String template, Map<String, Object> data);
 
     void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod);
 }
