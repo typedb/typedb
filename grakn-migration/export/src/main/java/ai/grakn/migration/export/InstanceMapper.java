@@ -70,8 +70,7 @@ public class InstanceMapper {
      * @return var patterns representing given instance
      */
     private static Var map(Entity entity){
-        Var var = base(entity);
-        return var;
+        return base(entity);
     }
 
     /**
@@ -88,7 +87,6 @@ public class InstanceMapper {
 
         Var var = base(relation);
         var = roleplayers(var, relation);
-//        var = hasResources(var, relation);
         return var;
     }
 
@@ -127,18 +125,7 @@ public class InstanceMapper {
      * @return var pattern with resources
      */
     private static Var hasResources(Var var, Instance instance){
-        Collection<Resource<?>> resources = Collections.EMPTY_SET;
-        if(instance instanceof Resource){
-            return var;
-        } else if(instance instanceof Entity){
-            resources = instance.asEntity().resources();
-        } else if (instance instanceof Relation){
-            resources = instance.asRelation().resources();
-        } else if(instance instanceof Rule){
-            resources = instance.asRule().resources();
-        }
-
-        for(Resource resource:resources){
+        for(Resource resource:instance.resources()){
            var = var.has(resource.type().getId(), resource.getValue());
         }
         return var;
