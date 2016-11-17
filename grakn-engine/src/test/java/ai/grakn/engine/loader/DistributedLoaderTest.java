@@ -96,7 +96,7 @@ public class DistributedLoaderTest extends GraknEngineTestBase {
     }
 
     private void loadOntologyFromFile() {
-        GraknGraph graph = GraphFactory.getInstance().getGraph(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");

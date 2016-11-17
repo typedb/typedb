@@ -18,8 +18,8 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.loader.BlockingLoader;
-import ai.grakn.engine.loader.DistributedLoader;
+//import ai.grakn.engine.loader.BlockingLoader;
+//import ai.grakn.engine.loader.DistributedLoader;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.util.ConfigProperties;
@@ -116,7 +116,7 @@ public class ImportController {
             if (!(new File(pathToFile)).exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(graphName, hosts)));
+//            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(graphName, hosts)));
 
         } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);
@@ -149,7 +149,7 @@ public class ImportController {
 
             initialiseLoading();
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(graphName)));
+//            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(graphName)));
 
         } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);

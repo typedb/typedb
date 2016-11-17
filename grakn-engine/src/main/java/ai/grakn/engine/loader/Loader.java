@@ -18,71 +18,43 @@
 
 package ai.grakn.engine.loader;
 
+import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.admin.InsertQueryAdmin;
-import mjson.Json;
+import javafx.util.Pair;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
+import static java.util.stream.Collectors.toSet;
 
 /**
- * RESTLoader to perform bulk loading into the graph
+ * Loader to manage Loading tasks in the Task Manager
  */
-public abstract class Loader {
+public class Loader {
 
-    protected AtomicInteger enqueuedJobs;
-    protected AtomicInteger loadingJobs;
-    protected AtomicInteger finishedJobs;
-    protected AtomicInteger errorJobs;
+    private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
+    private static final TaskManager manager = InMemoryTaskManager.getInstance();
+    private static final TaskStateStorage storage = manager.storage();
 
-    protected Collection<InsertQuery> queries;
-    protected int batchSize;
-    protected int threadsNumber;
+    private Collection<InsertQuery> queries;
+    private int batchSize;
+    private String keyspace;
 
-    final Logger LOG = LoggerFactory.getLogger(Loader.class);
-
-
-    public Loader(){
-        enqueuedJobs = new AtomicInteger();
-        loadingJobs = new AtomicInteger();
-        errorJobs = new AtomicInteger();
-        finishedJobs = new AtomicInteger();
-        queries = new HashSet<>();
-    }
-
-    /**
-     * Method to load data into the graph. Implementation depends on the type of the loader.
-     */
-    protected abstract void sendQueriesToLoader(Collection<InsertQuery> batch);
-
-    /**
-     * Wait for all loading to terminate.
-     */
-    public abstract void waitToFinish();
-
-    /**
-     * Add an insert query to the queue
-     * @param query insert query to be executed
-     */
-    public void add(InsertQuery query){
-        queries.add(query);
-        if(queries.size() >= batchSize){
-            sendQueriesToLoader(queries);
-            queries.clear();
-        }
-    }
-
-    /**
-     * Set the size of the each transaction in terms of number of vars.
-     * @param size number of vars in each transaction
-     */
-    public Loader setBatchSize(int size){
-        this.batchSize = size;
-        return this;
+    public Loader(String keyspace){
+        this.keyspace = keyspace;
+        this.queries = new HashSet<>();
     }
 
     /**
@@ -93,10 +65,11 @@ public abstract class Loader {
     }
 
     /**
-     * Set the number of thread that will execute insert transactions at a time
+     * Set the size of the each transaction in terms of number of vars.
+     * @param size number of vars in each transaction
      */
-    public Loader setThreadsNumber(int number){
-        this.threadsNumber = number;
+    public Loader setBatchSize(int size){
+        this.batchSize = size;
         return this;
     }
 
@@ -111,21 +84,95 @@ public abstract class Loader {
     }
 
     /**
+     * Add an insert query to the queue
+     * @param query insert query to be executed
+     */
+    public void add(InsertQuery query){
+        queries.add(query);
+        if(queries.size() >= batchSize){
+            sendQueriesToLoader(new HashSet<>(queries));
+            queries.clear();
+        }
+    }
+
+    /**
+     * Method to load data into the graph. Implementation depends on the type of the loader.
+     */
+    public void sendQueriesToLoader(Collection<InsertQuery> batch){
+        manager.scheduleTask(new LoaderTask(batch, keyspace), keyspace, new Date(), 0, new JSONObject());
+        printLoaderState();
+    }
+
+    /**
+     * Wait for all tasks to finish for one minute.
+     */
+    public void waitToFinish(){
+        waitToFinish(100000);
+    }
+
+    /**
+     * Wait for all tasks to finish.
+     * @param timeout amount of time (in ms) to wait.
+     */
+    public void waitToFinish(int timeout){
+        final long initial = new Date().getTime();
+        Collection<String> currentTasks = getTasks();
+        while ((new Date().getTime())-initial < timeout) {
+            printLoaderState();
+
+            if(currentTasks.stream().allMatch(this::isCompleted)){
+                return;
+            }
+
+            try {
+                Thread.sleep(500);
+            } catch (Exception e) {
+                LOG.error("Problem sleeping.");
+            }
+        }
+    }
+
+    /**
      * Method that logs the current state of loading transactions
      */
     public void printLoaderState(){
-        LOG.info(Json.object().set(TransactionState.State.QUEUED.name(), enqueuedJobs.get())
-                .set(TransactionState.State.LOADING.name(), loadingJobs.get())
-                .set(TransactionState.State.ERROR.name(), errorJobs.get())
-                .set(TransactionState.State.FINISHED.name(), finishedJobs.get()).toString());
+        LOG.info(new JSONObject()
+                .put(CREATED.name(), getTasks(CREATED).size())
+                .put(SCHEDULED.name(), getTasks(SCHEDULED).size())
+                .put(RUNNING.name(), getTasks(RUNNING).size())
+                .put(COMPLETED.name(), getTasks(COMPLETED).size())
+                .put(FAILED.name(), getTasks(FAILED).size())
+                .toString());
     }
 
-    protected void handleError(Exception e, int i) {
-        LOG.error("Caught exception ", e);
-        try {
-            Thread.sleep((i + 2) * 1000);
-        } catch (InterruptedException e1) {
-            LOG.error("Caught exception ", e1);
-        }
+    /**
+     * Get all loading tasks for this keyspace
+     * @return IDs of tasks in this keyspace
+     */
+    private Collection<String> getTasks(){
+        return storage.getTasks(null, LoaderTask.class.getName(), keyspace).stream()
+                .map(Pair::getKey)
+                .collect(toSet());
+    }
+
+    /**
+     * Get the number of loading tasks of a particular status in this keyspace
+     * @param status type of task to count
+     * @return number of tasks within the given parameters
+     */
+    private Collection<String> getTasks(TaskStatus status){
+        return storage.getTasks(status, LoaderTask.class.getName(), keyspace).stream()
+                .map(Pair::getKey)
+                .collect(toSet());
+    }
+
+    /**
+     * Check if a single task is completed or failed.
+     * @param taskID id of the task to check
+     * @return if the given task has been completed or failed.
+     */
+    private boolean isCompleted(String taskID){
+        TaskStatus status = storage.getState(taskID).status();
+        return status == COMPLETED || status == FAILED;
     }
 }

@@ -21,13 +21,14 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.engine.GraknEngineTestBase;
-import ai.grakn.engine.loader.TransactionState;
+//import ai.grakn.engine.loader.TransactionState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.get;
@@ -98,6 +99,15 @@ public class TransactionControllerTest extends GraknEngineTestBase {
         assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
         assertTrue(resultObj.has(TransactionState.State.FINISHED.name()));
         assertTrue(resultObj.has(TransactionState.State.LOADING.name()));
+        assertTrue(false);
+//        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
+//        given().body(exampleInvalidInsertQuery).
+//                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
+//        JSONObject resultObj = new JSONObject(get(REST.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
+//        assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
+//        assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
+//        assertTrue(resultObj.has(TransactionState.State.FINISHED.name()));
+//        assertTrue(resultObj.has(TransactionState.State.LOADING.name()));
 
     }
 

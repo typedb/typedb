@@ -26,9 +26,9 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -42,20 +42,17 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.parsePatterns;
-import static junit.framework.TestCase.assertNotNull;
 
 public class BlockingLoaderTest extends GraknEngineTestBase {
 
-    private final Logger LOG = LoggerFactory.getLogger(BlockingLoaderTest.class);
-
-    private GraknGraph graph;
+    private String graphName;
     private BlockingLoader loader;
+    private final org.slf4j.Logger LOG = LoggerFactory.getLogger(BlockingLoaderTest.class);
 
     @Before
     public void setUp() throws Exception {
-        String keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        graph = GraphFactory.getInstance().getGraph(keyspace);
-        loader = new BlockingLoader(keyspace);
+        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        loader = new BlockingLoader(graphName);
     }
 
     @Test
@@ -68,6 +65,7 @@ public class BlockingLoaderTest extends GraknEngineTestBase {
         loader.setExecutorSize(2);
         loader.setBatchSize(10);
         try {
+
             Stream<Pattern> patterns = parsePatterns(new FileInputStream(fileData));
             patterns.map(p -> Graql.insert(p.admin().asVar())).forEach(loader::add);
         } catch (FileNotFoundException e) {
@@ -97,10 +95,11 @@ public class BlockingLoaderTest extends GraknEngineTestBase {
         // TODO: Make this assertion consistently pass
         // Assert.assertTrue(secondLoadingTime < firstLoadingTime);
 
-        assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
     }
 
     private void loadOntology() {
+        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.debug("Loading new ontology .. ");
@@ -124,7 +123,7 @@ public class BlockingLoaderTest extends GraknEngineTestBase {
 
     @After
     public void cleanGraph() {
-            graph.clear();
+            GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
 }

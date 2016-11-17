@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.loader.RESTLoader;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.REST;
@@ -46,14 +45,14 @@ import static spark.Spark.post;
 @Produces("text/plain")
 public class TransactionController {
 
-    RESTLoader loader;
+//    RESTLoader loader;
     String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
     private final Logger LOG = LoggerFactory.getLogger(TransactionController.class);
 
 
     public TransactionController() {
 
-        loader = RESTLoader.getInstance();
+//        loader = RESTLoader.getInstance();
 
         get(REST.WebPath.LOADER_STATE_URI, this::loaderState);
         post(REST.WebPath.NEW_TRANSACTION_URI, this::newTransactionREST);
@@ -70,13 +69,14 @@ public class TransactionController {
     private String newTransactionREST(Request req, Response res) {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
-        UUID uuid = loader.addJob(currentGraphName, Json.read(req.body()));
-        if (uuid != null) {
-            res.status(201);
-            return uuid.toString();
-        } else {
-            throw new GraknEngineServerException(500,"Error while trying to load a new transaction.");
-        }
+//        UUID uuid = loader.addJob(currentGraphName, Json.read(req.body()));
+//        if (uuid != null) {
+//            res.status(201);
+//            return uuid.toString();
+//        } else {
+//            throw new GraknEngineServerException(500,"Error while trying to load a new transaction.");
+//        }
+        return null;
     }
 
 
@@ -86,11 +86,12 @@ public class TransactionController {
             value = "Returns the status of the transaction associated to the given UUID.")
     @ApiImplicitParam(name = "uuid", value = "UUID of the transaction", required = true, dataType = "string", paramType = "path")
     private String checkTransactionStatusREST(Request req, Response res) {
-        try {
-            return loader.getStatus(UUID.fromString(req.params(REST.Request.UUID_PARAMETER)));
-        } catch (Exception e) {
-            throw new GraknEngineServerException(500,e);
-        }
+//        try {
+//            return loader.getStatus(UUID.fromString(req.params(REST.Request.UUID_PARAMETER)));
+//        } catch (Exception e) {
+//            throw new GraknEngineServerException(500,e);
+//        }
+        return null;
     }
 
     @GET
@@ -98,10 +99,11 @@ public class TransactionController {
     @ApiOperation(
             value = "Returns the state of the RESTLoader.")
     private String loaderState(Request req, Response res) {
-        try {
-            return loader.getLoaderState();
-        } catch (Exception e) {
-            throw new GraknEngineServerException(500,e);
-        }
+//        try {
+//            return loader.getLoaderState();
+//        } catch (Exception e) {
+//            throw new GraknEngineServerException(500,e);
+//        }
+        return null;
     }
 }
