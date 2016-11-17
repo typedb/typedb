@@ -151,9 +151,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Relation hasResource(Resource resource){
         ResourceType type = resource.type();
 
-        RelationType hasResource = getGraknGraph().putRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
+        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
 
         Relation relation = hasResource.addRelation();
         relation.putRolePlayer(hasResourceTarget, this);
