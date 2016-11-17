@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
@@ -32,9 +30,12 @@ import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -280,13 +281,15 @@ public class InsertQueryExecutor {
     }
 
     private Object getValue(VarAdmin var) {
-        Iterator<?> values = var.getValueEqualsPredicates().iterator();
+        Iterator<ValueProperty> properties = var.getProperties(ValueProperty.class).iterator();
 
-        if (values.hasNext()) {
-            Object value = values.next();
+        if (properties.hasNext()) {
+            // Value properties are confirmed to be "equals" only in the ValueProperty class
+            //noinspection OptionalGetWithoutIsPresent
+            Object value = properties.next().getPredicate().equalsValue().get();
 
-            if (values.hasNext()) {
-                throw new IllegalStateException(ErrorMessage.INSERT_MULTIPLE_VALUES.getMessage(value, values.next()));
+            if (properties.hasNext()) {
+                throw new IllegalStateException(ErrorMessage.INSERT_MULTIPLE_VALUES.getMessage(value, properties.next()));
             }
 
             return value;

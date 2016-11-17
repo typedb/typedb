@@ -317,14 +317,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<?> getValueEqualsPredicates() {
-        return getValuePredicates().stream()
-                .map(ValuePredicateAdmin::equalsValue)
-                .flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
-    }
-
-    @Override
     public Set<ValuePredicateAdmin> getValuePredicates() {
         return getProperties(ValueProperty.class).map(ValueProperty::getPredicate).collect(toSet());
     }
