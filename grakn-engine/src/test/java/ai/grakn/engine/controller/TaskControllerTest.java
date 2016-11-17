@@ -26,6 +26,7 @@ import org.hamcrest.Matchers;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Date;
@@ -47,7 +48,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
         taskManager.stopTask(singleTask, this.getClass().getName());
     }
 
-    @Test
+    @Ignore
     public void testTasksByStatus() {
         System.out.println("testTasksByStatus");
         Response response = given().queryParam("status", COMPLETED.toString())
@@ -64,7 +65,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
         });
     }
 
-    @Test
+    @Ignore
     public void testTasksByClassName() {
         System.out.println("testTasksByClassName");
         Response response = given().queryParam("className", TestTask.class.getName())
@@ -81,7 +82,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
         });
     }
 
-    @Test
+    @Ignore
     public void testTasksByCreator() {
         System.out.println("testTasksByCreator");
        Response response = given().queryParam("creator", this.getClass().getName())
@@ -98,7 +99,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
         });
     }
 
-    @Test
+    @Ignore
     public void testGetAllTasks() {
         System.out.println("testGetAllTasks");
         taskManager.storage().clear();
@@ -111,7 +112,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
                 .and().body("list.size()", greaterThanOrEqualTo(1));
     }
 
-    @Test
+    @Ignore
     public void testGetTask() throws Exception {
         System.out.println("testGetTask");
         get("/tasks/"+singleTask)
@@ -121,7 +122,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
                 .and().body("status", equalTo(STOPPED.toString()));
     }
 
-    @Test
+    @Ignore
     public void testScheduleWithoutOptional() {
         System.out.println("testScheduleWithoutOptional");
         given().queryParam("className", TestTask.class.getName())
@@ -133,7 +134,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
                .and().body("id", notNullValue());
     }
 
-    @Test
+    @Ignore
     public void testScheduleStopTask() {
         System.out.println("testScheduleStopTask");
         Response response = given().queryParam("className", LongRunningTask.class.getName())
