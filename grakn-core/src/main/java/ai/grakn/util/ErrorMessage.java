@@ -52,6 +52,7 @@ public enum ErrorMessage {
     UNSUPPORTED_GRAPH("The graph backend of [%s] does not support an [%s] operation."),
     CANNOT_SUBCLASS_META("The Meta Concept [%s] cannot be a super type of [%s]."),
     RESOURCE_TYPE_UNIQUE("The resource [%s] is unique and is already attached to [%s]."),
+    SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

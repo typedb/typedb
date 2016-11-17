@@ -18,12 +18,14 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
@@ -125,4 +127,53 @@ public class OntologyMutationTest extends GraphTestBase{
         graknGraph.commit();
     }
 
+    @Test
+    public void testAddingEntityTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putEntityType("This Will Fail");
+    }
+
+    @Test
+    public void testAddingRoleTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putRoleType("This Will Fail");
+    }
+
+    @Test
+    public void testAddingResourceTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putResourceType("This Will Fail", ResourceType.DataType.STRING);
+    }
+
+    @Test
+    public void testAddingRuleTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putRuleType("This Will Fail");
+    }
+
+    @Test
+    public void testAddingRelationTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putRelationType("This Will Fail");
+    }
 }

@@ -152,7 +152,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return false;
     }
 
-    public boolean isMetaOntologyNotInitialised(){
+    private boolean isMetaOntologyNotInitialised(){
         return getMetaType() == null;
     }
 
@@ -604,7 +604,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
     }
     protected void closeGraphTransaction() throws Exception {
-        graph.close();
+        getTinkerPopGraph().close();
     }
 
     /**

@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class GraphTestBase {
+    protected AbstractGraknGraph graknGraphBatch;
     protected AbstractGraknGraph graknGraph;
 
     @Rule
@@ -34,7 +35,9 @@ public class GraphTestBase {
 
     @Before
     public void setUpGraph() {
-        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
+        graknGraphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
     }
 
     @After
