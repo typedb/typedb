@@ -20,6 +20,7 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
@@ -141,14 +142,12 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
                 Graql.id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
-        exception.expect(GraknValidationException.class);
+        exception.expect(ConceptException.class);
         exception.expectMessage(allOf(
                 containsString("person"),
                 containsString("name")
         ));
         emptyQb.insert(Graql.var().isa("person").has("name", "Bob")).execute();
-
-        empty.commit();
     }
 
     @Test
