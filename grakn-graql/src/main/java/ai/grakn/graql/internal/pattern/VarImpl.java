@@ -297,12 +297,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public boolean hasNoProperties() {
-        // return true if this variable has any properties set
-        return properties.isEmpty();
-    }
-
-    @Override
     public Optional<String> getIdOnly() {
 
         if (getId().isPresent() && properties.size() == 1 && !userDefinedName) {
@@ -420,7 +414,7 @@ class VarImpl implements VarAdmin {
         innerVars.remove(this);
         getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).forEach(innerVars::remove);
 
-        if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || v.hasNoProperties())) {
+        if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || !v.getProperties().findAny().isPresent())) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 

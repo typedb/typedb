@@ -114,11 +114,6 @@ public interface VarAdmin extends PatternAdmin, Var {
     String getPrintableName();
 
     /**
-     * @return true if this variable has no properties set
-     */
-    boolean hasNoProperties();
-
-    /**
      * @return all predicates on the value of this variable
      */
     Set<ValuePredicateAdmin> getValuePredicates();
