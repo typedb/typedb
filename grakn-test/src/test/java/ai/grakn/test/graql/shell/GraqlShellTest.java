@@ -18,15 +18,12 @@
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.AbstractRollbackGraphTest;
-import com.google.common.base.Strings;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.AbstractRollbackGraphTest;
+import com.google.common.base.Strings;
 import mjson.Json;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -35,7 +32,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -47,25 +43,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-public class GraqlShellIT extends AbstractRollbackGraphTest {
-    private static InputStream trueIn;
-    private static PrintStream trueOut;
-    private static PrintStream trueErr;
+public class GraqlShellTest extends AbstractRollbackGraphTest {
     private static String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        trueIn = System.in;
-        trueOut = System.out;
-        trueErr = System.err;
-    }
-
-    @AfterClass
-    public static void resetIO() {
-        System.setIn(trueIn);
-        System.setOut(trueOut);
-        System.setErr(trueErr);
+    @After
+    public void resetIO() {
+        System.setIn(null);
+        System.setOut(null);
+        System.setErr(null);
     }
 
     @Test
@@ -145,6 +131,14 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testAggregateQuery() throws Exception {
+        String result = testShell("match $x isa type; aggregate count;\n");
+
+        // Expect to see the whole meta-ontology
+        assertThat(result, containsString("\n2\n"));
+    }
+
+    @Test
     public void testAutocomplete() throws Exception {
         String result = testShell("match $x isa \t");
 
@@ -212,6 +206,29 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testDuplicateRelation() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        testShell(
+                "insert R isa relation-type, has-role R1, has-role R2; R1 isa role-type; R2 isa role-type;\n" +
+                        "insert X isa entity-type, plays-role R1, plays-role R2;\n" +
+                        "insert $x isa X;\n" +
+                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
+                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n",
+                err
+        );
+
+        assertThat(err.toString().toLowerCase(), allOf(containsString("exists"), containsString("relation")));
+    }
+
+    @Test
+    public void testLimit() throws Exception {
+        String result = testShell("match $x isa type; limit 1;\n");
+
+        // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
+        assertEquals(result, 7, result.split("\n").length);
+    }
+
+    @Test
     public void testComputeCount() throws Exception {
         String result = testShell("insert X isa entity-type; $a isa X; $b isa X; $c isa X;\ncommit\ncompute count;\n");
         assertThat(result, containsString("\n3\n"));
@@ -266,42 +283,10 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     }
 
     @Test
-    public void fuzzTest() throws Exception {
-        int repeats = 100;
-        for (int i = 0; i < repeats; i ++) {
-            System.out.println(i);
-            testShell(randomString(i));
-        }
-    }
-
-    @Test
     public void testLargeQuery() throws Exception {
         String value = Strings.repeat("really-", 100000) + "long-value";
         String[] result = testShell("insert X isa resource-type datatype string; value '" + value + "' isa X;\nmatch $x isa X;\n").split("\n");
         assertThat(result[result.length-2], allOf(containsString("$x"), containsString(value)));
-    }
-
-    @Test
-    public void testCommitError() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("insert bob isa relation-type;\ncommit;\nmatch $x isa relation-type;\n", err);
-        assertFalse(out, err.toString().isEmpty());
-    }
-
-    @Test
-    public void testCommitErrorExecuteOption() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("", err, "-e", "insert bob isa relation-type;");
-        assertFalse(out, err.toString().isEmpty());
-    }
-
-    private static String randomString(int length) {
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder();
-
-        random.ints().limit(length).forEach(i -> sb.append((char) i));
-
-        return sb.toString();
     }
 
     private String testShell(String input, String... args) throws Exception {
@@ -313,6 +298,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
         String[] newArgs = Arrays.copyOf(args, args.length + 2);
+
         newArgs[newArgs.length-2] = "-k";
         newArgs[newArgs.length-1] = graph.getKeyspace();
 
@@ -329,7 +315,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
             
             GraqlShell.runShell(newArgs, expectedVersion, historyFile, new GraqlClientImpl());
         } catch (Exception e) {
-            System.setErr(trueErr);
+            System.setErr(null);
             e.printStackTrace();
             err.flush();
             fail(berr.toString());
