@@ -18,18 +18,15 @@
 
 package ai.grakn.engine.visualiser;
 
-import ai.grakn.concept.*;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -43,7 +40,6 @@ public class HALConceptOntology {
 
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
-    private final Logger LOG = LoggerFactory.getLogger(HALConceptOntology.class);
     private final static String ROOT_CONCEPT = "type";
     private final static String ISA_EDGE = "isa";
     private final static String SUB_EDGE = "sub";
@@ -59,9 +55,8 @@ public class HALConceptOntology {
     private final static String TYPE_PROPERTY = "_type";
     private final static String BASETYPE_PROPERTY = "_baseType";
     private final static String DIRECTION_PROPERTY = "_direction";
+    private final static String VALUE_PROPERTY = "value";
 
-    private boolean embedType;
-    private Set<String> typesInQuery = null;
 
     public HALConceptOntology(Concept concept) {
 
@@ -70,9 +65,7 @@ public class HALConceptOntology {
         resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
 
         factory = new StandardRepresentationFactory();
-        typesInQuery = new HashSet<>();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
-        embedType = true;
 
         handleConceptOntology(halResource, concept);
 
@@ -93,7 +86,7 @@ public class HALConceptOntology {
                     .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT);
 
         if (concept.isResource()) {
-            resource.withProperty("value", concept.asResource().getValue());
+            resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
         }
     }
 
@@ -108,8 +101,8 @@ public class HALConceptOntology {
             halResource.withRepresentation(ISA_EDGE, HALType);
         } else {
             if (!concept.getId().equals(ROOT_CONCEPT)) {
-                HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT);
-                HALType.withProperty(ID_PROPERTY, ROOT_CONCEPT)
+                HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT)
+                        .withProperty(ID_PROPERTY, ROOT_CONCEPT)
                         .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
                         .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
                         .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
@@ -121,8 +114,6 @@ public class HALConceptOntology {
     }
 
     private void handleConceptOntology(Representation halResource, Concept concept) {
-
-
         generateStateAndLinks(halResource, concept);
         embedType(halResource, concept);
 
@@ -181,8 +172,6 @@ public class HALConceptOntology {
             halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
         });
     }
-
-    //-------------------------------
 
     public String render() {
         return halResource.toString(RepresentationFactory.HAL_JSON);

@@ -21,8 +21,6 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.engine.visualiser.HALConceptData;
-import ai.grakn.engine.visualiser.HALConceptOntology;
 import ai.grakn.engine.visualiser.HALConceptRepresentationBuilder;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.GraphFactory;
@@ -42,7 +40,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -84,10 +81,10 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-            return new HALConceptData(concept, separationDegree, false, new HashSet<>()).render();
+            return HALConceptRepresentationBuilder.renderHALConceptData(concept, separationDegree);
 
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -106,10 +103,10 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-            return new HALConceptOntology(concept).render();
+            return HALConceptRepresentationBuilder.renderHALConceptOntology(concept);
 
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -136,7 +133,7 @@ public class VisualiserController {
             Collection<Map<String, Concept>> graqlResultsList = matchQuery
                     .stream().collect(Collectors.toList());
             LOG.debug("Done querying.");
-            JSONArray halArray = HALConceptRepresentationBuilder.renderHALArrayData(matchQuery,graqlResultsList);
+            JSONArray halArray = HALConceptRepresentationBuilder.renderHALArrayData(matchQuery, graqlResultsList);
             LOG.debug("Done building resources.");
 
             return halArray.toString();
@@ -144,7 +141,6 @@ public class VisualiserController {
             throw new GraknEngineServerException(500, e);
         }
     }
-
 
 
 }
