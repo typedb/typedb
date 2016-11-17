@@ -84,11 +84,6 @@ public interface VarAdmin extends PatternAdmin, Var {
     Optional<String> getId();
 
     /**
-     * @return if this var has only an ID set and no other properties, return that ID, else return nothing
-     */
-    Optional<String> getIdOnly();
-
-    /**
      * @return all variables that this variable references
      */
     Set<VarAdmin> getInnerVars();

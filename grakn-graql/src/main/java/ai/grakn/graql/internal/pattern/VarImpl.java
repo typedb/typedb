@@ -297,16 +297,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Optional<String> getIdOnly() {
-
-        if (getId().isPresent() && properties.size() == 1 && !userDefinedName) {
-            return getId();
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    @Override
     public String getName() {
         return name;
     }
@@ -414,7 +404,7 @@ class VarImpl implements VarAdmin {
         innerVars.remove(this);
         getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).forEach(innerVars::remove);
 
-        if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || !v.getProperties().findAny().isPresent())) {
+        if (innerVars.stream().anyMatch(VarImpl::invalidInnerVariable)) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 
@@ -452,6 +442,10 @@ class VarImpl implements VarAdmin {
         properties.add(new RelationProperty(relationPlayers));
 
         return this;
+    }
+
+    private static boolean invalidInnerVariable(VarAdmin var) {
+        return var.getProperties().filter(p -> !(p instanceof IdProperty)).findAny().isPresent();
     }
 
     /**
