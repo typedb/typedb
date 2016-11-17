@@ -231,4 +231,41 @@ public class OntologyMutationTest extends GraphTestBase{
 
         entityType1.superType(entityType2);
     }
+
+
+    @Test
+    public void testDeletingPlaysRoleWhileBatchLoading(){
+        String roleTypeId = "role";
+        String entityTypeId = "entityType";
+        RoleType roleType = graknGraph.putRoleType(roleTypeId);
+        graknGraph.putEntityType(entityTypeId).playsRole(roleType);
+
+        roleType = graknGraphBatch.getRoleType(roleTypeId);
+        EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        entityType.deletePlaysRole(roleType);
+    }
+
+    @Test
+    public void testDeletingHasRolesWhileBatchLoading(){
+        String roleTypeId = "role";
+        String relationTypeId = "relationtype";
+        RoleType roleType = graknGraph.putRoleType(roleTypeId);
+        graknGraph.putRelationType(relationTypeId).hasRole(roleType);
+
+        roleType = graknGraphBatch.getRoleType(roleTypeId);
+        RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        relationType.deleteHasRole(roleType);
+    }
 }

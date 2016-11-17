@@ -280,6 +280,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public T deletePlaysRole(RoleType roleType) {
+        checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
 
         //Add castings to tracking to make sure they can still be played.

@@ -79,6 +79,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType deleteHasRole(RoleType roleType) {
+        checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.HAS_ROLE, roleType);
         //Add castings of roleType to make sure relations are still valid
         ((RoleTypeImpl) roleType).castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
