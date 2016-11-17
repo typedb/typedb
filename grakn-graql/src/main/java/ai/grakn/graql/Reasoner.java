@@ -84,7 +84,7 @@ public class Reasoner {
      */
     public void linkConceptTypes() {
         Set<Rule> rules = getRules(graph);
-        System.out.println(rules.size() + " rules initialized...");
+        LOG.debug(rules.size() + " rules initialized...");
         Set<Rule> linkedRules = new HashSet<>();
         rules.stream()
                 .filter(rule -> rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty())
@@ -99,7 +99,7 @@ public class Reasoner {
                 LOG.debug(e.getMessage());
             }
         }
-        System.out.println(linkedRules.size() + " rules linked...");
+        LOG.debug(linkedRules.size() + " rules linked...");
     }
 
     private void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
@@ -265,7 +265,7 @@ public class Reasoner {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
                 answer(atomicQuery, subGoals, matAnswers, materialise);
-                System.out.println("Atom: " + atomicQuery.getAtom() + " iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();
