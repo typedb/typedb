@@ -317,6 +317,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         return getThis();
     }
 
+    /**
+     * Checks if we are mutating a met type
+     */
     private void checkMetaType(){
         for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
             if(metaSchema.getId().equals(getId())){

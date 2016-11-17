@@ -79,7 +79,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
-        this.batchLoadingEnabled = batchLoadingEnabled;
         elementFactory = new ElementFactory(this);
 
         if(initialiseMetaConcepts()) {
@@ -90,6 +89,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             }
         }
 
+        this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
     }
 
