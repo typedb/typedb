@@ -56,7 +56,7 @@ public class PostProcessingTest extends GraknEngineTestBase {
         cache = Cache.getInstance();
         keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         postProcessing = PostProcessing.getInstance();
-        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
+        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
     @After
@@ -70,8 +70,15 @@ public class PostProcessingTest extends GraknEngineTestBase {
         //Create Scenario
         RoleType roleType1 = graknGraph.putRoleType("role 1");
         RoleType roleType2 = graknGraph.putRoleType("role 2");
-        RelationType relationType = graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+
+        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
+        roleType1 = graknGraph.getRoleType("role 1");
+        roleType2 = graknGraph.getRoleType("role 2");
+        RelationType relationType = graknGraph.getRelationType("rel type");
+        EntityType thing = graknGraph.getEntityType("thing");
+
         Instance instance1 = thing.addEntity();
         Instance instance2 = thing.addEntity();
         Instance instance3 = thing.addEntity();
@@ -149,8 +156,12 @@ public class PostProcessingTest extends GraknEngineTestBase {
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
-        ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph.putResourceType(sample, ResourceType.DataType.STRING);
+
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
+        ResourceType<String> resourceType = graph.getResourceType(sample);
+
         Resource<String> resource = resourceType.putResource(value);
         graph.commit();
         assertEquals(1, resourceType.instances().size());
