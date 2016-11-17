@@ -303,7 +303,7 @@ public class Analytics {
         List<String> path = new ArrayList<>();
         path.add(sourceId);
         path.addAll(map.entrySet().stream()
-                .sorted(Comparator.comparingInt(pair -> -1 * pair.getKey()))
+                .sorted(Comparator.comparingInt(Map.Entry::getKey))
                 .map(pair -> pair.getValue().iterator().next())
                 .collect(Collectors.toList()));
         path.add(destinationId);

@@ -32,7 +32,7 @@ import java.util.*;
 
 public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
-    private static final int MAX_ITERATION = 100;
+    private static final int MAX_ITERATION = 50;
 
     // element key
     private static final String IS_ACTIVE_CASTING = "shortestPathVertexProgram.isActiveCasting";
@@ -40,16 +40,17 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public static final String FOUND_IN_ITERATION = "shortestPathVertexProgram.foundInIteration";
 
     // memory key
-    private static final String VOTE_TO_HALT = "shortestPathVertexProgram.voteToHalt";
+    private static final String VOTE_TO_HALT_SOURCE = "shortestPathVertexProgram.voteToHalt.source";
+    private static final String VOTE_TO_HALT_DESTINATION = "shortestPathVertexProgram.voteToHalt.destination";
     private static final String FOUND_PATH = "shortestPathVertexProgram.foundDestination";
-
     private static final String PREDECESSOR_FROM_SOURCE = "shortestPathVertexProgram.fromSource";
     private static final String PREDECESSOR_FROM_DESTINATION = "shortestPathVertexProgram.fromDestination";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS =
             Sets.newHashSet(IS_ACTIVE_CASTING, PREDECESSOR, FOUND_IN_ITERATION);
     private static final Set<String> MEMORY_COMPUTE_KEYS =
-            Sets.newHashSet(VOTE_TO_HALT, FOUND_PATH, PREDECESSOR_FROM_SOURCE, PREDECESSOR_FROM_DESTINATION);
+            Sets.newHashSet(VOTE_TO_HALT_SOURCE, VOTE_TO_HALT_DESTINATION, FOUND_PATH,
+                    PREDECESSOR_FROM_SOURCE, PREDECESSOR_FROM_DESTINATION);
 
     private static final String MESSAGE_FROM_ROLE_PLAYER = "R";
     private static final String MESSAGE_FROM_ASSERTION = "A";
@@ -84,8 +85,9 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public void setup(final Memory memory) {
-        LOGGER.debug("ShortestPathVertexProgram Started !!!!!!!!");
-        memory.set(VOTE_TO_HALT, true);
+        LOGGER.info("ShortestPathVertexProgram Started !!!!!!!!");
+        memory.set(VOTE_TO_HALT_SOURCE, true);
+        memory.set(VOTE_TO_HALT_DESTINATION, true);
         memory.set(FOUND_PATH, false);
         memory.set(PREDECESSOR_FROM_SOURCE, "");
         memory.set(PREDECESSOR_FROM_DESTINATION, "");
@@ -103,7 +105,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         messenger.sendMessage(messageScopeIn, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
                         messenger.sendMessage(messageScopeOut, Pair.with(MESSAGE_FROM_ASSERTION, 0));
                     }
-                    // send message from the source vertex
+                    // send message from both source and destination vertex
                     String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
                     if (persistentProperties.get(SOURCE).equals(id)) {
                         LOGGER.debug("Found source vertex");
@@ -120,7 +122,6 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 break;
             case 1:
                 if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    LOGGER.debug("This is a casting vertex");
                     Set<String> messageSet = new HashSet<>();
                     Map<Integer, Tuple> messageMap = new HashMap<>();
                     Iterator<Tuple> iterator = messenger.receiveMessages();
@@ -136,56 +137,10 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     }
                     // casting is active if both its assertion and role-player is in the subgraph
                     if (messageSet.size() == 2) {
+                        LOGGER.debug("Considering casting " +
+                                vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
                         vertex.property(IS_ACTIVE_CASTING, true);
-                        if (messageMap.size() == 3) {
-                            memory.or(FOUND_PATH, true);
-//                            memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
-                            memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
-                            return;
-                        }
-                        int sum = messageMap.keySet().stream().mapToInt(Integer::intValue).sum();
-                        LOGGER.debug("Message sum = " + sum);
-                        if (messageMap.size() == 2) {
-                            switch (sum) {
-                                case 0:
-                                    messenger.sendMessage(messageScopeOut, messageMap.get(2));
-                                    messenger.sendMessage(messageScopeOut, messageMap.get(-2));
-                                    break;
-                                case 3:
-                                    messenger.sendMessage(messageScopeIn, messageMap.get(1));
-                                    messenger.sendMessage(messageScopeOut, messageMap.get(2));
-                                    break;
-                                case -3:
-                                    messenger.sendMessage(messageScopeIn, messageMap.get(-1));
-                                    messenger.sendMessage(messageScopeOut, messageMap.get(-2));
-                                    break;
-                                case 1:
-                                    memory.or(FOUND_PATH, true);
-                                    memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
-                                    LOGGER.debug("2 messages received, message sum = " + sum);
-                                    break;
-                                case -1:
-                                    memory.or(FOUND_PATH, true);
-                                    memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(1).getValue(0));
-                                    LOGGER.debug("2 messages received, message sum = " + sum);
-                                    break;
-                            }
-                        } else if (messageMap.size() == 1) {
-                            switch (sum) {
-                                case 1:
-                                    messenger.sendMessage(messageScopeIn, messageMap.get(1));
-                                    break;
-                                case -1:
-                                    messenger.sendMessage(messageScopeIn, messageMap.get(-1));
-                                    break;
-                                case 2:
-                                    messenger.sendMessage(messageScopeOut, messageMap.get(2));
-                                    break;
-                                case -2:
-                                    messenger.sendMessage(messageScopeOut, messageMap.get(-2));
-                                    break;
-                            }
-                        }
+                        sendMessagesFromCasting(messenger, memory, messageMap);
                     }
                 }
                 break;
@@ -195,15 +150,14 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
                         LOGGER.debug("Traversing back to vertex " + id);
                         memory.set(PREDECESSOR_FROM_SOURCE, vertex.value(PREDECESSOR));
-                        vertex.property(FOUND_IN_ITERATION, memory.getIteration());
+                        vertex.property(FOUND_IN_ITERATION, -1 * memory.getIteration());
                     } else if (memory.get(PREDECESSOR_FROM_DESTINATION).equals(id)) {
                         LOGGER.debug("Traversing back to vertex " + id);
                         memory.set(PREDECESSOR_FROM_DESTINATION, vertex.value(PREDECESSOR));
-                        vertex.property(FOUND_IN_ITERATION, -1 * memory.getIteration());
+                        vertex.property(FOUND_IN_ITERATION, memory.getIteration());
                     }
                 } else {
                     if (messenger.receiveMessages().hasNext()) {
-
                         // split because shortcut edges cannot be filtered out
                         if (memory.getIteration() % 2 == 0) {
                             if (selectedTypes.contains(Utility.getVertexType(vertex))) {
@@ -224,7 +178,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private void updateInstance(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
         if (!vertex.property(PREDECESSOR).isPresent()) {
             String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
-            LOGGER.debug("Considering vertex " + id);
+            LOGGER.debug("Considering instance " + id);
 
             Iterator<Tuple> iterator = messenger.receiveMessages();
             boolean hasMessageSource = false;
@@ -242,6 +196,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         messenger.sendMessage(messageScopeIn, Pair.with(id, 1));
                         messenger.sendMessage(messageScopeOut, Pair.with(id, 2));
                         vertex.property(PREDECESSOR, predecessorFromSource);
+                        memory.and(VOTE_TO_HALT_SOURCE, false);
                     }
                 } else {
                     if (!hasMessageDestination) {
@@ -251,6 +206,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         messenger.sendMessage(messageScopeIn, Pair.with(id, -1));
                         messenger.sendMessage(messageScopeOut, Pair.with(id, -2));
                         vertex.property(PREDECESSOR, predecessorFromDestination);
+                        memory.and(VOTE_TO_HALT_DESTINATION, false);
                     }
                 }
                 if (hasMessageSource && hasMessageDestination) {
@@ -263,13 +219,11 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     return;
                 }
             }
-            memory.and(VOTE_TO_HALT, false);
         }
     }
 
     private void updateCasting(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
-        LOGGER.debug("Considering vertex " + vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
-
+        LOGGER.debug("Considering casting " + vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
         Map<Integer, Tuple> messageMap = new HashMap<>();
         Iterator<Tuple> iterator = messenger.receiveMessages();
         int i = 0;
@@ -278,14 +232,26 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             LOGGER.debug("Message " + i++ + ": " + message.getValue(0));
             messageMap.put((int) message.getValue(1), message);
         }
+        sendMessagesFromCasting(messenger, memory, messageMap);
+    }
+
+    private void sendMessagesFromCasting(Messenger<Tuple> messenger, Memory memory, Map<Integer, Tuple> messageMap) {
+        int sum = messageMap.keySet().stream().mapToInt(Integer::intValue).sum();
         if (messageMap.size() == 3) {
+            LOGGER.debug("3 messages received, message sum = " + sum);
+            LOGGER.debug("Found path");
             memory.or(FOUND_PATH, true);
-            memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
-//            memory.set(NEXT_DESTINATION, messageMap.get(-2).getValue(0));
+            if (sum == 1) {
+                memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(1).getValue(0));
+                memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-2).getValue(0));
+            } else {
+                memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
+                memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-1).getValue(0));
+            }
             return;
         }
-        int sum = messageMap.keySet().stream().mapToInt(Integer::intValue).sum();
         if (messageMap.size() == 2) {
+            LOGGER.debug("2 messages received, message sum = " + sum);
             switch (sum) {
                 case 0:
                     messenger.sendMessage(messageScopeOut, messageMap.get(2));
@@ -300,13 +266,20 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     messenger.sendMessage(messageScopeOut, messageMap.get(-2));
                     break;
                 case 1:
+                    LOGGER.debug("Found path");
                     memory.or(FOUND_PATH, true);
                     memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
+                    memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-1).getValue(0));
+                    break;
                 case -1:
+                    LOGGER.debug("Found path");
                     memory.or(FOUND_PATH, true);
                     memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(1).getValue(0));
+                    memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-2).getValue(0));
+                    break;
             }
         } else if (messageMap.size() == 1) {
+            LOGGER.debug("1 message received, message sum = " + sum);
             switch (sum) {
                 case 1:
                     messenger.sendMessage(messageScopeIn, messageMap.get(1));
@@ -326,14 +299,15 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.debug("Finished Iteration " + memory.getIteration());
+        LOGGER.info("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() == 0) return false;
 
         if (memory.get(FOUND_PATH)) {
             return memory.get(PREDECESSOR_FROM_SOURCE).equals(persistentProperties.get(SOURCE));
         }
 
-        if (memory.<Boolean>get(VOTE_TO_HALT) && memory.getIteration() % 2 == 0) {
+        if (memory.getIteration() % 2 == 0 &&
+                (memory.<Boolean>get(VOTE_TO_HALT_SOURCE) || memory.<Boolean>get(VOTE_TO_HALT_DESTINATION))) {
             LOGGER.debug("There is no path between the given instances");
             throw new IllegalStateException(ErrorMessage.NO_PATH_EXIST.getMessage());
         }
@@ -343,7 +317,9 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             throw new IllegalStateException(ErrorMessage.MAX_ITERATION_REACHED
                     .getMessage(this.getClass().toString()));
         }
-        memory.or(VOTE_TO_HALT, true);
+
+        memory.or(VOTE_TO_HALT_SOURCE, true);
+        memory.or(VOTE_TO_HALT_DESTINATION, true);
         return false;
     }
 }
