@@ -173,7 +173,15 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         // TODO: Allow registering additional compute methods
-        String computeMethod = visitId(ctx.id());
+        String computeMethod = visitId(ctx.id(0));
+
+        String from = null;
+        String to = null;
+
+        if (ctx.id().size() > 1) {
+            from = visitId(ctx.id(1));
+            to = visitId(ctx.id(2));
+        }
 
         Set<String> statisticsResourceTypeIds = new HashSet<>(), subTypeIds = new HashSet<>();
 
@@ -184,6 +192,8 @@ class QueryVisitor extends GraqlBaseVisitor {
         if (ctx.statTypes() != null) {
             statisticsResourceTypeIds = visitStatTypes(ctx.statTypes());
         }
+
+        if (ctx.id().size() > 1) return queryBuilder.compute(computeMethod, from, to, subTypeIds);
 
         return queryBuilder.compute(computeMethod, subTypeIds, statisticsResourceTypeIds);
     }

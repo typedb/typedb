@@ -39,12 +39,16 @@ class ComputeQueryImpl implements ComputeQuery {
     private final Set<String> subTypeIds;
     private final Set<String> statisticsResourceTypeIds;
     private final String computeMethod;
+    private final String from;
+    private final String to;
 
-    ComputeQueryImpl(Optional<GraknGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
+    ComputeQueryImpl(Optional<GraknGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds, String from, String to) {
         this.graph = graph;
         this.computeMethod = computeMethod;
         this.subTypeIds = subTypeIds;
         this.statisticsResourceTypeIds = statisticsResourceTypeIds;
+        this.from = from;
+        this.to = to;
     }
 
     @Override
@@ -106,6 +110,10 @@ class ComputeQueryImpl implements ComputeQuery {
                     analytics = getAnalytics(keyspace, true);
                     return analytics.median();
                 }
+                case "shortestPath": {
+                    analytics = getAnalytics(keyspace, true);
+                    return analytics.shortestPath(from, to);
+                }
                 default: {
                     throw new IllegalArgumentException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
                 }
@@ -160,7 +168,7 @@ class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public ComputeQuery withGraph(GraknGraph graph) {
-        return new ComputeQueryImpl(Optional.of(graph), computeMethod, subTypeIds, statisticsResourceTypeIds);
+        return new ComputeQueryImpl(Optional.of(graph), computeMethod, subTypeIds, statisticsResourceTypeIds, from, to);
     }
 
     @Override

@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  */
-public class QueryBuilderImpl implements QueryBuilder{
+public class QueryBuilderImpl implements QueryBuilder {
 
     private final Optional<GraknGraph> graph;
     private final QueryParser queryParser;
@@ -113,6 +113,11 @@ public class QueryBuilderImpl implements QueryBuilder{
         return Queries.compute(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
 
+    @Override
+    public ComputeQuery compute(String computeMethod, String from, String to, Set<String> subTypeIds) {
+        return Queries.compute(graph, computeMethod, from, to, subTypeIds);
+    }
+
     /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
@@ -136,7 +141,7 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @return a pattern
      */
     @Override
-    public Pattern parsePattern(String patternString){
+    public Pattern parsePattern(String patternString) {
         return queryParser.parsePattern(patternString);
     }
 
@@ -151,7 +156,7 @@ public class QueryBuilderImpl implements QueryBuilder{
 
     /**
      * @param template a string representing a templated graql query
-     * @param data data to use in template
+     * @param data     data to use in template
      * @return a resolved graql query
      */
     @Override
