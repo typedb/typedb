@@ -18,16 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RuleType;
-import ai.grakn.example.MovieGraphFactory;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractMovieGraphTest;
-import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
@@ -40,6 +30,8 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,16 +41,9 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.concept.ResourceType.DataType.LONG;
-import static ai.grakn.concept.ResourceType.DataType.STRING;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.id;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RELATION_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RESOURCE_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.ROLE_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RULE_TYPE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -396,9 +381,9 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
-                var("x").isa("movie").has("my-resource", "look a string"),
+                id("movie").hasResource("my-resource"),
                 id("my-resource").isa("resource-type").datatype(ResourceType.DataType.STRING),
-                id("movie").hasResource("my-resource")
+                var("x").isa("movie").has("my-resource", "look a string")
         ).execute();
     }
 
