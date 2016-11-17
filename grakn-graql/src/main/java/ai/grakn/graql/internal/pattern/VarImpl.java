@@ -50,18 +50,14 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Maps;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -319,20 +315,6 @@ class VarImpl implements VarAdmin {
     @Override
     public Set<ValuePredicateAdmin> getValuePredicates() {
         return getProperties(ValueProperty.class).map(ValueProperty::getPredicate).collect(toSet());
-    }
-
-    @Override
-    public Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates() {
-        // Type of the resource is guaranteed to exist
-        //noinspection OptionalGetWithoutIsPresent
-        Function<VarAdmin, VarAdmin> type = v -> v.getType().get();
-
-        Function<VarAdmin, Stream<ValuePredicateAdmin>> predicates = resource -> resource.getValuePredicates().stream();
-
-        Map<VarAdmin, List<VarAdmin>> groupedByType =
-                getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(groupingBy(type));
-
-        return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
     }
 
     @Override

@@ -20,7 +20,6 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Var;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -112,10 +111,5 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return all predicates on the value of this variable
      */
     Set<ValuePredicateAdmin> getValuePredicates();
-
-    /**
-     * @return all predicates on resources of this variable (where the key is the resource type)
-     */
-    Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
 
 }
