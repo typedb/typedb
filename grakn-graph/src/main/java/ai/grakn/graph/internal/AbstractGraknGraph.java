@@ -397,48 +397,44 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return validConceptOfType(getConcept(id), RuleTypeImpl.class);
     }
 
-    private Type getConceptType(String id){
-        return validConceptOfType(getConcept(id), TypeImpl.class);
-    }
-
     @Override
     public Type getMetaType() {
-        return getConceptType(Schema.MetaSchema.TYPE.getId());
+        return getType(Schema.MetaSchema.TYPE.getId());
     }
 
     @Override
     public Type getMetaRelationType() {
-        return getConceptType(Schema.MetaSchema.RELATION_TYPE.getId());
+        return getType(Schema.MetaSchema.RELATION_TYPE.getId());
     }
 
     @Override
     public Type getMetaRoleType() {
-        return getConceptType(Schema.MetaSchema.ROLE_TYPE.getId());
+        return getType(Schema.MetaSchema.ROLE_TYPE.getId());
     }
 
     @Override
     public Type getMetaResourceType() {
-        return getConceptType(Schema.MetaSchema.RESOURCE_TYPE.getId());
+        return getType(Schema.MetaSchema.RESOURCE_TYPE.getId());
     }
 
     @Override
     public Type getMetaEntityType() {
-        return getConceptType(Schema.MetaSchema.ENTITY_TYPE.getId());
+        return getType(Schema.MetaSchema.ENTITY_TYPE.getId());
     }
 
     @Override
     public Type getMetaRuleType(){
-        return getConceptType(Schema.MetaSchema.RULE_TYPE.getId());
+        return getType(Schema.MetaSchema.RULE_TYPE.getId());
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getConceptType(Schema.MetaSchema.INFERENCE_RULE.getId()).asRuleType();
+        return getType(Schema.MetaSchema.INFERENCE_RULE.getId()).asRuleType();
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getConceptType(Schema.MetaSchema.CONSTRAINT_RULE.getId()).asRuleType();
+        return getType(Schema.MetaSchema.CONSTRAINT_RULE.getId()).asRuleType();
     }
 
     //-----------------------------------------------Casting Functionality----------------------------------------------
