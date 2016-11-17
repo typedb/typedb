@@ -226,6 +226,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return conceptLog;
     }
 
+    public void checkOntologyMutation(){
+        if(isBatchLoadingEnabled()){
+            throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
+        }
+    }
+
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     public Vertex addVertex(Schema.BaseType baseType){
@@ -257,6 +263,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     private TypeImpl putConceptType(String itemIdentifier, Schema.BaseType baseType, Type metaType) {
+        checkOntologyMutation();
         return elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType), metaType);
     }
     @Override

@@ -245,6 +245,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         if(Schema.MetaSchema.isMetaId(type.getId()) && !Schema.MetaSchema.isMetaId(getId())){
             throw new InvalidConceptTypeException(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(type.getId(), getId()));
         }
+        getGraknGraph().checkOntologyMutation();
 
         //Track any existing data if there is some
         Type currentSuperType = superType();
@@ -270,6 +271,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself.
      */
     public T playsRole(RoleType roleType) {
+        getGraknGraph().checkOntologyMutation();
         checkMetaType();
         putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
         return getThis();
