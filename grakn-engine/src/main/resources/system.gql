@@ -4,54 +4,26 @@ insert
 scheduled-task isa entity-type;
 
 # scheduled-task resources
-delay isa resource-type, datatype long;
-interval isa resource-type, datatype long;
+status isa resource-type, datatype string;
 status-change-time isa resource-type, datatype long;
-status-change-message isa resource-type, datatype string;
 status-change-by isa resource-type, datatype string;
-queued-time isa resource-type, datatype long;
+task-class-name isa resource-type, datatype string;
 created-by isa resource-type, datatype string;
-task-name isa resource-type, datatype string;
-process-state isa resource-type, datatype string;
+executing-hostname isa resource-type, datatype string;
+run-at isa resource-type, datatype long;
+recurring isa resource-type, datatype boolean;
+recur-interval isa resource-type, datatype long;
+task-failure isa resource-type, datatype string;
+task-checkpoint isa resource-type, datatype string;
 
-scheduled-task has-resource delay, 
-               has-resource interval,
+scheduled-task has-resource status,
                has-resource status-change-time,
-               has-resource status-change-message,
                has-resource status-change-by,
-               has-resource queued-time,
+               has-resource task-class-name,
                has-resource created-by,
-               has-resource task-name,
-               has-resource process-state;
-
-# Other entities.
-
-task-status isa entity-type;
-task-status-value isa resource-type, datatype string;
-task-status has-resource task-status-value;
-
-executing-hostname isa entity-type;
-executing-hostname-value isa resource-type, datatype string;
-executing-hostname has-resource executing-hostname-value;
-
-task-is-recurring isa entity-type;
-
-# Relations
-status-of-task isa relation-type;
-status-of-task-owner isa role-type;
-status-of-task-value isa role-type;
-status-of-task has-role status-of-task-owner,
-               has-role status-of-task-value;
-
-task-executing-hostname isa relation-type;
-task-executing-hostname-owner isa role-type;
-task-executing-hostname-value isa role-type;
-task-executing-hostname has-role task-executing-hostname-owner,
-                        has-role task-executing-hostname-value;
-
-task-recurrence isa relation-type;
-task-recurrence-owner isa role-type;
-task-recurrence-value isa role-type;
-task-recurrence has-role task-recurrence-owner,
-                has-role task-recurrence-value;
-
+               has-resource executing-hostname,
+               has-resource run-at,
+               has-resource recurring,
+               has-resource recur-interval,
+               has-resource task-failure,
+               has-resource task-checkpoint;
