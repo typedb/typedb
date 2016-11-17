@@ -20,13 +20,11 @@ package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Autocomplete;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.Reasoner;
 import com.google.common.base.Splitter;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.MatchQuery;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -39,10 +37,10 @@ import java.util.concurrent.Executors;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CANDIDATES;
 import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
@@ -57,7 +55,6 @@ class GraqlSession {
     private final GraknGraph graph;
     private final Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
-    private final Reasoner reasoner;
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
 
     private static final int QUERY_CHUNK_SIZE = 1000;
@@ -72,7 +69,6 @@ class GraqlSession {
         this.session = session;
         this.graph = graph;
         this.printer = printer;
-        reasoner = new Reasoner(graph);
 
         // Begin sending pings
         Thread thread = new Thread(this::ping);
@@ -137,11 +133,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                query = graph.graql().parse(queryString);
-
-                if (query instanceof MatchQuery) {
-                    query = reasonMatchQuery((MatchQuery) query);
-                }
+                query = graph.graql().parse(queryString).infer();
 
                 // Return results unless query is cancelled
                 query.resultsString(printer).forEach(result -> {
@@ -149,11 +141,6 @@ class GraqlSession {
                     sendQueryResult(result);
                 });
                 queryCancelled = false;
-
-                if (!query.isReadOnly()) {
-                    reasoner.linkConceptTypes();
-                }
-
             } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
                 errorMessage = e.getMessage();
             } catch (Throwable e) {
@@ -215,15 +202,6 @@ class GraqlSession {
             graph.rollback();
         } catch (UnsupportedOperationException ignored) {
         }
-    }
-
-    /**
-     * Apply reasoner to match query
-     */
-    private MatchQuery reasonMatchQuery(MatchQuery query) {
-        // Expand match query with reasoner, if there are any rules in the graph
-        // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
-        return reasoner.resolveToQuery(query);
     }
 
     /**
