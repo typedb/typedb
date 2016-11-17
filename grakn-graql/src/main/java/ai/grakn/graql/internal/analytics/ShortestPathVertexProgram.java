@@ -79,7 +79,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        if (memory.get(FOUND_DESTINATION)) return Collections.emptySet();
+        if ((Boolean)memory.get(FOUND_DESTINATION)) return Collections.emptySet();
         return messageScopeSet;
     }
 
@@ -149,7 +149,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 }
                 break;
             default:
-                if (memory.get(FOUND_DESTINATION)) {
+                if ((Boolean)memory.get(FOUND_DESTINATION)) {
                     String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
                     if (memory.get(NEXT_DESTINATION).equals(id)) {
                         LOGGER.debug("Traversing back to vertex " + id);
@@ -225,7 +225,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() < 2) return false;
-        if (memory.get(FOUND_DESTINATION)) {
+        if ((Boolean)memory.get(FOUND_DESTINATION)) {
             return memory.get(NEXT_DESTINATION).equals(persistentProperties.get(START_ID));
         }
 

@@ -194,11 +194,13 @@ public class MacroTest {
     }
 
     @Test
-    public void convertDateToEpochMacroTest(){
+    public void convertDateToEpochMacroTest() throws Exception {
+    	java.text.DateFormat format = new java.text.SimpleDateFormat("mm/dd/yyyy");
+    	String dateAsString = "10/09/1993";
+    	long time = format.parse(dateAsString).getTime();
         String template = "insert $x value @date(date \"mm/dd/yyyy\");";
-        String expected = "insert $x0 value \"726538200000\";";
-
-        assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
+        String expected = "insert $x0 value \"" + time + "\";";
+        assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
     @Test(expected = IllegalArgumentException.class)
