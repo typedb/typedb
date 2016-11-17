@@ -359,10 +359,6 @@ class VarImpl implements VarAdmin {
         return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
     }
 
-    public Set<ai.grakn.graql.admin.RelationPlayer> getRelationPlayers() {
-        return getProperties(RelationProperty.class).flatMap(RelationProperty::getRelationPlayers).collect(toSet());
-    }
-
     @Override
     public Stream<VarProperty> getProperties() {
         return properties.stream();

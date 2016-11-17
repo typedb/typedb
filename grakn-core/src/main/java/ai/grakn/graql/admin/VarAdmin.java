@@ -133,9 +133,4 @@ public interface VarAdmin extends PatternAdmin, Var {
      */
     Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
 
-    /**
-     * @return all role types and role players described for this relation
-     */
-    Set<RelationPlayer> getRelationPlayers();
-
 }

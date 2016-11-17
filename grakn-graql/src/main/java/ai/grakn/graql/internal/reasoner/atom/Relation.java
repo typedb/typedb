@@ -19,20 +19,26 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.admin.RelationPlayer;
-import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import javafx.util.Pair;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 
@@ -44,26 +50,33 @@ public class Relation extends Atom {
 
     public Relation(VarAdmin pattern) {
         super(pattern);
-        relationPlayers.addAll(pattern.getRelationPlayers());
+        // This is required to be a relation
+        //noinspection OptionalGetWithoutIsPresent
+        addRelationPlayers(pattern);
         inferTypeFromRoles();
     }
 
     public Relation(VarAdmin pattern, Query par) {
         super(pattern, par);
-        relationPlayers.addAll(pattern.getRelationPlayers());
+        addRelationPlayers(pattern);
         inferTypeFromRoles();
     }
 
     public Relation(String name, String id, Map<String, String> roleMap, Query par){
         super(constructRelation(name, id, roleMap), par);
-        relationPlayers.addAll(getPattern().asVar().getRelationPlayers());
+        addRelationPlayers(getPattern().asVar());
         inferTypeFromRoles();
     }
 
     private Relation(Relation a) {
         super(a);
-        relationPlayers.addAll(a.getPattern().asVar().getRelationPlayers());
+        addRelationPlayers(a.getPattern().asVar());
         inferTypeFromRoles();
+    }
+
+    private void addRelationPlayers(VarAdmin pattern) {
+        pattern.getProperty(RelationProperty.class)
+                .ifPresent(prop -> prop.getRelationPlayers().forEach(relationPlayers::add));
     }
 
     @Override
@@ -381,7 +394,7 @@ public class Relation extends Atom {
                     .forEach( var -> roleMap.put(var, null));
         //pattern mutation!
         atomPattern = constructRelation(isUserDefinedName()? varName : "", typeId, roleMap);
-        relationPlayers.addAll(getPattern().asVar().getRelationPlayers());
+        addRelationPlayers(getPattern().asVar());
 
         return roleVarTypeMap;
     }

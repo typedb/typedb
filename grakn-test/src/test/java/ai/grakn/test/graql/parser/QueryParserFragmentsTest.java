@@ -21,6 +21,7 @@ package ai.grakn.test.graql.parser;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,6 +39,7 @@ import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class QueryParserFragmentsTest {
 
     @Rule
@@ -54,7 +56,7 @@ public class QueryParserFragmentsTest {
 
         VarAdmin var2 = patterns.next().admin().asVar();
         assertTrue(var2.isRelation());
-        assertEquals(2, var2.getRelationPlayers().size());
+        assertEquals(2, var2.getProperty(RelationProperty.class).get().getRelationPlayers().count());
 
         VarAdmin var3 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var3.toString());
@@ -74,7 +76,7 @@ public class QueryParserFragmentsTest {
 
         VarAdmin var2 = patterns.next().admin().asVar();
         assertTrue(var2.isRelation());
-        assertEquals(2, var2.getRelationPlayers().size());
+        assertEquals(2, var2.getProperty(RelationProperty.class).get().getRelationPlayers().count());
 
         assertFalse(patterns.hasNext());
     }
