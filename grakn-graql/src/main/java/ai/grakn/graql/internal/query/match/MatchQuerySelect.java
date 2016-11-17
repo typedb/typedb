@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +49,11 @@ class MatchQuerySelect extends MatchQueryModifier {
     @Override
     public Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
         return stream.map(result -> Maps.filterKeys(result, names::contains));
+    }
+
+    @Override
+    protected boolean selectAll(boolean selectAll) {
+        return true;
     }
 
     @Override

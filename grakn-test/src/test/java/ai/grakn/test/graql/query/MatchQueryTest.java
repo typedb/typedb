@@ -22,10 +22,16 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.RelationPlayer;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,15 +44,34 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.*;
+import static ai.grakn.graql.Graql.all;
+import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.any;
+import static ai.grakn.graql.Graql.contains;
+import static ai.grakn.graql.Graql.eq;
+import static ai.grakn.graql.Graql.gt;
+import static ai.grakn.graql.Graql.gte;
+import static ai.grakn.graql.Graql.id;
+import static ai.grakn.graql.Graql.lt;
+import static ai.grakn.graql.Graql.lte;
+import static ai.grakn.graql.Graql.neq;
+import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.regex;
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
-import static ai.grakn.util.Schema.MetaSchema.*;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
+import static ai.grakn.util.Schema.MetaSchema.RESOURCE_TYPE;
+import static ai.grakn.util.Schema.MetaSchema.RULE_TYPE;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class MatchQueryTest extends AbstractMovieGraphTest {
@@ -568,6 +593,52 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testQueryDoesNotCrash() {
         qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); select $a1, $a2;").execute();
+    }
+
+    @Test
+    public void testGetAllVariables() {
+        Var var = var().rel("actor", "x").rel("y").isa("has-cast");
+        MatchQuery query = qb.match(var);
+
+        String relName = var.admin().getName();
+        String hasCast = var.admin().getProperty(IsaProperty.class).get().getType().getName();
+        RelationProperty relationProperty = var.admin().getProperty(RelationProperty.class).get();
+        String actor = relationProperty.getRelationPlayers()
+                .map(RelationPlayer::getRoleType)
+                .flatMap(CommonUtil::optionalToStream)
+                .findAny().get().getName();
+
+        Set<String> vars = ImmutableSet.of("x", "y", relName, hasCast, actor);
+
+        assertEquals(vars, query.admin().getAllVariableNames());
+    }
+
+    @Test
+    public void testSelectAllVariables() {
+        Var var = var().rel("actor", "x").rel("y").isa("has-cast");
+        MatchQuery query = qb.match(var);
+
+        String relName = var.admin().getName();
+        String hasCast = var.admin().getProperty(IsaProperty.class).get().getType().getName();
+        RelationProperty relationProperty = var.admin().getProperty(RelationProperty.class).get();
+        String actor = relationProperty.getRelationPlayers()
+                .map(RelationPlayer::getRoleType)
+                .flatMap(CommonUtil::optionalToStream)
+                .findAny().get().getName();
+
+        Set<String> vars = query.admin().getAllVariableNames();
+
+        assertFalse(query.select(vars).execute().isEmpty());
+
+        query.select(vars).forEach(result -> {
+            assertEquals(vars, result.keySet());
+            assertTrue(result.get("x").isEntity());
+            assertTrue(result.get("y").isEntity());
+            assertTrue(result.get(relName).isRelation());
+            assertTrue(result.get(hasCast).isRelationType());
+            assertEquals("actor", result.get(actor).getId());
+            assertEquals("has-cast", result.get(hasCast).getId());
+        });
     }
 
     @Test(expected = IllegalArgumentException.class)

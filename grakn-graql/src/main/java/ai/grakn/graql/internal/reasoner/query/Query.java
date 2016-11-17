@@ -110,10 +110,15 @@ public class Query implements MatchQueryInternal {
     public Set<String> getSelectedNames() { return Sets.newHashSet(selectVars);}
 
     @Override
+    public Set<String> getAllVariableNames() {
+        return getMatchQuery().admin().getAllVariableNames();
+    }
+
+    @Override
     public MatchQuery select(Set<String> vars){ return this;}
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order, boolean selectAll) {
         return getMatchQuery().stream();
     }
 

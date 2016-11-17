@@ -60,4 +60,9 @@ public interface MatchQueryAdmin extends MatchQuery {
      * @return all selected variable names in the query
      */
     Set<String> getSelectedNames();
+
+    /**
+     * @return all variable names in the query, including any generated variable names
+     */
+    Set<String> getAllVariableNames();
 }

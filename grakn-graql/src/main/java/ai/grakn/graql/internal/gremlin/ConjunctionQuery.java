@@ -56,11 +56,14 @@ class ConjunctionQuery {
     private final Set<VarAdmin> vars;
 
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
+    private final ImmutableSet<String> names;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarAdmin> patternConjunction) {
+    ConjunctionQuery(Conjunction<VarAdmin> patternConjunction, ImmutableSet<String> names) {
+        this.names = names;
+
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -68,10 +71,10 @@ class ConjunctionQuery {
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =
-                vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
+                vars.stream().flatMap(this::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         // Get all variable names mentioned in non-starting fragments
-        Set<String> names = fragmentSets.stream()
+        Set<String> allNames = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::getFragments)
                 .filter(fragment -> !fragment.isStartingFragment())
                 .flatMap(Fragment::getVariableNames)
@@ -83,7 +86,7 @@ class ConjunctionQuery {
                 .flatMap(fragment -> fragment.getDependencies().stream())
                 .collect(toImmutableSet());
 
-        Set<String> validNames = Sets.difference(names, dependencies);
+        Set<String> validNames = Sets.difference(allNames, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         this.equivalentFragmentSets = fragmentSets.stream()
@@ -123,17 +126,17 @@ class ConjunctionQuery {
                 .flatMap(v -> v.getTypeIds().stream());
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {
-        return var.getImplicitInnerVars().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {
+        return var.getImplicitInnerVars().stream().flatMap(this::equivalentFragmentSetsOfVar);
     }
 
-    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarAdmin var) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarAdmin var) {
         ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
         // If the user has provided a variable name, it can't be represented with a shortcut edge because it may be
         // referred to later.
-        if (var.isUserDefinedName()) {
+        if (names.contains(var.getName()) || var.isUserDefinedName()) {
             shortcutTraversal.setInvalid();
         }
 

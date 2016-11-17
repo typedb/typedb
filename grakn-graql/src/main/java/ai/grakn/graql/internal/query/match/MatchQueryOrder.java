@@ -40,13 +40,13 @@ class MatchQueryOrder extends MatchQueryModifier {
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<GraknGraph> graph, Optional<MatchOrder> order
+            Optional<GraknGraph> graph, Optional<MatchOrder> order, boolean selectAll
     ) {
         if (order.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_ORDER.getMessage());
         }
 
-        return inner.stream(graph, Optional.of(this.order));
+        return inner.stream(graph, Optional.of(this.order), selectAll);
     }
 
     @Override
