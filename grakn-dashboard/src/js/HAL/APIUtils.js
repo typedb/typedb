@@ -92,6 +92,10 @@ function buildLabel(resource) {
         case API.RESOURCE_TYPE:
             label = resource[API.KEY_VALUE];
             break;
+        case API.GENERATED_RELATION_TYPE:
+            let value = (resource[API.KEY_TYPE].length === 0) ? "" : ": " + resource[API.KEY_TYPE];
+            label = resource[API.KEY_BASE_TYPE] + value;
+            break;
 
         default:
             label = resource[API.KEY_ID];

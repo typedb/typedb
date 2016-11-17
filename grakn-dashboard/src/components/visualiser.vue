@@ -169,13 +169,13 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                             <td>Show related ontology of selected node(s).</td>
                                         </tr>
                                         <tr>
-                                            <td>Left Click + Shift</td>
+                                            <td>Double Click</td>
                                             <td>Shows instances and isa of selected node(s), <b>WITHOUT</b> clearing the
                                                 graph of all other non-related nodes.
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td>Double Click</td>
+                                            <td>Double Click + Shift</td>
                                             <td>Shows instances and isa of selected node(s), whilst clearing the graph
                                                 of all other non-related nodes.
                                             </td>
