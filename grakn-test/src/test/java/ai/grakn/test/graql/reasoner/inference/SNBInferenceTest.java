@@ -26,7 +26,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;

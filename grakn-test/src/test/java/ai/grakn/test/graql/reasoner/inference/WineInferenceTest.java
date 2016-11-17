@@ -55,8 +55,8 @@ public class WineInferenceTest {
                         "{$nameP value 'Eva';$nameW value 'Tamaioasa Romaneasca';} or" +
                         "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y;";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
