@@ -18,6 +18,7 @@
 
 package ai.grakn;
 
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import org.junit.Test;
 
@@ -56,5 +57,15 @@ public class GraknTest {
     @Test
     public void testComputer(){
         assertThat(Grakn.factory(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
+    }
+
+    @Test
+    public void testSingletonBetweenBatchAndNormalInMemory(){
+        String keyspace = "test1";
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
+        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
+
+        assertNotEquals(graph, batchGraph);
+        assertEquals(graph.getTinkerPopGraph(), batchGraph.getTinkerPopGraph());
     }
 }
