@@ -18,20 +18,19 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.internal.template.Value;
-import ai.grakn.graql.internal.template.Value;
+import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
 public class EqualsMacro implements Macro<Boolean> {
 
     @Override
-    public Boolean apply(List<Value> values) {
+    public Boolean apply(List<Object> values) {
         if(values.size() < 2){
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
-        Value first = values.get(0);
+        Object first = values.get(0);
         return values.stream().allMatch(first::equals);
     }
 

@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.template.TemplateParser;
-import ai.grakn.graql.internal.template.macro.Macro;
+import ai.grakn.graql.macro.Macro;
 import ai.grakn.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
@@ -155,8 +155,8 @@ public class QueryBuilderImpl implements QueryBuilder{
      * @return a resolved graql query
      */
     @Override
-    public String parseTemplate(String template, Map<String, Object> data){
-        return templateParser.parseTemplate(template, data);
+    public <T extends Query<?>> T parseTemplate(String template, Map<String, Object> data){
+        return parse(templateParser.parseTemplate(template, data));
     }
 
     @Override
@@ -164,6 +164,7 @@ public class QueryBuilderImpl implements QueryBuilder{
         queryParser.registerAggregate(name, aggregateMethod);
     }
 
+    @Override
     public void registerMacro(Macro macro){
         templateParser.registerMacro(macro.name(), macro);
     }

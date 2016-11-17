@@ -21,7 +21,7 @@ package ai.grakn.migration.base;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilderImpl;
-import ai.grakn.graql.internal.template.macro.Macro;
+import ai.grakn.graql.macro.Macro;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -43,9 +43,13 @@ public abstract class AbstractMigrator implements Migrator {
         return this;
     }
 
+    /**
+     * @param template a string representing a templated graql query
+     * @param data data used in the template
+     * @return an insert query
+     */
     protected InsertQuery template(String template, Map<String, Object> data){
-        String templated = queryBuilder.parseTemplate(template, data);
-        return queryBuilder.parse(templated);
+        return (InsertQuery) queryBuilder.parseTemplate(template, data);
     }
 
     /**

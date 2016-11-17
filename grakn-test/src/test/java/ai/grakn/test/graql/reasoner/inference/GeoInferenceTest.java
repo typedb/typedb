@@ -31,19 +31,11 @@ import static org.junit.Assert.assertEquals;
 
 public class GeoInferenceTest {
 
-    private static GraknGraph graph;
-    private static Reasoner reasoner;
-    private static QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-        graph = GeoGraph.getGraph();
-        reasoner = new Reasoner(graph);
-        qb = graph.graql();
-    }
-
     @Test
     public void testQuery() {
+        GraknGraph graph = GeoGraph.getGraph();
+        Reasoner reasoner = new Reasoner(graph);
+        QueryBuilder qb = graph.graql();
         String queryString = "match $x isa city;$x has name $name;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;\n"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -52,13 +44,15 @@ public class GeoInferenceTest {
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        //printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQueryPrime() {
+        GraknGraph graph = GeoGraph.getGraph();
+        Reasoner reasoner = new Reasoner(graph);
+        QueryBuilder qb = graph.graql();
         String queryString = "match $x isa city;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -73,6 +67,9 @@ public class GeoInferenceTest {
 
     @Test
     public void testQuery2() {
+        GraknGraph graph = GeoGraph.getGraph();
+        Reasoner reasoner = new Reasoner(graph);
+        QueryBuilder qb = graph.graql();
         String queryString = "match $x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -87,6 +84,9 @@ public class GeoInferenceTest {
 
     @Test
     public void testQuery2Prime() {
+        GraknGraph graph = GeoGraph.getGraph();
+        Reasoner reasoner = new Reasoner(graph);
+        QueryBuilder qb = graph.graql();
         String queryString = "match $x isa university;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";

@@ -25,8 +25,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Date;
 import java.util.UUID;
 
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -40,43 +44,27 @@ public class PostProcessingTaskTest extends GraknEngineTestBase {
 
     @Test
     public void testStart() throws Exception {
-        UUID uuid = taskManager.scheduleTask(new PostProcessingTask(), 100);
-        Assert.assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
+        String id= taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), new Date(), 0, null);
+        Assert.assertNotEquals(CREATED, taskManager.storage().getState(id).status());
 
         // Wait for supervisor thread to mark task as completed
-        Thread.sleep(2000);
+        final long initial = new Date().getTime();
+
+        while ((new Date().getTime())-initial < 10000) {
+            if (taskManager.storage().getState(id).status() == COMPLETED)
+                break;
+
+            Thread.sleep(100);
+        }
 
         // Check that task has ran
-        Assert.assertEquals(TaskStatus.COMPLETED, taskManager.getTaskState(uuid).getStatus());
+        Assert.assertEquals(COMPLETED, taskManager.storage().getState(id).status());
     }
 
     @Test
     public void testStop() {
-        UUID uuid = taskManager.scheduleRecurringTask(new PostProcessingTask(), 100, 10000);
-        taskManager.stopTask(uuid);
-        Assert.assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
+        String id = taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), new Date(), 10000, null);
+        taskManager.stopTask(id, this.getClass().getName());
+        Assert.assertEquals(STOPPED, taskManager.storage().getState(id).status());
     }
-/*
-    @Test
-    public void testPauseResume() {
-        UUID uuid = taskManager.scheduleTask(new PostProcessingTask(), 1000);
-        Assert.assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
-
-        taskManager.pauseTask(uuid);
-        Assert.assertEquals(TaskStatus.PAUSED, taskManager.getTaskState(uuid).getStatus());
-
-        taskManager.resumeTask(uuid);
-        Assert.assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
-    }
-
-    @Test
-    public void testRestart() {
-        UUID uuid = taskManager.scheduleTask(new PostProcessingTask(), 0);
-        taskManager.stopTask(uuid);
-        Assert.assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
-        //taskManager.restartTask(uuid);
-        Assert.assertNotEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
-    }
-*/
-
 }

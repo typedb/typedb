@@ -118,9 +118,9 @@ public class Graql {
     /**
      * @param template a string representing a templated graql query
      * @param data data to use in template
-     * @return a resolved graql query
+     * @return a query, the type will depend on the type indicated in the template
      */
-    public static String parseTemplate(String template, Map<String, Object> data){
+    public static <T extends Query<?>> T parseTemplate(String template, Map<String, Object> data){
         return withoutGraph().parseTemplate(template, data);
     }
 

@@ -16,10 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.template.macro;
-
-import ai.grakn.graql.internal.template.Value;
-import ai.grakn.graql.internal.template.Value;
+package ai.grakn.graql.macro;
 
 import java.util.List;
 
@@ -28,7 +25,16 @@ import java.util.List;
  */
 public interface Macro<T> {
 
-    T apply(List<Value> values);
+    /**
+     * Apply the macro to the given values
+     * @param values Values on which to operate the macro
+     * @return result of the function
+     */
+    T apply(List<Object> values);
 
+    /**
+     * The name of the macro
+     * @return the name of the macro
+     */
     String name();
 }

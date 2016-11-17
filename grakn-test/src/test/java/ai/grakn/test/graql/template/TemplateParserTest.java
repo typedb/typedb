@@ -36,8 +36,8 @@ public class TemplateParserTest {
 
     @Test
     public void oneValueOneLineTest(){
-        String template = "insert $x isa person has name <name>    ";
-        String expected = "insert $x0 isa person has name \"Phil Collins\"    ";
+        String template = "insert $x isa person has name <name>;    ";
+        String expected = "insert $x0 has name \"Phil Collins\" isa person;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Phil Collins");
@@ -47,8 +47,8 @@ public class TemplateParserTest {
 
     @Test
     public void multiValueOneLineTest(){
-        String template = "insert $x isa person has name <name> , has feet <numFeet>";
-        String expected = "insert $x0 isa person has name \"Phil Collins\" , has feet 3";
+        String template = "insert $x isa person has name <name> , has feet <numFeet>;";
+        String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Phil Collins");
@@ -60,7 +60,7 @@ public class TemplateParserTest {
     @Test(expected = RuntimeException.class)
     public void dataMissingTest() {
         String template = "insert $x isa person has name <name> , has feet <numFeet> ";
-        String expected = "insert $x0 isa person has name \"Phil Collins\", has feet 3 ";
+        String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Phil Collins");
@@ -71,15 +71,14 @@ public class TemplateParserTest {
 
     @Test
     public void quotingWhenReplacementInVariableTest(){
-        String template = "" +
+        String template =
                 "insert \n" +
                 "for (address in addresses) do { \n" +
                 "   $<address> has address <address>;\n" +
                 "}";
 
-        String expected = "insert \n" +
-                "   $22-Hornsey has address \"22 Hornsey\";\n" +
-                "   $Something has address \"Something\";\n";
+        String expected = "insert $22-Hornsey has address \"22 Hornsey\";\n" +
+                "$Something has address \"Something\";";
 
 
         Map<String, Object> data = new HashMap<>();
@@ -90,12 +89,14 @@ public class TemplateParserTest {
 
     @Test
     public void noSpacesBetweenTokensTest(){
-        String template = "for (whale in whales) do {" +
-                "\t\t\t$x isa whale has name, <whale>;\n}";
+        String template =
+                "insert " +
+                "for (whale in whales) do {" +
+                "\t\t\t$x isa whale has name <whale>;\n}";
 
         String expected =
-                "\t\t\t$x0 isa whale has name, \"shamu\";\n" +
-                        "\t\t\t$x1 isa whale has name, \"dory\";\n";
+                "insert $x0 isa whale has name \"shamu\";\n" +
+                        "$x1 isa whale has name \"dory\";";
 
         Map<String, Object> data = new HashMap<>();
         data.put("whales", Arrays.asList("shamu", "dory"));
@@ -105,8 +106,13 @@ public class TemplateParserTest {
 
     @Test
     public void multipleDataTypesTest(){
-        String template = "first is a <string>, second a <long>, third a <double>, fourth a <bool>";
-        String expected = "first is a \"string\", second a 40, third a 0.001, fourth a false";
+        String template = "insert $x isa y; $x value <string>; $x value <long>; $x value <double>; $x value <bool>;";
+        String expected =
+                "insert $x0 isa y;\n" +
+                "$x0 value \"string\";\n" +
+                "$x0 value 40;\n" +
+                "$x0 value 0.001;\n" +
+                "$x0 value false;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("string", "string");
@@ -119,12 +125,13 @@ public class TemplateParserTest {
 
     @Test
     public void forLoopOverArrayTest(){
-        String template = "for (whale in whales ) do {" +
+        String template = "insert " +
+                "for (whale in whales ) do {" +
                 "$x isa whale has name <whale>;\n}";
 
         String expected =
-                "$x0 isa whale has name \"shamu\";\n" +
-                        "$x1 isa whale has name \"dory\";\n";
+                "insert $x0 isa whale has name \"shamu\";\n" +
+                        "$x1 isa whale has name \"dory\";";
 
         Map<String, Object> data = new HashMap<>();
         data.put("whales", Arrays.asList("shamu", "dory"));
@@ -143,16 +150,16 @@ public class TemplateParserTest {
                 "        ($x, $y) isa resides;\n" +
                 "    }";
 
-        String expected = "insert\n" +
-                "    $x0 isa person;\n" +
-                "        $y0 isa address;\n" +
-                "        $y0 has street \"Collins Ave\" ;\n" +
-                "        $y0 has number 8855 ;\n" +
-                "        ($x0, $y0) isa resides;\n" +
-                "        $y1 isa address;\n" +
-                "        $y1 has street \"Hornsey St\" ;\n" +
-                "        $y1 has number 8 ;\n" +
-                "        ($x0, $y1) isa resides;\n";
+        String expected =
+                "insert $x0 isa person;\n" +
+                        "$y0 isa address;\n" +
+                        "$y0 has street \"Collins Ave\";\n" +
+                        "$y0 has number 8855;\n" +
+                        "($x0, $y0) isa resides;\n" +
+                        "$y1 isa address;\n" +
+                        "$y1 has street \"Hornsey St\";\n" +
+                        "$y1 has number 8;\n" +
+                        "($x0, $y1) isa resides;";
 
         Map<String, Object> address1 = new HashMap<>();
         address1.put("street", "Collins Ave");
@@ -179,16 +186,15 @@ public class TemplateParserTest {
                 "        ($x, $y) isa resides;\n" +
                 "    }";
 
-        String expected = "insert\n" +
-                "    $x0 isa person;\n" +
-                "        $y0 isa address;\n" +
-                "        $y0 has street \"Collins Ave\" ;\n" +
-                "        $y0 has number 8855 ;\n" +
-                "        ($x0, $y0) isa resides;\n" +
-                "        $y1 isa address;\n" +
-                "        $y1 has street \"Hornsey St\" ;\n" +
-                "        $y1 has number 8 ;\n" +
-                "        ($x0, $y1) isa resides;\n";
+        String expected = "insert $x0 isa person;\n" +
+                "$y0 isa address;\n" +
+                "$y0 has street \"Collins Ave\";\n" +
+                "$y0 has number 8855;\n" +
+                "($x0, $y0) isa resides;\n" +
+                "$y1 isa address;\n" +
+                "$y1 has street \"Hornsey St\";\n" +
+                "$y1 has number 8;\n" +
+                "($x0, $y1) isa resides;";
 
         Map<String, Object> address1 = new HashMap<>();
         address1.put("street", "Collins Ave");
@@ -207,33 +213,34 @@ public class TemplateParserTest {
     @Test
     public void doubleNestedForTest(){
 
-        String template = "" +
+        String template =
+                "insert " +
                 "for ( people ) \n" +
                 "do { \n" +
-                "insert $x isa person has name <name>;\n" +
+                "$x isa person has name <name>;\n" +
                 "    for ( addresses ) do {\n" +
-                "    insert $y isa address ;\n" +
+                "    $y isa address ;\n" +
                 "        $y has street <street> ;\n" +
                 "        $y has number <number> ;\n" +
                 "        ($x, $y) isa resides;\n" +
                 "    }\n" +
                 "}";
 
-        String expected = "" +
+        String expected =
                 "insert $x0 isa person has name \"Elmo\";\n" +
-                "    insert $y0 isa address ;\n" +
-                "        $y0 has street \"North Pole\" ;\n" +
-                "        $y0 has number 100 ;\n" +
-                "        ($x0, $y0) isa resides;\n" +
-                "    insert $y1 isa address ;\n" +
-                "        $y1 has street \"South Pole\" ;\n" +
-                "        $y1 has number -100 ;\n" +
-                "        ($x0, $y1) isa resides;\n" +
-                "insert $x1 isa person has name \"Flounder\";\n" +
-                "    insert $y2 isa address ;\n" +
-                "        $y2 has street \"Under the sea\" ;\n" +
-                "        $y2 has number 22 ;\n" +
-                "        ($x1, $y2) isa resides;\n";
+                        "$y0 isa address;\n" +
+                        "$y0 has street \"North Pole\";\n" +
+                        "$y0 has number 100;\n" +
+                        "($x0, $y0) isa resides;\n" +
+                        "$y1 isa address;\n" +
+                        "$y1 has street \"South Pole\";\n" +
+                        "$y1 has number -100;\n" +
+                        "($x0, $y1) isa resides;\n" +
+                        "$x1 isa person has name \"Flounder\";\n" +
+                        "$y2 isa address;\n" +
+                        "$y2 has street \"Under the sea\";\n" +
+                        "$y2 has number 22;\n" +
+                        "($x1, $y2) isa resides;";
 
         Map<String, Object> address1 = new HashMap<>();
         address1.put("street", "North Pole");
@@ -263,7 +270,7 @@ public class TemplateParserTest {
 
     @Test
     public void reusingVariablesAfterBlockScopingTest(){
-        String template = "" +
+        String template =
                 "insert $x isa person has name <name>;\n" +
                 "    \n" +
                 "for ( addresses ) do {\n" +
@@ -272,20 +279,20 @@ public class TemplateParserTest {
                 "        $y has number <number> ;\n" +
                 "        ($x, $y) isa resides;\n" +
                 "}\n" +
-                "$y isa person, id 1234;\n" +
+                "$y isa person;\n" +
                 "($x, $y) isa friends;";
 
-        String expected = "" +
+        String expected =
                 "insert $x0 isa person has name \"Manon\";\n" +
-                "        $y0 isa address;\n" +
-                "        $y0 has street \"Collins Ave\" ;\n" +
-                "        $y0 has number 8855 ;\n" +
-                "        ($x0, $y0) isa resides;\n" +
-                "        $y1 isa address;\n" +
-                "        $y1 has street \"Hornsey St\" ;\n" +
-                "        $y1 has number 8 ;\n" +
-                "        ($x0, $y1) isa resides;\n" +
-                "$y2 isa person, id 1234;\n" +
+                "$y0 isa address;\n" +
+                "$y0 has street \"Collins Ave\";\n" +
+                "$y0 has number 8855;\n" +
+                "($x0, $y0) isa resides;\n" +
+                "$y1 isa address;\n" +
+                "$y1 has street \"Hornsey St\";\n" +
+                "$y1 has number 8;\n" +
+                "($x0, $y1) isa resides;\n" +
+                "$y2 isa person;\n" +
                 "($x0, $y2) isa friends;";
 
         Map<String, Object> address1 = new HashMap<>();
@@ -305,15 +312,14 @@ public class TemplateParserTest {
 
     @Test
     public void dotNotationTest(){
-        String template = "" +
+        String template = "insert " +
                 "$x isa person has name <name>;\n" +
                 "$y isa address;\n" +
                 "$y has street <address.street>;\n" +
                 "$y has number <address.number>;\n" +
                 "($x, $y) isa resides;";
 
-        String expected = "" +
-                "$x0 isa person has name \"Phil Collins\";\n" +
+        String expected = "insert $x0 has name \"Phil Collins\" isa person;\n" +
                 "$y0 isa address;\n" +
                 "$y0 has street \"Collins Ave\";\n" +
                 "$y0 has number 1;\n" +
@@ -332,8 +338,8 @@ public class TemplateParserTest {
 
     @Test
     public void doubleDotTest(){
-        String template = "$x isa person has name <person.name.firstName>\n";
-        String expected = "$x0 isa person has name \"Phil\"\n";
+        String template = "insert $x isa person has name <person.name.firstName>;\n";
+        String expected = "insert $x0 isa person has name \"Phil\";";
 
         Map<String, Object> data = new HashMap<>();
         data.put("person", Collections.singletonMap("name", Collections.singletonMap("firstName", "Phil")));
@@ -343,8 +349,8 @@ public class TemplateParserTest {
 
     @Test
     public void comboVarDotTest(){
-        String template = "$<person.name> isa person";
-        String expected = "$Phil-Collins isa person";
+        String template = "insert $<person.name> isa person;";
+        String expected = "insert $Phil-Collins isa person;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("person", Collections.singletonMap("name", "Phil Collins"));
@@ -365,38 +371,38 @@ public class TemplateParserTest {
 
     @Test
     public void ifElseIfTest(){
-        String template = "" +
+        String template =
                 "if(eq firstName true) do { insert $person has hasName <firstName>; }\n" +
-                "elseif(eq firstName false) do { insert $person; }\n" +
-                "else { something }";
-        String expected = " insert $person0 has hasName true;";
+                "elseif(eq firstName false) do { insert $person isa person; }\n" +
+                "else { insert $nothing isa nothing; }";
+        String expected = "insert $person0 has hasName true;";
 
         assertParseEquals(template, Collections.singletonMap("firstName", true), expected);
 
-        expected = " insert $person0;";
+        expected = "insert $person0 isa person;";
         assertParseEquals(template, Collections.singletonMap("firstName", false), expected);
 
-        expected = " something";
+        expected = "insert $nothing0 isa nothing;";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void ifElseTest(){
-        String template = "" +
+        String template =
                 "if (ne firstName null ) do {\n" +
                 "    insert $person has name <firstName>;" +
                 "}\n" +
                 "else {\n" +
                 "    insert $person;" +
                 "}\n";
-        String expected = "    insert $person0 has name \"Phil\";";
+        String expected = "insert $person0 has name \"Phil\";";
 
         Map<String, Object> data = new HashMap<>();
         data.put("firstName", "Phil");
 
         assertParseEquals(template, data, expected);
 
-        expected = "    insert $person0;";
+        expected = "insert $person0 ;";
         data = new HashMap<>();
 
         assertParseEquals(template, data, expected);
@@ -404,8 +410,8 @@ public class TemplateParserTest {
 
     @Test
     public void andExpressionTest(){
-        String template = "if(and this that) do { something }";
-        String expected = " something";
+        String template = "if(and this that) do { insert $x isa t; } else { insert $x isa f; }";
+        String expected = "insert $x0 isa t;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("this", true);
@@ -413,14 +419,14 @@ public class TemplateParserTest {
 
         assertParseEquals(template, data, expected);
 
-        expected = "";
+        expected = "insert $x0 isa f;";
         data = new HashMap<>();
         data.put("this", false);
         data.put("that", true);
 
         assertParseEquals(template, data, expected);
 
-        expected = "";
+        expected = "insert $x0 isa f;";
         data = new HashMap<>();
         data.put("this", false);
         data.put("that", false);
@@ -438,8 +444,8 @@ public class TemplateParserTest {
 
     @Test
     public void orExpressionTest(){
-        String template = "if(or this that) do { something }";
-        String expected = " something";
+        String template = "if(or this that) do { insert $x isa t; } else { insert $x isa f; }";
+        String expected = "insert $x0 isa t;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("this", false);
@@ -447,14 +453,14 @@ public class TemplateParserTest {
 
         assertParseEquals(template, data, expected);
 
-        expected = " something";
+        expected = "insert $x0 isa t;";
         data = new HashMap<>();
         data.put("this", true);
         data.put("that", true);
 
         assertParseEquals(template, data, expected);
 
-        expected = "";
+        expected = "insert $x0 isa f;";
         data = new HashMap<>();
         data.put("this", false);
         data.put("that", false);
@@ -472,18 +478,18 @@ public class TemplateParserTest {
 
     @Test
     public void notExpressionTest(){
-        String template = "if(not this) do { something }";
-        String expected = " something";
+        String template = "if(not this) do { insert $something isa something; } else { insert $something isa nothing; }";
+        String expected = "insert $something0 isa something;";
 
         assertParseEquals(template, Collections.singletonMap("this", false), expected);
 
-        expected = "";
+        expected = "insert $something0 isa nothing;";
         assertParseEquals(template, Collections.singletonMap("this", true), expected);
     }
 
     @Test(expected = RuntimeException.class)
     public void notExpressionWrongTypeTest(){
-        assertParseEquals("if(not this) do {y}", Collections.singletonMap("this", "string"), "");
+        assertParseEquals("if(not this) do {insert isa y;} else {insert isa z;}", Collections.singletonMap("this", "string"), "");
     }
 
     @Test
@@ -492,8 +498,8 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(gt first second) do {y}", data, "");
-        assertParseEquals("if(gt second first) do {y}", data, "y");
+        assertParseEquals("if(gt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(gt second first) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -501,7 +507,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(gt first second) do {y}", data, "");
+        assertParseEquals("if(gt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
@@ -510,14 +516,14 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(ge first second) do {y}", data, "");
-        assertParseEquals("if(ge second first) do {y}", data, "y");
+        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(ge second first) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
 
         data.put("first", 2);
-        assertParseEquals("if(ge first second) do {y}", data, "y");
+        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
 
         data.put("first", 2.0);
-        assertParseEquals("if(ge first second) do {y}", data, "y");
+        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -525,7 +531,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(ge first second) do {y}", data, "");
+        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
@@ -534,11 +540,11 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(lt first second) do {y}", data, "y");
-        assertParseEquals("if(lt second first) do {y}", data, "");
+        assertParseEquals("if(lt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(lt second first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
 
         data.put("second", 1);
-        assertParseEquals("if(lt second first) do {y}", data, "");
+        assertParseEquals("if(lt second first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -546,7 +552,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(lt first second) do {y}", data, "");
+        assertParseEquals("if(lt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
@@ -555,14 +561,14 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(le first second) do {y}", data, "y");
-        assertParseEquals("if(le second first) do {y}", data, "");
+        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(le second first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
 
         data.put("second", 2);
-        assertParseEquals("if(le first second) do {y}", data, "y");
+        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
 
         data.put("second", 2.0);
-        assertParseEquals("if(le first second) do {y}", data, "y");
+        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -570,13 +576,13 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(le first second) do {y}", data, "");
+        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
     public void concatReplaceTest(){
-        String template = "(pokemon-with-type: <pokemon_id>-pokemon, type-of-pokemon: <type_id>-type) isa has-type;";
-        String expected = "(pokemon-with-type: \"124-pokemon\", type-of-pokemon: \"124-type\") isa has-type;";
+        String template = "insert (pokemon-with-type: <pokemon_id>-pokemon, type-of-pokemon: <type_id>-type) isa has-type;";
+        String expected = "insert isa has-type (pokemon-with-type: \"124-pokemon\", type-of-pokemon: \"124-type\");";
 
         Map<String, Object> data = new HashMap<>();
         data.put("pokemon_id", 124);
@@ -594,30 +600,34 @@ public class TemplateParserTest {
 
     @Test
     public void quotesTest(){
-        String template = "insert thing has quotes \"in quotes\"";
-        assertParseEquals(template, new HashMap<>(), template);
+        String template = "insert $thing has quotes \"in quotes\";";
+        String expected = "insert $thing0 has quotes \"in quotes\";";
+        assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void doubleQuotesInSingleQuotesTest(){
-        String template = "insert thing has quotes \"'in' quotes\"";
-        assertParseEquals(template, new HashMap<>(), template);
+        String template = "insert thing has quotes \"'in' quotes\";";
+        String expected = "insert id \"thing\" has quotes \"\\'in\\' quotes\";";
+        assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void singleQuotesInSingleQuotesTest(){
-        String template = "insert thing has quotes '\"in\" quotes'";
-        assertParseEquals(template, new HashMap<>(), template);
+        String template = "insert thing has quotes '\"in\" quotes';";
+        String expected = "insert has quotes \"\\\"in\\\" quotes\" id \"thing\";";
+        assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void escapedDoubleQuotesInDoubleQuotesTest(){
-        String template = "insert thing has quotes \"\\\"in\\\" quotes\"";
-        assertParseEquals(template, new HashMap<>(), template);
+        String template = "insert thing has quotes \"\\\"in\\\" quotes\";";
+        String expected = "insert has quotes \"\\\"in\\\" quotes\" id \"thing\";";
+        assertParseEquals(template, new HashMap<>(), expected);
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        String result = Graql.parseTemplate(template, data);
+        String result = Graql.parseTemplate(template, data).toString();
         System.out.println(result);
         assertEquals(expected, result);
     }

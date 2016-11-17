@@ -20,13 +20,12 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.loader.RESTLoader;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.loader.RESTLoader;
 import ai.grakn.engine.util.ConfigProperties;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Consumer;
 
 public class PostProcessingTask implements BackgroundTask {
     private final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
@@ -38,7 +37,7 @@ public class PostProcessingTask implements BackgroundTask {
         postProcessing = PostProcessing.getInstance();
     }
 
-    public void start() {
+    public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
         if(RESTLoader.getInstance().getLoadingJobs() != 0)
             return;
 
@@ -52,16 +51,9 @@ public class PostProcessingTask implements BackgroundTask {
         postProcessing.stop();
     }
 
-    public Map<String, Object> pause() {
-        LOG.warn(this.getClass().getName()+".pause() is not implemented.");
-        return new HashMap<>();
+    public void pause() {
     }
 
-    public void resume(Map<String, Object> m) {
-        LOG.warn(this.getClass().getName()+".resume() is not implemented.");
-    }
-
-    public void restart() {
-        postProcessing.reset();
+    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
     }
 }

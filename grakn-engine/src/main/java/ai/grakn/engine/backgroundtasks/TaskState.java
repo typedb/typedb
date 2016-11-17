@@ -18,133 +18,145 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import org.json.JSONObject;
+
 import java.util.Date;
-import java.util.Map;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
  */
-public class TaskState {
+public class TaskState implements Cloneable {
+    /**
+     * Task status, @see TaskStatus.
+     */
     private TaskStatus status;
+    /**
+     * Time when task status was last updated.
+     */
     private Date statusChangeTime;
+    /**
+     * String identifying who last updated task status.
+     */
     private String statusChangedBy;
-    private String statusChangeMessage;
-
-    private String name;
-    private Date queuedTime;
+    /**
+     * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
+     */
+    private String taskClassName;
+    /**
+     * String identifying who created this task.
+     */
     private String creator;
-
+    /**
+     * String identifying which engine instance is executing this task, set when task is scheduled.
+     */
     private String executingHostname;
-    private long delay;
+    /**
+     * When this task should be executed.
+     */
+    private Date runAt;
+    /**
+     * Should this task be run again after it has finished executing successfully.
+     */
     private Boolean recurring;
+    /**
+     * If a task is marked as recurring, this represents the time delay between the next executing of this task.
+     */
     private long interval;
-    private Map<String, Object> pauseState;
-    private Throwable failure = null;
+    /**
+     * Used to store any executing failures for the given task.
+     */
+    private Throwable failure;
+    /**
+     * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
+     */
+    private String taskCheckpoint;
+    /**
+     * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
+     */
+    private JSONObject configuration;
     
-    public TaskState(String name) {
+    TaskState(String taskClassName) {
         status = TaskStatus.CREATED;
-        this.name = name;
+        failure = null;
+        this.taskClassName = taskClassName;
     }
 
-    public TaskState setStatus(TaskStatus status) {
+    public TaskState status(TaskStatus status) {
         this.status = status;
-        statusChangeTime = new Date();
         return this;
     }
 
-    public TaskStatus getStatus() {
+    public TaskStatus status() {
         return status;
     }
 
-    public String getName() {
-        return this.name;
+    public TaskState statusChangeTime(Date statusChangeTime) {
+        this.statusChangeTime = statusChangeTime;
+        return this;
     }
 
-    public Date getStatusChangeTime() {
+    public Date statusChangeTime() {
         return statusChangeTime;
     }
 
-    public TaskState setQueuedTime(Date queuedTime) {
-        this.queuedTime = queuedTime;
-        return this;
-    }
-
-    public Date getQueuedTime() {
-        return queuedTime;
-    }
-
-    public TaskState setExecutingHostname(String hostname) {
-        executingHostname = hostname;
-        return this;
-    }
-
-    public String getExecutingHostname() {
-        return executingHostname;
-    }
-
-    public TaskState setCreator(String creator) {
-        this.creator = creator;
-        return this;
-    }
-
-    public String getCreator() {
-        return creator;
-    }
-
-    public TaskState setStatusChangedBy(String statusChangedBy) {
+    public TaskState statusChangedBy(String statusChangedBy) {
         this.statusChangedBy = statusChangedBy;
         return this;
     }
 
-    public String getStatusChangedBy() {
+    public String statusChangedBy() {
         return statusChangedBy;
     }
 
-    public TaskState setStatusChangeMessage(String message) {
-        statusChangeMessage = message;
+    public String taskClassName() {
+        return this.taskClassName;
+    }
+
+    public TaskState creator(String creator) {
+        this.creator = creator;
         return this;
     }
 
-    public String getStatusChangeMessage() {
-        return statusChangeMessage;
+    public String creator() {
+        return creator;
     }
 
-    public long getDelay() {
-        return delay;
-    }
-
-    public TaskState setDelay(long delay) {
-        this.delay = delay;
+    public TaskState executingHostname(String hostname) {
+        executingHostname = hostname;
         return this;
     }
 
-    public Boolean getRecurring() {
-        return recurring;
+    public String executingHostname() {
+        return executingHostname;
     }
 
-    public TaskState setRecurring(Boolean recurring) {
+    public TaskState runAt(Date runAt) {
+        this.runAt = runAt;
+        return this;
+    }
+
+    public Date runAt() {
+        return runAt;
+    }
+
+    public TaskState isRecurring(Boolean recurring) {
         this.recurring = recurring;
         return this;
     }
 
-    public long getInterval() {
-        return interval;
+    public Boolean isRecurring() {
+        return recurring;
     }
 
-    public TaskState setInterval(long interval) {
+    public TaskState interval(long interval) {
         this.interval = interval;
         return this;
     }
 
-    public Map<String, Object> getPauseState() {
-        return pauseState;
+    public long interval() {
+        return interval;
     }
 
-    public TaskState setPauseState(Map<String, Object> pauseState) {
-        this.pauseState = pauseState;
-        return this;
-    }
-    
     public boolean isFailed() {
     	return this.failure != null;
     }
@@ -156,5 +168,41 @@ public class TaskState {
     public TaskState failure(Throwable failure) {
     	this.failure = failure;
     	return this;
+    }
+
+    public TaskState checkpoint(String taskCheckpoint) {
+        this.taskCheckpoint = taskCheckpoint;
+        return this;
+    }
+
+    public String checkpoint() {
+        return taskCheckpoint;
+    }
+
+    public TaskState configuration(JSONObject configuration) {
+        this.configuration = configuration;
+        return this;
+    }
+
+    public JSONObject configuration() {
+        return configuration;
+    }
+
+    public TaskState clone() throws CloneNotSupportedException {
+        TaskState state = (TaskState)super.clone();
+
+        state.status(status)
+             .statusChangeTime(statusChangeTime)
+             .statusChangedBy(statusChangedBy)
+             .creator(creator)
+             .executingHostname(executingHostname)
+             .runAt(runAt)
+             .isRecurring(recurring)
+             .interval(interval)
+             .failure(failure)
+             .checkpoint(taskCheckpoint)
+             .configuration(new JSONObject(configuration.toString()));
+
+        return state;
     }
 }

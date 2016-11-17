@@ -84,7 +84,6 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa Person, has name $name;" +
                 "{$name value 'aaa';} or {$name value 'aab';} or {$name value 'aaaa';};select $Y, $name;";
 
-        Utility.printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
         //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
@@ -103,9 +102,8 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa Person, has name $name;" +
                 "{$name value 'a';} or {$name value 'aaa';} or {$name value 'aab';} or {$name value 'aaaa';};select $Y;";
 
-        Utility.printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
         //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
@@ -170,8 +168,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //reasoner.resolve(query, true);
-        //assertEquals(Sets.newHashSet(qb.<MatchQuery>parse(queryString)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -187,7 +183,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -205,7 +200,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -223,7 +217,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
@@ -242,7 +235,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 18*/
@@ -259,7 +251,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -282,7 +273,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -299,7 +289,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /** test 6.1 from Cao p 71*/
@@ -333,7 +322,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**test3 from Nguyen (similar to test 6.5 from Cao)*/
@@ -350,7 +338,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     //TODO bug #10635
@@ -368,7 +355,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**test 6.6 from Cao p.76*/
@@ -386,7 +372,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**test 6.9 from Cao p.82*/
@@ -404,7 +389,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**test 6.10 from Cao p. 82*/
@@ -419,9 +403,8 @@ public class RecursiveInferenceTest {
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
-        //assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
@@ -437,7 +420,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -454,7 +436,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -471,7 +452,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -488,7 +468,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-       // assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
@@ -505,7 +484,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
     @Test
     public void testReverseSameGeneration2() {
@@ -527,7 +505,6 @@ public class RecursiveInferenceTest {
 
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
