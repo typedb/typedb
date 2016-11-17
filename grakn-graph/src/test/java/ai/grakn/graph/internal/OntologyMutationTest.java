@@ -176,4 +176,59 @@ public class OntologyMutationTest extends GraphTestBase{
 
         graknGraphBatch.putRelationType("This Will Fail");
     }
+
+    @Test
+    public void testAddingHasRolesWhileBatchLoading(){
+        String roleTypeId = "role";
+        String relationTypeId = "relationtype";
+        graknGraph.putRoleType(roleTypeId);
+        graknGraph.putRelationType(relationTypeId);
+
+        RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
+        RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        relationType.hasRole(roleType);
+    }
+
+    @Test
+    public void testAddingPlaysRoleWhileBatchLoading(){
+        String roleTypeId = "role";
+        String entityTypeId = "entityType";
+        graknGraph.putRoleType(roleTypeId);
+        graknGraph.putEntityType(entityTypeId);
+
+        RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
+        EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        entityType.playsRole(roleType);
+    }
+
+    @Test
+    public void testAkoingWhileBatchLoading(){
+        String entityTypeId1 = "entityType1";
+        String entityTypeId2 = "entityType2";
+
+        graknGraph.putEntityType(entityTypeId1);
+        graknGraph.putEntityType(entityTypeId2);
+
+        EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
+        EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        entityType1.superType(entityType2);
+    }
 }
