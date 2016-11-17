@@ -31,7 +31,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -194,7 +193,6 @@ public class GenealogyTest{
         QueryAnswers answers = reasoner.resolve(query);
         QueryAnswers answers2 = reasoner.resolve(query2);
         assertEquals(answers, answers2);
-        printAnswers(answers);
         assertTrue(!answers.isEmpty());
     }
 
@@ -321,7 +319,6 @@ public class GenealogyTest{
         Reasoner reasoner = new Reasoner(graph);
 
         QueryAnswers answers = reasoner.resolve(query);
-        printAnswers(answers);
         assertTrue(!answers.isEmpty());
     }
 
