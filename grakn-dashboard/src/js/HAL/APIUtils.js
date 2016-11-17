@@ -29,9 +29,7 @@ export function edgeLeftToRight(a, b) {
     if (API.KEY_DIRECTION in b)
         if (b[API.KEY_DIRECTION] === "OUT")
             return false;
-        else
-            console.log("API ERROR: [" + API.KEY_DIRECTION + "] not found in " + b[API.KEY_ID]);
-
+            
     return true;
 }
 

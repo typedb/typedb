@@ -84,7 +84,6 @@ export default class HALParser {
      */
     parseEmbedded(objs, parent, roleName) {
         _.map(objs, child => {
-          if((child[API.KEY_BASE_TYPE] === API.RESOURCE_TYPE))
             if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE)|| this.nodeAlreadyInGraph(this.getHref(child))) {
                 var links = Utils.nodeLinks(child);
                 // Add resource and iterate its _embedded field

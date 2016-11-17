@@ -51,9 +51,9 @@ export default {
         engineClient = new EngineClient();
 
         halParser = new HALParser();
-        
+
         halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
-        halParser.setNewRelationship((f, t, l) =>visualiser.addEdge(f, t, l));
+        halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
         halParser.setNodeAlreadyInGraph(id => visualiser.nodeExists(id));
     },
 
@@ -118,6 +118,13 @@ export default {
             codeMirror.setValue("match $x " + (t === 'roles' ? 'plays-role' : 'isa') + " " + ti + ";");
             this.typeInstances = false;
             this.runQuery();
+        },
+
+        loadOntology() {
+          let query_isa="match $x isa type;";
+          let query_sub="match $x sub type;";
+          engineClient.graqlHAL(query_isa, this.graphResponse);
+          engineClient.graqlHAL(query_sub, this.graphResponse);
         },
 
         getMetaTypes() {
@@ -298,14 +305,13 @@ export default {
                 .removeClass('btn-danger')
                 .removeClass('btn-warning')
                 .addClass('btn-default');
-            this.closeConfigPanel();
         },
 
         clearGraph() {
             // Reset all interface elements to default.
             codeMirror.setValue("");
             this.resetMsg();
-
+            this.closeConfigPanel();
             // And clear the graph
             visualiser.clearGraph();
         }
