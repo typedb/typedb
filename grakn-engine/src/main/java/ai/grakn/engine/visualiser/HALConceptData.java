@@ -234,6 +234,9 @@ public class HALConceptData {
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
         if (!type.getId().equals(ROOT_CONCEPT)) {
             type.instances().parallelStream().forEach(instance -> {
+
+                if(instance.isType() && instance.asType().isImplicit()) return;
+
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 handleConcept(instanceResource, instance, separationDegree - 1);

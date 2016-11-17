@@ -51,7 +51,7 @@ public class HALConceptRepresentationBuilder {
                 .findFirst().map(Concept::getId)
                 .orElse("");
 
-        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery,relationType);
+        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, relationType);
     }
 
     public static String renderHALConceptData(Concept concept, int separationDegree) {
@@ -66,16 +66,20 @@ public class HALConceptRepresentationBuilder {
         final JSONArray lines = new JSONArray();
         graqlResultsList.parallelStream()
                 .forEach(resultLine -> resultLine.entrySet().forEach(current -> {
+
+                    if (current.getValue().isType() && current.getValue().asType().isImplicit()) return;
+
                     LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
                     Representation currentHal = new HALConceptData(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
                             typesAskedInQuery).getRepresentation();
                     attachGeneratedRelation(currentHal, current, linkedNodes, resultLine, relationType);
                     lines.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
+
                 }));
         return lines;
     }
 
-    private static void attachGeneratedRelation(Representation currentHal,Map.Entry<String,Concept> current, Map<String, Collection<String>> linkedNodes, Map<String, Concept> resultLine, String relationType){
+    private static void attachGeneratedRelation(Representation currentHal, Map.Entry<String, Concept> current, Map<String, Collection<String>> linkedNodes, Map<String, Concept> resultLine, String relationType) {
         if (linkedNodes.containsKey(current.getKey())) {
             linkedNodes.get(current.getKey())
                     .forEach(varName -> {
