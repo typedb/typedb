@@ -24,7 +24,6 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

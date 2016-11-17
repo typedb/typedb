@@ -20,7 +20,6 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.test.graql.reasoner.graphs.PathGraph;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphII;
 import com.google.common.collect.Sets;
