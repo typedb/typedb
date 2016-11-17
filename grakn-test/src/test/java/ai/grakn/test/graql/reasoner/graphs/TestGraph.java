@@ -27,7 +27,9 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.test.AbstractEngineTest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,7 +41,7 @@ import java.util.stream.Collectors;
 
 public class TestGraph {
     protected GraknGraph graknGraph;
-    private final static String filePath = "src/test/graql/";
+    protected final static String filePath = "src/test/graql/";
     private final static String defaultKey = "name";
 
     protected static RoleType hasKeyTarget;
@@ -48,13 +50,15 @@ public class TestGraph {
     private static RoleType hasKeyValue;
 
     public TestGraph(){
-        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        //graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = GraphFactory.getInstance().getGraph( UUID.randomUUID().toString().replaceAll("-", "a"));
         buildGraph();
         commit();
     }
 
     public TestGraph(String primaryKeyId, String... files) {
-        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        //graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = GraphFactory.getInstance().getGraph( UUID.randomUUID().toString().replaceAll("-", "a"));
         if (primaryKeyId != null) addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);
         commit();

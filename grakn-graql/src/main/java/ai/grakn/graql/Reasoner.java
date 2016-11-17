@@ -84,7 +84,7 @@ public class Reasoner {
      */
     public void linkConceptTypes() {
         Set<Rule> rules = getRules(graph);
-        LOG.debug(rules.size() + " rules initialized...");
+        System.out.println(rules.size() + " rules initialized...");
         Set<Rule> linkedRules = new HashSet<>();
         rules.stream()
                 .filter(rule -> rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty())
@@ -99,7 +99,7 @@ public class Reasoner {
                 LOG.debug(e.getMessage());
             }
         }
-        LOG.debug(linkedRules.size() + " rules linked...");
+        System.out.println(linkedRules.size() + " rules linked...");
     }
 
     private void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
@@ -190,7 +190,7 @@ public class Reasoner {
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
         boolean queryVisited = matAnswers.containsKey(atomicQuery);
 
-        if(queryAdmissible) {
+         if(queryAdmissible) {
             if (!queryVisited){
                 atomicQuery.DBlookup();
                 recordAnswers(atomicQuery, matAnswers);
@@ -226,7 +226,7 @@ public class Reasoner {
                                         .filterVars(atomicQuery.getSelectedNames());
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource()
-                        || atom.isRelation() && atom.isUserDefinedName())
+                        || atom.isUserDefinedName() && atom.isRelation() )
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
                 if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
 
@@ -265,7 +265,7 @@ public class Reasoner {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
                 answer(atomicQuery, subGoals, matAnswers, materialise);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
+                System.out.println("Atom: " + atomicQuery.getAtom() + " iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();
