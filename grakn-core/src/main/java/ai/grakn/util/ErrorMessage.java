@@ -50,7 +50,6 @@ public enum ErrorMessage {
     CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     UNSUPPORTED_GRAPH("The graph backend of [%s] does not support an [%s] operation."),
-    CANNOT_SUBCLASS_META("The Meta Concept [%s] cannot be a super type of [%s]."),
     RESOURCE_TYPE_UNIQUE("The resource [%s] is unique and is already attached to [%s]."),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
 

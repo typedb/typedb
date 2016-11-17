@@ -25,7 +25,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -242,11 +241,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself
      */
     public T superType(T type) {
+        ((TypeImpl) type).checkTypeMutation();
         checkTypeMutation();
-        if(Schema.MetaSchema.isMetaId(type.getId()) && !Schema.MetaSchema.isMetaId(getId())){
-            throw new InvalidConceptTypeException(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(type.getId(), getId()));
-        }
-
 
         //Track any existing data if there is some
         Type currentSuperType = superType();
