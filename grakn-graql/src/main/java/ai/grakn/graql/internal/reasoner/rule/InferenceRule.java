@@ -84,10 +84,14 @@ public class InferenceRule {
                     .filter(type -> !body.containsEquivalentAtom(type))
                     .collect(Collectors.toSet());
             Set<Predicate> predicates = new HashSet<>();
+            //predicates obtained from binaries
             types.stream().map(type -> (Binary) type)
                     .filter(type -> type.getPredicate() != null)
                     .map(Binary::getPredicate)
                     .forEach(predicates::add);
+            //direct predicates
+            predicates.addAll(parentAtom.getIdPredicates());
+
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);
             head.addAtomConstraints(types);
