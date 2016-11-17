@@ -140,11 +140,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             ruleType.setType(type.getId());
             entityType.setType(type.getId());
 
-            relationType.superType(type);
-            roleType.superType(type);
-            resourceType.superType(type);
-            ruleType.superType(type);
-            entityType.superType(type);
+            relationType.putEdge(type, Schema.EdgeLabel.SUB);
+            roleType.putEdge(type, Schema.EdgeLabel.SUB);
+            resourceType.putEdge(type, Schema.EdgeLabel.SUB);
+            ruleType.putEdge(type, Schema.EdgeLabel.SUB);
+            entityType.putEdge(type, Schema.EdgeLabel.SUB);
 
             return true;
         }

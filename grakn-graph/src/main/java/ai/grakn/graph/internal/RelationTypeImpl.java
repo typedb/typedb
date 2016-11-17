@@ -67,7 +67,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType hasRole(RoleType roleType) {
-        getGraknGraph().checkOntologyMutation();
+        checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
         return this;
     }

@@ -242,10 +242,11 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself
      */
     public T superType(T type) {
+        checkTypeMutation();
         if(Schema.MetaSchema.isMetaId(type.getId()) && !Schema.MetaSchema.isMetaId(getId())){
             throw new InvalidConceptTypeException(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(type.getId(), getId()));
         }
-        getGraknGraph().checkOntologyMutation();
+
 
         //Track any existing data if there is some
         Type currentSuperType = superType();
@@ -271,8 +272,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself.
      */
     public T playsRole(RoleType roleType) {
-        getGraknGraph().checkOntologyMutation();
-        checkMetaType();
+        checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
         return getThis();
     }
@@ -310,7 +310,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        checkMetaType();
+        checkTypeMutation();
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract)
             getGraknGraph().getConceptLog().putConcept(this);
@@ -318,9 +318,12 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     }
 
     /**
-     * Checks if we are mutating a met type
+     * Checks if we are mutating a type in a valid way. Type mutations are valid if:
+     * 1. The type is not a meta-type
+     * 2. The graph is not batch loading
      */
-    private void checkMetaType(){
+    protected void checkTypeMutation(){
+        getGraknGraph().checkOntologyMutation();
         for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
             if(metaSchema.getId().equals(getId())){
                 throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getId()));
