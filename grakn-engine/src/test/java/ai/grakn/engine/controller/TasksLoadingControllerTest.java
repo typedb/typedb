@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
+import ai.grakn.engine.loader.LoaderTask;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.graql.Graql;
@@ -78,7 +79,7 @@ public class TasksLoadingControllerTest extends GraknEngineTestBase {
         String nametags = readFileAsString("small_nametags.gql");
 
         String response = given()
-                .parameter(CLASS_NAME_PARAMETER, "ai.grakn.engine.loader.LoaderTask")
+                .parameter(CLASS_NAME_PARAMETER, LoaderTask.class.getName())
                 .parameter(CREATOR_PARAMETER, keyspace)
                 .parameter(RUN_AT_PARAMETER, new Date().getTime())
                 .parameter(CONFIGURATION_PARAMETER, getConfiguration(nametags))

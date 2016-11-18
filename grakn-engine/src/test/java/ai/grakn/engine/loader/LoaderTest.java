@@ -82,6 +82,20 @@ public class LoaderTest extends GraknEngineTestBase {
     }
 
     @Test
+    public void loadWithSmallQueueSizeToBlockTest(){
+        loader.setQueueSize(1);
+        loadOntology("dblp-ontology.gql", keyspace);
+
+        String nametags = readFileAsString("small_nametags.gql");
+        loadAndTime(nametags);
+
+        Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
+
+        assertEquals(nameTags.size(), 100);
+        assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+    }
+
+    @Test
     public void stopLoadingTaskExpectException(){
         assertTrue(false);
     }

@@ -70,6 +70,7 @@ public class REST {
             public static final String OFFSET = "offset";
 
             public static class Loader {
+                public static final String BLOCK = "block";
                 public static final String INSERTS = "inserts";
                 public static final String KEYSPACE = "keyspace";
             }

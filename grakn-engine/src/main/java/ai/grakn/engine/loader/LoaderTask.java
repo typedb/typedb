@@ -42,6 +42,7 @@ import static ai.grakn.engine.util.ConfigProperties.LOADER_REPEAT_COMMITS;
 
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
+import static ai.grakn.util.REST.Request.Task.Loader.BLOCK;
 import static ai.grakn.util.REST.Request.Task.Loader.INSERTS;
 import static ai.grakn.util.REST.Request.Task.Loader.KEYSPACE;
 
@@ -61,7 +62,8 @@ public class LoaderTask implements BackgroundTask {
     public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
         attemptInsertions(
                 getKeyspace(configuration),
-                getInserts(configuration));
+                getInserts(configuration),
+                getReleaseSemaphore(configuration));
     }
 
     @Override
@@ -79,9 +81,8 @@ public class LoaderTask implements BackgroundTask {
         throw new UnsupportedOperationException("Loader task cannot be resumed");
     }
 
-    private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts) {
-        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
-        try {
+    private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts, boolean releaseSemaphore) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
             for (int i = 0; i < repeatCommits; i++) {
                 if(insertQueriesInOneTransaction(graph, inserts)){
                     return;
@@ -90,11 +91,8 @@ public class LoaderTask implements BackgroundTask {
 
             throwException("Could not insert");
         } finally {
-            graph.close();
-            try {
-                ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
-            } catch (Exception e) {
-                e.printStackTrace();
+            if(releaseSemaphore == true){
+                Loader.blocker.release();
             }
         }
     }
@@ -191,5 +189,13 @@ public class LoaderTask implements BackgroundTask {
 
         //TODO default graph name
         throw new IllegalArgumentException(ILLEGAL_ARGUMENT_EXCEPTION.getMessage("No keyspace", configuration));
+    }
+
+    private boolean getReleaseSemaphore(JSONObject configuration){
+        if(configuration.has(BLOCK)){
+            return configuration.getBoolean(BLOCK);
+        }
+
+        return false;
     }
 }

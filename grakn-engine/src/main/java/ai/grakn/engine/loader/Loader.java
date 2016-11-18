@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.concurrent.Semaphore;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
@@ -38,6 +39,7 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 
+import static ai.grakn.util.REST.Request.Task.Loader.BLOCK;
 import static ai.grakn.util.REST.Request.Task.Loader.INSERTS;
 import static ai.grakn.util.REST.Request.Task.Loader.KEYSPACE;
 
@@ -49,12 +51,15 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Loader {
 
+    public static Semaphore blocker = new Semaphore(25);
+
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
     private static final TaskManager manager = InMemoryTaskManager.getInstance();
     private static final TaskStateStorage storage = manager.storage();
 
-    private Collection<InsertQuery> queries;
     private int batchSize;
+
+    private Collection<InsertQuery> queries;
     private String keyspace;
 
     public Loader(String keyspace){
@@ -75,6 +80,15 @@ public class Loader {
      */
     public Loader setBatchSize(int size){
         this.batchSize = size;
+        return this;
+    }
+
+    /**
+     * Set the size of the queue- this is equivalent to the size of the semaphore.
+     * @param size the size of the queue
+     */
+    public Loader setQueueSize(int size){
+        blocker = new Semaphore(size);
         return this;
     }
 
@@ -104,8 +118,13 @@ public class Loader {
      * Method to load data into the graph. Implementation depends on the type of the loader.
      */
     public void sendQueriesToLoader(Collection<InsertQuery> batch){
+        try {
+            blocker.acquire();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
         manager.scheduleTask(new LoaderTask(), keyspace, new Date(), 0, getConfiguration(batch));
-        printLoaderState();
     }
 
     /**
@@ -120,6 +139,8 @@ public class Loader {
      * @param timeout amount of time (in ms) to wait.
      */
     public void waitToFinish(int timeout){
+        flush();
+
         final long initial = new Date().getTime();
         Collection<String> currentTasks = getTasks();
         while ((new Date().getTime())-initial < timeout) {
@@ -188,6 +209,7 @@ public class Loader {
      */
     private JSONObject getConfiguration(Collection<InsertQuery> queries){
         JSONObject json = new JSONObject();
+        json.put(BLOCK, true);
         json.put(KEYSPACE, keyspace);
         json.put(INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()));
         return json;
