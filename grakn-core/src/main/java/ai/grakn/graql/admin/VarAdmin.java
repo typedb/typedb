@@ -81,11 +81,6 @@ public interface VarAdmin extends PatternAdmin, Var {
     <T extends VarProperty> boolean hasProperty(Class<T> type);
 
     /**
-     * @return the type of this variable, if it has one specified
-     */
-    Optional<VarAdmin> getType();
-
-    /**
      * @return the ID this variable represents, if it represents something with a specific ID
      */
     Optional<String> getId();

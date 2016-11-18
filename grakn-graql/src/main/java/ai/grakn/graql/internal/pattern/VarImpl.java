@@ -271,11 +271,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Optional<VarAdmin> getType() {
-        return getProperty(IsaProperty.class).map(IsaProperty::getType);
-    }
-
-    @Override
     public boolean isUserDefinedName() {
         return userDefinedName;
     }

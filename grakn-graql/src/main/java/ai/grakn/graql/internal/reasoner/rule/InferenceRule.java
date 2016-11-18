@@ -25,6 +25,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -106,7 +107,7 @@ public class InferenceRule {
             Atomic childAtom = getRuleConclusionAtom();
             VarAdmin var = childAtom.getPattern().asVar();
             Var relVar = Graql.var(childAtom.getVarName());
-            if (var.getType().isPresent()) relVar.isa(var.getType().orElse(null));
+            var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
             // This is guaranteed to be a relation
             //noinspection OptionalGetWithoutIsPresent
             var.getProperty(RelationProperty.class).get().getRelationPlayers().forEach(c -> {

@@ -199,7 +199,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
-        Optional<String> maybeId = var.getType().flatMap(VarAdmin::getId);
+        Optional<String> maybeId = var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getId);
 
         maybeId.ifPresent(typeId -> {
             RelationType relationType = graph.getRelationType(typeId);
@@ -234,7 +234,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public void checkInsertable(VarAdmin var) throws IllegalStateException {
-        if (!var.getType().isPresent()) {
+        if (!var.hasProperty(IsaProperty.class)) {
             throw new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ISA.getMessage());
         }
     }

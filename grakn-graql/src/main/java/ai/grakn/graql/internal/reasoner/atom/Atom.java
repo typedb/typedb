@@ -24,6 +24,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
@@ -68,7 +69,7 @@ public abstract class Atom extends AtomBase {
             vTypeId = resource.getType();
         }
         else
-            vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");
+            vTypeId = var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getId).orElse("");
         return vTypeId;
     }
 

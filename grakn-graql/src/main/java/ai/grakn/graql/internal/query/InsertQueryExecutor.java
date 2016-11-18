@@ -27,6 +27,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
@@ -141,7 +142,7 @@ public class InsertQueryExecutor {
     private Concept addConcept(VarAdmin varToAdd) {
         VarAdmin var = mergeVar(varToAdd);
 
-        Optional<VarAdmin> typeVar = var.getType();
+        Optional<VarAdmin> typeVar = var.getProperty(IsaProperty.class).map(IsaProperty::getType);
         Optional<VarAdmin> subVar = getSub(var);
 
         if (typeVar.isPresent() && subVar.isPresent()) {
