@@ -35,6 +35,7 @@ public class LongRunningTask implements BackgroundTask {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException ignored) {
+                break;
             }
         }
     }

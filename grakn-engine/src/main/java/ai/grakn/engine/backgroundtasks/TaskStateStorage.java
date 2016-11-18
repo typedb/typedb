@@ -82,11 +82,5 @@ public interface TaskStateStorage {
      * @param createdBy String containing created by. See TaskState.
      * @return Set<Pair<String, TaskState> of task IDs and corresponding TaskState *copies*.
      */
-    Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy);
-
-
-    /**
-     * Clear all stored tasks.
-     */
-    void clear();
+    Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit);
 }

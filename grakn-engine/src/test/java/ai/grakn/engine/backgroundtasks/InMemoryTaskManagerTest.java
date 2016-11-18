@@ -21,7 +21,6 @@ package ai.grakn.engine.backgroundtasks;
 import ai.grakn.engine.GraknEngineTestBase;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -62,11 +61,10 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
             if (storage.getState(id).status() == COMPLETED)
                 break;
 
-            System.out.println("created: "+storage.getTasks(CREATED, null, null).size());
-            System.out.println("scheduled: "+storage.getTasks(SCHEDULED, null, null).size());
-            System.out.println("completed: "+storage.getTasks(COMPLETED, null, null).size());
-            System.out.println("running: "+storage.getTasks(RUNNING, null, null).size());
-
+            System.out.println("created: "+storage.getTasks(CREATED, null, null, 0).size());
+            System.out.println("scheduled: "+storage.getTasks(SCHEDULED, null, null,0 ).size());
+            System.out.println("completed: "+storage.getTasks(COMPLETED, null, null,0).size());
+            System.out.println("running: "+storage.getTasks(RUNNING, null, null,0 ).size());
 
             try {
                 Thread.sleep(100);
