@@ -37,7 +37,7 @@ public class AtomicFactory {
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var);
-        else if(var.getProperties(HasResourceProperty.class).findAny().isPresent())
+        else if(var.hasProperty(HasResourceProperty.class))
             return new Resource(var);
         else if (var.getId().isPresent())
             return new IdPredicate(var);
@@ -54,7 +54,7 @@ public class AtomicFactory {
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var,parent);
-        else if(var.getProperties(HasResourceProperty.class).findAny().isPresent())
+        else if(var.hasProperty(HasResourceProperty.class))
             return new Resource(var, parent);
         else if (var.getId().isPresent())
             return new IdPredicate(var, parent);

@@ -73,6 +73,14 @@ public interface VarAdmin extends PatternAdmin, Var {
     <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
 
     /**
+     * Get whether this {@link Var} has a {@link VarProperty} of the given type
+     * @param type the type of the {@link VarProperty}
+     * @param <T> the type of the {@link VarProperty}
+     * @return whether this {@link Var} has a {@link VarProperty} of the given type
+     */
+    <T extends VarProperty> boolean hasProperty(Class<T> type);
+
+    /**
      * @return the type of this variable, if it has one specified
      */
     Optional<VarAdmin> getType();

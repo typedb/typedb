@@ -60,7 +60,6 @@ import java.util.Stack;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -279,7 +278,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public boolean isRelation() {
-        return getProperty(RelationProperty.class).isPresent();
+        return hasProperty(RelationProperty.class);
     }
 
     @Override
@@ -330,6 +329,11 @@ class VarImpl implements VarAdmin {
     @Override
     public <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type) {
         return getProperties().filter(type::isInstance).map(type::cast).findAny();
+    }
+
+    @Override
+    public <T extends VarProperty> boolean hasProperty(Class<T> type) {
+        return getProperties(type).findAny().isPresent();
     }
 
     @Override
