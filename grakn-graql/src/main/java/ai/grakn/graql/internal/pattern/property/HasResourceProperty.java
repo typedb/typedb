@@ -37,18 +37,26 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.id;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.util.CommonUtil.tryAny;
+import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final String resourceType;
+    private final Optional<String> resourceType;
     private final VarAdmin resource;
 
+    public HasResourceProperty(VarAdmin resource) {
+        this.resourceType = Optional.empty();
+        this.resource = resource.isa(var().isa(Schema.MetaSchema.RESOURCE_TYPE.getId())).admin();
+    }
+
     public HasResourceProperty(String resourceType, VarAdmin resource) {
-        this.resourceType = resourceType;
+        this.resourceType = Optional.of(resourceType);
         this.resource = resource.isa(resourceType).admin();
     }
 
-    public String getType() {
+    public Optional<String> getType() {
         return resourceType;
     }
 
@@ -63,21 +71,21 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public String getProperty() {
-        String resourceRepr;
+        Stream.Builder<String> repr = Stream.builder();
         if (resource.isUserDefinedName()) {
-            resourceRepr = " " + resource.getPrintableName();
+            repr.add(resource.getPrintableName());
         } else {
-            resourceRepr = resource.getProperties(ValueProperty.class).findAny()
-                    .map(prop -> " " + prop.getPredicate()).orElse("");
+            resource.getProperties(ValueProperty.class).findAny()
+                    .ifPresent(prop -> repr.add(prop.getPredicate().toString()));
         }
-        return resourceType + resourceRepr;
+        return repr.build().collect(joining(" "));
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
-        Optional<String> hasResource = Optional.of(Schema.Resource.HAS_RESOURCE.getId(resourceType));
-        Optional<String> hasResourceOwner = Optional.of(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceType));
-        Optional<String> hasResourceValue = Optional.of(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceType));
+        Optional<String> hasResource = resourceType.map(Schema.Resource.HAS_RESOURCE::getId);
+        Optional<String> hasResourceOwner = resourceType.map(Schema.Resource.HAS_RESOURCE_OWNER::getId);
+        Optional<String> hasResourceValue = resourceType.map(Schema.Resource.HAS_RESOURCE_VALUE::getId);
 
         return Sets.newHashSet(EquivalentFragmentSet.create(
                 Fragments.shortcut(hasResource, hasResourceOwner, hasResourceValue, start, resource.getName()),
@@ -92,7 +100,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     void checkValidProperty(GraknGraph graph, VarAdmin var) {
-        if (graph.getResourceType(resourceType) == null) {
+        if (resourceType.isPresent() && graph.getResourceType(resourceType.get()) == null) {
             throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
         }
     }
@@ -110,14 +118,18 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
         resources(concept).stream()
-                .filter(r -> r.type().getId().equals(resourceType))
+                .filter(r -> resourceType.map(type -> r.type().getId().equals(type)).orElse(true))
                 .filter(r -> predicate.map(p -> p.getPredicate().test(r.getValue())).orElse(true))
                 .forEach(Concept::delete);
     }
 
     @Override
     public Stream<VarAdmin> getTypes() {
-        return Stream.of(id(resourceType).admin());
+        if (resourceType.isPresent()) {
+            return Stream.of(id(resourceType.get()).admin());
+        } else {
+            return Stream.empty();
+        }
     }
 
     /**

@@ -23,6 +23,7 @@ import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -33,7 +34,10 @@ import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import com.google.common.collect.Sets;
+
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -173,14 +177,18 @@ public class PropertyMapper {
     private static Set<Atomic> map(HasResourceProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
-        String type = prop.getType();
+        Optional<String> type = prop.getType();
 
         VarAdmin baseVar = prop.getResource();
         String valueVariable = baseVar.isUserDefinedName() ?
-                baseVar.getName() : varName + "-" + type + "-" + UUID.randomUUID().toString();
+                baseVar.getName() : varName + "-" + type.orElse("") + "-" + UUID.randomUUID().toString();
 
         //add resource atom
-        VarAdmin resVar = Graql.var(varName).has(type, Graql.var(valueVariable)).admin();
+        Var resource = Graql.var(valueVariable);
+        VarAdmin resVar = type
+                .map(t ->Graql.var(varName).has(t, resource))
+                .orElseGet(() -> Graql.var(varName).has(resource)).admin();
+
         atoms.add(AtomicFactory.create(resVar, parent));
 
         //add value atom
