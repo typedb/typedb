@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
-import com.google.common.collect.ImmutableCollection;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.InsertQuery;
@@ -30,6 +29,7 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -80,6 +80,11 @@ class InsertQueryImpl implements InsertQueryAdmin {
         ).orElseGet(
                 () -> Queries.insert(vars, Optional.of(graph))
         );
+    }
+
+    @Override
+    public InsertQuery infer() {
+        return matchQuery.map(m -> m.infer().insert(vars)).orElse(this);
     }
 
     @Override

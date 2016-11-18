@@ -20,7 +20,6 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Var;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -74,19 +73,17 @@ public interface VarAdmin extends PatternAdmin, Var {
     <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
 
     /**
-     * @return the type of this variable, if it has one specified
+     * Get whether this {@link Var} has a {@link VarProperty} of the given type
+     * @param type the type of the {@link VarProperty}
+     * @param <T> the type of the {@link VarProperty}
+     * @return whether this {@link Var} has a {@link VarProperty} of the given type
      */
-    Optional<VarAdmin> getType();
+    <T extends VarProperty> boolean hasProperty(Class<T> type);
 
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
      */
     Optional<String> getId();
-
-    /**
-     * @return if this var has only an ID set and no other properties, return that ID, else return nothing
-     */
-    Optional<String> getIdOnly();
 
     /**
      * @return all variables that this variable references
@@ -104,38 +101,8 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<String> getTypeIds();
 
     /**
-     * @return whether this variable represents a relation
-     */
-    boolean isRelation();
-
-    /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
      */
     String getPrintableName();
-
-    /**
-     * @return true if this variable has no properties set
-     */
-    boolean hasNoProperties();
-
-    /**
-     * @return all predicates on the value of this variable
-     */
-    Set<ValuePredicateAdmin> getValuePredicates();
-
-    /**
-     * @return the values that this variable must have
-     */
-    Set<?> getValueEqualsPredicates();
-
-    /**
-     * @return all predicates on resources of this variable (where the key is the resource type)
-     */
-    Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
-
-    /**
-     * @return all role types and role players described for this relation
-     */
-    Set<RelationPlayer> getRelationPlayers();
 
 }

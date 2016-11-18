@@ -19,17 +19,17 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.id;
-import static ai.grakn.graql.internal.util.CommonUtil.tryAny;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -68,7 +67,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         if (resource.isUserDefinedName()) {
             resourceRepr = " " + resource.getPrintableName();
         } else {
-            resourceRepr = tryAny(resource.getValuePredicates()).map(predicate -> " " + predicate).orElse("");
+            resourceRepr = resource.getProperties(ValueProperty.class).findAny()
+                    .map(prop -> " " + prop.getPredicate()).orElse("");
         }
         return resourceType + resourceRepr;
     }
@@ -106,7 +106,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        Optional<ValuePredicateAdmin> predicate = resource.getValuePredicates().stream().findAny();
+        Optional<ValuePredicateAdmin> predicate =
+                resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
         resources(concept).stream()
                 .filter(r -> r.type().getId().equals(resourceType))

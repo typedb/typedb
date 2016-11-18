@@ -157,8 +157,8 @@ public class PropertyMapper {
         atoms.add(AtomicFactory.create(resVar, parent));
 
         //add value atom
-        baseVar.getValuePredicates().forEach(pred -> {
-            VarAdmin resourceValueVar = Graql.var(valueVariable).value(pred).admin();
+        baseVar.getProperties(ValueProperty.class).forEach(valProp -> {
+            VarAdmin resourceValueVar = Graql.var(valueVariable).value(valProp.getPredicate()).admin();
             atoms.add(AtomicFactory.create(resourceValueVar, parent));
         });
         return atoms;

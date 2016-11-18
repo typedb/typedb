@@ -29,4 +29,6 @@ public interface AggregateQuery<T> extends Query<T> {
 
     @Override
     AggregateQuery<T> withGraph(GraknGraph graph);
+
+    AggregateQuery<T> infer();
 }

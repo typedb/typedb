@@ -195,26 +195,27 @@ public class GraqlShellTest {
 
     @Test
     public void testReasoner() throws IOException {
+        ByteArrayOutputStream berr = new ByteArrayOutputStream();
         String result = testShell(
                 "insert man isa entity-type; person isa entity-type;\n" +
-                        "insert 'felix' isa man;\n" +
+                        "insert isa man;\n" +
                         "match $x isa person;\n" +
-                        "insert my-rule isa inference-rule lhs {match $x isa man;} rhs {match $x isa person;};\n" +
-                        "match $x isa person;\n"
+                        "insert isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
+                        "match $x isa person;\n", berr
         );
 
         // Make sure first 'match' query has no results and second has exactly one result
         String[] results = result.split("\n");
         int matchCount = 0;
         for (int i = 0; i < results.length; i ++) {
-            if (results[i].contains(">>> match $x isa person")) {
+            if (results[i].contains(">>> match $x isa person;")) {
 
                 if (matchCount == 0) {
                     // First 'match' result is before rule is added, so should have no results
-                    assertFalse(results[i + 1].contains("felix"));
+                    assertFalse(results[i + 1].startsWith("$x"));
                 } else {
                     // Second 'match' result is after rule is added, so should have a result
-                    assertTrue(results[i + 1].contains("felix"));
+                    assertTrue(results[i + 1].startsWith("$x"));
                 }
 
                 matchCount ++;
