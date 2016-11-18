@@ -286,6 +286,13 @@ public class Reasoner {
         return answers.filterVars(query.getSelectedNames());
     }
 
+    public void precomputeInferences(){
+        getRules(graph).forEach(rl -> {
+            InferenceRule rule = new InferenceRule(rl, graph);
+            resolve(rule.getHead());
+        });
+    }
+
     /**
      * Resolve a given query using the rule base
      * @param inputQuery the query string to be expanded
