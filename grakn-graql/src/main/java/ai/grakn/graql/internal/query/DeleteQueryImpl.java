@@ -74,6 +74,11 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
+    public DeleteQuery infer() {
+        return new DeleteQueryImpl(deleters.values(), matchQuery.infer());
+    }
+
+    @Override
     public DeleteQueryAdmin admin() {
         return this;
     }
