@@ -19,24 +19,28 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
 import org.junit.Test;
 
 import java.util.Set;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -270,5 +274,21 @@ public class EntityTest extends GraphTestBase{
                 assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), roleType.getId());
             }
         });
+    }
+
+    @Test
+    public void testHasResourceWithNoSchema(){
+        EntityType entityType = graknGraph.putEntityType("A Thing");
+        ResourceType resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
+
+        Entity entity = entityType.addEntity();
+        Resource resource = resourceType.putResource("A resource thing");
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(entityType.getId(), resourceType.getId()))
+        ));
+
+        entity.hasResource(resource);
     }
 }

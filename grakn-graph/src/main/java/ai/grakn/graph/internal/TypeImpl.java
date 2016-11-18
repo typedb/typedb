@@ -25,7 +25,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -242,9 +241,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself
      */
     public T superType(T type) {
-        if(Schema.MetaSchema.isMetaId(type.getId()) && !Schema.MetaSchema.isMetaId(getId())){
-            throw new InvalidConceptTypeException(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(type.getId(), getId()));
-        }
+        ((TypeImpl) type).checkTypeMutation();
+        checkTypeMutation();
 
         //Track any existing data if there is some
         Type currentSuperType = superType();
@@ -270,7 +268,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself.
      */
     public T playsRole(RoleType roleType) {
-        checkMetaType();
+        checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
         return getThis();
     }
@@ -282,6 +280,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public T deletePlaysRole(RoleType roleType) {
+        checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
 
         //Add castings to tracking to make sure they can still be played.
@@ -308,14 +307,20 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        checkMetaType();
+        checkTypeMutation();
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract)
             getGraknGraph().getConceptLog().putConcept(this);
         return getThis();
     }
 
-    private void checkMetaType(){
+    /**
+     * Checks if we are mutating a type in a valid way. Type mutations are valid if:
+     * 1. The type is not a meta-type
+     * 2. The graph is not batch loading
+     */
+    protected void checkTypeMutation(){
+        getGraknGraph().checkOntologyMutation();
         for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
             if(metaSchema.getId().equals(getId())){
                 throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getId()));

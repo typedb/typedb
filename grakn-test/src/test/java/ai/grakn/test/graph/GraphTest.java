@@ -19,7 +19,7 @@ public class GraphTest extends AbstractRollbackGraphTest {
         graph.putEntityType(thing);
         graph.commit();
 
-        graph = factory.getGraphBatchLoading();
+        graph = factory.getGraph();
         assertNotNull(graph.getEntityType(thing));
 
         String related = "related";

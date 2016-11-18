@@ -18,12 +18,14 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
@@ -125,4 +127,145 @@ public class OntologyMutationTest extends GraphTestBase{
         graknGraph.commit();
     }
 
+    @Test
+    public void testAddingEntityTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putEntityType("This Will Fail");
+    }
+
+    @Test
+    public void testAddingRoleTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putRoleType("This Will Fail");
+    }
+
+    @Test
+    public void testAddingResourceTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putResourceType("This Will Fail", ResourceType.DataType.STRING);
+    }
+
+    @Test
+    public void testAddingRuleTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putRuleType("This Will Fail");
+    }
+
+    @Test
+    public void testAddingRelationTypeWhileBatchLoading(){
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        graknGraphBatch.putRelationType("This Will Fail");
+    }
+
+    @Test
+    public void testAddingHasRolesWhileBatchLoading(){
+        String roleTypeId = "role";
+        String relationTypeId = "relationtype";
+        graknGraph.putRoleType(roleTypeId);
+        graknGraph.putRelationType(relationTypeId);
+
+        RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
+        RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        relationType.hasRole(roleType);
+    }
+
+    @Test
+    public void testAddingPlaysRoleWhileBatchLoading(){
+        String roleTypeId = "role";
+        String entityTypeId = "entityType";
+        graknGraph.putRoleType(roleTypeId);
+        graknGraph.putEntityType(entityTypeId);
+
+        RoleType roleType = graknGraphBatch.getRoleType(roleTypeId);
+        EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        entityType.playsRole(roleType);
+    }
+
+    @Test
+    public void testAkoingWhileBatchLoading(){
+        String entityTypeId1 = "entityType1";
+        String entityTypeId2 = "entityType2";
+
+        graknGraph.putEntityType(entityTypeId1);
+        graknGraph.putEntityType(entityTypeId2);
+
+        EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
+        EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        entityType1.superType(entityType2);
+    }
+
+
+    @Test
+    public void testDeletingPlaysRoleWhileBatchLoading(){
+        String roleTypeId = "role";
+        String entityTypeId = "entityType";
+        RoleType roleType = graknGraph.putRoleType(roleTypeId);
+        graknGraph.putEntityType(entityTypeId).playsRole(roleType);
+
+        roleType = graknGraphBatch.getRoleType(roleTypeId);
+        EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        entityType.deletePlaysRole(roleType);
+    }
+
+    @Test
+    public void testDeletingHasRolesWhileBatchLoading(){
+        String roleTypeId = "role";
+        String relationTypeId = "relationtype";
+        RoleType roleType = graknGraph.putRoleType(roleTypeId);
+        graknGraph.putRelationType(relationTypeId).hasRole(roleType);
+
+        roleType = graknGraphBatch.getRoleType(roleTypeId);
+        RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.SCHEMA_LOCKED.getMessage())
+        ));
+
+        relationType.deleteHasRole(roleType);
+    }
 }

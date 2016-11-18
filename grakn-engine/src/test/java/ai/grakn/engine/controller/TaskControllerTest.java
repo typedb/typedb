@@ -18,11 +18,13 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.*;
-import com.jayway.restassured.http.ContentType;
 import ai.grakn.engine.GraknEngineTestBase;
+import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.backgroundtasks.LongRunningTask;
+import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TestTask;
+import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
-import org.hamcrest.Matchers;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -33,8 +35,12 @@ import java.util.Date;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
-import static com.jayway.restassured.RestAssured.*;
-import static org.hamcrest.Matchers.*;
+import static com.jayway.restassured.RestAssured.get;
+import static com.jayway.restassured.RestAssured.given;
+import static com.jayway.restassured.RestAssured.put;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 
 public class TaskControllerTest extends GraknEngineTestBase {
@@ -49,6 +55,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     }
 
     @Ignore
+    @Test
     public void testTasksByStatus() {
         System.out.println("testTasksByStatus");
         Response response = given().queryParam("status", COMPLETED.toString())
@@ -66,6 +73,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     }
 
     @Ignore
+    @Test
     public void testTasksByClassName() {
         System.out.println("testTasksByClassName");
         Response response = given().queryParam("className", TestTask.class.getName())
@@ -83,6 +91,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     }
 
     @Ignore
+    @Test
     public void testTasksByCreator() {
         System.out.println("testTasksByCreator");
        Response response = given().queryParam("creator", this.getClass().getName())
@@ -100,6 +109,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     }
 
     @Ignore
+    @Test
     public void testGetAllTasks() {
         System.out.println("testGetAllTasks");
         taskManager.storage().clear();
@@ -113,6 +123,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     }
 
     @Ignore
+    @Test
     public void testGetTask() throws Exception {
         System.out.println("testGetTask");
         get("/tasks/"+singleTask)
@@ -123,6 +134,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     }
 
     @Ignore
+    @Test
     public void testScheduleWithoutOptional() {
         System.out.println("testScheduleWithoutOptional");
         given().queryParam("className", TestTask.class.getName())
@@ -135,6 +147,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     }
 
     @Ignore
+    @Test
     public void testScheduleStopTask() {
         System.out.println("testScheduleStopTask");
         Response response = given().queryParam("className", LongRunningTask.class.getName())

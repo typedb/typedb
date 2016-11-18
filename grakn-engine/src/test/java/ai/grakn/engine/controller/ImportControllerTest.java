@@ -123,7 +123,7 @@ public class ImportControllerTest extends GraknEngineTestBase {
     }
 
     private void importOntology(String ontologyFile, String graphNameParam){
-        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphNameParam);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(graphNameParam);
 
         List<String> lines = null;
         try {

@@ -529,13 +529,23 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void testPutRelationSimple(){
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraphBatchLoading();
-
-        EntityType type = graph.putEntityType("Test");
+        //Load Ontology
+        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
+        graph.putEntityType("Test");
         RoleType actor = graph.putRoleType("Actor");
         RoleType actor2 = graph.putRoleType("Actor 2");
         RoleType actor3 = graph.putRoleType("Actor 3");
-        RelationType cast = graph.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
+        graph.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
+
+        //Fetch Ontology
+        graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
+        EntityType type = graph.getEntityType("Test");
+        actor = graph.getRoleType("Actor");
+        actor2 = graph.getRoleType("Actor 2");
+        actor3 = graph.getRoleType("Actor 3");
+        RelationType cast = graph.getRelationType("Cast");
+
         Instance pacino = type.addEntity();
         Instance thing = type.addEntity();
         Instance godfather = type.addEntity();

@@ -79,7 +79,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
-        this.batchLoadingEnabled = batchLoadingEnabled;
         elementFactory = new ElementFactory(this);
 
         if(initialiseMetaConcepts()) {
@@ -90,6 +89,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             }
         }
 
+        this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
     }
 
@@ -140,11 +140,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             ruleType.setType(type.getId());
             entityType.setType(type.getId());
 
-            relationType.superType(type);
-            roleType.superType(type);
-            resourceType.superType(type);
-            ruleType.superType(type);
-            entityType.superType(type);
+            relationType.putEdge(type, Schema.EdgeLabel.SUB);
+            roleType.putEdge(type, Schema.EdgeLabel.SUB);
+            resourceType.putEdge(type, Schema.EdgeLabel.SUB);
+            ruleType.putEdge(type, Schema.EdgeLabel.SUB);
+            entityType.putEdge(type, Schema.EdgeLabel.SUB);
 
             return true;
         }
@@ -152,7 +152,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return false;
     }
 
-    public boolean isMetaOntologyNotInitialised(){
+    private boolean isMetaOntologyNotInitialised(){
         return getMetaType() == null;
     }
 
@@ -226,6 +226,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return conceptLog;
     }
 
+    public void checkOntologyMutation(){
+        if(isBatchLoadingEnabled()){
+            throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
+        }
+    }
+
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     public Vertex addVertex(Schema.BaseType baseType){
@@ -257,6 +263,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     private TypeImpl putConceptType(String itemIdentifier, Schema.BaseType baseType, Type metaType) {
+        checkOntologyMutation();
         return elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType), metaType);
     }
     @Override
@@ -397,48 +404,44 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return validConceptOfType(getConcept(id), RuleTypeImpl.class);
     }
 
-    private Type getConceptType(String id){
-        return validConceptOfType(getConcept(id), TypeImpl.class);
-    }
-
     @Override
     public Type getMetaType() {
-        return getConceptType(Schema.MetaSchema.TYPE.getId());
+        return getType(Schema.MetaSchema.TYPE.getId());
     }
 
     @Override
     public Type getMetaRelationType() {
-        return getConceptType(Schema.MetaSchema.RELATION_TYPE.getId());
+        return getType(Schema.MetaSchema.RELATION_TYPE.getId());
     }
 
     @Override
     public Type getMetaRoleType() {
-        return getConceptType(Schema.MetaSchema.ROLE_TYPE.getId());
+        return getType(Schema.MetaSchema.ROLE_TYPE.getId());
     }
 
     @Override
     public Type getMetaResourceType() {
-        return getConceptType(Schema.MetaSchema.RESOURCE_TYPE.getId());
+        return getType(Schema.MetaSchema.RESOURCE_TYPE.getId());
     }
 
     @Override
     public Type getMetaEntityType() {
-        return getConceptType(Schema.MetaSchema.ENTITY_TYPE.getId());
+        return getType(Schema.MetaSchema.ENTITY_TYPE.getId());
     }
 
     @Override
     public Type getMetaRuleType(){
-        return getConceptType(Schema.MetaSchema.RULE_TYPE.getId());
+        return getType(Schema.MetaSchema.RULE_TYPE.getId());
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getConceptType(Schema.MetaSchema.INFERENCE_RULE.getId()).asRuleType();
+        return getType(Schema.MetaSchema.INFERENCE_RULE.getId()).asRuleType();
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getConceptType(Schema.MetaSchema.CONSTRAINT_RULE.getId()).asRuleType();
+        return getType(Schema.MetaSchema.CONSTRAINT_RULE.getId()).asRuleType();
     }
 
     //-----------------------------------------------Casting Functionality----------------------------------------------
@@ -604,7 +607,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
     }
     protected void closeGraphTransaction() throws Exception {
-        graph.close();
+        getTinkerPopGraph().close();
     }
 
     /**
