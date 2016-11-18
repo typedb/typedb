@@ -40,6 +40,10 @@ import ai.grakn.exception.GraknValidationException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Request;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -79,6 +83,20 @@ public class ClusteringTest extends AbstractGraphTest {
     String keyspace;
     Analytics computer;
 
+    public static void main(String[] argv) {
+        JUnitCore junit = new JUnitCore();
+        while (true) {
+            Result result = junit.run(Request.method(ClusteringTest.class, "testConnectedComponent"));
+            System.out.println("Failures " + result.getFailureCount());
+            if (result.getFailureCount() > 0) {
+                for (Failure failure : result.getFailures()) {
+                    failure.getException().printStackTrace();
+                }
+                break;
+            }
+        }
+    }
+
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
@@ -93,7 +111,7 @@ public class ClusteringTest extends AbstractGraphTest {
         logger.setLevel(Level.DEBUG);
     }
 
-    @Ignore //TODO: Stabalise this test. It fails way too often.
+    //    @Ignore //TODO: Stabalise this test. It fails way too often.
     @Test
     public void testConnectedComponent() throws Exception {
         // TODO: Fix in TinkerGraphComputer
@@ -388,7 +406,7 @@ public class ClusteringTest extends AbstractGraphTest {
                 .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
         relationType6.addRelation()
                 .putRolePlayer(resourceOwner6, entity4)
-                .putRolePlayer(resourceValue6,  graph.getResourceType(resourceType6).putResource(7.5));
+                .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
 
         // some resources in, but not connect them to any instances
         graph.getResourceType(resourceType1).putResource(2.8);
