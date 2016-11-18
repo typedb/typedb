@@ -290,7 +290,9 @@ public class InsertQueryExecutor {
             Object value = properties.next().getPredicate().equalsValue().get();
 
             if (properties.hasNext()) {
-                throw new IllegalStateException(ErrorMessage.INSERT_MULTIPLE_VALUES.getMessage(value, properties.next()));
+                throw new IllegalStateException(ErrorMessage.INSERT_MULTIPLE_VALUES.getMessage(
+                        value, properties.next().getPredicate())
+                );
             }
 
             return value;
