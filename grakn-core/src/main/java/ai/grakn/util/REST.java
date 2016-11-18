@@ -33,14 +33,8 @@ public class REST {
         public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
         public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
 
-
         public static final String COMMIT_LOG_URI = "/commit_log";
-
-        public static final String NEW_TRANSACTION_URI = "/transaction/new";
-        public static final String TRANSACTION_STATUS_URI = "/transaction/status/";
-        public static final String LOADER_STATE_URI = "/transaction/loaderState";
         public static final String GET_STATUS_CONFIG_URI = "/status/config";
-
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 

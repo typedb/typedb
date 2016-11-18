@@ -45,7 +45,7 @@ public class LoaderTest extends GraknEngineTestBase {
     @Before
     public void setup() {
         graph = GraphFactory.getInstance().getGraph(keyspace);
-        loader = new Loader(keyspace);
+        loader = new LoaderImpl(keyspace);
     }
 
     @After
@@ -93,21 +93,6 @@ public class LoaderTest extends GraknEngineTestBase {
 
         assertEquals(nameTags.size(), 100);
         assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
-    }
-
-    @Test
-    public void stopLoadingTaskExpectException(){
-        assertTrue(false);
-    }
-
-    @Test
-    public void noKeyspaceTest(){
-        assertTrue(false);
-    }
-
-    @Test
-    public void noInsertsTest(){
-        assertTrue(false);
     }
 
     private void loadAndTime(String toLoad){
