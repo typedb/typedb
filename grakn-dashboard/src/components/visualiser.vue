@@ -52,7 +52,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         </div>
                     </div>
                     <div class="col-xs-2">
-                      <button @click="loadOntology" class="btn btn-default console-button" id="ontology-button">Ontology</button>
+                      <button @click="loadOntology" class="btn btn-default console-button" id="ontology-button">Visualise</button>
                     </div>
                 </div>
                 <div class="tab-content">

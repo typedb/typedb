@@ -121,8 +121,8 @@ export default {
         },
 
         loadOntology() {
-          let query_isa="match $x isa type;";
-          let query_sub="match $x sub type;";
+          let query_isa="match $x isa "+API.TYPE_TYPE+";";
+          let query_sub="match $x sub "+API.TYPE_TYPE+";";
           engineClient.graqlHAL(query_isa, this.graphResponse);
           engineClient.graqlHAL(query_sub, this.graphResponse);
         },
@@ -193,11 +193,12 @@ export default {
 
             const eventKeys = param.event.srcEvent;
 
+            if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE)
+                visualiser.deleteNode(node);
+
             if (eventKeys.shiftKey)
                 visualiser.clearGraph();
-            if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
-                visualiser.deleteNode(node);
-            }
+
             engineClient.request({
                 url: node,
                 callback: this.graphResponse

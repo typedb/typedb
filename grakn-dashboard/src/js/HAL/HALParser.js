@@ -57,10 +57,12 @@ export default class HALParser {
             _.map(data, x => {
                 this.parseHalObject(x)
             });
+            return data.length;
+
         } else {
             this.parseHalObject(data);
+            return 1;
         }
-        return data.length;
     }
 
     parseHalObject(obj) {
