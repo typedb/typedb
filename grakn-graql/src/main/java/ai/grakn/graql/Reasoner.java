@@ -290,7 +290,7 @@ public class Reasoner {
     public void precomputeInferences(){
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
-            resolve(rule.getHead());
+            resolve(rule.getHead(), true);
         });
     }
 
