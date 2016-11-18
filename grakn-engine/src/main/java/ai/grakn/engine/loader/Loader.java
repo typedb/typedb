@@ -37,10 +37,15 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
+
+import static ai.grakn.util.REST.Request.Task.Loader.INSERTS;
+import static ai.grakn.util.REST.Request.Task.Loader.KEYSPACE;
+
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Loader to manage Loading tasks in the Task Manager
+ * Manage loading tasks in the Task Manager
  */
 public class Loader {
 
@@ -99,7 +104,7 @@ public class Loader {
      * Method to load data into the graph. Implementation depends on the type of the loader.
      */
     public void sendQueriesToLoader(Collection<InsertQuery> batch){
-        manager.scheduleTask(new LoaderTask(batch, keyspace), keyspace, new Date(), 0, new JSONObject());
+        manager.scheduleTask(new LoaderTask(), keyspace, new Date(), 0, getConfiguration(batch));
         printLoaderState();
     }
 
@@ -133,7 +138,7 @@ public class Loader {
     }
 
     /**
-     * Method that logs the current state of loading transactions
+     * Method that logs the current state of loading tasks
      */
     public void printLoaderState(){
         LOG.info(new JSONObject()
@@ -174,5 +179,17 @@ public class Loader {
     private boolean isCompleted(String taskID){
         TaskStatus status = storage.getState(taskID).status();
         return status == COMPLETED || status == FAILED;
+    }
+
+    /**
+     * Transform queries into Json configuration needed by the Loader task
+     * @param queries queries to include in configuration
+     * @return configuration for the loader task
+     */
+    private JSONObject getConfiguration(Collection<InsertQuery> queries){
+        JSONObject json = new JSONObject();
+        json.put(KEYSPACE, keyspace);
+        json.put(INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()));
+        return json;
     }
 }
