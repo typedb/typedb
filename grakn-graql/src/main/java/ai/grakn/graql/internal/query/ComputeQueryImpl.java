@@ -162,4 +162,9 @@ class ComputeQueryImpl implements ComputeQuery {
     public ComputeQuery withGraph(GraknGraph graph) {
         return new ComputeQueryImpl(Optional.of(graph), computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
+
+    @Override
+    public ComputeQuery infer() {
+        return this;
+    }
 }

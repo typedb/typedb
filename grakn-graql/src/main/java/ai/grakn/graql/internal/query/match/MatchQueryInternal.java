@@ -111,6 +111,11 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
     }
 
     @Override
+    default MatchQuery infer() {
+        return new MatchQueryInfer(this);
+    }
+
+    @Override
     default <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }

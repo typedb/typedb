@@ -22,8 +22,9 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
@@ -32,6 +33,7 @@ import javafx.util.Pair;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -59,15 +61,15 @@ public abstract class Atom extends AtomBase {
 
     private String extractTypeId(VarAdmin var) {
         String vTypeId;
-        Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
-        if (resourceMap.size() != 0) {
-            if (resourceMap.size() != 1)
+        Iterator<HasResourceProperty> resources = var.getProperties(HasResourceProperty.class).iterator();
+        if (resources.hasNext()) {
+            HasResourceProperty resource = resources.next();
+            if (resources.hasNext())
                 throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
-            Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
-            vTypeId = entry.getKey().getId().orElse("");
+            vTypeId = resource.getType();
         }
         else
-            vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");
+            vTypeId = var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getId).orElse("");
         return vTypeId;
     }
 

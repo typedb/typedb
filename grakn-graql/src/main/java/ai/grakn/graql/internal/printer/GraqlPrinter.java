@@ -18,24 +18,24 @@
 
 package ai.grakn.graql.internal.printer;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.query.match.MatchQueryInternal;
 import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.graql.internal.util.StringConverter;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.query.match.MatchQueryInternal.colorKeyword;
 import static ai.grakn.graql.internal.query.match.MatchQueryInternal.colorType;
+import static ai.grakn.graql.internal.util.StringConverter.escapeString;
+import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
 /**
  * Default printer that prints results in Graql syntax
@@ -53,16 +53,26 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display values for resources and ids for everything else
             if (concept.isResource()) {
                 sb.append(MatchQueryInternal.colorKeyword("value "));
-                sb.append(StringConverter.valueToString(concept.asResource().getValue()));
+                sb.append(valueToString(concept.asResource().getValue()));
             } else {
                 sb.append(MatchQueryInternal.colorKeyword("id "));
-                sb.append("\"").append(StringConverter.escapeString(concept.getId())).append("\"");
+                sb.append("\"").append(escapeString(concept.getId())).append("\"");
+            }
+
+            if (concept.isRelation()) {
+                String relationString = concept.asRelation().rolePlayers().entrySet().stream().map(entry -> {
+                    RoleType roleType = entry.getKey();
+                    Instance rolePlayer = entry.getValue();
+                    return colorType(idToString(roleType.getId())) + ": " + idToString(rolePlayer.getId());
+                }).collect(Collectors.joining(", "));
+
+                sb.append(" (").append(relationString).append(")");
             }
 
             // Display type of each concept
             Type type = concept.type();
             if (type != null) {
-                sb.append(MatchQueryInternal.colorKeyword(" isa ")).append(MatchQueryInternal.colorType(StringConverter.idToString(type.getId())));
+                sb.append(MatchQueryInternal.colorKeyword(" isa ")).append(colorType(idToString(type.getId())));
             }
 
             // Display lhs and rhs for rules

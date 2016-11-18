@@ -27,4 +27,6 @@ public interface ComputeQuery extends Query<Object> {
 
     @Override
     ComputeQuery withGraph(GraknGraph graph);
+
+    ComputeQuery infer();
 }

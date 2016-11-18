@@ -168,9 +168,9 @@ public class VisualiserController {
         final Map<String, Collection<String>> linkedNodes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             //if in the current var is expressed some kind of relation (e.g. ($x,$y))
-            if (var.getProperty(RelationProperty.class).isPresent()) {
+            var.getProperty(RelationProperty.class).ifPresent(relationProperty -> {
                 //collect all the role players in the current var's relations (e.g. 'x' and 'y')
-                final List<String> rolePlayersInVar = var.getProperty(RelationProperty.class).get()
+                final List<String> rolePlayersInVar = relationProperty
                         .getRelationPlayers().map(x -> x.getRolePlayer().getName()).collect(Collectors.toList());
                 //if it is a binary or ternary relation
                 if (rolePlayersInVar.size() > 1) {
@@ -182,7 +182,7 @@ public class VisualiserController {
                         });
                     });
                 }
-            }
+            });
         });
         return linkedNodes;
     }

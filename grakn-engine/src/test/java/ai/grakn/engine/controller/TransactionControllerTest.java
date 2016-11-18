@@ -38,12 +38,12 @@ import static org.junit.Assert.assertTrue;
 
 public class TransactionControllerTest extends GraknEngineTestBase {
 
-    private String graphName;
+    private String keyspace;
 
     @Before
     public void setUp() throws Exception {
-        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
+        keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
         graph.putEntityType("Man");
         graph.commit();
     }
@@ -52,7 +52,7 @@ public class TransactionControllerTest extends GraknEngineTestBase {
     public void insertValidQuery() {
         Json exampleInsertQuery = Json.array("insert $x isa Man;");
         String transactionUUID = given().body(exampleInsertQuery.toString()).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?keyspace=grakntest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 5 && !status.equals("FINISHED")) {
@@ -65,14 +65,14 @@ public class TransactionControllerTest extends GraknEngineTestBase {
             }
         }
 
-        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getEntityType("Man").instances().iterator().next());
+        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(keyspace).getEntityType("Man").instances().iterator().next());
     }
 
     @Test
     public void insertInvalidQuery() {
         Json exampleInvalidInsertQuery = Json.array("insert id ?Cdcs;w4. '' ervalue;");
         String transactionUUID = given().body(exampleInvalidInsertQuery.toString()).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?keyspace=grakntest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 10 && !status.equals("ERROR")) {
@@ -92,7 +92,7 @@ public class TransactionControllerTest extends GraknEngineTestBase {
     public void checkLoaderStateTest() {
         String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
         given().body(exampleInvalidInsertQuery).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?keyspace=grakntest").body().asString();
         JSONObject resultObj = new JSONObject(get(REST.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
         assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
         assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
@@ -103,6 +103,6 @@ public class TransactionControllerTest extends GraknEngineTestBase {
 
     @After
     public void cleanGraph() {
-        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+        GraphFactory.getInstance().getGraphBatchLoading(keyspace).clear();
     }
 }
