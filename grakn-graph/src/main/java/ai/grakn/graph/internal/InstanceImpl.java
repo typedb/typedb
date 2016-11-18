@@ -26,6 +26,8 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -151,9 +153,13 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Relation hasResource(Resource resource){
         ResourceType type = resource.type();
 
-        RelationType hasResource = getGraknGraph().putRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = getGraknGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
+        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
+
+        if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
+            throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getId(), resource.type().getId()));
+        }
 
         Relation relation = hasResource.addRelation();
         relation.putRolePlayer(hasResourceTarget, this);

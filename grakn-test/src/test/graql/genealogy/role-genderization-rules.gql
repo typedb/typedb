@@ -1,0 +1,112 @@
+insert
+
+# TODO: materializing the relationships would make this much cleaner (genderized role would be added to the same relationship)
+
+isa inference-rule
+lhs
+{(grandparent: $x) isa grandparentship;
+$x has gender "female";
+}
+rhs
+{(grandmother: $x) isa grandparentship;};
+
+isa inference-rule
+lhs
+{(grandparent: $x) isa grandparentship;
+$x has gender "male";
+}
+rhs
+{(grandfather: $x) isa grandparentship;};
+
+isa inference-rule
+lhs
+{(grandchild: $x) isa grandparentship;
+$x has gender "male";
+}
+rhs
+{(grandson: $x) isa grandparentship;};
+
+isa inference-rule
+lhs
+{(grandchild: $x) isa grandparentship;
+$x has gender "female";
+}
+rhs
+{(granddaughter: $x) isa grandparentship;};
+
+isa inference-rule
+lhs
+{(parent: $x) isa parentship;
+$x has gender "female";
+}
+rhs
+{(mother: $x) isa parentship;};
+
+isa inference-rule
+lhs
+{(parent: $x, $y) isa parentship;
+$x has gender "male";
+}
+rhs
+{(father: $x, $y) isa parentship;};
+
+isa inference-rule
+lhs
+{(child: $x) isa parentship;
+$x has gender "female";
+}
+rhs
+{(daughter: $x) isa parentship;};
+
+isa inference-rule
+lhs
+{(child: $x) isa parentship;
+$x has gender "male";
+}
+rhs
+{(son: $x) isa parentship;};
+
+isa inference-rule
+lhs
+{($role: $x) isa marriage; $role sub generic-spouse; $x has gender "female";}
+rhs
+{(wife: $x) isa marriage;};
+
+isa inference-rule
+lhs
+{($role: $x) isa marriage; $role sub generic-spouse; $x has gender "male";}
+rhs
+{(husband: $x) isa marriage;};
+
+# TODO: Genderize in-laws
+isa inference-rule
+lhs
+{(parent-in-law: $x) isa in-laws;
+$x has gender "male";
+}
+rhs
+{(father-in-law: $x) isa in-laws;};
+
+isa inference-rule
+lhs
+{(parent-in-law: $x) isa in-laws;
+$x has gender "female";
+}
+rhs
+{(mother-in-law: $x) isa in-laws;};
+
+isa inference-rule
+lhs
+{(child-in-law: $x) isa in-laws;
+$x has gender "male";
+}
+rhs
+{(son-in-law: $x) isa in-laws;};
+
+isa inference-rule
+lhs
+{(child-in-law: $x) isa in-laws;
+$x has gender "female";
+}
+rhs
+{(daughter-in-law: $x) isa in-laws;};

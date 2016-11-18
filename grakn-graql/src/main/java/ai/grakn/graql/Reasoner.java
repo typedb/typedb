@@ -172,7 +172,7 @@ public class Reasoner {
                     subs = subs.join(localSubs);
                 }
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
-                        .filterVars(atomicQuery.getSelectedNames());
+                        .filterVars(ruleHead.getSelectedNames());
                 QueryAnswers newAnswers = new QueryAnswers();
                 newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
                 if (!newAnswers.isEmpty()) answers = newAnswers;
@@ -190,7 +190,7 @@ public class Reasoner {
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
         boolean queryVisited = matAnswers.containsKey(atomicQuery);
 
-        if(queryAdmissible) {
+         if(queryAdmissible) {
             if (!queryVisited){
                 atomicQuery.DBlookup();
                 recordAnswers(atomicQuery, matAnswers);
@@ -226,7 +226,7 @@ public class Reasoner {
                                         .filterVars(atomicQuery.getSelectedNames());
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource()
-                        || atom.isRelation() && atom.isUserDefinedName())
+                        || atom.isUserDefinedName() && atom.isRelation() )
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
                 if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
 

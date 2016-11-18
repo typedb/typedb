@@ -120,11 +120,11 @@ public class MovieGraphFactory {
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
                 .playsRole(productionWithGenre);
 
-        hasResource(production, title);
-        hasResource(production, tmdbVoteCount);
-        hasResource(production, tmdbVoteAverage);
-        hasResource(production, releaseDate);
-        hasResource(production, runtime);
+        production.hasResource(title);
+        production.hasResource(tmdbVoteCount);
+        production.hasResource(tmdbVoteAverage);
+        production.hasResource(releaseDate);
+        production.hasResource(runtime);
 
         movie = graknGraph.putEntityType("movie").superType(production);
 
@@ -133,26 +133,26 @@ public class MovieGraphFactory {
         person = graknGraph.putEntityType("person")
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
-        hasResource(person, gender);
-        hasResource(person, name);
-        hasResource(person, realName);
+        person.hasResource(gender);
+        person.hasResource(name);
+        person.hasResource(realName);
 
         genre = graknGraph.putEntityType("genre").playsRole(genreOfProduction);
 
-        hasResource(genre, name);
+        genre.hasResource(name);
 
         character = graknGraph.putEntityType("character")
                 .playsRole(characterBeingPlayed);
 
-        hasResource(character, name);
+        character.hasResource(name);
 
         graknGraph.putEntityType("award");
         language = graknGraph.putEntityType("language");
 
-        hasResource(language, name);
+        language.hasResource(name);
 
         cluster = graknGraph.putEntityType("cluster").playsRole(clusterOfProduction);
-        hasResource(cluster, name);
+        cluster.hasResource(name);
     }
 
     private static void buildInstances() throws ParseException {
@@ -304,7 +304,7 @@ public class MovieGraphFactory {
     private static void buildRules() {
         // These rules are totally made up for testing purposes and don't work!
         RuleType aRuleType = graknGraph.putRuleType("a-rule-type");
-        hasResource(aRuleType, name);
+        aRuleType.hasResource(name);
 
         Pattern lhs = graknGraph.graql().parsePattern("$x id 'expect-lhs'");
         Pattern rhs = graknGraph.graql().parsePattern("$x id 'expect-rhs'");
@@ -322,15 +322,6 @@ public class MovieGraphFactory {
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
 
         putResource(materialize, name, "materialize-rule");
-    }
-
-    private static void hasResource(Type type, ResourceType<?> resourceType) {
-        RoleType owner = graknGraph.putRoleType("has-" + resourceType.getId() + "-owner");
-        RoleType value = graknGraph.putRoleType("has-" + resourceType.getId() + "-value");
-        graknGraph.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);
-
-        type.playsRole(owner);
-        resourceType.playsRole(value);
     }
 
     private static <D> void putResource(Instance instance, ResourceType<D> resourceType, D resource) {

@@ -18,20 +18,19 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.RuleType;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -143,9 +142,9 @@ public class TypeTest extends GraphTestBase{
         RuleType metaType = graknGraph.getMetaRuleInference();
         RuleType superType = graknGraph.putRuleType("An Entity Type");
 
-        expectedException.expect(InvalidConceptTypeException.class);
+        expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(metaType.getId(), superType.getId()))
+                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaType.getId()))
         ));
 
         superType.superType(metaType);

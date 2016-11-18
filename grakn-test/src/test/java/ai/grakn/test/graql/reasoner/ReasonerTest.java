@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 

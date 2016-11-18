@@ -84,4 +84,15 @@ public class GraphFactoryControllerTest extends GraknEngineTestBase {
 
     }
 
+    @Test
+    public void testGraphSingleton(){
+        String keyspace = "grakntest";
+        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
+
+        assertNotEquals(graphNormal, graphBatch);
+        //This is only true for tinkergraph
+        assertEquals(graphNormal.getTinkerPopGraph(), graphBatch.getTinkerPopGraph());
+    }
+
 }

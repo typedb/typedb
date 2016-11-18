@@ -84,10 +84,15 @@ public class InferenceRule {
                     .filter(type -> !body.containsEquivalentAtom(type))
                     .collect(Collectors.toSet());
             Set<Predicate> predicates = new HashSet<>();
+            //predicates obtained from types
             types.stream().map(type -> (Binary) type)
                     .filter(type -> type.getPredicate() != null)
                     .map(Binary::getPredicate)
                     .forEach(predicates::add);
+            //direct predicates
+            predicates.addAll(parentAtom.getIdPredicates());
+            predicates.addAll(parentAtom.getValuePredicates());
+
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);
             head.addAtomConstraints(types);
@@ -96,7 +101,7 @@ public class InferenceRule {
     }
 
     private void rewriteHead(Atom parentAtom){
-        if(parentAtom.isRelation() && parentAtom.isUserDefinedName()){
+        if(parentAtom.isUserDefinedName() && parentAtom.isRelation() ){
             Atomic childAtom = getRuleConclusionAtom();
             VarAdmin var = childAtom.getPattern().asVar();
             Var relVar = Graql.var(childAtom.getVarName());
