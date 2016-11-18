@@ -411,7 +411,7 @@ public class Relation extends Atom {
         Set<String> childBVs = getRolePlayers();
         Map<String, String> unifiers = new HashMap<>();
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
-        Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
+        Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
 
         //find child->parent var mappings based on roles
         childBVs.forEach(chVar -> {
