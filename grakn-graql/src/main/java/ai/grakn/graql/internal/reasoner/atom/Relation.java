@@ -358,7 +358,7 @@ public class Relation extends Atom {
         //remove sub and super roles of allocated roles
         allocatedRoles.forEach(role -> {
             rolesToAllocate.removeAll(role.subTypes());
-            rolesToAllocate.remove(role.superType());
+            if (role.superType() != null) rolesToAllocate.remove(role.superType());
             rolesToAllocate.remove(role);
         });
         varsToAllocate.removeAll(allocatedVars);
