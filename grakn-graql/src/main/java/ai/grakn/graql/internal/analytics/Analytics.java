@@ -295,6 +295,7 @@ public class Analytics {
     public List<String> shortestPath(String sourceId, String destinationId) {
         if (!verticesExistInSubgraph(sourceId, destinationId))
             throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
+        if (sourceId.equals(destinationId)) return Collections.singletonList(sourceId);
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypes, sourceId, destinationId),
                 new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.FOUND_IN_ITERATION));

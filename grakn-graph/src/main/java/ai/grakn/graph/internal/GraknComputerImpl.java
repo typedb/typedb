@@ -45,7 +45,7 @@ public class GraknComputerImpl implements GraknComputer {
                 graphComputer = graphComputer.mapReduce(mapReduce);
             return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            throw asRuntimeException(e);
         }
     }
 
@@ -54,7 +54,16 @@ public class GraknComputerImpl implements GraknComputer {
         try {
             return getComputer().mapReduce(mapReduce).submit().get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            throw asRuntimeException(e);
+        }
+    }
+
+    private RuntimeException asRuntimeException(Throwable throwable) {
+        Throwable cause = throwable.getCause();
+        if (cause instanceof RuntimeException) {
+            return (RuntimeException) cause;
+        } else {
+            return new RuntimeException(cause);
         }
     }
 
