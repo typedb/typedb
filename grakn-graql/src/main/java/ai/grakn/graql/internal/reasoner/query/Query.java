@@ -296,14 +296,16 @@ public class Query implements MatchQueryInternal {
         toAdd.forEach(atom -> atom.unify(mappings));
         toAdd.forEach(this::addAtom);
 
+        mappings.putAll(resolveCaptures());
         updateSelectedVars(mappings);
-        resolveCaptures();
     }
 
     /**
      * finds captured variable occurrences in a query and replaces them with fresh variables
+     * @return new mappings resulting from capture resolution
      */
-    private void resolveCaptures() {
+    private Map<String, String> resolveCaptures() {
+        Map<String, String> newMappings = new HashMap<>();
         //find captures
         Set<String> captures = new HashSet<>();
         getVarSet().forEach(v -> {
@@ -311,9 +313,12 @@ public class Query implements MatchQueryInternal {
         });
 
         captures.forEach(cap -> {
-            String fresh = Utility.createFreshVariable(getVarSet(), cap.replace("captured->", ""));
+            String old = cap.replace("captured->", "");
+            String fresh = Utility.createFreshVariable(getVarSet(), old);
             unify(cap, fresh);
+            newMappings.put(old, fresh);
         });
+        return newMappings;
     }
 
     public MatchQuery getMatchQuery() {
