@@ -68,9 +68,6 @@ public abstract class AtomBase implements Atomic{
         return Sets.newHashSet(varName);
     }
 
-    @Override
-    public Set<String> getUnifiableNames(){ return getVarNames();}
-
     public PatternAdmin getPattern(){ return atomPattern;}
 
     public Query getParentQuery(){

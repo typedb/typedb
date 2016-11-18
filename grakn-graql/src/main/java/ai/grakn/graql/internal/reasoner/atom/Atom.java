@@ -150,32 +150,6 @@ public abstract class Atom extends AtomBase {
         throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
     }
 
-    @Override
-    public Map<String, String> getUnifiers(Atomic parentAtom) {
-        if (!(parentAtom instanceof Atom))
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-
-        Set<String> varsToAllocate = parentAtom.getUnifiableNames();
-        Set<String> childBVs = getUnifiableNames();
-        Map<String, String> unifiers = new HashMap<>();
-        Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
-        Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
-
-        //find child->parent var mappings based on roles
-        childBVs.forEach(chVar -> {
-            if(!varsToAllocate.isEmpty()) {
-                RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
-                //map to empty if no var matching
-                String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
-                if (pVar.isEmpty())
-                    pVar = varsToAllocate.iterator().next();
-                if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
-                varsToAllocate.remove(pVar);
-            }
-        });
-        return unifiers;
-    }
-
     public Set<Predicate> getIdPredicates() {
         Set<Predicate> relevantPredicates = new HashSet<>();
         getParentQuery().getIdPredicates().stream()
