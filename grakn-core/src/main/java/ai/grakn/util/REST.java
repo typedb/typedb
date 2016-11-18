@@ -50,22 +50,30 @@ public class REST {
         public static final String TASKS_SCHEDULE_URI ="/tasks/schedule";
     }
 
-    public static class Request{
+    public static class Request {
         public static final String PATH_FIELD = "path";
         public static final String QUERY_FIELD = "query";
         public static final String ID_PARAMETER = ":id";
-        public static final String GRAPH_NAME_PARAM = "graphName";
+        public static final String KEYSPACE_PARAM = "keyspace";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String UUID_PARAMETER = ":uuid";
-        public static final String TASK_STATUS_PARAMETER = "status";
-        public static final String TASK_CLASS_NAME_PARAMETER = "className";
-        public static final String TASK_CREATOR_PARAMETER = "creator";
-        public static final String TASK_RUN_AT_PARAMETER = "runAt";
-        public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
-        public static final String TASK_CONFIGURATION_PARAMETER = "configuration";
-        public static final String TASK_STOP = "/stop";
-        public static final String LIMIT_PARAM = "limit";
-        public static final String OFFSET_PARAM = "offset";
+
+        public static class Task {
+            public static final String STATUS_PARAMETER = "status";
+            public static final String CLASS_NAME_PARAMETER = "className";
+            public static final String CREATOR_PARAMETER = "creator";
+            public static final String RUN_AT_PARAMETER = "runAt";
+            public static final String RUN_INTERVAL_PARAMETER = "interval";
+            public static final String CONFIGURATION_PARAMETER = "configuration";
+            public static final String STOP = "/stop";
+            public static final String LIMIT = "limit";
+            public static final String OFFSET = "offset";
+
+            public static class Loader {
+                public static final String INSERTS = "inserts";
+                public static final String KEYSPACE = "keyspace";
+            }
+        }
     }
 
     public static class GraphConfig{

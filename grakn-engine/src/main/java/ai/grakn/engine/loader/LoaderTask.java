@@ -189,6 +189,7 @@ public class LoaderTask implements BackgroundTask {
             return configuration.getString(KEYSPACE);
         }
 
+        //TODO default graph name
         throw new IllegalArgumentException(ILLEGAL_ARGUMENT_EXCEPTION.getMessage("No keyspace", configuration));
     }
 }

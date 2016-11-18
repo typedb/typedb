@@ -33,6 +33,7 @@ import java.util.Collection;
 
 import static ai.grakn.graql.Graql.parsePatterns;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
 public class LoaderTest extends GraknEngineTestBase {
@@ -78,6 +79,21 @@ public class LoaderTest extends GraknEngineTestBase {
 
         assertEquals(nameTags.size(), 100);
         assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+    }
+
+    @Test
+    public void stopLoadingTaskExpectException(){
+        assertTrue(false);
+    }
+
+    @Test
+    public void noKeyspaceTest(){
+        assertTrue(false);
+    }
+
+    @Test
+    public void noInsertsTest(){
+        assertTrue(false);
     }
 
     private void loadAndTime(String toLoad){

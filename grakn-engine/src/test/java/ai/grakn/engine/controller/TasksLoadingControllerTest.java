@@ -19,100 +19,110 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Entity;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.engine.GraknEngineTestBase;
-//import ai.grakn.engine.loader.TransactionState;
-import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.util.REST;
-import mjson.Json;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.PatternAdmin;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.jayway.restassured.RestAssured.get;
+import java.util.Collection;
+import java.util.Date;
+
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.graql.Graql.parsePatterns;
+import static ai.grakn.util.REST.Request.Task.Loader.INSERTS;
+import static ai.grakn.util.REST.Request.Task.Loader.KEYSPACE;
+
+
+import static ai.grakn.util.REST.Request.Task.CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.CONFIGURATION_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.STATUS_PARAMETER;
+import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_URI;
+
 import static com.jayway.restassured.RestAssured.given;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class TasksLoadingControllerTest extends GraknEngineTestBase {
 
-    private String keyspace;
+    private static final String keyspace = "KEYSPACE";
+    private static final int NUMBER_TO_TEST = 10;
+    private GraknGraph graph;
 
     @Before
-    public void setUp() throws Exception {
-        keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
-        graph.putEntityType("Man");
-        graph.commit();
-    }
-
-    @Test
-    public void insertValidQuery() {
-        Json exampleInsertQuery = Json.array("insert $x isa Man;");
-        String transactionUUID = given().body(exampleInsertQuery.toString()).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?keyspace=grakntest").body().asString();
-        int i = 0;
-        String status = "QUEUED";
-        while (i < 5 && !status.equals("FINISHED")) {
-            i++;
-            try {
-                Thread.sleep(500);
-                status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(keyspace).getEntityType("Man").instances().iterator().next());
-    }
-
-    @Test
-    public void insertInvalidQuery() {
-        Json exampleInvalidInsertQuery = Json.array("insert id ?Cdcs;w4. '' ervalue;");
-        String transactionUUID = given().body(exampleInvalidInsertQuery.toString()).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?keyspace=grakntest").body().asString();
-        int i = 0;
-        String status = "QUEUED";
-        while (i < 10 && !status.equals("ERROR")) {
-            i++;
-            try {
-                Thread.sleep(500);
-                System.out.println(get("/transaction/status/" + transactionUUID).then().extract().response().asString());
-                status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        assertEquals("ERROR", status);
-    }
-
-    @Test
-    public void checkLoaderStateTest() {
-        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
-        given().body(exampleInvalidInsertQuery).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?keyspace=grakntest").body().asString();
-        JSONObject resultObj = new JSONObject(get(REST.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
-        assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
-        assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
-        assertTrue(resultObj.has(TransactionState.State.FINISHED.name()));
-        assertTrue(resultObj.has(TransactionState.State.LOADING.name()));
-        assertTrue(false);
-//        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
-//        given().body(exampleInvalidInsertQuery).
-//                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
-//        JSONObject resultObj = new JSONObject(get(REST.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
-//        assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
-//        assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
-//        assertTrue(resultObj.has(TransactionState.State.FINISHED.name()));
-//        assertTrue(resultObj.has(TransactionState.State.LOADING.name()));
-
+    public void setup() {
+        graph = GraphFactory.getInstance().getGraph(keyspace);
     }
 
     @After
-    public void cleanGraph() {
-        GraphFactory.getInstance().getGraphBatchLoading(keyspace).clear();
+    public void clean(){
+        graph.clear();
+        graph.close();
+    }
+
+    @Test
+    public void loaderTaskAPITest(){
+        loadOntology("dblp-ontology.gql", keyspace);
+
+        String nametags = readFileAsString("small_nametags.gql");
+
+        String response = given()
+                .parameter(CLASS_NAME_PARAMETER, "ai.grakn.engine.loader.LoaderTask")
+                .parameter(CREATOR_PARAMETER, keyspace)
+                .parameter(RUN_AT_PARAMETER, new Date().getTime())
+                .parameter(CONFIGURATION_PARAMETER, getConfiguration(nametags))
+                .when().post(TASKS_SCHEDULE_URI).body().asString();
+
+        String taskID = new JSONObject(response).getString("id");
+
+        waitToFinish(taskID);
+
+        Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
+
+        assertEquals(NUMBER_TO_TEST, nameTags.size());
+        assertNotNull(graph.getResourcesByValue("X532e20492e204b68617368696e").iterator().next().getId());
+    }
+
+    private String getConfiguration(String queries){
+        Collection<InsertQuery> inserts =
+                parsePatterns(queries).stream()
+                .map(Pattern::admin)
+                .map(PatternAdmin::getVars)
+                .map(Graql::insert).limit(NUMBER_TO_TEST)
+                        .collect(toSet());
+
+        JSONObject json = new JSONObject();
+        json.put(KEYSPACE, keyspace);
+        json.put(INSERTS, inserts.stream().map(InsertQuery::toString).collect(toList()));
+        return json.toString();
+    }
+
+    private void waitToFinish(String id) {
+        final long initial = new Date().getTime();
+
+        while ((new Date().getTime())-initial < 10000) {
+            String response = given().get(TASKS_URI + "/" + id).then().extract().response().asString();
+            String status = new JSONObject(response).getString(STATUS_PARAMETER);
+
+            if (status.equals(COMPLETED.name()))
+                break;
+
+            try {
+                Thread.sleep(100);
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

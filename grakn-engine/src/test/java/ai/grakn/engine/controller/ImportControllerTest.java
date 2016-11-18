@@ -45,7 +45,7 @@ public class ImportControllerTest extends GraknEngineTestBase {
 
     @Before
     public void setUp() throws Exception {
-        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
     }
 
     @Test
