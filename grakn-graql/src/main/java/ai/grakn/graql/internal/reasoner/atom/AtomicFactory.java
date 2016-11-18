@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
 
@@ -35,7 +36,7 @@ public class AtomicFactory {
             throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
 
         VarAdmin var = pattern.asVar();
-        if(var.isRelation())
+        if(var.hasProperty(RelationProperty.class))
             return new Relation(var);
         else if(var.hasProperty(HasResourceProperty.class))
             return new Resource(var);
@@ -52,7 +53,7 @@ public class AtomicFactory {
             throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
 
         VarAdmin var = pattern.asVar();
-        if(var.isRelation())
+        if(var.hasProperty(RelationProperty.class))
             return new Relation(var,parent);
         else if(var.hasProperty(HasResourceProperty.class))
             return new Resource(var, parent);
@@ -73,9 +74,9 @@ public class AtomicFactory {
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         Set<VarAdmin> vars = pattern.getVars();
-        vars.stream().filter(VarAdmin::isRelation).forEach(var -> atoms.add(create(var, parent)));
+        vars.stream().filter(var -> var.hasProperty(RelationProperty.class)).forEach(var -> atoms.add(create(var, parent)));
         vars.stream()
-                .filter(var -> !var.isRelation())
+                .filter(var -> !var.hasProperty(RelationProperty.class))
                 .forEach(var -> var.getProperties()
                         .forEach(prop -> atoms.addAll(PropertyMapper.map(prop, var, parent))));
         return atoms;

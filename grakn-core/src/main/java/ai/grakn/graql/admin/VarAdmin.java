@@ -106,11 +106,6 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<String> getTypeIds();
 
     /**
-     * @return whether this variable represents a relation
-     */
-    boolean isRelation();
-
-    /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
      */
     String getPrintableName();

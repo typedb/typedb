@@ -277,11 +277,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public boolean isRelation() {
-        return hasProperty(RelationProperty.class);
-    }
-
-    @Override
     public boolean isUserDefinedName() {
         return userDefinedName;
     }
