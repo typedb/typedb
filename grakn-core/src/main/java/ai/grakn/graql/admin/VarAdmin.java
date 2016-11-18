@@ -110,9 +110,4 @@ public interface VarAdmin extends PatternAdmin, Var {
      */
     String getPrintableName();
 
-    /**
-     * @return all predicates on the value of this variable
-     */
-    Set<ValuePredicateAdmin> getValuePredicates();
-
 }

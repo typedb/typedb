@@ -26,7 +26,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
@@ -304,11 +303,6 @@ class VarImpl implements VarAdmin {
         } else {
             return getId().map(StringConverter::idToString).orElse("'" + toString() + "'");
         }
-    }
-
-    @Override
-    public Set<ValuePredicateAdmin> getValuePredicates() {
-        return getProperties(ValueProperty.class).map(ValueProperty::getPredicate).collect(toSet());
     }
 
     @Override

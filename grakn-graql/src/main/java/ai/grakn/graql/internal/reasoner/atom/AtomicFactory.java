@@ -23,6 +23,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
 
@@ -42,7 +43,7 @@ public class AtomicFactory {
             return new Resource(var);
         else if (var.getId().isPresent())
             return new IdPredicate(var);
-        else if (!var.getValuePredicates().isEmpty())
+        else if (var.hasProperty(ValueProperty.class))
             return new ValuePredicate(var);
         else
             return new TypeAtom(var);
@@ -59,7 +60,7 @@ public class AtomicFactory {
             return new Resource(var, parent);
         else if (var.getId().isPresent())
             return new IdPredicate(var, parent);
-        else if (!var.getValuePredicates().isEmpty())
+        else if (var.hasProperty(ValueProperty.class))
             return new ValuePredicate(var, parent);
         else
             return new TypeAtom(var, parent);

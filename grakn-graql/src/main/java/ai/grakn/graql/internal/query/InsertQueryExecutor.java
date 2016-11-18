@@ -218,7 +218,7 @@ public class InsertQueryExecutor {
     private Concept putConceptByType(Optional<String> id, VarAdmin var, Type type) {
         String typeId = type.getId();
 
-        if (!type.isResourceType() && !var.getValuePredicates().isEmpty()) {
+        if (!type.isResourceType() && var.hasProperty(ValueProperty.class)) {
             throw new IllegalStateException(INSERT_NON_RESOURCE_WITH_VALUE.getMessage(type.getId()));
         }
 
