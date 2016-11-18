@@ -97,7 +97,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
         String id = result.getId();
 
-        if (deleter.hasNoProperties()) {
+        if (!deleter.getProperties().findAny().isPresent()) {
             // Delete whole concept if nothing specified to delete
             deleteConcept(id);
         } else {

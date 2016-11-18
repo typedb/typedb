@@ -21,6 +21,7 @@ package ai.grakn.test.graql.parser;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,6 +39,7 @@ import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class QueryParserFragmentsTest {
 
     @Rule
@@ -53,8 +55,8 @@ public class QueryParserFragmentsTest {
         assertEquals("$x isa person", var1.toString());
 
         VarAdmin var2 = patterns.next().admin().asVar();
-        assertTrue(var2.isRelation());
-        assertEquals(2, var2.getRelationPlayers().size());
+        assertTrue(var2.hasProperty(RelationProperty.class));
+        assertEquals(2, var2.getProperty(RelationProperty.class).get().getRelationPlayers().count());
 
         VarAdmin var3 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var3.toString());
@@ -73,8 +75,8 @@ public class QueryParserFragmentsTest {
         assertEquals("$x isa person", var1.toString());
 
         VarAdmin var2 = patterns.next().admin().asVar();
-        assertTrue(var2.isRelation());
-        assertEquals(2, var2.getRelationPlayers().size());
+        assertTrue(var2.hasProperty(RelationProperty.class));
+        assertEquals(2, var2.getProperty(RelationProperty.class).get().getRelationPlayers().count());
 
         assertFalse(patterns.hasNext());
     }
@@ -101,7 +103,7 @@ public class QueryParserFragmentsTest {
         assertEquals("match", objects.next());
         assertEquals("$x isa person", objects.next().toString());
         assertEquals("insert", objects.next());
-        assertTrue(((VarAdmin) objects.next()).isRelation());
+        assertTrue(((VarAdmin) objects.next()).hasProperty(RelationProperty.class));
         assertEquals("match", objects.next());
         assertTrue(objects.hasNext());
     }

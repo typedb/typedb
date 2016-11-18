@@ -26,7 +26,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
@@ -50,21 +49,16 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Maps;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -277,16 +271,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Optional<VarAdmin> getType() {
-        return getProperty(IsaProperty.class).map(IsaProperty::getType);
-    }
-
-    @Override
-    public boolean isRelation() {
-        return getProperty(RelationProperty.class).isPresent();
-    }
-
-    @Override
     public boolean isUserDefinedName() {
         return userDefinedName;
     }
@@ -294,22 +278,6 @@ class VarImpl implements VarAdmin {
     @Override
     public Optional<String> getId() {
         return getProperty(IdProperty.class).map(IdProperty::getId);
-    }
-
-    @Override
-    public boolean hasNoProperties() {
-        // return true if this variable has any properties set
-        return properties.isEmpty();
-    }
-
-    @Override
-    public Optional<String> getIdOnly() {
-
-        if (getId().isPresent() && properties.size() == 1 && !userDefinedName) {
-            return getId();
-        } else {
-            return Optional.empty();
-        }
     }
 
     @Override
@@ -333,37 +301,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<?> getValueEqualsPredicates() {
-        return getValuePredicates().stream()
-                .map(ValuePredicateAdmin::equalsValue)
-                .flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
-    }
-
-    @Override
-    public Set<ValuePredicateAdmin> getValuePredicates() {
-        return getProperties(ValueProperty.class).map(ValueProperty::getPredicate).collect(toSet());
-    }
-
-    @Override
-    public Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates() {
-        // Type of the resource is guaranteed to exist
-        //noinspection OptionalGetWithoutIsPresent
-        Function<VarAdmin, VarAdmin> type = v -> v.getType().get();
-
-        Function<VarAdmin, Stream<ValuePredicateAdmin>> predicates = resource -> resource.getValuePredicates().stream();
-
-        Map<VarAdmin, List<VarAdmin>> groupedByType =
-                getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(groupingBy(type));
-
-        return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
-    }
-
-    public Set<ai.grakn.graql.admin.RelationPlayer> getRelationPlayers() {
-        return getProperties(RelationProperty.class).flatMap(RelationProperty::getRelationPlayers).collect(toSet());
-    }
-
-    @Override
     public Stream<VarProperty> getProperties() {
         return properties.stream();
     }
@@ -376,6 +313,11 @@ class VarImpl implements VarAdmin {
     @Override
     public <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type) {
         return getProperties().filter(type::isInstance).map(type::cast).findAny();
+    }
+
+    @Override
+    public <T extends VarProperty> boolean hasProperty(Class<T> type) {
+        return getProperties(type).findAny().isPresent();
     }
 
     @Override
@@ -424,7 +366,7 @@ class VarImpl implements VarAdmin {
         innerVars.remove(this);
         getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).forEach(innerVars::remove);
 
-        if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || v.hasNoProperties())) {
+        if (innerVars.stream().anyMatch(VarImpl::invalidInnerVariable)) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 
@@ -462,6 +404,10 @@ class VarImpl implements VarAdmin {
         properties.add(new RelationProperty(relationPlayers));
 
         return this;
+    }
+
+    private static boolean invalidInnerVariable(VarAdmin var) {
+        return var.getProperties().filter(p -> !(p instanceof IdProperty)).findAny().isPresent();
     }
 
     /**

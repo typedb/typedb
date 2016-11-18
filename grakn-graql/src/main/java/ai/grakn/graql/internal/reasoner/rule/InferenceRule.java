@@ -18,18 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.Binary;
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.atom.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -105,8 +107,10 @@ public class InferenceRule {
             Atomic childAtom = getRuleConclusionAtom();
             VarAdmin var = childAtom.getPattern().asVar();
             Var relVar = Graql.var(childAtom.getVarName());
-            if (var.getType().isPresent()) relVar.isa(var.getType().orElse(null));
-            var.getRelationPlayers().forEach(c -> {
+            var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+            // This is guaranteed to be a relation
+            //noinspection OptionalGetWithoutIsPresent
+            var.getProperty(RelationProperty.class).get().getRelationPlayers().forEach(c -> {
                 VarAdmin rolePlayer = c.getRolePlayer();
                 Optional<VarAdmin> roleType = c.getRoleType();
                 if (roleType.isPresent())

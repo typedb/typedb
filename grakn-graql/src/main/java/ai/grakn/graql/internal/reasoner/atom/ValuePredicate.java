@@ -21,8 +21,10 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import java.util.Set;
+
+import java.util.Iterator;
 
 public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
@@ -95,9 +97,10 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
     @Override
     protected ValuePredicateAdmin extractPredicate(VarAdmin pattern) {
-        Set<ValuePredicateAdmin> predicates = pattern.getValuePredicates();
-        if (predicates.size() > 1)
+        Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
+        ValueProperty property = properties.next();
+        if (properties.hasNext())
             throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
-        return predicates.iterator().next();
+        return property.getPredicate();
     }
 }
