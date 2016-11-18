@@ -65,6 +65,7 @@ public class REST {
         public static final String TASK_CONFIGURATION_PARAMETER = "configuration";
         public static final String TASK_STOP = "/stop";
         public static final String LIMIT_PARAM = "limit";
+        public static final String OFFSET_PARAM = "offset";
     }
 
     public static class GraphConfig{

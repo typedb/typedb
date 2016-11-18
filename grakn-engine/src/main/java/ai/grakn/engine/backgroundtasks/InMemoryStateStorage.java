@@ -24,18 +24,18 @@ import org.json.JSONObject;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class InMemoryTaskStateStorage implements TaskStateStorage {
-    private static InMemoryTaskStateStorage instance = null;
+public class InMemoryStateStorage implements StateStorage {
+    private static InMemoryStateStorage instance = null;
 
     private Map<String, TaskState> storage;
 
-    private InMemoryTaskStateStorage() {
+    private InMemoryStateStorage() {
         storage = new ConcurrentHashMap<>();
     }
 
-    public static synchronized InMemoryTaskStateStorage getInstance() {
+    public static synchronized InMemoryStateStorage getInstance() {
         if(instance == null)
-            instance = new InMemoryTaskStateStorage();
+            instance = new InMemoryStateStorage();
         return instance;
     }
 
@@ -100,9 +100,8 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
         return newState;
     }
 
-    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit) {
+    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {
         Set<Pair<String, TaskState>> res = new HashSet<>();
-
 
         int count = 0;
         for(Map.Entry<String, TaskState> x: storage.entrySet()) {
@@ -116,8 +115,13 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
             if(createdBy != null && !Objects.equals(state.creator(), createdBy))
                 continue;
 
-            if(limit > 0 && count >= limit)
+            if(count < offset) {
+                count++;
+                continue;
+            }
+            else if(limit > 0 && count >= (limit+offset)) {
                 break;
+            }
             count++;
 
             res.add(new Pair<>(x.getKey(), state));

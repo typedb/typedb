@@ -54,17 +54,17 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     }
 
     private void waitToFinish(String id) {
-       TaskStateStorage storage = taskManager.storage();
+       StateStorage storage = taskManager.storage();
         final long initial = new Date().getTime();
 
         while ((new Date().getTime())-initial < 10000) {
             if (storage.getState(id).status() == COMPLETED)
                 break;
 
-            System.out.println("created: "+storage.getTasks(CREATED, null, null, 0).size());
-            System.out.println("scheduled: "+storage.getTasks(SCHEDULED, null, null,0 ).size());
-            System.out.println("completed: "+storage.getTasks(COMPLETED, null, null,0).size());
-            System.out.println("running: "+storage.getTasks(RUNNING, null, null,0 ).size());
+            System.out.println("created: "+storage.getTasks(CREATED, null, null, 0, 0).size());
+            System.out.println("scheduled: "+storage.getTasks(SCHEDULED, null, null,0, 0).size());
+            System.out.println("completed: "+storage.getTasks(COMPLETED, null, null,0, 0).size());
+            System.out.println("running: "+storage.getTasks(RUNNING, null, null,0, 0).size());
 
             try {
                 Thread.sleep(100);

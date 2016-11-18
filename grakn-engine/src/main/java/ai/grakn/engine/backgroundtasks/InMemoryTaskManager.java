@@ -43,7 +43,7 @@ public class InMemoryTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskManager.class);
 
     private Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
-    private TaskStateStorage taskStateStorage;
+    private StateStorage stateStorage;
     private ReentrantLock stateUpdateLock;
 
     private ExecutorService executorService;
@@ -51,7 +51,7 @@ public class InMemoryTaskManager implements TaskManager {
 
     private InMemoryTaskManager() {
         instantiatedTasks = new ConcurrentHashMap<>();
-        taskStateStorage = InMemoryTaskStateStorage.getInstance();
+        stateStorage = InMemoryStateStorage.getInstance();
         stateUpdateLock = new ReentrantLock();
 
         ConfigProperties properties = ConfigProperties.getInstance();
@@ -67,14 +67,14 @@ public class InMemoryTaskManager implements TaskManager {
 
     public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
         Boolean recurring = (period != 0);
-        String id = taskStateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
+        String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
 
         // Schedule task to run.
         Date now = new Date();
         long delay = now.getTime() - runAt.getTime();
 
         try {
-            taskStateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
+            stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
 
             ScheduledFuture<?> future;
             if(recurring)
@@ -86,7 +86,7 @@ public class InMemoryTaskManager implements TaskManager {
 
         }
         catch (Throwable t) {
-            taskStateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
+            stateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
             instantiatedTasks.remove(id);
 
             return null;
@@ -98,7 +98,7 @@ public class InMemoryTaskManager implements TaskManager {
     public TaskManager stopTask(String id, String requesterName) {
         stateUpdateLock.lock();
 
-        TaskState state = taskStateStorage.getState(id);
+        TaskState state = stateStorage.getState(id);
         if(state == null)
             return this;
 
@@ -109,7 +109,7 @@ public class InMemoryTaskManager implements TaskManager {
             if(state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
                 LOG.info("Stopping a currently scheduled task "+id);
                 pair.getKey().cancel(true);
-                taskStateStorage.updateState(id, STOPPED, name,null, null, null, null);
+                stateStorage.updateState(id, STOPPED, name,null, null, null, null);
             }
             else if(state.status() == RUNNING) {
                 LOG.info("Stopping running task "+id);
@@ -119,7 +119,7 @@ public class InMemoryTaskManager implements TaskManager {
                     task.stop();
                 }
 
-                taskStateStorage.updateState(id, STOPPED, name, null, null, null, null);
+                stateStorage.updateState(id, STOPPED, name, null, null, null, null);
             }
             else {
                 LOG.warn("Task not running - "+id);
@@ -130,22 +130,22 @@ public class InMemoryTaskManager implements TaskManager {
         return this;
     }
 
-    public TaskStateStorage storage() {
-        return taskStateStorage;
+    public StateStorage storage() {
+        return stateStorage;
     }
 
     private Runnable exceptionCatcher(String id, BackgroundTask task) {
         return () -> {
             try {
-                task.start(saveCheckpoint(id), taskStateStorage.getState(id).configuration());
+                task.start(saveCheckpoint(id), stateStorage.getState(id).configuration());
 
                 stateUpdateLock.lock();
-                if(taskStateStorage.getState(id).status() == RUNNING)
-                    taskStateStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null, null);
+                if(stateStorage.getState(id).status() == RUNNING)
+                    stateStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null, null);
                 stateUpdateLock.unlock();
             }
             catch (Throwable t) {
-                taskStateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null, null);
+                stateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null, null);
             }
         };
     }
@@ -154,13 +154,13 @@ public class InMemoryTaskManager implements TaskManager {
         return () -> {
             stateUpdateLock.lock();
 
-            TaskState state = taskStateStorage.getState(id);
+            TaskState state = stateStorage.getState(id);
             if(recurring && (state.status() == SCHEDULED || state.status() == COMPLETED)) {
-                taskStateStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null, null);
+                stateStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null, null);
                 executorService.submit(exceptionCatcher(id, task));
             }
             else if (!recurring && state.status() == SCHEDULED) {
-                taskStateStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null, null);
+                stateStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null, null);
                 executorService.submit(exceptionCatcher(id, task));
             }
 
@@ -171,7 +171,7 @@ public class InMemoryTaskManager implements TaskManager {
     private Consumer<String> saveCheckpoint(String id) {
         return s -> {
             stateUpdateLock.lock();
-            taskStateStorage.updateState(id, taskStateStorage.getState(id).status(), SAVE_CHECKPOINT_NAME, null, null, s, null);
+            stateStorage.updateState(id, stateStorage.getState(id).status(), SAVE_CHECKPOINT_NAME, null, null, s, null);
             stateUpdateLock.unlock();
         };
     }
