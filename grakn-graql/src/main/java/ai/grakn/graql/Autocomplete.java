@@ -18,10 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
-import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -45,13 +42,13 @@ public class Autocomplete {
     private final int cursorPosition;
 
     /**
-     * @param graph the graph to find types in
+     * @param types a set of type IDs to autocomplete
      * @param query the query to autocomplete
      * @param cursorPosition the cursor position in the query
      * @return an autocomplete object containing potential candidates and cursor position to autocomplete from
      */
-    public static Autocomplete create(GraknGraph graph, String query, int cursorPosition) {
-        return new Autocomplete(graph, query, cursorPosition);
+    public static Autocomplete create(Set<String> types, String query, int cursorPosition) {
+        return new Autocomplete(types, query, cursorPosition);
     }
 
     /**
@@ -69,24 +66,24 @@ public class Autocomplete {
     }
 
     /**
-     * @param graph the graph to find types in
+     * @param types a set of type IDs to autocomplete
      * @param query the query to autocomplete
      * @param cursorPosition the cursor position in the query
      */
-    private Autocomplete(GraknGraph graph, String query, int cursorPosition) {
+    private Autocomplete(Set<String> types, String query, int cursorPosition) {
         Optional<? extends Token> optToken = getCursorToken(query, cursorPosition);
-        candidates = findCandidates(graph, query, optToken);
+        candidates = findCandidates(types, query, optToken);
         this.cursorPosition = findCursorPosition(cursorPosition, optToken);
     }
 
     /**
-     * @param graph the graph to find types in
+     * @param types the graph to find types in
      * @param query a graql query
      * @param optToken the token the cursor is on in the query
      * @return a set of potential autocomplete words
      */
-    private static ImmutableSet<String> findCandidates(GraknGraph graph, String query, Optional<? extends Token> optToken) {
-        ImmutableSet<String> allCandidates = Stream.of(GRAQL_KEYWORDS.stream(), getTypes(graph), getVariables(query))
+    private static ImmutableSet<String> findCandidates(Set<String> types, String query, Optional<? extends Token> optToken) {
+        ImmutableSet<String> allCandidates = Stream.of(GRAQL_KEYWORDS.stream(), types.stream(), getVariables(query))
                 .flatMap(Function.identity()).collect(toImmutableSet());
 
         return optToken.map(
@@ -114,18 +111,6 @@ public class Autocomplete {
                 .filter(token -> !candidates.contains(" "))
                 .map(Token::getStartIndex)
                 .orElse(cursorPosition);
-    }
-
-    /**
-     * @param graph the graph to find types in
-     * @return all type IDs in the ontology
-     */
-    private static Stream<String> getTypes(GraknGraph graph) {
-        Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
-
-        Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getId);
-
-        return Stream.concat(types, metaTypes);
     }
 
     /**

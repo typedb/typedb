@@ -19,11 +19,13 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Autocomplete;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.util.Schema;
 import com.google.common.base.Splitter;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -32,8 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.function.Supplier;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
@@ -200,7 +205,8 @@ class GraqlSession {
         queryExecutor.submit(() -> {
             String queryString = json.at(QUERY).asString();
             int cursor = json.at(AUTOCOMPLETE_CURSOR).asInteger();
-            Autocomplete autocomplete = Autocomplete.create(graph, queryString, cursor);
+            Set<String> types = getTypes(graph).collect(Collectors.toSet());
+            Autocomplete autocomplete = Autocomplete.create(types, queryString, cursor);
             sendAutocomplete(autocomplete);
         });
     }
@@ -291,5 +297,17 @@ class GraqlSession {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * @param graph the graph to find types in
+     * @return all type IDs in the ontology
+     */
+    private static Stream<String> getTypes(GraknGraph graph) {
+        Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
+
+        Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getId);
+
+        return Stream.concat(types, metaTypes);
     }
 }
