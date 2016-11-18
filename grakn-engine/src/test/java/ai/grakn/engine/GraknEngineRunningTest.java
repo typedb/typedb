@@ -18,6 +18,8 @@
 
 package ai.grakn.engine;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.RestAssured;
 import ai.grakn.engine.util.ConfigProperties;
 import org.junit.Before;
@@ -25,7 +27,9 @@ import org.junit.Test;
 
 import java.util.Properties;
 
+import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class GraknEngineRunningTest {
@@ -45,6 +49,10 @@ public class GraknEngineRunningTest {
 
         boolean running = GraknEngineServer.isRunning();
         assertTrue(running);
+
+        // Check that we've loaded the ontology
+        GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
+        assertEquals(1, graph.graql().match(var("x").id("scheduled-task")).execute().size());
 
         GraknEngineServer.stop();
         Thread.sleep(5000);
