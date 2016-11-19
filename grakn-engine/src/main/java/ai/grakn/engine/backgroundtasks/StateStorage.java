@@ -24,7 +24,7 @@ import org.json.JSONObject;
 import java.util.Date;
 import java.util.Set;
 
-public interface TaskStateStorage {
+public interface StateStorage {
     /**
      * Create a new task state and store it, returning an ID to later access this task state.
      * @param taskName String class name of object implementing the BackgroundTask interface. This must not be null.
@@ -80,13 +80,13 @@ public interface TaskStateStorage {
      * @param taskStatus See TaskStatus enum.
      * @param taskClassName String containing task class name. See TaskState.
      * @param createdBy String containing created by. See TaskState.
+     * @param limit Limit the returned result set to @limit amount of entries.
+     * @param offset Use in conjunction with @limit for pagination.
      * @return Set<Pair<String, TaskState> of task IDs and corresponding TaskState *copies*.
      */
-    Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy);
-
-
-    /**
-     * Clear all stored tasks.
-     */
-    void clear();
+    Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus,
+                                          String taskClassName,
+                                          String createdBy,
+                                          int limit,
+                                          int offset);
 }

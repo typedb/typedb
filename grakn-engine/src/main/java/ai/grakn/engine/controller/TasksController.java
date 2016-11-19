@@ -32,10 +32,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
+import javax.ws.rs.*;
 
 import java.util.Date;
 
@@ -50,11 +47,11 @@ import static spark.Spark.post;
 public class TasksController {
     private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
     private TaskManager taskManager;
-    private TaskStateStorage taskStateStorage;
+    private StateStorage stateStorage;
 
     public TasksController() {
         taskManager = InMemoryTaskManager.getInstance();
-        taskStateStorage = taskManager.storage();
+        stateStorage = taskManager.storage();
 
         get(ALL_TASKS_URI, this::getTasks);
         get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
@@ -66,22 +63,36 @@ public class TasksController {
     @Path("/all")
     @ApiOperation(value = "Get tasks matching a specific TaskStatus.")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "status", value = "TaskStatus as string", dataType = "string", paramType = "query"),
-        @ApiImplicitParam(name = "className", value = "Class name of BackgroundTask Object", dataType = "string", paramType = "query"),
-        @ApiImplicitParam(name = "creator", value = "Who instantiated these tasks.", dataType = "string", paramType = "query")
+        @ApiImplicitParam(name = "status", value = "TaskStatus as string.", dataType = "string", paramType = "query"),
+        @ApiImplicitParam(name = "className", value = "Class name of BackgroundTask Object.", dataType = "string", paramType = "query"),
+        @ApiImplicitParam(name = "creator", value = "Who instantiated these tasks.", dataType = "string", paramType = "query"),
+        @ApiImplicitParam(name = "limit", value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
+        @ApiImplicitParam(name = "offset", value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
     })
     private JSONArray getTasks(Request request, Response response) {
         TaskStatus status = null;
         String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
         String creator = request.queryParams(TASK_CREATOR_PARAMETER);
+        int limit = 0;
+        int offset = 0;
 
-        if(request.queryParams(TASK_STATUS_PARAMETER) != null)
+        if(request.queryParams(LIMIT_PARAM) != null)
+            limit = Integer.valueOf(request.queryParams(LIMIT_PARAM));
+
+        if(request.queryParams(OFFSET_PARAM) != null)
+            offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
+
+        if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
             status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
+        }
 
         JSONArray result = new JSONArray();
-        for (Pair<String, TaskState> pair : taskStateStorage.getTasks(status, className, creator)) {
-            result.put(serialiseState(pair.getKey(), pair.getValue()));
+        for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
+            result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
         }
+
+        System.out.println("result length: "+result.length());
+        System.out.println(" all response: "+result.toString());
 
         response.type("application/json");
         return result;
@@ -94,8 +105,10 @@ public class TasksController {
     private String getTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            JSONObject result = serialiseState(id, taskStateStorage.getState(id));
+            JSONObject result = serialiseStateFull(id, stateStorage.getState(id));
             response.type("application/json");
+
+            System.out.println("get one response: "+result.toString());
             return result.toString();
         } catch(Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -166,17 +179,22 @@ public class TasksController {
         }
     }
 
-    private JSONObject serialiseState(String id, TaskState state) {
+
+    private JSONObject serialiseStateSubset(String id, TaskState state) {
         return new JSONObject().put("id", id)
-                               .put("status", state.status())
-                               .put("creator", state.creator())
-                               .put("className", state.taskClassName())
-                               .put("runAt", state.runAt())
-                               .put("recurring", state.isRecurring())
-                               .put("interval", state.interval())
-                               .put("isFailed", state.isFailed())
-                               .put("failure", state.failure())
-                               .put("executingHostname", state.executingHostname())
-                               .put("configuration", state.configuration());
+                .put("status", state.status())
+                .put("creator", state.creator())
+                .put("className", state.taskClassName())
+                .put("runAt", state.runAt())
+                .put("recurring", state.isRecurring())
+                .put("isFailed", state.isFailed());
+    }
+
+    private JSONObject serialiseStateFull(String id, TaskState state) {
+        return serialiseStateSubset(id, state)
+                       .put("interval", state.interval())
+                       .put("failure", state.failure())
+                       .put("executingHostname", state.executingHostname())
+                       .put("configuration", state.configuration());
     }
 }
