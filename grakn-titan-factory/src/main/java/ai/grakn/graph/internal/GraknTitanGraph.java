@@ -18,9 +18,10 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.util.REST;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import ai.grakn.util.REST;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
@@ -37,6 +38,11 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     @Override
     protected void closeGraphTransaction() throws Exception {
-        getTinkerPopGraph().tx().close();
+        StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
+        graph.tx().close();
+
+        if(graph.getOpenTransactions().isEmpty()){
+            graph.close();
+        }
     }
 }

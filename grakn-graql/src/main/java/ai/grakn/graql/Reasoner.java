@@ -288,9 +288,20 @@ public class Reasoner {
     }
 
     public void precomputeInferences(){
+        Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
+        Set<AtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
-            resolve(rule.getHead(), true);
+            AtomicQuery atomicQuery = new AtomicMatchQuery(rule.getHead(), new QueryAnswers());
+            int dAns;
+            Set<AtomicQuery> SG;
+            do {
+                SG = new HashSet<>(subGoals);
+                dAns = atomicQuery.getAnswers().size();
+                answer(atomicQuery, SG, matAnswers, true);
+                dAns = atomicQuery.getAnswers().size() - dAns;
+            } while (dAns != 0);
+            subGoals.addAll(SG);
         });
     }
 
