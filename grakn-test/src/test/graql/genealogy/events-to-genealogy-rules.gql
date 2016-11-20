@@ -51,22 +51,22 @@ rhs
  $rel has role "newborn";}
  rhs
  {$p has gender $gender;};
-# 
-# $materializePeopleBirthDates isa inference-rule
-# lhs
-# {$b isa birth has confidence "high" has date $date;
-# $rel (happening: $b, protagonist: $p) isa event-protagonist;
-# $rel has role "newborn";}
-# rhs
-# {$p has birth-date $date;};
-# 
-# $materializePeopleDeathDates isa inference-rule
-# lhs
-# {$b isa death has confidence "high" has date $date;
-# $rel (happening: $b, protagonist: $p);
-# $rel isa event-protagonist has role "deceased";}
-# rhs
-# {$p has death-date $date;};
+ 
+ $materializePeopleBirthDates isa inference-rule
+ lhs
+ {$b isa birth has confidence "high" has birth-date $date;
+ $rel (happening: $b, protagonist: $p) isa event-protagonist;
+ $rel has role "newborn";}
+ rhs
+ {$p has birth-date $date;};
+ 
+ $materializePeopleDeathDates isa inference-rule
+ lhs
+ {$b isa death has confidence "high" has death-date $date;
+ $rel (happening: $b, protagonist: $p);
+ $rel isa event-protagonist has role "deceased";}
+ rhs
+ {$p has death-date $date;};
 
 #############################################################################
 #                                                                           #

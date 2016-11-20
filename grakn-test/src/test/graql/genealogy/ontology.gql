@@ -4,9 +4,12 @@ document isa entity-type
 	plays-role evidence
 	has-resource identifier
 	has-resource document-location
-	has-resource document-type;
+	has-resource document-type
+	has-resource notes;
 document-location isa resource-type datatype string;
 document-type isa resource-type datatype string;
+
+notes isa resource-type datatype string;
 
 conclusion-evidence isa relation-type
 	has-role evidence
@@ -22,7 +25,9 @@ event isa entity-type
 	plays-role happening
 	has-resource degree
 	has-resource confidence
-	has-resource date;
+	has-resource date
+	has-resource identifier
+	has-resource notes;
 
 # This is needed otherwise reasoner complains about the missing resource if it has not been persisted
 degree isa resource-type datatype long;
@@ -46,11 +51,13 @@ birth sub event
 	has-resource firstname
 	has-resource middlename
 	has-resource surname
-	has-resource gender;
+	has-resource gender
+	has-resource birth-date;
 child-identifier sub identifier;
 parent-identifier sub identifier;
 
-death sub event;
+death sub event
+	has-resource death-date;
 
 date isa resource-type datatype string;
 
