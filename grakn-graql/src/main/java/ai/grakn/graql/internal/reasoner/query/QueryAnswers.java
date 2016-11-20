@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,10 +41,15 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
     public QueryAnswers(){super();}
     public QueryAnswers(Collection<? extends Map<String, Concept>> ans){ super(ans);}
 
+    public Set<String> getVars(){
+        Optional<Map<String, Concept>> map = this.stream().findFirst();
+        return map.isPresent()? map.get().keySet() : new HashSet<>();
+    }
+
     public QueryAnswers filterVars(Set<String> vars) {
         QueryAnswers results = new QueryAnswers();
         if (this.isEmpty()) return results;
-        
+
         this.forEach(answer -> {
             Map<String, Concept> map = new HashMap<>();
             answer.forEach((var, concept) -> {
@@ -53,6 +59,23 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             if (!map.isEmpty()) results.add(map);
         });
         return new QueryAnswers(results.stream().distinct().collect(Collectors.toSet()));
+    }
+
+    public QueryAnswers filterKnown(QueryAnswers known){
+        if (this.getVars().equals(known.getVars())){
+            QueryAnswers results = new QueryAnswers(this);
+            results.removeAll(known);
+            return results;
+        }
+        QueryAnswers results = new QueryAnswers();
+        this.forEach(answer ->{
+            boolean isKnown = false;
+            Iterator<Map<String, Concept>> it = known.iterator();
+            while(it.hasNext() && !isKnown)
+                isKnown = answer.entrySet().containsAll(it.next().entrySet());
+            if (!isKnown) results.add(answer);
+        });
+        return results;
     }
 
     public QueryAnswers filterInComplete(Set<String> vars) {
