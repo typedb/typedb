@@ -6,6 +6,8 @@ import simpleMode from 'codemirror/addon/mode/simple.js';
 
 import Visualiser from '../js/visualiser/Visualiser.js';
 import HALParser from '../js/HAL/HALParser.js';
+import * as API from '../js/HAL/APITerms';
+
 import EngineClient from '../js/EngineClient.js';
 import * as PLang from '../js/prismGraql.js';
 import simpleGraql from '../js/codemirrorGraql.js';
@@ -49,12 +51,10 @@ export default {
         engineClient = new EngineClient();
 
         halParser = new HALParser();
-        halParser.setNewResource((id, p, a, l) => {
-            visualiser.addNode(id, p, a, l)
-        });
-        halParser.setNewRelationship((f, t, l) => {
-            visualiser.addEdge(f, t, l)
-        });
+
+        halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
+        halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
+        halParser.setNodeAlreadyInGraph(id => visualiser.nodeExists(id));
     },
 
     attached() {
@@ -120,6 +120,13 @@ export default {
             this.runQuery();
         },
 
+        loadOntology() {
+          let query_isa="match $x isa "+API.TYPE_TYPE+";";
+          let query_sub="match $x sub "+API.TYPE_TYPE+";";
+          engineClient.graqlHAL(query_isa, this.graphResponse);
+          engineClient.graqlHAL(query_sub, this.graphResponse);
+        },
+
         getMetaTypes() {
             if (this.typeInstances)
                 this.typeInstances = false;
@@ -148,7 +155,7 @@ export default {
             if (eventKeys.altKey)
                 engineClient.request({
                     url: visualiser.nodes._data[node].ontology,
-                    callback: this.typeQueryResponse
+                    callback: this.graphResponse
                 });
             else {
                 var props = visualiser.getNode(node);
@@ -185,18 +192,22 @@ export default {
                 return;
 
             const eventKeys = param.event.srcEvent;
-            if (!eventKeys.shiftKey)
+
+            if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE)
+                visualiser.deleteNode(node);
+
+            if (eventKeys.shiftKey)
                 visualiser.clearGraph();
 
             engineClient.request({
                 url: node,
-                callback: this.typeQueryResponse
+                callback: this.graphResponse
             });
         },
         addResourceNodeWithOwners(id) {
             engineClient.request({
                 url: id,
-                callback: this.typeQueryResponse
+                callback: this.graphResponse
             });
         },
         rightClick(param) {
@@ -270,16 +281,6 @@ export default {
                 this.showError(err);
             }
         },
-
-        typeQueryResponse(resp, err) {
-            if (resp != undefined) {
-                halParser.parseHalObject(resp);
-                visualiser.cluster();
-            } else {
-                this.showError(err);
-            }
-        },
-
         /*
          * UX
          */
@@ -305,14 +306,13 @@ export default {
                 .removeClass('btn-danger')
                 .removeClass('btn-warning')
                 .addClass('btn-default');
-            this.closeConfigPanel();
         },
 
         clearGraph() {
             // Reset all interface elements to default.
             codeMirror.setValue("");
             this.resetMsg();
-
+            this.closeConfigPanel();
             // And clear the graph
             visualiser.clearGraph();
         }

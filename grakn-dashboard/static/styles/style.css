@@ -90,6 +90,19 @@ div {
     margin-right: 10px;
 }
 
+#close-error{
+  margin-left:10px;
+  font-size:150%;
+  margin-top:15px;
+  color:#949ba2;
+}
+
+#ontology-button{
+  margin-top:2.5px;
+  margin-right:10px;
+  color:white;
+}
+
 #panel-console-container {
     border: 3px solid #4e5156;
     margin-bottom: 0px;

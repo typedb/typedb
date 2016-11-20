@@ -28,6 +28,7 @@ export default class HALParser {
     constructor() {
         this.newResource = x => {};
         this.newRelationship = x => {};
+        this.nodeAlreadyInGraph = x => {};
     }
 
     /**
@@ -35,6 +36,10 @@ export default class HALParser {
      */
     setNewResource(fn) {
         this.newResource = fn;
+    }
+
+    setNodeAlreadyInGraph(fn){
+      this.nodeAlreadyInGraph = fn;
     }
 
     /**
@@ -48,15 +53,21 @@ export default class HALParser {
      * Start parsing HAL response in @data. Will call functions set by setNewResource() and setNewRelationship().
      */
     parseResponse(data) {
-        _.map(data, x => {
-            this.parseHalObject(x)
-        });
-        return data.length;
+        if (Array.isArray(data)) {
+            _.map(data, x => {
+                this.parseHalObject(x)
+            });
+            return data.length;
+
+        } else {
+            this.parseHalObject(data);
+            return 1;
+        }
     }
 
     parseHalObject(obj) {
         if (obj !== null) {
-            var links = Utils.nodeLinks(obj);
+            let links = Utils.nodeLinks(obj);
             this.newResource(this.getHref(obj), Utils.defaultProperties(obj), Utils.extractResources(obj), links);
             // Add assertions from _embedded
             if (API.KEY_EMBEDDED in obj) {
@@ -75,7 +86,7 @@ export default class HALParser {
      */
     parseEmbedded(objs, parent, roleName) {
         _.map(objs, child => {
-            if (child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE) {
+            if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE)|| this.nodeAlreadyInGraph(this.getHref(child))) {
                 var links = Utils.nodeLinks(child);
                 // Add resource and iterate its _embedded field
                 var hrefP = this.getHref(child);

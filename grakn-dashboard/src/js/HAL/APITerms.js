@@ -26,6 +26,7 @@ export const RULE_TYPE = "rule-type";
 export const RESOURCE_TYPE = "resource-type";
 export const ROLE_TYPE = "role-type";
 export const ENTITY_TYPE = "entity-type";
+export const GENERATED_RELATION_TYPE = "generated-relation";
 
 export const KEY_ID = "_id";
 export const KEY_EMBEDDED = "_embedded";

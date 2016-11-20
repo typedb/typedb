@@ -19,22 +19,18 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.visualiser.HALConceptRepresentationBuilder;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import com.theoryinpractise.halbuilder.api.Representation;
-import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import ai.grakn.concept.Concept;
-import ai.grakn.engine.visualiser.HALConcept;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -43,7 +39,8 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static spark.Spark.get;
@@ -56,10 +53,8 @@ public class VisualiserController {
 
     private final Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
 
-
     private String defaultGraphName;
     private int separationDegree;
-    private final int MATCH_QUERY_FIXED_DEGREE = 0;
     //TODO: implement a pagination system.
 
     public VisualiserController() {
@@ -86,10 +81,10 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-            return new HALConcept(concept, separationDegree, false, new HashSet<>()).render();
+            return HALConceptRepresentationBuilder.renderHALConceptData(concept, separationDegree);
 
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -108,10 +103,10 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-            return new HALConcept(concept).render();
+            return HALConceptRepresentationBuilder.renderHALConceptOntology(concept);
 
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -138,53 +133,14 @@ public class VisualiserController {
             Collection<Map<String, Concept>> graqlResultsList = matchQuery
                     .stream().collect(Collectors.toList());
             LOG.debug("Done querying.");
-
-            Map<String, Collection<String>> linkedNodes = computeLinkedNodesFromQuery(matchQuery);
-            Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet());
-            JSONArray halArray = buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery);
-
+            JSONArray halArray = HALConceptRepresentationBuilder.renderHALArrayData(matchQuery, graqlResultsList);
             LOG.debug("Done building resources.");
+
             return halArray.toString();
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
     }
 
-    private JSONArray buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery) {
-        final JSONArray lines = new JSONArray();
-        graqlResultsList.parallelStream()
-                .forEach(resultLine -> resultLine.entrySet().forEach(current -> {
-                    LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
-                    Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
-                            typesAskedInQuery).getRepresentation();
-                    if (linkedNodes.containsKey(current.getKey()))
-                        linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", REST.WebPath.CONCEPT_BY_ID_URI + resultLine.get(varName).getId()));
-                    lines.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
-                }));
-        return lines;
-    }
-
-    private Map<String, Collection<String>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
-        final Map<String, Collection<String>> linkedNodes = new HashMap<>();
-        matchQuery.admin().getPattern().getVars().forEach(var -> {
-            //if in the current var is expressed some kind of relation (e.g. ($x,$y))
-            var.getProperty(RelationProperty.class).ifPresent(relationProperty -> {
-                //collect all the role players in the current var's relations (e.g. 'x' and 'y')
-                final List<String> rolePlayersInVar = relationProperty
-                        .getRelationPlayers().map(x -> x.getRolePlayer().getName()).collect(Collectors.toList());
-                //if it is a binary or ternary relation
-                if (rolePlayersInVar.size() > 1) {
-                    rolePlayersInVar.forEach(rolePlayer -> {
-                        linkedNodes.putIfAbsent(rolePlayer, new HashSet<>());
-                        rolePlayersInVar.forEach(y -> {
-                            if (!y.equals(rolePlayer))
-                                linkedNodes.get(rolePlayer).add(y);
-                        });
-                    });
-                }
-            });
-        });
-        return linkedNodes;
-    }
 
 }
