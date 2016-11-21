@@ -399,6 +399,17 @@ public class GenealogyTest extends AbstractEngineTest{
         assertTrue(!answers.isEmpty());
     }
 
+    //Bug #11150 Relations with resources as single VarAdmin
+    @Test
+    public void testRelationResources(){
+        String queryString = "match $rel (happening: $b, protagonist: $p) isa event-protagonist has role 'parent';";
+        String queryString2 = "match $rel (happening: $b, protagonist: $p) isa event-protagonist; $rel has role 'parent';";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+
+        assertTrue(query.equals(query2));
+    }
+
     private boolean checkResource(QueryAnswers answers, String var, String value){
         boolean isOk = true;
         Iterator<Map<String, Concept>> it =  answers.iterator();

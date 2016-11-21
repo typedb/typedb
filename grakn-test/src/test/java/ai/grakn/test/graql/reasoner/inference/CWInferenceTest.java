@@ -31,7 +31,6 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
 
-
 public class CWInferenceTest {
 
     @Test
