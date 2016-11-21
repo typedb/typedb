@@ -22,7 +22,7 @@ askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchQuery? insert varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
-computeQuery   : 'compute' id ('of' statTypes)? ('in' subgraph)? ';' ;
+computeQuery   : 'compute' id ('from' id 'to' id)? ('of' statTypes)? ('in' subgraph)? ';' ;
 
 statTypes      : idList ;
 subgraph       : idList ;

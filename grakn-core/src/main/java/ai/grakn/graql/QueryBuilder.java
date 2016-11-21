@@ -58,6 +58,8 @@ public interface QueryBuilder {
 
     ComputeQuery compute(String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds);
 
+    ComputeQuery compute(String computeMethod, String from, String to, Set<String> subTypeIds);
+
     /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns

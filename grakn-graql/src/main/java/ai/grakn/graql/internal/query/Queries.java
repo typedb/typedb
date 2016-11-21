@@ -45,7 +45,8 @@ import java.util.Set;
  */
 public class Queries {
 
-    private Queries() {}
+    private Queries() {
+    }
 
     /**
      * @param pattern a pattern to match in the graph
@@ -62,7 +63,7 @@ public class Queries {
     }
 
     /**
-     * @param vars a collection of Vars to insert
+     * @param vars       a collection of Vars to insert
      * @param matchQuery the match query to insert for each result
      */
     public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, MatchQueryAdmin matchQuery) {
@@ -71,7 +72,7 @@ public class Queries {
 
     /**
      * @param graph the graph to execute on
-     * @param vars a collection of Vars to insert
+     * @param vars  a collection of Vars to insert
      */
     public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, Optional<GraknGraph> graph) {
         return new InsertQueryImpl(vars, Optional.empty(), graph);
@@ -82,11 +83,15 @@ public class Queries {
     }
 
     public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod) {
-        return new ComputeQueryImpl(graph, computeMethod, new HashSet<>(), new HashSet<>());
+        return new ComputeQueryImpl(graph, computeMethod, new HashSet<>(), new HashSet<>(), null, null);
+    }
+
+    public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod, String from, String to, Set<String> subTypeIds) {
+        return new ComputeQueryImpl(graph, computeMethod, subTypeIds, new HashSet<>(), from, to);
     }
 
     public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
-        return new ComputeQueryImpl(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
+        return new ComputeQueryImpl(graph, computeMethod, subTypeIds, statisticsResourceTypeIds, null, null);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {
