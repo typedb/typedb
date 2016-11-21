@@ -68,13 +68,13 @@ rhs
 
 isa inference-rule
 lhs
-{($role: $x) isa marriage; $role sub generic-spouse; $x has gender "female";}
+{($x) isa marriage; $x has gender "female";}
 rhs
 {(wife: $x) isa marriage;};
 
 isa inference-rule
 lhs
-{($role: $x) isa marriage; $role sub generic-spouse; $x has gender "male";}
+{($x) isa marriage; $x has gender "male";}
 rhs
 {(husband: $x) isa marriage;};
 

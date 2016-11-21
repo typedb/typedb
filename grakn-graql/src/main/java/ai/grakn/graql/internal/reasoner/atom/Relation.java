@@ -76,6 +76,8 @@ public class Relation extends Atom {
         inferTypeFromRoles();
     }
 
+    private Set<RelationPlayer> getRelationPlayers(){return getRelationPlayers(this.atomPattern.asVar());}
+
     private Set<RelationPlayer> getRelationPlayers(VarAdmin pattern) {
         Set<RelationPlayer> rps = new HashSet<>();
         pattern.getProperty(RelationProperty.class)
@@ -144,10 +146,15 @@ public class Relation extends Atom {
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
+        Atom ruleAtom = child.getRuleConclusionAtom();
+        if(!(ruleAtom instanceof Relation)) return false;
+
+        Relation childAtom = (Relation) ruleAtom;
+        //discard if child has less rolePlayers
+        if (childAtom.getRelationPlayers().size() < this.getRelationPlayers().size()) return false;
+
         boolean ruleRelevant = true;
         Query parent = getParentQuery();
-        Atom childAtom = child.getRuleConclusionAtom();
-
         Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
         Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
 

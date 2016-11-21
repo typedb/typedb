@@ -30,8 +30,10 @@ public class Resource extends Binary{
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
+        Atom ruleAtom = child.getRuleConclusionAtom();
+        if(!(ruleAtom instanceof Resource)) return false;
+        Resource childAtom = (Resource) ruleAtom;
         Query parent = getParentQuery();
-        Atom childAtom = child.getRuleConclusionAtom();
         String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
         String parentVal = parent.getValuePredicate(getValueVariable());
         return parentVal.isEmpty() || childVal.isEmpty() || parentVal.equals(childVal);

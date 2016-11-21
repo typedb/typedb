@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
+import com.fasterxml.jackson.databind.node.DecimalNode;
 import com.google.common.collect.Sets;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -82,6 +84,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -90,6 +93,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $x isa person, has firstname $n;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -98,6 +102,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $x has identifier $i has middlename $mn;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -106,6 +111,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $x isa person has surname $srn;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -116,6 +122,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertTrue(answers.size() == 66);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     //It is expected that results are different due to how rules are defined
@@ -130,6 +137,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -149,13 +157,27 @@ public class GenealogyTest extends AbstractEngineTest{
         assertTrue(!answers.isEmpty());
     }
 
-    //Bug #11149
+    //TODO need to do all combinations for roles missing
     @Test
+    @Ignore
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
+        assertEquals(answers, answers2);
+    }
+
+    //Bug #11149
+    @Test
+    public void testMarriageMaterialisation2() {
+        String queryString = "match $rel (spouse1: $x, spouse2: $y) isa marriage;";
+        MatchQuery query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertTrue(!answers.isEmpty());
+        assertEquals(answers, answers2);
     }
 
     @Test
@@ -164,6 +186,7 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -171,6 +194,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMarriage2(){
         String queryString = "match ($r: $x) isa marriage; $r isa wife;";
     }
+
 
     /*
     test for the second rule file:
@@ -184,6 +208,7 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -192,6 +217,7 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -201,6 +227,7 @@ public class GenealogyTest extends AbstractEngineTest{
 
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -211,6 +238,7 @@ public class GenealogyTest extends AbstractEngineTest{
 
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(checkResource(answers, "g", "female"));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -224,6 +252,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -238,6 +267,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -252,6 +282,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -266,6 +297,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -287,6 +319,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(checkResource(answers, "g", "male"));
         assertTrue(!answers.isEmpty());
     }
@@ -302,6 +335,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(checkResource(answers, "g", "female"));
         assertTrue(!answers.isEmpty());
     }
@@ -317,6 +351,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -331,6 +366,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -356,6 +392,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -370,6 +407,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -385,6 +423,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
         assertTrue(checkResource(answers, "g", "female"));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -396,6 +435,7 @@ public class GenealogyTest extends AbstractEngineTest{
 
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(checkResource(answers, "g", "female"));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 

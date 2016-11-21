@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -70,6 +71,13 @@ public abstract class Binary extends Atom{
 
     @Override
     public boolean isBinary(){ return true;}
+
+    @Override
+    protected boolean isRuleApplicable(InferenceRule child) {
+        //TODO rule applicability for types should be disabled
+        Atom ruleAtom = child.getHead().getAtom();
+        return (ruleAtom instanceof Binary) && this.getType().equals(ruleAtom.getType());
+    }
 
     @Override
     public boolean equals(Object obj) {

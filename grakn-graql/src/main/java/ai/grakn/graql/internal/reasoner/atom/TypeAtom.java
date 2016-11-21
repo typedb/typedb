@@ -52,7 +52,8 @@ public class TypeAtom extends Binary{
 
     @Override
     public Type getType(){
-        return getPredicate() != null? getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
+        return getPredicate() != null?
+                getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
     }
 }
 
