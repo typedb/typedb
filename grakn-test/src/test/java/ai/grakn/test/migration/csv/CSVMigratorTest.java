@@ -75,22 +75,7 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
         load(getFile("csv", "pets/schema.gql"));
         String template = Files.readLines(getFile("csv", "pets/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
         migrate(new CSVMigrator(template, getFile("csv", "pets/quotes/emptyquotes.csv")));
-
-        Collection<Entity> pets = graph.getEntityType("pet").instances();
-        assertEquals(9, pets.size());
-
-        Collection<Entity> cats = graph.getEntityType("cat").instances();
-        assertEquals(2, cats.size());
-
-        // test empty value not created
-        ResourceType<String> name = graph.getResourceType("name");
-        ResourceType<String> death = graph.getResourceType("death");
-
-        Entity puffball = graph.getResource("Puffball", name).ownerInstances().iterator().next().asEntity();
-        assertEquals(0, puffball.resources(death).size());
-
-        Entity bowser = graph.getResource("Bowser", name).ownerInstances().iterator().next().asEntity();
-        assertEquals(1, bowser.resources(death).size());
+        assertPetGraphCorrect();
     }
 
     @Test
