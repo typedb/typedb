@@ -60,7 +60,7 @@ public class RemoteShellController {
     private final int WEBSOCKET_TIMEOUT = 3600000;
 
 
-    String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+    String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
 
     public RemoteShellController() {
 
@@ -82,7 +82,7 @@ public class RemoteShellController {
 
     private String buildMetaTypeInstancesObject(Request req, Response res) {
 
-        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
@@ -108,7 +108,7 @@ public class RemoteShellController {
     })
     private String matchQuery(Request req, Response res) {
 
-        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");

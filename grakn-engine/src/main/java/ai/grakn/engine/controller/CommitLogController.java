@@ -57,11 +57,11 @@ public class CommitLogController {
      * @return The result of clearing the post processing for a single graph
      */
     private String deleteConcepts(Request req, Response res){
-        String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
 
         if(graphName == null){
             res.status(400);
-           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.GRAPH_NAME_PARAM, "delete");
+           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.KEYSPACE_PARAM, "delete");
         }
 
         cache.getCastingJobs(graphName).clear();
@@ -78,10 +78,10 @@ public class CommitLogController {
      */
     private String submitConcepts(Request req, Response res) {
         try {
-            String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+            String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
 
             if (graphName == null) {
-                graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+                graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
             }
             LOG.info("Commit log received for graph [" + graphName + "]");
 

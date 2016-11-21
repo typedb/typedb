@@ -91,7 +91,7 @@ public class ImportController {
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
 
-        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
     }
 
     @POST
@@ -109,7 +109,7 @@ public class ImportController {
         try {
             JSONObject bodyObject = new JSONObject(req.body());
             final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName = (bodyObject.has(REST.Request.GRAPH_NAME_PARAM)) ? bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString() : defaultGraphName;
+            final String graphName = (bodyObject.has(REST.Request.KEYSPACE_PARAM)) ? bodyObject.get(REST.Request.KEYSPACE_PARAM).toString() : defaultGraphName;
             final Collection<String> hosts = new HashSet<>();
             bodyObject.getJSONArray("hosts").forEach(x -> hosts.add(((String) x)));
 
@@ -142,7 +142,7 @@ public class ImportController {
         try {
             JSONObject bodyObject = new JSONObject(req.body());
             final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName = (bodyObject.has(REST.Request.GRAPH_NAME_PARAM)) ? bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString() : defaultGraphName;
+            final String graphName = (bodyObject.has(REST.Request.KEYSPACE_PARAM)) ? bodyObject.get(REST.Request.KEYSPACE_PARAM).toString() : defaultGraphName;
 
             if (!(new File(pathToFile)).exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
