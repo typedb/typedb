@@ -117,8 +117,7 @@ public class RemoteSession {
         String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
         String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
         Printer printer = printers.getOrDefault(outputFormat, Printers.graql());
-        GraknGraph graph = getGraph.apply(keyspace);
-        GraqlSession graqlSession = new GraqlSession(session, graph, printer);
+        GraqlSession graqlSession = new GraqlSession(session, () -> getGraph.apply(keyspace), printer);
         sessions.put(session, graqlSession);
     }
 }
