@@ -74,7 +74,8 @@ public abstract class Binary extends Atom{
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getRuleConclusionAtom();
+        //TODO rule applicability for types should be disabled
+        Atom ruleAtom = child.getHead().getAtom();
         return (ruleAtom instanceof Binary) && this.getType().equals(ruleAtom.getType());
     }
 
