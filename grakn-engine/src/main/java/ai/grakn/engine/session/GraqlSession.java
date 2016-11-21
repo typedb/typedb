@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
@@ -52,7 +53,8 @@ import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
  */
 class GraqlSession {
     private final Session session;
-    private final GraknGraph graph;
+    private GraknGraph graph;
+    private final Supplier<GraknGraph> getGraph;
     private final Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
@@ -65,9 +67,10 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, GraknGraph graph, Printer printer) {
+    GraqlSession(Session session, Supplier<GraknGraph> getGraph, Printer printer) {
         this.session = session;
-        this.graph = graph;
+        this.getGraph = getGraph;
+        this.graph = getGraph.get();
         this.printer = printer;
 
         // Begin sending pings
@@ -143,10 +146,15 @@ class GraqlSession {
                 queryCancelled = false;
             } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
                 errorMessage = e.getMessage();
+                LOG.error(errorMessage,e);
             } catch (Throwable e) {
                 errorMessage = "An unexpected error occurred";
                 LOG.error(errorMessage,e);
             } finally {
+                // Refresh the graph, in case it has been closed by analytics
+                // TODO: Handle this elsewhere (analytics or graph factory?)
+                attemptRefresh();
+
                 if (errorMessage != null) {
                     if (query != null && !query.isReadOnly()) {
                         attemptRollback();
@@ -197,10 +205,20 @@ class GraqlSession {
         });
     }
 
+    private void attemptRefresh() {
+        try {
+            graph = getGraph.get();
+        } catch (Throwable e) {
+            LOG.error("Error during refresh", e);
+        }
+    }
+
     private void attemptRollback() {
         try {
             graph.rollback();
         } catch (UnsupportedOperationException ignored) {
+        } catch (Throwable e) {
+            LOG.error("Error during rollback", e);
         }
     }
 
