@@ -20,13 +20,17 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Resource;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
+import java.util.Iterator;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -34,7 +38,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GenealogyTest{
+public class GenealogyTest extends AbstractEngineTest{
 
     private static GraknGraph graph;
     private static Reasoner reasoner;
@@ -45,6 +49,7 @@ public class GenealogyTest{
         graph = GenealogyGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql();
+
         /*
         //prerunning analytics
         graph.graql().parse("compute degreesAndPersist in event, conclusion-evidence;").execute();
@@ -68,17 +73,15 @@ public class GenealogyTest{
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assert(answers.size() == 1);
     }
 
     @Test
     public void testGender() {
-        String queryString = "match $x isa person has gender $gender;";
+        String queryString = "match $x isa person has identifier $id has gender $gender;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -86,8 +89,7 @@ public class GenealogyTest{
     public void testName() {
         String queryString = "match $x isa person, has firstname $n;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -95,8 +97,7 @@ public class GenealogyTest{
     public void testMiddleName() {
         String queryString = "match $x has identifier $i has middlename $mn;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -104,8 +105,7 @@ public class GenealogyTest{
     public void testSurName() {
         String queryString = "match $x isa person has surname $srn;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -113,9 +113,31 @@ public class GenealogyTest{
     public void testParentship() {
         String queryString = "match (child: $x, parent: $y) isa parentship;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
-        assertTrue(!answers.isEmpty());
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        answers.forEach(answer -> assertTrue(answer.size() == 2));
+        assertTrue(answers.size() == 66);
+    }
+
+    //It is expected that results are different due to how rules are defined
+    @Test
+    @Ignore
+    public void testParentship2() {
+        String queryString = "match (child: $x, $y) isa parentship;select $x;";
+        String queryString2 = "match (child: $x) isa parentship;";
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        answers.forEach(answer -> assertTrue(answer.size() == 2));
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testParentship3(){
+        String queryString = "match ($x, son: $y) isa parentship;";
+        MatchQuery query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(answers.isEmpty());
     }
 
     @Test
@@ -123,8 +145,7 @@ public class GenealogyTest{
     public void testMarriageType() {
         String queryString = "match $x isa marriage;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -133,8 +154,7 @@ public class GenealogyTest{
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -142,9 +162,14 @@ public class GenealogyTest{
     public void testMarriage() {
         String queryString = "match (spouse1: $x, spouse2: $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+    }
+
+    @Test
+    @Ignore
+    public void testMarriage2(){
+        String queryString = "match ($r: $x) isa marriage; $r isa wife;";
     }
 
     /*
@@ -157,8 +182,7 @@ public class GenealogyTest{
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -166,32 +190,39 @@ public class GenealogyTest{
     public void testCousins() {
         String queryString = "match ($x, $y) isa cousins;";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testInLaws() {
-        String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;";
+        String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$y has gender 'male';";
         MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testMotherInLaw() {
-        String queryString = "match (mother-in-law: $x); $x has identifier $id;";
-        String queryString2 = "match (parent-in-law: $x) isa in-laws;" +
-                "$x has gender 'female';$x has identifier $id;";
+        String queryString = "match (parent-in-law: $x) isa in-laws;" +
+                "$x has gender $g;$g value 'female';$x has identifier $id;";
+        MatchQuery query = new Query(queryString, graph);
+
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(checkResource(answers, "g", "female"));
+    }
+
+    @Test
+    public void testMotherInLaw2() {
+        String queryString = "match (mother-in-law: $x);$x has identifier $id;$x has gender $g;";
+        String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
+                "$x has gender $g;$g value 'female';$x has identifier $id; select $x, $g, $id;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
         assertTrue(!answers.isEmpty());
     }
@@ -199,29 +230,27 @@ public class GenealogyTest{
     @Test
     public void testFatherInLaw() {
         String queryString = "match (father-in-law: $x); $x has identifier $id;";
-        String queryString2 = "match (parent-in-law: $x) isa in-laws;" +
-                "$x has gender 'male';$x has identifier $id;";
+        String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
+                "$x has gender 'male';$x has identifier $id; select $x, $id;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
         assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testSonInLaw() {
-        String queryString = "match (son-in-law: $x); $x has identifier $id;";
-        String queryString2 = "match (child-in-law: $x) isa in-laws;" +
-                "$x has gender 'male';$x has identifier $id;";
+        String queryString = "match (son-in-law: $x);$x has gender $g;";
+        String queryString2 = "match (child-in-law: $x, $y) isa in-laws;" +
+                "$x has gender $g;$g value 'male';select $x, $g;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
         assertTrue(!answers.isEmpty());
     }
@@ -229,14 +258,13 @@ public class GenealogyTest{
     @Test
     public void testDaughterInLaw() {
         String queryString = "match (daughter-in-law: $x); $x has identifier $id;";
-        String queryString2 = "match (child-in-law: $x) isa in-laws;" +
-                "$x has gender 'female';$x has identifier $id;";
+        String queryString2 = "match (child-in-law: $x, $y) isa in-laws;" +
+                "$x has gender 'female';$x has identifier $id; select $x, $id;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
         assertTrue(!answers.isEmpty());
     }
@@ -250,15 +278,44 @@ public class GenealogyTest{
 
     @Test
     public void testSon() {
-        String queryString = "match (son: $x);$x has identifier $id;";
-        String queryString2 = "match (child: $x) isa parentship;" +
-                "$x has gender 'male';$x has identifier $id;";
+        String queryString = "match (son: $x);$x has gender $g;";
+        String queryString2 = "match (child: $x, $y) isa parentship;" +
+                "$x has gender $g;$g value 'male'; select $x, $g;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        assertEquals(answers, answers2);
+        assertTrue(checkResource(answers, "g", "male"));
+        assertTrue(!answers.isEmpty());
+    }
+
+    @Test
+    public void testDaughter() {
+        String queryString = "match (daughter: $x);$x has gender $g;";
+        String queryString2 = "match (child: $x, $y) isa parentship;" +
+                "$x has gender $g;$g value 'female'; select $x, $g;";
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        assertEquals(answers, answers2);
+        assertTrue(checkResource(answers, "g", "female"));
+        assertTrue(!answers.isEmpty());
+    }
+
+    @Test
+    public void testFather() {
+        String queryString = "match (father: $x);";
+        String queryString2 = "match (parent: $x, $y) isa parentship;" +
+                "$x has gender 'male'; select $x;";
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
         assertTrue(!answers.isEmpty());
     }
@@ -266,60 +323,89 @@ public class GenealogyTest{
     @Test
     public void testMother() {
         String queryString = "match (mother: $x);";
-        String queryString2 = "match (parent: $x) isa parentship;" +
-                "$x has gender 'female';";
+        String queryString2 = "match (parent: $x, $y) isa parentship;" +
+                "$x has gender 'female';select $x;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
         assertTrue(!answers.isEmpty());
     }
 
     @Test
-    //TODO  (grandmother: $x) works, (grandmother: $x, $y) gets filtered too aggressively and returns no results
+    public void testFemaleFather() {
+        String queryString = "match (father: $x) isa parentship; $x has gender $g; $g value 'female';";
+        MatchQuery query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(answers.isEmpty());
+    }
+
+
+    @Test
     public void testGrandMother() {
         String queryString = "match (grandmother: $x) isa grandparentship;" +
                 "$x has identifier $pidX;select $pidX;";
-        String queryString2 = "match (grandparent: $x) isa grandparentship;" +
+        String queryString2 = "match (grandparent: $x, $y) isa grandparentship;" +
                 "$x has gender 'female';" +
                 "$x has identifier $pidX; select $pidX;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
     }
 
     @Test
     public void testGrandMother2() {
         String queryString = "match (grandmother: $x) isa grandparentship; $x has gender $g;";
-        String queryString2 = "match (grandparent: $x) isa grandparentship;" +
-                "$x has gender $g;$g value 'female';";
+        String queryString2 = "match (grandparent: $x, $y) isa grandparentship;" +
+                "$x has gender $g;$g value 'female';select $x, $g;";
 
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
 
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = reasoner.resolve(query2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertEquals(answers, answers2);
     }
 
     @Test
-    @Ignore
-    public void testGrandParentship(){
-        String queryString = "match "+
-                "(grandfather: $x); (granddaughter: $y); (grandparent: $x, grandchild: $y) isa grandparentship;";
-        MatchQuery query = new Query(queryString, graph);
-        Reasoner reasoner = new Reasoner(graph);
+    public void testGrandDaughter(){
+        String queryString = "match (granddaughter: $x); $x has gender $g;";
+        String queryString2 = "match (grandchild: $x, $y) isa grandparentship;" +
+                "$x has gender $g;$g value 'female';select $x, $g;";
 
-        QueryAnswers answers = reasoner.resolve(query);
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        assertEquals(answers, answers2);
+        assertTrue(checkResource(answers, "g", "female"));
         assertTrue(!answers.isEmpty());
     }
 
+    @Test
+    public void testGrandParentship(){
+        String queryString = "match "+
+                "(grandchild: $x); (granddaughter: $x);$x has gender $g;";
+        MatchQuery query = new Query(queryString, graph);
+
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(checkResource(answers, "g", "female"));
+        assertTrue(!answers.isEmpty());
+    }
+
+    private boolean checkResource(QueryAnswers answers, String var, String value){
+        boolean isOk = true;
+        Iterator<Map<String, Concept>> it =  answers.iterator();
+        while (it.hasNext() && isOk){
+            Concept c = it.next().get(var);
+            isOk = c.asResource().getValue().equals(value);
+        }
+        return isOk;
+    }
 }

@@ -4,7 +4,7 @@ insert
 
 isa inference-rule
 lhs
-{(grandparent: $x) isa grandparentship;
+{(grandparent: $x, grandchild: $y) isa grandparentship;
 $x has gender "female";
 }
 rhs
@@ -12,7 +12,7 @@ rhs
 
 isa inference-rule
 lhs
-{(grandparent: $x) isa grandparentship;
+{(grandparent: $x, grandchild: $y) isa grandparentship;
 $x has gender "male";
 }
 rhs
@@ -20,7 +20,7 @@ rhs
 
 isa inference-rule
 lhs
-{(grandchild: $x) isa grandparentship;
+{(grandchild: $x, grandparent: $y) isa grandparentship;
 $x has gender "male";
 }
 rhs
@@ -28,7 +28,7 @@ rhs
 
 isa inference-rule
 lhs
-{(grandchild: $x) isa grandparentship;
+{(grandchild: $x, grandparent: $y) isa grandparentship;
 $x has gender "female";
 }
 rhs
@@ -36,7 +36,7 @@ rhs
 
 isa inference-rule
 lhs
-{(parent: $x) isa parentship;
+{(parent: $x, child: $y) isa parentship;
 $x has gender "female";
 }
 rhs
@@ -44,15 +44,15 @@ rhs
 
 isa inference-rule
 lhs
-{(parent: $x, $y) isa parentship;
+{(parent: $x, child: $y) isa parentship;
 $x has gender "male";
 }
 rhs
-{(father: $x, $y) isa parentship;};
+{(father: $x) isa parentship;};
 
 isa inference-rule
 lhs
-{(child: $x) isa parentship;
+{(child: $x, parent: $y) isa parentship;
 $x has gender "female";
 }
 rhs
@@ -60,7 +60,7 @@ rhs
 
 isa inference-rule
 lhs
-{(child: $x) isa parentship;
+{(child: $x, parent: $y) isa parentship;
 $x has gender "male";
 }
 rhs
@@ -81,7 +81,7 @@ rhs
 # TODO: Genderize in-laws
 isa inference-rule
 lhs
-{(parent-in-law: $x) isa in-laws;
+{(parent-in-law: $x, child-in-law: $y) isa in-laws;
 $x has gender "male";
 }
 rhs
@@ -89,7 +89,7 @@ rhs
 
 isa inference-rule
 lhs
-{(parent-in-law: $x) isa in-laws;
+{(parent-in-law: $x, child-in-law: $y) isa in-laws;
 $x has gender "female";
 }
 rhs
@@ -97,7 +97,7 @@ rhs
 
 isa inference-rule
 lhs
-{(child-in-law: $x) isa in-laws;
+{(child-in-law: $x, parent-in-law: $y) isa in-laws;
 $x has gender "male";
 }
 rhs
@@ -105,7 +105,7 @@ rhs
 
 isa inference-rule
 lhs
-{(child-in-law: $x) isa in-laws;
+{(child-in-law: $x, parent-in-law: $y) isa in-laws;
 $x has gender "female";
 }
 rhs

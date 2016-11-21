@@ -7,7 +7,7 @@ $x has surname <surname>;}
 if (ne name2 null) do {
 $x has middlename <name2>;}
 if (ne born null) do {
-$x has date <born>;}
+$x has birth-date <born>;}
 if (ne dead null) do {
-$y isa death has date <dead> has confidence "high";
+$y isa death has death-date <dead> has confidence "high";
 (happening: $y, protagonist: $p) isa event-protagonist has role "deceased";}

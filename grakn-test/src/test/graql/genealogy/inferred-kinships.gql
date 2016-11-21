@@ -39,4 +39,22 @@ lhs
 {(spouse1: $x, spouse2: $y) isa marriage;
 (parent: $il, child: $y) isa parentship;}
 rhs
+
 {(parent-in-law: $il, child-in-law: $x) isa in-laws;};
+
+$parentsOfSpousesAreInLaws2 isa inference-rule
+lhs
+{(spouse1: $x, spouse2: $y) isa marriage;
+(parent: $il, child: $x) isa parentship;}
+rhs
+{(parent-in-law: $il, child-in-law: $y) isa in-laws;};
+
+#TODO: THIS IS HOW THE RULE SHOULD LOOK LIKE. FOR THE MOMENT I WILL USE TWO RULES INSTEAD
+#$parentsOfSpousesAreInLaws isa inference-rule
+#lhs
+#{($r1: $x, $r2: $y) isa marriage;
+#$r1 isa generic-spouse;
+#$r2 isa generic-spouse;
+#(parent: $il, child: $y) isa parentship;}
+#rhs
+#{(parent-in-law: $il, child-in-law: $x) isa in-laws;};

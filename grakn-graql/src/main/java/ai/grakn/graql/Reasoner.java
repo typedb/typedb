@@ -171,11 +171,13 @@ public class Reasoner {
                     QueryAnswers localSubs = answerWM(childAtomicQuery, subGoals, matAnswers);
                     subs = subs.join(localSubs);
                 }
+
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
                         .filterVars(ruleHead.getSelectedNames())
                         .filterKnown(atomicQuery.getAnswers());
                 QueryAnswers newAnswers = new QueryAnswers();
                 newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
+
                 if (!newAnswers.isEmpty()) answers = newAnswers;
                 atomicQuery.getAnswers().addAll(answers);
                 recordAnswers(atomicQuery, matAnswers);
