@@ -938,4 +938,34 @@ public class AnalyticsTest extends AbstractGraphTest {
             fail();
         }
     }
+
+    @Test
+    public void testResourcesMergedOnBulkMutate() throws GraknValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        RoleType friend1 = graph.putRoleType("friend1");
+        RoleType friend2 = graph.putRoleType("friend2");
+        RelationType friendship = graph.putRelationType("friendship");
+        friendship.hasRole(friend1).hasRole(friend2);
+
+        EntityType person = graph.putEntityType("person");
+        person.playsRole(friend1).playsRole(friend2);
+
+        for (int i = 0; i < 10; i++) {
+            friendship.addRelation()
+                    .putRolePlayer(friend1, person.addEntity())
+                    .putRolePlayer(friend2, person.addEntity());
+        }
+
+        graph.commit();
+        String keyspace = graph.getKeyspace();
+
+        new Analytics(keyspace, new HashSet<String>(),new HashSet<String>()).degreesAndPersist();
+
+        Collection<Resource<Object>> degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
+                .getResourceType("degree").instances();
+
+        assertEquals(1,degrees.size());
+    }
 }
