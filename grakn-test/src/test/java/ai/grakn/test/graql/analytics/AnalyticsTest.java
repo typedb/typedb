@@ -28,12 +28,12 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.engine.postprocessing.PostProcessing;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import ai.grakn.exception.GraknValidationException;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -961,11 +961,20 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.commit();
         String keyspace = graph.getKeyspace();
 
-        new Analytics(keyspace, new HashSet<String>(),new HashSet<String>()).degreesAndPersist();
+        new Analytics(keyspace, new HashSet<>(), new HashSet<>()).degreesAndPersist();
 
         Collection<Resource<Object>> degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
                 .getResourceType("degree").instances();
 
+        assertTrue(degrees.size() > 1);
+
+        //Force Post Processing
+        PostProcessing postProcessing = PostProcessing.getInstance();
+        postProcessing.run();
+
+        //Check all is good
+        graph.close();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         assertEquals(1,degrees.size());
     }
 }
