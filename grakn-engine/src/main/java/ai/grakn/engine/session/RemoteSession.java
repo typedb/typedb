@@ -100,9 +100,6 @@ public class RemoteSession {
                 case REST.RemoteShell.ACTION_ROLLBACK:
                     sessions.get(session).rollback();
                     break;
-                case REST.RemoteShell.ACTION_AUTOCOMPLETE:
-                    sessions.get(session).autocomplete(json);
-                    break;
             }
         } catch (Throwable e) {
             LOG.error("Exception",e);

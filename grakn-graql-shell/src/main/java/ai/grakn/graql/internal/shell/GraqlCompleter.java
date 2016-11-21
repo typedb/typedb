@@ -18,42 +18,37 @@
 
 package ai.grakn.graql.internal.shell;
 
-import ai.grakn.graql.GraqlShell;
-import ai.grakn.util.REST;
-import ai.grakn.graql.GraqlShell;
+import ai.grakn.graql.Autocomplete;
 import jline.console.completer.Completer;
-import mjson.Json;
 
-import java.io.IOException;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CANDIDATES;
-import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 
 /**
  * An autocompleter for Graql.
  * Provides a default 'complete' method that will filter results to only those that pass the Graql lexer
  */
-public class GraQLCompleter implements Completer {
+public class GraqlCompleter implements Completer {
 
-    private final GraqlShell shell;
+    private CompletableFuture<Set<String>> types = new CompletableFuture<>();
 
-    public GraQLCompleter(GraqlShell shell) {
-        this.shell = shell;
+    public void setTypes(Set<String> types) {
+        this.types.complete(types);
     }
 
     @Override
     public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        Json json = null;
-
+        Set<String> theTypes;
         try {
-            json = shell.getAutocompleteCandidates(buffer, cursor);
-        } catch (InterruptedException | ExecutionException | IOException e) {
-            e.printStackTrace();
+            theTypes = types.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
 
-        json.at(REST.RemoteShell.AUTOCOMPLETE_CANDIDATES).asJsonList().forEach(candidate -> candidates.add(candidate.asString()));
-        return json.at(REST.RemoteShell.AUTOCOMPLETE_CURSOR).asInteger();
+        Autocomplete autocomplete = Autocomplete.create(theTypes, buffer, cursor);
+        candidates.addAll(autocomplete.getCandidates());
+        return autocomplete.getCursorPosition();
     }
 }

@@ -18,22 +18,29 @@
 
 package ai.grakn.shell;
 
+import ai.grakn.graql.GraqlShell;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.base.Strings;
-import ai.grakn.graql.GraqlShell;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 // TODO: Fix randomly failing tests
 // GraqlShellTest sometimes stalls with no output. This is probably related to the mock websocket
@@ -172,7 +179,7 @@ public class GraqlShellTest {
         assertThat(
                 result,
                 allOf(
-                        containsString("type"), containsString("match"),
+                        containsString("relation-type"), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );
