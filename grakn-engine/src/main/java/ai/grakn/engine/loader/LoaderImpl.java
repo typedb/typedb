@@ -20,7 +20,7 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
@@ -58,7 +58,7 @@ public class LoaderImpl implements Loader {
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
     private static final TaskManager manager = InMemoryTaskManager.getInstance();
-    private static final TaskStateStorage storage = manager.storage();
+    private static final StateStorage storage = manager.storage();
     private static final ConfigProperties properties = ConfigProperties.getInstance();
 
     private int batchSize;
@@ -182,7 +182,7 @@ public class LoaderImpl implements Loader {
      * @return IDs of tasks in this keyspace
      */
     private Collection<String> getTasks(){
-        return storage.getTasks(null, LoaderTask.class.getName(), keyspace).stream()
+        return storage.getTasks(null, LoaderTask.class.getName(), keyspace, 100000, 0).stream()
                 .map(Pair::getKey)
                 .collect(toSet());
     }
@@ -193,7 +193,7 @@ public class LoaderImpl implements Loader {
      * @return number of tasks within the given parameters
      */
     private Collection<String> getTasks(TaskStatus status){
-        return storage.getTasks(status, LoaderTask.class.getName(), keyspace).stream()
+        return storage.getTasks(status, LoaderTask.class.getName(), keyspace, 100000, 0).stream()
                 .map(Pair::getKey)
                 .collect(toSet());
     }

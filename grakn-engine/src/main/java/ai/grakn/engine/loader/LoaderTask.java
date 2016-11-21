@@ -91,8 +91,8 @@ public class LoaderTask implements BackgroundTask {
 
             throwException("Could not insert");
         } finally {
-            if(releaseSemaphore == true){
-                Loader.blocker.release();
+            if(releaseSemaphore){
+                LoaderImpl.blocker.release();
             }
         }
     }

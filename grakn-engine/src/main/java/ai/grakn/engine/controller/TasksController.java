@@ -103,9 +103,6 @@ public class TasksController {
             result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
         }
 
-        System.out.println("result length: "+result.length());
-        System.out.println(" all response: "+result.toString());
-
         response.type("application/json");
         return result;
     }
@@ -162,8 +159,8 @@ public class TasksController {
 
         if(request.queryParams(RUN_INTERVAL_PARAMETER) != null)
             interval = Long.valueOf(request.queryParams(RUN_INTERVAL_PARAMETER));
-        if(request.queryParams(CONFIGURATION_PARAMETER) != null)
-            configuration = new JSONObject(request.queryParams(CONFIGURATION_PARAMETER));
+        if(request.body() != null)
+            configuration = new JSONObject(request.body());
 
         if(className == null || createdBy == null || runAt == null)
             throw new GraknEngineServerException(400, "Missing mandatory parameters");

@@ -19,33 +19,41 @@
 package ai.grakn.engine.loader.client;
 
 import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderTask;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.utils.IOUtils;
+import sun.nio.ch.IOUtil;
 
 import javax.xml.ws.http.HTTPException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
+import static ai.grakn.util.REST.Request.Task.CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.Task.Loader.INSERTS;
 import static ai.grakn.util.REST.Request.Task.Loader.KEYSPACE;
+import static ai.grakn.util.REST.Request.Task.LIMIT;
 import static ai.grakn.engine.util.ConfigProperties.BATCH_SIZE_PROPERTY;
 import static ai.grakn.engine.util.ConfigProperties.POLLING_FREQUENCY_PROPERTY;
 
@@ -55,10 +63,9 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 
+import static ai.grakn.util.REST.Request.Task.RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
-
-import static ai.grakn.engine.util.ConfigProperties.SERVER_PORT_NUMBER;
 
 import static java.util.stream.Collectors.toList;
 
@@ -75,17 +82,16 @@ public class LoaderClient implements Loader {
     private String keyspace;
 
     private int currentHost;
-    private List<String> hosts;
+    private Set<String> hosts;
 
     private Map<String, Semaphore> availability;
-    private Map<String, Integer> jobsTerminated;
+    private Set<String> submitted;
 
-    private static final String POST = post();
-
-    private static final String GET = "http://%s:" + properties.getProperty(SERVER_PORT_NUMBER) + TASKS_URI;
+    private final String POST = post();
+    private final String GET = get();
 
     public LoaderClient(String keyspace, Collection<String> hosts) {
-        this.hosts = Lists.newArrayList(hosts);
+        this.hosts = Sets.newHashSet(hosts);
         currentHost = 0;
 
         setBatchSize(properties.getPropertyAsInt(BATCH_SIZE_PROPERTY));
@@ -174,16 +180,18 @@ public class LoaderClient implements Loader {
 
     public void sendQueriesToLoader(Collection<InsertQuery> queries) {
 
-        HttpURLConnection currentConn = acquireNextHost();
-        executePost(currentConn, getConfiguration(queries));
+        HttpURLConnection currentConn = acquireNextHost(getPostParams());
+        String response = executePost(currentConn, getConfiguration(queries));
 
         int responseCode = getResponseCode(currentConn);
-        if (responseCode != REST.HttpConn.HTTP_TRANSACTION_CREATED) {
+        if (responseCode != REST.HttpConn.OK) {
             throw new HTTPException(responseCode);
         }
 
-        LOG.info("Transaction sent to host: " + hosts.get(currentHost));
+        String job = Json.read(response).at("id").asString();
+        submitted.add(job);
 
+        LOG.info("Job " + job + " sent to host: " + hosts.toArray()[currentHost]);
         if(future == null){ startCheckingStatus(); }
     }
 
@@ -193,7 +201,7 @@ public class LoaderClient implements Loader {
      * @return if the given transaction has finished
      */
     private String getHostState(String host) {
-        HttpURLConnection connection = getHost(host, GET);
+        HttpURLConnection connection = getHost(host, GET, "");
         String response = getResponseBody(connection);
         connection.disconnect();
 
@@ -221,10 +229,8 @@ public class LoaderClient implements Loader {
      * This method updates the semaphore availability.
      */
     public void checkForStatusLoop() {
-        boolean finished = false;
 
-        while (!finished) {
-
+        while (!submitted.isEmpty()) {
             int runningCreated = 0;
             int runningScheduled = 0;
             int runningCompleted = 0;
@@ -235,20 +241,13 @@ public class LoaderClient implements Loader {
             for (String host : availability.keySet()) {
 
                 Json state = Json.read(getHostState(host));
-                LOG.info("State from host ["+host+"]:");
-                LOG.info(state.toString());
+                Map<String, Integer> states = releaseJobsCompletedIn(state, host);
 
-                int created = state.at(CREATED.name()).asInteger();
-                int scheduled = state.at(SCHEDULED.name()).asInteger();
-                int completed = state.at(COMPLETED.name()).asInteger();
-                int running = state.at(RUNNING.name()).asInteger();
-                int failed = state.at(FAILED.name()).asInteger();
-
-                int terminated = completed + failed;
-
-                int permitsToRelease = terminated - jobsTerminated.get(host);
-                availability.get(host).release(permitsToRelease);
-                jobsTerminated.put(host, terminated);
+                int created = states.get(CREATED.name());
+                int scheduled = states.get(SCHEDULED.name());
+                int completed = states.get(COMPLETED.name());
+                int running = states.get(RUNNING.name());
+                int failed = states.get(FAILED.name());
 
                 printLoaderState(created, scheduled, completed, running, failed);
 
@@ -261,17 +260,12 @@ public class LoaderClient implements Loader {
 
             printLoaderState(runningCreated, runningScheduled, runningCompleted, runningRunning, runningFailed);
 
-            if((runningCreated + runningRunning + runningScheduled) == 0){
-                finished = true;
-            }
-
             try {
                 Thread.sleep(pollingFrequency);
             } catch (InterruptedException e) {
                 LOG.error("Exception",e);
             }
         }
-
         stopCheckingStatus();
     }
 
@@ -280,7 +274,7 @@ public class LoaderClient implements Loader {
      *
      * @return the available http connection
      */
-    private HttpURLConnection acquireNextHost() {
+    private HttpURLConnection acquireNextHost(String params) {
         String host = nextHost();
 
         // check availability
@@ -288,7 +282,7 @@ public class LoaderClient implements Loader {
             host = nextHost();
         }
 
-        return getHost(host, POST);
+        return getHost(host, POST, params);
     }
 
     /**
@@ -302,7 +296,7 @@ public class LoaderClient implements Loader {
             currentHost = 0;
         }
 
-        return hosts.get(currentHost);
+        return hosts.toArray()[currentHost].toString();
     }
 
     /**
@@ -311,10 +305,10 @@ public class LoaderClient implements Loader {
      * @param host ip of the machine where engine is running
      * @return http connection to the machine where engine is running
      */
-    private HttpURLConnection getHost(String host, String format) {
+    private HttpURLConnection getHost(String host, String format, String params) {
         HttpURLConnection urlConn = null;
         try {
-            String url = String.format(format, host, keyspace);
+            String url = String.format(format, host) + "?" + params;
             urlConn = (HttpURLConnection) new URL(url).openConnection();
             urlConn.setDoOutput(true);
         } catch (IOException e) {
@@ -336,19 +330,21 @@ public class LoaderClient implements Loader {
             // add body and execute
             connection.setRequestProperty(REST.HttpConn.CONTENT_LENGTH, Integer.toString(body.length()));
             connection.getOutputStream().write(body.getBytes(REST.HttpConn.UTF8));
+            connection.getOutputStream().flush();
 
             // get response
-            return connection.getResponseMessage();
+            return IOUtils.toString(connection.getInputStream());
         }
         catch (HTTPException e){
             LOG.error(ErrorMessage.ERROR_IN_DISTRIBUTED_TRANSACTION.getMessage(
                     connection.getURL().toString(),
                     e.getStatusCode(),
-                    getResponseMessage(connection),
-                    body));
+                    getResponseMessage(connection)));
         }
         catch (IOException e){
             LOG.error(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(connection.getURL().toString()));
+        } finally {
+            connection.disconnect();
         }
 
         return null;
@@ -397,18 +393,6 @@ public class LoaderClient implements Loader {
     }
 
     /**
-     * Transform queries into Json configuration needed by the Loader task
-     * @param queries queries to include in configuration
-     * @return configuration for the loader task
-     */
-    private String getConfiguration(Collection<InsertQuery> queries){
-        return Json.object()
-                .set(KEYSPACE, keyspace)
-                .set(INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
-                .toString();
-    }
-
-    /**
      * Method that logs the current state of loading transactions
      */
     private void printLoaderState(int created, int scheduled, int completed, int running, int failed) {
@@ -425,15 +409,60 @@ public class LoaderClient implements Loader {
      * Reset the jobs terminated map
      */
     private void resetJobsTerminated(){
-        jobsTerminated = new HashMap<>();
-        hosts.forEach(h -> jobsTerminated.put(h, 0));
+        submitted = new HashSet<>();
     }
 
-    private static String get(){
-        return "http://%s:" +
-                properties.getProperty(SERVER_PORT_NUMBER) +
+    private String post(){
+        return "http://%s" + TASKS_SCHEDULE_URI;
+    }
 
-                SCHEDULED + "?" +
-                GRAPH_NAME_PARAM + "=%s";
+    private String get(){
+        return "http://%s" + ALL_TASKS_URI;
+    }
+
+    private String getPostParams(){
+        return CLASS_NAME_PARAMETER + "=" + LoaderTask.class.getName() + "&" +
+                RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
+                LIMIT + "=" + 10000 + "&" +
+                CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
+    }
+
+    /**
+     * Transform queries into Json configuration needed by the Loader task
+     * @param queries queries to include in configuration
+     * @return configuration for the loader task
+     */
+    private String getConfiguration(Collection<InsertQuery> queries){
+        return Json.object()
+                .set(KEYSPACE, keyspace)
+                .set(INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
+                .toString();
+    }
+
+    private Map<String, Integer> releaseJobsCompletedIn(Json state, String host){
+        Map<String, Integer> states = new HashMap<>();
+        states.put(CREATED.name(), 0);
+        states.put(RUNNING.name(), 0);
+        states.put(SCHEDULED.name(), 0);
+        states.put(FAILED.name(), 0);
+        states.put(COMPLETED.name(), 0);
+
+        if(state == null){
+            return states;
+        }
+
+        for(Object map:state.asList()){
+            String status = ((HashMap) map).get("status").toString();
+            states.put(status, states.get(status) + 1);
+
+
+            String job = ((HashMap) map).get("id").toString();
+            if(submitted.contains(job)){
+                availability.get(host).release();
+                submitted.remove(job);
+            }
+        }
+
+        return states;
     }
 }

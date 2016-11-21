@@ -18,9 +18,11 @@
 
 package ai.grakn.engine.loader;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.engine.GraknEngineTestBase;
+import ai.grakn.engine.loader.client.LoaderClient;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -29,13 +31,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import static ai.grakn.graql.Graql.parsePatterns;
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class LoaderTest extends GraknEngineTestBase {
+public class LoaderClientTest extends GraknEngineTestBase {
 
     private static final String keyspace = "KEYSPACE";
     private Loader loader;
@@ -44,11 +47,11 @@ public class LoaderTest extends GraknEngineTestBase {
     @Before
     public void setup() {
         graph = GraphFactory.getInstance().getGraph(keyspace);
-        loader = new LoaderImpl(keyspace);
+        loader = new LoaderClient(keyspace, Arrays.asList(Grakn.DEFAULT_URI, Grakn.DEFAULT_URI));
     }
 
     @After
-    public void clean() throws InterruptedException {
+    public void clean(){
         graph.clear();
         graph.close();
     }
@@ -62,7 +65,7 @@ public class LoaderTest extends GraknEngineTestBase {
 
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
-        assertEquals(100, nameTags.size());
+        assertEquals(nameTags.size(), 100);
         assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
     }
 
@@ -82,7 +85,7 @@ public class LoaderTest extends GraknEngineTestBase {
 
     @Test
     public void loadWithSmallQueueSizeToBlockTest(){
-        loader.setQueueSize(1);
+        loader.setQueueSize(10);
         loadOntology("dblp-ontology.gql", keyspace);
 
         String nametags = readFileAsString("small_nametags.gql");

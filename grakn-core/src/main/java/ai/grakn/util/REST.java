@@ -79,7 +79,7 @@ public class REST {
 
     public static class HttpConn{
         public static final String INSERT_PREFIX = "insert ";
-        public static final int HTTP_TRANSACTION_CREATED = 201;
+        public static final int OK = 200;
         public static final String UTF8 = "UTF8";
         public static final String CONTENT_LENGTH = "Content-Length";
         public static final String CONTENT_TYPE = "Content-Type";

@@ -72,7 +72,7 @@ public abstract class GraknEngineTestBase {
     protected void loadOntology(String file, String graphName) {
         LOG.debug("Loading new ontology .. ");
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(graphName)) {
 
             String ontology = readFileAsString(file);
 
