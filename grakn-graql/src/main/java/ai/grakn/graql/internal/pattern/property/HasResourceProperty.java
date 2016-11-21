@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.id;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.util.CommonUtil.tryAny;
 import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
@@ -72,6 +71,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
+
+        resourceType.ifPresent(repr);
+
         if (resource.isUserDefinedName()) {
             repr.add(resource.getPrintableName());
         } else {
