@@ -127,11 +127,14 @@ public class AtomicQuery extends Query{
                                 answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName()).getPredicateValue()));
                                 answer.put(atom.getValueVariable(), c);
                             } else if (c.isRelation()) {
-                                Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers()
-                                        .entrySet().stream().filter( entry -> entry.getValue() != null)
-                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                                 answer.put(atom.getVarName(), c);
                                 Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
+                                Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers()
+                                        .entrySet().stream()
+                                        .filter(entry -> entry.getValue() != null)
+                                        .filter(entry -> roleMap.containsKey(entry.getKey()))
+                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
                                 roleplayers.entrySet().forEach(entry -> {
                                     answer.put(roleMap.get(entry.getKey()).getKey(), entry.getValue());
                                 });
@@ -151,10 +154,11 @@ public class AtomicQuery extends Query{
      */
     public QueryAnswers materialise(Set<IdPredicate> subs) {
         QueryAnswers insertAnswers = new QueryAnswers();
-        subs.forEach(this::addAtom);
+        AtomicQuery queryToMaterialise = new AtomicQuery(this);
+        subs.forEach(queryToMaterialise::addAtom);
 
         //extrapolate if needed
-        Atom atom = getAtom();
+        Atom atom = queryToMaterialise.getAtom();
         if(atom.isRelation() &&
                 (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
             String relTypeId = atom.getTypeId();
@@ -165,20 +169,20 @@ public class AtomicQuery extends Query{
             Set<Map<String, String>> roleMaps = new HashSet<>();
             Utility.computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
 
-            removeAtom(atom);
+            queryToMaterialise.removeAtom(atom);
             roleMaps.forEach( map -> {
                 //TODO doesn't update core atom
-                Relation relationWithRoles = new Relation(atom.getVarName(), relTypeId, map, this);
-                addAtom(relationWithRoles);
-                insertAnswers.addAll(materialiseComplete());
-                removeAtom(relationWithRoles);
+                Relation relationWithRoles = new Relation(atom.getVarName(), relTypeId, map, queryToMaterialise);
+                queryToMaterialise.addAtom(relationWithRoles);
+                insertAnswers.addAll(queryToMaterialise.materialiseComplete());
+                queryToMaterialise.removeAtom(relationWithRoles);
             });
-            addAtom(atom);
+            //queryToMaterialise.addAtom(atom);
         }
         else
-            insertAnswers.addAll(materialiseComplete());
+            insertAnswers.addAll(queryToMaterialise.materialiseComplete());
 
-        subs.forEach(this::removeAtom);
+        //subs.forEach(queryToMaterialise::removeAtom);
         return insertAnswers;
     }
 

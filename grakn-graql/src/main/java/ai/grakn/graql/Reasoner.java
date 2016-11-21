@@ -50,6 +50,14 @@ public class Reasoner {
         linkConceptTypes();
     }
 
+    private void commitGraph() {
+        try {
+            graph.commit();
+        } catch (GraknValidationException e) {
+            LOG.debug(e.getMessage());
+        }
+    }
+
     private void linkConceptTypes(Rule rule) {
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(rule.getLHS());
@@ -92,13 +100,7 @@ public class Reasoner {
                     linkConceptTypes(rule);
                     linkedRules.add(rule);
                 });
-        if(!linkedRules.isEmpty()) {
-            try {
-                graph.commit();
-            } catch (GraknValidationException e) {
-                LOG.debug(e.getMessage());
-            }
-        }
+        if(!linkedRules.isEmpty()) commitGraph();
         LOG.debug(linkedRules.size() + " rules linked...");
     }
 
@@ -179,7 +181,11 @@ public class Reasoner {
                 newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
 
                 if (!newAnswers.isEmpty()) answers = newAnswers;
-                atomicQuery.getAnswers().addAll(answers);
+                //TODO do all combinations if roles missing
+                QueryAnswers filteredAnswers = answers
+                        .filterVars(atomicQuery.getSelectedNames())
+                        .filterIncomplete(atomicQuery.getSelectedNames());
+                atomicQuery.getAnswers().addAll(filteredAnswers);
                 recordAnswers(atomicQuery, matAnswers);
             }
         }
@@ -233,7 +239,7 @@ public class Reasoner {
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
                 if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
 
-                QueryAnswers filteredAnswers = answers.filterInComplete(atomicQuery.getSelectedNames());
+                QueryAnswers filteredAnswers = answers.filterIncomplete(atomicQuery.getSelectedNames());
                 atomicQuery.getAnswers().addAll(filteredAnswers);
                 recordAnswers(atomicQuery, matAnswers);
             }
@@ -301,10 +307,12 @@ public class Reasoner {
                 SG = new HashSet<>(subGoals);
                 dAns = atomicQuery.getAnswers().size();
                 answer(atomicQuery, SG, matAnswers, true);
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
+        commitGraph();
     }
 
     /**
@@ -322,6 +330,7 @@ public class Reasoner {
                     Query cq = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
                     answers.addAll(resolveConjunctiveQuery(cq, materialise));
                 });
+        if(materialise) commitGraph();
         return answers;
     }
 
@@ -333,10 +342,13 @@ public class Reasoner {
      * @return MatchQuery with answers
      */
     public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
-        if (!Reasoner.getRules(graph).isEmpty())
-            return new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
-        else
+        if (Reasoner.getRules(graph).isEmpty())
             return inputQuery;
+        else {
+            MatchQuery outputQuery = new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
+            if (materialise) commitGraph();
+            return outputQuery;
+        }
     }
 
     /**
@@ -344,13 +356,5 @@ public class Reasoner {
      * @param inputQuery
      * @return query with answers
      */
-    public MatchQuery resolveToQuery(MatchQuery inputQuery) {
-        MatchQuery outputQuery = resolveToQuery(inputQuery, true);
-        try {
-            graph.commit();
-        } catch (GraknValidationException e) {
-            LOG.debug(e.getMessage());
-        }
-        return outputQuery;
-    }
+    public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, true);}
 }

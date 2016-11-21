@@ -78,7 +78,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return results;
     }
 
-    public QueryAnswers filterInComplete(Set<String> vars) {
+    public QueryAnswers filterIncomplete(Set<String> vars) {
         return new QueryAnswers(this.stream()
                 .filter(answer -> answer.size() == vars.size())
                 .collect(Collectors.toSet()));
@@ -204,6 +204,6 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
 
         QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, valueConstraints, typeConstraints);
         return unifiedAnswers.filterVars(parentQuery.getSelectedNames())
-                             .filterInComplete(parentQuery.getSelectedNames());
+                             .filterIncomplete(parentQuery.getSelectedNames());
     }
 }
