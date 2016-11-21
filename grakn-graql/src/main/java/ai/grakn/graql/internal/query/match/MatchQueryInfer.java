@@ -47,7 +47,7 @@ class MatchQueryInfer extends MatchQueryModifier {
         );
 
         // TODO: Handle ordering
-        return new Reasoner(graph).resolve(inner).stream();
+        return new Reasoner(graph).resolveToQuery(inner).stream();
     }
 
     @Override
