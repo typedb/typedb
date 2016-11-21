@@ -104,7 +104,7 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         if(parentAtom.isUserDefinedName() && parentAtom.isRelation() ){
-            Atomic childAtom = getRuleConclusionAtom();
+            Atomic childAtom = head.getAtom();
             VarAdmin var = childAtom.getPattern().asVar();
             Var relVar = Graql.var(childAtom.getVarName());
             var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
@@ -128,7 +128,7 @@ public class InferenceRule {
      */
     private void unifyViaAtom(Atom parentAtom) {
         rewriteHead(parentAtom);
-
+        
         Atomic childAtom = getRuleConclusionAtom();
         Query parent = parentAtom.getParentQuery();
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);

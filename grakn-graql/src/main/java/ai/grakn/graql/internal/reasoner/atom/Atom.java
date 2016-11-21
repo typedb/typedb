@@ -93,7 +93,7 @@ public abstract class Atom extends AtomBase {
      * */
     public boolean isResource(){ return false;}
 
-    protected boolean isRuleApplicable(InferenceRule child) { return true; }
+    protected abstract boolean isRuleApplicable(InferenceRule child);
 
     public Set<Rule> getApplicableRules() {
         Set<Rule> children = new HashSet<>();

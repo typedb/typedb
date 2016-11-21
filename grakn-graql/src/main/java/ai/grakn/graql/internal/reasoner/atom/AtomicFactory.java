@@ -74,10 +74,7 @@ public class AtomicFactory {
 
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        Set<VarAdmin> vars = pattern.getVars();
-        vars.stream().filter(var -> var.hasProperty(RelationProperty.class)).forEach(var -> atoms.add(create(var, parent)));
-        vars.stream()
-                .filter(var -> !var.hasProperty(RelationProperty.class))
+        pattern.getVars()
                 .forEach(var -> var.getProperties()
                         .forEach(prop -> atoms.addAll(PropertyMapper.map(prop, var, parent))));
         return atoms;
