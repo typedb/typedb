@@ -974,7 +974,8 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         //Check all is good
         graph.close();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
-        assertEquals(1,degrees.size());
+        degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
+                .getResourceType("degree").instances();
+        assertEquals(2,degrees.size());
     }
 }
