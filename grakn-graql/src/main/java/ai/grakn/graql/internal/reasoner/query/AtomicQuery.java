@@ -177,12 +177,9 @@ public class AtomicQuery extends Query{
                 insertAnswers.addAll(queryToMaterialise.materialiseComplete());
                 queryToMaterialise.removeAtom(relationWithRoles);
             });
-            //queryToMaterialise.addAtom(atom);
         }
         else
             insertAnswers.addAll(queryToMaterialise.materialiseComplete());
-
-        //subs.forEach(queryToMaterialise::removeAtom);
         return insertAnswers;
     }
 

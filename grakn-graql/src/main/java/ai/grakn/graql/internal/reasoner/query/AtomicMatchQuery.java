@@ -84,8 +84,6 @@ public class AtomicMatchQuery extends AtomicQuery{
             });
             fullAnswers.addAll(materialise(subs));
         });
-
-        System.out.println("Insert answers: " + fullAnswers.size());
         return fullAnswers;
     }
 }
