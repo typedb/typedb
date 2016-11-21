@@ -27,7 +27,7 @@ import java.util.Map;
 
 /**
  * A Resource Type which can hold different values.
- * @param <D> The data tyoe of this resource type.
+ * @param <D> The data type of this resource type.
  */
 public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------

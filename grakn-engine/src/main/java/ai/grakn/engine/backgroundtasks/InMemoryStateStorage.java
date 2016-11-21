@@ -62,7 +62,11 @@ public class InMemoryStateStorage implements StateStorage {
 
     public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
                             Throwable failure, String checkpoint, JSONObject configuration) {
-        if(id == null || status == null)
+        if(id == null)
+            return;
+
+        if(status == null && statusChangeBy == null && executingHostname == null && failure == null
+                && checkpoint == null && configuration == null)
             return;
 
         TaskState state = storage.get(id);
