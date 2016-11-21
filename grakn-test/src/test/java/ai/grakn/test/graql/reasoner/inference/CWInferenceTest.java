@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.test.AbstractEngineTest;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.MatchQuery;
@@ -26,13 +27,20 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 
-public class CWInferenceTest {
+public class CWInferenceTest extends AbstractEngineTest{
+
+    @BeforeClass
+    public static void onStartup(){
+        assumeTrue(usingTinker());
+    }
 
     @Test
     public void testWeapon() {

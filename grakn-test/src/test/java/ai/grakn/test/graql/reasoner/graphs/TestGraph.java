@@ -50,15 +50,13 @@ public class TestGraph {
     private static RoleType hasKeyValue;
 
     public TestGraph(){
-        //graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        graknGraph = GraphFactory.getInstance().getGraph( UUID.randomUUID().toString().replaceAll("-", "a"));
+        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
         commit();
     }
 
     public TestGraph(String primaryKeyId, String... files) {
-        //graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        graknGraph = GraphFactory.getInstance().getGraph( UUID.randomUUID().toString().replaceAll("-", "a"));
+        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         if (primaryKeyId != null) addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);
         commit();

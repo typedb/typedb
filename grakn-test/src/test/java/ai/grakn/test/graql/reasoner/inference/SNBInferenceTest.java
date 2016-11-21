@@ -23,6 +23,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
@@ -33,8 +34,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
-public class SNBInferenceTest {
+public class SNBInferenceTest extends AbstractEngineTest{
+
+    @BeforeClass
+    public static void onStartup(){
+        assumeTrue(usingTinker());
+    }
 
     /**
      * Tests transitivity
