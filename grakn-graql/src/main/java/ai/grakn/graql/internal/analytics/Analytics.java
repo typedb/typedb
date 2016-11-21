@@ -32,6 +32,8 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,6 +61,7 @@ public class Analytics {
     public static final String degree = "degree";
     public static final String connectedComponent = "connectedComponent";
     private static final int numberOfOntologyChecks = 10;
+    private static final Logger LOGGER = LoggerFactory.getLogger(Analytics.class);
 
     private final String keySpace;
 
@@ -149,10 +152,12 @@ public class Analytics {
      * @return the number of instances
      */
     public long count() {
+        LOGGER.info("CountMapReduce is called");
         GraknComputer computer = getGraphComputer();
         if (!selectedTypesHaveInstance()) return 0L;
         ComputerResult result = computer.compute(new CountMapReduce(subtypes));
         Map<String, Long> count = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        LOGGER.info("CountMapReduce is done");
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
     }
 
@@ -162,6 +167,7 @@ public class Analytics {
      * @return min
      */
     public Optional<Number> min() {
+        LOGGER.info("MinMapReduce is called");
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
@@ -174,6 +180,7 @@ public class Analytics {
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MinMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        LOGGER.info("MinMapReduce is done");
         return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
     }
 
@@ -183,6 +190,7 @@ public class Analytics {
      * @return max
      */
     public Optional<Number> max() {
+        LOGGER.info("MaxMapReduce is called");
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
@@ -195,6 +203,7 @@ public class Analytics {
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MaxMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        LOGGER.info("MaxMapReduce is done");
         return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
     }
 
@@ -204,6 +213,7 @@ public class Analytics {
      * @return sum
      */
     public Optional<Number> sum() {
+        LOGGER.info("SumMapReduce is called");
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
@@ -216,6 +226,7 @@ public class Analytics {
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new SumMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        LOGGER.info("SumMapReduce is done");
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
     }
 
@@ -225,6 +236,7 @@ public class Analytics {
      * @return mean
      */
     public Optional<Double> mean() {
+        LOGGER.info("MeanMapReduce is called");
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
@@ -238,6 +250,7 @@ public class Analytics {
                 new MeanMapReduce(statisticsResourceTypes, dataType));
         Map<String, Map<String, Double>> mean = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
+        LOGGER.info("MeanMapReduce is done");
         return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
     }
 
@@ -247,6 +260,7 @@ public class Analytics {
      * @return median
      */
     public Optional<Number> median() {
+        LOGGER.info("MedianVertexProgram is called");
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
@@ -258,6 +272,7 @@ public class Analytics {
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(
                 new MedianVertexProgram(allSubtypes, statisticsResourceTypes, dataType));
+        LOGGER.info("MedianMapReduce is done");
         return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
     }
 
@@ -267,6 +282,7 @@ public class Analytics {
      * @return standard deviation
      */
     public Optional<Double> std() {
+        LOGGER.info("StdMapReduce is called");
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
@@ -283,6 +299,7 @@ public class Analytics {
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
         double count = stdTuple.get(StdMapReduce.COUNT);
+        LOGGER.info("StdMapReduce is done");
         return Optional.of(Math.sqrt(squareSum / count - (sum / count) * (sum / count)));
     }
 
@@ -293,6 +310,7 @@ public class Analytics {
      * @return a shortest path: a list of vertex ids along the path (including the two given vertices)
      */
     public List<String> shortestPath(String sourceId, String destinationId) {
+        LOGGER.info("ShortestPathVertexProgram is called");
         if (!verticesExistInSubgraph(sourceId, destinationId))
             throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
         if (sourceId.equals(destinationId)) return Collections.singletonList(sourceId);
@@ -308,7 +326,7 @@ public class Analytics {
                 .map(pair -> pair.getValue().iterator().next())
                 .collect(Collectors.toList()));
         path.add(destinationId);
-
+        LOGGER.info("ShortestPathVertexProgram is done");
         return path;
     }
 
@@ -318,10 +336,12 @@ public class Analytics {
      * @return a map of set, each set contains all the vertex ids belonging to one connected component
      */
     public Map<String, Set<String>> connectedComponents() {
+        LOGGER.info("ConnectedComponentsVertexProgram is called");
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterMemberMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+        LOGGER.info("ConnectedComponentsVertexProgram is done");
         return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
@@ -331,10 +351,12 @@ public class Analytics {
      * @return a map of component size
      */
     public Map<String, Long> connectedComponentsSize() {
+        LOGGER.info("ConnectedComponentsVertexProgram is called");
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+        LOGGER.info("ConnectedComponentsVertexProgram is done");
         return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
@@ -342,6 +364,7 @@ public class Analytics {
      * Compute the connected components and persist the component labels
      */
     public Map<String, Long> connectedComponentsAndPersist() {
+        LOGGER.info("ConnectedComponentsVertexProgram is called");
         if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
@@ -353,6 +376,7 @@ public class Analytics {
             GraknComputer computer = getGraphComputer();
             ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes, keySpace),
                     new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+            LOGGER.info("ConnectedComponentsVertexProgram is done");
             return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         }
         return Collections.emptyMap();
@@ -364,9 +388,11 @@ public class Analytics {
      * @return a map from each instance to its degree
      */
     public Map<Long, Set<String>> degrees() {
+        LOGGER.info("DegreeVertexProgram is called");
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes),
                 new DegreeDistributionMapReduce(subtypes));
+        LOGGER.info("DegreeVertexProgram is done");
         return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
@@ -377,6 +403,7 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
+        LOGGER.info("DegreeVertexProgram is called");
         if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
@@ -387,6 +414,7 @@ public class Analytics {
 
         GraknComputer computer = getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(subtypes, keySpace));
+        LOGGER.info("DegreeVertexProgram is done");
     }
 
     /**
@@ -418,7 +446,6 @@ public class Analytics {
         } catch (GraknValidationException e) {
             throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()), e);
         }
-
     }
 
     /**

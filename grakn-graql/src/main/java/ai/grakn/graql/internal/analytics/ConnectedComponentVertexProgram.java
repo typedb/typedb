@@ -169,7 +169,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.debug("Finished Iteration " + memory.getIteration());
+        LOGGER.info("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() < 3) return false;
         if ((Boolean)memory.get(IS_LAST_ITERATION)) return true;
 
