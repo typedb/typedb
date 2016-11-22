@@ -20,6 +20,7 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.test.AbstractEngineTest;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -38,6 +39,7 @@ import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -49,8 +51,14 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
-public class AtomicTest {
+public class AtomicTest extends AbstractEngineTest{
+
+    @BeforeClass
+    public static void onStartup(){
+        assumeTrue(usingTinker());
+    }
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();

@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.reasoner;
 
+import ai.grakn.test.AbstractEngineTest;
 import com.google.common.collect.Sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
@@ -36,14 +37,16 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
-public class QueryTest {
+public class QueryTest extends AbstractEngineTest {
 
     private static GraknGraph graph;
     private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
+        assumeTrue(usingTinker());
         graph = SNBGraph.getGraph();
         qb = graph.graql();
     }

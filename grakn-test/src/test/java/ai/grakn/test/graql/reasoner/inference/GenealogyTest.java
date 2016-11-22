@@ -20,7 +20,6 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Resource;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
@@ -51,6 +50,7 @@ public class GenealogyTest extends AbstractEngineTest{
         graph = GenealogyGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql();
+
 
         /*
         //prerunning analytics

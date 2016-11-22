@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
@@ -45,8 +46,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
-public class AtomicQueryTest {
+public class AtomicQueryTest extends AbstractEngineTest{
     private static GraknGraph graph;
     private static QueryBuilder qb;
 
@@ -55,6 +57,7 @@ public class AtomicQueryTest {
 
     @BeforeClass
     public static void setUpClass() {
+        assumeTrue(usingTinker());
         graph = SNBGraph.getGraph();
         qb = graph.graql();
     }

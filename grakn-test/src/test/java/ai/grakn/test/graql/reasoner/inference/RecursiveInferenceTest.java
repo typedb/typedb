@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.PathGraph;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphII;
 import com.google.common.collect.Sets;
@@ -33,6 +34,7 @@ import ai.grakn.test.graql.reasoner.graphs.NguyenGraph;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphSymmetric;
 import ai.grakn.test.graql.reasoner.graphs.TailRecursionGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -40,8 +42,14 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
-public class RecursiveInferenceTest {
+public class RecursiveInferenceTest extends AbstractEngineTest{
+
+    @BeforeClass
+    public static void onStartup(){
+        assumeTrue(usingTinker());
+    }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test

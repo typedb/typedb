@@ -23,6 +23,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.test.AbstractEngineTest;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
@@ -33,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -43,8 +45,14 @@ import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
-public class ReasonerTest {
+public class ReasonerTest extends AbstractEngineTest{
+
+    @BeforeClass
+    public static void onStartup(){
+        assumeTrue(usingTinker());
+    }
 
     @Test
     public void testSubPropertyRule() {

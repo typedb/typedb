@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.test.AbstractEngineTest;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -28,15 +29,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 
-public class WineInferenceTest {
+public class WineInferenceTest extends AbstractEngineTest{
 
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
+        assumeTrue(usingTinker());
         GraknGraph graph = TestGraph.getGraph("name", "wines-test.gql", "wines-rules.gql");
         reasoner = new Reasoner(graph);
         qb = graph.graql();
