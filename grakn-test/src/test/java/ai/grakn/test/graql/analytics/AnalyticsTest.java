@@ -28,12 +28,12 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.engine.postprocessing.PostProcessing;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import ai.grakn.exception.GraknValidationException;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -937,5 +937,45 @@ public class AnalyticsTest extends AbstractGraphTest {
             e.printStackTrace();
             fail();
         }
+    }
+
+    @Test
+    public void testResourcesMergedOnBulkMutate() throws GraknValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        RoleType friend1 = graph.putRoleType("friend1");
+        RoleType friend2 = graph.putRoleType("friend2");
+        RelationType friendship = graph.putRelationType("friendship");
+        friendship.hasRole(friend1).hasRole(friend2);
+
+        EntityType person = graph.putEntityType("person");
+        person.playsRole(friend1).playsRole(friend2);
+
+        for (int i = 0; i < 10; i++) {
+            friendship.addRelation()
+                    .putRolePlayer(friend1, person.addEntity())
+                    .putRolePlayer(friend2, person.addEntity());
+        }
+
+        graph.commit();
+        String keyspace = graph.getKeyspace();
+
+        new Analytics(keyspace, new HashSet<>(), new HashSet<>()).degreesAndPersist();
+
+        Collection<Resource<Object>> degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
+                .getResourceType("degree").instances();
+
+        assertTrue(degrees.size() > 1);
+
+        //Force Post Processing
+        PostProcessing postProcessing = PostProcessing.getInstance();
+        postProcessing.run();
+
+        //Check all is good
+        graph.close();
+        degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
+                .getResourceType("degree").instances();
+        assertEquals(2,degrees.size());
     }
 }
