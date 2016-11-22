@@ -116,7 +116,6 @@ public interface GraknGraph extends AutoCloseable{
      */
     <V> Resource<V> getResource(V value, ResourceType<V> type);
 
-
     /**
      *
      * @param value A value which a Resource in the graph may be holding.
@@ -218,12 +217,6 @@ public interface GraknGraph extends AutoCloseable{
      */
     Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
-    /**
-     *
-     * @param id The id of the relation object you are looking for
-     * @return The relation object.
-     */
-    Relation getRelation(String id);
     //------------------------------------- Utilities ----------------------------------
     /**
      * Closes and clears the current graph.

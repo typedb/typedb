@@ -547,15 +547,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     @Override
-    public Relation getRelation(String id) {
-        ConceptImpl concept = getConcept(Schema.ConceptProperty.ITEM_IDENTIFIER, id);
-        if(concept != null && Schema.BaseType.RELATION.name().equals(concept.getBaseType()))
-            return concept.asRelation();
-        else
-            return null;
-    }
-
-    @Override
     public void rollback() {
         try {
             getTinkerPopGraph().tx().rollback();
