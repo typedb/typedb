@@ -48,9 +48,11 @@ public interface StateStorage {
                     JSONObject configuration);
 
     /**
-     * Used to update task state.
+     * Used to update task state. With the exception of @id any other fields may individually be null, however all parameters
+     * cannot be null at the same time. Setting any of the parameters to null indicates that their values should not be
+     * changed.
      * @param id ID of task to update, this must not be null.
-     * @param status New status of task. This must not be null.
+     * @param status New status of task, may be null.
      * @param statusChangeBy String identifying caller, may be null.
      * @param executingHostname String hostname of engine instance scheduling/executing this task. May be null.
      * @param failure Throwable to store any exceptions that occurred during executing. May be null.
