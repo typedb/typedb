@@ -241,7 +241,7 @@ public class InsertQueryExecutor {
         } else if (type.isRelationType()) {
             return addOrGetInstance(id, graph::getRelation, type.asRelationType()::addRelation);
         } else if (type.isResourceType()) {
-            return addOrGetInstance(id, graph::getResource,
+            return addOrGetInstance(id, graph::getConcept,
                     () -> type.asResourceType().putResource(getValue(var))
             );
         } else if (type.isRuleType()) {

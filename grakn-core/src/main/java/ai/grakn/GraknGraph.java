@@ -110,14 +110,6 @@ public interface GraknGraph extends AutoCloseable{
 
     /**
      *
-     * @param id A unique Id which identifies the Resource in the graph.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource with the provided Id or null if no such Resource exists.
-     */
-    <V> Resource<V> getResource(String id);
-
-    /**
-     *
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @param value A value which a Resource in the graph may be holding.
      * @param type The resource type of this resource.
