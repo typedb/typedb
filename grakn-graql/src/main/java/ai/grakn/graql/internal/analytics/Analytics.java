@@ -555,7 +555,7 @@ public class Analytics {
     protected boolean verticesExistInSubgraph(String... ids) {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
         for (String id : ids) {
-            Concept concept = graph.getInstance(id);
+            Concept concept = graph.getConcept(id);
             if (concept == null || !subtypes.contains(concept.type().getId())) return false;
         }
         return true;

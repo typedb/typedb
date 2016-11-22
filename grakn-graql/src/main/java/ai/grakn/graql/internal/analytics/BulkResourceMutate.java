@@ -128,7 +128,7 @@ public class BulkResourceMutate<T> {
         initialiseGraph();
         resourcesToPersist.forEach((id, value) -> {
             Instance instance =
-                    graph.getInstance(id);
+                    graph.getConcept(id);
 
             // fetch all current resource assertions on the instance
             List<Relation> relations = instance.relations(resourceOwner).stream()

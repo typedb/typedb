@@ -111,13 +111,6 @@ public interface GraknGraph extends AutoCloseable{
 
     /**
      *
-     * @param id A unique Id which identifies the Instance in the graph.
-     * @return The Instance with the provided Id or null if no such Instance exists.
-     */
-    Instance getInstance(String id);
-
-    /**
-     *
      * @param id A unique Id which identifies the Entity in the graph.
      * @return The Entity with the provided Id or null if no such Entity exists.
      */

@@ -353,7 +353,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         Relation instanceB = b.addRelation();
         c.putResource("1");
 
-        assertEquals(instanceA, graknGraph.getInstance(instanceA.getId()));
+        assertEquals(instanceA, graknGraph.getConcept(instanceA.getId()));
     }
 
     @Test
