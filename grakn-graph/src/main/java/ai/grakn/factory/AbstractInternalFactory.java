@@ -44,6 +44,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.config = config;
+
+        Runtime.getRuntime().addShutdownHook(new GraphClose());
     }
 
     abstract boolean isClosed(G innerGraph);
@@ -111,5 +113,22 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     private boolean isClosed(M graknGraph) {
         G innerGraph = graknGraph.getTinkerPopGraph();
         return isClosed(innerGraph);
+    }
+
+    private void closeGraph(M graknGraph){
+        if(graknGraph != null && !isClosed(graknGraph)){
+            try {
+                System.out.println("This guy died: " + graknGraph.getKeyspace());
+            } catch (Exception e) {
+                throw new RuntimeException(ErrorMessage.FAILED_SHUTDOWN.getMessage(graknGraph.getKeyspace()));
+            }
+        }
+    }
+
+    private class GraphClose extends Thread{
+        public void run() {
+            closeGraph(graknGraph);
+            closeGraph(batchLoadingGraknGraph);
+        }
     }
 }

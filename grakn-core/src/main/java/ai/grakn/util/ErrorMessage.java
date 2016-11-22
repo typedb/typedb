@@ -72,6 +72,7 @@ public enum ErrorMessage {
     INVALID_COMPUTER("The graph computer ['%s'] is not supported"),
     CONFIG_IGNORED("The config parameter ['%s'] with value ['%s'] is ignored for this implementation"),
     CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn graph using the backend ['%s']"),
+    FAILED_SHUTDOWN("The graph with keyspace [%s] did not shutdown safely"),
 
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Grakn Engine located at ['%s'] returned response ['%s'], cannot proceed."),
