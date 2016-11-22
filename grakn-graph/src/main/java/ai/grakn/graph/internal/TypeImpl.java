@@ -282,7 +282,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     public String toString(){
         String message = super.toString();
-        message = message + " - Abstract [" + isAbstract() + "] ";
+        message = message + " - Name [" + getName() + "] - Abstract [" + isAbstract() + "] ";
         return message;
     }
 
