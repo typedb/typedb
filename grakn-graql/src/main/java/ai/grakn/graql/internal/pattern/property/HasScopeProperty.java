@@ -74,7 +74,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
-        concept.asRelation().deleteScope(graph.getInstance(scopeId));
+        concept.asRelation().deleteScope(graph.getConcept(scopeId));
     }
 
     @Override

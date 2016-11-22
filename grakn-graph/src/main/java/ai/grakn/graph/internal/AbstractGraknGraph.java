@@ -335,11 +335,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     @Override
-    public Instance getInstance(String id) {
-        return validConceptOfType(getConcept(id), InstanceImpl.class);
-    }
-
-    @Override
     public Entity getEntity(String id) {
         return validConceptOfType(getConcept(id), EntityImpl.class);
     }
