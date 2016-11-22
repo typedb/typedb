@@ -160,7 +160,10 @@ public class InsertQueryExecutor {
         Concept concept = typeConcept.map(type ->
                 putConceptByType(var.getId(), var, type)
         ).orElseGet(() ->
-                var.getId().map(graph::getConcept).orElse(null)
+                var.getId().map(id -> {
+                    Concept c = graph.getConcept(id); //Due Generic Casting cannot inline
+                    return c;
+                }).orElse(null)
         );
 
         if (concept == null) {

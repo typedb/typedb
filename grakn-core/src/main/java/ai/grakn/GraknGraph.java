@@ -100,7 +100,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param id A unique Id which identifies the Concept in the graph.
      * @return The Concept with the provided Id or null if no such Concept exists.
      */
-    Concept getConcept(String id);
+    <T extends Concept> T getConcept(String id);
 
     /**
      *

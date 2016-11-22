@@ -196,14 +196,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return ((ConceptImpl)from).addEdge((ConceptImpl) to, type);
     }
 
-    public ConceptImpl getConcept(Schema.ConceptProperty key, String value) {
+    public <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
             if(!isBatchLoadingEnabled() && vertices.hasNext())
                 throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
-            return elementFactory.buildUnknownConcept(vertex);
+            return (T) elementFactory.buildUnknownConcept(vertex);
         } else {
             return null;
         }
@@ -325,7 +325,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     @Override
-    public Concept getConcept(String id) {
+    public <T extends Concept> T getConcept(String id) {
         return getConcept(Schema.ConceptProperty.ITEM_IDENTIFIER, id);
     }
 
