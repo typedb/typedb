@@ -1,19 +1,19 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
 package ai.grakn.engine.backgroundtasks;
@@ -22,21 +22,20 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import javafx.util.Pair;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
 import java.util.*;
-import java.util.function.Function;
 
+import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
+import static ai.grakn.engine.util.SystemOntologyElements.*;
 import static ai.grakn.graql.Graql.var;
 
 public class GraknStateStorage implements StateStorage {
@@ -53,15 +52,16 @@ public class GraknStateStorage implements StateStorage {
         if(taskName == null || createdBy == null || runAt == null || recurring == null)
             return null;
 
-        Var state = var("task").isa("scheduled-task")
-                                      .has("task-class-name", taskName)
-                                      .has("created-by", createdBy)
-                                      .has("run-at", runAt.getTime())
-                                      .has("recurring", recurring)
-                                      .has("recur-interval", interval);
+        Var state = var(TASK_VAR).isa(SCHEDULED_TASK)
+                                 .has(STATUS, CREATED.toString())
+                                 .has(TASK_CLASS_NAME, taskName)
+                                 .has(CREATED_BY, createdBy)
+                                 .has(RUN_AT, runAt.getTime())
+                                 .has(RECURRING, recurring)
+                                 .has(RECUR_INTERVAL, interval);
 
         if(configuration != null)
-            state.has("task-configuration", configuration.toString());
+            state.has(TASK_CONFIGURATION, configuration.toString());
 
         graph.graql().insert(state).execute();
 
@@ -95,28 +95,34 @@ public class GraknStateStorage implements StateStorage {
         Var resources = var(TASK_VAR).id(id);
 
         if(status != null) {
-            deleters.has("status");
-            resources.has("status", status.toString());
+            deleters.has(STATUS)
+                    .has(STATUS_CHANGE_TIME);
+            resources.has(STATUS, status.toString())
+                     .has(STATUS_CHANGE_TIME, new Date().getTime());
         }
         if(statusChangeBy != null) {
-            deleters.has("status-change-by");
-            resources.has("status-change-by", statusChangeBy);
+            deleters.has(STATUS_CHANGE_BY);
+            resources.has(STATUS_CHANGE_BY, statusChangeBy);
         }
         if(executingHostname != null) {
-            deleters.has("executing-hostname");
-            resources.has("executing-hostname", executingHostname);
+            deleters.has(EXECUTING_HOSTNAME);
+            resources.has(EXECUTING_HOSTNAME, executingHostname);
         }
         if(failure != null) {
-            deleters.has("task-failure");
-            resources.has("task-failure", serialise(failure));
+            deleters.has(TASK_EXCEPTION)
+                    .has(STACK_TRACE);
+
+            resources.has(TASK_EXCEPTION, failure.toString());
+            if(failure.getStackTrace().length > 0)
+                 resources.has(STACK_TRACE, Arrays.toString(failure.getStackTrace()));
         }
         if(checkpoint != null) {
-            deleters.has("task-checkpoint");
-            resources.has("task-checkpoint", checkpoint);
+            deleters.has(TASK_CHECKPOINT);
+            resources.has(TASK_CHECKPOINT, checkpoint);
         }
         if(configuration != null) {
-            deleters.has("task-configuration");
-            resources.has("task-configuration", configuration.toString());
+            deleters.has(TASK_CONFIGURATION);
+            resources.has(TASK_CONFIGURATION, configuration.toString());
         }
 
         // Remove relations to any resources we want to currently update
@@ -140,7 +146,7 @@ public class GraknStateStorage implements StateStorage {
             return null;
 
         Instance instance = graph.getInstance(id);
-        Resource<?> name = instance.resources(graph.getResourceType("task-class-name")).stream().findFirst().orElse(null);
+        Resource<?> name = instance.resources(graph.getResourceType(TASK_CLASS_NAME)).stream().findFirst().orElse(null);
         if(name == null) {
             LOG.error("Could not get 'task-class-name' for "+id);
             return null;
@@ -161,49 +167,80 @@ public class GraknStateStorage implements StateStorage {
     }
 
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {
-        return null;
-    }
+        Var matchVar = var(TASK_VAR).isa(SCHEDULED_TASK);
 
+        if(taskStatus != null)
+            matchVar.has(STATUS, taskStatus.toString());
+        if(taskClassName != null)
+            matchVar.has(TASK_CLASS_NAME, taskClassName);
+        if(createdBy != null)
+            matchVar.has(CREATED_BY, createdBy);
+
+        MatchQuery q = graph.graql().match(matchVar);
+
+        if(limit > 0)
+            q.limit(limit);
+        if(offset > 0)
+            q.offset(offset);
+
+        List<Map<String, Concept>> res = q.execute();
+
+        // Create Set of pairs with IDs &
+        Set<Pair<String, TaskState>> out = new HashSet<>();
+        for(Map<String, Concept> m: res) {
+            Concept c = m.values().stream().findFirst().orElse(null);
+            if(c != null) {
+                String id = c.getId();
+
+                out.add(new Pair<>(id, getState(id)));
+            }
+        }
+
+        return out;
+    }
 
     /*
     Internal
      */
     private TaskState buildState(TaskState state, String resourceName, Object resourceValue) {
         switch (resourceName) {
-            case "status":
+            case STATUS:
                 state.status(TaskStatus.valueOf(resourceValue.toString()));
                 break;
-            case "status-change-time":
+            case STATUS_CHANGE_TIME:
                 state.statusChangeTime(new Date((Long)resourceValue));
                 break;
-            case "status-change-by":
+            case STATUS_CHANGE_BY:
                 state.statusChangedBy(resourceValue.toString());
                 break;
-            case "task-class-name":
+            case TASK_CLASS_NAME:
                 // Set when instantiating TaskState, ignore it now.
                 break;
-            case "created-by":
+            case CREATED_BY:
                 state.creator(resourceValue.toString());
                 break;
-            case "executing-hostname":
+            case EXECUTING_HOSTNAME:
                 state.executingHostname(resourceValue.toString());
                 break;
-            case "run-at":
+            case RUN_AT:
                 state.runAt(new Date((Long)resourceValue));
                 break;
-            case "recurring":
+            case RECURRING:
                 state.isRecurring((Boolean)resourceValue);
                 break;
-            case "recur-interval":
+            case RECUR_INTERVAL:
                 state.interval((Long)resourceValue);
                 break;
-            case "task-failure":
-                state.failure(deserialise(resourceValue.toString()));
+            case TASK_EXCEPTION:
+                state.exception(resourceValue.toString());
                 break;
-            case "task-checkpoint":
+            case STACK_TRACE:
+                state.stackTrace(resourceValue.toString());
+                break;
+            case TASK_CHECKPOINT:
                 state.checkpoint(resourceValue.toString());
                 break;
-            case "task-configuration":
+            case TASK_CONFIGURATION:
                 state.configuration(new JSONObject(resourceValue.toString()));
                 break;
             default:
@@ -213,39 +250,4 @@ public class GraknStateStorage implements StateStorage {
 
         return state;
     }
-
-    private String serialise(Object o) {
-        String serialised = null;
-
-        try {
-            ByteArrayOutputStream bytestream = new ByteArrayOutputStream();
-            ObjectOutputStream outputStream = new ObjectOutputStream(bytestream);
-
-            outputStream.writeObject(o);
-            outputStream.flush();
-            serialised = Base64.getEncoder().encodeToString(bytestream.toByteArray());
-        }
-        catch (IOException e) {
-            LOG.error("Could not serialise object: "+o+"\n the error was: "+e);
-        }
-
-        return serialised;
-    }
-
-    private <T> T deserialise(String s) {
-        T deserialised = null;
-
-        try {
-            byte data[] = Base64.getDecoder().decode(s);
-            ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
-            ObjectInputStream inputStream = new ObjectInputStream(byteStream);
-            deserialised = (T) inputStream.readObject();
-        }
-        catch(IOException | ClassNotFoundException e ) {
-            LOG.error("Could not deserialise object: "+s+"\n the error was: "+e);
-        }
-
-        return deserialised;
-    }
-
 }

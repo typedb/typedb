@@ -65,7 +65,8 @@ public class TaskState implements Cloneable {
     /**
      * Used to store any executing failures for the given task.
      */
-    private Throwable failure;
+    private String stackTrace;
+    private String exception;
     /**
      * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
      */
@@ -77,7 +78,6 @@ public class TaskState implements Cloneable {
     
     TaskState(String taskClassName) {
         status = TaskStatus.CREATED;
-        failure = null;
         this.taskClassName = taskClassName;
     }
 
@@ -157,17 +157,22 @@ public class TaskState implements Cloneable {
         return interval;
     }
 
-    public boolean isFailed() {
-    	return this.failure != null;
+    public TaskState stackTrace(String stackTrace) {
+        this.stackTrace = stackTrace;
+        return this;
     }
-    
-    public Throwable failure() {
-    	return this.failure;
+
+    public String stackTrace() {
+        return stackTrace;
     }
-    
-    public TaskState failure(Throwable failure) {
-    	this.failure = failure;
-    	return this;
+
+    public TaskState exception(String exceptionMessage) {
+        this.exception = exceptionMessage;
+        return this;
+    }
+
+    public String exception() {
+        return exception;
     }
 
     public TaskState checkpoint(String taskCheckpoint) {
@@ -199,7 +204,8 @@ public class TaskState implements Cloneable {
              .runAt(runAt)
              .isRecurring(recurring)
              .interval(interval)
-             .failure(failure)
+             .stackTrace(stackTrace)
+             .exception(exception)
              .checkpoint(taskCheckpoint)
              .configuration(new JSONObject(configuration.toString()));
 

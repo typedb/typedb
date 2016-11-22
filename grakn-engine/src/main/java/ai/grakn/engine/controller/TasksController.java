@@ -186,14 +186,14 @@ public class TasksController {
                 .put("creator", state.creator())
                 .put("className", state.taskClassName())
                 .put("runAt", state.runAt())
-                .put("recurring", state.isRecurring())
-                .put("isFailed", state.isFailed());
+                .put("recurring", state.isRecurring());
     }
 
     private JSONObject serialiseStateFull(String id, TaskState state) {
         return serialiseStateSubset(id, state)
                        .put("interval", state.interval())
-                       .put("failure", state.failure())
+                       .put("exception", state.exception())
+                       .put("stackTrace", state.stackTrace())
                        .put("executingHostname", state.executingHostname())
                        .put("configuration", state.configuration());
     }
