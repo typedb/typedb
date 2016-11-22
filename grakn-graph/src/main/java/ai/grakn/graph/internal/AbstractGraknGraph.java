@@ -20,7 +20,6 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -332,11 +331,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public Type getType(String id) {
         return validConceptOfType(getConcept(id), TypeImpl.class);
-    }
-
-    @Override
-    public Entity getEntity(String id) {
-        return validConceptOfType(getConcept(id), EntityImpl.class);
     }
 
     @Override

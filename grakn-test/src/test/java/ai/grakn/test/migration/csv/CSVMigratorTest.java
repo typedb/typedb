@@ -20,10 +20,10 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
-import com.google.common.io.Files;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.csv.CSVMigrator;
+import ai.grakn.test.migration.AbstractGraknMigratorTest;
+import com.google.common.io.Files;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -35,8 +35,6 @@ import static java.util.stream.Collectors.joining;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 public class CSVMigratorTest extends AbstractGraknMigratorTest {
 
@@ -112,10 +110,10 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
         // test empty value not created
         ResourceType description = graph.getResourceType("description");
 
-        Entity venture = graph.getEntity("Venture");
+        Entity venture = graph.getConcept("Venture");
         assertEquals(1, venture.resources(description).size());
 
-        Entity ventureLarge = graph.getEntity("Venture Large");
+        Entity ventureLarge = graph.getConcept("Venture Large");
         assertEquals(0, ventureLarge.resources(description).size());
     }
 

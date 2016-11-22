@@ -237,7 +237,7 @@ public class InsertQueryExecutor {
         } else if (typeId.equals(Schema.MetaSchema.RULE_TYPE.getId())) {
             return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
-            return addOrGetInstance(id, graph::getEntity, type.asEntityType()::addEntity);
+            return addOrGetInstance(id, graph::getConcept, type.asEntityType()::addEntity);
         } else if (type.isRelationType()) {
             return addOrGetInstance(id, graph::getRelation, type.asRelationType()::addRelation);
         } else if (type.isResourceType()) {

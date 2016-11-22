@@ -19,7 +19,6 @@
 package ai.grakn;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -108,13 +107,6 @@ public interface GraknGraph extends AutoCloseable{
      * @return The Type with the provided Id or null if no such Type exists.
      */
     Type getType(String id);
-
-    /**
-     *
-     * @param id A unique Id which identifies the Entity in the graph.
-     * @return The Entity with the provided Id or null if no such Entity exists.
-     */
-    Entity getEntity(String id);
 
     /**
      *

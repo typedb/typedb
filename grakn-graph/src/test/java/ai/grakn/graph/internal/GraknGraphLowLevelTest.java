@@ -18,14 +18,13 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -211,14 +210,6 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         assertTrue(graknGraph.getResourcesByValue("Bob").contains(c3));
         assertEquals(c1, c3);
         assertNotEquals(c1, c2);
-    }
-
-    @Test
-    public void testGetConceptInstance(){
-        assertNull(graknGraph.getEntity("Bob"));
-        EntityType type = graknGraph.putEntityType("Parent");
-        Instance c2 = type.addEntity();
-        assertEquals(c2, graknGraph.getEntity(c2.getId()));
     }
 
     @Test

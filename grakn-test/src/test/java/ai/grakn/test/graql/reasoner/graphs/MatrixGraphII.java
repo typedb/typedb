@@ -53,19 +53,19 @@ public class MatrixGraphII extends TestGraph{
 
         Q.addRelation()
                 .putRolePlayer(Qfrom, aInst)
-                .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[1][1]));
+                .putRolePlayer(Qto, graknGraph.getConcept(aInstancesIds[1][1]));
 
         for(int i = 1 ; i <= n ; i++) {
             for (int j = 1; j <= m; j++) {
                 if ( i < n ) {
                     Q.addRelation()
-                            .putRolePlayer(Qfrom, graknGraph.getInstance(aInstancesIds[i][j]))
-                            .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[i+1][j]));
+                            .putRolePlayer(Qfrom, graknGraph.getConcept(aInstancesIds[i][j]))
+                            .putRolePlayer(Qto, graknGraph.getConcept(aInstancesIds[i+1][j]));
                 }
                 if ( j < m){
                     Q.addRelation()
-                            .putRolePlayer(Qfrom, graknGraph.getInstance(aInstancesIds[i][j]))
-                            .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[i][j+1]));
+                            .putRolePlayer(Qfrom, graknGraph.getConcept(aInstancesIds[i][j]))
+                            .putRolePlayer(Qto, graknGraph.getConcept(aInstancesIds[i][j+1]));
                 }
             }
         }
