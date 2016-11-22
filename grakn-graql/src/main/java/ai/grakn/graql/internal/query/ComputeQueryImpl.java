@@ -110,7 +110,7 @@ class ComputeQueryImpl implements ComputeQuery {
                     analytics = getAnalytics(keyspace, true);
                     return analytics.median();
                 }
-                case "shortestPath": {
+                case "path": {
                     analytics = getAnalytics(keyspace, true);
                     return analytics.shortestPath(from, to);
                 }
