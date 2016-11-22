@@ -625,7 +625,6 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         EntityType type2 = graknGraph.putEntityType("Concept Type 1");
 
         List<Map<String, Concept>> results = graknGraph.graql().match(var("x").isa(entityType)).execute();
-        System.out.println();
 
         boolean found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type1)));
         assertTrue(found);
