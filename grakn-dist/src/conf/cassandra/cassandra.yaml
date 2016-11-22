@@ -28,7 +28,7 @@ cluster_name: 'Titan Cassandra Cluster'
 # toy data.  However, increasing num_tokens is strongly recommended for
 # production Titan instances backed by Cassandra.  This low value is just
 # for development and testing.
-num_tokens: 4
+num_tokens: 256
 
 # initial_token allows you to specify tokens manually.  While you can use # it with
 # vnodes (num_tokens > 1, above) -- in which case you should provide a 
