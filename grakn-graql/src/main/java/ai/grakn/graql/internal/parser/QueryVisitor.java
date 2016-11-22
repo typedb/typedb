@@ -301,12 +301,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitPropHasId(GraqlParser.PropHasIdContext ctx) {
-        String type = visitId(ctx.id());
-        return var -> var.has(type);
-    }
-
-    @Override
     public UnaryOperator<Var> visitPropHasVariable(GraqlParser.PropHasVariableContext ctx) {
         Var resource = var(getVariable(ctx.VARIABLE()));
 

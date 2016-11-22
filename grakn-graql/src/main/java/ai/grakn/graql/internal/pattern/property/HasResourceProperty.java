@@ -77,8 +77,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         if (resource.isUserDefinedName()) {
             repr.add(resource.getPrintableName());
         } else {
-            resource.getProperties(ValueProperty.class).findAny()
-                    .ifPresent(prop -> repr.add(prop.getPredicate().toString()));
+            resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
         }
         return repr.build().collect(joining(" "));
     }

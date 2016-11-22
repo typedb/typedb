@@ -219,13 +219,6 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testHasTmdbVoteCountQuery() {
-        MatchQuery expected = qb.match(var("x").has("tmdb-vote-count"));
-        MatchQuery parsed = qb.parse("match $x has tmdb-vote-count;");
-        assertQueriesEqual(expected, parsed);
-    }
-
-    @Test
     public void testVariablesEverywhereQuery() {
         MatchQuery expected = qb.match(
                 var().rel(var("p"), "x").rel("y"),

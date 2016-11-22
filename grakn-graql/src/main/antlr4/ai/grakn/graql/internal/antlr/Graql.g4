@@ -54,7 +54,6 @@ property       : 'isa' variable                  # isa
                | 'value' predicate?              # propValue
                | 'lhs' '{' patterns '}'          # propLhs
                | 'rhs' '{' varPatterns '}'       # propRhs
-               | 'has' id                        # propHasId
                | 'has' id? VARIABLE              # propHasVariable
                | 'has' id (predicate | VARIABLE) # propHas
                | 'has-resource' variable         # propResource
