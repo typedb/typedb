@@ -117,7 +117,7 @@ public class PostProcessingTest extends GraknEngineTestBase {
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
         //Get Needed Grakn Objects
         RelationType relationType = graknGraph.getRelationType(relationTypeId);
-        Instance otherInstance = graknGraph.getInstance(otherInstanceId);
+        Instance otherInstance = graknGraph.getConcept(otherInstanceId);
         RoleType otherRoleType = graknGraph.getRoleType(otherRoleTypeId);
         Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
         String relationId = relation.getId();

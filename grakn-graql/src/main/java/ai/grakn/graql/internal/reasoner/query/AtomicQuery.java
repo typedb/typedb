@@ -19,9 +19,12 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -35,7 +38,11 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
@@ -135,7 +142,7 @@ public class AtomicQuery extends Query{
                         .forEach(c -> {
                             Map<String, Concept> answer = new HashMap<>();
                             if (c.isResource()) {
-                                answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName()).getPredicateValue()));
+                                answer.put(atom.getVarName(), graph.getConcept(getIdPredicate(atom.getVarName()).getPredicateValue()));
                                 answer.put(atom.getValueVariable(), c);
                             } else if (c.isRelation()) {
                                 answer.put(atom.getVarName(), c);

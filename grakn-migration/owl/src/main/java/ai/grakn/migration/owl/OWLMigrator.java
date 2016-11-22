@@ -160,7 +160,7 @@ public class OWLMigrator {
 
     public Entity entity(OWLNamedIndividual individual) {
         String id = namer.individualEntityName(individual.getIRI());
-        Entity entity = graph.getEntity(id);
+        Entity entity = graph.getConcept(id);
         if (entity != null)
             return entity;
         OWLClass owlclass = eval(() -> {

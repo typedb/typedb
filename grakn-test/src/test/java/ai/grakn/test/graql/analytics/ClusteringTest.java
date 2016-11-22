@@ -312,10 +312,10 @@ public class ClusteringTest extends AbstractGraphTest {
     private void addResourceRelations() throws GraknValidationException {
         graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
-        Entity entity1 = graph.getEntity(entityId1);
-        Entity entity2 = graph.getEntity(entityId2);
-        Entity entity3 = graph.getEntity(entityId3);
-        Entity entity4 = graph.getEntity(entityId4);
+        Entity entity1 = graph.getConcept(entityId1);
+        Entity entity2 = graph.getConcept(entityId2);
+        Entity entity3 = graph.getConcept(entityId3);
+        Entity entity4 = graph.getConcept(entityId4);
 
         RoleType resourceOwner1 = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceType1));
         RoleType resourceOwner2 = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceType2));

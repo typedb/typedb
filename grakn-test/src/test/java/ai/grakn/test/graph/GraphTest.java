@@ -46,15 +46,15 @@ public class GraphTest extends AbstractRollbackGraphTest {
 
         graph = factory.getGraphBatchLoading();
         String r1 = graph.getRelationType(related).addRelation()
-                .putRolePlayer(graph.getRoleType(related1),graph.getEntity(e1))
-                .putRolePlayer(graph.getRoleType(related2),graph.getEntity(e2)).getId();
+                .putRolePlayer(graph.getRoleType(related1),graph.getConcept(e1))
+                .putRolePlayer(graph.getRoleType(related2),graph.getConcept(e2)).getId();
         graph.commit();
 
         graph = factory.getGraph();
         Map<RoleType, Instance> rps = graph.getRelation(r1).rolePlayers();
         assertEquals(2,rps.size());
-        assertEquals(graph.getEntity(e1), rps.get(graph.getRoleType(related1)));
-        assertEquals(graph.getEntity(e2), rps.get(graph.getRoleType(related2)));
+        assertEquals(graph.getConcept(e1), rps.get(graph.getRoleType(related1)));
+        assertEquals(graph.getConcept(e2), rps.get(graph.getRoleType(related2)));
 
         graph = factory.getGraphBatchLoading();
         graph.getRelation(r1).delete();

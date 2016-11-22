@@ -254,7 +254,7 @@ public class ValidatorTest extends GraphTestBase{
         assertionIds.forEach(id -> assertNull(graknGraph.getConcept(id)));
 
         // assert the movie is gone
-        assertNull(graknGraph.getEntity("godfather"));
+        assertNull(graknGraph.getConcept("godfather"));
 
     }
 
