@@ -18,6 +18,7 @@
 package ai.grakn.engine;
 
 
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
@@ -28,10 +29,13 @@ import ai.grakn.engine.controller.TransactionController;
 import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.GraphFactory;
 import ai.grakn.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
+import spark.utils.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -86,6 +90,8 @@ public class GraknEngineServer {
             response.body("New exception: "+e.getMessage()+" - Please refer to grakn.log file for full stack trace.");
         });
 
+        loadSystemOntology();
+
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
@@ -132,5 +138,23 @@ public class GraknEngineServer {
         LOG.info("\n==================================================");
         LOG.info("\n"+String.format(ConfigProperties.GRAKN_ASCII,address));
         LOG.info("\n==================================================");
+    }
+
+    private static void loadSystemOntology() {
+        GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
+        ClassLoader loader = GraknEngineServer.class.getClassLoader();
+
+        try {
+            String query = IOUtils.toString(loader.getResourceAsStream(ConfigProperties.SYSTEM_ONTOLOGY_FILE));
+
+            graph.graql()
+                 .parse(query)
+                 .execute();
+
+            graph.commit();
+        }
+        catch(IOException | GraknValidationException | NullPointerException e) {
+            LOG.error("Could not load system ontology. The error was: "+e);
+        }
     }
 }
