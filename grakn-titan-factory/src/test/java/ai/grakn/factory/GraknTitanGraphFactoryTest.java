@@ -181,7 +181,7 @@ public class GraknTitanGraphFactoryTest {
         for (int i=0; i<nTimes; i++) {
             indexResult = indexGraph.traversal().V(first).
                     outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                    has(Schema.EdgeProperty.TO_ROLE.name(), String.valueOf(1)).inV().
+                    has(Schema.EdgeProperty.TO_ROLE_NAME.name(), String.valueOf(1)).inV().
                     values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
         }
         double endTime = System.nanoTime();
@@ -226,7 +226,7 @@ public class GraknTitanGraphFactoryTest {
         double startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
             gremlinIndexedTraversalResult = indexGraph.traversal().V(first).
-                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr).range(0, 10)).
+                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr).range(0, 10)).
                     inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
         }
         double endTime = System.nanoTime();
@@ -267,19 +267,19 @@ public class GraknTitanGraphFactoryTest {
         for (int i=0; i<nTimes; i++) {
             // confirm every iteration fetches exactly the same results
             result = graph.traversal().V(first).
-                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr).range(0, 10)).
+                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr).range(0, 10)).
                     inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
             if (i>0) assertEquals(result,oldResult);
             oldResult = result;
 
             // confirm paging works
             List allNodes = graph.traversal().V(first).
-                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr)).
+                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr)).
                     inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
 
             for (int j=0;j<max-1;j++) {
                 List currentNode = graph.traversal().V(first).
-                        local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr).range(j, j + 1)).
+                        local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr).range(j, j + 1)).
                         inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
                 assertEquals(currentNode.get(0),allNodes.get(j));
             }
@@ -362,7 +362,7 @@ public class GraknTitanGraphFactoryTest {
     }
 
     private static void createGraphTestVertexCentricIndex(String indexProp,Graph graph, int max) throws InterruptedException {
-        createGraphGeneric(indexProp,graph,max, Schema.ConceptProperty.VALUE_STRING.name(), Schema.EdgeLabel.SHORTCUT.getLabel(), Schema.EdgeProperty.TO_ROLE.name());
+        createGraphGeneric(indexProp,graph,max, Schema.ConceptProperty.VALUE_STRING.name(), Schema.EdgeLabel.SHORTCUT.getLabel(), Schema.EdgeProperty.TO_ROLE_NAME.name());
     }
 
     private static void createGraphGeneric(String indexProp,Graph graph,int max,String nodeProp,String edgeLabel,String edgeProp) throws InterruptedException {
