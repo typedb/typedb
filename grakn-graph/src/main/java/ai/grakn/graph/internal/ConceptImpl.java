@@ -133,7 +133,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return True if the concept can be updated. I.e. the value is unique for the property.
      */
     private boolean updateAllowed(Schema.ConceptProperty key, String value) {
-        ConceptImpl fetchedConcept = graknGraph.getConcept(key, value);
+        Concept fetchedConcept = graknGraph.getConcept(key, value);
         return fetchedConcept == null || this.equals(fetchedConcept);
     }
 
