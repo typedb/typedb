@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
     InstanceImpl(Vertex v, V type, AbstractGraknGraph graknGraph) {
         super(v, type, graknGraph);
-        generateInstanceId(type);
     }
 
     /**
@@ -151,11 +150,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public Relation hasResource(Resource resource){
-        ResourceType type = resource.type();
-
-        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
+        String name = resource.type().getName();
+        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getId(name));
+        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(name));
+        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getId(), resource.type().getId()));

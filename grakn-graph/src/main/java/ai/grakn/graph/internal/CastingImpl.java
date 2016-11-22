@@ -39,7 +39,6 @@ class CastingImpl extends ConceptImpl {
 
     CastingImpl(Vertex v, RoleType type,  AbstractGraknGraph graknGraph) {
         super(v, type, graknGraph);
-        generateInstanceId(type);
     }
 
     /**
