@@ -20,14 +20,11 @@ package ai.grakn.test.graql.parser;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.test.AbstractMovieGraphTest;
-import com.google.common.collect.Sets;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.AbstractMovieGraphTest;
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -176,6 +173,11 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
     public void testMatchInsertToString() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var("x").has("title", "hello"));
         assertEquals("match $x isa movie;\ninsert $x has title \"hello\";", query.toString());
+    }
+
+    @Test
+    public void testResourceWithoutTypeToString() {
+        assertValidToString(qb.match(var("x").has(var("y"))));
     }
 
     @Test(expected=UnsupportedOperationException.class)

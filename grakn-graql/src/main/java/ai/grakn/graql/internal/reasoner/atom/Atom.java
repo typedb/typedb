@@ -66,7 +66,7 @@ public abstract class Atom extends AtomBase {
             HasResourceProperty resource = resources.next();
             if (resources.hasNext())
                 throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
-            vTypeId = resource.getType();
+            vTypeId = resource.getType().orElse("");
         }
         else
             vTypeId = var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getId).orElse("");

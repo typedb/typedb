@@ -131,6 +131,11 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
+    public Var has(Var var) {
+        return addProperty(new HasResourceProperty(var.admin()));
+    }
+
+    @Override
     public Var has(String type, Object value) {
         return has(type, Graql.eq(value));
     }
@@ -364,7 +369,10 @@ class VarImpl implements VarAdmin {
     public String toString() {
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
-        getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).forEach(innerVars::remove);
+        getProperties(HasResourceProperty.class)
+                .map(HasResourceProperty::getResource)
+                .flatMap(r -> r.getInnerVars().stream())
+                .forEach(innerVars::remove);
 
         if (innerVars.stream().anyMatch(VarImpl::invalidInnerVariable)) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");

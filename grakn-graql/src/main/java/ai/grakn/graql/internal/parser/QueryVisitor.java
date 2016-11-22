@@ -311,15 +311,25 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public UnaryOperator<Var> visitPropHasVariable(GraqlParser.PropHasVariableContext ctx) {
+        Var resource = var(getVariable(ctx.VARIABLE()));
+
+        if (ctx.id() != null) {
+            String type =visitId(ctx.id());
+            return var -> var.has(type, resource);
+        } else {
+            return var -> var.has(resource);
+        }
+    }
+
+    @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
         String type = visitId(ctx.id());
 
         if (ctx.predicate() != null) {
             return var -> var.has(type, visitPredicate(ctx.predicate()));
-        } else if (ctx.VARIABLE() != null) {
-            return var -> var.has(type, var(getVariable(ctx.VARIABLE())));
         } else {
-            return var -> var.has(type);
+            return var -> var.has(type, var(getVariable(ctx.VARIABLE())));
         }
     }
 

@@ -66,6 +66,12 @@ public interface Var extends Pattern {
     Var has(String type);
 
     /**
+     * @param var a variable representing a resource
+     * @return this
+     */
+    Var has(Var var);
+
+    /**
      * the variable must have a resource or name of the given type with an exact matching value
      *
      * @param type a resource type in the ontology
