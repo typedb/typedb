@@ -553,4 +553,24 @@ public class ReasonerTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
+
+    @Test
+    public void testLimit(){
+        GraknGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x; limit 5;";
+        MatchQuery query = lgraph.graql().<MatchQuery>parse(queryString);
+        Reasoner reasoner = new Reasoner(lgraph);
+        printAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+    }
 }
+
+
+
+
+
+
+
+
+
+
+

@@ -74,9 +74,10 @@ public class AtomicFactory {
 
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        pattern.getVars()
-                .forEach(var -> var.getProperties()
-                        .forEach(prop -> atoms.addAll(PropertyMapper.map(prop, var, parent))));
+        pattern.getVars().stream()
+                .flatMap(var -> var.getProperties()
+                        .flatMap(prop -> PropertyMapper.map(prop, var, parent).stream()))
+                .forEach(atoms::add);
         return atoms;
     }
 }

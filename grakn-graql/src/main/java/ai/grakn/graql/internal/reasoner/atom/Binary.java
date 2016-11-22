@@ -34,12 +34,7 @@ public abstract class Binary extends Atom{
     private Predicate predicate = null;
     protected String valueVariable;
 
-    public Binary(VarAdmin pattern) {
-        super(pattern);
-        this.valueVariable = extractValueVariableName(pattern);
-        this.predicate = getPredicate();
-    }
-
+    public Binary(VarAdmin pattern) { this(pattern, null);}
     public Binary(VarAdmin pattern, Query par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
@@ -49,7 +44,7 @@ public abstract class Binary extends Atom{
     public Binary(Binary a) {
         super(a);
         this.valueVariable = extractValueVariableName(a.getPattern().asVar());
-        this.predicate = getPredicate();
+        this.predicate = a.getPredicate();
     }
 
     protected abstract String extractValueVariableName(VarAdmin var);

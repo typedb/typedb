@@ -43,12 +43,7 @@ public abstract class Atom extends AtomBase {
     protected Type type = null;
     protected String typeId = null;
 
-    public Atom(VarAdmin pattern) {
-        super(pattern);
-        this.atomPattern = pattern;
-        this.typeId = extractTypeId(atomPattern.asVar());
-    }
-
+    public Atom(VarAdmin pattern) { this(pattern, null);}
     public Atom(VarAdmin pattern, Query par) {
         super(pattern, par);
         this.typeId = extractTypeId(atomPattern.asVar());

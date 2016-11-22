@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -62,7 +63,7 @@ public class PropertyMapper {
         else if (prop instanceof HasResourceProperty)
             return map((HasResourceProperty)prop, var, parent);
         else
-            return Sets.newHashSet(AtomicFactory.create(var, parent));
+            throw new IllegalArgumentException(ErrorMessage.GRAQL_PROPERTY_NOT_MAPPED.getMessage(prop.toString()));
     }
 
     //TODO all these should eventually go into atom constructors
@@ -90,7 +91,7 @@ public class PropertyMapper {
         String type = prop.getId();
         if (!type.isEmpty()) {
             VarAdmin idVar = Graql.var(varName).id(type).admin();
-            atoms.add(AtomicFactory.create(idVar, parent));
+            atoms.add(new IdPredicate(idVar, parent));
         }
         return atoms;
     }
@@ -98,7 +99,7 @@ public class PropertyMapper {
     private static Set<Atomic> map(ValueProperty prop, VarAdmin var, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         VarAdmin valueVar = Graql.var(var.getName()).value(prop.getPredicate()).admin();
-        atoms.add(AtomicFactory.create(valueVar, parent));
+        atoms.add(new ValuePredicate(valueVar, parent));
         return atoms;
     }
 
@@ -113,12 +114,11 @@ public class PropertyMapper {
         if (!baseVar.isUserDefinedName()) {
             String type = prop.getSuperType().getId().orElse("");
             VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
-            atoms.add(AtomicFactory.create(tVar, parent));
+            atoms.add(new IdPredicate(tVar, parent));
         }
-
         //isa part
         VarAdmin resVar = Graql.var(varName).sub(Graql.var(valueVariable)).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
+        atoms.add(new TypeAtom(resVar, parent));
         return atoms;
     }
 
@@ -132,11 +132,11 @@ public class PropertyMapper {
         if (!baseVar.isUserDefinedName()) {
             String type = prop.getRole().getId().orElse("");
             VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
-            atoms.add(AtomicFactory.create(tVar, parent));
+            atoms.add(new IdPredicate(tVar, parent));
         }
         //isa part
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(valueVariable)).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
+        atoms.add(new TypeAtom(resVar, parent));
         return atoms;
     }
 
@@ -148,7 +148,7 @@ public class PropertyMapper {
 
         //isa part
         VarAdmin resVar = Graql.var(varName).hasResource(type).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
+        atoms.add(new TypeAtom(resVar, parent));
         return atoms;
     }
 
@@ -166,11 +166,11 @@ public class PropertyMapper {
         if (!baseVar.isUserDefinedName()) {
             String type = prop.getType().getId().orElse("");
             VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
-            atoms.add(AtomicFactory.create(tVar, parent));
+            atoms.add(new IdPredicate(tVar, parent));
         }
         //isa part
         VarAdmin resVar = Graql.var(varName).isa(Graql.var(valueVariable)).admin();
-        atoms.add(AtomicFactory.create(resVar, parent));
+        atoms.add(new TypeAtom(resVar, parent));
         return atoms;
     }
 
@@ -188,13 +188,12 @@ public class PropertyMapper {
         VarAdmin resVar = type
                 .map(t ->Graql.var(varName).has(t, resource))
                 .orElseGet(() -> Graql.var(varName).has(resource)).admin();
-
-        atoms.add(AtomicFactory.create(resVar, parent));
+        atoms.add(new Resource(resVar, parent));
 
         //add value atom
         baseVar.getProperties(ValueProperty.class).forEach(valProp -> {
             VarAdmin resourceValueVar = Graql.var(valueVariable).value(valProp.getPredicate()).admin();
-            atoms.add(AtomicFactory.create(resourceValueVar, parent));
+            atoms.add(new ValuePredicate(resourceValueVar, parent));
         });
         return atoms;
     }

@@ -32,13 +32,10 @@ public abstract class AtomBase implements Atomic{
     protected PatternAdmin atomPattern = null;
     private Query parent = null;
 
-    public AtomBase(VarAdmin pattern) {
+    public AtomBase(VarAdmin pattern) { this(pattern, null);}
+    public AtomBase(VarAdmin pattern, Query par) {
         this.atomPattern = pattern;
         this.varName = pattern.getName();
-    }
-
-    public AtomBase(VarAdmin pattern, Query par) {
-        this(pattern);
         this.parent = par;
     }
 

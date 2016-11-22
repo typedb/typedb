@@ -50,14 +50,7 @@ public class Relation extends Atom {
     private Map<RoleType, Pair<String, Type>> roleVarTypeMap = null;
     private Map<String, Pair<Type, RoleType>> varTypeRoleMap = null;
 
-    public Relation(VarAdmin pattern) {
-        super(pattern);
-        // This is required to be a relation
-        //noinspection OptionalGetWithoutIsPresent
-        relationPlayers = getRelationPlayers(pattern);
-        inferTypeFromRoles();
-    }
-
+    public Relation(VarAdmin pattern) { this(pattern, null);}
     public Relation(VarAdmin pattern, Query par) {
         super(pattern, par);
         relationPlayers = getRelationPlayers(pattern);
