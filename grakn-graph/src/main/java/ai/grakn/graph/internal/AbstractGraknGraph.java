@@ -333,11 +333,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return validConceptOfType(getConcept(id), TypeImpl.class);
     }
 
-    @Override
-    public <V> Resource<V> getResource(String id) {
-        return validConceptOfType(getConcept(id), ResourceImpl.class);
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     public <V> Resource<V> getResource(V value, ResourceType<V> type){
