@@ -491,7 +491,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
         Set<EdgeImpl> edges = pacino.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT);
         for(EdgeImpl edge : edges){
-            assertEquals(relation.type().getId(), edge.getProperty(Schema.EdgeProperty.RELATION_TYPE_ID));
+            assertEquals(relation.type().getName(), edge.getProperty(Schema.EdgeProperty.RELATION_TYPE_NAME));
         }
 
         Set<ConceptImpl> godfatherToOthers = godfather.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);

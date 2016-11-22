@@ -128,13 +128,13 @@ public final class Schema {
     public enum EdgeProperty {
         ROLE_TYPE(String.class),
         RELATION_ID(String.class),
-        RELATION_TYPE_ID(String.class),
+        RELATION_TYPE_NAME(String.class),
         TO_ID(String.class),
-        TO_ROLE(String.class),
-        TO_TYPE(String.class),
+        TO_ROLE_NAME(String.class),
+        TO_TYPE_NAME(String.class),
         FROM_ID(String.class),
-        FROM_ROLE(String.class),
-        FROM_TYPE(String.class),
+        FROM_ROLE_NAME(String.class),
+        FROM_TYPE_NAME(String.class),
         SHORTCUT_HASH(String.class),
         REQUIRED(Boolean.class);
 
