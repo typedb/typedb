@@ -245,7 +245,7 @@ public class InsertQueryExecutor {
                     () -> type.asResourceType().putResource(getValue(var))
             );
         } else if (type.isRuleType()) {
-            return addOrGetInstance(id, graph::getRule, () -> {
+            return addOrGetInstance(id, graph::getConcept, () -> {
                 Pattern lhs = var.getProperty(LhsProperty.class).get().getLhs();
                 Pattern rhs = var.getProperty(RhsProperty.class).get().getRhs();
                 return type.asRuleType().addRule(lhs, rhs);

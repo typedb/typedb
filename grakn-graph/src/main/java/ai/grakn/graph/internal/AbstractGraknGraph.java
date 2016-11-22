@@ -27,7 +27,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
@@ -357,11 +356,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         });
 
         return resources;
-    }
-
-    @Override
-    public Rule getRule(String id) {
-        return validConceptOfType(getConcept(id), RuleImpl.class);
     }
 
     @Override

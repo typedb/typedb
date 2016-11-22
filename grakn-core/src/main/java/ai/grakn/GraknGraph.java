@@ -26,7 +26,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
@@ -125,13 +124,6 @@ public interface GraknGraph extends AutoCloseable{
      * @return The Resources holding the provided value or an empty collection if no such Resource exists.
      */
     <V> Collection<Resource<V>> getResourcesByValue(V value);
-
-    /**
-     *
-     * @param id A unique Id which identifies the Rule in the graph.
-     * @return The Rule with the provided Id or null if no such Rule exists.
-     */
-    Rule getRule(String id);
 
     /**
      *
