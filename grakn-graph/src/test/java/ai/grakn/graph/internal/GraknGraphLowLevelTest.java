@@ -213,14 +213,6 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
     }
 
     @Test
-    public void testGetRelation(){
-        RelationType relationType = graknGraph.putRelationType("Hello");
-        Relation c1 = relationType.addRelation();
-        assertEquals(c1, graknGraph.getRelation(c1.getId()));
-        assertNull(graknGraph.getResourceType("BOB"));
-    }
-
-    @Test
     public void testGetConceptType(){
         assertNull(graknGraph.getEntityType("Bob"));
         Type c2 = graknGraph.putEntityType("Bob");
@@ -257,7 +249,6 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testGetResource(){
-        assertNull(graknGraph.getResource("Bob"));
         ResourceType type = graknGraph.putResourceType("Type", ResourceType.DataType.STRING);
         ResourceType type2 = graknGraph.putResourceType("Type 2", ResourceType.DataType.STRING);
         Resource c2 = type.putResource("1");
