@@ -19,19 +19,24 @@
 package ai.grakn.graql;
 
 import ai.grakn.graql.internal.shell.ErrorMessage;
-import ai.grakn.graql.internal.shell.GraQLCompleter;
+import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.GraqlSignalHandler;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
+import ai.grakn.util.GraknVersion;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
-import ai.grakn.util.GraknVersion;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -39,7 +44,12 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import sun.misc.Signal;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -51,14 +61,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.REST.RemoteShell.*;
+import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_END;
+import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
+import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
+import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
+import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
+import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
+import static ai.grakn.util.REST.RemoteShell.ERROR;
+import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
+import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
+import static ai.grakn.util.REST.RemoteShell.QUERY;
+import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
+import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static ai.grakn.util.REST.WebPath.IMPORT_DATA_URI;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
 
 /**
@@ -109,10 +135,8 @@ public class GraqlShell {
 
     private Session session;
 
-    // A future containing an autocomplete result, once it has been received
-    private CompletableFuture<Json> autocompleteResponse = new CompletableFuture<>();
-
     private boolean waitingQuery = false;
+    private final GraqlCompleter graqlCompleter = new GraqlCompleter();
 
     /**
      * Run a Graql REPL
@@ -321,7 +345,7 @@ public class GraqlShell {
         console.setHistory(history);
 
         // Add all autocompleters
-        console.addCompleter(new AggregateCompleter(new GraQLCompleter(this), new ShellCommandCompleter()));
+        console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
 
         String queryString;
 
@@ -414,8 +438,9 @@ public class GraqlShell {
                     notifyAll();
                 }
                 break;
-            case ACTION_AUTOCOMPLETE:
-                autocompleteResponse.complete(json);
+            case ACTION_TYPES:
+                Set<String> types = json.at(TYPES).asJsonList().stream().map(Json::asString).collect(toSet());
+                graqlCompleter.setTypes(types);
                 break;
             case ACTION_ERROR:
                 System.err.print(json.at(ERROR).asString());
@@ -518,22 +543,6 @@ public class GraqlShell {
         } else {
             System.exit(0);
         }
-    }
-
-    public synchronized Json getAutocompleteCandidates(
-            String queryString, int cursorPosition
-    ) throws InterruptedException, ExecutionException, IOException {
-        sendJson(Json.object(
-                ACTION, ACTION_AUTOCOMPLETE,
-                QUERY, queryString,
-                AUTOCOMPLETE_CURSOR, cursorPosition
-        ));
-
-        Json json = autocompleteResponse.get();
-
-        autocompleteResponse = new CompletableFuture<>();
-
-        return json;
     }
 
     private void sendJson(Json json) {

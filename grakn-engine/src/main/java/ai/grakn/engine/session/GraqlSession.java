@@ -19,11 +19,12 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.Autocomplete;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.util.Schema;
 import com.google.common.base.Splitter;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -34,19 +35,20 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 import java.util.function.Supplier;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CANDIDATES;
-import static ai.grakn.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
+import static ai.grakn.util.REST.RemoteShell.TYPES;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A Graql shell session for a single client, running on one graph in one thread
@@ -72,6 +74,8 @@ class GraqlSession {
         this.getGraph = getGraph;
         this.graph = getGraph.get();
         this.printer = printer;
+
+        queryExecutor.submit(this::sendTypes);
 
         // Begin sending pings
         Thread thread = new Thread(this::ping);
@@ -193,18 +197,6 @@ class GraqlSession {
         queryExecutor.submit(graph::rollback);
     }
 
-    /**
-     * Find autocomplete results and send them to the client
-     */
-    void autocomplete(Json json) {
-        queryExecutor.submit(() -> {
-            String queryString = json.at(QUERY).asString();
-            int cursor = json.at(AUTOCOMPLETE_CURSOR).asInteger();
-            Autocomplete autocomplete = Autocomplete.create(graph, queryString, cursor);
-            sendAutocomplete(autocomplete);
-        });
-    }
-
     private void attemptRefresh() {
         try {
             graph = getGraph.get();
@@ -272,13 +264,12 @@ class GraqlSession {
     }
 
     /**
-     * Send the given autocomplete results to the client
+     * Send a list of all types in the ontology
      */
-    private void sendAutocomplete(Autocomplete autocomplete) {
+    private void sendTypes() {
         sendJson(Json.object(
-                ACTION, ACTION_AUTOCOMPLETE,
-                AUTOCOMPLETE_CANDIDATES, autocomplete.getCandidates(),
-                AUTOCOMPLETE_CURSOR, autocomplete.getCursorPosition()
+                ACTION, ACTION_TYPES,
+                TYPES, getTypes(graph).collect(toList())
         ));
     }
 
@@ -291,5 +282,17 @@ class GraqlSession {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * @param graph the graph to find types in
+     * @return all type IDs in the ontology
+     */
+    private static Stream<String> getTypes(GraknGraph graph) {
+        Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
+
+        Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getId);
+
+        return Stream.concat(types, metaTypes);
     }
 }

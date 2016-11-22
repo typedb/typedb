@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-core</artifactId>
+            <artifactId>grakn-graql</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
