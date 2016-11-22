@@ -116,9 +116,9 @@ public class PostProcessingTest extends GraknEngineTestBase {
 
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
         //Get Needed Grakn Objects
-        RelationType relationType = graknGraph.getRelationType(relationTypeId);
+        RelationType relationType = graknGraph.getConcept(relationTypeId);
         Instance otherInstance = graknGraph.getConcept(otherInstanceId);
-        RoleType otherRoleType = graknGraph.getRoleType(otherRoleTypeId);
+        RoleType otherRoleType = graknGraph.getConcept(otherRoleTypeId);
         Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
         String relationId = relation.getId();
 
@@ -128,17 +128,16 @@ public class PostProcessingTest extends GraknEngineTestBase {
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().
-                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainRoleTypeId).next();
+                hasId(mainRoleTypeId).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
-                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), relationId).next();
+                hasId(relationId).next();
 
         Vertex mainInstanceVertex = rawGraph.traversal().V().
-                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainInstanceId).next();
+                hasId(mainInstanceId).next();
 
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
-        castingVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
@@ -184,14 +183,13 @@ public class PostProcessingTest extends GraknEngineTestBase {
     private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
         AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;
         Vertex originalResource = (Vertex) graph.getTinkerTraversal()
-                .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resource.getId()).next();
+                .hasId(resource.getId()).next();
         Vertex vertexResourceType = (Vertex) graph.getTinkerTraversal()
-                .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resourceType.getId()).next();
+                .hasId(resourceType.getId()).next();
 
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
-        resourceVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);
 
