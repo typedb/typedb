@@ -18,14 +18,14 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -46,7 +46,6 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -68,17 +67,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         this.graknGraph = graknGraph;
         type(type);
         graknGraph.getConceptLog().putConcept(this);
-    }
-
-    /**
-     * Generates and saves a readable entity id
-     * @param type the type of this concept
-     */
-    protected void generateInstanceId(V type){
-        if(getId() == null){
-            String id = getBaseType() + "-" + type.getId() + "-" + UUID.randomUUID().toString();
-            setImmutableProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, id, getId(), Function.identity());
-        }
     }
 
     /**
@@ -595,7 +583,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public String getId(){
-        return getProperty(Schema.ConceptProperty.ITEM_IDENTIFIER);
+        return getBaseIdentifier().toString();
     }
 
     /**
