@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static ai.grakn.engine.controller.RequestUtil.getAsList;
 import static ai.grakn.engine.controller.RequestUtil.getAsString;
 import static ai.grakn.engine.controller.RequestUtil.getKeyspace;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static spark.Spark.before;
 import static spark.Spark.halt;
 import static spark.Spark.post;
@@ -107,7 +108,7 @@ public class ImportController {
     private String importDataRESTDistributed(Request req, Response res) {
         loadingInProgress.set(true);
         try {
-            final String keyspace = getKeyspace(req);
+            final String keyspace = getKeyspace(req.body());
             final String pathToFile = getAsString(PATH_FIELD, req.body());
             final Collection<String> hosts = getAsList(HOSTS_FIELD, req.body());
 
@@ -137,7 +138,7 @@ public class ImportController {
     private String importDataREST(Request req, Response res) {
         loadingInProgress.set(true);
         try {
-            final String keyspace = getKeyspace(req);
+            final String keyspace = getKeyspace(req.body());
             final String pathToFile = getAsString(PATH_FIELD, req.body());
 
             if (!(new File(pathToFile)).exists())

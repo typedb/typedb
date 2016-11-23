@@ -43,6 +43,11 @@ public abstract class RequestUtil {
         return keyspace == null ? defaultKeyspace : keyspace;
     }
 
+    public static String getKeyspace(String request){
+        Json keyspace = Json.read(request).at(KEYSPACE_PARAM);
+        return keyspace == null ? defaultKeyspace : keyspace.asString();
+    }
+
     public static String getContenttype(Request request){
         return request.contentType().split(";")[0];
     }

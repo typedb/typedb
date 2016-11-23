@@ -58,7 +58,7 @@ public class REST {
         public static final String HOSTS_FIELD = "hosts";
         public static final String QUERY_FIELD = "query";
         public static final String ID_PARAMETER = ":id";
-        public static final String KEYSPACE_PARAM = "graphName";
+        public static final String KEYSPACE_PARAM = "keyspace";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String UUID_PARAMETER = ":uuid";
         public static final String TASK_STATUS_PARAMETER = "status";
