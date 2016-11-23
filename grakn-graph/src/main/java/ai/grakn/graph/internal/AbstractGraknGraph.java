@@ -144,12 +144,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
             constraintRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.CONSTRAINT_RULE.getId());
 
-            type.setType(type.getId());
-            relationType.setType(type.getId());
-            roleType.setType(type.getId());
-            resourceType.setType(type.getId());
-            ruleType.setType(type.getId());
-            entityType.setType(type.getId());
+            type.setType(type.getName());
+            relationType.setType(type.getName());
+            roleType.setType(type.getName());
+            resourceType.setType(type.getName());
+            ruleType.setType(type.getName());
+            entityType.setType(type.getName());
 
             relationType.putEdge(type, Schema.EdgeLabel.SUB);
             roleType.putEdge(type, Schema.EdgeLabel.SUB);
