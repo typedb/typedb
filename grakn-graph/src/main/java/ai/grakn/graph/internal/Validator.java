@@ -48,7 +48,7 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
-        Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getModifiedConcepts());
+        Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getConceptLog().getModifiedConcepts());
 
         for(ConceptImpl nextToValidate: validationList){
             if(nextToValidate.isAlive()) {

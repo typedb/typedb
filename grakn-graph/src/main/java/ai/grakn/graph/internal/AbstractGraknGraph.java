@@ -206,18 +206,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
 
-    public Set<ConceptImpl> getModifiedConcepts(){
-        return getConceptLog().getModifiedConcepts();
-    }
-
-    public Set<String> getModifiedCastingIds(){
-        return getConceptLog().getModifiedCastingIds();
-    }
-
-    public Set<String> getModifiedResourceIds(){
-        return getConceptLog().getModifiedResourceIds();
-    }
-
     public ConceptLog getConceptLog() {
         ConceptLog conceptLog = context.get();
         if(conceptLog == null){
@@ -226,7 +214,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return conceptLog;
     }
 
-    public void checkOntologyMutation(){
+    void checkOntologyMutation(){
         if(isBatchLoadingEnabled()){
             throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
         }
@@ -234,9 +222,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
-    public Vertex addVertex(Schema.BaseType baseType){
-        Vertex v = getTinkerPopGraph().addVertex(baseType.name());
-        return v;
+    Vertex addVertex(Schema.BaseType baseType){
+        return getTinkerPopGraph().addVertex(baseType.name());
     }
 
     private Vertex putVertex(String itemIdentifier, Schema.BaseType baseType){
@@ -323,6 +310,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             return null;
         }
     }
+
     @Override
     public Concept getConcept(String id) {
         return getConcept(Schema.ConceptProperty.ITEM_IDENTIFIER, id);
@@ -454,7 +442,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
         return casting;
     }
-    public CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
+    CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
         CastingImpl foundCasting  = null;
         if(rolePlayer != null)
             foundCasting = getCasting(role, rolePlayer);
@@ -619,8 +607,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         validateGraph();
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
-        Set<String> castings = getModifiedCastingIds();
-        Set<String> resources = getModifiedResourceIds();
+        Set<String> castings = getConceptLog().getModifiedCastingIds();
+        Set<String> resources = getConceptLog().getModifiedResourceIds();
 
         if(castings.size() > 0)
             modifiedConcepts.put(Schema.BaseType.CASTING, castings);
