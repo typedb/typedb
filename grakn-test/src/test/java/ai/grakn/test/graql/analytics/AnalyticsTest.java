@@ -944,6 +944,13 @@ public class AnalyticsTest extends AbstractGraphTest {
     public void testResourcesMergedOnBulkMutate() throws GraknValidationException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
+        Cache cache = Cache.getInstance();
+
+        //Clear Cache
+        cache.getKeyspaces().forEach(keyspace -> {
+            cache.getResourceJobs(keyspace).clear();
+            cache.getCastingJobs(keyspace).clear();
+        });
 
         RoleType friend1 = graph.putRoleType("friend1");
         RoleType friend2 = graph.putRoleType("friend2");
@@ -970,7 +977,6 @@ public class AnalyticsTest extends AbstractGraphTest {
         assertTrue(degrees.size() > 1);
 
         //Wait for cache to be updated
-        Cache cache = Cache.getInstance();
         int failCount = 0;
         while(cache.getResourceJobs(keyspace).size() < 4){
             Thread.sleep(1000);
