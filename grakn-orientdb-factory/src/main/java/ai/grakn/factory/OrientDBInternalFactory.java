@@ -53,7 +53,10 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
     @Override
     GraknOrientDBGraph buildGraknGraphFromTinker(OrientGraph graph, boolean batchLoading) {
-        return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, batchLoading);
+        String engineUrl = super.engineUrl;
+        if(engineUrl.equals(SPECIAL_IN_MEMORY))
+            engineUrl = null;
+        return new GraknOrientDBGraph(graph, super.keyspace, engineUrl, batchLoading);
     }
 
     @Override

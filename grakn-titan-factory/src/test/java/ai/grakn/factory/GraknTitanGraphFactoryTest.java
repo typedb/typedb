@@ -292,7 +292,7 @@ public class GraknTitanGraphFactoryTest {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
-        for(int i = 0; i < 100; i ++) {
+        for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
                 GraknTitanGraph graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
                 assertFalse(graph.getTinkerPopGraph().isClosed());
