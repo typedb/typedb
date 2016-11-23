@@ -24,25 +24,26 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 import static ai.grakn.util.Schema.BaseType.CASTING;
+import static ai.grakn.util.Schema.ConceptProperty.NAME;
 
-class IdFragment extends AbstractFragment {
+class NameFragment extends AbstractFragment {
 
-    private final String id;
+    private final String name;
 
-    IdFragment(String start, String id) {
+    NameFragment(String start, String name) {
         super(start);
-        this.id = id;
+        this.name = name;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        // Whenever looking up by ID, we have to confirm this is not a casting
-        traversal.hasId(id).not(__.hasLabel(CASTING.name()));
+        // Whenever looking up by name, we have to confirm this is not a casting
+        traversal.has(NAME.name(), name).not(__.hasLabel(CASTING.name()));
     }
 
     @Override
     public String getName() {
-        return "[id:" + idToString(id) + "]";
+        return "[name:" + idToString(name) + "]";
     }
 
     @Override
@@ -51,21 +52,21 @@ class IdFragment extends AbstractFragment {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        IdFragment that = (IdFragment) o;
+        NameFragment that = (NameFragment) o;
 
-        return id != null ? id.equals(that.id) : that.id == null;
+        return name != null ? name.equals(that.name) : that.name == null;
 
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (id != null ? id.hashCode() : 0);
+        result = 31 * result + (name != null ? name.hashCode() : 0);
         return result;
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
+    public long fragmentCost(long previousCost) {
         return 1;
     }
 }

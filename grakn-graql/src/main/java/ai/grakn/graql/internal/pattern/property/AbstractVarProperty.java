@@ -34,9 +34,9 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     public final void checkValid(GraknGraph graph, VarAdmin var) throws IllegalStateException {
         checkValidProperty(graph, var);
 
-        getTypes().map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream).forEach(typeId -> {
-            if (graph.getConcept(typeId) == null) {
-                throw new IllegalStateException(ErrorMessage.ID_NOT_FOUND.getMessage(typeId));
+        getTypes().map(VarAdmin::getName).flatMap(CommonUtil::optionalToStream).forEach(name -> {
+            if (graph.getType(name) == null) {
+                throw new IllegalStateException(ErrorMessage.NAME_NOT_FOUND.getMessage(name));
             }
         });
     }

@@ -98,19 +98,19 @@ public class PostprocessingTest extends GraphTestBase{
         Edge tinkerEdge = fromInstance.getVertex().addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
         EdgeImpl edge = new EdgeImpl(tinkerEdge, graknGraph);
 
-        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getId());
+        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName());
         edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId());
 
         if (fromInstance.getId() != null)
             edge.setProperty(Schema.EdgeProperty.FROM_ID, fromInstance.getId());
-        edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getId());
+        edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName());
 
         if (toInstance.getId() != null)
             edge.setProperty(Schema.EdgeProperty.TO_ID, toInstance.getId());
-        edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getId());
+        edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
 
-        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.getParentIsa().getId());
-        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.getParentIsa().getId());
+        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.getParentIsa().getName());
+        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.getParentIsa().getName());
     }
 
     @Test

@@ -137,11 +137,11 @@ public class Graql {
     }
 
     /**
-     * @param id the id of a concept
-     * @return a query variable that identifies a concept by id
+     * @param name the name of a concept
+     * @return a query variable that identifies a concept by name
      */
-    public static Var id(String id) {
-        return var().id(id);
+    public static Var name(String name) {
+        return var().name(name);
     }
 
     /**

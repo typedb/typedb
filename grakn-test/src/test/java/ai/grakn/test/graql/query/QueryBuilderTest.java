@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
@@ -82,7 +81,7 @@ public class QueryBuilderTest extends AbstractMovieGraphTest {
     public void testBuildMatchInsertQueryGraphLast() {
         assertFalse(graph.graql().match(var().id("a-movie")).ask().execute());
         InsertQuery query =
-                match(var("x").id("movie")).
+                match(var("x").name("movie")).
                 insert(var().has("title", "a-movie").isa("movie")).withGraph(graph);
         query.execute();
         assertTrue(graph.graql().match(var().has("title", "a-movie")).ask().execute());

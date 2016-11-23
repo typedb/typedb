@@ -167,7 +167,7 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(HasResourceTypeProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getName();
+        String varName = var.getVarName();
         String type = prop.getResourceType().getId().orElse("");
         //!!!HasResourceType is a special case and it doesn't allow variables as resource types!!!
 

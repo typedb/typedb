@@ -55,8 +55,8 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outHasRole(start, role.getName()),
-                Fragments.inHasRole(role.getName(), start)
+                Fragments.outHasRole(start, role.getVarName()),
+                Fragments.inHasRole(role.getVarName(), start)
         ));
     }
 
@@ -78,8 +78,8 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        String roleId = role.getId().orElseThrow(() -> failDelete(this));
-        concept.asRelationType().deleteHasRole(graph.getRoleType(roleId));
+        String roleName = role.getName().orElseThrow(() -> failDelete(this));
+        concept.asRelationType().deleteHasRole(graph.getRoleType(roleName));
     }
 
     @Override

@@ -20,18 +20,13 @@ package ai.grakn.test.graql.printer;
 
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.AbstractMovieGraphTest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.AbstractMovieGraphTest;
 import mjson.Json;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,12 +77,14 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
 
     @Test
     public void testJsonMetaType() {
-        assertJsonEquals(Json.object("id", "entity-type"), graph.getMetaEntityType());
+        String id = graph.getMetaEntityType().getId();
+        assertJsonEquals(Json.object("id", id, "name", "entity-type"), graph.getMetaEntityType());
     }
 
     @Test
     public void testJsonEntityType() {
-        assertJsonEquals(Json.object("id", "movie", "isa", "entity-type"), graph.getEntityType("movie"));
+        String id = graph.getEntityType("movie").getId();
+        assertJsonEquals(Json.object("id", id, "name", "movie", "isa", "entity-type"), graph.getEntityType("movie"));
     }
 
     @Test

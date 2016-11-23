@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.printer;
 
-import ai.grakn.graql.Printer;
-import com.google.common.collect.Maps;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Printer;
+import com.google.common.collect.Maps;
 import mjson.Json;
 
 import java.util.Collection;
@@ -40,8 +39,12 @@ public class JsonPrinter implements Printer<Json> {
     public Json graqlString(boolean inner, Concept concept) {
         Json json = Json.object("id", concept.getId());
 
+        if (concept.isType()) {
+            json.set("name", concept.asType().getName());
+        }
+
         if (concept.type() != null) {
-            json.set("isa", concept.type().getId());
+            json.set("isa", concept.type().getName());
         }
 
         if (concept.isResource()) {

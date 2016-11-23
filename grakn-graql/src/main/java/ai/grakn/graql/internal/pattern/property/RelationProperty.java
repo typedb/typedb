@@ -19,22 +19,23 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -77,16 +78,16 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
             if (roleType.isPresent()) {
-                Optional<String> roleTypeId = roleType.get().getId();
+                Optional<String> roleTypeName = roleType.get().getName();
 
-                if (roleTypeId.isPresent()) {
-                    shortcutTraversal.addRel(roleTypeId.get(), relationPlayer.getRolePlayer().getName());
+                if (roleTypeName.isPresent()) {
+                    shortcutTraversal.addRel(roleTypeName.get(), relationPlayer.getRolePlayer().getVarName());
                 } else {
                     shortcutTraversal.setInvalid();
                 }
 
             } else {
-                shortcutTraversal.addRel(relationPlayer.getRolePlayer().getName());
+                shortcutTraversal.addRel(relationPlayer.getRolePlayer().getVarName());
             }
         });
     }
@@ -143,7 +144,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(String start, String casting, VarAdmin rolePlayer) {
-        String other = rolePlayer.getName();
+        String other = rolePlayer.getVarName();
 
         return Stream.of(
                 // Pattern between relation and casting
@@ -159,8 +160,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(String start, String casting, VarAdmin roleType, VarAdmin rolePlayer) {
-        String roletypeName = roleType.getName();
-        String roleplayerName = rolePlayer.getName();
+        String roletypeName = roleType.getVarName();
+        String roleplayerName = rolePlayer.getVarName();
 
         return Stream.of(
                 // Pattern between relation and casting
@@ -196,27 +197,28 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         Set<String> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
-                .map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream)
+                .map(VarAdmin::getName).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
-        Optional<String> maybeId = var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getId);
+        Optional<String> maybeName =
+                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getName);
 
-        maybeId.ifPresent(typeId -> {
-            RelationType relationType = graph.getRelationType(typeId);
+        maybeName.ifPresent(name -> {
+            RelationType relationType = graph.getRelationType(name);
 
             if (relationType == null) {
-                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(typeId));
+                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(name));
             }
 
             Collection<RelationType> relationTypes = relationType.subTypes();
 
             Set<String> validRoles = relationTypes.stream()
                     .flatMap(r -> r.hasRoles().stream())
-                    .map(Concept::getId)
+                    .map(Type::getName)
                     .collect(toSet());
 
             String errors = roleTypes.stream().filter(roleType -> !validRoles.contains(roleType)).map(roleType ->
-                    ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleType, typeId, validRoles)
+                    ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleType, name, validRoles)
             ).collect(joining("\n"));
 
             if (!errors.equals("")) {

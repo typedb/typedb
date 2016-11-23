@@ -156,7 +156,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getId(), resource.type().getId()));
+            throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getName(), resource.type().getName()));
         }
 
         Relation relation = hasResource.addRelation();
