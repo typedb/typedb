@@ -23,22 +23,14 @@ import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.response.Response;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.Graql;
 import ai.grakn.util.REST;
 import mjson.Json;
-import org.junit.Assert;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
 
 import static com.jayway.restassured.RestAssured.given;
 import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static org.junit.Assert.assertNotNull;
 
 public class ImportControllerTest extends GraknEngineTestBase {
 
@@ -46,65 +38,34 @@ public class ImportControllerTest extends GraknEngineTestBase {
 
     @Test
     public void testLoadOntologyAndData() {
-        String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
-        String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
-
-        importOntology(ontologyPath, keyspace);
-
-        Response dataResponse = given().contentType("application/json").
-                body(Json.object("path", dataPath).toString()).when().
-                post(REST.WebPath.IMPORT_DATA_URI);
-
-        dataResponse.then().assertThat().statusCode(200);
-
-        //TODO: find a proper way to notify a client when loading is done. Something slightly more elegant than a thread sleep.
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(keyspace).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
-        GraphFactory.getInstance().getGraphBatchLoading(keyspace).clear();
+        String dataPath = getPath("small_nametags.gql");
+        Json body = Json.object("path", dataPath);
+        runAndAssertCorrect(body, keyspace);
     }
 
     @Test
     public void testLoadOntologyAndDataDistributed() {
-        String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
-        String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
-
-
-        importOntology(ontologyPath, keyspace);
-
-        Response dataResponse = given().contentType("application/json").
-                body(Json.object("path", dataPath, "hosts", Json.array().add("127.0.0.1")).toString()).when().
-                post(REST.WebPath.IMPORT_DATA_URI);
-
-        dataResponse.then().assertThat().statusCode(200);
-
-        //TODO: find a proper way to notify a client when loading is done. Something slightly more elegant than a thread sleep.
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(keyspace).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
-        GraphFactory.getInstance().getGraphBatchLoading(keyspace).clear();
+        String dataPath = getPath("small_nametags.gql");
+        Json body = Json.object("path", dataPath, "hosts", Json.array().add("127.0.0.1"));
+        runAndAssertCorrect(body, keyspace);
     }
 
     @Test
-    public void testLoadOntologyAndDataOnCustomKeyspace() {
-        String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
-        String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
+    public void testLoadOntologyAndDataOnCustomKeyspace(){
+        String dataPath = getPath("small_nametags.gql");
         String customGraph = "importgraph";
+        Json body = Json.object("path", dataPath);
 
-        importOntology(ontologyPath, customGraph);
+        runAndAssertCorrect(body, customGraph);
+    }
+
+    private void runAndAssertCorrect(Json body, String keyspace){
+        loadOntology("dblp-ontology.gql", keyspace);
 
         Response dataResponse = given().
                 contentType("application/json").
-                queryParam(KEYSPACE_PARAM, customGraph).
-                body(Json.object("path", dataPath).toString()).when().
+                queryParam(KEYSPACE_PARAM, keyspace).
+                body(body.toString()).when().
                 post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);
@@ -116,27 +77,9 @@ public class ImportControllerTest extends GraknEngineTestBase {
             e.printStackTrace();
         }
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
-        GraphFactory.getInstance().getGraphBatchLoading(customGraph).clear();
+        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
+        assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+        graph.clear();
+        graph.close();
     }
-
-    private void importOntology(String ontologyFile, String graphNameParam){
-        GraknGraph graph = GraphFactory.getInstance().getGraph(graphNameParam);
-
-        List<String> lines = null;
-        try {
-            lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        Graql.parse(query).withGraph(graph).execute();
-        try {
-            graph.commit();
-        } catch (GraknValidationException e) {
-            e.printStackTrace();
-        }
-    }
-
-
 }
