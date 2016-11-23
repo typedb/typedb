@@ -423,10 +423,13 @@ public class Query implements MatchQueryInternal {
      */
     public boolean isEquivalent(Query q) {
         boolean equivalent = true;
-        if(atomSet.size() != q.getAtoms().size()) return false;
-        Iterator<Atomic> it = atomSet.iterator();
+        Set<Atom> atoms = atomSet.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .collect(Collectors.toSet());
+        if(atoms.size() != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
+        Iterator<Atom> it = atoms.iterator();
         while (it.hasNext() && equivalent) {
-            Atomic atom = it.next();
+            Atom atom = it.next();
             equivalent = q.containsEquivalentAtom(atom);
         }
         return equivalent;

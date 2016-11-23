@@ -74,17 +74,7 @@ public class Reasoner {
     }
 
     public static Set<Rule> getRules(GraknGraph graph) {
-        Set<Rule> rules = new HashSet<>();
-        QueryBuilder qb = graph.graql();
-        MatchQuery sq = qb.parse("match $x isa inference-rule;");
-        List<Map<String, Concept>> results = Lists.newArrayList(sq);
-        for (Map<String, Concept> result : results) {
-            for (Map.Entry<String, Concept> entry : result.entrySet()) {
-                Concept concept = entry.getValue();
-                rules.add((Rule) concept);
-            }
-        }
-        return rules;
+        return new HashSet<>(graph.getMetaRuleInference().instances());
     }
 
     /**

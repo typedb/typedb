@@ -23,9 +23,7 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class TypeAtom extends Binary{
 
-    public TypeAtom(VarAdmin pattern) {
-        super(pattern);
-    }
+    public TypeAtom(VarAdmin pattern) { this(pattern, null);}
     public TypeAtom(VarAdmin pattern, Query par) {
         super(pattern, par);
     }

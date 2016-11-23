@@ -38,6 +38,7 @@ import org.junit.Test;
 import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 public class GenealogyTest extends AbstractEngineTest{
 
@@ -50,7 +51,6 @@ public class GenealogyTest extends AbstractEngineTest{
         graph = GenealogyGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql();
-
 
         /*
         //prerunning analytics
