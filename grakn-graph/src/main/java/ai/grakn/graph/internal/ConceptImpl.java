@@ -412,7 +412,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         if(type != null){
             TypeImpl currentIsa = getParentIsa();
             if(currentIsa == null){
-                setType(String.valueOf(type.getId()));
+                setType(String.valueOf(type.getName()));
                 putEdge(type, Schema.EdgeLabel.ISA);
             } else if(!currentIsa.equals(type)){
                 throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));

@@ -113,14 +113,14 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<String> roleTypeItemIdentifier = Arrays.stream(roleTypes).map(Concept::getId).collect(Collectors.toSet());
+        Set<String> roleTypeNames = Arrays.stream(roleTypes).map(RoleType::getName).collect(Collectors.toSet());
 
         InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
             CastingImpl casting = c.asCasting();
-            if (roleTypeItemIdentifier.size() != 0) {
-                if (roleTypeItemIdentifier.contains(casting.getType()))
+            if (roleTypeNames.size() != 0) {
+                if (roleTypeNames.contains(casting.getType()))
                     relations.addAll(casting.getRelations());
             } else {
                 relations.addAll(casting.getRelations());
