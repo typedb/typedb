@@ -41,13 +41,9 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     private void closeTitan(){
         StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
-
-        //This is so we can control the count of open transactions
-        synchronized (this) {
-            graph.tx().close();
-            if (graph.getOpenTransactions().isEmpty()) {
-                graph.close();
-            }
+        graph.tx().close();
+        if (graph.getOpenTransactions().isEmpty()) {
+            closePermanent();
         }
     }
 }
