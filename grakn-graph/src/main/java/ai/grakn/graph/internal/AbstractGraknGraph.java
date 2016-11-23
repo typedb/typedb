@@ -606,10 +606,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
      */
     @Override
     public void close() {
-        if(!isClosed()) {
-            getConceptLog().clearTransaction();
-            closeGraph(ErrorMessage.CLOSED_USER.getMessage());
-        }
+        getConceptLog().clearTransaction();
+        closeGraph(ErrorMessage.CLOSED_USER.getMessage());
     }
 
     //Standard Close Operation Overridden in Titan
@@ -618,9 +616,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     void finaliseClose(Runnable closer, String closedReason){
-        closer.run();
-        localClosedReason.set(closedReason);
-        localIsClosed.set(true);
+        if(!isClosed()) {
+            closer.run();
+            localClosedReason.set(closedReason);
+            localIsClosed.set(true);
+        }
     }
 
     void closePermanent(){

@@ -48,12 +48,13 @@ public class BlockingLoaderTest extends GraknEngineTestBase {
 
     private final Logger LOG = LoggerFactory.getLogger(BlockingLoaderTest.class);
 
+    private String keyspace;
     private GraknGraph graph;
     private BlockingLoader loader;
 
     @Before
     public void setUp() throws Exception {
-        String keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         graph = GraphFactory.getInstance().getGraph(keyspace);
         loader = new BlockingLoader(keyspace);
     }
@@ -124,7 +125,8 @@ public class BlockingLoaderTest extends GraknEngineTestBase {
 
     @After
     public void cleanGraph() {
-            graph.clear();
+        graph.clear();
+        graph = GraphFactory.getInstance().getGraph(keyspace);
     }
 
 }
