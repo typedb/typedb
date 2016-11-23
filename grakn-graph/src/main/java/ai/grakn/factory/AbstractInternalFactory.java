@@ -78,7 +78,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             //Closes the graph to force a full refresh if the other graph has committed
             if(hasCommitted){
                 try {
-                    graknGraph.getTinkerPopGraph().close();
+                    graknGraph.closeGraph(ErrorMessage.CLOSED_FACTORY.getMessage());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -109,7 +109,10 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     }
 
     private boolean isClosed(M graknGraph) {
-        G innerGraph = graknGraph.getTinkerPopGraph();
-        return isClosed(innerGraph);
+        if(!graknGraph.isClosed()) {
+            G innerGraph = graknGraph.getTinkerPopGraph();
+            return isClosed(innerGraph);
+        }
+        return true;
     }
 }

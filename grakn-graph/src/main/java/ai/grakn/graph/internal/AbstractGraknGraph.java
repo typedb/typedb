@@ -71,10 +71,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
+    private final G graph;
 
-    private G graph;
     private boolean committed;
+    private boolean isClosed;
     private String closedReason;
+
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
@@ -92,11 +94,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
+        this.isClosed = false;
     }
 
     @Override
     public String getKeyspace(){
         return keyspace;
+    }
+
+    @Override
+    public boolean isClosed(){
+        return isClosed;
     }
 
     public boolean hasCommitted(){
@@ -158,7 +166,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     public G getTinkerPopGraph(){
-        if(graph == null){
+        if(isClosed()){
             throw new GraphRuntimeException(closedReason);
         }
         return graph;
@@ -589,16 +597,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public void close() {
         getConceptLog().clearTransaction();
-        closeGraph(ErrorMessage.CLOSED_BY_USER.getMessage());
+        closeGraph(ErrorMessage.CLOSED_USER.getMessage());
     }
-    protected void closeGraph(String closedReason){
+    public void closeGraph(String closedReason){
         finaliseClose(this::closePermanent, closedReason);
     }
 
     void finaliseClose(Runnable closer, String closedReason){
         closer.run();
         this.closedReason = closedReason;
-        graph = null;
+        this.isClosed = true;
     }
 
     void closePermanent(){

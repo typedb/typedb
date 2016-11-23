@@ -115,16 +115,34 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     }
 
     @Test
-    public void testClose(){
+    public void testCloseStandard(){
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CLOSED_BY_USER.getMessage())
+                containsString(ErrorMessage.CLOSED_USER.getMessage())
         ));
 
         graph.putEntityType("thing");
+    }
+
+    @Test
+    public void testCloseClearing() throws GraknValidationException {
+        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
+        AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraphBatchLoading();
+
+        graphBatch.commit();
+
+        //We get this so we force the other refernce to be invalidated
+        AbstractGraknGraph graphNormal2 = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CLOSED_FACTORY.getMessage())
+        ));
+
+        graphNormal.getEntityType("thing");
     }
 
 }
