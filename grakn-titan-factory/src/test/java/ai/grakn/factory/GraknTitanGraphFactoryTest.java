@@ -295,7 +295,7 @@ public class GraknTitanGraphFactoryTest {
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
                 GraknTitanGraph graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
-                System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is using graph [" + graph.getTinkerPopGraph() + "]");
+                System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is using graph [" + graph.getTinkerPopGraph().hashCode() + "] with transaction [" + graph.getTinkerPopGraph().tx() + "]");
                 assertFalse("Grakn graph is closed", graph.isClosed());
                 assertFalse("Internal tinkerpop graph is closed", graph.getTinkerPopGraph().isClosed());
                 graph.putEntityType("A Thing");
