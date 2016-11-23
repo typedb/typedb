@@ -29,6 +29,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
@@ -57,13 +58,24 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     }
 
     @Override
+    public TitanGraph getGraphWithNewTransaction(TitanGraph graph){
+        if(!graph.tx().isOpen()){
+            graph.tx().open();
+            System.out.println("Thread [" + Thread.currentThread().getId() + "]  opening new transaction on existing graph [" + graph.hashCode() + "] has number of transactions [" + ((StandardTitanGraph) graph).getOpenTransactions().size() + "]");
+        }
+        return graph;
+    }
+
+    @Override
     GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph, boolean batchLoading) {
         return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override
     TitanGraph buildTinkerPopGraph() {
-        return newTitanGraph(super.keyspace, super.engineUrl, super.config);
+        TitanGraph titanGraph = newTitanGraph(super.keyspace, super.engineUrl, super.config);
+        System.out.println("Thread [" + Thread.currentThread().getId() + "] built new graph [" + titanGraph.hashCode() + "]");
+        return titanGraph;
     }
 
     private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig){
