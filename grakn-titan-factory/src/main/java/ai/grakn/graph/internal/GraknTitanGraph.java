@@ -37,7 +37,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    protected void closeGraph(String reason){
+    public void closeGraph(String reason){
         finaliseClose(this::closeTitan, reason);
     }
 

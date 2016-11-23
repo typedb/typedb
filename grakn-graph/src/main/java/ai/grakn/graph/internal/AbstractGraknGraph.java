@@ -66,17 +66,17 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
-    private final ThreadLocal<ConceptLog> context = new ThreadLocal<>();
     private final ElementFactory elementFactory;
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
 
-    private boolean committed;
-    private boolean isClosed;
-    private String closedReason;
+    private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localIsClosed = new ThreadLocal<>();
+    private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
 
+    private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
@@ -94,7 +94,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
-        this.isClosed = false;
+        localIsClosed.set(false);
     }
 
     @Override
@@ -104,7 +104,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     @Override
     public boolean isClosed(){
-        return isClosed;
+        Boolean value = localIsClosed.get();
+        if(value == null)
+            return false;
+        else
+            return value;
     }
 
     public boolean hasCommitted(){
@@ -167,7 +171,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     public G getTinkerPopGraph(){
         if(isClosed()){
-            throw new GraphRuntimeException(closedReason);
+            throw new GraphRuntimeException(localClosedReason.get());
         }
         return graph;
     }
@@ -216,9 +220,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
 
     public ConceptLog getConceptLog() {
-        ConceptLog conceptLog = context.get();
+        ConceptLog conceptLog = localConceptLog.get();
         if(conceptLog == null){
-            context.set(conceptLog = new ConceptLog());
+            localConceptLog.set(conceptLog = new ConceptLog());
         }
         return conceptLog;
     }
@@ -605,8 +609,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     void finaliseClose(Runnable closer, String closedReason){
         closer.run();
-        this.closedReason = closedReason;
-        this.isClosed = true;
+        localClosedReason.set(closedReason);
+        localIsClosed.set(true);
     }
 
     void closePermanent(){
