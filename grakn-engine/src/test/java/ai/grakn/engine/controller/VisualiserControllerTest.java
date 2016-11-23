@@ -34,20 +34,25 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
 import static com.jayway.restassured.RestAssured.get;
+import static com.jayway.restassured.RestAssured.with;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static ai.grakn.util.REST.Request.QUERY_FIELD;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
 public class VisualiserControllerTest extends GraknEngineTestBase {
 
-    private static String graphName = "specialtestgraph";
+    private static String keyspace = "specialtestgraph";
     private String entityId;
 
     // Adding Ignore since I have to re-write the tests, give that the HAL format is now different.
 
     @Before
     public void setUp() throws Exception {
-        GraknGraph graph = GraphFactory.getInstance().getGraph(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
         EntityType man = graph.putEntityType("Man");
         entityId = man.addEntity().getId();
         graph.commit();
@@ -55,34 +60,61 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
 
     @Ignore
      public void notExistingID() {
-        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"6573gehjio?graphName="+graphName).then().statusCode(404).extract().response().andReturn();
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, keyspace)
+                .get(REST.WebPath.CONCEPT_BY_ID_URI + "6573gehjiok")
+                .then().statusCode(200).extract().response().andReturn();
         String  message = response.getBody().asString();
         assertTrue(message.equals("ID [6573gehjio] not found in the graph."));
     }
 
     @Ignore
     public void getEntityByID() {
-        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI + entityId + "?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, keyspace)
+                .get(REST.WebPath.CONCEPT_BY_ID_URI + entityId)
+                .then().statusCode(200).extract().response().andReturn();
+
         JSONObject message = new JSONObject(response.getBody().asString());
         makeSureThisIsOurMan(message);
     }
 
-    @Ignore
-    public void getEntityByMatchQuery() {
-        Response response = get(REST.WebPath.GRAPH_MATCH_QUERY_URI+"?graphName="+graphName+"&query=match $x isa Man;").then().statusCode(200).extract().response().andReturn();
+    @Test
+    public void halContentTypeTest(){
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, keyspace)
+                .queryParam(QUERY_FIELD, "match $x isa Man;")
+                .contentType(HAL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
         JSONArray resultArray = new JSONArray(response.getBody().asString());
         makeSureThisIsOurMan(resultArray.getJSONObject(0));
     }
 
-    @Ignore
+    @Test
+    public void graqlContentTypeTest(){
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, keyspace)
+                .queryParam(QUERY_FIELD, "match $x isa Man;")
+                .contentType(GRAQL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+
+        String graql = response.getBody().asString();
+        assertTrue(graql.contains("isa Man"));
+        assertTrue(graql.contains("id \"" + entityId + "\""));
+    }
+
+    @Test
     public void syntacticallyWrongMatchQuery() {
-        Response response = get(REST.WebPath.GRAPH_MATCH_QUERY_URI+"?graphName="+graphName+"&query=match ersouiuiwne is ieeui;").then().statusCode(500).extract().response().andReturn();
+        Response response = get(REST.WebPath.GRAPH_MATCH_QUERY_URI+"?keyspace="+keyspace+"&query=match ersouiuiwne is ieeui;").then().statusCode(500).extract().response().andReturn();
         System.out.println(response.body().asString());
 
     }
 
     private void makeSureThisIsOurMan(JSONObject message){
-        assertEquals(message.getString("_type"),"Man");
+        System.out.println(message);
+        assertEquals(message.getString("_type"), "Man");
         assertEquals(message.getString("_id"),entityId);
         assertEquals(message.getString("_baseType"),"entity-type");
         assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/" + entityId);
@@ -95,7 +127,11 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
 
     @Ignore
     public void getTypeByID() {
-        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"Man?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, keyspace)
+                .get(REST.WebPath.CONCEPT_BY_ID_URI + "Man")
+                .then().statusCode(200).extract().response().andReturn();
+
         JSONObject message = new JSONObject(response.getBody().asString());
 
         assertEquals(message.getString("_type"),"entity-type");
@@ -104,6 +140,7 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
         assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/Man");
 
         JSONArray isaEmbeddedArray = message.getJSONObject("_embedded").getJSONArray("isa");
+        System.out.println(isaEmbeddedArray);
         Set<String> ids = new HashSet<>();
         isaEmbeddedArray.forEach(x ->ids.add(((JSONObject)x).getString("_id")));
         assertTrue(ids.contains(entityId));
@@ -117,6 +154,6 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
 
     @After
     public void cleanGraph(){
-        GraphFactory.getInstance().getGraph(graphName).clear();
+        GraphFactory.getInstance().getGraph(keyspace).clear();
     }
 }

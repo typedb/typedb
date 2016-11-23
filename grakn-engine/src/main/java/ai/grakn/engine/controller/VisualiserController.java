@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.visualiser.HALConceptRepresentationBuilder;
 import ai.grakn.exception.GraknEngineServerException;
@@ -48,11 +49,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static ai.grakn.engine.controller.RequestUtil.getContenttype;
+import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.engine.controller.RequestUtil.getKeyspace;
+
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.QUERY_FIELD;
-import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Response.ENTITIES_JSON_FIELD;
+import static ai.grakn.util.REST.Response.RELATIONS_JSON_FIELD;
+import static ai.grakn.util.REST.Response.RESOURCES_JSON_FIELD;
+import static ai.grakn.util.REST.Response.ROLES_JSON_FIELD;
 import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
 
 @Path("/graph")
@@ -63,10 +72,7 @@ public class VisualiserController {
     private final static Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
-    private final String defaultKeyspace = properties.getProperty(DEFAULT_KEYSPACE_PROPERTY);
     private final int separationDegree = properties.getPropertyAsInt(HAL_DEGREE_PROPERTY);
-    private String defaultGraphName;
-    private int separationDegree;
     private final static String SHORTEST_PATH_QUERY = "path";
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
@@ -74,6 +80,10 @@ public class VisualiserController {
     //TODO: implement a pagination system.
 
     public VisualiserController() {
+        get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::conceptById);
+        get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + ID_PARAMETER, this::conceptByIdOntology);
+        get(REST.WebPath.META_TYPE_INSTANCES_URI, this::ontology);
+        get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::match);
         get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::getConceptById);
         get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + ID_PARAMETER, this::getConceptByIdOntology);
         get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
@@ -88,14 +98,13 @@ public class VisualiserController {
             value = "Return the HAL representation of a given concept.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
-    private String getConceptById(Request req, Response res) {
-        String keyspace = req.queryParams(KEYSPACE_PARAM) == null ? defaultKeyspace : req.queryParams(KEYSPACE_PARAM);
+    private String conceptById(Request req, Response res) {
+        String keyspace = getKeyspace(req);
 
         try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
-            LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return HALConceptRepresentationBuilder.renderHALConceptData(concept, separationDegree);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -108,13 +117,12 @@ public class VisualiserController {
             value = "Return the HAL representation of a given concept.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
-    private String getConceptByIdOntology(Request req, Response res) {
-        String keyspaceParam = req.queryParams(KEYSPACE_PARAM);
-        String currentGraphName = (keyspaceParam == null) ? defaultKeyspace : keyspaceParam;
+    private String conceptByIdOntology(Request req, Response res) {
+        String keyspace = getKeyspace(req);
 
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return HALConceptRepresentationBuilder.renderHALConceptOntology(concept);
@@ -125,49 +133,89 @@ public class VisualiserController {
     }
 
     @GET
-    @Path("/match")
+    @Path("/ontology")
     @ApiOperation(
-            value = "Executes match query on the server and build HAL representation for each concept in the query result.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reasoner", value = "Boolean used to decide whether run reasoner together with the current query.", required = true, dataType = "sting/boolean", paramType = "query")
+            value = "Produces a JSONObject containing meta-ontology types instances.",
+            notes = "The built JSONObject will contain ontology nodes divided in roles, entities, relations and resources.",
+            response = JSONObject.class)
+    @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
+    private String ontology(Request req, Response res) {
+        String keyspace = getKeyspace(req);
 
-    })
-    private String matchQuery(Request req, Response res) {
-
-        String currentGraphName = req.queryParams(KEYSPACE_PARAM);
-        if (currentGraphName == null) currentGraphName = defaultKeyspace;
-
-        boolean useReasoner = Boolean.parseBoolean(req.queryParams("reasoner"));
-
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
-
-            LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
-            MatchQuery matchQuery = graph.graql().parse(req.queryParams(REST.Request.QUERY_FIELD));
-
-            MatchQuery currentMatchQuery;
-
-            if (useReasoner) {
-                currentMatchQuery = new Reasoner(graph).resolveToQuery(matchQuery, true);
-                graph.commit();
-            } else {
-                currentMatchQuery = matchQuery;
-            }
-
-            Collection<Map<String, Concept>> graqlResultsList = currentMatchQuery
-                    .stream()
-                    .collect(Collectors.toList());
-            graph.commit();
-            LOG.debug("Done querying, " + graqlResultsList.size() + " results found");
-
-            JSONArray halArray = HALConceptRepresentationBuilder.renderHALArrayData(matchQuery, graqlResultsList);
-            LOG.debug("Done building resources.");
-
-            return halArray.toString();
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)){
+            JSONObject responseObj = new JSONObject();
+            responseObj.put(ROLES_JSON_FIELD, instances(graph.getMetaRoleType()));
+            responseObj.put(ENTITIES_JSON_FIELD, instances(graph.getMetaEntityType()));
+            responseObj.put(RELATIONS_JSON_FIELD, instances(graph.getMetaRelationType()));
+            responseObj.put(RESOURCES_JSON_FIELD, instances(graph.getMetaResourceType()));
+            return responseObj.toString();
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
+    }
+
+    @GET
+    @Path("/match")
+    @ApiOperation(
+            value = "Executes match query on the server and build a representation for each concept in the query result. " +
+                    "Return type is determined by the content type. Either application/graql or application/json/hal")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "reasoner", value = "Boolean used to decide whether run reasoner together with the current query.", required = true, dataType = "sting/boolean", paramType = "query")
+})
+    private String match(Request req, Response res) {
+        String keyspace = getKeyspace(req);
+        boolean useReasoner = Boolean.parseBoolean(req.queryParams("reasoner"));
+
+        
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
+            MatchQuery matchQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
+            matchQuery = useReasoner ? new Reasoner(graph).resolveToQuery(matchQuery, true) : matchQuery;
+
+            switch (getContenttype(req)){
+                case HAL_CONTENTTYPE:
+                    return formatAsHAL(matchQuery);
+                case GRAQL_CONTENTTYPE:
+                    return formatAsGraql(matchQuery);
+            }
+
+            throw new IllegalArgumentException("Incorrect content type");
+        } catch (Exception e) {
+            throw new GraknEngineServerException(500, e);
+        }
+    }
+
+    /**
+     * Format a match query as HAL
+     * @param query query to format
+     * @return HAL representation
+     */
+    private String formatAsHAL(MatchQuery query){
+        Collection<Map<String, Concept>> results = query.stream().collect(toList());
+        JSONArray halArray = HALConceptRepresentationBuilder.renderHALArrayData(query, results);
+
+        return halArray.toString();
+    }
+
+    /**
+     * Format a match query results as Graql
+     * @param match query to format
+     * @return HAL representation
+     */
+    private String formatAsGraql(MatchQuery match){
+        return match.resultsString(Printers.graql())
+                .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
+                .collect(Collectors.joining("\n"));
+    }
+
+    /**
+     * Return all of the instances of the given type
+     * @param type type to find instances of
+     * @return JSONArray with IDs of instances
+     */
+    private JSONArray instances(Type type){
+        return new JSONArray(type.instances().stream().map(Concept::getId).toArray());
     }
 
     @GET
@@ -175,15 +223,13 @@ public class VisualiserController {
     @ApiOperation(
             value = "Executes compute query on the server and build HAL representation of result or returns string containing statistics.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "query", value = "Compute query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String computeQuery(Request req, Response res) {
+        String keyspace = getKeyspace(req);
 
-        String currentGraphName = req.queryParams(KEYSPACE_PARAM);
-        if (currentGraphName == null) currentGraphName = defaultKeyspace;
-        
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
 
             String query = req.queryParams(REST.Request.QUERY_FIELD);
             LOG.debug("Start querying for: [{}]", query);
@@ -212,17 +258,12 @@ public class VisualiserController {
 
     @GET
     @Path("/preMaterialiseAll")
-    @ApiOperation(
-            value = "Pre materialise all the rules on the graph.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
-    })
+    @ApiOperation(value = "Pre materialise all the rules on the graph.")
+    @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String preMaterialiseAll(Request req, Response res) {
+        String keyspace = getKeyspace(req);
 
-        String currentGraphName = req.queryParams(KEYSPACE_PARAM);
-        if (currentGraphName == null) currentGraphName = defaultKeyspace;
-
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
             new Reasoner(graph).precomputeInferences();
             return "Done.";
         } catch (Exception e) {

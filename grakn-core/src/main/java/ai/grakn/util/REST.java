@@ -69,6 +69,8 @@ public class REST {
         public static final String TASK_STOP = "/stop";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
+        public static final String HAL_CONTENTTYPE = "application/json/hal";
+        public static final String GRAQL_CONTENTTYPE = "application/graql";
     }
 
     public static class GraphConfig{
