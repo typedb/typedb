@@ -600,8 +600,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
      */
     @Override
     public void close() {
-        getConceptLog().clearTransaction();
-        closeGraph(ErrorMessage.CLOSED_USER.getMessage());
+        if(!isClosed()) {
+            getConceptLog().clearTransaction();
+            closeGraph(ErrorMessage.CLOSED_USER.getMessage());
+        }
     }
     public void closeGraph(String closedReason){
         finaliseClose(this::closePermanent, closedReason);
