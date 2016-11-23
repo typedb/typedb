@@ -68,12 +68,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private final ThreadLocal<ConceptLog> context = new ThreadLocal<>();
     private final ElementFactory elementFactory;
-    //private final ConceptLog conceptLog;
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
-    private final G graph;
+
+    private G graph;
     private boolean committed;
+    private String closedReason;
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
@@ -158,7 +159,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     public G getTinkerPopGraph(){
         if(graph == null){
-            throw new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this.getClass().getName()));
+            throw new GraphRuntimeException(closedReason);
         }
         return graph;
     }
@@ -588,14 +589,24 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public void close() {
         getConceptLog().clearTransaction();
+        closeGraph(ErrorMessage.CLOSED_BY_USER.getMessage());
+    }
+    protected void closeGraph(String closedReason){
+        finaliseClose(this::closePermanent, closedReason);
+    }
+
+    void finaliseClose(Runnable closer, String closedReason){
+        closer.run();
+        this.closedReason = closedReason;
+        graph = null;
+    }
+
+    void closePermanent(){
         try {
-            closeGraphTransaction();
+            getTinkerPopGraph().close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-    protected void closeGraphTransaction() throws Exception {
-        getTinkerPopGraph().close();
     }
 
     /**

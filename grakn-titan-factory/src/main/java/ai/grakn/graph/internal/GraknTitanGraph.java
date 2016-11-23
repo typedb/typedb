@@ -37,12 +37,16 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    protected void closeGraphTransaction() throws Exception {
+    protected void closeGraph(String reason){
+        finaliseClose(this::closeTitan, reason);
+    }
+
+    private void closeTitan(){
         StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
         graph.tx().close();
 
         if(graph.getOpenTransactions().isEmpty()){
-            graph.close();
+            closePermanent();
         }
     }
 }

@@ -42,7 +42,7 @@ public enum ErrorMessage {
             "duplicate values"),
     INVALID_EDGE("The edge ['%s'] between concept ['%s'] and ['%s'] is invalid"),
     NOT_SUPPORTED("Not supported with a ['%s'] backend"),
-    CLOSED("The ['%s'] has been permanently closed"),
+    CLOSED_BY_USER("You have closed this graph and it can no longer be used"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     IMMUTABLE_TYPE("The type of concept [%s] cannot be set to [%s] as it is already set to [%s]"),
