@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
@@ -93,12 +94,12 @@ class VarImpl implements VarAdmin {
      */
     VarImpl(Collection<VarAdmin> vars) {
         VarAdmin first = vars.iterator().next();
-        this.name = first.getName();
+        this.name = first.getVarName();
         this.userDefinedName = first.isUserDefinedName();
 
         for (VarAdmin var : vars) {
             if (var.isUserDefinedName()) {
-                this.name = var.getName();
+                this.name = var.getVarName();
             }
 
             var.getProperties().forEach(this::addProperty);
@@ -108,6 +109,11 @@ class VarImpl implements VarAdmin {
     @Override
     public Var id(String id) {
         return addProperty(new IdProperty(id));
+    }
+
+    @Override
+    public Var name(String name) {
+        return addProperty(new NameProperty(name));
     }
 
     @Override
@@ -152,7 +158,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var isa(String type) {
-        return isa(Graql.var().id(type));
+        return isa(Graql.name(type));
     }
 
     @Override
@@ -162,7 +168,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var sub(String type) {
-        return sub(Graql.var().id(type));
+        return sub(Graql.name(type));
     }
 
     @Override
@@ -172,7 +178,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasRole(String type) {
-        return hasRole(Graql.var().id(type));
+        return hasRole(Graql.name(type));
     }
 
     @Override
@@ -182,7 +188,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var playsRole(String type) {
-        return playsRole(Graql.var().id(type));
+        return playsRole(Graql.name(type));
     }
 
     @Override
@@ -197,7 +203,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasResource(String type) {
-        return hasResource(Graql.var().id(type));
+        return hasResource(Graql.name(type));
     }
 
     @Override
@@ -217,7 +223,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(String roletype, String roleplayer) {
-        return rel(Graql.var().id(roletype), Graql.var(roleplayer));
+        return rel(Graql.name(roletype), Graql.var(roleplayer));
     }
 
     @Override
@@ -227,7 +233,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(String roletype, Var roleplayer) {
-        return rel(Graql.var().id(roletype), roleplayer);
+        return rel(Graql.name(roletype), roleplayer);
     }
 
     @Override
@@ -286,12 +292,17 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public String getName() {
+    public Optional<String> getName() {
+        return getProperty(NameProperty.class).map(NameProperty::getNameValue);
+    }
+
+    @Override
+    public String getVarName() {
         return name;
     }
 
     @Override
-    public void setName(String name) {
+    public void setVarName(String name) {
         if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
         this.name = name;
     }
@@ -301,7 +312,7 @@ class VarImpl implements VarAdmin {
         if (userDefinedName) {
             return "$" + name;
         } else {
-            return getId().map(StringConverter::idToString).orElse("'" + toString() + "'");
+            return getName().map(StringConverter::idToString).orElse("'" + toString() + "'");
         }
     }
 
@@ -358,10 +369,10 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<String> getTypeIds() {
+    public Set<String> getTypeNames() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
-                .map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream)
+                .map(VarAdmin::getName).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
     }
 
@@ -415,7 +426,7 @@ class VarImpl implements VarAdmin {
     }
 
     private static boolean invalidInnerVariable(VarAdmin var) {
-        return var.getProperties().filter(p -> !(p instanceof IdProperty)).findAny().isPresent();
+        return var.getProperties().filter(p -> !(p instanceof NameProperty)).findAny().isPresent();
     }
 
     /**

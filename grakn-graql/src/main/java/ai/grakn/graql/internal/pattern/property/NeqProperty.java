@@ -30,8 +30,8 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(
                 EquivalentFragmentSet.create(Fragments.notCasting(start)),
-                EquivalentFragmentSet.create(Fragments.notCasting(var.getName())),
-                EquivalentFragmentSet.create(Fragments.neq(start, var.getName()), Fragments.neq(var.getName(), start))
+                EquivalentFragmentSet.create(Fragments.notCasting(var.getVarName())),
+                EquivalentFragmentSet.create(Fragments.neq(start, var.getVarName()), Fragments.neq(var.getVarName(), start))
         );
     }
 

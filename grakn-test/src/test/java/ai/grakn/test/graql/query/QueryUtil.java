@@ -57,6 +57,8 @@ class QueryUtil {
 
             String resourceValue = result.getId();
 
+            if (result.isType()) resourceValue = result.asType().getName();
+
             for (ResourceType resourceType : resourceTypes) {
                 if(result.isInstance()){
                     Collection<Resource<?>> foundResources = result.asInstance().resources(resourceType);
@@ -69,7 +71,7 @@ class QueryUtil {
 
             assertTrue("Unexpected value: " + resourceValue, expectedSet.contains(resourceValue));
             unfoundSet.remove(resourceValue);
-            if (type != null) assertEquals(type, result.type().getId());
+            if (type != null) assertEquals(type, result.type().getName());
         });
 
         assertTrue("expected values not found: " + unfoundSet, unfoundSet.isEmpty());

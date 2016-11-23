@@ -40,7 +40,7 @@ public abstract class AtomBase implements Atomic{
 
     public AtomBase(AtomBase a) {
         this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
-        this.varName = atomPattern.asVar().getName();
+        this.varName = atomPattern.asVar().getVarName();
     }
 
     @Override
@@ -80,7 +80,7 @@ public abstract class AtomBase implements Atomic{
 
     private void setVarName(String var){
         varName = var;
-        atomPattern.asVar().setName(var);
+        atomPattern.asVar().setVarName(var);
     }
 
     public void unify(String from, String to) {

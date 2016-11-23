@@ -95,12 +95,12 @@ public class Analytics {
         // fetch all the types
         Set<Type> subtypes = subTypeIds.stream().map((id) -> {
             Type type = graph.getType(id);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(id));
             return type;
         }).collect(Collectors.toSet());
         Set<Type> statisticsResourceTypes = statisticsResourceTypeIds.stream().map((id) -> {
             Type type = graph.getType(id);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(id));
             return type;
         }).collect(Collectors.toSet());
 

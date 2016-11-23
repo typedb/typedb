@@ -25,8 +25,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
@@ -47,16 +45,16 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public HasResourceTypeProperty(VarAdmin resourceType) {
         this.resourceType = resourceType;
 
-        String resourceTypeId = resourceType.getId().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
+        String resourceTypeName = resourceType.getName().orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = Graql.id(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId))
+        ownerRole = Graql.name(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeName))
                 .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
-        valueRole = Graql.id(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId))
+        valueRole = Graql.name(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeName))
                 .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
 
-        relationType = Graql.id(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
+        relationType = Graql.name(Schema.Resource.HAS_RESOURCE.getId(resourceTypeName))
                 .isa(Schema.MetaSchema.RELATION_TYPE.getId())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
@@ -84,7 +82,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         traversals.addAll(ownerPlaysRole.match(start));
 
         PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole);
-        traversals.addAll(valuePlaysRole.match(resourceType.getName()));
+        traversals.addAll(valuePlaysRole.match(resourceType.getVarName()));
 
         return traversals;
     }

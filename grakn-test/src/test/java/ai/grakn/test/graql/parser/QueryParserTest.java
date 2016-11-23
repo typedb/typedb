@@ -52,9 +52,9 @@ import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.gte;
-import static ai.grakn.graql.Graql.id;
 import static ai.grakn.graql.Graql.lt;
 import static ai.grakn.graql.Graql.lte;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.parse;
@@ -248,7 +248,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 var("x").isa(var("z")),
                 var("y").value("crime"),
                 var("z").sub("production"),
-                id("has-genre").hasRole(var("p"))
+                name("has-genre").hasRole(var("p"))
         );
 
         MatchQuery parsed = qb.parse(
@@ -312,7 +312,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 "'pokemon' isa entity-type;" +
                 "evolution isa relation-type;" +
                 "evolves-from isa role-type;" +
-                "id \"evolves-to\" isa role-type;" +
+                "type-name \"evolves-to\" isa role-type;" +
                 "evolution has-role evolves-from, has-role evolves-to;" +
                 "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
                 "name isa resource-type datatype string;" +
@@ -322,12 +322,12 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
                 "(evolves-from: $y, evolves-to: $z) isa evolution;").execute();
 
-        assertTrue(qb.match(id("pokemon").isa(ENTITY_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(id("evolution").isa(RELATION_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(id("evolves-from").isa(ROLE_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(id("evolves-to").isa(ROLE_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(id("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
-        assertTrue(qb.match(id("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
+        assertTrue(qb.match(name("pokemon").isa(ENTITY_TYPE.getId())).ask().execute());
+        assertTrue(qb.match(name("evolution").isa(RELATION_TYPE.getId())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").isa(ROLE_TYPE.getId())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").isa(ROLE_TYPE.getId())).ask().execute());
+        assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
+        assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
         assertTrue(qb.match(
                 var("x").has("name", "Pichu").isa("pokemon"),
@@ -379,7 +379,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     public void testInsertDataTypeQuery() {
         qb.parse("insert my-type isa resource-type, datatype long;").execute();
 
-        MatchQuery query = qb.match(var("x").id("my-type"));
+        MatchQuery query = qb.match(var("x").name("my-type"));
         ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
         assertEquals(ResourceType.DataType.LONG, datatype);
@@ -411,10 +411,10 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         Pattern lhsPattern = and(qb.parsePatterns(lhs));
         Pattern rhsPattern = and(qb.parsePatterns(rhs));
 
-        qb.parse("insert id '" + ruleTypeId + "' isa rule-type; \n" +
+        qb.parse("insert '" + ruleTypeId + "' isa rule-type; \n" +
                 "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
-        assertTrue(qb.match(var().id("my-rule-thing").isa(RULE_TYPE.getId())).ask().execute());
+        assertTrue(qb.match(name("my-rule-thing").isa(RULE_TYPE.getId())).ask().execute());
 
         RuleType ruleType = graph.getRuleType(ruleTypeId);
         boolean found = false;
@@ -478,7 +478,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
         Concept result = query.execute();
 
-        assertEquals("movie", result.type().getId());
+        assertEquals("movie", result.type().getName());
     }
 
     @Test
@@ -527,7 +527,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     public void testRegexResourceType() {
         MatchQuery query = qb.parse("match $x regex /(fe)?male/;");
         assertEquals(1, query.stream().count());
-        assertEquals("gender", query.get("x").findFirst().get().getId());
+        assertEquals("gender", query.get("x").findFirst().get().asType().getName());
     }
 
     @Test

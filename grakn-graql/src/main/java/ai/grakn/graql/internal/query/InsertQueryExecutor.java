@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
-import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_ID;
+import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
 import static ai.grakn.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
 
 /**
@@ -66,16 +66,17 @@ public class InsertQueryExecutor {
     private final Collection<VarAdmin> vars;
     private final Map<String, Concept> concepts = new HashMap<>();
     private final Stack<String> visitedVars = new Stack<>();
-    private final ImmutableMap<String, List<VarAdmin>> varsByName;
+    private final ImmutableMap<String, List<VarAdmin>> varsByVarName;
+    private final ImmutableMap<String, List<VarAdmin>> varsByTypeName;
     private final ImmutableMap<String, List<VarAdmin>> varsById;
 
     InsertQueryExecutor(Collection<VarAdmin> vars, GraknGraph graph) {
         this.vars = vars;
         this.graph = graph;
 
-        // Group variables by name
-        varsByName = ImmutableMap.copyOf(
-                vars.stream().collect(Collectors.groupingBy(VarAdmin::getName))
+        // Group variables by variable name
+        varsByVarName = ImmutableMap.copyOf(
+                vars.stream().collect(Collectors.groupingBy(VarAdmin::getVarName))
         );
 
         // Group variables by id (if they have one defined)
@@ -85,6 +86,15 @@ public class InsertQueryExecutor {
                 vars.stream()
                         .filter(var -> var.getId().isPresent())
                         .collect(Collectors.groupingBy(var -> var.getId().get()))
+        );
+
+        // Group variables by type name (if they have one defined)
+        // the 'filter' step guarantees the remaining have a name
+        //noinspection OptionalGetWithoutIsPresent
+        varsByTypeName = ImmutableMap.copyOf(
+                vars.stream()
+                        .filter(var -> var.getName().isPresent())
+                        .collect(Collectors.groupingBy(var -> var.getName().get()))
         );
     }
 
@@ -123,7 +133,7 @@ public class InsertQueryExecutor {
      * @return the same as addConcept, but using an internal map to remember previous calls
      */
     public Concept getConcept(VarAdmin var) {
-        String name = var.getName();
+        String name = var.getVarName();
         if (visitedVars.contains(name)) {
             throw new IllegalStateException(ErrorMessage.INSERT_RECURSIVE.getMessage(var.getPrintableName()));
         }
@@ -155,21 +165,20 @@ public class InsertQueryExecutor {
                 typeVar.map(this::getConcept).map(Concept::asType)
         );
 
-        // If type provided, then 'put' the concept, else 'get' it
-        Concept concept = typeConcept.map(type ->
-                putConceptByType(var.getId(), var, type)
-        ).orElseGet(() ->
-                var.getId().map(id -> {
-                    Concept c = graph.getConcept(id); //Due Generic Casting cannot inline
-                    return c;
-                }).orElse(null)
+        // If type provided, then 'put' the concept, else 'get' it by ID or name
+        Optional<Concept> concept = optionalOr(
+                typeConcept.map(type -> putConceptByType(var.getName(), var.getId(), var, type)),
+                var.getId().map(graph::<Concept>getConcept),
+                var.getName().map(graph::getType)
         );
 
-        if (concept == null) {
+        if (concept.isPresent()) {
+            return concept.get();
+        } else {
             String message;
 
             if (subVar.isPresent()) {
-                String subId = subVar.get().getId().orElse("<no-id>");
+                String subId = subVar.get().getName().orElse("<no-name>");
                 message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), subId);
             } else {
                 message = var.getId().map(ErrorMessage.INSERT_WITHOUT_TYPE::getMessage)
@@ -178,8 +187,6 @@ public class InsertQueryExecutor {
 
             throw new IllegalStateException(message);
         }
-
-        return concept;
     }
 
     /**
@@ -194,48 +201,60 @@ public class InsertQueryExecutor {
         // Keep merging until the set of merged variables stops changing
         // This handles cases when variables are referred to with multiple degrees of separation
         // e.g.
-        // "123" isa movie; $x id "123"; $y id "123"; ($y, $z)
+        // id "123" isa movie; $x id "123", name "Bob"; $y id "123"; ($y, $z)
         while (changed) {
-            // Merge variable referred to by name...
-            List<VarAdmin> vars = varsByName.getOrDefault(var.getName(), Lists.newArrayList());
+            // Merge variable referred to by variable name...
+            List<VarAdmin> vars = varsByVarName.getOrDefault(var.getVarName(), Lists.newArrayList());
             vars.add(var);
-            boolean byNameChange = varsToMerge.addAll(vars);
+            boolean byVarNameChange = varsToMerge.addAll(vars);
             var = Patterns.mergeVars(varsToMerge);
 
             // Then merge variables referred to by id...
             boolean byIdChange = var.getId().map(id -> varsToMerge.addAll(varsById.get(id))).orElse(false);
             var = Patterns.mergeVars(varsToMerge);
 
-            changed = byNameChange | byIdChange;
+            // And finally merge variables referred to by type name...
+            boolean byTypeNameChange = var.getName().map(id -> varsToMerge.addAll(varsByTypeName.get(id))).orElse(false);
+            var = Patterns.mergeVars(varsToMerge);
+
+            changed = byVarNameChange | byIdChange | byTypeNameChange;
         }
 
         return var;
     }
 
     /**
+     * @param name the name of the concept
      * @param id the ID of the concept
      * @param var the Var representing the concept in the insert query
      * @param type the type of the concept
      * @return a concept with the given ID and the specified type
      */
-    private Concept putConceptByType(Optional<String> id, VarAdmin var, Type type) {
-        String typeId = type.getId();
+    private Concept putConceptByType(Optional<String> name, Optional<String> id, VarAdmin var, Type type) {
+        String typeName = type.getName();
 
         if (!type.isResourceType() && var.hasProperty(ValueProperty.class)) {
             throw new IllegalStateException(INSERT_NON_RESOURCE_WITH_VALUE.getMessage(type.getId()));
         }
 
-        if (typeId.equals(Schema.MetaSchema.ENTITY_TYPE.getId())) {
-            return graph.putEntityType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(Schema.MetaSchema.RELATION_TYPE.getId())) {
-            return graph.putRelationType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(Schema.MetaSchema.ROLE_TYPE.getId())) {
-            return graph.putRoleType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(Schema.MetaSchema.RESOURCE_TYPE.getId())) {
-            return graph.putResourceType(getTypeIdOrThrow(id), getDataType(var));
-        } else if (typeId.equals(Schema.MetaSchema.RULE_TYPE.getId())) {
-            return graph.putRuleType(getTypeIdOrThrow(id));
-        } else if (type.isEntityType()) {
+        if (typeName.equals(Schema.MetaSchema.ENTITY_TYPE.getId())) {
+            return graph.putEntityType(getTypeNameOrThrow(name));
+        } else if (typeName.equals(Schema.MetaSchema.RELATION_TYPE.getId())) {
+            return graph.putRelationType(getTypeNameOrThrow(name));
+        } else if (typeName.equals(Schema.MetaSchema.ROLE_TYPE.getId())) {
+            return graph.putRoleType(getTypeNameOrThrow(name));
+        } else if (typeName.equals(Schema.MetaSchema.RESOURCE_TYPE.getId())) {
+            return graph.putResourceType(getTypeNameOrThrow(name), getDataType(var));
+        } else if (typeName.equals(Schema.MetaSchema.RULE_TYPE.getId())) {
+            return graph.putRuleType(getTypeNameOrThrow(name));
+        }
+
+        // Concept must be an instance, so confirm it has no name set
+        name.ifPresent(theName -> {
+            throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(theName));
+        });
+
+        if (type.isEntityType()) {
             return addOrGetInstance(id, type.asEntityType()::addEntity);
         } else if (type.isRelationType()) {
             return addOrGetInstance(id, type.asRelationType()::addRelation);
@@ -265,21 +284,18 @@ public class InsertQueryExecutor {
     private <T extends Type, S extends Instance> S addOrGetInstance(
             Optional<String> id, Supplier<S> addInstance
     ) {
-        return id.map(graph::<S>getConcept).orElseGet(() -> {
-            if (id.isPresent()) throw new IllegalStateException(INSERT_INSTANCE_WITH_ID.getMessage(id.get()));
-            return addInstance.get();
-        });
+        return id.map(graph::<S>getConcept).orElseGet(addInstance);
     }
 
     /**
-     * Get an ID from an optional for a type, throwing an exception if it is not present.
-     * This is because types must have specified IDs.
-     * @param id an optional ID to get
-     * @return the ID, if present
-     * @throws IllegalStateException if the ID was not present
+     * Get a name from an optional for a type, throwing an exception if it is not present.
+     * This is because types must have specified names.
+     * @param name an optional name to get
+     * @return the name, if present
+     * @throws IllegalStateException if the name was not present
      */
-    private String getTypeIdOrThrow(Optional<String> id) throws IllegalStateException {
-        return id.orElseThrow(() -> new IllegalStateException(ErrorMessage.INSERT_TYPE_WITHOUT_ID.getMessage()));
+    private String getTypeNameOrThrow(Optional<String> name) throws IllegalStateException {
+        return name.orElseThrow(() -> new IllegalStateException(ErrorMessage.INSERT_TYPE_WITHOUT_NAME.getMessage()));
     }
 
     private Object getValue(VarAdmin var) {

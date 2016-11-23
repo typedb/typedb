@@ -47,7 +47,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
      * @param matchQuery a pattern to match and delete for each result
      */
     DeleteQueryImpl(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
-        this.deleters = Maps.uniqueIndex(deleters, VarAdmin::getName);
+        this.deleters = Maps.uniqueIndex(deleters, VarAdmin::getVarName);
         this.matchQuery = matchQuery.admin();
     }
 

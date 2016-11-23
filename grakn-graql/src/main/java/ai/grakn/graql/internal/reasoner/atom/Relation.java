@@ -263,7 +263,7 @@ public class Relation extends TypeAtom{
         boolean varFound = false;
         Iterator<RelationPlayer> it = relationPlayers.iterator();
         while(it.hasNext() && !varFound)
-            varFound = it.next().getRolePlayer().getName().equals(name);
+            varFound = it.next().getRolePlayer().getVarName().equals(name);
         return varFound;
     }
 
@@ -283,12 +283,12 @@ public class Relation extends TypeAtom{
     public void unify(String from, String to) {
         super.unify(from, to);
         relationPlayers.forEach(c -> {
-            String var = c.getRolePlayer().getName();
+            String var = c.getRolePlayer().getVarName();
             if (var.equals(from)) {
-                c.getRolePlayer().setName(to);
+                c.getRolePlayer().setVarName(to);
             }
             else if (var.equals(to)) {
-                c.getRolePlayer().setName("captured->" + var);
+                c.getRolePlayer().setVarName("captured->" + var);
             }
         });
     }
@@ -297,13 +297,13 @@ public class Relation extends TypeAtom{
     public void unify (Map<String, String> mappings) {
         super.unify(mappings);
         relationPlayers.forEach(c -> {
-            String var = c.getRolePlayer().getName();
+            String var = c.getRolePlayer().getVarName();
             if (mappings.containsKey(var) ) {
                 String target = mappings.get(var);
-                c.getRolePlayer().setName(target);
+                c.getRolePlayer().setVarName(target);
             }
             else if (mappings.containsValue(var)) {
-                c.getRolePlayer().setName("captured->" + var);
+                c.getRolePlayer().setVarName("captured->" + var);
             }
         });
     }
@@ -323,7 +323,7 @@ public class Relation extends TypeAtom{
     }
     public Set<String> getRolePlayers(){
         Set<String> vars = new HashSet<>();
-        relationPlayers.forEach(c -> vars.add(c.getRolePlayer().getName()));
+        relationPlayers.forEach(c -> vars.add(c.getRolePlayer().getVarName()));
         return vars;
     }
 
@@ -344,7 +344,7 @@ public class Relation extends TypeAtom{
             Type type = varTypeMap.get(var);
             String roleTypeId = "";
             for(RelationPlayer c : relationPlayers) {
-                if (c.getRolePlayer().getName().equals(var))
+                if (c.getRolePlayer().getVarName().equals(var))
                     roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }
             //roletype explicit
@@ -386,7 +386,7 @@ public class Relation extends TypeAtom{
 
         //explicit role types from castings
         relationPlayers.forEach(c -> {
-            String var = c.getRolePlayer().getName();
+            String var = c.getRolePlayer().getVarName();
             String roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             Type type = varTypeMap.get(var);
             if (!roleTypeId.isEmpty()) {

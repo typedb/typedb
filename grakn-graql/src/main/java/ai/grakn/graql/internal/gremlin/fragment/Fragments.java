@@ -117,6 +117,10 @@ public class Fragments {
         return new IdFragment(start, id);
     }
 
+    public static Fragment name(String start, String name) {
+        return new NameFragment(start, name);
+    }
+
     public static ValueFragment value(String start, ValuePredicateAdmin predicate) {
         return new ValueFragment(start, predicate);
     }

@@ -67,8 +67,8 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outIsa(start, type.getName()),
-                Fragments.inIsa(type.getName(), start)
+                Fragments.outIsa(start, type.getVarName()),
+                Fragments.inIsa(type.getVarName(), start)
         ));
     }
 
@@ -84,8 +84,8 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
-        type.getId().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
-            throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getId()));
+        type.getName().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
+            throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getName()));
         });
     }
 

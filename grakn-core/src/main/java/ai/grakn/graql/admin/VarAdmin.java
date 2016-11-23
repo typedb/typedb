@@ -41,12 +41,12 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the variable name of this variable
      */
-    String getName();
+    String getVarName();
 
     /**
      * @param name the new variable name of this variable
      */
-    void setName(String name);
+    void setVarName(String name);
 
     /**
      * @return whether the user specified a name for this variable
@@ -86,6 +86,11 @@ public interface VarAdmin extends PatternAdmin, Var {
     Optional<String> getId();
 
     /**
+     * @return the name this variable represents, if it represents something with a specific name
+     */
+    Optional<String> getName();
+
+    /**
      * @return all variables that this variable references
      */
     Set<VarAdmin> getInnerVars();
@@ -96,9 +101,9 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<VarAdmin> getImplicitInnerVars();
 
     /**
-     * @return all type IDs that this variable refers to
+     * @return all type names that this variable refers to
      */
-    Set<String> getTypeIds();
+    Set<String> getTypeNames();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')

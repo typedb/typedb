@@ -39,7 +39,7 @@ public class TypeAtom extends Binary{
 
     @Override
     protected String extractValueVariableName(VarAdmin var) {
-        return var.getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).getName();
+        return var.getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).getVarName();
     }
 
     @Override

@@ -22,11 +22,11 @@ askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchQuery? insert varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
-computeQuery   : 'compute' id ('from' id 'to' id)? ('of' statTypes)? ('in' subgraph)? ';' ;
+computeQuery   : 'compute' name ('from' name 'to' name)? ('of' statTypes)? ('in' subgraph)? ';' ;
 
-statTypes      : idList ;
-subgraph       : idList ;
-idList         : id (',' id)* ;
+statTypes      : nameList ;
+subgraph       : nameList ;
+nameList       : name (',' name)* ;
 
 aggregate      : id argument*                     # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
@@ -45,29 +45,30 @@ pattern        : varPattern                    # varPatternCase
 varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
-property       : 'isa' variable                  # isa
-               | 'sub' variable                  # sub
-               | 'has-role' variable             # hasRole
-               | 'plays-role' variable           # playsRole
-               | 'has-scope' variable            # hasScope
-               | 'id' STRING                     # propId
-               | 'value' predicate?              # propValue
-               | 'lhs' '{' patterns '}'          # propLhs
-               | 'rhs' '{' varPatterns '}'       # propRhs
-               | 'has' id? VARIABLE              # propHasVariable
-               | 'has' id (predicate | VARIABLE) # propHas
-               | 'has-resource' variable         # propResource
-               | '(' casting (',' casting)* ')'  # propRel
-               | 'is-abstract'                   # isAbstract
-               | 'datatype' DATATYPE             # propDatatype
-               | 'regex' REGEX                   # propRegex
-               | '!=' variable                   # propNeq
+property       : 'isa' variable                   # isa
+               | 'sub' variable                   # sub
+               | 'has-role' variable              # hasRole
+               | 'plays-role' variable            # playsRole
+               | 'has-scope' variable             # hasScope
+               | 'id' id                          # propId
+               | 'type-name' name                 # propName
+               | 'value' predicate?               # propValue
+               | 'lhs' '{' patterns '}'           # propLhs
+               | 'rhs' '{' varPatterns '}'        # propRhs
+               | 'has' id? VARIABLE               # propHasVariable
+               | 'has' name (predicate | VARIABLE)? # propHas
+               | 'has-resource' variable          # propResource
+               | '(' casting (',' casting)* ')'   # propRel
+               | 'is-abstract'                    # isAbstract
+               | 'datatype' DATATYPE              # propDatatype
+               | 'regex' REGEX                    # propRegex
+               | '!=' variable                    # propNeq
                ;
 
-casting        : variable (':' variable)?
-               | variable variable         {notifyErrorListeners("expecting {',', ':'}");};
+casting        : variable (':' VARIABLE)?
+               | variable VARIABLE         {notifyErrorListeners("expecting {',', ':'}");};
 
-variable       : id | VARIABLE ;
+variable       : name | VARIABLE ;
 
 predicate      : '='? value                # predicateEq
                | '!=' value                # predicateNeq
@@ -90,6 +91,7 @@ insert         : 'insert' ;
 patternSep     : pattern ';' ;
 batchPattern   : 'match' | 'insert' | patternSep ;
 
+name           : ID | STRING ;
 id             : ID | STRING ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;

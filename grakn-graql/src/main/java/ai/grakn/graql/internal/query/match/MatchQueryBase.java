@@ -19,16 +19,16 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.GremlinQuery;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -130,7 +129,7 @@ public class MatchQueryBase implements MatchQueryInternal {
         return conjunction.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
                 .filter(VarAdmin::isUserDefinedName)
-                .map(VarAdmin::getName)
+                .map(VarAdmin::getVarName)
                 .collect(Collectors.toSet());
     }
 
@@ -151,7 +150,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     private Map<String, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
         return getSelectedNames().stream().collect(Collectors.toMap(
                 name -> name,
-                name -> graph.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))
+                name -> graph.getConcept(vertices.get(name).id().toString())
         ));
     }
 }
