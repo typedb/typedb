@@ -14,6 +14,8 @@ run-at isa resource-type, datatype long;
 recurring isa resource-type, datatype boolean;
 recur-interval isa resource-type, datatype long;
 task-failure isa resource-type, datatype string;
+stack-trace isa resource-type, datatype string;
+task-exception isa resource-type, datatype string;
 task-checkpoint isa resource-type, datatype string;
 task-configuration isa resource-type, datatype string;
 
@@ -26,6 +28,7 @@ scheduled-task has-resource status,
                has-resource run-at,
                has-resource recurring,
                has-resource recur-interval,
-               has-resource task-failure,
+               has-resource stack-trace,
+               has-resource task-exception,
                has-resource task-checkpoint
                has-resource task-configuration;

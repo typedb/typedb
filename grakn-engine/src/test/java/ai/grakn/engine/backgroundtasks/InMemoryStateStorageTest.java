@@ -66,15 +66,15 @@ public class InMemoryStateStorageTest {
         TaskState state = stateStorage.getState(id);
 
         // Change.
-        stateStorage.updateState(id, SCHEDULED, "bla", "example.com", new UnsupportedOperationException(), "blabla", null);
+        stateStorage.updateState(id, SCHEDULED, "bla", "example.com", new UnsupportedOperationException("message"), "blabla", null);
 
         TaskState newState = stateStorage.getState(id);
         assertNotEquals("the object itself", state, newState);
         assertNotEquals("status", state.status(), newState.status());
         assertNotEquals("status changed by", state.statusChangedBy(), newState.statusChangedBy());
         assertNotEquals("hostname", state.executingHostname(), newState.executingHostname());
-        assertNotEquals("isFailure", state.isFailed(), newState.isFailed());
-        assertNotEquals("failure (throwable)", state.failure(), newState.failure());
+        assertNotEquals("exception message", state.exception(), newState.exception());
+        assertNotEquals("stack trace", state.stackTrace(), newState.stackTrace());
         assertNotEquals("checkpoint", state.checkpoint(), newState.checkpoint());
     }
 

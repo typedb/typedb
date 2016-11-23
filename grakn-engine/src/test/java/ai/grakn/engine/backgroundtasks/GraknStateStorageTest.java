@@ -1,10 +1,27 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.engine.backgroundtasks;
 
 import ai.grakn.engine.GraknEngineTestBase;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Date;
@@ -80,8 +97,8 @@ public class GraknStateStorageTest extends GraknEngineTestBase {
         assertNotEquals("status", state.status(), newState.status());
         assertNotEquals("status changed by", state.statusChangedBy(), newState.statusChangedBy());
         assertNotEquals("hostname", state.executingHostname(), newState.executingHostname());
-        assertNotEquals("isFailure", state.isFailed(), newState.isFailed());
-        assertNotEquals("failure (throwable)", state.failure(), newState.failure());
+        assertNotEquals("exception", state.exception(), newState.exception());
+        assertNotEquals("stack trace", state.stackTrace(), newState.stackTrace());
         assertNotEquals("checkpoint", state.checkpoint(), newState.checkpoint());
         assertEquals("configuration", state.configuration().toString(), newState.configuration().toString());
     }
@@ -99,7 +116,6 @@ public class GraknStateStorageTest extends GraknEngineTestBase {
         assertEquals(CREATED, state.status());
     }
 
-    @Ignore
     @Test
     public void testGetByStatus() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
@@ -112,7 +128,6 @@ public class GraknStateStorageTest extends GraknEngineTestBase {
                         .size() == 1);
     }
 
-    @Ignore
     @Test
     public void testGetByCreator() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
@@ -125,7 +140,6 @@ public class GraknStateStorageTest extends GraknEngineTestBase {
                         .size() == 1);
     }
 
-    @Ignore
     @Test
     public void testGetByClassName() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
@@ -138,7 +152,6 @@ public class GraknStateStorageTest extends GraknEngineTestBase {
                         .size() == 1);
     }
 
-    @Ignore
     @Test
     public void testGetAll() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
@@ -151,7 +164,6 @@ public class GraknStateStorageTest extends GraknEngineTestBase {
                         .size() == 1);
     }
 
-    @Ignore
     @Test
     public void testPagination() {
         for (int i = 0; i < 20; i++) {

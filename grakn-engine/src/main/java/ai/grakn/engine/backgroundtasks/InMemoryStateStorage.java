@@ -78,7 +78,8 @@ public class InMemoryStateStorage implements StateStorage {
             if(executingHostname != null)
                 state.executingHostname(executingHostname);
             if(failure != null)
-                state.failure(failure);
+                state.exception(failure.toString())
+                     .stackTrace(Arrays.toString(failure.getStackTrace()));
             if(checkpoint != null)
                 state.checkpoint(checkpoint);
             if(configuration != null)
