@@ -28,7 +28,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -38,22 +37,19 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static com.jayway.restassured.RestAssured.given;
+import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
 public class ImportControllerTest extends GraknEngineTestBase {
 
-    private String graphName;
-
-    @Before
-    public void setUp() throws Exception {
-        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
-    }
+    private String keyspace = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
 
     @Test
     public void testLoadOntologyAndData() {
         String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
 
-        importOntology(ontologyPath,graphName);
+        importOntology(ontologyPath, keyspace);
 
         Response dataResponse = given().contentType("application/json").
                 body(Json.object("path", dataPath).toString()).when().
@@ -68,8 +64,8 @@ public class ImportControllerTest extends GraknEngineTestBase {
             e.printStackTrace();
         }
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
-        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(keyspace).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+        GraphFactory.getInstance().getGraphBatchLoading(keyspace).clear();
     }
 
     @Test
@@ -78,11 +74,11 @@ public class ImportControllerTest extends GraknEngineTestBase {
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
 
 
-        importOntology(ontologyPath,graphName);
+        importOntology(ontologyPath, keyspace);
 
         Response dataResponse = given().contentType("application/json").
                 body(Json.object("path", dataPath, "hosts", Json.array().add("127.0.0.1")).toString()).when().
-                post(REST.WebPath.IMPORT_DISTRIBUTED_URI);
+                post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);
 
@@ -93,8 +89,8 @@ public class ImportControllerTest extends GraknEngineTestBase {
             e.printStackTrace();
         }
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
-        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(keyspace).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+        GraphFactory.getInstance().getGraphBatchLoading(keyspace).clear();
     }
 
     @Test
@@ -103,10 +99,12 @@ public class ImportControllerTest extends GraknEngineTestBase {
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
         String customGraph = "importgraph";
 
-        importOntology(ontologyPath,customGraph);
+        importOntology(ontologyPath, customGraph);
 
-        Response dataResponse = given().contentType("application/json").
-                body(Json.object("path", dataPath, "keyspace", customGraph).toString()).when().
+        Response dataResponse = given().
+                contentType("application/json").
+                queryParam(KEYSPACE_PARAM, customGraph).
+                body(Json.object("path", dataPath).toString()).when().
                 post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);

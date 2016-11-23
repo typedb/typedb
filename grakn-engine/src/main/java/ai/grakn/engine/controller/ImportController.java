@@ -48,138 +48,103 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.grakn.engine.controller.RequestUtil.getAsList;
 import static ai.grakn.engine.controller.RequestUtil.getAsString;
 import static ai.grakn.engine.controller.RequestUtil.getKeyspace;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static spark.Spark.before;
 import static spark.Spark.halt;
 import static spark.Spark.post;
 import static ai.grakn.util.REST.Request.PATH_FIELD;
 import static ai.grakn.util.REST.Request.HOSTS_FIELD;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
-@Api(value = "/import", description = "Endpoints to import data and ontologies from Graqlfiles to a graph.")
+@Api(value = "/import", description = "Endpoints to import Graql data from a file.")
 @Path("/import")
 @Produces("text/plain")
 public class ImportController {
 
     private final Logger LOG = LoggerFactory.getLogger(ImportController.class);
-    private ScheduledExecutorService checkLoadingExecutor = Executors.newSingleThreadScheduledExecutor();
-    private ScheduledFuture printingState;
-
-    private AtomicLong processedEntities = new AtomicLong();
-    private AtomicLong processedRelations = new AtomicLong();
-    private AtomicBoolean loadingInProgress = new AtomicBoolean(false);
+    private final AtomicBoolean loadingInProgress = new AtomicBoolean(false);
 
     private static final String INSERT_KEYWORD = "insert";
     private static final String MATCH_KEYWORD = "match";
 
     public ImportController() {
-
         before(REST.WebPath.IMPORT_DATA_URI, (req, res) -> {
-            if (loadingInProgress.get())
-                halt(423, "Another loading process is still running.\n");
-        });
-        before(REST.WebPath.IMPORT_DISTRIBUTED_URI, (req, res) -> {
             if (loadingInProgress.get())
                 halt(423, "Another loading process is still running.\n");
         });
 
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
-        post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
     }
-
-    @POST
-    @Path("/distribute/data")
-    @ApiOperation(
-            value = "Import data from a Graql file. It performs batch loading and distributed the batches to remote hosts.",
-            notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body"),
-            @ApiImplicitParam(name = "hosts", value = "Collection of hosts' addresses.", required = true, dataType = "string", paramType = "body")
-    })
-
-    private String importDataRESTDistributed(Request req, Response res) {
-        loadingInProgress.set(true);
-        try {
-            final String keyspace = getKeyspace(req.body());
-            final String pathToFile = getAsString(PATH_FIELD, req.body());
-            final Collection<String> hosts = getAsList(HOSTS_FIELD, req.body());
-
-            if (!(new File(pathToFile)).exists())
-                throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
-
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(keyspace, hosts)));
-
-        } catch (FileNotFoundException j) {
-            loadingInProgress.set(false);
-            throw new GraknEngineServerException(400, j);
-        } catch (Exception e) {
-            loadingInProgress.set(false);
-            throw new GraknEngineServerException(500, e);
-        }
-
-        return "Distributed loading successfully STARTED. \n";
-    }
-
 
     @POST
     @Path("/batch/data")
     @ApiOperation(
             value = "Import data from a Graql file. It performs batch loading.",
-            notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
-    @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
+            notes = "If the hosts field is populated, it will distribute the load amongst them. This should not " +
+                    "be used to load ontologies because it splits up the file into smaller parts.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body"),
+            @ApiImplicitParam(name = "hosts", value = "Collection of hosts' addresses.", required = true, dataType = "string", paramType = "body"),
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
+    })
     private String importDataREST(Request req, Response res) {
-        loadingInProgress.set(true);
         try {
-            final String keyspace = getKeyspace(req.body());
+            final String keyspace = getKeyspace(req);
             final String pathToFile = getAsString(PATH_FIELD, req.body());
+            final Collection<String> hosts = getAsList(HOSTS_FIELD, req.body());
 
-            if (!(new File(pathToFile)).exists())
+            final File file = new File(pathToFile);
+            if (!file.exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            initialiseLoading();
+            Loader loader = getLoader(keyspace, hosts);
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(keyspace)));
+            // Spawn threads to load and check status of loader
+            ScheduledFuture scheduledFuture = scheduledPrinting(loader);
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(file, loader, scheduledFuture));
 
         } catch (FileNotFoundException j) {
-            loadingInProgress.set(false);
             throw new GraknEngineServerException(400, j);
         } catch (Exception e) {
-            loadingInProgress.set(false);
             throw new GraknEngineServerException(500, e);
         }
 
-        return "Loading successfully STARTED. \n";
+        return "Loading successfully STARTED.\n";
     }
 
-    private void initialiseLoading() {
-        printingState = checkLoadingExecutor.scheduleAtFixedRate(this::checkLoadingStatus, 10, 10, TimeUnit.SECONDS);
-        processedEntities.set(0);
-        processedRelations.set(0);
+    /**
+     * Return the appropriate loader- Blocking if no hosts are provided, distributed otherwise
+     * @param keyspace name of the graph to use
+     * @param hosts collection of hosts' addressed
+     * @return Loader configured to the provided keyspace
+     */
+    private Loader getLoader(String keyspace, Collection<String> hosts){
+        return hosts == null ? new BlockingLoader(keyspace) :new DistributedLoader(keyspace, hosts);
     }
 
-    private void checkLoadingStatus() {
-        LOG.info("===== Import from file in progress ====");
-        LOG.info("Processed Entities: " + processedEntities);
-        LOG.info("Processed Relations: " + processedRelations);
-        LOG.info("=======================================");
+    /**
+     * Spawn a thread that will check the status of the loader every 10 seconds.
+     * @param loader loader the task will print the status of
+     * @return a ScheduledFuture representing printing task
+     */
+    private ScheduledFuture scheduledPrinting(Loader loader){
+        return Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate(loader::printLoaderState, 10, 10, SECONDS);
     }
-
 
     // This method works under the following assumption:
     // - all entities insert statements are before the relation ones
-
-    private void importDataFromFile(String dataFile, Loader loaderParam) {
+    private void importDataFromFile(File file, Loader loaderParam, Future statusPrinter) {
         LOG.info("Data loading started.");
+        loadingInProgress.set(true);
         try {
-            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(new FileInputStream(dataFile)).iterator();
+            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(new FileInputStream(file)).iterator();
             if (batchIterator.hasNext()) {
                 Object var = batchIterator.next();
                 // -- ENTITIES --
@@ -192,16 +157,12 @@ public class ImportController {
                     var = consumeInsertRelation(batchIterator, loaderParam);
                 }
             }
-            loaderParam.waitToFinish();
-            LOG.info("Data loading complete:");
-            checkLoadingStatus();
-            printingState.cancel(true);
-            processedEntities.set(0);
-            processedRelations.set(0);
-            loadingInProgress.set(false);
+
             PostProcessing.getInstance().run();
         } catch (Exception e) {
             LOG.error("Exception while batch loading data.", e);
+        } finally {
+            statusPrinter.cancel(true);
             loadingInProgress.set(false);
         }
     }
@@ -213,7 +174,6 @@ public class ImportController {
             var = batchIterator.next();
             if (var instanceof Var) {
                 insertQuery.add(((Var) var));
-                processedEntities.incrementAndGet();
             } else
                 break;
         }
@@ -247,7 +207,6 @@ public class ImportController {
 
 
         loader.add(Graql.match(insertQueryMatch).insert(insertQuery));
-        processedRelations.incrementAndGet();
 
         return var;
     }

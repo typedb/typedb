@@ -22,7 +22,6 @@ import ai.grakn.engine.util.ConfigProperties;
 import mjson.Json;
 import spark.Request;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
@@ -43,20 +42,19 @@ public abstract class RequestUtil {
         return keyspace == null ? defaultKeyspace : keyspace;
     }
 
-    public static String getKeyspace(String request){
-        Json keyspace = Json.read(request).at(KEYSPACE_PARAM);
-        return keyspace == null ? defaultKeyspace : keyspace.asString();
-    }
-
     public static String getContenttype(Request request){
         return request.contentType().split(";")[0];
     }
 
     public static String getAsString(String property, String request){
-       return Json.read(request).at(property).asString();
+        Json json = Json.read(request);
+       return json.has(property) ? json.at(property).asString() : null;
     }
 
     public static List<String> getAsList(String property, String request){
-        return Json.read(request).at(property).asList().stream().map(Object::toString).collect(toList());
+        Json json = Json.read(request);
+        return json.has(property)
+                ? json.at(property).asList().stream().map(Object::toString).collect(toList())
+                : null;
     }
 }
