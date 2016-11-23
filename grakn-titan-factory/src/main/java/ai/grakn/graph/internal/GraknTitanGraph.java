@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.util.REST;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -29,11 +28,10 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public void clear() {
+    protected void clearGraph() {
         TitanGraph titanGraph = getTinkerPopGraph();
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
     }
 
     @Override

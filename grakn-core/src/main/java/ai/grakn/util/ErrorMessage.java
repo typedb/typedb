@@ -44,6 +44,7 @@ public enum ErrorMessage {
     NOT_SUPPORTED("Not supported with a ['%s'] backend"),
     CLOSED_USER("You have closed this graph and it can no longer be used"),
     CLOSED_FACTORY("This graph has been closed due to a transaction being committed and invalidating this graph"),
+    CLOSED_CLEAR("This graph has been closed due to clearing it"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     IMMUTABLE_TYPE("The type of concept [%s] cannot be set to [%s] as it is already set to [%s]"),

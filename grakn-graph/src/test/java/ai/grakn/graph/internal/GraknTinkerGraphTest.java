@@ -102,6 +102,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         graknGraph.putEntityType("entity type");
         assertNotNull(graknGraph.getEntityType("entity type"));
         graknGraph.clear();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
         assertNull(graknGraph.getEntityType("entity type"));
         assertNotNull(graknGraph.getMetaEntityType());
     }
@@ -128,7 +129,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     }
 
     @Test
-    public void testCloseClearing() throws GraknValidationException {
+    public void testCloseWhenSwitchingBetweenBatchAndNormal() throws GraknValidationException {
         AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
         AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraphBatchLoading();
 
@@ -142,6 +143,17 @@ public class GraknTinkerGraphTest extends GraphTestBase{
                 containsString(ErrorMessage.CLOSED_FACTORY.getMessage())
         ));
 
+        graphNormal.getEntityType("thing");
+    }
+
+    @Test
+    public void testCloseWhenClearing(){
+        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
+        graphNormal.clear();
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CLOSED_CLEAR.getMessage())
+        ));
         graphNormal.getEntityType("thing");
     }
 

@@ -592,6 +592,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
      */
     @Override
     public void clear() {
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
+        clearGraph();
+        finaliseClose(this::closePermanent, ErrorMessage.CLOSED_CLEAR.getMessage());
+    }
+
+    protected void clearGraph(){
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
@@ -605,6 +611,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             closeGraph(ErrorMessage.CLOSED_USER.getMessage());
         }
     }
+
+    //Standard Close Operation Overridden in Titan
     public void closeGraph(String closedReason){
         finaliseClose(this::closePermanent, closedReason);
     }

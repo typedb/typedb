@@ -19,7 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -29,13 +28,6 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){
         super(tinkerGraph, name, engineUrl, batchLoading);
-    }
-
-    @Override
-    public void clear(){
-        super.clear();
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
-        initialiseMetaConcepts();
     }
 
     @Override

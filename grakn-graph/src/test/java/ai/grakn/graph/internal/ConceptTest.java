@@ -362,4 +362,9 @@ public class ConceptTest extends GraphTestBase{
         ));
         graknGraph.putEntityType("type");
     }
+
+    @Test
+    public void name(){
+        System.out.println(graknGraph.getMetaType().superType());
+    }
 }
