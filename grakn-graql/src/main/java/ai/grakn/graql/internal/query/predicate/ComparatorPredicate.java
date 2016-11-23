@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import com.google.common.collect.ImmutableSet;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
 
-abstract class ComparatorPredicate extends AbstractValuePredicate {
+abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
     protected Object value;
 
@@ -29,7 +29,6 @@ abstract class ComparatorPredicate extends AbstractValuePredicate {
      * @param value the value that this atom is testing against
      */
     public ComparatorPredicate(Object value) {
-        super(ImmutableSet.of(value));
         this.value = value;
     }
 

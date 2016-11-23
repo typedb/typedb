@@ -18,13 +18,13 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import com.google.common.collect.ImmutableSet;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;
 
-class EqPredicate extends AbstractValuePredicate {
+class EqPredicate implements ValuePredicateAdmin {
 
     private Object value;
 
@@ -32,7 +32,6 @@ class EqPredicate extends AbstractValuePredicate {
      * @param value the value that this atom is testing against
      */
     EqPredicate(Object value) {
-        super(ImmutableSet.of(value));
         this.value = value;
     }
 

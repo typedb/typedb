@@ -19,11 +19,9 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Admin class for inspecting a ValuePredicate
@@ -48,11 +46,6 @@ public interface ValuePredicateAdmin extends ValuePredicate {
     default Optional<Object> equalsValue() {
         return Optional.empty();
     }
-
-    /**
-     * @return all values referred to in the atom (including within 'ors' and 'ands')
-     */
-    Set<Object> getInnerValues();
 
     /**
      * @return the gremlin atom object this ValuePredicate wraps

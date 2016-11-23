@@ -77,9 +77,6 @@ predicate      : '='? value                # predicateEq
                | '<=' value                # predicateLte
                | 'contains' STRING         # predicateContains
                | REGEX                     # predicateRegex
-               | predicate 'and' predicate # predicateAnd
-               | predicate 'or' predicate  # predicateOr
-               | '(' predicate ')'         # predicateParens
                ;
 value          : STRING  # valueString
                | INTEGER # valueInteger

@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import com.google.common.collect.ImmutableSet;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
-class RegexPredicate extends AbstractValuePredicate {
+class RegexPredicate implements ValuePredicateAdmin {
 
     private final String pattern;
 
@@ -30,7 +30,6 @@ class RegexPredicate extends AbstractValuePredicate {
      * @param pattern the regex pattern that this atom is testing against
      */
     RegexPredicate(String pattern) {
-        super(ImmutableSet.of(pattern));
         this.pattern = pattern;
     }
 

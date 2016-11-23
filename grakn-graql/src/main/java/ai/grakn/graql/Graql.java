@@ -18,13 +18,6 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.aggregate.Aggregates;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
@@ -33,6 +26,8 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.query.predicate.Predicates;
 import ai.grakn.graql.internal.util.AdminConverter;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -331,22 +326,6 @@ public class Graql {
     public static ValuePredicate lte(Comparable value) {
         Objects.requireNonNull(value);
         return Predicates.lte(value);
-    }
-
-    /**
-     * @param predicates an array of predicates
-     * @return a atom that returns true when all the predicates are true
-     */
-    public static ValuePredicate all(ValuePredicate predicate, ValuePredicate... predicates) {
-        return Arrays.stream(predicates).reduce(predicate, ValuePredicate::and);
-    }
-
-    /**
-     * @param predicates an array of predicates
-     * @return a atom that returns true when any of the predicates are true
-     */
-    public static ValuePredicate any(ValuePredicate predicate, ValuePredicate... predicates) {
-        return Arrays.stream(predicates).reduce(predicate, ValuePredicate::or);
     }
 
     /**

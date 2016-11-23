@@ -458,16 +458,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public ValuePredicate visitPredicateAnd(GraqlParser.PredicateAndContext ctx) {
-        return visitPredicate(ctx.predicate(0)).and(visitPredicate(ctx.predicate(1)));
-    }
-
-    @Override
-    public ValuePredicate visitPredicateOr(GraqlParser.PredicateOrContext ctx) {
-        return visitPredicate(ctx.predicate(0)).or(visitPredicate(ctx.predicate(1)));
-    }
-
-    @Override
     public ValuePredicate visitPredicateParens(GraqlParser.PredicateParensContext ctx) {
         return visitPredicate(ctx.predicate());
     }

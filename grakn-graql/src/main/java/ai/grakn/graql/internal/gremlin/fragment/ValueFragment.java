@@ -21,8 +21,12 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
 
 class ValueFragment extends AbstractFragment {
 
@@ -35,8 +39,21 @@ class ValueFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        Schema.ConceptProperty value = getValueProperty();
-        traversal.has(value.name(), predicate.getPredicate());
+        Object value = predicate.getPredicate().getValue();
+
+        if (value != null) {
+            // Look up on a single key (e.g. VALUE_STRING)
+            ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(value.getClass().getTypeName());
+            Schema.ConceptProperty property = dataType.getConceptProperty();
+            traversal.has(property.name(), predicate.getPredicate());
+        } else {
+            // Look up on all keys if necessary (not indexable)
+            Traversal[] hasTraversals = SUPPORTED_TYPES.values().stream().map(dataType -> {
+                Schema.ConceptProperty property = dataType.getConceptProperty();
+                return __.has(property.name(), predicate.getPredicate());
+            }).toArray(Traversal[]::new);
+            traversal.or(hasTraversals);
+        }
     }
 
     @Override
@@ -51,14 +68,6 @@ class ValueFragment extends AbstractFragment {
         } else {
             return previousCost;
         }
-    }
-
-    /**
-     * @return the correct VALUE property to check on the vertex for the given predicate
-     */
-    private Schema.ConceptProperty getValueProperty() {
-        Object value = predicate.getInnerValues().iterator().next();
-        return ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName()).getConceptProperty();
     }
 
     @Override

@@ -47,9 +47,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.all;
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.any;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
@@ -113,14 +111,20 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     @Test
     public void testPredicateQuery1() {
         MatchQuery expected = qb.match(
-                var("x").isa("movie")
-                        .value(any(eq("Apocalypse Now"), lt("Juno").and(gt("Godfather")), eq("Spy")).and(neq("Apocalypse Now")))
+                var("x").isa("movie").has("title", var("t")),
+                or(
+                        var("t").value(eq("Apocalypse Now")),
+                        and(var("t").value(lt("Juno")), var("t").value(gt("Godfather"))),
+                        var("t").value(eq("Spy"))
+                ),
+                var("t").value(neq("Apocalypse Now"))
         );
 
         MatchQuery parsed = qb.parse(
                 "match\n" +
-                        "$x isa movie\n" +
-                        "\tvalue (= \"Apocalypse Now\" or < 'Juno' and > 'Godfather' or 'Spy') and !='Apocalypse Now';\n"
+                "$x isa movie, has title $t;\n" +
+                "$t value = \"Apocalypse Now\" or {$t value < 'Juno'; $t value > 'Godfather';} or $t value 'Spy';" +
+                "$t value !='Apocalypse Now';\n"
         );
 
         assertQueriesEqual(expected, parsed);
@@ -129,11 +133,16 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     @Test
     public void testPredicateQuery2() {
         MatchQuery expected = qb.match(
-                var("x").isa("movie").value(all(lte("Juno"), gte("Godfather"), neq("Heat")).or(eq("The Muppets")))
+                var("x").isa("movie").has("title", var("t")),
+                or(
+                    and(var("t").value(lte("Juno")), var("t").value(gte("Godfather")), var("t").value(neq("Heat"))),
+                    var("t").value("The Muppets")
+                )
         );
 
         MatchQuery parsed = qb.parse(
-                "match $x isa movie, value (<= 'Juno' and >= 'Godfather' and != 'Heat') or = 'The Muppets';"
+                "match $x isa movie, has title $t;" +
+                "{$t value <= 'Juno'; $t value >= 'Godfather'; $t value != 'Heat';} or $t value = 'The Muppets';"
         );
 
         assertQueriesEqual(expected, parsed);
@@ -143,11 +152,13 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     public void testPredicateQuery3() {
         MatchQuery expected = qb.match(
                 var().rel("x").rel("y"),
-                var("y").isa("person").value(contains("ar").or(regex("^M.*$")))
+                var("y").isa("person").has("name", var("n")),
+                or(var("n").value(contains("ar")), var("n").value(regex("^M.*$")))
         );
 
         MatchQuery parsed = (MatchQuery) qb.parse(
-                "match ($x, $y); $y isa person value contains 'ar' or /^M.*$/;"
+                "match ($x, $y); $y isa person, has name $n;" +
+                "$n value contains 'ar' or $n value /^M.*$/;"
         );
 
         assertQueriesEqual(expected, parsed);
