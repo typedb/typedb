@@ -106,7 +106,7 @@ public class ImportControllerTest extends GraknEngineTestBase {
         importOntology(ontologyPath,customGraph);
 
         Response dataResponse = given().contentType("application/json").
-                body(Json.object("path", dataPath, "graphName", customGraph).toString()).when().
+                body(Json.object("path", dataPath, "keyspace", customGraph).toString()).when().
                 post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);

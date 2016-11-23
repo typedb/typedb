@@ -22,7 +22,6 @@ import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.engine.loader.DistributedLoader;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.postprocessing.PostProcessing;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -33,8 +32,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -46,7 +43,10 @@ import javax.ws.rs.Produces;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -54,13 +54,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static spark.Spark.*;
-
+import static ai.grakn.engine.controller.RequestUtil.getAsList;
+import static ai.grakn.engine.controller.RequestUtil.getAsString;
+import static ai.grakn.engine.controller.RequestUtil.getKeyspace;
+import static spark.Spark.before;
+import static spark.Spark.halt;
+import static spark.Spark.post;
+import static ai.grakn.util.REST.Request.PATH_FIELD;
+import static ai.grakn.util.REST.Request.HOSTS_FIELD;
 
 @Api(value = "/import", description = "Endpoints to import data and ontologies from Graqlfiles to a graph.")
 @Path("/import")
 @Produces("text/plain")
-
 public class ImportController {
 
     private final Logger LOG = LoggerFactory.getLogger(ImportController.class);
@@ -73,9 +78,6 @@ public class ImportController {
 
     private static final String INSERT_KEYWORD = "insert";
     private static final String MATCH_KEYWORD = "match";
-
-
-    private String defaultGraphName;
 
     public ImportController() {
 
@@ -90,8 +92,6 @@ public class ImportController {
 
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
-
-        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
     }
 
     @POST
@@ -107,18 +107,16 @@ public class ImportController {
     private String importDataRESTDistributed(Request req, Response res) {
         loadingInProgress.set(true);
         try {
-            JSONObject bodyObject = new JSONObject(req.body());
-            final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName = (bodyObject.has(REST.Request.KEYSPACE_PARAM)) ? bodyObject.get(REST.Request.KEYSPACE_PARAM).toString() : defaultGraphName;
-            final Collection<String> hosts = new HashSet<>();
-            bodyObject.getJSONArray("hosts").forEach(x -> hosts.add(((String) x)));
+            final String keyspace = getKeyspace(req);
+            final String pathToFile = getAsString(PATH_FIELD, req.body());
+            final Collection<String> hosts = getAsList(HOSTS_FIELD, req.body());
 
             if (!(new File(pathToFile)).exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(graphName, hosts)));
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(keyspace, hosts)));
 
-        } catch (JSONException | FileNotFoundException j) {
+        } catch (FileNotFoundException j) {
             loadingInProgress.set(false);
             throw new GraknEngineServerException(400, j);
         } catch (Exception e) {
@@ -136,22 +134,20 @@ public class ImportController {
             value = "Import data from a Graql file. It performs batch loading.",
             notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
     @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
-
     private String importDataREST(Request req, Response res) {
         loadingInProgress.set(true);
         try {
-            JSONObject bodyObject = new JSONObject(req.body());
-            final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName = (bodyObject.has(REST.Request.KEYSPACE_PARAM)) ? bodyObject.get(REST.Request.KEYSPACE_PARAM).toString() : defaultGraphName;
+            final String keyspace = getKeyspace(req);
+            final String pathToFile = getAsString(PATH_FIELD, req.body());
 
             if (!(new File(pathToFile)).exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
             initialiseLoading();
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(graphName)));
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(keyspace)));
 
-        } catch (JSONException | FileNotFoundException j) {
+        } catch (FileNotFoundException j) {
             loadingInProgress.set(false);
             throw new GraknEngineServerException(400, j);
         } catch (Exception e) {

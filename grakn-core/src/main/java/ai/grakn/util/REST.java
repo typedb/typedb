@@ -55,6 +55,7 @@ public class REST {
 
     public static class Request{
         public static final String PATH_FIELD = "path";
+        public static final String HOSTS_FIELD = "hosts";
         public static final String QUERY_FIELD = "query";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "graphName";

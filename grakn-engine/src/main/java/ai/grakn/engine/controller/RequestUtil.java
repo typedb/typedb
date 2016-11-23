@@ -19,10 +19,15 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.util.ConfigProperties;
+import mjson.Json;
 import spark.Request;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Methods that will be used by all of the controllers.
@@ -40,5 +45,13 @@ public abstract class RequestUtil {
 
     public static String getContenttype(Request request){
         return request.contentType().split(";")[0];
+    }
+
+    public static String getAsString(String property, String request){
+       return Json.read(request).at(property).asString();
+    }
+
+    public static List<String> getAsList(String property, String request){
+        return Json.read(request).at(property).asList().stream().map(Object::toString).collect(toList());
     }
 }
