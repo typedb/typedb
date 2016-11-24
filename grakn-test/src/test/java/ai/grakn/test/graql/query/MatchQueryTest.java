@@ -606,13 +606,13 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testNoInstancesOfRoleType() {
-        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").id("actor"));
+        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").name("actor"));
         assertEquals(0, query.stream().count());
     }
 
     @Test
     public void testNoInstancesOfRoleTypeUnselectedVariable() {
-        MatchQuery query = qb.match(var().isa(var("y")), var("y").id("actor"));
+        MatchQuery query = qb.match(var().isa(var("y")), var("y").name("actor"));
         assertEquals(0, query.stream().count());
     }
 
