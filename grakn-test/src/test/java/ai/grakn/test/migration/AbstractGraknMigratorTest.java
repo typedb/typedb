@@ -213,7 +213,7 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         assertNotNull(poison);
         assertNotNull(bulbasaur);
 
-        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getId());
-        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getId());
+        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getName());
+        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getName());
     }
 }
