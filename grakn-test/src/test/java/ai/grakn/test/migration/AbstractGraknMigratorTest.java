@@ -39,7 +39,6 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
@@ -218,7 +217,7 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         assertNotNull(poison);
         assertNotNull(bulbasaur);
 
-        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getId());
-        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getId());
+        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getName());
+        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getName());
     }
 }
