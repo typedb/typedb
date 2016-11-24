@@ -58,7 +58,7 @@ public class BulkResourceMutate<T> {
     private int batchSize = 100;
     private GraknGraph graph;
     private int currentNumberOfVertices = 0;
-    private String resourceTypeId;
+    private String resourceTypeName;
     private final String keyspace;
     private Map<String, T> resourcesToPersist = new HashMap<>();
 
@@ -67,14 +67,14 @@ public class BulkResourceMutate<T> {
     private RoleType resourceValue;
     private RelationType relationType;
 
-    public BulkResourceMutate(String keyspace, String resourceTypeId) {
+    public BulkResourceMutate(String keyspace, String resourceTypeName) {
         LOGGER.debug("Starting BulkResourceMutate");
         this.keyspace = keyspace;
-        this.resourceTypeId = resourceTypeId;
+        this.resourceTypeName = resourceTypeName;
     }
 
-    public BulkResourceMutate(String keyspace, String resourceTypeId, int batchSize) {
-        this(keyspace, resourceTypeId);
+    public BulkResourceMutate(String keyspace, String resourceTypeName, int batchSize) {
+        this(keyspace, resourceTypeName);
         this.batchSize = batchSize;
     }
 
@@ -110,7 +110,7 @@ public class BulkResourceMutate<T> {
                 LOGGER.debug("Number of failures: " + numberOfFailures);
                 if (!(numberOfFailures < numberOfRetries)) {
                     LOGGER.debug("REACHED MAX NUMBER OF RETRIES !!!!!!!!");
-                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId, e.getMessage()), e);
+                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeName, e.getMessage()), e);
                 }
             }
         } while (hasFailed);
@@ -175,10 +175,10 @@ public class BulkResourceMutate<T> {
     }
 
     private void refreshOntologyElements() {
-        resourceType = graph.getResourceType(resourceTypeId);
-        resourceOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        resourceValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId));
+        resourceType = graph.getResourceType(resourceTypeName);
+        resourceOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeName));
+        resourceValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeName));
+        relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeName));
     }
 
     private void initialiseGraph() {
