@@ -61,7 +61,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
         newConcepts.push(graknGraph.putEntityType("3"));
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = graknGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getConceptLog().getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
 
     }
@@ -78,7 +78,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
         newConcepts.push(c2);
 
         // check the concept tracker is empty
-        modifiedConcepts = graknGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getConceptLog().getModifiedConcepts();
         assertEquals(3, modifiedConcepts.size());
 
         // add primitive edges in as many ways as possible
@@ -88,7 +88,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
         newConcepts.push(c3);
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = graknGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getConceptLog().getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
 
     }
@@ -105,7 +105,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
         type.delete();
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = graknGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getConceptLog().getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
     }
 
@@ -120,7 +120,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
         instance.delete();
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = graknGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getConceptLog().getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
 
     }

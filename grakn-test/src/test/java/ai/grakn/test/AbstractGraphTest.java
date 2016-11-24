@@ -20,7 +20,6 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import org.junit.After;
 import org.junit.Before;
 
@@ -41,6 +40,5 @@ public abstract class AbstractGraphTest extends AbstractEngineTest {
     @After
     public void closeGraph() throws Exception {
         graph.close();
-        ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
     }
 }

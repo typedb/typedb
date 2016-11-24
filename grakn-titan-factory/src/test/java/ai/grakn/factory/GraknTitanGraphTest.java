@@ -19,11 +19,15 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.graph.internal.GraknTitanGraph;
+import ai.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,6 +38,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static junit.framework.TestCase.assertNotNull;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -43,6 +49,9 @@ public class GraknTitanGraphTest {
     private static final String TEST_URI = null;
     private static final boolean TEST_BATCH_LOADING = false;
     private GraknGraph graknGraph;
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setup(){
@@ -124,5 +133,16 @@ public class GraknTitanGraphTest {
         GraknTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
 
         assertEquals(case1.getKeyspace(), case2.getKeyspace());
+    }
+
+    @Test
+    public void testClearTitanGraph(){
+        GraknTitanGraph graph = new TitanInternalFactory("case", TEST_URI, TEST_CONFIG).getGraph(false);
+        graph.clear();
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CLOSED_CLEAR.getMessage())
+        ));
+        graph.getEntityType("thing");
     }
 }

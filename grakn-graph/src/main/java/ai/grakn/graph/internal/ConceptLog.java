@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  *      edge cases, for example, relationship where a new role player is added.
  *
  */
-class ConceptLog {
+public class ConceptLog {
     private Set<ConceptImpl> modifiedConcepts;
     private Set<ConceptImpl> modifiedCastings;
     private Set<ConceptImpl> modifiedResources;

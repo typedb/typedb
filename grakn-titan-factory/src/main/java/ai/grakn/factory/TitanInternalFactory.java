@@ -57,6 +57,14 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     }
 
     @Override
+    public TitanGraph getGraphWithNewTransaction(TitanGraph graph){
+        if(!graph.tx().isOpen()){
+            graph.tx().open();
+        }
+        return graph;
+    }
+
+    @Override
     GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph, boolean batchLoading) {
         return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
@@ -156,9 +164,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     }
     private static void makePropertyKey(TitanManagement management, String propertyKey, Class type){
         if (management.getPropertyKey(propertyKey) == null) {
-            if (management.getPropertyKey(propertyKey) == null) {
-                management.makePropertyKey(propertyKey).dataType(type).make();
-            }
+            management.makePropertyKey(propertyKey).dataType(type).make();
         }
     }
 

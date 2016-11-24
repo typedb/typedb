@@ -18,14 +18,14 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graph.internal.GraknTitanGraph;
+import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import ai.grakn.GraknGraph;
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -291,11 +291,13 @@ public class GraknTitanGraphFactoryTest {
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
+        TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", TEST_URI, TEST_CONFIG);
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
-                GraknTitanGraph graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
-                assertFalse(graph.getTinkerPopGraph().isClosed());
+                GraknTitanGraph graph = factory.getGraph(false);
+                assertFalse("Grakn graph is closed", graph.isClosed());
+                assertFalse("Internal tinkerpop graph is closed", graph.getTinkerPopGraph().isClosed());
                 graph.putEntityType("A Thing");
                 graph.close();
             }));

@@ -269,6 +269,12 @@ public interface GraknGraph extends AutoCloseable{
 
     /**
      *
+     * @return True if the graph has been closed
+     */
+    boolean isClosed();
+
+    /**
+     *
      * @return A read only tinkerpop traversal for manually traversing the graph
      */
     GraphTraversal<Vertex, Vertex> getTinkerTraversal();

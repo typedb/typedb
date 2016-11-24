@@ -107,8 +107,8 @@ public class BlockingLoader extends Loader {
                     // commit the transaction
                     graph.commit();
 
-                    cache.addJobCasting(graphName, ((AbstractGraknGraph) graph).getModifiedCastingIds());
-                    cache.addJobResource(graphName, ((AbstractGraknGraph) graph).getModifiedCastingIds());
+                    cache.addJobCasting(graphName, ((AbstractGraknGraph) graph).getConceptLog().getModifiedCastingIds());
+                    cache.addJobResource(graphName, ((AbstractGraknGraph) graph).getConceptLog().getModifiedCastingIds());
                     return;
                 } catch (GraknValidationException e) {
                     //If it's a validation exception there is no point in re-trying

@@ -66,14 +66,17 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
-    private final ThreadLocal<ConceptLog> context = new ThreadLocal<>();
     private final ElementFactory elementFactory;
-    //private final ConceptLog conceptLog;
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
-    private boolean committed;
+
+    private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localIsClosed = new ThreadLocal<>();
+    private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
+
+    private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
@@ -91,11 +94,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
+        localIsClosed.set(false);
     }
 
     @Override
     public String getKeyspace(){
         return keyspace;
+    }
+
+    @Override
+    public boolean isClosed(){
+        Boolean value = localIsClosed.get();
+        if(value == null)
+            return false;
+        else
+            return value;
     }
 
     public boolean hasCommitted(){
@@ -157,8 +170,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     public G getTinkerPopGraph(){
-        if(graph == null){
-            throw new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this.getClass().getName()));
+        if(isClosed()){
+            throw new GraphRuntimeException(localClosedReason.get());
         }
         return graph;
     }
@@ -206,27 +219,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
 
-    public Set<ConceptImpl> getModifiedConcepts(){
-        return getConceptLog().getModifiedConcepts();
-    }
-
-    public Set<String> getModifiedCastingIds(){
-        return getConceptLog().getModifiedCastingIds();
-    }
-
-    public Set<String> getModifiedResourceIds(){
-        return getConceptLog().getModifiedResourceIds();
-    }
-
     public ConceptLog getConceptLog() {
-        ConceptLog conceptLog = context.get();
+        ConceptLog conceptLog = localConceptLog.get();
         if(conceptLog == null){
-            context.set(conceptLog = new ConceptLog());
+            localConceptLog.set(conceptLog = new ConceptLog());
         }
         return conceptLog;
     }
 
-    public void checkOntologyMutation(){
+    void checkOntologyMutation(){
         if(isBatchLoadingEnabled()){
             throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
         }
@@ -234,9 +235,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
-    public Vertex addVertex(Schema.BaseType baseType){
-        Vertex v = getTinkerPopGraph().addVertex(baseType.name());
-        return v;
+    Vertex addVertex(Schema.BaseType baseType){
+        return getTinkerPopGraph().addVertex(baseType.name());
     }
 
     private Vertex putVertex(String itemIdentifier, Schema.BaseType baseType){
@@ -323,6 +323,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             return null;
         }
     }
+
     @Override
     public Concept getConcept(String id) {
         return getConcept(Schema.ConceptProperty.ITEM_IDENTIFIER, id);
@@ -454,7 +455,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
         return casting;
     }
-    public CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
+    CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
         CastingImpl foundCasting  = null;
         if(rolePlayer != null)
             foundCasting = getCasting(role, rolePlayer);
@@ -591,6 +592,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
      */
     @Override
     public void clear() {
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
+        clearGraph();
+        finaliseClose(this::closePermanent, ErrorMessage.CLOSED_CLEAR.getMessage());
+    }
+
+    protected void clearGraph(){
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
@@ -600,14 +607,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public void close() {
         getConceptLog().clearTransaction();
+        closeGraph(ErrorMessage.CLOSED_USER.getMessage());
+    }
+
+    //Standard Close Operation Overridden in Titan
+    public void closeGraph(String closedReason){
+        finaliseClose(this::closePermanent, closedReason);
+    }
+
+    void finaliseClose(Runnable closer, String closedReason){
+        if(!isClosed()) {
+            closer.run();
+            localClosedReason.set(closedReason);
+            localIsClosed.set(true);
+        }
+    }
+
+    void closePermanent(){
+        System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is PERMANENTLY closing graph [" + getTinkerPopGraph().hashCode() + "]");
         try {
-            closeGraphTransaction();
+            getTinkerPopGraph().close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-    protected void closeGraphTransaction() throws Exception {
-        getTinkerPopGraph().close();
     }
 
     /**
@@ -619,8 +641,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         validateGraph();
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
-        Set<String> castings = getModifiedCastingIds();
-        Set<String> resources = getModifiedResourceIds();
+        Set<String> castings = getConceptLog().getModifiedCastingIds();
+        Set<String> resources = getConceptLog().getModifiedResourceIds();
 
         if(castings.size() > 0)
             modifiedConcepts.put(Schema.BaseType.CASTING, castings);
