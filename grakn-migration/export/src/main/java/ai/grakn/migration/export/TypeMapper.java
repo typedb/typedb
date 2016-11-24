@@ -17,10 +17,6 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
@@ -43,15 +39,15 @@ public class TypeMapper {
      */
     public static Var map(Type type) {
         Var mapped = formatBase(type);
-        if (type instanceof EntityType) {
+        if (type.isEntityType()) {
             mapped = map(mapped, type.asEntityType());
-        } else if (type instanceof RelationType) {
+        } else if (type.isRelationType()) {
             mapped = map(mapped, type.asRelationType());
-        } else if (type instanceof RoleType) {
+        } else if (type.isRoleType()) {
             mapped = map(mapped, type.asRoleType());
-        } else if (type instanceof ResourceType) {
+        } else if (type.isResourceType()) {
             mapped = map(mapped, type.asResourceType());
-        } else if (type instanceof RuleType) {
+        } else if (type.isRuleType()) {
             mapped = map(mapped, type.asRuleType());
         }
 
