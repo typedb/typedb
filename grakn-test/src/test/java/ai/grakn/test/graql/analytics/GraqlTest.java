@@ -23,6 +23,7 @@ import ai.grakn.concept.*;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
@@ -71,6 +72,9 @@ public class GraqlTest extends AbstractGraphTest {
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
+
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
+        logger.setLevel(Level.DEBUG);
     }
 
     @Test
@@ -106,15 +110,12 @@ public class GraqlTest extends AbstractGraphTest {
         ));
     }
 
-    @Ignore //TODO: Fix this once the race condition has been resolved.
     @Test
     public void testDegreesAndPersist() throws Exception {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        qb.parse("compute degreesAndPersist;").execute();
-        qb.parse("compute degreesAndPersist;").execute();
         qb.parse("compute degreesAndPersist;").execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
