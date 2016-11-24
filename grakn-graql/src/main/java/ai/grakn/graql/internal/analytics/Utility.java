@@ -30,7 +30,6 @@ public class Utility {
      * @return the type
      */
     static String getVertexType(Vertex vertex) {
-//        return vertex.label();
         return vertex.value(Schema.ConceptProperty.TYPE.name());
     }
 
