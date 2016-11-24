@@ -363,7 +363,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public <V> Collection<Resource<V>> getResourcesByValue(V value) {
         HashSet<Resource<V>> resources = new HashSet<>();
-        ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass());
+        ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
         getConcepts(dataType.getConceptProperty(), value).forEach(concept -> {
             if(concept != null && concept.isResource()) {
