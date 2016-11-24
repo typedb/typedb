@@ -132,16 +132,6 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
                 .findFirst().get());
     }
 
-    protected void assertRelationBetweenTypesExists(Type type1, Type type2, String relation){
-        RelationType relationType = graph.getRelationType(relation);
-
-        RoleType role1 = type1.playsRoles().stream().filter(r -> r.relationType().getId().equals(relation)).findFirst().get();
-        RoleType role2 = type2.playsRoles().stream().filter(r -> r.relationType().getId().equals(relation)).findFirst().get();
-
-        assertTrue(relationType.hasRoles().contains(role1));
-        assertTrue(relationType.hasRoles().contains(role2));
-    }
-
     protected void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
         RelationType relationType = graph.getRelationType(relation);
 
