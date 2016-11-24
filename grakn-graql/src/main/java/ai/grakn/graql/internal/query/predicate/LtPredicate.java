@@ -23,19 +23,19 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 class LtPredicate extends ComparatorPredicate {
 
     /**
-     * @param value the value that this atom is testing against
+     * @param value the value that this predicate is testing against
      */
     LtPredicate(Object value) {
         super(value);
     }
 
     @Override
-    public P<Object> getPredicate() {
-        return P.lt(value);
+    protected String getSymbol() {
+        return "<";
     }
 
     @Override
-    protected String getSymbol() {
-        return "<";
+    <V> P<V> gremlinPredicate(V value) {
+        return P.lt(value);
     }
 }

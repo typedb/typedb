@@ -120,7 +120,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         resources(concept).stream()
                 .filter(r -> resourceType.map(type -> r.type().getId().equals(type)).orElse(true))
-                .filter(r -> predicate.map(p -> p.getPredicate().test(r.getValue())).orElse(true))
+                .filter(r -> predicate.flatMap(ValuePredicateAdmin::getPredicate).map(p -> p.test(r.getValue())).orElse(true))
                 .forEach(Concept::delete);
     }
 

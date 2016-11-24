@@ -165,6 +165,18 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testMoviesReleasedAfterOrAtTheSameTimeAsSpy() {
+        MatchQuery expected = qb.match(
+                var("x").has("release-date", gte(var("r"))),
+                var().has("title", "Spy").has("release-date", var("r"))
+        );
+
+        MatchQuery parsed = qb.parse("match $x has release-date >= $r; has title 'Spy', has release-date $r;");
+
+        assertQueriesEqual(expected, parsed);
+    }
+
+    @Test
     public void testTypesQuery() throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 

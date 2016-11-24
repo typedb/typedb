@@ -19,23 +19,43 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Optional;
 
 class RegexPredicate implements ValuePredicateAdmin {
 
     private final String pattern;
 
     /**
-     * @param pattern the regex pattern that this atom is testing against
+     * @param pattern the regex pattern that this predicate is testing against
      */
     RegexPredicate(String pattern) {
         this.pattern = pattern;
     }
 
-    @Override
-    public P<Object> getPredicate() {
+    private P<Object> regexPredicate() {
         return new P<>((value, p) -> java.util.regex.Pattern.matches((String) p, (String) value), pattern);
+    }
+
+    @Override
+    public Optional<P<Object>> getPredicate() {
+        return Optional.of(regexPredicate());
+    }
+
+    @Override
+    public Optional<VarAdmin> getInnerVar() {
+        return Optional.empty();
+    }
+
+    @Override
+    public void applyPredicate(GraphTraversal<Vertex, Vertex> traversal) {
+        traversal.has(Schema.ConceptProperty.VALUE_STRING.name(), regexPredicate());
     }
 
     @Override

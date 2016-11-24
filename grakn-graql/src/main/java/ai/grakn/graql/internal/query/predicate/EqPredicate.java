@@ -18,25 +18,30 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;
 
-class EqPredicate implements ValuePredicateAdmin {
+class EqPredicate extends ComparatorPredicate {
 
     private Object value;
 
     /**
-     * @param value the value that this atom is testing against
+     * @param value the value that this predicate is testing against
      */
     EqPredicate(Object value) {
+        super(value);
         this.value = value;
     }
 
     @Override
-    public P<Object> getPredicate() {
+    protected String getSymbol() {
+        return "=";
+    }
+
+    @Override
+    <V> P<V> gremlinPredicate(V value) {
         return P.eq(value);
     }
 

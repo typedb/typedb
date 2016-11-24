@@ -276,7 +276,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a atom that is true when a value equals the specified value
+     * @return a predicate that is true when a value equals the specified value
      */
     public static ValuePredicate eq(Object value) {
         Objects.requireNonNull(value);
@@ -284,8 +284,17 @@ public class Graql {
     }
 
     /**
+     * @param var the variable representing a resource
+     * @return a predicate that is true when a value equals the specified value
+     */
+    public static ValuePredicate eq(Var var) {
+        Objects.requireNonNull(var);
+        return Predicates.eq(var.admin());
+    }
+
+    /**
      * @param value the value
-     * @return a atom that is true when a value does not equal the specified value
+     * @return a predicate that is true when a value does not equal the specified value
      */
     public static ValuePredicate neq(Object value) {
         Objects.requireNonNull(value);
@@ -293,8 +302,17 @@ public class Graql {
     }
 
     /**
+     * @param var the variable representing a resource
+     * @return a predicate that is true when a value does not equal the specified value
+     */
+    public static ValuePredicate neq(Var var) {
+        Objects.requireNonNull(var);
+        return Predicates.neq(var.admin());
+    }
+
+    /**
      * @param value the value
-     * @return a atom that is true when a value is strictly greater than the specified value
+     * @return a predicate that is true when a value is strictly greater than the specified value
      */
     public static ValuePredicate gt(Comparable value) {
         Objects.requireNonNull(value);
@@ -302,8 +320,17 @@ public class Graql {
     }
 
     /**
+     * @param var the variable representing a resource
+     * @return a predicate that is true when a value is strictly greater than the specified value
+     */
+    public static ValuePredicate gt(Var var) {
+        Objects.requireNonNull(var);
+        return Predicates.gt(var.admin());
+    }
+
+    /**
      * @param value the value
-     * @return a atom that is true when a value is greater or equal to the specified value
+     * @return a predicate that is true when a value is greater or equal to the specified value
      */
     public static ValuePredicate gte(Comparable value) {
         Objects.requireNonNull(value);
@@ -311,8 +338,17 @@ public class Graql {
     }
 
     /**
+     * @param var the variable representing a resource
+     * @return a predicate that is true when a value is greater or equal to the specified value
+     */
+    public static ValuePredicate gte(Var var) {
+        Objects.requireNonNull(var);
+        return Predicates.gte(var.admin());
+    }
+
+    /**
      * @param value the value
-     * @return a atom that is true when a value is strictly less than the specified value
+     * @return a predicate that is true when a value is strictly less than the specified value
      */
     public static ValuePredicate lt(Comparable value) {
         Objects.requireNonNull(value);
@@ -320,8 +356,17 @@ public class Graql {
     }
 
     /**
+     * @param var the variable representing a resource
+     * @return a predicate that is true when a value is strictly less than the specified value
+     */
+    public static ValuePredicate lt(Var var) {
+        Objects.requireNonNull(var);
+        return Predicates.lt(var.admin());
+    }
+
+    /**
      * @param value the value
-     * @return a atom that is true when a value is less or equal to the specified value
+     * @return a predicate that is true when a value is less or equal to the specified value
      */
     public static ValuePredicate lte(Comparable value) {
         Objects.requireNonNull(value);
@@ -329,8 +374,17 @@ public class Graql {
     }
 
     /**
+     * @param var the variable representing a resource
+     * @return a predicate that is true when a value is less or equal to the specified value
+     */
+    public static ValuePredicate lte(Var var) {
+        Objects.requireNonNull(var);
+        return Predicates.lte(var.admin());
+    }
+
+    /**
      * @param pattern a regex pattern
-     * @return a atom that returns true when a value matches the given regular expression
+     * @return a predicate that returns true when a value matches the given regular expression
      */
     public static ValuePredicate regex(String pattern) {
         Objects.requireNonNull(pattern);
@@ -339,10 +393,19 @@ public class Graql {
 
     /**
      * @param substring a substring to match
-     * @return a atom that returns true when a value contains the given substring
+     * @return a predicate that returns true when a value contains the given substring
      */
     public static ValuePredicate contains(String substring) {
         Objects.requireNonNull(substring);
         return Predicates.contains(substring);
+    }
+
+    /**
+     * @param var the variable representing a resource
+     * @return a predicate that returns true when a value contains the given substring
+     */
+    public static ValuePredicate contains(Var var) {
+        Objects.requireNonNull(var);
+        return Predicates.contains(var.admin());
     }
 }

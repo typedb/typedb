@@ -567,6 +567,32 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testAllGreaterThanResources() {
+        MatchQuery query = qb.match(var("x").value(gt(var("y"))));
+
+        List<Map<String, Concept>> results = query.execute();
+
+        assertTrue(String.valueOf(results.size()), results.size() > 10);
+
+        results.forEach(result -> {
+            //noinspection unchecked
+            Comparable<Comparable<?>> x = (Comparable<Comparable<?>>) result.get("x").asResource().getValue();
+            Comparable<?> y = (Comparable<?>) result.get("y").asResource().getValue();
+            assertTrue(x.toString() + " <= " + y.toString(), x.compareTo(y) > 0);
+        });
+    }
+
+    @Test
+    public void testMoviesReleasedBeforeTheMuppets() {
+        MatchQuery query = qb.match(
+                var("x").has("release-date", lt(var("r"))),
+                var().has("title", "The Muppets").has("release-date", var("r"))
+        );
+
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Godfather");
+    }
+
+    @Test
     public void testMatchAllResources() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has(var("x")));
 

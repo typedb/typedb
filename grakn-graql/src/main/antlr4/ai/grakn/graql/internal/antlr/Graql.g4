@@ -78,10 +78,11 @@ predicate      : '='? value                # predicateEq
                | 'contains' STRING         # predicateContains
                | REGEX                     # predicateRegex
                ;
-value          : STRING  # valueString
-               | INTEGER # valueInteger
-               | REAL    # valueReal
-               | BOOLEAN # valueBoolean
+value          : VARIABLE # valueVariable
+               | STRING   # valueString
+               | INTEGER  # valueInteger
+               | REAL     # valueReal
+               | BOOLEAN  # valueBoolean
                ;
 
 // These rules are used for parsing streams of patterns separated by semicolons
