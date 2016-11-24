@@ -17,10 +17,6 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
@@ -32,7 +28,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 
 import java.util.Collection;
-import java.util.Collections;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
@@ -50,13 +45,13 @@ public class InstanceMapper {
      */
     public static Var map(Instance instance){
         Var mapped = var();
-        if(instance instanceof Entity){
+        if(instance.isEntity()){
             mapped = map(instance.asEntity());
-        } else if(instance instanceof Resource){
+        } else if(instance.isResource()){
             mapped = map(instance.asResource());
-        } else if(instance instanceof Relation){
+        } else if(instance.isRelation()){
             mapped = map(instance.asRelation());
-        } else if(instance instanceof Rule){
+        } else if(instance.isRule()){
             mapped = map(instance.asRule());
         }
 
