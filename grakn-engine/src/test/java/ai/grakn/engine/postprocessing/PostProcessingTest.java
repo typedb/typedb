@@ -20,16 +20,16 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -37,7 +37,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -149,7 +148,6 @@ public class PostProcessingTest extends GraknEngineTestBase {
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
     }
 
-    @Ignore //TODO: Fix remotely. Failing on Jenkins only
     @Test
     public void testMergeDuplicateResources() throws GraknValidationException, InterruptedException {
         String keyspace = "testbatchgraph";
