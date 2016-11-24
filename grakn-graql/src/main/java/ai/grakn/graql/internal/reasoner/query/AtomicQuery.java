@@ -135,9 +135,6 @@ public class AtomicQuery extends Query{
         QueryAnswers insertAnswers = new QueryAnswers();
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
-            //System.out.println("Materialising: ");
-            //getPattern().getPatterns().forEach(System.out::println);
-            //System.out.println();
             Set<Concept> insertedConcepts = insert.stream().collect(Collectors.toSet());
             if (atom.isUserDefinedName()) {
                 insertedConcepts.stream()
