@@ -106,7 +106,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         messenger.sendMessage(messageScopeOut, Pair.with(MESSAGE_FROM_ASSERTION, 0));
                     }
                     // send message from both source and destination vertex
-                    String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
+                    String id = vertex.id().toString();
                     if (persistentProperties.get(SOURCE).equals(id)) {
                         LOGGER.debug("Found source vertex");
                         vertex.property(PREDECESSOR, "");
@@ -137,8 +137,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     }
                     // casting is active if both its assertion and role-player is in the subgraph
                     if (messageSet.size() == 2) {
-                        LOGGER.debug("Considering casting " +
-                                vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
+                        LOGGER.debug("Considering casting " + vertex.id().toString());
                         vertex.property(IS_ACTIVE_CASTING, true);
                         sendMessagesFromCasting(messenger, memory, messageMap);
                     }
@@ -177,7 +176,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private void updateInstance(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
         if (!vertex.property(PREDECESSOR).isPresent()) {
-            String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
+            String id = vertex.id().toString();
             LOGGER.debug("Considering instance " + id);
 
             Iterator<Tuple> iterator = messenger.receiveMessages();
@@ -223,7 +222,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     }
 
     private void updateCasting(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
-        LOGGER.debug("Considering casting " + vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
+        LOGGER.debug("Considering casting " + vertex.id().toString());
         Map<Integer, Tuple> messageMap = new HashMap<>();
         Iterator<Tuple> iterator = messenger.receiveMessages();
         int i = 0;
