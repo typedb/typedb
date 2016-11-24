@@ -333,7 +333,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @SuppressWarnings("unchecked")
     @Override
     public <V> Resource<V> getResource(V value, ResourceType<V> type){
-        String index = ResourceImpl.generateResourceIndex(type.getId(), value.toString());
+        String index = ResourceImpl.generateResourceIndex(type, value.toString());
         ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, index);
         if(concept != null){
             return concept.asResource();
