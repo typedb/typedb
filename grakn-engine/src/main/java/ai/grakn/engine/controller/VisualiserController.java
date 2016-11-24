@@ -53,13 +53,14 @@ public class VisualiserController {
 
     private final Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
 
-    private String defaultGraphName;
+
+    private String defaultKeyspace;
     private int separationDegree;
     //TODO: implement a pagination system.
 
     public VisualiserController() {
 
-        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        defaultKeyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
         separationDegree = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
 
         get(REST.WebPath.CONCEPT_BY_ID_URI + REST.Request.ID_PARAMETER, this::getConceptById);
@@ -75,13 +76,13 @@ public class VisualiserController {
             value = "Return the HAL representation of a given concept.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String getConceptById(Request req, Response res) {
-        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
+        String keyspaceParam = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        String currentKeyspace = (keyspaceParam == null) ? defaultKeyspace : keyspaceParam;
 
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentKeyspace)){
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return HALConceptRepresentationBuilder.renderHALConceptData(concept, separationDegree);
@@ -97,13 +98,13 @@ public class VisualiserController {
             value = "Return the HAL representation of a given concept.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String getConceptByIdOntology(Request req, Response res) {
-        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
+        String keyspaceParam = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        String currentKeyspace = (keyspaceParam == null) ? defaultKeyspace : keyspaceParam;
 
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentKeyspace)) {
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return HALConceptRepresentationBuilder.renderHALConceptOntology(concept);
@@ -118,15 +119,15 @@ public class VisualiserController {
     @ApiOperation(
             value = "Executes match query on the server and build HAL representation for each concept in the query result.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String matchQuery(Request req, Response res) {
 
-        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        if (currentGraphName == null) currentGraphName = defaultGraphName;
+        String currentKeyspace = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        if (currentKeyspace == null) currentKeyspace = defaultKeyspace;
 
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentKeyspace)) {
 
             LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
             MatchQuery matchQuery = graph.graql().parse(req.queryParams(REST.Request.QUERY_FIELD));

@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.loader.BlockingLoader;
-import ai.grakn.engine.loader.DistributedLoader;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.util.ConfigProperties;
@@ -91,7 +89,7 @@ public class ImportController {
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
 
-        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
     }
 
     @POST
@@ -109,14 +107,14 @@ public class ImportController {
         try {
             JSONObject bodyObject = new JSONObject(req.body());
             final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName = (bodyObject.has(REST.Request.GRAPH_NAME_PARAM)) ? bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString() : defaultGraphName;
+            final String keyspace = (bodyObject.has(REST.Request.KEYSPACE_PARAM)) ? bodyObject.get(REST.Request.KEYSPACE_PARAM).toString() : defaultGraphName;
             final Collection<String> hosts = new HashSet<>();
             bodyObject.getJSONArray("hosts").forEach(x -> hosts.add(((String) x)));
 
             if (!(new File(pathToFile)).exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(graphName, hosts)));
+//            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(keyspace, hosts)));
 
         } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);
@@ -142,14 +140,14 @@ public class ImportController {
         try {
             JSONObject bodyObject = new JSONObject(req.body());
             final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName = (bodyObject.has(REST.Request.GRAPH_NAME_PARAM)) ? bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString() : defaultGraphName;
+            final String keyspace = (bodyObject.has(REST.Request.KEYSPACE_PARAM)) ? bodyObject.get(REST.Request.KEYSPACE_PARAM).toString() : defaultGraphName;
 
             if (!(new File(pathToFile)).exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
             initialiseLoading();
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(graphName)));
+//            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(keyspace)));
 
         } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);

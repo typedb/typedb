@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.reasoner.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.csv.CSVMigrator;

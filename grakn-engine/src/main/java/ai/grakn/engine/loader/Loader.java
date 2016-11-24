@@ -1,131 +1,63 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
+ * MindmapsDB is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * MindmapsDB is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
 package ai.grakn.engine.loader;
 
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.admin.InsertQueryAdmin;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicInteger;
-
-/**
- * RESTLoader to perform bulk loading into the graph
- */
-public abstract class Loader {
-
-    protected AtomicInteger enqueuedJobs;
-    protected AtomicInteger loadingJobs;
-    protected AtomicInteger finishedJobs;
-    protected AtomicInteger errorJobs;
-
-    protected Collection<InsertQuery> queries;
-    protected int batchSize;
-    protected int threadsNumber;
-
-    final Logger LOG = LoggerFactory.getLogger(Loader.class);
-
-
-    public Loader(){
-        enqueuedJobs = new AtomicInteger();
-        loadingJobs = new AtomicInteger();
-        errorJobs = new AtomicInteger();
-        finishedJobs = new AtomicInteger();
-        queries = new HashSet<>();
-    }
+public interface Loader {
 
     /**
-     * Method to load data into the graph. Implementation depends on the type of the loader.
+     * Load any remaining batches in the queue.
      */
-    protected abstract void sendQueriesToLoader(Collection<InsertQuery> batch);
+    public void flush();
 
     /**
-     * Wait for all loading to terminate.
+     * @return the current batch size - minimum number of vars to be loaded in a transaction
      */
-    public abstract void waitToFinish();
+    public int getBatchSize();
 
     /**
      * Add an insert query to the queue
      * @param query insert query to be executed
      */
-    public void add(InsertQuery query){
-        queries.add(query);
-        if(queries.size() >= batchSize){
-            sendQueriesToLoader(queries);
-            queries.clear();
-        }
-    }
+    public void add(InsertQuery query);
 
     /**
      * Set the size of the each transaction in terms of number of vars.
      * @param size number of vars in each transaction
      */
-    public Loader setBatchSize(int size){
-        this.batchSize = size;
-        return this;
-    }
+    public Loader setBatchSize(int size);
 
     /**
-     * @return the current batch size - minimum number of vars to be loaded in a transaction
+     * Set the size of the queue- this is equivalent to the size of the semaphore.
+     * @param size the size of the queue
      */
-    public int getBatchSize(){
-        return this.batchSize;
-    }
+    public Loader setQueueSize(int size);
 
     /**
-     * Set the number of thread that will execute insert transactions at a time
+     * Wait for all tasks to finish for one minute.
      */
-    public Loader setThreadsNumber(int number){
-        this.threadsNumber = number;
-        return this;
-    }
+    public void waitToFinish();
 
     /**
-     * Load any remaining batches in the queue.
+     * Wait for all tasks to finish.
+     * @param timeout amount of time (in ms) to wait.
      */
-    public void flush(){
-        if(queries.size() > 0){
-            sendQueriesToLoader(queries);
-            queries.clear();
-        }
-    }
-
-    /**
-     * Method that logs the current state of loading transactions
-     */
-    public void printLoaderState(){
-        LOG.info(Json.object().set(TransactionState.State.QUEUED.name(), enqueuedJobs.get())
-                .set(TransactionState.State.LOADING.name(), loadingJobs.get())
-                .set(TransactionState.State.ERROR.name(), errorJobs.get())
-                .set(TransactionState.State.FINISHED.name(), finishedJobs.get()).toString());
-    }
-
-    protected void handleError(Exception e, int i) {
-        LOG.error("Caught exception ", e);
-        try {
-            Thread.sleep((i + 2) * 1000);
-        } catch (InterruptedException e1) {
-            LOG.error("Caught exception ", e1);
-        }
-    }
+    public void waitToFinish(int timeout);
 }

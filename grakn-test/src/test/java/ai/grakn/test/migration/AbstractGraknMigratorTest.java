@@ -27,8 +27,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.ResourceType.DataType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.engine.loader.BlockingLoader;
 import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
@@ -39,7 +39,6 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
@@ -79,13 +78,7 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     }
 
     protected void migrate(Migrator migrator){
-        int numberThreads = 8;
-        if(usingTinker()){
-            numberThreads = 1;
-        }
-
-        MigrationLoader.load(
-                new BlockingLoader(graph.getKeyspace()).setThreadsNumber(numberThreads), migrator);
+        MigrationLoader.load(new LoaderImpl(graph.getKeyspace()), migrator);
     }
 
     protected void load(File ontology) {
@@ -183,6 +176,7 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     }
 
     protected void assertPetGraphCorrect(){
+        graph = factory.getGraph();
         Collection<Entity> pets = graph.getEntityType("pet").instances();
         assertEquals(9, pets.size());
 
@@ -203,6 +197,7 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     }
 
     protected void assertPokemonGraphCorrect(){
+        graph = factory.getGraph();
         Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
         assertEquals(9, pokemon.size());
 

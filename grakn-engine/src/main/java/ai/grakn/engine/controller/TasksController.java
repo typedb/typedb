@@ -36,11 +36,23 @@ import javax.ws.rs.*;
 
 import java.util.Date;
 
-import static ai.grakn.util.REST.Request.*;
-import static ai.grakn.util.REST.WebPath.*;
 import static spark.Spark.get;
 import static spark.Spark.put;
 import static spark.Spark.post;
+
+import static ai.grakn.util.REST.Request.Task.CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.CONFIGURATION_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.STATUS_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.RUN_INTERVAL_PARAMETER;
+import static ai.grakn.util.REST.Request.Task.STOP;
+import static ai.grakn.util.REST.Request.Task.OFFSET;
+import static ai.grakn.util.REST.Request.Task.LIMIT;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
@@ -55,7 +67,7 @@ public class TasksController {
 
         get(ALL_TASKS_URI, this::getTasks);
         get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
-        put(TASKS_URI + "/" + ID_PARAMETER + TASK_STOP, this::stopTask);
+        put(TASKS_URI + "/" + ID_PARAMETER + STOP, this::stopTask);
         post(TASKS_SCHEDULE_URI, this::scheduleTask);
     }
 
@@ -71,28 +83,25 @@ public class TasksController {
     })
     private JSONArray getTasks(Request request, Response response) {
         TaskStatus status = null;
-        String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
-        String creator = request.queryParams(TASK_CREATOR_PARAMETER);
+        String className = request.queryParams(CLASS_NAME_PARAMETER);
+        String creator = request.queryParams(CREATOR_PARAMETER);
         int limit = 0;
         int offset = 0;
 
-        if(request.queryParams(LIMIT_PARAM) != null)
-            limit = Integer.valueOf(request.queryParams(LIMIT_PARAM));
+        if(request.queryParams(LIMIT) != null)
+            limit = Integer.valueOf(request.queryParams(LIMIT));
 
-        if(request.queryParams(OFFSET_PARAM) != null)
-            offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
+        if(request.queryParams(OFFSET) != null)
+            offset = Integer.valueOf(request.queryParams(OFFSET));
 
-        if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
-            status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
+        if(request.queryParams(STATUS_PARAMETER) != null) {
+            status = TaskStatus.valueOf(request.queryParams(STATUS_PARAMETER));
         }
 
         JSONArray result = new JSONArray();
         for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
             result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
         }
-
-        System.out.println("result length: "+result.length());
-        System.out.println(" all response: "+result.toString());
 
         response.type("application/json");
         return result;
@@ -141,26 +150,28 @@ public class TasksController {
             @ApiImplicitParam(name = "configuration", value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "query")
     })
     private String scheduleTask(Request request, Response response) {
-        String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
-        String createdBy = request.queryParams(TASK_CREATOR_PARAMETER);
+        String className = request.queryParams(CLASS_NAME_PARAMETER);
+        String createdBy = request.queryParams(CREATOR_PARAMETER);
+        String runAt = request.queryParams(RUN_AT_PARAMETER);
+
         Long interval = 0L;
         JSONObject configuration = new JSONObject();
 
-        if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null)
-            interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
-        if(request.queryParams(TASK_CONFIGURATION_PARAMETER) != null)
-            configuration = new JSONObject(request.queryParams(TASK_CONFIGURATION_PARAMETER));
+        if(request.queryParams(RUN_INTERVAL_PARAMETER) != null)
+            interval = Long.valueOf(request.queryParams(RUN_INTERVAL_PARAMETER));
+        if(request.body() != null)
+            configuration = new JSONObject(request.body());
 
-        if(className == null || createdBy == null)
+        if(className == null || createdBy == null || runAt == null)
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
 
         try {
-            Date runAt = new Date(Long.valueOf(request.queryParams(TASK_RUN_AT_PARAMETER)));
+            Date runAtDate = new Date(Long.valueOf(runAt));
 
             Class<?> clazz = Class.forName(className);
             BackgroundTask task = (BackgroundTask)clazz.newInstance();
 
-            String id = taskManager.scheduleTask(task, createdBy, runAt, interval, configuration);
+            String id = taskManager.scheduleTask(task, createdBy, runAtDate, interval, configuration);
             JSONObject resp = new JSONObject()
                     .put("id", id);
 

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Cache {
     private final Map<String, Set<String>> castings;
@@ -30,6 +31,7 @@ public class Cache {
     private final AtomicBoolean saveInProgress;
 
     private static Cache instance=null;
+    private AtomicLong lastTimeModified;
 
     public static synchronized Cache getInstance(){
         if(instance==null) instance=new Cache();
@@ -40,6 +42,7 @@ public class Cache {
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);
+        lastTimeModified = new AtomicLong(System.currentTimeMillis());
     }
 
     public boolean isSaveInProgress() {
@@ -60,6 +63,7 @@ public class Cache {
     }
     public void addJobCasting(String keyspace, Set<String> conceptIds) {
         getCastingJobs(keyspace).addAll(conceptIds);
+        updateLastTimeJobAdded();
     }
     public void deleteJobCasting(String keyspace, String conceptId) {
         getCastingJobs(keyspace).remove(conceptId);
@@ -72,8 +76,23 @@ public class Cache {
     }
     public void addJobResource(String keyspace, Set<String> conceptIds) {
         getResourceJobs(keyspace).addAll(conceptIds);
+        updateLastTimeJobAdded();
     }
     public void deleteJobResource(String keyspace, String conceptId) {
         getResourceJobs(keyspace).remove(conceptId);
+    }
+
+    /**
+     * @return the last time a job was added to the Cache.
+     */
+    public long getLastTimeJobAdded(){
+        return lastTimeModified.get();
+    }
+
+    /**
+     * Keep a record of the last time something was added to the Cache.
+     */
+    private void updateLastTimeJobAdded(){
+        lastTimeModified.set(System.currentTimeMillis());
     }
 }

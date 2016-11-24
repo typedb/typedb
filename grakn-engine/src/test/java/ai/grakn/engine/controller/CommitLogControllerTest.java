@@ -47,12 +47,10 @@ import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest extends GraknEngineTestBase {
     public final String KEYSPACE = "test";
-    private Cache cache;
+    private Cache cache = Cache.getInstance();
 
     @Before
     public void setUp() throws Exception {
-        cache = Cache.getInstance();
-
         String commitLog = "{\n" +
                 "    \"concepts\":[\n" +
                 "        {\"id\":\"1\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
@@ -69,7 +67,7 @@ public class CommitLogControllerTest extends GraknEngineTestBase {
                 "}";
 
         given().contentType(ContentType.JSON).body(commitLog).when().
-                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
+                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
     }
 
@@ -139,7 +137,7 @@ public class CommitLogControllerTest extends GraknEngineTestBase {
         assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
 
-        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
+        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
 
         waitForCache(KEYSPACE, 0);

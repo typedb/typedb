@@ -58,7 +58,7 @@ public class RemoteShellController {
     private final int WEBSOCKET_TIMEOUT = 3600000;
 
 
-    String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+    String defaultKeyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
 
     public RemoteShellController() {
 
@@ -75,15 +75,15 @@ public class RemoteShellController {
             value = "Produces a JSONObject containing meta-ontology types instances.",
             notes = "The built JSONObject will contain ontology nodes divided in roles, entities, relations and resources.",
             response = JSONObject.class)
-    @ApiImplicitParam(name = "graphName", value = "Name of graph tu use", dataType = "string", paramType = "query")
+    @ApiImplicitParam(name = "keyspace", value = "Name of graph tu use", dataType = "string", paramType = "query")
 
 
     private String buildMetaTypeInstancesObject(Request req, Response res) {
 
-        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        if (currentGraphName == null) currentGraphName = defaultGraphName;
+        String currentKeyspace = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        if (currentKeyspace == null) currentKeyspace = defaultKeyspace;
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentKeyspace)){
             JSONObject responseObj = new JSONObject();
             responseObj.put(REST.Response.ROLES_JSON_FIELD, new JSONArray(graph.getMetaRoleType().instances().stream().map(Concept::getId).toArray()));
             responseObj.put(REST.Response.ENTITIES_JSON_FIELD, new JSONArray(graph.getMetaEntityType().instances().stream().map(Concept::getId).toArray()));
@@ -101,19 +101,19 @@ public class RemoteShellController {
     @ApiOperation(
             value = "Executes match query on the server and produces a result string.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String matchQuery(Request req, Response res) {
 
-        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        if (currentGraphName == null) currentGraphName = defaultGraphName;
+        String currentKeyspace = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        if (currentKeyspace == null) currentKeyspace = defaultKeyspace;
 
         LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
         Printer printer = Printers.graql();
 
-        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentKeyspace)) {
             return graph.graql().parse(req.queryParams(REST.Request.QUERY_FIELD))
                     .resultsString(printer)
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))

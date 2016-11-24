@@ -25,7 +25,6 @@ import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.ImportController;
 import ai.grakn.engine.controller.RemoteShellController;
 import ai.grakn.engine.controller.StatusController;
-import ai.grakn.engine.controller.TransactionController;
 import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
@@ -80,7 +79,6 @@ public class GraknEngineServer {
         new GraphFactoryController();
         new ImportController();
         new CommitLogController();
-        new TransactionController();
         new StatusController();
         new TasksController();
 

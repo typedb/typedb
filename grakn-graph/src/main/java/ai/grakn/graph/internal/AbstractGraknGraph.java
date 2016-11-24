@@ -680,7 +680,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     String getCommitLogEndPoint(){
         if(engine == null)
             return null;
-        return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + keyspace;
+        return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
