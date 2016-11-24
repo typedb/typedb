@@ -24,6 +24,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -133,18 +134,7 @@ public class ClusteringTest extends AbstractGraphTest {
             assertEquals(1, sizeMapPersist.size());
             assertEquals(7L, sizeMapPersist.values().iterator().next().longValue());
             final String finalClusterLabel = clusterLabel;
-            instanceIds.forEach(id -> {
-                Instance instance = graph.getInstance(id);
-                Collection<Resource<?>> resources = null;
-                if (instance.isEntity()) {
-                    resources = instance.asEntity().resources();
-                } else if (instance.isRelation()) {
-                    resources = instance.asRelation().resources();
-                }
-                assertNotNull(resources);
-                assertEquals(1, resources.size());
-                assertEquals(finalClusterLabel, resources.iterator().next().getValue());
-            });
+            instanceIds.forEach(id -> checkConnectedComponent(id, finalClusterLabel));
             assertEquals(count, computer.count());
         }
 
@@ -187,13 +177,7 @@ public class ClusteringTest extends AbstractGraphTest {
             memberMap.values().stream()
                     .filter(set -> set.size() != 1)
                     .flatMap(Collection::stream)
-                    .forEach(id -> {
-                        List<Concept> resources = graph.graql()
-                                .match(id(id).has(Analytics.connectedComponent, var("x")))
-                                .get("x").collect(Collectors.toList());
-                        assertEquals(1, resources.size());
-                        assertEquals(finalClusterLabel, resources.get(0).asResource().getValue());
-                    });
+                    .forEach(id -> checkConnectedComponent(id, finalClusterLabel));
             assertEquals(count, computer.count());
         }
 
@@ -215,14 +199,15 @@ public class ClusteringTest extends AbstractGraphTest {
             assertEquals(17, sizeMapPersist.size());
             memberMap.values().stream()
                     .flatMap(Collection::stream)
-                    .forEach(id -> {
-                        List<Concept> resources = graph.graql()
-                                .match(id(id).has(Analytics.connectedComponent, var("x")))
-                                .get("x").collect(Collectors.toList());
-                        assertEquals(1, resources.size());
-                        assertEquals(id, resources.get(0).asResource().getValue());
-                    });
+                    .forEach(id -> checkConnectedComponent(id, id));
         }
+    }
+
+    private void checkConnectedComponent(String id, String expectedClusterLabel) {
+        Collection<Resource<?>> resources =
+                graph.getInstance(id).resources(graph.getResourceType(Analytics.connectedComponent));
+        assertEquals(1, resources.size());
+        assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
@@ -388,7 +373,7 @@ public class ClusteringTest extends AbstractGraphTest {
                 .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
         relationType6.addRelation()
                 .putRolePlayer(resourceOwner6, entity4)
-                .putRolePlayer(resourceValue6,  graph.getResourceType(resourceType6).putResource(7.5));
+                .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
 
         // some resources in, but not connect them to any instances
         graph.getResourceType(resourceType1).putResource(2.8);

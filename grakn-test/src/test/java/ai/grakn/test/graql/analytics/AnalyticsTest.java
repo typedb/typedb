@@ -217,19 +217,12 @@ public class AnalyticsTest extends AbstractGraphTest {
         ));
     }
 
-    private static void checkDegrees(GraknGraph graph, Map<String, Long> correctDegrees) {
+    private void checkDegrees(Map<String, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
-            Instance instance = graph.getInstance(entry.getKey());
-            // TODO: when shortcut edges are removed properly during concurrent deletion revert code
-            Collection<Resource<?>> resources = null;
-            if (instance.isEntity()) {
-                resources = instance.asEntity().resources();
-            } else if (instance.isRelation()) {
-                resources = instance.asRelation().resources();
-            }
-            assert resources != null;
+            Collection<Resource<?>> resources =
+                    graph.getInstance(entry.getKey()).resources(graph.getResourceType(Analytics.degree));
             assertEquals(1, resources.size());
-            assertEquals(entry.getValue(),resources.iterator().next().getValue());
+            assertEquals(entry.getValue(), resources.iterator().next().getValue());
         });
     }
 
@@ -278,22 +271,22 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.clear();
-        correctDegrees.put(entity1, 1l);
-        correctDegrees.put(entity2, 3l);
-        correctDegrees.put(entity3, 1l);
-        correctDegrees.put(id1, 2l);
-        correctDegrees.put(id2, 2l);
-        correctDegrees.put(id3, 1l);
+        correctDegrees.put(entity1, 1L);
+        correctDegrees.put(entity2, 3L);
+        correctDegrees.put(entity3, 1L);
+        correctDegrees.put(id1, 2L);
+        correctDegrees.put(id2, 2L);
+        correctDegrees.put(id3, 1L);
 
         // assert persisted degrees are correct
-        checkDegrees(graph, correctDegrees);
+        checkDegrees(correctDegrees);
 
         // compute again and again ...
         long numVertices = 0;
         for (int i = 0; i < 2; i++) {
             computer.degreesAndPersist();
             graph = factory.getGraph();
-            checkDegrees(graph, correctDegrees);
+            checkDegrees(correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
@@ -303,16 +296,16 @@ public class AnalyticsTest extends AbstractGraphTest {
             }
         }
 
-        computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+        computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
 
         // compute degrees on all types, again and again ...
-        correctDegrees.put(entity4, 1l);
-        correctDegrees.put(id3, 2l);
+        correctDegrees.put(entity4, 1L);
+        correctDegrees.put(id3, 2L);
         for (int i = 0; i < 2; i++) {
 
             computer.degreesAndPersist();
             graph = factory.getGraph();
-            checkDegrees(graph, correctDegrees);
+            checkDegrees(correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
@@ -993,7 +986,6 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.close();
         degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
                 .getResourceType("degree").instances();
-
-        assertEquals(2,degrees.size());
+        assertEquals(2, degrees.size());
     }
 }

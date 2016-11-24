@@ -19,12 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.*;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
@@ -38,13 +33,7 @@ import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -133,12 +122,13 @@ public class GraqlTest extends AbstractGraphTest {
         correctDegrees.put(relationId23, 2l);
         correctDegrees.put(relationId24, 2l);
 
-        correctDegrees.forEach((k, v) -> {
-            List<Concept> resources = graph.graql()
-                    .match(Graql.id(k).has(Analytics.degree, Graql.var("x")))
-                    .get("x").collect(Collectors.toList());
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+
+        correctDegrees.entrySet().forEach(entry -> {
+            Collection<Resource<?>> resources =
+                    graph.getInstance(entry.getKey()).resources(graph.getResourceType(Analytics.degree));
             assertEquals(1, resources.size());
-            assertEquals(v, resources.get(0).asResource().getValue());
+            assertEquals(entry.getValue(),resources.iterator().next().getValue());
         });
     }
 

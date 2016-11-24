@@ -120,7 +120,7 @@ public class BulkResourceMutate<T> {
     }
 
     private void persistResources() throws GraknValidationException {
-        if (resourcesToPersist.isEmpty()){
+        if (resourcesToPersist.isEmpty()) {
             LOGGER.debug("Nothing to persist");
             return;
         }
@@ -132,15 +132,11 @@ public class BulkResourceMutate<T> {
 
             // fetch all current resource assertions on the instance
             List<Relation> relations = instance.relations(resourceOwner).stream()
-                    .filter(relation -> relation.rolePlayers().size() == 2)
+                    .filter(relation -> relation.rolePlayers().size() == 2 &&
+                            relation.rolePlayers().containsKey(resourceValue))
                     .filter(relation -> {
-                        boolean currentLogicalState = relation.rolePlayers().containsKey(resourceValue);
-                        Instance roleplayer = relation.rolePlayers().get(resourceValue);
-                        if (roleplayer != null) {
-                            return roleplayer.type().getId().equals(resourceTypeId) && currentLogicalState;
-                        } else {
-                            return currentLogicalState;
-                        }
+                        Instance rolePlayer = relation.rolePlayers().get(resourceValue);
+                        return rolePlayer == null || rolePlayer.type().getId().equals(resourceTypeId);
                     }).collect(Collectors.toList());
 
             relations.forEach(relation -> LOGGER.debug("Assertions currently attached: " + relation.toString()));
@@ -163,11 +159,9 @@ public class BulkResourceMutate<T> {
                 return roleplayer == null || roleplayer.asResource().getValue() != value;
             }).collect(Collectors.toList());
 
-            // if it doesn't exist already delete the old one and add the new one
-            // TODO: we need to figure out what to do when we have multiple resources of the same type already in graph
+            // if it doesn't exist already delete the old one(s) and add the new one
             if (!relations.isEmpty()) {
                 LOGGER.debug("Deleting " + relations.size() + " existing assertion(s), adding a new one");
-//                graph.getRelation(relations.get(0).getId()).delete();
                 relations.forEach(Concept::delete);
 
                 Resource<T> resource = resourceType.putResource(value);
