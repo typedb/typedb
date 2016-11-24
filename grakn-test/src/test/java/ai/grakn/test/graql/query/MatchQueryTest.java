@@ -635,6 +635,15 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testLookupResourcesOnId() {
+        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
+        String id = godfather.getId();
+        MatchQuery query = qb.match(var().id(id).has("title", var("x")));
+
+        assertEquals("Godfather", query.get("x").findAny().get().asResource().getValue());
+    }
+
+    @Test
     public void testQueryDoesNotCrash() {
         qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); select $a1, $a2;").execute();
     }
