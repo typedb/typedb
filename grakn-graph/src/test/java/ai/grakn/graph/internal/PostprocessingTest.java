@@ -226,7 +226,7 @@ public class PostprocessingTest extends GraphTestBase{
 
 
     private ResourceImpl createFakeResource(ResourceType type, String value){
-        String index = ResourceImpl.generateResourceIndex(type.getId(), value);
+        String index = ResourceImpl.generateResourceIndex(type, value);
         Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type).getVertex());
