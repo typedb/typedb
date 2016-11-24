@@ -25,6 +25,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -32,7 +33,6 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -79,9 +79,7 @@ public class Relation extends Atom {
     }
 
     @Override
-    public Atomic clone(){
-        return new Relation(this);
-    }
+    public Atomic clone(){ return new Relation(this);}
 
     //rolePlayer-roleType
     public static VarAdmin constructRelation(String name, String id, Map<String, String> roleMap) {
@@ -394,7 +392,9 @@ public class Relation extends Atom {
                 .forEach( var -> roleMap.put(var, null));
 
         //pattern mutation!
+        PatternAdmin oldPattern = atomPattern;
         atomPattern = constructRelation(isUserDefinedName()? varName : "", typeId, roleMap);
+        getParentQuery().replacePattern(oldPattern, atomPattern);
         relationPlayers = getRelationPlayers(getPattern().asVar());
 
         return roleVarTypeMap;
@@ -445,5 +445,26 @@ public class Relation extends Atom {
                 && !this.getVarName().equals(parentAtom.getVarName()))
             unifiers.put(this.getVarName(), parentAtom.getVarName());
         return unifiers;
+    }
+
+    private Map<String, Predicate> getVarSubMap() {
+        Map<String, Predicate> map = new HashMap<>();
+        getIdPredicates().forEach( sub -> {
+            String var = sub.getVarName();
+            map.put(var, sub);
+        });
+        return map;
+    }
+
+    private Map<RoleType, String> getRoleConceptIdMap(){
+        Map<RoleType, String> roleConceptMap = new HashMap<>();
+        Map<String, Predicate> varSubMap = getVarSubMap();
+        Map<RoleType, Pair<String, Type>> roleVarMap = getRoleVarTypeMap();
+
+        roleVarMap.forEach( (role, varTypePair) -> {
+            String var = varTypePair.getKey();
+            roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
+        });
+        return roleConceptMap;
     }
 }

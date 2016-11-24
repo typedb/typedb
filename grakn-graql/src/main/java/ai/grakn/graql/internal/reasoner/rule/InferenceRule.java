@@ -48,7 +48,6 @@ public class InferenceRule {
 
     private final Query body;
     private AtomicQuery head;
-
     private final Rule rule;
 
     public InferenceRule(Rule rl, GraknGraph graph){

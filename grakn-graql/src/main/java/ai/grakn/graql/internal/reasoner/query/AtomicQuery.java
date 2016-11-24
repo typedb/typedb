@@ -59,7 +59,7 @@ public class AtomicQuery extends Query{
     public AtomicQuery(AtomicQuery q){
         super(q);
         Atom coreAtom = null;
-        Iterator<Atom> it = atomSet.stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
+        Iterator<Atom> it = getAtoms().stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
         while(it.hasNext() && coreAtom == null) {
             Atom at = it.next();
             if (at.equals(q.getAtom())) coreAtom = at;
@@ -109,6 +109,24 @@ public class AtomicQuery extends Query{
     public Atom getAtom(){ return atom;}
     public Set<AtomicQuery> getChildren(){ return children;}
 
+    @Override
+    public boolean addAtom(Atomic at) {
+        if(super.addAtom(at)){
+            if(atom == null && at.isAtom()) atom = (Atom) at;
+            return true;
+        }
+        else return false;
+    }
+
+    @Override
+    public boolean removeAtom(Atomic at) {
+        if( super.removeAtom(at)) {
+            if (atom != null & at.equals(atom)) atom = null;
+            return true;
+        }
+        else return false;
+    }
+
     /**
      * materialise the query provided all variables are mapped
      */
@@ -117,6 +135,9 @@ public class AtomicQuery extends Query{
         QueryAnswers insertAnswers = new QueryAnswers();
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
+            //System.out.println("Materialising: ");
+            //getPattern().getPatterns().forEach(System.out::println);
+            //System.out.println();
             Set<Concept> insertedConcepts = insert.stream().collect(Collectors.toSet());
             if (atom.isUserDefinedName()) {
                 insertedConcepts.stream()
@@ -171,7 +192,6 @@ public class AtomicQuery extends Query{
 
             queryToMaterialise.removeAtom(atom);
             roleMaps.forEach( map -> {
-                //TODO doesn't update core atom
                 Relation relationWithRoles = new Relation(atom.getVarName(), relTypeId, map, queryToMaterialise);
                 queryToMaterialise.addAtom(relationWithRoles);
                 insertAnswers.addAll(queryToMaterialise.materialiseComplete());

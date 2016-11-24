@@ -243,6 +243,5 @@ public class AtomicTest extends AbstractEngineTest{
         Atomic resAtom2 = AtomicFactory
                 .create(qb.<MatchQuery>parse(nrecRelString).admin().getPattern().getPatterns().iterator().next()
                         , new Query(recRelString, graph));
-        System.out.println();
     }
 }

@@ -18,11 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
@@ -45,30 +43,30 @@ import java.util.stream.Collectors;
 
 public class PropertyMapper {
 
-    public static Set<Atomic> map(VarProperty prop, VarAdmin var, Query parent){
+    public static Set<Atomic> map(VarProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent){
         if(prop instanceof RelationProperty)
-            return map((RelationProperty)prop, var, parent);
+            return map((RelationProperty)prop, var, vars, parent);
         else if (prop instanceof IdProperty)
-            return map((IdProperty)prop, var, parent);
+            return map((IdProperty)prop, var, vars, parent);
         else if(prop instanceof ValueProperty)
-            return map((ValueProperty)prop, var, parent);
+            return map((ValueProperty)prop, var, vars, parent);
         else if (prop instanceof SubProperty)
-            return map((SubProperty)prop, var, parent);
+            return map((SubProperty)prop, var, vars, parent);
         else if (prop instanceof PlaysRoleProperty)
-            return map((PlaysRoleProperty)prop, var, parent);
+            return map((PlaysRoleProperty)prop, var, vars, parent);
         else if (prop instanceof HasResourceTypeProperty)
-            return map((HasResourceTypeProperty)prop, var, parent);
+            return map((HasResourceTypeProperty)prop, var, vars, parent);
         else if (prop instanceof IsaProperty)
-            return map((IsaProperty)prop, var, parent);
+            return map((IsaProperty)prop, var, vars, parent);
         else if (prop instanceof HasResourceProperty)
-            return map((HasResourceProperty)prop, var, parent);
+            return map((HasResourceProperty)prop, var, vars, parent);
         else
             throw new IllegalArgumentException(ErrorMessage.GRAQL_PROPERTY_NOT_MAPPED.getMessage(prop.toString()));
     }
 
     //TODO all these should eventually go into atom constructors
 
-    private static Set<Atomic> map(RelationProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(RelationProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         Set<RelationPlayer> relationPlayers = prop.getRelationPlayers().collect(Collectors.toSet());
         Var relVar = var.isUserDefinedName()? Graql.var(var.getName()) : Graql.var();
@@ -85,62 +83,43 @@ public class PropertyMapper {
         return atoms;
     }
 
-    private static Set<Atomic> map(IdProperty prop, VarAdmin var, Query parent) {
-        Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getName();
-        String type = prop.getId();
-        if (!type.isEmpty()) {
-            VarAdmin idVar = Graql.var(varName).id(type).admin();
-            atoms.add(new IdPredicate(idVar, parent));
-        }
-        return atoms;
+    private static Set<Atomic> map(IdProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+        return Sets.newHashSet(new IdPredicate(prop, var, parent));
     }
 
-    private static Set<Atomic> map(ValueProperty prop, VarAdmin var, Query parent) {
-        Set<Atomic> atoms = new HashSet<>();
-        VarAdmin valueVar = Graql.var(var.getName()).value(prop.getPredicate()).admin();
-        atoms.add(new ValuePredicate(valueVar, parent));
-        return atoms;
+    private static Set<Atomic> map(ValueProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+        return Sets.newHashSet(new ValuePredicate(prop, var, parent));
     }
 
-    private static Set<Atomic> map(SubProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(SubProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
-        VarAdmin baseVar = prop.getSuperType();
-        String valueVariable = baseVar.isUserDefinedName() ?
-                baseVar.getName() : varName + "-sub-" + UUID.randomUUID().toString();
+        VarAdmin typeVar = prop.getSuperType();
+        String typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getName() : varName + "-sub-" + UUID.randomUUID().toString();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        //id part
-        if (!baseVar.isUserDefinedName()) {
-            String type = prop.getSuperType().getId().orElse("");
-            VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
-            atoms.add(new IdPredicate(tVar, parent));
-        }
-        //isa part
-        VarAdmin resVar = Graql.var(varName).sub(Graql.var(valueVariable)).admin();
+        VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
         atoms.add(new TypeAtom(resVar, parent));
+        if (predicate != null) atoms.add(predicate);
         return atoms;
     }
 
-    private static Set<Atomic> map(PlaysRoleProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(PlaysRoleProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
-        VarAdmin baseVar = prop.getRole();
-        String valueVariable = baseVar.isUserDefinedName() ?
-                baseVar.getName() : varName + "-plays-role-" + UUID.randomUUID().toString();
-        //id part
-        if (!baseVar.isUserDefinedName()) {
-            String type = prop.getRole().getId().orElse("");
-            VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
-            atoms.add(new IdPredicate(tVar, parent));
-        }
-        //isa part
-        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(valueVariable)).admin();
+        VarAdmin typeVar = prop.getRole();
+        String typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getName() : varName + "-plays-role-" + UUID.randomUUID().toString();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+
+        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
         atoms.add(new TypeAtom(resVar, parent));
+        if (predicate != null) atoms.add(predicate);
         return atoms;
     }
 
-    private static Set<Atomic> map(HasResourceTypeProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(HasResourceTypeProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         String type = prop.getResourceType().getId().orElse("");
@@ -152,49 +131,76 @@ public class PropertyMapper {
         return atoms;
     }
 
-    private static Set<Atomic> map(IsaProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(IsaProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return atoms;
 
         String varName = var.getName();
-        VarAdmin baseVar = prop.getType();
-        String valueVariable = baseVar.isUserDefinedName() ?
-                baseVar.getName() : varName + "-type-" + UUID.randomUUID().toString();
+        VarAdmin typeVar = prop.getType();
+        String typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getName() : varName + "-type-" + UUID.randomUUID().toString();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        //id part
-        if (!baseVar.isUserDefinedName()) {
-            String type = prop.getType().getId().orElse("");
-            VarAdmin tVar = Graql.var(valueVariable).id(type).admin();
-            atoms.add(new IdPredicate(tVar, parent));
-        }
         //isa part
-        VarAdmin resVar = Graql.var(varName).isa(Graql.var(valueVariable)).admin();
-        atoms.add(new TypeAtom(resVar, parent));
+        VarAdmin resVar = Graql.var(varName).isa(Graql.var(typeVariable)).admin();
+        atoms.add(new TypeAtom(resVar, predicate, parent));
+        if (predicate != null) atoms.add(predicate);
         return atoms;
     }
 
-    private static Set<Atomic> map(HasResourceProperty prop, VarAdmin var, Query parent) {
+    private static Set<Atomic> map(HasResourceProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getName();
         Optional<String> type = prop.getType();
-
-        VarAdmin baseVar = prop.getResource();
-        String valueVariable = baseVar.isUserDefinedName() ?
-                baseVar.getName() : varName + "-" + type.orElse("") + "-" + UUID.randomUUID().toString();
+        VarAdmin valueVar = prop.getResource();
+        String valueVariable = valueVar.isUserDefinedName() ?
+                valueVar.getName() : varName + "-" + type.orElse("") + "-" + UUID.randomUUID().toString();
+        Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
+        atoms.addAll(predicates);
 
         //add resource atom
         Var resource = Graql.var(valueVariable);
         VarAdmin resVar = type
                 .map(t ->Graql.var(varName).has(t, resource))
                 .orElseGet(() -> Graql.var(varName).has(resource)).admin();
-        atoms.add(new Resource(resVar, parent));
-
-        //add value atom
-        baseVar.getProperties(ValueProperty.class).forEach(valProp -> {
-            VarAdmin resourceValueVar = Graql.var(valueVariable).value(valProp.getPredicate()).admin();
-            atoms.add(new ValuePredicate(resourceValueVar, parent));
-        });
+        //TODO!!! currently storing single predicate only
+        Predicate predicate = predicates.stream().findFirst().orElse(null);
+        atoms.add(new Resource(resVar, predicate, parent));
+        if (predicate != null) atoms.add(predicate);
         return atoms;
+    }
+
+    private static IdPredicate getIdPredicate(String typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, Query parent){
+        IdPredicate predicate = null;
+        //look for id predicate among vars
+        if(typeVar.isUserDefinedName()){
+            predicate = vars.stream()
+                    .filter(v -> v.getName().equals(typeVariable))
+                    .flatMap(v -> v.getProperties(IdProperty.class).map(vp -> new IdPredicate(vp, v, parent)))
+                    .findFirst().orElse(null);
+        }
+        else{
+            IdProperty idProp = typeVar.getProperty(IdProperty.class).orElse(null);
+            if (idProp != null) predicate = new IdPredicate(IdPredicate.createIdVar(typeVariable, idProp.getId()), parent);
+        }
+        return predicate;
+    }
+
+    private static Set<ValuePredicate> getValuePredicates(String valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, Query parent){
+        Set<ValuePredicate> predicates = new HashSet<>();
+        if(valueVar.isUserDefinedName()){
+            vars.stream()
+                    .filter(v -> v.getName().equals(valueVariable))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(vp, v, parent)))
+                    .forEach(predicates::add);
+        }
+        //add value atom
+        else {
+            valueVar.getProperties(ValueProperty.class)
+                    .forEach(vp -> predicates
+                            .add(new ValuePredicate(ValuePredicate.createValueVar(valueVariable, vp.getPredicate()), parent)));
+        }
+        return predicates;
     }
 }

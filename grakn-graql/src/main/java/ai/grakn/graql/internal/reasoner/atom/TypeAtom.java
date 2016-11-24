@@ -25,8 +25,9 @@ public class TypeAtom extends Binary{
 
     public TypeAtom(VarAdmin pattern) { this(pattern, null);}
     public TypeAtom(VarAdmin pattern, Query par) {
-        super(pattern, par);
+        this(pattern, null, par);
     }
+    public TypeAtom(VarAdmin pattern, Predicate p, Query par) { super(pattern, p, par);}
     private TypeAtom(TypeAtom a) { super(a);}
 
     @Override
