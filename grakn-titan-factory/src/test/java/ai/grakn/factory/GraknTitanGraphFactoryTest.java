@@ -295,26 +295,11 @@ public class GraknTitanGraphFactoryTest {
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
-
-                try {
-                    Thread.sleep((long) (Math.random() * 100));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                try {
-                    GraknTitanGraph graph = factory.getGraph(false);
-                    System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is using graph [" + graph.getTinkerPopGraph().hashCode() + "] with transaction [" + graph.getTinkerPopGraph().tx() + "]");
-                    assertFalse("Grakn graph is closed", graph.isClosed());
-                    assertFalse("Internal tinkerpop graph is closed", graph.getTinkerPopGraph().isClosed());
-                    graph.putEntityType("A Thing");
-                    graph.close();
-                } catch (IllegalStateException e){
-                    System.out.println("EXCEPTION Thread [" + Thread.currentThread().getId() + "] had an exception : [" + e.getMessage() + "]");
-                    System.exit(0);
-                    throw e;
-                }
-
+                GraknTitanGraph graph = factory.getGraph(false);
+                assertFalse("Grakn graph is closed", graph.isClosed());
+                assertFalse("Internal tinkerpop graph is closed", graph.getTinkerPopGraph().isClosed());
+                graph.putEntityType("A Thing");
+                graph.close();
             }));
         }
 
