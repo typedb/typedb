@@ -19,25 +19,26 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.GremlinQuery;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static ai.grakn.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -61,7 +62,9 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(
+            Optional<GraknGraph> optionalGraph, Optional<MatchOrder> order, boolean selectAll
+    ) {
         GraknGraph graph = optionalGraph.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
@@ -70,13 +73,13 @@ public class MatchQueryBase implements MatchQueryInternal {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));
         }
 
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversal();
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order, selectAll).getTraversal();
         return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
     }
 
     @Override
     public Set<Type> getTypes(GraknGraph graph) {
-        GremlinQuery gremlinQuery = getQuery(graph, Optional.empty());
+        GremlinQuery gremlinQuery = getQuery(graph, Optional.empty(), false);
         return gremlinQuery.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
     }
 
@@ -87,24 +90,15 @@ public class MatchQueryBase implements MatchQueryInternal {
 
     @Override
     public ImmutableSet<String> getSelectedNames() {
-        // Default selected names are all user defined variable names shared between disjunctions.
-        // For example, in a query of the form
-        // {..$x..$y..} or {..$x..}
-        // $x will appear in the results, but not $y because it is not guaranteed to appear in all disjunctions
+        return getCommonVariables().stream()
+                .filter(VarAdmin::isUserDefinedName)
+                .map(VarAdmin::getName)
+                .collect(toImmutableSet());
+    }
 
-        // Get conjunctions within disjunction
-        Set<Conjunction<VarAdmin>> conjunctions = pattern.getDisjunctiveNormalForm().getPatterns();
-
-        // Get all selected names from each conjunction
-        Stream<Set<String>> vars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
-
-        // Get the intersection of all conjunctions to find any variables shared between them
-        // This will fail if there are no conjunctions (so the query is empty)
-        Set<String> names = vars.reduce(Sets::intersection).orElseThrow(
-                () -> new RuntimeException(ErrorMessage.MATCH_NO_PATTERNS.getMessage())
-        );
-        
-        return ImmutableSet.copyOf(names);
+    @Override
+    public ImmutableSet<String> getAllVariableNames() {
+        return getCommonVariables().stream().map(VarAdmin::getName).collect(toImmutableSet());
     }
 
     @Override
@@ -123,15 +117,35 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     /**
-     * @param conjunction a conjunction containing variables
-     * @return all user-defined variable names in the given conjunction
+     * Get common variables across all disjunctions
      */
-    private Set<String> getDefinedNamesFromConjunction(Conjunction<VarAdmin> conjunction) {
-        return conjunction.getVars().stream()
-                .flatMap(var -> var.getInnerVars().stream())
-                .filter(VarAdmin::isUserDefinedName)
-                .map(VarAdmin::getName)
-                .collect(Collectors.toSet());
+    private Set<VarAdmin> getCommonVariables() {
+        // Default names are all variable names shared between disjunctions.
+        // For example, in a query of the form
+        // {..$x..$y..} or {..$x..}
+        // $x will appear in the results, but not $y because it is not guaranteed to appear in all disjunctions
+
+        // Get conjunctions within disjunction
+        Set<Conjunction<VarAdmin>> conjunctions = pattern.getDisjunctiveNormalForm().getPatterns();
+
+        // Get all variable names from each conjunction
+        Stream<Set<VarAdmin>> allVars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
+
+        // Get the intersection of all conjunctions to find any variables shared between them
+        // This will fail if there are no conjunctions (so the query is empty)
+        Set<VarAdmin> commonVars = allVars.reduce(Sets::intersection).orElseThrow(
+                () -> new RuntimeException(ErrorMessage.MATCH_NO_PATTERNS.getMessage())
+        );
+
+        return ImmutableSet.copyOf(commonVars);
+    }
+
+    /**
+     * @param conjunction a conjunction containing variables
+     * @return all variable names in the given conjunction
+     */
+    private Set<VarAdmin> getDefinedNamesFromConjunction(Conjunction<VarAdmin> conjunction) {
+        return conjunction.getVars().stream().flatMap(var -> var.getInnerVars().stream()).collect(toSet());
     }
 
     /**
@@ -139,8 +153,8 @@ public class MatchQueryBase implements MatchQueryInternal {
      * @param order an optional ordering of the query
      * @return the query that will match the specified patterns
      */
-    private GremlinQuery getQuery(GraknGraph graph, Optional<MatchOrder> order) {
-        return new GremlinQuery(graph, this.pattern, getSelectedNames(), order);
+    private GremlinQuery getQuery(GraknGraph graph, Optional<MatchOrder> order, boolean selectAll) {
+        return new GremlinQuery(graph, this.pattern, selectAll ? getAllVariableNames() : getSelectedNames(), order);
     }
 
     /**
@@ -149,10 +163,7 @@ public class MatchQueryBase implements MatchQueryInternal {
      * @return a map of concepts where the key is the variable name
      */
     private Map<String, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
-        return getSelectedNames().stream().collect(Collectors.toMap(
-                name -> name,
-                name -> graph.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))
-        ));
+        return Maps.transformValues(vertices, vertex -> graph.getConcept(vertex.value(ITEM_IDENTIFIER.name())));
     }
 }
 

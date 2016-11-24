@@ -45,8 +45,8 @@ abstract class MatchQueryModifier implements MatchQueryInternal {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order) {
-        return transformStream(inner.stream(graph, order));
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order, boolean selectAll) {
+        return transformStream(inner.stream(graph, order, selectAll(selectAll)));
     }
 
     @Override
@@ -74,6 +74,11 @@ abstract class MatchQueryModifier implements MatchQueryInternal {
         return inner.getSelectedNames();
     }
 
+    @Override
+    public final Set<String> getAllVariableNames() {
+        return inner.getAllVariableNames();
+    }
+
     /**
      * Transform the given stream. This should be overridden in subclasses to perform modifier behaviour.
      * The default implementation returns the stream unmodified.
@@ -82,6 +87,10 @@ abstract class MatchQueryModifier implements MatchQueryInternal {
      */
     protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
         return stream;
+    }
+
+    protected boolean selectAll(boolean selectAll) {
+        return selectAll;
     }
 
     /**

@@ -77,7 +77,7 @@ public class GremlinQuery {
         this.names = names;
         this.order = order;
 
-        innerQueries = patterns.stream().map(ConjunctionQuery::new).collect(toList());
+        innerQueries = patterns.stream().map(p -> new ConjunctionQuery(p, names)).collect(toList());
     }
 
     /**

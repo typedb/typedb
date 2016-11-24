@@ -24,10 +24,16 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.RelationPlayer;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -603,6 +609,52 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testQueryDoesNotCrash() {
         qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); select $a1, $a2;").execute();
+    }
+
+    @Test
+    public void testGetAllVariables() {
+        Var var = var().rel("actor", "x").rel("y").isa("has-cast");
+        MatchQuery query = qb.match(var);
+
+        String relName = var.admin().getName();
+        String hasCast = var.admin().getProperty(IsaProperty.class).get().getType().getName();
+        RelationProperty relationProperty = var.admin().getProperty(RelationProperty.class).get();
+        String actor = relationProperty.getRelationPlayers()
+                .map(RelationPlayer::getRoleType)
+                .flatMap(CommonUtil::optionalToStream)
+                .findAny().get().getName();
+
+        Set<String> vars = ImmutableSet.of("x", "y", relName, hasCast, actor);
+
+        assertEquals(vars, query.admin().getAllVariableNames());
+    }
+
+    @Test
+    public void testSelectAllVariables() {
+        Var var = var().rel("actor", "x").rel("y").isa("has-cast");
+        MatchQuery query = qb.match(var);
+
+        String relName = var.admin().getName();
+        String hasCast = var.admin().getProperty(IsaProperty.class).get().getType().getName();
+        RelationProperty relationProperty = var.admin().getProperty(RelationProperty.class).get();
+        String actor = relationProperty.getRelationPlayers()
+                .map(RelationPlayer::getRoleType)
+                .flatMap(CommonUtil::optionalToStream)
+                .findAny().get().getName();
+
+        Set<String> vars = query.admin().getAllVariableNames();
+
+        assertFalse(query.select(vars).execute().isEmpty());
+
+        query.select(vars).forEach(result -> {
+            assertEquals(vars, result.keySet());
+            assertTrue(result.get("x").isEntity());
+            assertTrue(result.get("y").isEntity());
+            assertTrue(result.get(relName).isRelation());
+            assertTrue(result.get(hasCast).isRelationType());
+            assertEquals("actor", result.get(actor).getId());
+            assertEquals("has-cast", result.get(hasCast).getId());
+        });
     }
 
     @Test(expected = IllegalArgumentException.class)
