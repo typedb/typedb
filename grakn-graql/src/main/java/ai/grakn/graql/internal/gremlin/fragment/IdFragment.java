@@ -37,7 +37,7 @@ class IdFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         // Whenever looking up by ID, we have to confirm this is not a casting
-        traversal.hasId(id).not(__.hasLabel(CASTING.name()));
+        traversal.hasId(Long.valueOf(id)).not(__.hasLabel(CASTING.name()));
     }
 
     @Override
