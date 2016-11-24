@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
 
 /**
  * OLAP computations that can be applied to a Grakn Graph. The current implementation uses the SparkGraphComputer
@@ -69,19 +70,19 @@ public class Analytics {
     /**
      * The concept type ids that define which instances appear in the subgraph.
      */
-    private final Set<String> subtypes = new HashSet<>();
-    private final Map<String, String> resourceTypes = new HashMap<>();
-    private final Set<String> statisticsResourceTypes = new HashSet<>();
+    private final Set<String> subtypeNames = new HashSet<>();
+    private final Map<String, String> resourceTypeNames = new HashMap<>();
+    private final Set<String> statisticsResourceTypeNames = new HashSet<>();
 
     /**
      * Create a graph computer from a Grakn Graph. The computer operates on the instances of the types provided in
-     * the <code>subtypes</code> argument. All subtypes of the given types are included when deciding whether to
+     * the <code>subtypeNames</code> argument. All subtypeNames of the given types are included when deciding whether to
      * include an instance.
      *
-     * @param subTypeIds                the set of type ids the computer will use to filter instances
-     * @param statisticsResourceTypeIds the set of resource type ids statistics will be working on
+     * @param subTypeNames                the set of type names the computer will use to filter instances
+     * @param statisticsResourceTypeNames the set of resource type ids statistics will be working on
      */
-    public Analytics(String keySpace, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
+    public Analytics(String keySpace, Set<String> subTypeNames, Set<String> statisticsResourceTypeNames) {
         this.keySpace = keySpace;
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
@@ -93,56 +94,36 @@ public class Analytics {
         }
 
         // fetch all the types
-        Set<Type> subtypes = subTypeIds.stream().map((id) -> {
-            Type type = graph.getType(id);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(id));
+        Set<Type> subtypes = subTypeNames.stream().map((name) -> {
+            Type type = graph.getType(name);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(name));
             return type;
         }).collect(Collectors.toSet());
-        Set<Type> statisticsResourceTypes = statisticsResourceTypeIds.stream().map((id) -> {
-            Type type = graph.getType(id);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(id));
+        Set<Type> statisticsResourceTypes = statisticsResourceTypeNames.stream().map((name) -> {
+            Type type = graph.getType(name);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(name));
             return type;
         }).collect(Collectors.toSet());
 
         // collect resource-types for statistics
-        graph.getMetaResourceType().instances()
-                .forEach(type -> resourceTypes.put(type.getId(), type.asResourceType().getDataType().getName()));
+        graph.getMetaResourceType().instances().stream()
+                .map(Concept::asResourceType)
+                .forEach(type -> resourceTypeNames.put(type.getName(), type.getDataType().getName()));
 
         if (subtypes.isEmpty()) {
-
-            // collect meta-types to exclude them as they do not have instances
-            Set<Concept> excludedTypes = new HashSet<>();
-            excludedTypes.add(graph.getMetaType());
-            excludedTypes.add(graph.getMetaEntityType());
-            excludedTypes.add(graph.getMetaRelationType());
-            excludedTypes.add(graph.getMetaResourceType());
-            excludedTypes.add(graph.getMetaRoleType());
-            excludedTypes.add(graph.getMetaRuleType());
-
-            // collect role-types to exclude them because the user does not see castings
-            excludedTypes.addAll(graph.getMetaRoleType().instances());
-            excludedTypes.addAll(graph.getMetaRuleType().instances());
-
-            // collect analytics resource types to exclude
-            CommonOLAP.analyticsElements.stream()
-                    .filter(element -> graph.getType(element) != null)
-                    .map(graph::getType)
-                    .forEach(excludedTypes::add);
-
-            // fetch all types
-            graph.getMetaType().instances().stream()
-                    .filter(concept -> !excludedTypes.contains(concept))
-                    .map(Concept::asType)
-                    .forEach(type -> this.subtypes.add(type.getId()));
+            graph.getMetaEntityType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.getMetaResourceType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.getMetaRelationType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            this.subtypeNames.removeAll(analyticsElements);
         } else {
             for (Type t : subtypes) {
-                t.subTypes().forEach(subtype -> this.subtypes.add(subtype.getId()));
+                t.subTypes().forEach(subtype -> this.subtypeNames.add(subtype.getName()));
             }
         }
 
         if (!statisticsResourceTypes.isEmpty()) {
             for (Type t : statisticsResourceTypes) {
-                t.subTypes().forEach(subtype -> this.statisticsResourceTypes.add(subtype.getId()));
+                t.subTypes().forEach(subtype -> this.statisticsResourceTypeNames.add(subtype.getName()));
             }
         }
     }
@@ -156,7 +137,7 @@ public class Analytics {
         LOGGER.info("CountMapReduce is called");
         GraknComputer computer = getGraphComputer();
         if (!selectedTypesHaveInstance()) return 0L;
-        ComputerResult result = computer.compute(new CountMapReduce(subtypes));
+        ComputerResult result = computer.compute(new CountMapReduce(subtypeNames));
         Map<String, Long> count = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("CountMapReduce is done");
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
@@ -169,17 +150,17 @@ public class Analytics {
      */
     public Optional<Number> min() {
         LOGGER.info("MinMapReduce is called");
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
-        Set<String> allSubtypes = statisticsResourceTypes.stream()
+        Set<String> allSubtypes = statisticsResourceTypeNames.stream()
                 .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
-        allSubtypes.addAll(subtypes);
-        allSubtypes.addAll(statisticsResourceTypes);
+        allSubtypes.addAll(subtypeNames);
+        allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
-                new MinMapReduce(statisticsResourceTypes, dataType));
+                new MinMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("MinMapReduce is done");
         return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
@@ -192,17 +173,17 @@ public class Analytics {
      */
     public Optional<Number> max() {
         LOGGER.info("MaxMapReduce is called");
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
-        Set<String> allSubtypes = statisticsResourceTypes.stream()
+        Set<String> allSubtypes = statisticsResourceTypeNames.stream()
                 .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
-        allSubtypes.addAll(subtypes);
-        allSubtypes.addAll(statisticsResourceTypes);
+        allSubtypes.addAll(subtypeNames);
+        allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
-                new MaxMapReduce(statisticsResourceTypes, dataType));
+                new MaxMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("MaxMapReduce is done");
         return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
@@ -215,17 +196,17 @@ public class Analytics {
      */
     public Optional<Number> sum() {
         LOGGER.info("SumMapReduce is called");
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
-        Set<String> allSubtypes = statisticsResourceTypes.stream()
+        Set<String> allSubtypes = statisticsResourceTypeNames.stream()
                 .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
-        allSubtypes.addAll(subtypes);
-        allSubtypes.addAll(statisticsResourceTypes);
+        allSubtypes.addAll(subtypeNames);
+        allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
-                new SumMapReduce(statisticsResourceTypes, dataType));
+                new SumMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("SumMapReduce is done");
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
@@ -238,17 +219,17 @@ public class Analytics {
      */
     public Optional<Double> mean() {
         LOGGER.info("MeanMapReduce is called");
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
-        Set<String> allSubtypes = statisticsResourceTypes.stream()
+        Set<String> allSubtypes = statisticsResourceTypeNames.stream()
                 .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
-        allSubtypes.addAll(subtypes);
-        allSubtypes.addAll(statisticsResourceTypes);
+        allSubtypes.addAll(subtypeNames);
+        allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
-                new MeanMapReduce(statisticsResourceTypes, dataType));
+                new MeanMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> mean = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
         LOGGER.info("MeanMapReduce is done");
@@ -262,17 +243,17 @@ public class Analytics {
      */
     public Optional<Number> median() {
         LOGGER.info("MedianVertexProgram is called");
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
-        Set<String> allSubtypes = statisticsResourceTypes.stream()
+        Set<String> allSubtypes = statisticsResourceTypeNames.stream()
                 .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
-        allSubtypes.addAll(subtypes);
-        allSubtypes.addAll(statisticsResourceTypes);
+        allSubtypes.addAll(subtypeNames);
+        allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(
-                new MedianVertexProgram(allSubtypes, statisticsResourceTypes, dataType));
+                new MedianVertexProgram(allSubtypes, statisticsResourceTypeNames, dataType));
         LOGGER.info("MedianMapReduce is done");
         return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
     }
@@ -284,17 +265,17 @@ public class Analytics {
      */
     public Optional<Double> std() {
         LOGGER.info("StdMapReduce is called");
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
-        Set<String> allSubtypes = statisticsResourceTypes.stream()
+        Set<String> allSubtypes = statisticsResourceTypeNames.stream()
                 .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
-        allSubtypes.addAll(subtypes);
-        allSubtypes.addAll(statisticsResourceTypes);
+        allSubtypes.addAll(subtypeNames);
+        allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
-                new StdMapReduce(statisticsResourceTypes, dataType));
+                new StdMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
@@ -317,8 +298,8 @@ public class Analytics {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
         if (sourceId.equals(destinationId)) return Collections.singletonList(graph.getConcept(sourceId));
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypes, sourceId, destinationId),
-                new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.FOUND_IN_ITERATION));
+        ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypeNames, sourceId, destinationId),
+                new ClusterMemberMapReduce(subtypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         Map<Integer, Set<String>> map = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
 
         List<String> path = new ArrayList<>();
@@ -342,8 +323,8 @@ public class Analytics {
         LOGGER.info("ConnectedComponentsVertexProgram is called");
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
-                new ClusterMemberMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+        ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypeNames),
+                new ClusterMemberMapReduce(subtypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         LOGGER.info("ConnectedComponentsVertexProgram is done");
         return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
@@ -357,8 +338,8 @@ public class Analytics {
         LOGGER.info("ConnectedComponentsVertexProgram is called");
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
-                new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+        ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypeNames),
+                new ClusterSizeMapReduce(subtypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         LOGGER.info("ConnectedComponentsVertexProgram is done");
         return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
@@ -368,7 +349,7 @@ public class Analytics {
      */
     public Map<String, Long> connectedComponentsAndPersist() {
         LOGGER.info("ConnectedComponentsVertexProgram is called");
-        if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
+        if (!Sets.intersection(subtypeNames, analyticsElements).isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
@@ -377,8 +358,8 @@ public class Analytics {
             waitOnMutateResourceOntology(connectedComponent);
 
             GraknComputer computer = getGraphComputer();
-            ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes, keySpace),
-                    new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+            ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypeNames, keySpace),
+                    new ClusterSizeMapReduce(subtypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
             LOGGER.info("ConnectedComponentsVertexProgram is done");
             return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         }
@@ -393,8 +374,8 @@ public class Analytics {
     public Map<Long, Set<String>> degrees() {
         LOGGER.info("DegreeVertexProgram is called");
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes),
-                new DegreeDistributionMapReduce(subtypes));
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypeNames),
+                new DegreeDistributionMapReduce(subtypeNames));
         LOGGER.info("DegreeVertexProgram is done");
         return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
@@ -407,7 +388,7 @@ public class Analytics {
      */
     private void degreesAndPersist(String resourceType) {
         LOGGER.info("DegreeVertexProgram is called");
-        if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
+        if (!Sets.intersection(subtypeNames, analyticsElements).isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
@@ -416,7 +397,7 @@ public class Analytics {
         waitOnMutateResourceOntology(resourceType);
 
         GraknComputer computer = getGraphComputer();
-        computer.compute(new DegreeAndPersistVertexProgram(subtypes, keySpace));
+        computer.compute(new DegreeAndPersistVertexProgram(subtypeNames, keySpace));
         LOGGER.info("DegreeVertexProgram is done");
     }
 
@@ -430,17 +411,17 @@ public class Analytics {
 
     /**
      * Add the analytics elements to the ontology of the graph specified in <code>keySpace</code>. The ontology elements
-     * are related to the resource type <code>resourceTypeId</code> used to persist data computed by analytics.
+     * are related to the resource type <code>resourceTypeName</code> used to persist data computed by analytics.
      *
-     * @param resourceTypeId   the ID of a resource type used to persist information
+     * @param resourceTypeName   the ID of a resource type used to persist information
      * @param resourceDataType the datatype of the resource type
      */
-    private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
+    private void mutateResourceOntology(String resourceTypeName, ResourceType.DataType resourceDataType) {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
 
-        ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
+        ResourceType resource = graph.putResourceType(resourceTypeName, resourceDataType);
 
-        for (String type : subtypes) {
+        for (String type : subtypeNames) {
             graph.getType(type).hasResource(resource);
         }
 
@@ -479,7 +460,7 @@ public class Analytics {
             RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId));
             if (relationType == null) continue;
 
-            for (String type : subtypes) {
+            for (String type : subtypeNames) {
                 Collection<RoleType> roles = graph.getType(type).playsRoles();
                 if (!roles.contains(degreeOwner)) {
                     isOntologyComplete = false;
@@ -502,13 +483,13 @@ public class Analytics {
         String dataType = null;
         for (String type : types) {
             // check if the selected type is a resource-type
-            if (!resourceTypes.containsKey(type))
+            if (!resourceTypeNames.containsKey(type))
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
 
             if (dataType == null) {
                 // check if the resource-type has data-type LONG or DOUBLE
-                dataType = resourceTypes.get(type);
+                dataType = resourceTypeNames.get(type);
 
                 if (!dataType.equals(ResourceType.DataType.LONG.getName()) &&
                         !dataType.equals(ResourceType.DataType.DOUBLE.getName()))
@@ -517,7 +498,7 @@ public class Analytics {
 
             } else {
                 // check if all the resource-types have the same data-type
-                if (!dataType.equals(resourceTypes.get(type)))
+                if (!dataType.equals(resourceTypeNames.get(type)))
                     throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                             .getMessage(this.getClass().toString()));
             }
@@ -531,18 +512,18 @@ public class Analytics {
 
         List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
                 .map(type -> var("x").has(type)).collect(Collectors.toList());
-        List<Pattern> checkSubtypes = subtypes.stream()
+        List<Pattern> checkSubtypes = subtypeNames.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
         return graph.graql().match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 
     private boolean selectedTypesHaveInstance() {
-        if (subtypes.isEmpty()) return false;
+        if (subtypeNames.isEmpty()) return false;
 
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
-        List<Pattern> checkSubtypes = subtypes.stream()
+        List<Pattern> checkSubtypes = subtypeNames.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
         return graph.graql().match(or(checkSubtypes)).ask().execute();
@@ -556,7 +537,7 @@ public class Analytics {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
         for (String id : ids) {
             Concept concept = graph.getConcept(id);
-            if (concept == null || !subtypes.contains(concept.type().getId())) return false;
+            if (concept == null || !subtypeNames.contains(concept.type().getName())) return false;
         }
         return true;
     }
