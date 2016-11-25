@@ -202,21 +202,21 @@ public class OWLMigrator {
     }
     
     public RoleType subjectRole(RelationType relType) {
-        return graph.putRoleType(namer.subjectRole(relType.getId()));
+        return graph.putRoleType(namer.subjectRole(relType.getName()));
     }
 
     public RoleType objectRole(RelationType relType) {
-        return graph.putRoleType(namer.objectRole(relType.getId()));
+        return graph.putRoleType(namer.objectRole(relType.getName()));
     }
 
     public RoleType entityRole(EntityType entityType, ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getId()));
+        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getName()));
         entityType.playsRole(roleType);
         return roleType;
     }
     
     public RoleType resourceRole(ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getId()));
+        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getName()));
         resourceType.playsRole(roleType);
         return roleType;
     }

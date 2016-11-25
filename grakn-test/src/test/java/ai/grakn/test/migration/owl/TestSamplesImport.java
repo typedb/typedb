@@ -17,19 +17,18 @@
  */
 package ai.grakn.test.migration.owl;
 
-import java.util.Optional;
-
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
 import org.junit.Test;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
+import java.util.Optional;
 
 /**
  * Load and verify the ontology from the test sample resources. 
@@ -84,7 +83,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(type);
             Assert.assertNull(migrator.graph().getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
             Assert.assertNotNull(type.superType());
-            Assert.assertEquals("tPerson", type.superType().getId());
+            Assert.assertEquals("tPerson", type.superType().getName());
             Assert.assertEquals(top, type.superType().superType());
             Assert.assertTrue(top.subTypes().contains(migrator.graph().getEntityType("tPlace")));
             Assert.assertNotEquals(0, type.instances().size());
