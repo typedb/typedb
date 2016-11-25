@@ -109,7 +109,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             if (inner) {
                 sb.append("{");
                 collection.stream().findFirst().ifPresent(item -> graqlString(true, item).apply(sb));
-                collection.stream().skip(1).forEach(item -> graqlString(true, item).apply(sb));
+                collection.stream().skip(1).forEach(item -> graqlString(true, item).apply(sb.append(", ")));
                 sb.append("}");
             } else {
                 collection.forEach(item -> graqlString(true, item).apply(sb).append("\n"));
@@ -143,7 +143,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
         if (object instanceof Map.Entry<?, ?>) {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) object;
             return graqlString(true, entry.getKey())
-                    .andThen(sb -> sb.append(":\t"))
+                    .andThen(sb -> sb.append(": "))
                     .andThen(graqlString(true, entry.getValue()));
         } else {
             return sb -> sb.append(object.toString());
