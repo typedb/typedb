@@ -62,7 +62,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         synchronized (graph) {
             if (!graph.tx().isOpen()) {
                 graph.tx().open();
-                System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
+                System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
                         "transaction on graph [" + graph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) graph).getOpenTransactions().size() + "]");
             }
             return graph;

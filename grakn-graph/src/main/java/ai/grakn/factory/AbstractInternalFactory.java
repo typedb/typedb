@@ -66,12 +66,12 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, batchLoading);
             lastGraphBuiltBatchLoading = true;
-            System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + batchLoadingGraknGraph.getTinkerPopGraph().hashCode() +"]");
+            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + batchLoadingGraknGraph.getTinkerPopGraph().hashCode() +"]");
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, batchLoading);
             lastGraphBuiltBatchLoading = false;
-            System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + graknGraph.getTinkerPopGraph().hashCode() +"]");
+            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + graknGraph.getTinkerPopGraph().hashCode() +"]");
             return graknGraph;
         }
     }

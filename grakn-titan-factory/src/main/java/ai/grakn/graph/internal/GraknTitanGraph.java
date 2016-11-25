@@ -43,7 +43,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
         synchronized (graph) { //Have to block here because the list of open transactions in Titan is not thread safe.
             graph.tx().close();
-            System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] closed transaction on [" + graph.hashCode() + "] number is now [" + graph.getOpenTransactions().size() + "]");
+            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] closed transaction on [" + graph.hashCode() + "] number is now [" + graph.getOpenTransactions().size() + "]");
             if (graph.getOpenTransactions().isEmpty()) {
                 //synchronized (this) { //Block on the main graph because we are about to make it unusable, so the factory should know about this.
                     closePermanent();
