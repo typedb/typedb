@@ -287,7 +287,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testNegativeAskQuery() {
-        assertFalse(qb.<AskQuery>parse("match $x isa movie id 'Dogfather'; ask;").execute());
+        assertFalse(qb.<AskQuery>parse("match $x isa movie type-name 'Dogfather'; ask;").execute());
     }
 
     @Test
