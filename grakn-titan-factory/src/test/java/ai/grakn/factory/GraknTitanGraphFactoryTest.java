@@ -218,7 +218,7 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
                     graph.putEntityType("A Thing");
                     graph.close();
                 } catch(IllegalStateException e){
-                    System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] got exception: " + e.getMessage());
+                    System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] got exception: " + e.getMessage());
                     e.printStackTrace();
                     System.exit(0);
 
