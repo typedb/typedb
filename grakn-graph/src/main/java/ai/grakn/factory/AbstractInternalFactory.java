@@ -101,7 +101,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace))
             	systemSpace().keyspaceOpened(this.keyspace);
         } else {
-            synchronized (graknGraph) {
+            //synchronized (graknGraph) {
                 if (graknGraph.isClosed()) {
                     graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
                 } else {
@@ -115,7 +115,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                         }
                     }
                 }
-            }
+            //}
         }
 
         return graknGraph;

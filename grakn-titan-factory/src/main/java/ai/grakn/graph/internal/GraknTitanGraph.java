@@ -45,9 +45,14 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
             graph.tx().close();
             System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] closed transaction on [" + graph.hashCode() + "] number is now [" + graph.getOpenTransactions().size() + "]");
             if (graph.getOpenTransactions().isEmpty()) {
-                synchronized (this) { //Block on the main graph because we are about to make it unusable, so the factory should know about this.
+                //synchronized (this) { //Block on the main graph because we are about to make it unusable, so the factory should know about this.
                     closePermanent();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
+                //}
             }
         }
     }
