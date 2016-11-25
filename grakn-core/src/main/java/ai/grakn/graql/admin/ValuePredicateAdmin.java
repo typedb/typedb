@@ -19,11 +19,11 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Admin class for inspecting a ValuePredicate
@@ -36,26 +36,25 @@ public interface ValuePredicateAdmin extends ValuePredicate {
     }
 
     /**
-     * @return whether this atom is specific (e.g. "eq" is specific, "regex" is not)
+     * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
      */
     default boolean isSpecific() {
         return false;
     }
 
     /**
-     * @return the value comparing against, if this is an "equality" atom, otherwise nothing
+     * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
      */
     default Optional<Object> equalsValue() {
         return Optional.empty();
     }
 
     /**
-     * @return all values referred to in the atom (including within 'ors' and 'ands')
+     * @return the gremlin predicate object this ValuePredicate wraps
      */
-    Set<Object> getInnerValues();
+    Optional<P<Object>> getPredicate();
 
-    /**
-     * @return the gremlin atom object this ValuePredicate wraps
-     */
-    P<Object> getPredicate();
+    Optional<VarAdmin> getInnerVar();
+
+    void applyPredicate(GraphTraversal<Vertex, Vertex> traversal);
 }

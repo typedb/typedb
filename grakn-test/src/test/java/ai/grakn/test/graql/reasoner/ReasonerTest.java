@@ -406,17 +406,6 @@ public class ReasonerTest extends AbstractEngineTest{
     }
 
     @Test
-    public void testAndOrValuePredicate(){
-        GraknGraph graph = SNBGraph.getGraph();
-        String queryString = "match $y isa person;$y has age >18 and <25;";
-        String explicitQuery = "match $y isa person;$y has name 'Bob';";
-        MatchQuery query = new Query(queryString, graph);
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-    }
-
-    @Test
     @Ignore
     public void testAllVarsRelation(){
         GraknGraph lgraph = GeoGraph.getGraph();

@@ -30,18 +30,6 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 public interface ValuePredicate {
 
     /**
-     * @param other the other atom
-     * @return a atom that returns true when both predicates are true
-     */
-    ValuePredicate and(ValuePredicate other);
-
-    /**
-     * @param other the other atom
-     * @return a atom that returns true when either atom is true
-     */
-    ValuePredicate or(ValuePredicate other);
-
-    /**
      * @return an Admin class allowing inspection of this atom
      */
     ValuePredicateAdmin admin();

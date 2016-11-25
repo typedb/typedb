@@ -22,7 +22,10 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
+
+import java.util.stream.Stream;
 
 public class ValueProperty extends AbstractVarProperty implements NamedProperty, SingleFragmentProperty {
 
@@ -56,6 +59,11 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty,
         if (!predicate.equalsValue().isPresent()) {
             throw new IllegalStateException(ErrorMessage.INSERT_PREDICATE.getMessage());
         }
+    }
+
+    @Override
+    public Stream<VarAdmin> getInnerVars() {
+        return CommonUtil.optionalToStream(predicate.getInnerVar());
     }
 
     @Override

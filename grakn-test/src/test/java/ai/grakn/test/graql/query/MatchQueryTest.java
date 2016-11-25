@@ -44,9 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.all;
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.any;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
@@ -128,8 +126,13 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testPredicateQuery1() {
         MatchQuery query = qb.match(
-                var("x").isa("movie")
-                        .has("title", any(lt("Juno").and(gt("Godfather")), eq("Apocalypse Now"), eq("Spy")).and(neq("Apocalypse Now")))
+                var("x").isa("movie").has("title", var("t")),
+                or(
+                        var("t").value(eq("Apocalypse Now")),
+                        and(var("t").value(lt("Juno")), var("t").value(gt("Godfather"))),
+                        var("t").value(eq("Spy"))
+                ),
+                var("t").value(neq("Apocalypse Now"))
         );
 
         QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Hocus Pocus", "Heat", "Spy");
@@ -138,7 +141,11 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testPredicateQuery2() {
         MatchQuery query = qb.match(
-                var("x").isa("movie").has("title", all(lte("Juno"), gte("Godfather"), neq("Heat")).or(eq("The Muppets")))
+                var("x").isa("movie").has("title", var("t")),
+                or(
+                        and(var("t").value(lte("Juno")), var("t").value(gte("Godfather")), var("t").value(neq("Heat"))),
+                        var("t").value("The Muppets")
+                )
         );
 
         QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Hocus Pocus", "Godfather", "The Muppets");
@@ -264,7 +271,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testGlobalPredicateQuery() {
         Stream<Concept> query = qb.match(
-                var("x").value(gt(500L).and(lt(1000000L)))
+                var("x").value(gt(500L)),
+                var("x").value(lt(1000000L))
         ).get("x");
 
         // Results will contain any numbers greater than 500, but no strings
@@ -556,6 +564,32 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
         // We expect there to be a result for every distinct pair of concepts
         assertEquals(numConcepts * (numConcepts - 1), pairs.stream().count());
+    }
+
+    @Test
+    public void testAllGreaterThanResources() {
+        MatchQuery query = qb.match(var("x").value(gt(var("y"))));
+
+        List<Map<String, Concept>> results = query.execute();
+
+        assertTrue(String.valueOf(results.size()), results.size() > 10);
+
+        results.forEach(result -> {
+            //noinspection unchecked
+            Comparable<Comparable<?>> x = (Comparable<Comparable<?>>) result.get("x").asResource().getValue();
+            Comparable<?> y = (Comparable<?>) result.get("y").asResource().getValue();
+            assertTrue(x.toString() + " <= " + y.toString(), x.compareTo(y) > 0);
+        });
+    }
+
+    @Test
+    public void testMoviesReleasedBeforeTheMuppets() {
+        MatchQuery query = qb.match(
+                var("x").has("release-date", lt(var("r"))),
+                var().has("title", "The Muppets").has("release-date", var("r"))
+        );
+
+        QueryUtil.assertResultsMatch(query, "x", "movie", graph.getResourceType("title"), "Godfather");
     }
 
     @Test

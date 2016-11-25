@@ -23,6 +23,7 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
 
@@ -89,8 +90,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
     @Override
     public String getPredicateValue() {
-        if (predicate.getPredicate().getValue() == null) return "";
-        else return predicate.getPredicate().getValue().toString();
+        return predicate.getPredicate().map(P::getValue).map(Object::toString).orElse("");
     }
 
     @Override

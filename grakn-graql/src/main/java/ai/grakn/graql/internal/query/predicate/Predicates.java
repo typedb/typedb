@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.ValuePredicate;
+import ai.grakn.graql.admin.VarAdmin;
 
 public class Predicates {
 
@@ -37,16 +37,32 @@ public class Predicates {
         return new LtPredicate(value);
     }
 
+    public static ValuePredicate lt(VarAdmin var) {
+        return new LtPredicate(var);
+    }
+
     public static ValuePredicate lte(Object value) {
         return new LtePredicate(value);
+    }
+
+    public static ValuePredicate lte(VarAdmin var) {
+        return new LtePredicate(var);
     }
 
     public static ValuePredicate gt(Object value) {
         return new GtPredicate(value);
     }
 
+    public static ValuePredicate gt(VarAdmin var) {
+        return new GtPredicate(var);
+    }
+
     public static ValuePredicate gte(Object value) {
         return new GtePredicate(value);
+    }
+
+    public static ValuePredicate gte(VarAdmin var) {
+        return new GtePredicate(var);
     }
 
     public static ValuePredicate eq(Object value) {
@@ -55,5 +71,9 @@ public class Predicates {
 
     public static ValuePredicate contains(String substring) {
         return new ContainsPredicate(substring);
+    }
+
+    public static ValuePredicate contains(VarAdmin var) {
+        return new ContainsPredicate(var);
     }
 }

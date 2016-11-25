@@ -18,24 +18,32 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
+import ai.grakn.graql.admin.VarAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 class ContainsPredicate extends ComparatorPredicate {
 
     /**
-     * @param substring the value that this atom is testing against
+     * @param substring the value that this predicate is testing against
      */
     ContainsPredicate(String substring) {
         super(substring);
     }
 
-    @Override
-    public P<Object> getPredicate() {
-        return new P<>((value, s) -> ((String) value).contains((String) s), value);
+    /**
+     * @param var the variable that this predicate is testing against
+     */
+    ContainsPredicate(VarAdmin var) {
+        super(var);
     }
 
     @Override
     protected String getSymbol() {
         return "contains";
+    }
+
+    @Override
+    <V> P<V> gremlinPredicate(V value) {
+        return new P<>((v, s) -> ((String) v).contains((String) s), value);
     }
 }
