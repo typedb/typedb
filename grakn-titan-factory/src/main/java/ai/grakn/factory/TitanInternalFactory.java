@@ -83,6 +83,13 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         TitanGraph titanGraph = configureGraph(name, address, pathToConfig);
         buildTitanIndexes(titanGraph);
         titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+
+        if (!graph.tx().isOpen()) {
+            graph.tx().open();
+            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
+                    "transaction on NEW graph [" + graph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) graph).getOpenTransactions().size() + "]");
+        }
+
         return titanGraph;
     }
 
