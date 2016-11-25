@@ -63,6 +63,13 @@ public abstract class AtomBase implements Atomic{
         return Sets.newHashSet(varName);
     }
 
+    public Set<String> getSelectedNames(){
+         Set<String> vars = getParentQuery().getSelectedNames();
+        vars.retainAll(getVarNames());
+        return vars;
+    }
+    public boolean isValueUserDefinedName(){ return false;}
+
     public PatternAdmin getPattern(){ return atomPattern;}
 
     public Query getParentQuery(){

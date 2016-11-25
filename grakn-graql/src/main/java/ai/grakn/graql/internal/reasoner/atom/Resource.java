@@ -21,6 +21,8 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Resource extends Binary{
 
@@ -41,6 +43,13 @@ public class Resource extends Binary{
     }
 
     @Override
+    protected String extractTypeId(VarAdmin var) {
+        HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
+        return resProp != null? resProp.getType().orElse("") : "";
+    }
+
+
+    @Override
     protected String extractValueVariableName(VarAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarAdmin resVar = prop.getResource();
@@ -49,7 +58,7 @@ public class Resource extends Binary{
 
     @Override
     protected void setValueVariable(String var) {
-        valueVariable = var;
+        super.setValueVariable(var);
         atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setName(var));
     }
 
@@ -60,4 +69,14 @@ public class Resource extends Binary{
 
     @Override
     public boolean isResource(){ return true;}
+    @Override
+    public boolean isSelectable(){ return true;}
+
+    //TODO fix the single predicate
+    @Override
+    public Set<Predicate> getValuePredicates(){
+        return getParentQuery().getValuePredicates().stream()
+                .filter(atom -> atom.getVarName().equals(getValueVariable()))
+                .collect(Collectors.toSet());
+    }
 }

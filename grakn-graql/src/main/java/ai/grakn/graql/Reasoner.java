@@ -222,14 +222,16 @@ public class Reasoner {
                 }
 
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
-                                        .filterVars(atomicQuery.getSelectedNames());
+                        .filterVars(atomicQuery.getSelectedNames())
+                        .filterKnown(atomicQuery.getAnswers());;
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource()
                         || atom.isUserDefinedName() && atom.isRelation() )
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
                 if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
 
-                QueryAnswers filteredAnswers = answers.filterIncomplete(atomicQuery.getSelectedNames());
+                QueryAnswers filteredAnswers = answers.filterVars(atomicQuery.getSelectedNames())
+                        .filterIncomplete(atomicQuery.getSelectedNames());
                 atomicQuery.getAnswers().addAll(filteredAnswers);
                 recordAnswers(atomicQuery, matAnswers);
             }

@@ -19,7 +19,10 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TypeAtom extends Binary{
 
@@ -28,7 +31,12 @@ public class TypeAtom extends Binary{
         this(pattern, null, par);
     }
     public TypeAtom(VarAdmin pattern, Predicate p, Query par) { super(pattern, p, par);}
-    private TypeAtom(TypeAtom a) { super(a);}
+    protected TypeAtom(TypeAtom a) { super(a);}
+
+    @Override
+    protected String extractTypeId(VarAdmin var) {
+        return getPredicate() != null? getPredicate().getPredicateValue() : "";
+    }
 
     @Override
     protected String extractValueVariableName(VarAdmin var) {
@@ -37,8 +45,8 @@ public class TypeAtom extends Binary{
 
     @Override
     protected void setValueVariable(String var) {
-        valueVariable = var;
-        atomPattern.asVar().getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).setName(var);
+        super.setValueVariable(var);
+        atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setName(var));
     }
 
     @Override
@@ -50,9 +58,12 @@ public class TypeAtom extends Binary{
     public boolean isType(){ return true;}
 
     @Override
-    public Type getType(){
-        return getPredicate() != null?
+    public Type getType() {
+        return getPredicate() != null ?
                 getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
     }
+
+    @Override
+    public Set<Predicate> getValuePredicates() { return new HashSet<>();}
 }
 

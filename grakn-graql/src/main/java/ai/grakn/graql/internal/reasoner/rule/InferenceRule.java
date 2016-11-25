@@ -30,9 +30,9 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.Binary;
 import ai.grakn.graql.internal.reasoner.atom.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
@@ -71,11 +71,13 @@ public class InferenceRule {
         return types.iterator().next();
     }
 
+    /**
+     * @return a conclusion atom which parent contains all atoms in the rule
+     */
     public Atom getRuleConclusionAtom() {
-        if (head.selectAtoms().size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(body.toString()));
-        Atom atom = head.selectAtoms().iterator().next();
-        atom.setParentQuery(body);
+        Query ruleQuery = new Query(head);
+        Atom atom = ruleQuery.selectAtoms().iterator().next();
+        body.getAtoms().forEach(at -> ruleQuery.addAtom(at.clone()));
         return atom;
     }
 
@@ -91,8 +93,7 @@ public class InferenceRule {
                     .map(Binary::getPredicate)
                     .forEach(predicates::add);
             //direct predicates
-            predicates.addAll(parentAtom.getIdPredicates());
-            predicates.addAll(parentAtom.getValuePredicates());
+            predicates.addAll(parentAtom.getPredicates());
 
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);
@@ -103,13 +104,14 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         if(parentAtom.isUserDefinedName() && parentAtom.isRelation() ){
-            Atomic childAtom = head.getAtom();
+            Relation childAtom = (Relation) head.getAtom();
             VarAdmin var = childAtom.getPattern().asVar();
-            Var relVar = Graql.var(childAtom.getVarName());
+            Var relVar = Graql.var(parentAtom.getVarName());
             var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
             // This is guaranteed to be a relation
             //noinspection OptionalGetWithoutIsPresent
-            var.getProperty(RelationProperty.class).get().getRelationPlayers().forEach(c -> {
+            var.getProperty(RelationProperty.class).get().getRelationPlayers()
+                    .forEach(c -> {
                 VarAdmin rolePlayer = c.getRolePlayer();
                 Optional<VarAdmin> roleType = c.getRoleType();
                 if (roleType.isPresent())
@@ -117,7 +119,10 @@ public class InferenceRule {
                 else
                     relVar.rel(rolePlayer);
             });
-            head = new AtomicQuery((Atom) AtomicFactory.create(relVar.admin(), body), new HashSet<>());
+
+            Relation newAtom = new Relation(relVar.admin(), childAtom.getPredicate(), head);
+            head.removeAtom(childAtom);
+            head.addAtom(newAtom);
         }
     }
 

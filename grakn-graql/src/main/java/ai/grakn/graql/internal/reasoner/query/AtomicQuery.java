@@ -176,12 +176,12 @@ public class AtomicQuery extends Query{
         subs.forEach(queryToMaterialise::addAtom);
 
         //extrapolate if needed
-        Atom atom = queryToMaterialise.getAtom();
+        Atom at = queryToMaterialise.getAtom();
         if(atom.isRelation() &&
                 (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
-            String relTypeId = atom.getTypeId();
+            Relation atom = (Relation) at;
             RelationType relType = (RelationType) atom.getType();
-            Set<String> vars = atom.getVarNames();
+            Set<String> vars = atom.getRolePlayers();
             Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
 
             Set<Map<String, String>> roleMaps = new HashSet<>();
@@ -189,7 +189,8 @@ public class AtomicQuery extends Query{
 
             queryToMaterialise.removeAtom(atom);
             roleMaps.forEach( map -> {
-                Relation relationWithRoles = new Relation(atom.getVarName(), relTypeId, map, queryToMaterialise);
+                Relation relationWithRoles = new Relation(atom.getVarName(), atom.getValueVariable(),
+                        map, atom.getPredicate(), queryToMaterialise);
                 queryToMaterialise.addAtom(relationWithRoles);
                 insertAnswers.addAll(queryToMaterialise.materialiseComplete());
                 queryToMaterialise.removeAtom(relationWithRoles);

@@ -1,12 +1,20 @@
 insert
 
+#isa inference-rule,
+#lhs {$x isa person;
+#$t isa tag;$t has name 'Ludwig van Beethoven';
+#($x, $t) isa tagging;
+#$y isa product;$y has name 'Nocturnes';
+#},
+#rhs {($x, $y) isa recommendation;};
+
 isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t has name 'Ludwig van Beethoven';
+$t isa tag;$t has name 'Roger Waters';
 ($x, $t) isa tagging;
-$y isa product;$y has name 'Nocturnes';
+$y isa tag;$y has name 'Pink Floyd';
 },
-rhs {($x, $y) isa recommendation;};
+rhs {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
 #isa inference-rule,
 #lhs {$x isa person;
