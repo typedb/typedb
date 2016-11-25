@@ -34,14 +34,16 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -66,6 +68,11 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     private static InternalFactory titanGraphFactory ;
 
+
+    @Parameterized.Parameters
+    public static List<Object[]> data() {
+        return Arrays.asList(new Object[10][0]);
+    }
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
@@ -198,15 +205,14 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     @Test
     public void testMultithreadedRetrievalOfGraphs(){
-        Set<Future> futures = new HashSet<>();
+        Set<Future> futures = ConcurrentHashMap.newKeySet();
         ExecutorService pool = Executors.newFixedThreadPool(10);
         TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", TEST_URI, TEST_CONFIG);
 
-        for(int i = 0; i < 200; i ++) {
+        for(int j = 0; j < 300; j ++) {
             futures.add(pool.submit(() -> {
                 try {
                     GraknTitanGraph graph = factory.getGraph(false);
-                    System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is using graph [" + graph.getTinkerPopGraph().hashCode() + "]");
                     assertFalse("Grakn graph is closed", graph.isClosed());
                     assertFalse("Internal tinkerpop graph is closed", graph.getTinkerPopGraph().isClosed());
                     graph.putEntityType("A Thing");
