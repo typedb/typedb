@@ -34,11 +34,11 @@ public abstract class Binary extends Atom{
     private Predicate predicate = null;
     protected String valueVariable;
 
-    public Binary(VarAdmin pattern) { this(pattern, null);}
-    public Binary(VarAdmin pattern, Query par) {
+    public Binary(VarAdmin pattern, Query par) { this(pattern, null, par);}
+    public Binary(VarAdmin pattern, Predicate p, Query par){
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
-        this.predicate = getPredicate();
+        this.predicate = p;
     }
 
     public Binary(Binary a) {
@@ -48,15 +48,7 @@ public abstract class Binary extends Atom{
     }
 
     protected abstract String extractValueVariableName(VarAdmin var);
-
-    public Predicate getPredicate(){
-        if (predicate != null) return predicate;
-        else
-            return getParentQuery() != null ? getParentQuery().getAtoms().stream()
-                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
-                .filter(at -> at.getVarName().equals(valueVariable)).findFirst().orElse(null) : null;
-    }
-
+    public Predicate getPredicate(){ return predicate;}
     private boolean predicatesEquivalent(Binary atom){
         Predicate pred = getPredicate();
         Predicate objPredicate = atom.getPredicate();

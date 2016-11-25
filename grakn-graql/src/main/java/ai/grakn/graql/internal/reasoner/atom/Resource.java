@@ -25,7 +25,8 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 public class Resource extends Binary{
 
     public Resource(VarAdmin pattern) { this(pattern, null);}
-    public Resource(VarAdmin pattern, Query par) { super(pattern, par);}
+    public Resource(VarAdmin pattern, Query par) { this(pattern, null, par);}
+    public Resource(VarAdmin pattern, Predicate p, Query par){ super(pattern, p, par);}
     private Resource(Resource a) { super(a);}
 
     @Override

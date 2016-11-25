@@ -43,16 +43,16 @@ import java.util.stream.Stream;
 public class Query implements MatchQueryInternal {
 
     protected final GraknGraph graph;
-    protected final Set<Atomic> atomSet = new HashSet<>();
+    private final Set<Atomic> atomSet = new HashSet<>();
 
-    private final Conjunction<PatternAdmin> pattern;
+    private final Conjunction<PatternAdmin> pattern = Patterns.conjunction(Sets.newHashSet());
     private final Set<String> selectVars;
 
     public Query(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
-        this.pattern = createPattern(atomSet);
+        fillPattern(atomSet);
     }
 
     public Query(String query, GraknGraph graph) {
@@ -60,7 +60,10 @@ public class Query implements MatchQueryInternal {
     }
 
     public Query(Query q) {
-        this(q.toString(), q.graph);
+        this.graph = q.getGraph().orElse(null);
+        this.selectVars = q.getSelectedNames();
+        q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
+        fillPattern(atomSet);
     }
 
     protected Query(Atom atom, Set<String> vars) {
@@ -69,7 +72,6 @@ public class Query implements MatchQueryInternal {
         this.graph = atom.getParentQuery().getGraph().orElse(null);
         this.selectVars = atom.getVarNames();
         selectVars.addAll(vars);
-        this.pattern = Patterns.conjunction(Sets.newHashSet());
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
         selectVars.retainAll(getVarSet());
@@ -122,14 +124,18 @@ public class Query implements MatchQueryInternal {
 
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
+    private boolean addPattern(PatternAdmin p){ return pattern.getPatterns().add(p);}
+    private boolean removePattern(PatternAdmin p){ return pattern.getPatterns().remove(p);}
+    public void replacePattern(PatternAdmin oldPattern, PatternAdmin newPattern) {
+        removePattern(oldPattern);
+        addPattern(newPattern);
+    }
 
     @Override
     public List<Map<String, Concept>> execute() { return getMatchQuery().execute();}
 
-    private Conjunction<PatternAdmin> createPattern(Set<Atomic> atoms){
-        Set<PatternAdmin> patterns = new HashSet<>();
-        atoms.forEach(atom -> patterns.add(atom.getPattern()));
-        return Patterns.conjunction(patterns);
+    private void fillPattern(Set<Atomic> atoms){
+        atoms.stream().map(Atomic::getPattern).forEach(this::addPattern);
     }
 
     /**
@@ -192,8 +198,6 @@ public class Query implements MatchQueryInternal {
         return vars;
     }
 
-    private boolean containsVar(String var) { return getVarSet().contains(var);}
-
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
     public boolean containsEquivalentAtom(Atomic atom){
         boolean isContained = false;
@@ -203,16 +207,6 @@ public class Query implements MatchQueryInternal {
             isContained = atom.isEquivalent(at);
         }
         return isContained;
-    }
-
-    private void replacePattern(PatternAdmin oldPattern, PatternAdmin newPattern) {
-        PatternAdmin toRemove = oldPattern;
-        for(PatternAdmin pat : pattern.getPatterns())
-            if(pat.equals(oldPattern))
-                toRemove = pat;
-
-        pattern.getPatterns().remove(toRemove);
-        pattern.getPatterns().add(newPattern);
     }
 
     private void updateSelectedVars(Map<String, String> mappings) {
@@ -330,12 +324,6 @@ public class Query implements MatchQueryInternal {
 
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
-        /*
-        getVarSet().forEach(var -> {
-                Predicate predicate = getIdPredicate(var);
-                if (predicate != null) map.putIfAbsent(var, graph.getType(predicate.getPredicateValue()));
-        });
-        */
         getTypeConstraints().forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
         return map;
     }
@@ -349,7 +337,6 @@ public class Query implements MatchQueryInternal {
         getTypeConstraints().stream()
                 .filter(type -> type.getVarName().equals(var))
                 .forEach(type -> type.getPredicates().stream().findFirst().ifPresent(relevantSubs::add));
-        assert(relevantSubs.size() < 2);
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 
@@ -361,24 +348,20 @@ public class Query implements MatchQueryInternal {
         return relevantVPs.isEmpty()? "" : relevantVPs.iterator().next().getPredicateValue();
     }
 
-    protected void addAtom(Atomic atom) {
-        if(!containsAtom(atom)) {
-            atomSet.add(atom);
-            pattern.getPatterns().add(atom.getPattern());
+    public boolean addAtom(Atomic atom) {
+        if(atomSet.add(atom)) {
+            atom.setParentQuery(this);
+            return addPattern(atom.getPattern());
         }
+        else return false;
     }
 
-    protected void removeAtom(Atomic atom) {
-        atomSet.remove(atom);
-        pattern.getPatterns().remove(atom.getPattern());
+    public boolean removeAtom(Atomic atom) {
+        return atomSet.remove(atom) && removePattern(atom.getPattern());
     }
 
     public void addAtomConstraints(Set<? extends Atomic> cstrs){
-        cstrs.forEach(con -> {
-            Atomic lcon = AtomicFactory.create(con, this);
-            lcon.setParentQuery(this);
-            addAtom(lcon);
-        });
+        cstrs.forEach(con -> addAtom(AtomicFactory.create(con, this)));
     }
 
     private void addAtomConstraints(Atom atom){

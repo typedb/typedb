@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
@@ -28,8 +29,14 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
-public class GeoInferenceTest {
+public class GeoInferenceTest extends AbstractEngineTest {
+
+    @BeforeClass
+    public static void onStartup(){
+        assumeTrue(usingTinker());
+    }
 
     @Test
     public void testQuery() {

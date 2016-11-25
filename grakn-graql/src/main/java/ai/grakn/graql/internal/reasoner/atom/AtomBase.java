@@ -32,7 +32,6 @@ public abstract class AtomBase implements Atomic{
     protected PatternAdmin atomPattern = null;
     private Query parent = null;
 
-    public AtomBase(VarAdmin pattern) { this(pattern, null);}
     public AtomBase(VarAdmin pattern, Query par) {
         this.atomPattern = pattern;
         this.varName = pattern.getName();
@@ -40,12 +39,11 @@ public abstract class AtomBase implements Atomic{
     }
 
     public AtomBase(AtomBase a) {
-        if (a.getParentQuery() != null)
-            this.parent = a.getParentQuery();
         this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
         this.varName = atomPattern.asVar().getName();
     }
 
+    @Override
     public abstract Atomic clone();
 
     @Override

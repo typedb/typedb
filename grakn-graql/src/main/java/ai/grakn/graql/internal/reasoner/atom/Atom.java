@@ -179,27 +179,6 @@ public abstract class Atom extends AtomBase {
         return relevantTypes;
     }
 
-    public Map<String, Predicate> getVarSubMap() {
-        Map<String, Predicate> map = new HashMap<>();
-        getIdPredicates().forEach( sub -> {
-            String var = sub.getVarName();
-            map.put(var, sub);
-        });
-        return map;
-    }
-
-    public Map<RoleType, String> getRoleConceptIdMap(){
-        Map<RoleType, String> roleConceptMap = new HashMap<>();
-        Map<String, Predicate> varSubMap = getVarSubMap();
-        Map<RoleType, Pair<String, Type>> roleVarMap = getRoleVarTypeMap();
-
-        roleVarMap.forEach( (role, varTypePair) -> {
-            String var = varTypePair.getKey();
-            roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
-        });
-        return roleConceptMap;
-    }
-
     public Map<String, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
         Map<String, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;

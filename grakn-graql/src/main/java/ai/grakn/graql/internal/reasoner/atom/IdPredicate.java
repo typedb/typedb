@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class IdPredicate extends Predicate<String>{
@@ -28,17 +29,18 @@ public class IdPredicate extends Predicate<String>{
     public IdPredicate(VarAdmin pattern) {
         super(pattern);
     }
-
     public IdPredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-
+    public IdPredicate(IdProperty prop, VarAdmin var, Query par){
+        this(createIdVar(var.getName(), prop.getId()), par);
+    }
     public IdPredicate(IdPredicate a) {
         super(a);
     }
 
     public IdPredicate(String varName, Concept con) {
-        super(createIdPredicate(varName, con));
+        super(createIdVar(varName, con.getId()));
         this.predicate = con.getId();
     }
 
@@ -47,8 +49,8 @@ public class IdPredicate extends Predicate<String>{
         setParentQuery(parent);
     }
 
-    public static VarAdmin createIdPredicate(String varName, Concept con){
-        return Graql.var(varName).id(con.getId()).admin();
+    public static VarAdmin createIdVar(String varName, String typeId){
+        return Graql.var(varName).id(typeId).admin();
     }
 
     @Override
