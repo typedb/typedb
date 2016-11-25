@@ -74,7 +74,18 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="col-xs-12">
             <div class="panel panel-filled" v-bind:class="errorPanelClass">
                 <div class="panel-body">
-                    {{errorMessage}} <a href="#" @click="resetMsg"><i class="pe-7s-close-circle" id="close-error"></i></a>
+                    {{errorMessage}} <a href="#" @click="resetMsg"><i class="pe-7s-close-circle grakn-icon"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" v-show="analyticsStringResponse">
+        <div class="col-xs-12">
+            <div class="panel panel-filled" class="analyticsStringPanel">
+              <div class="panel-heading">Analytics Results</div>
+                <div class="panel-body">
+                    <pre class="language-graql">{{analyticsStringResponse}}</pre>
                 </div>
             </div>
         </div>
@@ -108,7 +119,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                         </div>
                                         <span v-show="numOfResources>0">Resources:</span>
                                         <div class="dd-item" v-for="(key, value) in allNodeResources">
-                                            <div class="dd-handle" @dblclick="addResourceNodeWithOwners(value.link)"><span class="list-key">{{key}}:</span> {{value.label}}</div>
+                                            <div class="dd-handle" @dblclick="addResourceNodeWithOwners(value.link)"><span class="list-key">{{key}}:</span>
+                                              <a v-if="value.href" href="{{value.label}}" style="word-break: break-all;" target="_blank">{{value.label}}</a>
+                                              <span v-else> {{value.label}}</span>
+                                            </div>
                                         </div>
                                         <span v-show="numOfLinks>0">Links:</span>
                                         <div class="dd-item" v-for="(key, value) in allNodeLinks">

@@ -48,6 +48,11 @@ h4 {
 
 body {
     -moz-user-select: none;
+    -ms-overflow-style: none;  // IE 10+
+    overflow: -moz-scrollbars-none;  // Firefox
+}
+body::-webkit-scrollbar {
+   display: none;  // Safari and Chrome
 }
 
 div {
@@ -72,8 +77,12 @@ div {
     margin-bottom: 0px;
 }
 
-.panel-body {
+.properties-tab .panel-body {
     overflow: scroll;
+}
+
+.properties-tab .panel-body::-webkit-scrollbar {
+   display: none;
 }
 
 .graph-div {
@@ -90,7 +99,7 @@ div {
     margin-right: 10px;
 }
 
-#close-error{
+.grakn-icon{
   margin-left:10px;
   font-size:150%;
   margin-top:15px;

@@ -24,7 +24,9 @@ import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.GraphFactory;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
@@ -114,7 +116,9 @@ public class RemoteShellController {
         Printer printer = Printers.graql();
 
         try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
-            return graph.graql().parse(req.queryParams(REST.Request.QUERY_FIELD))
+            MatchQuery matchQuery = graph.graql().parse(req.queryParams(REST.Request.QUERY_FIELD));
+            MatchQuery inferQuery = new Reasoner(graph).resolveToQuery(matchQuery);
+            return inferQuery
                     .resultsString(printer)
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));

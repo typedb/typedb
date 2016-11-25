@@ -190,12 +190,14 @@ public class ImportController {
                     var = consumeInsertEntity(batchIterator, loaderParam);
                 }
                 loaderParam.waitToFinish();
-
                 // ---- RELATIONS --- //
                 while (var.equals(MATCH_KEYWORD)) {
-                    var = consumeInsertRelation(batchIterator,loaderParam);
+                    var = consumeInsertRelation(batchIterator, loaderParam);
                 }
             }
+            loaderParam.waitToFinish();
+            LOG.info("Data loading complete:");
+            checkLoadingStatus();
             printingState.cancel(true);
             processedEntities.set(0);
             processedRelations.set(0);
@@ -245,6 +247,7 @@ public class ImportController {
             } else
                 break;
         }
+
 
         loader.add(Graql.match(insertQueryMatch).insert(insertQuery));
         processedRelations.incrementAndGet();

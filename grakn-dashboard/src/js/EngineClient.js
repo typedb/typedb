@@ -47,16 +47,21 @@ export default class EngineClient {
      */
     request(requestData) {
         $.ajax({
-            type: requestData.requestType || this.requestType,
-            contentType: requestData.contentType || this.contentType,
-            dataType: requestData.dataType || this.dataType,
-            cache: requestData.cache || this.cache,
-            data: requestData.data,
-            url: requestData.url,
-
-            error: (errObj, _, eText) => { requestData.callback(null, errObj.responseText); },
-            success: r => { requestData.callback(r, null) }
-        });
+                type: requestData.requestType || this.requestType,
+                contentType: requestData.contentType || this.contentType,
+                dataType: requestData.dataType || this.dataType,
+                cache: requestData.cache || this.cache,
+                data: requestData.data,
+                url: requestData.url
+            }).done(function(r) {
+                //sometimes we might not have a callback function
+                if(typeof requestData.callback == 'function')
+                    requestData.callback(r, null)
+            })
+            .fail(function(errObj) {
+                if(typeof requestData.callback == 'function')
+                    requestData.callback(null, errObj.responseText);
+            });
     }
 
     /**
@@ -64,7 +69,7 @@ export default class EngineClient {
      */
     conceptsByType(type, fn) {
         this.request({
-            url: "/graph/concept/"+type,
+            url: "/graph/concept/" + type,
             callback: fn
         });
     }
@@ -74,7 +79,19 @@ export default class EngineClient {
      */
     graqlShell(query, fn) {
         this.request({
-            url: "/shell/match?query="+query,
+            url: "/shell/match?query=" + query,
+            callback: fn,
+            dataType: "text",
+            contentType: "application/text"
+        });
+    }
+
+    /**
+     * Pre materialise
+     */
+    preMaterialiseAll(fn) {
+        this.request({
+            url: "/graph/preMaterialiseAll",
             callback: fn,
             dataType: "text",
             contentType: "application/text"
@@ -84,9 +101,19 @@ export default class EngineClient {
     /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
-    graqlHAL(query, fn) {
+    graqlHAL(query, useReasoner, fn) {
         this.request({
-            url: "/graph/match?query="+query,
+            url: "/graph/match?query=" + query + "&reasoner=" + useReasoner,
+            callback: fn
+        });
+    }
+
+    /**
+     * Send graql query to Engine, returns an array of HAL objects.
+     */
+    graqlAnalytics(query, fn) {
+        this.request({
+            url: "/graph/analytics?query=" + query,
             callback: fn
         });
     }

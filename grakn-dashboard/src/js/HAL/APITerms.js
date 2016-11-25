@@ -28,6 +28,7 @@ export const ROLE_TYPE = "role-type";
 export const ENTITY_TYPE = "entity-type";
 export const GENERATED_RELATION_TYPE = "generated-relation";
 
+export const KEY_EMPTY_ROLE_NAME = "EMPTY-GRAKN-ROLE";
 export const KEY_ID = "_id";
 export const KEY_EMBEDDED = "_embedded";
 export const KEY_TYPE = "_type";

@@ -22,10 +22,18 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="row">
         <div class="col-xs-12">
             <div class="panel panel-filled" v-if="response">
-                <div class="panel-heading">
-                    Current Configuration
-                </div>
                 <div class="panel-body">
+                  <div class="table-responsive">
+                      <table class="table table-hover table-stripped">
+                          <thead>
+                              <tr><th>Inference settings</th><th>Value</th><tr>
+                          <thead>
+                          <tbody>
+                              <tr><td>Activate Inference</td><td><input type="checkbox" value="" @click="checkedReasoner(useReasoner)" v-model="useReasoner"></td></tr>
+                              <tr><td>Materialisation</td><td><button @click="materialiseAll" class="btn btn-default">Materialise All</button></td></tr>
+                          </tbody>
+                      </table>
+                  </div>
                     <div class="table-responsive">
                         <table class="table table-hover table-stripped">
                             <thead>
@@ -91,6 +99,7 @@ export default {
         return {
             response: undefined,
             errorMessage: undefined,
+            useReasoner:window.useReasoner,
             engineClient: {}
         };
     },
@@ -109,11 +118,19 @@ export default {
             this.errorMessage = msg;
         },
 
+        checkedReasoner(status){
+          window.useReasoner=!status;
+        },
+
         engineStatus(resp, err) {
             if(resp != null)
                 this.response = resp
             else
                 this.showError(err);
+        },
+
+        materialiseAll(){
+          engineClient.preMaterialiseAll();
         },
 
         retry() {

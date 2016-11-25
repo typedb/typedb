@@ -29,7 +29,7 @@ export function edgeLeftToRight(a, b) {
     if (API.KEY_DIRECTION in b)
         if (b[API.KEY_DIRECTION] === "OUT")
             return false;
-            
+
     return true;
 }
 
@@ -85,14 +85,13 @@ function buildLabel(resource) {
             label = resource[API.KEY_TYPE] + ": " + resource[API.KEY_ID];
             break;
         case API.RELATION_TYPE:
-            label = resource[API.KEY_BASE_TYPE] + ": " + resource[API.KEY_TYPE];
+            label = resource[API.KEY_BASE_TYPE].substring(0,3) + ": " + resource[API.KEY_TYPE];
             break;
         case API.RESOURCE_TYPE:
             label = resource[API.KEY_VALUE];
             break;
         case API.GENERATED_RELATION_TYPE:
-            let value = (resource[API.KEY_TYPE].length === 0) ? "" : ": " + resource[API.KEY_TYPE];
-            label = resource[API.KEY_BASE_TYPE] + value;
+            label = resource[API.KEY_TYPE] || "";
             break;
 
         default:

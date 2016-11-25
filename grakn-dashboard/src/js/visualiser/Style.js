@@ -47,7 +47,7 @@ export default class Style {
                 highlight: "#a1d884"
             },
             font: {
-                color: "#bbbcbc",
+                color: "#ffad33",
                 background: "none",
                 strokeWidth: 0
             }
@@ -72,6 +72,7 @@ export default class Style {
 
         // User defined ontology & instances
         switch(baseType) {
+            case API.GENERATED_RELATION_TYPE:
             case API.RELATION_TYPE:
                 return {
                     background: this.node.colour.background,

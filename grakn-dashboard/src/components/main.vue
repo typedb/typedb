@@ -63,7 +63,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </li>
 
                 <li v-link-active>
-                    <a v-link="{ path: '/status' }">Status</a>
+                    <a v-link="{ path: '/config' }">Config</a>
                 </li>
 
                 <li v-link-active>
@@ -115,6 +115,7 @@ export default {
 
     created() {
         engineClient = new EngineClient();
+        window.useReasoner=false;
     },
 
     attached() {

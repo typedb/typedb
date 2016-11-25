@@ -5,7 +5,7 @@ import placeholder from 'codemirror/addon/display/placeholder.js';
 import simpleMode from 'codemirror/addon/mode/simple.js';
 
 import Visualiser from '../js/visualiser/Visualiser.js';
-import HALParser from '../js/HAL/HALParser.js';
+import * as HALParser from '../js/HAL/HALParser.js';
 import * as API from '../js/HAL/APITerms';
 
 import EngineClient from '../js/EngineClient.js';
@@ -13,6 +13,7 @@ import * as PLang from '../js/prismGraql.js';
 import simpleGraql from '../js/codemirrorGraql.js';
 
 export default {
+    props: ['useReasoner'],
     data() {
         return {
             errorMessage: undefined,
@@ -20,9 +21,10 @@ export default {
             visualiser: {},
             engineClient: {},
             halParser: {},
-
+            analyticsStringResponse: undefined,
             typeInstances: false,
             typeKeys: [],
+            doubleClickTime:0,
 
             // resources keys used to change label of a node type
             allNodeProps: [],
@@ -44,13 +46,12 @@ export default {
         visualiser = new Visualiser();
         visualiser.setOnDoubleClick(this.doubleClick)
             .setOnRightClick(this.rightClick)
-            .setOnClick(this.leftClick)
+            .setOnClick(this.singleClick)
             .setOnDragEnd(this.dragEnd)
             .setOnHoldOnNode(this.holdOnNode);
 
         engineClient = new EngineClient();
-
-        halParser = new HALParser();
+        halParser = new HALParser.default();
 
         halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
         halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
@@ -67,7 +68,7 @@ export default {
             //set the height of right panel of same size of graph-div
             $('.properties-tab').height(divHeight + 7);
             //fix the height of panel-body so that it is possible to make it overflow:scroll
-            $('.properties-tab .panel-body').height(divHeight - 85);
+            $('.properties-tab .panel-body').height(divHeight - 120);
         };
 
         visualiser.render(graph);
@@ -110,7 +111,11 @@ export default {
             if (query == undefined || query.length === 0)
                 return;
 
-            engineClient.graqlHAL(query, this.graphResponse);
+            if (query.trim().startsWith("compute"))
+                engineClient.graqlAnalytics(query, this.analyticsResponse);
+            else
+                engineClient.graqlHAL(query, window.useReasoner, this.graphResponse);
+
             this.resetMsg();
         },
 
@@ -121,10 +126,10 @@ export default {
         },
 
         loadOntology() {
-          let query_isa="match $x isa "+API.TYPE_TYPE+";";
-          let query_sub="match $x sub "+API.TYPE_TYPE+";";
-          engineClient.graqlHAL(query_isa, this.graphResponse);
-          engineClient.graqlHAL(query_sub, this.graphResponse);
+            let query_isa = "match $x isa " + API.TYPE_TYPE + ";";
+            let query_sub = "match $x sub " + API.TYPE_TYPE + ";";
+            engineClient.graqlHAL(query_sub, window.useReasoner, this.graphResponse);
+            engineClient.graqlHAL(query_isa, window.useReasoner, this.graphResponse);
         },
 
         getMetaTypes() {
@@ -139,6 +144,18 @@ export default {
                 });
         },
 
+        singleClick(param) {
+            let t0 = new Date();
+            let threshold = 200;
+            //all this fun to be able to distinguish a single click from a double click
+            if (t0 - this.doubleClickTime > threshold) {
+                setTimeout(()=> {
+                    if (t0 - this.doubleClickTime > threshold) {
+                        this.leftClick(param);
+                    }
+                }, threshold);
+            }
+        },
         /*
          * User interaction: visualiser
          */
@@ -164,9 +181,7 @@ export default {
                     type: props.type,
                     baseType: props.baseType
                 }
-
-                this.allNodeResources = (props.properties != null) ? this.sortObject(props.properties) : {};
-                this.allNodeLinks = this.sortObject(props.links);
+                this.allNodeResources = this.prepareResources(props.properties);
 
                 this.numOfResources = Object.keys(this.allNodeResources).length;
                 this.numOfLinks = Object.keys(this.allNodeLinks).length;
@@ -177,8 +192,25 @@ export default {
                 this.openPropertiesTab();
             }
         },
-        sortObject(o) {
-            return Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {});
+        prepareResources(o) {
+            if (o == null) return {};
+
+            //Sort object's keys alphabetically and check if the resource contains a URL string
+            return Object.keys(o).sort().reduce(
+                //r is the accumulator variable, i.e. new object with sorted keys
+                //k is the current key
+                (r, k) => {
+                    this.checkURLString(o[k]);
+                    r[k] = o[k];
+                    return r;
+                }, {});
+        },
+        checkURLString(resourceObject) {
+            resourceObject.href = this.validURL(resourceObject.label);
+        },
+        validURL(str) {
+            var pattern = new RegExp(HALParser.URL_REGEX, "i");
+            return pattern.test(str);
         },
         dragEnd(param) {
             // As multiselect is disabled, there will only ever be one node.
@@ -187,6 +219,7 @@ export default {
         },
 
         doubleClick(param) {
+            this.doubleClickTime = new Date();
             const node = param.nodes[0];
             if (node == undefined || visualiser.expandCluster(node))
                 return;
@@ -220,12 +253,6 @@ export default {
                     visualiser.deleteNode(x)
                 });
             }
-            // else if (!visualiser.expandCluster(node)) {
-            //     this.allNodeProps = visualiser.getAllNodeProperties(node);
-            //     this.nodeType = visualiser.getNodeType(node);
-            //     $('#label-tab').addClass("active");
-            //     this.openPropertiesTab();
-            // }
         },
         openPropertiesTab() {
             $('.properties-tab.active').addClass('animated slideInRight');
@@ -238,6 +265,7 @@ export default {
             if (!(this.nodeType in this.selectedProps)) {
                 this.selectedProps[this.nodeType] = [];
             }
+
             if (this.selectedProps[this.nodeType].includes(p))
                 this.selectedProps[this.nodeType] = this.selectedProps[this.nodeType].filter(x => x != p);
             else
@@ -263,10 +291,7 @@ export default {
 
             this.allNodeProps = visualiser.getAllNodeProperties(node);
             this.nodeType = visualiser.getNodeType(node);
-            //$('#label-tab').addClass("active");
             $('#myModal2').modal('show');
-
-            // this.openPropertiesTab();
         },
         /*
          * EngineClient callbacks
@@ -277,6 +302,17 @@ export default {
                     this.showWarning("Sorry, no results found for your query.");
                 else
                     visualiser.cluster();
+            } else {
+                this.showError(err);
+            }
+        },
+        analyticsResponse(resp, err) {
+            if (resp != null) {
+                if (resp.type === "string") {
+                    this.analyticsStringResponse = resp.response;
+                } else {
+                    halParser.parseResponse(resp.response);
+                }
             } else {
                 this.showError(err);
             }
@@ -302,6 +338,7 @@ export default {
 
         resetMsg() {
             this.errorMessage = undefined;
+            this.analyticsStringResponse = undefined;
             $('.search-button')
                 .removeClass('btn-danger')
                 .removeClass('btn-warning')
