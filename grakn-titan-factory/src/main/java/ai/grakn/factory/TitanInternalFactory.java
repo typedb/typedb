@@ -29,6 +29,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
@@ -60,6 +61,8 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     public TitanGraph getGraphWithNewTransaction(TitanGraph graph){
         if(!graph.tx().isOpen()){
             graph.tx().open();
+            System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
+                    "transaction on graph [" + graph.hashCode() + "] open transactions: [" + ((StandardTitanGraph)graph).getOpenTransactions().size() + "]");
         }
         return graph;
     }

@@ -66,12 +66,15 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, batchLoading);
             lastGraphBuiltBatchLoading = true;
+            System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + graknGraph.getTinkerPopGraph().hashCode() +"]");
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, batchLoading);
             lastGraphBuiltBatchLoading = false;
+            System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + graknGraph.getTinkerPopGraph().hashCode() +"]");
             return graknGraph;
         }
+
     }
     protected M getGraph(M graknGraph, boolean batchLoading){
         //This checks if the previous graph built with this factory is the same as the one we trying to build now.
