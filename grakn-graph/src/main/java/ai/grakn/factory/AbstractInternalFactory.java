@@ -112,6 +112,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                         if (isClosed(innerGraph)) {
                             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
                         } else {
+                            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] refreshing fully open graph");
                             getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
                         }
                     }
