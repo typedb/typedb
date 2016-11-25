@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
@@ -309,11 +310,12 @@ public class Analytics {
      *
      * @return a shortest path: a list of vertex ids along the path (including the two given vertices)
      */
-    public List<String> shortestPath(String sourceId, String destinationId) {
+    public List<Concept> shortestPath(String sourceId, String destinationId) {
         LOGGER.info("ShortestPathVertexProgram is called");
         if (!verticesExistInSubgraph(sourceId, destinationId))
             throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
-        if (sourceId.equals(destinationId)) return Collections.singletonList(sourceId);
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
+        if (sourceId.equals(destinationId)) return Collections.singletonList(graph.getConcept(sourceId));
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypes, sourceId, destinationId),
                 new ClusterMemberMapReduce(subtypes, ShortestPathVertexProgram.FOUND_IN_ITERATION));
@@ -327,7 +329,8 @@ public class Analytics {
                 .collect(Collectors.toList()));
         path.add(destinationId);
         LOGGER.info("ShortestPathVertexProgram is done");
-        return path;
+        graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
+        return path.stream().map(graph::getConcept).collect(Collectors.toList());
     }
 
     /**
