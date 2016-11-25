@@ -86,6 +86,15 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testResourceWithTypeFasterFromType() {
+        GraqlTraversal fromInstance =
+                traversal(outIsa("x", "X"), id("X", "_"), makeShortcut("x", "y"), outIsa("y", "Y"), id("Y", "_"));
+        GraqlTraversal fromType =
+                traversal(id("X", "_"), inIsa("X", "x"), makeShortcut("x", "y"), outIsa("y", "Y"), id("Y", "_"));
+        assertFaster(fromType, fromInstance);
+    }
+
+    @Test
     public void testCheckDistinctCastingEarlyFaster() {
         Fragment distinctCasting = distinctCasting("c2", "c1");
         Fragment inRolePlayer = inRolePlayer("x", "c1");
@@ -180,6 +189,10 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
         ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
         return GraqlTraversal.create(graph, fragmentsSet);
+    }
+
+    private static Fragment makeShortcut(String x, String y) {
+        return shortcut(Optional.empty(), Optional.empty(), Optional.empty(), x, y);
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {

@@ -64,7 +64,7 @@ public class GraqlTraversal {
 
     // TODO: Find a better way to represent these values
     // Just a pretend big number
-    private static final long NUM_VERTICES_ESTIMATE = 1_000;
+    private static final long NUM_VERTICES_ESTIMATE = 10_000;
 
     private static final long MAX_TRAVERSAL_ATTEMPTS = 1_000;
 
