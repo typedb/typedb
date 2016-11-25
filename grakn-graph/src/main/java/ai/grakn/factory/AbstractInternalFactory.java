@@ -110,6 +110,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                     G innerGraph = graknGraph.getTinkerPopGraph();
                     synchronized (innerGraph) {
                         if (isClosed(innerGraph)) {
+                            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] refreshing new graph on open grakn graph");
                             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
                         } else {
                             System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] refreshing fully open graph");
