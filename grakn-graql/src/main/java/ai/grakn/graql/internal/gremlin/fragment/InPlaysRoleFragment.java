@@ -40,7 +40,7 @@ class InPlaysRoleFragment extends AbstractFragment {
     }
 
     @Override
-    public long fragmentCost(long previousCost) {
+    public double fragmentCost(double previousCost) {
         return previousCost * NUM_TYPES_PER_ROLE;
     }
 

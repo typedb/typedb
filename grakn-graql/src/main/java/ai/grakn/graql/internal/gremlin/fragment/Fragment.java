@@ -96,5 +96,5 @@ public interface Fragment {
         return false;
     }
 
-    long fragmentCost(long previousCost);
+    double fragmentCost(double previousCost);
 }

@@ -203,8 +203,8 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
         //noinspection OptionalGetWithoutIsPresent
         GraqlTraversal globalOptimum = query.allGraqlTraversals().min(comparing(GraqlTraversal::getComplexity)).get();
 
-        long globalComplexity = globalOptimum.getComplexity();
-        long complexity = traversal.getComplexity();
+        double globalComplexity = globalOptimum.getComplexity();
+        double complexity = traversal.getComplexity();
 
         assertTrue(
                 "Expected\n " +
@@ -215,8 +215,8 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     private static void assertFaster(GraqlTraversal fast, GraqlTraversal slow) {
-        long fastComplexity = fast.getComplexity();
-        long slowComplexity = slow.getComplexity();
+        double fastComplexity = fast.getComplexity();
+        double slowComplexity = slow.getComplexity();
         boolean condition = fastComplexity < slowComplexity;
 
         assertTrue(
