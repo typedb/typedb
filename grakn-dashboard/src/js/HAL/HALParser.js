@@ -24,7 +24,20 @@ import * as Utils from './APIUtils';
 /*
  * Parses HAL responses with callbacks (for found HAL resources & relationships).
  */
+export const URL_REGEX = "^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:" +
+    "(?!(?:10|127)(?:\\.\\d{1,3}){3})" +
+    "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})" +
+    "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})" +
+    "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])" +
+    "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}" +
+    "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))" +
+    "|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)" +
+    "(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*" +
+    "(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?" +
+    "(?:[/?#]\\S*)?$";
+
 export default class HALParser {
+
     constructor() {
         this.newResource = x => {};
         this.newRelationship = x => {};
@@ -38,8 +51,8 @@ export default class HALParser {
         this.newResource = fn;
     }
 
-    setNodeAlreadyInGraph(fn){
-      this.nodeAlreadyInGraph = fn;
+    setNodeAlreadyInGraph(fn) {
+        this.nodeAlreadyInGraph = fn;
     }
 
     /**
@@ -58,7 +71,6 @@ export default class HALParser {
                 this.parseHalObject(x)
             });
             return data.length;
-
         } else {
             this.parseHalObject(data);
             return 1;
@@ -67,12 +79,17 @@ export default class HALParser {
 
     parseHalObject(obj) {
         if (obj !== null) {
-            let links = Utils.nodeLinks(obj);
-            this.newResource(this.getHref(obj), Utils.defaultProperties(obj), Utils.extractResources(obj), links);
+            let objResponse;
+            //The response from Analytics will be a string instead of object. That's why we need this check.
+            objResponse = (typeof obj === 'string') ? JSON.parse(obj) : obj;
+
+            let links = Utils.nodeLinks(objResponse);
+
+            this.newResource(this.getHref(objResponse), Utils.defaultProperties(objResponse), Utils.extractResources(objResponse), links);
             // Add assertions from _embedded
-            if (API.KEY_EMBEDDED in obj) {
-                _.map(Object.keys(obj[API.KEY_EMBEDDED]), key => {
-                    this.parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key)
+            if (API.KEY_EMBEDDED in objResponse) {
+                _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), key => {
+                    this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key)
                 });
             }
         }
@@ -86,7 +103,7 @@ export default class HALParser {
      */
     parseEmbedded(objs, parent, roleName) {
         _.map(objs, child => {
-            if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE)|| this.nodeAlreadyInGraph(this.getHref(child))) {
+            if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE) || this.nodeAlreadyInGraph(this.getHref(child))) {
                 var links = Utils.nodeLinks(child);
                 // Add resource and iterate its _embedded field
                 var hrefP = this.getHref(child);
@@ -94,10 +111,12 @@ export default class HALParser {
 
                 this.newResource(hrefP, Utils.defaultProperties(child), Utils.extractResources(child), links);
 
+                let edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? "" : roleName;
+
                 if (Utils.edgeLeftToRight(parent, child))
-                    this.newRelationship(hrefP, hrefC, roleName);
+                    this.newRelationship(hrefP, hrefC, edgeLabel);
                 else
-                    this.newRelationship(hrefC, hrefP, roleName);
+                    this.newRelationship(hrefC, hrefP, edgeLabel);
 
                 this.parseHalObject(child);
             }

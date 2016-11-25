@@ -21,6 +21,7 @@ package ai.grakn.engine.visualiser;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -37,12 +38,14 @@ public class HALConceptRepresentationBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
-    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?query=match $x id '%s'; $y id '%s'; $r ($x, $y); select $r;";
-    private final static String HAS_ROLE_EDGE = "has-role";
+    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y); select $r;";
+    private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
     public static JSONArray renderHALArrayData(MatchQuery matchQuery, Collection<Map<String, Concept>> graqlResultsList) {
         //Compute connections between variables in Graql result
-        Map<String, Collection<String>> linkedNodes = computeLinkedNodesFromQuery(matchQuery);
+        Map<String, Collection<String>> linkedNodes = new HashMap<>();
+        Map<String, String> roleTypes = new HashMap<>();
+        computeLinkedNodesFromQuery(matchQuery, linkedNodes, roleTypes);
         //Collect all the types explicitly asked in the match query
         Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet());
         //Check if among the types asked in the query there is a relation-type (we only support one relation-type per query)
@@ -51,7 +54,7 @@ public class HALConceptRepresentationBuilder {
                 .findFirst().map(Concept::getId)
                 .orElse("");
 
-        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, relationType);
+        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, relationType, roleTypes);
     }
 
     public static String renderHALConceptData(Concept concept, int separationDegree) {
@@ -62,7 +65,7 @@ public class HALConceptRepresentationBuilder {
         return new HALConceptOntology(concept).render();
     }
 
-    private static JSONArray buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery, String relationType) {
+    private static JSONArray buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery, String relationType, Map<String, String> roleTypes) {
         final JSONArray lines = new JSONArray();
         graqlResultsList.parallelStream()
                 .forEach(resultLine -> resultLine.entrySet().forEach(current -> {
@@ -72,35 +75,56 @@ public class HALConceptRepresentationBuilder {
                     LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
                     Representation currentHal = new HALConceptData(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
                             typesAskedInQuery).getRepresentation();
-                    attachGeneratedRelation(currentHal, current, linkedNodes, resultLine, relationType);
+                    attachGeneratedRelation(currentHal, current, linkedNodes, resultLine, relationType, roleTypes);
                     lines.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
 
                 }));
         return lines;
     }
 
-    private static void attachGeneratedRelation(Representation currentHal, Map.Entry<String, Concept> current, Map<String, Collection<String>> linkedNodes, Map<String, Concept> resultLine, String relationType) {
+    private static void attachGeneratedRelation(Representation currentHal, Map.Entry<String, Concept> current, Map<String, Collection<String>> linkedNodes, Map<String, Concept> resultLine, String relationType, Map<String, String> roleTypes) {
         if (linkedNodes.containsKey(current.getKey())) {
             linkedNodes.get(current.getKey())
                     .forEach(varName -> {
-                        Concept rolePlayer = resultLine.get(varName);
-                        String currentID = current.getValue().getId();
-                        String firstID = (currentID.compareTo(rolePlayer.getId()) > 0) ? currentID : rolePlayer.getId();
-                        String secondID = (currentID.compareTo(rolePlayer.getId()) > 0) ? rolePlayer.getId() : currentID;
-                        String assertionID = String.format(ASSERTION_URL, firstID, secondID);
-                        currentHal.withRepresentation(HAS_ROLE_EDGE, new HALGeneratedRelation().getNewGeneratedRelation(assertionID, relationType));
+                        if (current.getValue() != null) {
+                            Concept rolePlayer = resultLine.get(varName);
+                            String currentID = current.getValue().getId();
+
+                            String firstID;
+                            String secondID;
+                            String firstRole;
+                            String secondRole;
+
+                            if (currentID.compareTo(rolePlayer.getId()) > 0) {
+                                firstID = currentID;
+                                secondID = rolePlayer.getId();
+                                firstRole = (roleTypes.get(current.getKey()).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(current.getKey()) + ":";
+                                secondRole = (roleTypes.get(varName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(varName) + ":";
+                            } else {
+                                firstID = rolePlayer.getId();
+                                secondID = currentID;
+                                secondRole = (roleTypes.get(current.getKey()).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(current.getKey()) + ":";
+                                firstRole = (roleTypes.get(varName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(varName) + ":";
+                            }
+
+                            String assertionID = String.format(ASSERTION_URL, firstID, secondID, firstRole, secondRole);
+                            currentHal.withRepresentation(roleTypes.get(current.getKey()), new HALGeneratedRelation().getNewGeneratedRelation(assertionID, relationType));
+                        }
                     });
         }
     }
 
-    private static Map<String, Collection<String>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
-        final Map<String, Collection<String>> linkedNodes = new HashMap<>();
+    private static Map<String, Collection<String>> computeLinkedNodesFromQuery(MatchQuery matchQuery, Map<String, Collection<String>> linkedNodes, Map<String, String> roleTypes) {
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             //if in the current var is expressed some kind of relation (e.g. ($x,$y))
             if (var.getProperty(RelationProperty.class).isPresent()) {
                 //collect all the role players in the current var's relations (e.g. 'x' and 'y')
                 final List<String> rolePlayersInVar = var.getProperty(RelationProperty.class).get()
-                        .getRelationPlayers().map(x -> x.getRolePlayer().getName()).collect(Collectors.toList());
+                        .getRelationPlayers().map(x -> {
+                            roleTypes.put(x.getRolePlayer().getName(),
+                                    (x.getRoleType().isPresent()) ? x.getRoleType().get().getId().get() : HAS_ROLE_EDGE);
+                            return x.getRolePlayer().getName();
+                        }).collect(Collectors.toList());
                 //if it is a binary or ternary relation
                 if (rolePlayersInVar.size() > 1) {
                     rolePlayersInVar.forEach(rolePlayer -> {

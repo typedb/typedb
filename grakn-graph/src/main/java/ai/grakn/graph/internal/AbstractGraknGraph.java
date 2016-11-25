@@ -624,7 +624,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     void closePermanent(){
-        System.out.println("HERE---------> Thread [" + Thread.currentThread().getId() + "] is PERMANENTLY closing graph [" + getTinkerPopGraph().hashCode() + "]");
         try {
             getTinkerPopGraph().close();
         } catch (Exception e) {

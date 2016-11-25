@@ -27,6 +27,7 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -74,8 +75,6 @@ public class HALConceptData {
     }
 
 
-
-
     private void handleConcept(Representation halResource, Concept concept, int separationDegree) {
 
         generateStateAndLinks(halResource, concept);
@@ -89,9 +88,17 @@ public class HALConceptData {
         if (concept.type() == null && typesInQuery.contains(ROOT_CONCEPT))
             embedType(halResource, concept);
 
+        if (concept.isType() && concept.asType().superType() != null)
+            embedSuperType(halResource, concept.asType());
+
         //If a match query contains an assertion we always embed the role players
         if (concept.isRelation() && separationDegree == 0) {
             generateRelationEmbedded(halResource, concept.asRelation(), 1);
+        }
+
+        if (concept.isRule()) {
+            generateRuleLHS(halResource, concept.asRule());
+            generateRuleRHS(halResource, concept.asRule());
         }
 
         if (separationDegree == 0) return;
@@ -105,10 +112,36 @@ public class HALConceptData {
         if (concept.isResource()) {
             generateOwnerInstances(halResource, concept.asResource(), separationDegree);
         }
+
         if (concept.isType()) {
+
             generateTypeEmbedded(halResource, concept.asType(), separationDegree);
         }
 
+    }
+
+    private void generateRuleRHS(Representation halResource, Rule rule) {
+        Representation RHS = factory.newRepresentation(resourceLinkPrefix + "RHS-"+rule.getId())
+                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
+                .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
+                .withProperty(ID_PROPERTY, "RHS-"+rule.getId())
+                .withProperty(TYPE_PROPERTY, "RHS")
+                .withProperty(BASETYPE_PROPERTY, "resource-type")
+                .withProperty(VALUE_PROPERTY,rule.getRHS().admin().toString());
+        halResource.withRepresentation("RHS", RHS);
+    }
+
+    private void generateRuleLHS(Representation halResource, Rule rule) {
+        Representation LHS = factory.newRepresentation(resourceLinkPrefix + "LHS-"+rule.getId())
+                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
+                .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
+                .withProperty(ID_PROPERTY, "LHS-"+rule.getId())
+                .withProperty(TYPE_PROPERTY, "LHS")
+                .withProperty(BASETYPE_PROPERTY, "resource-type")
+                .withProperty(VALUE_PROPERTY,rule.getLHS().admin().asConjunction()
+                        .getPatterns()
+                        .stream().map(Object::toString).collect(Collectors.joining("; \n")));
+        halResource.withRepresentation("LHS", LHS);
     }
 
     private void generateOwnerInstances(Representation halResource, Resource conceptResource, int separationDegree) {
@@ -120,6 +153,13 @@ public class HALConceptData {
             handleConcept(instanceResource, currentInstance, separationDegree - 1);
             halResource.withRepresentation(roleType.getId(), instanceResource);
         });
+    }
+
+    private void embedSuperType(Representation halResource, Type type) {
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.superType().getId())
+                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+        generateStateAndLinks(HALType, type.superType());
+        halResource.withRepresentation(SUB_EDGE, HALType);
     }
 
     private void embedType(Representation halResource, Concept concept) {
@@ -180,7 +220,7 @@ public class HALConceptData {
             Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(embeddedResource, currentResource);
-            resource.withRepresentation(currentResource.type().getId(),embeddedResource);
+            resource.withRepresentation(currentResource.type().getId(), embeddedResource);
         });
     }
 
@@ -235,7 +275,7 @@ public class HALConceptData {
         if (!type.getId().equals(ROOT_CONCEPT)) {
             type.instances().parallelStream().forEach(instance -> {
 
-                if(instance.isType() && instance.asType().isImplicit()) return;
+                if (instance.isType() && instance.asType().isImplicit()) return;
 
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);

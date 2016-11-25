@@ -23,7 +23,7 @@ var VueRouter = require('vue-router')
 var graknapp = require('./components/main.vue');
 var visualiser = require('./components/visualiser.vue')
 var console = require('./components/console.vue')
-var status =  require('./components/status.vue')
+var config =  require('./components/config.vue')
 
 Vue.use(VueRouter)
 
@@ -32,8 +32,8 @@ var router = new VueRouter({
     linkActiveClass: 'active'
 })
 router.map({
-    '/status': {
-        component: status
+    '/config': {
+        component: config
     },
     '/graph': {
         component: visualiser

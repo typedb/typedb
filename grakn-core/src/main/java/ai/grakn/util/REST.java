@@ -29,6 +29,9 @@ public class REST {
         public static final String META_TYPE_INSTANCES_URI = "/shell/metaTypeInstances";
         public static final String MATCH_QUERY_URI = "/shell/match";
         public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
+        public static final String GRAPH_ANALYTICS_QUERY_URI = "/graph/analytics";
+        public static final String GRAPH_PRE_MATERIALISE_QUERY_URI = "/graph/preMaterialiseAll";
+
 
         public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
         public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
