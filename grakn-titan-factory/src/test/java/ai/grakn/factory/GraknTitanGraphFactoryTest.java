@@ -34,16 +34,14 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,11 +66,6 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     private static InternalFactory titanGraphFactory ;
 
-
-    @Parameterized.Parameters
-    public static List<Object[]> data() {
-        return Arrays.asList(new Object[100][0]);
-    }
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
@@ -205,11 +198,11 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     @Test
     public void testMultithreadedRetrievalOfGraphs(){
-        Set<Future> futures = ConcurrentHashMap.newKeySet();
+        Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
         TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", TEST_URI, TEST_CONFIG);
 
-        for(int j = 0; j < 300; j ++) {
+        for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
                 try {
                     GraknTitanGraph graph = factory.getGraph(false);
