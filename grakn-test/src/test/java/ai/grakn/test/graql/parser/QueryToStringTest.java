@@ -48,7 +48,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testSimpleMatchQueryToString() {
-        assertValidToString(qb.match(var("x").isa("movie").id("Godfather")));
+        assertValidToString(qb.match(var("x").isa("movie").name("Godfather")));
     }
 
     @Test
