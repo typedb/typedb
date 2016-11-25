@@ -40,7 +40,7 @@ class OutHasScopeFragment extends AbstractFragment {
     }
 
     @Override
-    public long fragmentCost(long previousCost) {
+    public double fragmentCost(double previousCost) {
         return previousCost * NUM_INSTANCES_PER_SCOPE;
     }
 }

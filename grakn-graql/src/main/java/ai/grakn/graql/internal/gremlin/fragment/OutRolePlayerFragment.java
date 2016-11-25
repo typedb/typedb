@@ -40,7 +40,7 @@ class OutRolePlayerFragment extends AbstractFragment {
     }
 
     @Override
-    public long fragmentCost(long previousCost) {
+    public double fragmentCost(double previousCost) {
         return previousCost;
     }
 }

@@ -64,7 +64,7 @@ class ShortcutFragment extends AbstractFragment {
     }
 
     @Override
-    public long fragmentCost(long previousCost) {
+    public double fragmentCost(double previousCost) {
         return previousCost * NUM_SHORTCUT_EDGES_PER_INSTANCE;
     }
 

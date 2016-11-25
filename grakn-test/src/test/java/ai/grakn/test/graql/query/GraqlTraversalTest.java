@@ -86,6 +86,15 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testResourceWithTypeFasterFromType() {
+        GraqlTraversal fromInstance =
+                traversal(outIsa("x", "X"), id("X", "_"), makeShortcut("x", "y"), outIsa("y", "Y"), id("Y", "_"));
+        GraqlTraversal fromType =
+                traversal(id("X", "_"), inIsa("X", "x"), makeShortcut("x", "y"), outIsa("y", "Y"), id("Y", "_"));
+        assertFaster(fromType, fromInstance);
+    }
+
+    @Test
     public void testCheckDistinctCastingEarlyFaster() {
         Fragment distinctCasting = distinctCasting("c2", "c1");
         Fragment inRolePlayer = inRolePlayer("x", "c1");
@@ -182,6 +191,10 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
         return GraqlTraversal.create(graph, fragmentsSet);
     }
 
+    private static Fragment makeShortcut(String x, String y) {
+        return shortcut(Optional.empty(), Optional.empty(), Optional.empty(), x, y);
+    }
+
     private static void assertNearlyOptimal(Pattern pattern) {
         GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"), Optional.empty());
 
@@ -190,8 +203,8 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
         //noinspection OptionalGetWithoutIsPresent
         GraqlTraversal globalOptimum = query.allGraqlTraversals().min(comparing(GraqlTraversal::getComplexity)).get();
 
-        long globalComplexity = globalOptimum.getComplexity();
-        long complexity = traversal.getComplexity();
+        double globalComplexity = globalOptimum.getComplexity();
+        double complexity = traversal.getComplexity();
 
         assertTrue(
                 "Expected\n " +
@@ -202,8 +215,8 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     private static void assertFaster(GraqlTraversal fast, GraqlTraversal slow) {
-        long fastComplexity = fast.getComplexity();
-        long slowComplexity = slow.getComplexity();
+        double fastComplexity = fast.getComplexity();
+        double slowComplexity = slow.getComplexity();
         boolean condition = fastComplexity < slowComplexity;
 
         assertTrue(

@@ -64,7 +64,7 @@ public class GraqlTraversal {
 
     // TODO: Find a better way to represent these values
     // Just a pretend big number
-    private static final long NUM_VERTICES_ESTIMATE = 1_000;
+    private static final long NUM_VERTICES_ESTIMATE = 10_000;
 
     private static final long MAX_TRAVERSAL_ATTEMPTS = 1_000;
 
@@ -117,10 +117,10 @@ public class GraqlTraversal {
             numFragments -= 1;
         }
 
-        long cost = 1;
+        double cost = 1;
 
         while (!fragmentSets.isEmpty()) {
-            Pair<Long, List<Fragment>> pair = findPlan(fragmentSets, names, cost, depth);
+            Pair<Double, List<Fragment>> pair = findPlan(fragmentSets, names, cost, depth);
             cost = pair.getValue0();
             List<Fragment> newFragments = Lists.reverse(pair.getValue1());
 
@@ -146,15 +146,15 @@ public class GraqlTraversal {
      * @param depth the maximum depth the plan is allowed to descend in the tree
      * @return a pair, containing the cost of the plan and a list of fragments comprising the traversal plan
      */
-    private static Pair<Long, List<Fragment>> findPlan(
-            Set<EquivalentFragmentSet> fragmentSets, Set<String> names, long cost, long depth
+    private static Pair<Double, List<Fragment>> findPlan(
+            Set<EquivalentFragmentSet> fragmentSets, Set<String> names, double cost, long depth
     ) {
         // Base case
-        Pair<Long, List<Fragment>> baseCase = Pair.with(cost, Lists.newArrayList());
+        Pair<Double, List<Fragment>> baseCase = Pair.with(cost, Lists.newArrayList());
 
         if (depth == 0) return baseCase;
 
-        Comparator<Pair<Long, List<Fragment>>> byCost = comparing(Pair::getValue0);
+        Comparator<Pair<Double, List<Fragment>>> byCost = comparing(Pair::getValue0);
 
         // Try every fragment that has its dependencies met, then select the lowest cost fragment
         return fragments(fragmentSets)
@@ -164,11 +164,11 @@ public class GraqlTraversal {
                 .orElse(baseCase);
     }
 
-    private static Pair<Long, List<Fragment>> findPlanWithFragment(
-            Fragment fragment, Set<EquivalentFragmentSet> fragmentSets, Set<String> names, long cost, long depth
+    private static Pair<Double, List<Fragment>> findPlanWithFragment(
+            Fragment fragment, Set<EquivalentFragmentSet> fragmentSets, Set<String> names, double cost, long depth
     ) {
         // Calculate the new costs, fragment sets and variable names when using this fragment
-        long newCost = fragmentCost(fragment, cost, names);
+        double newCost = fragmentCost(fragment, cost, names);
 
         EquivalentFragmentSet fragmentSet = fragment.getEquivalentFragmentSet();
         Set<EquivalentFragmentSet> newFragmentSets = Sets.difference(fragmentSets, ImmutableSet.of(fragmentSet));
@@ -176,7 +176,7 @@ public class GraqlTraversal {
         Set<String> newNames = Sets.union(names, fragment.getVariableNames().collect(toSet()));
 
         // Recursively find a plan
-        Pair<Long, List<Fragment>> pair = findPlan(newFragmentSets, newNames, newCost, depth - 1);
+        Pair<Double, List<Fragment>> pair = findPlan(newFragmentSets, newNames, newCost, depth - 1);
 
         // Add this fragment and cost and return
         pair.getValue1().add(fragment);
@@ -264,15 +264,15 @@ public class GraqlTraversal {
     /**
      * Get the estimated complexity of the traversal.
      */
-    public long getComplexity() {
+    public double getComplexity() {
 
-        long totalCost = 0;
+        double totalCost = 0;
 
         for (List<Fragment> list : fragments) {
             Set<String> names = new HashSet<>();
 
-            long cost = 1;
-            long listCost = 0;
+            double cost = 1;
+            double listCost = 0;
 
             for (Fragment fragment : list) {
                 cost = fragmentCost(fragment, cost, names);
@@ -286,7 +286,7 @@ public class GraqlTraversal {
         return totalCost;
     }
 
-    private static long fragmentCost(Fragment fragment, long previousCost, Set<String> names) {
+    private static double fragmentCost(Fragment fragment, double previousCost, Set<String> names) {
         if (names.contains(fragment.getStart())) {
             return fragment.fragmentCost(previousCost);
         } else {
