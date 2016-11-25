@@ -26,6 +26,7 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
@@ -60,10 +61,17 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     @Override
     public synchronized TitanGraph getGraphWithNewTransaction(TitanGraph graph){
         synchronized (graph) {
+            String thing = "Open transactions: [";
+            for (TitanTransaction titanTransaction : ((StandardTitanGraph) graph).getOpenTransactions()) {
+                thing += titanTransaction.hashCode() + ", ";
+            }
+            thing += "]";
+
             if (!graph.tx().isOpen()) {
                 graph.tx().open();
+                thing += " new transaction created [" + graph.tx() + "]";
                 System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
-                        "transaction on graph [" + graph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) graph).getOpenTransactions().size() + "]");
+                        "transaction on graph [" + graph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) graph).getOpenTransactions().size() + "] " + thing);
             }
             return graph;
         }
@@ -84,10 +92,17 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         buildTitanIndexes(titanGraph);
         titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
 
+        String thing = "Open transactions: [";
+        for (TitanTransaction titanTransaction : ((StandardTitanGraph) graph).getOpenTransactions()) {
+            thing += titanTransaction.hashCode() + ", ";
+        }
+        thing += "]";
+
         if (!titanGraph.tx().isOpen()) {
             titanGraph.tx().open();
+            thing += " new transaction created [" + graph.tx() + "]";
             System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
-                    "transaction on NEW graph [" + titanGraph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) titanGraph).getOpenTransactions().size() + "]");
+                    "transaction on NEW graph [" + titanGraph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) titanGraph).getOpenTransactions().size() + "] " + thing);
         }
 
         return titanGraph;
