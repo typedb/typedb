@@ -1,4 +1,93 @@
-Version 0.6.0
+Version 0.7.0
+- support for relation type variables (#666)
+- Fix how graql prints maps (#665)
+- Dashboard with Reasoner and Analytics: (#664)
+- Used bigger number (#663)
+- Add support for comparing resources of variables (#660)
+- Ignore testMultithreadedRetrievalOfGraphs in GraknTitanGraphFactoryTest (#661)
+- Better atom creation (#659)
+- Improve bulk mutate, use core to check results in tests, add changes made for demo (#658)
+- Throw Exception when using a closed graph which specifies the reason it is closed. (#656)
+- Add variables for custom log level/appender. (#657)
+- Functionality #11193 Search/Retrieve multiple tasks based on resource values (#654)
+- fix compile problems of shorted path with Eclipse
+- cleaning atomic interface and simplified getRules (#655)
+- Change default cassandra token number to 4 (#652)
+- Make Graql shell autocomplete operate on the client side (#653)
+- Grakn task store (#651)
+- Load system keyspace on startup (#639)
+- Add support for `has $x`, to get all attached resources (#634)
+- Test for checking that resources are merged after bulk mutation in analytics.  (#644)
+- force tinker graph for everything apart genealogy test (#645)
+- Fix bug where queries were not correctly limited when using reasoner (#650)
+- Fix bug when executing multiple analytics methods from shell (#648)
+- Add new shortest path plus some minor improvements (#631)
+- change the number of tokens for unit tests (#646)
+- various fixes (#643)
+- added support for multiprop relations (relation resources etc.) (#642)
+- updated genealogy test suite (#641)
+- faster execution when requerying (#638)
+- Visualise ontology (#630)
+- relation fixes (#624)
+- Auto close the main titan graph when no transactions remain open (#635)
+- precomputeInferences with caching (#640)
+- Pagination (#636)
+- add precompute option (#633)
+- Refactor `VarAdmin`, removing any unnecessary methods (#628)
+- Make Graql shell print a relation's roleplayers (#626)
+- Add `Query#infer` method (#625)
+- Lock ontology when using a batch graph (#618)
+- fixed issue with select variables for materialisation (#623)
+- Genealogy test suite (#622)
+- Bug fix- Engine loader neverending (#621)
+- Ignore TaskControllerTests (#620)
+- small fix of compilation error with Eclipse compiler and time zone unit test issue of migration macros
+- BackgroundTasks refactor (#616)
+- Move Macro interface to grakn-core (#617)
+- Fix issue where clean command would clean even if you said no! (#615)
+- fixed null pointer issue with sub roles in rel (#613)
+- added materialisation by default (#612)
+- Fixes in handling node resources (#614)
+- Graql Templating new macros (#609)
+- Add debug log whenever query plan is created (#610)
+- Add support for "not equals" (#606)
+- fixed bug with resource rule applicability (#608)
+- Remove 404 handing from engine (#607)
+- Move and renaming `Casting` interface (#603)
+- Move and renaming `Casting` interface (#603)
+- fixed hashing (#601)
+- Taking advantage of `resources` on instance (#605)
+- Add one-to-one shortest path (#594)
+- added subrole checking (#597)
+- Improve instance creation implementation (#599)
+- Change Graql orderBy to take an enum
+- Fix bug related to order of fragments
+- Tidy up some code
+- Move Instance Construction To Type Classes (#595)
+- cleanup
+- rearrange getting unifiers
+- Refresh graph When switching between batch and normal graph after a commit has been done.  (#590)
+- Move resources to Instances interface (#591)
+- Log level bug fix and 404 exception handling (#592)
+- Remove left-over print statement
+- Remove unnecessary Fragment methods
+- Add semi-optimal query optimisation
+- added one more test
+- fixed unification bug when unifying atoms with different number of castings
+- added referencing relation user defined variables
+- Log level bug fix and 404 exception handling
+- Remove embedded link so it opens in _top. (#589)
+- update to version 0.7.0-SNAPSHOT
+
+
+Version v0.6.1
+- 0.6.1 release
+- Engine loader fixes that help load the film data set.
+- New import file (#586)
+
+
+Version v0.6.0
+- 0.6.0 release
 - disable brackground task supervisor temporarily
 - Aggregate Javadocs. Organization links in header/footer. (#588)
 - Removing System exit (#585)
