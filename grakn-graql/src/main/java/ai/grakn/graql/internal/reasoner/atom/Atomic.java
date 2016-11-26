@@ -42,6 +42,10 @@ public interface Atomic extends Cloneable{
      * @return true if the atom can be resolved by a rule (atom exists in one of the rule's head)
      */
     default boolean isRuleResolvable(){ return false;}
+    /**
+     * @return true if the atom can form an atomic query
+     */
+    default boolean isSelectable(){ return false;}
 
     default boolean isRecursive(){ return false;}
 

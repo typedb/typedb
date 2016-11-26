@@ -27,6 +27,8 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.Binary;
+import ai.grakn.graql.internal.reasoner.atom.TypeAtom;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
@@ -70,7 +72,7 @@ public class Query implements MatchQueryInternal {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph().orElse(null);
-        this.selectVars = atom.getVarNames();
+        this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
@@ -184,6 +186,9 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * @return set of atoms constituting constraints (by means of types) for this atom
+     */
     public Set<Atom> getTypeConstraints(){
         return getAtoms().stream()
                 .filter(Atomic::isAtom)
@@ -365,10 +370,17 @@ public class Query implements MatchQueryInternal {
     }
 
     private void addAtomConstraints(Atom atom){
-        addAtomConstraints(atom.getIdPredicates());
-        addAtomConstraints(atom.getValuePredicates());
-        addAtomConstraints(atom.getTypeConstraints()
-                .stream().filter(at -> !at.isRuleResolvable())
+        addAtomConstraints(atom.getPredicates());
+        Set<Atom> types = atom.getTypeConstraints().stream()
+                .filter(at -> !at.isSelectable())
+                .filter(at -> !at.isRuleResolvable())
+                .collect(Collectors.toSet());
+        addAtomConstraints(types);
+        //id predicates from types
+        addAtomConstraints(types.stream()
+                .map(type -> (TypeAtom) type)
+                .filter(type -> type.getPredicate() != null)
+                .map(Binary::getPredicate)
                 .collect(Collectors.toSet()));
     }
 
@@ -384,7 +396,7 @@ public class Query implements MatchQueryInternal {
 
         //pass relations or rule-resolvable types and resources
         Set<Atom> selectedAtoms = atoms.stream()
-                .filter(atom -> (!atom.isType()) || atom.isRuleResolvable())
+                .filter(atom -> (atom.isSelectable() || atom.isRuleResolvable()))
                 .collect(Collectors.toSet());
 
         //order by variables

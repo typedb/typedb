@@ -23,17 +23,13 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,29 +40,8 @@ public abstract class Atom extends AtomBase {
     protected String typeId = null;
 
     public Atom(VarAdmin pattern) { this(pattern, null);}
-    public Atom(VarAdmin pattern, Query par) {
-        super(pattern, par);
-        this.typeId = extractTypeId(atomPattern.asVar());
-    }
-
-    public Atom(Atom a) {
-        super(a);
-        this.typeId = extractTypeId(atomPattern.asVar());
-    }
-
-    private String extractTypeId(VarAdmin var) {
-        String vTypeId;
-        Iterator<HasResourceProperty> resources = var.getProperties(HasResourceProperty.class).iterator();
-        if (resources.hasNext()) {
-            HasResourceProperty resource = resources.next();
-            if (resources.hasNext())
-                throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
-            vTypeId = resource.getType().orElse("");
-        }
-        else
-            vTypeId = var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getId).orElse("");
-        return vTypeId;
-    }
+    public Atom(VarAdmin pattern, Query par) { super(pattern, par);}
+    public Atom(Atom a) { super(a);}
 
     @Override
     public boolean isAtom(){ return true;}
@@ -95,6 +70,7 @@ public abstract class Atom extends AtomBase {
         GraknGraph graph = getParentQuery().getGraph().orElse(null);
         Type type = getType();
         //TODO change if we allow for Types having null type
+        //Case: relation without type - match all
         if (type == null) {
             Collection<Rule> applicableRules = Reasoner.getRules(graph).stream()
                     .filter(rule -> rule.getConclusionTypes().stream().filter(Type::isRelationType).count() != 0)
@@ -125,7 +101,7 @@ public abstract class Atom extends AtomBase {
 
         String typeId = getTypeId();
         if (typeId.isEmpty()) return false;
-        Type type = getParentQuery().getGraph().orElse(null).getType(typeId);
+        Type type = getType();
         Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
         Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
 
@@ -147,25 +123,9 @@ public abstract class Atom extends AtomBase {
         throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
     }
 
-    public Set<Predicate> getIdPredicates() {
-        Set<Predicate> relevantPredicates = new HashSet<>();
-        getParentQuery().getIdPredicates().stream()
-                .filter(atom -> containsVar(atom.getVarName()))
-                .forEach(relevantPredicates::add);
-        //ids from indirect types
-        getTypeConstraints()
-                .forEach(atom -> {
-                    Predicate predicate = getParentQuery().getIdPredicate(atom.getValueVariable());
-                    if (predicate != null) relevantPredicates.add(predicate);
-                });
-        return relevantPredicates;
-    }
-
-    public Set<Predicate> getValuePredicates(){
-        return getParentQuery().getValuePredicates().stream()
-                .filter(atom -> (containsVar(atom.getVarName())))
-                .collect(Collectors.toSet());
-    }
+    public abstract Set<Predicate> getPredicates();
+    public abstract Set<Predicate> getIdPredicates();
+    public abstract Set<Predicate> getValuePredicates();
 
     public Set<Atom> getTypeConstraints(){
         Set<Atom> relevantTypes = new HashSet<>();

@@ -134,7 +134,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};} or " +
                 "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        //assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 

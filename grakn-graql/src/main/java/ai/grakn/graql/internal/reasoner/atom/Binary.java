@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
@@ -29,35 +28,54 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class Binary extends Atom{
+public abstract class Binary extends Atom {
 
     private Predicate predicate = null;
-    protected String valueVariable;
+    private String valueVariable;
 
-    public Binary(VarAdmin pattern, Query par) { this(pattern, null, par);}
-    public Binary(VarAdmin pattern, Predicate p, Query par){
+    public Binary(VarAdmin pattern, Predicate p, Query par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
         this.predicate = p;
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
     public Binary(Binary a) {
         super(a);
         this.valueVariable = extractValueVariableName(a.getPattern().asVar());
-        this.predicate = a.getPredicate();
-    }
-
-    protected abstract String extractValueVariableName(VarAdmin var);
-    public Predicate getPredicate(){ return predicate;}
-    private boolean predicatesEquivalent(Binary atom){
-        Predicate pred = getPredicate();
-        Predicate objPredicate = atom.getPredicate();
-        return (pred  == null && objPredicate == null)
-            || ((pred  != null && objPredicate != null) && pred.isEquivalent(objPredicate));
+        this.predicate = a.getPredicate() != null ? (Predicate) a.getPredicate().clone() : null;
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
     @Override
-    public boolean isBinary(){ return true;}
+    public void setParentQuery(Query q) {
+        super.setParentQuery(q);
+        if (predicate != null) predicate.setParentQuery(q);
+    }
+
+    protected abstract String extractTypeId(VarAdmin var);
+
+    protected abstract String extractValueVariableName(VarAdmin var);
+
+    public Predicate getPredicate() {
+        return predicate;
+    }
+
+    protected void setPredicate(Predicate p) {
+        predicate = p;
+    }
+
+    private boolean predicatesEquivalent(Binary atom) {
+        Predicate pred = getPredicate();
+        Predicate objPredicate = atom.getPredicate();
+        return (pred == null && objPredicate == null)
+                || ((pred != null && objPredicate != null) && pred.isEquivalent(objPredicate));
+    }
+
+    @Override
+    public boolean isBinary() {
+        return true;
+    }
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
@@ -94,21 +112,42 @@ public abstract class Binary extends Atom{
     }
 
     @Override
-    public int equivalenceHashCode(){
+    public int equivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + (predicate != null? predicate.equivalenceHashCode() : 0);
+        hashCode = hashCode * 37 + (predicate != null ? predicate.equivalenceHashCode() : 0);
         return hashCode;
     }
 
-    @Override
-    public Set<Predicate> getPredicates(){
-        return getParentQuery().getAtoms().stream()
-                .filter(Atomic::isPredicate).map(atom -> (Predicate) atom)
-                .filter(atom -> atom.getVarName().equals(valueVariable)).collect(Collectors.toSet());
+    public String getValueVariable() {
+        return valueVariable;
     }
 
-    public String getValueVariable(){ return valueVariable;}
+    protected void setValueVariable(String var) {
+        valueVariable = var;
+    }
+
+    @Override
+    public boolean isValueUserDefinedName() {
+        return predicate == null;
+    }
+
+    @Override
+    public Set<Predicate> getIdPredicates() {
+        //direct predicates
+        Set<Predicate> idPredicates = getParentQuery().getIdPredicates().stream()
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+        if (getPredicate() != null) idPredicates.add(getPredicate());
+        return idPredicates;
+    }
+
+    @Override
+    public Set<Predicate> getPredicates() {
+        Set<Predicate> predicates = getValuePredicates();
+        predicates.addAll(getIdPredicates());
+        return predicates;
+    }
 
     public Set<Atom> getLinkedAtoms(){
         Set<Atom> atoms = new HashSet<>();
@@ -123,13 +162,20 @@ public abstract class Binary extends Atom{
         return atoms;
     }
 
-    protected abstract void setValueVariable(String var);
-
     @Override
     public Set<String> getVarNames() {
-        Set<String> varNames = Sets.newHashSet(getVarName());
-        if (!valueVariable.isEmpty()) varNames.add(valueVariable);
-        return varNames;
+        Set<String> vars = new HashSet<>();
+        if (isUserDefinedName()) vars.add(getVarName());
+        if (!valueVariable.isEmpty()) vars.add(valueVariable);
+        return vars;
+    }
+
+    @Override
+    public Set<String> getSelectedNames(){
+        Set<String> vars = super.getSelectedNames();
+        if(isUserDefinedName()) vars.add(getVarName());
+        if(isValueUserDefinedName()) vars.add(getValueVariable());
+        return vars;
     }
 
     @Override
@@ -141,6 +187,7 @@ public abstract class Binary extends Atom{
         } else if (var.equals(to)) {
             setValueVariable("captured->" + var);
         }
+        if (predicate != null) predicate.unify(from, to);
     }
 
     @Override
@@ -153,6 +200,7 @@ public abstract class Binary extends Atom{
         else if (unifiers.containsValue(var)) {
             setValueVariable("captured->" + var);
         }
+        if (predicate != null) predicate.unify(unifiers);
     }
 
     @Override
@@ -161,12 +209,15 @@ public abstract class Binary extends Atom{
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
 
         Map<String, String> unifiers = new HashMap<>();
-        String childVarName = this.getVarName();
-        String parentVarName = parentAtom.getVarName();
         String childValVarName = this.getValueVariable();
         String parentValVarName = ((Binary) parentAtom).getValueVariable();
 
-        if (!childVarName.equals(parentVarName)) unifiers.put(childVarName, parentVarName);
+        if (parentAtom.isUserDefinedName()){
+            String childVarName = this.getVarName();
+            String parentVarName = parentAtom.getVarName();
+            if (!childVarName.equals(parentVarName))
+                unifiers.put(childVarName, parentVarName);
+        }
         if (!childValVarName.equals(parentValVarName)) unifiers.put(childValVarName, parentValVarName);
         return unifiers;
     }

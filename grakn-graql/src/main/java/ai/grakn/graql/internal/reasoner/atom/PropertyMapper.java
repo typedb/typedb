@@ -68,18 +68,38 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(RelationProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        Set<RelationPlayer> relationPlayers = prop.getRelationPlayers().collect(Collectors.toSet());
         Var relVar = var.isUserDefinedName()? Graql.var(var.getName()) : Graql.var();
-
-        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        if (isaProp != null) relVar.isa(isaProp.getProperty());
+        Set<RelationPlayer> relationPlayers = prop.getRelationPlayers().collect(Collectors.toSet());
         relationPlayers.forEach(rp -> {
             VarAdmin role = rp.getRoleType().orElse(null);
             VarAdmin rolePlayer = rp.getRolePlayer();
             if (role != null) relVar.rel(role, rolePlayer);
             else relVar.rel(rolePlayer);
         });
-        atoms.add(new Relation(relVar.admin(), parent));
+
+        //id part
+        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
+        IdPredicate predicate = null;
+        //Isa present
+        if (isaProp != null) {
+            VarAdmin isaVar = isaProp.getType();
+            String type = isaVar.getId().orElse("");
+            String typeVariable = type.isEmpty()? isaVar.getName() : "rel-" + UUID.randomUUID().toString();
+            relVar.isa(Graql.var(typeVariable));
+            if (!type.isEmpty()) {
+                VarAdmin idVar = Graql.var(typeVariable).id(isaProp.getProperty()).admin();
+                predicate = new IdPredicate(idVar, parent);
+            }
+            else {
+                predicate = vars.stream()
+                        .filter(v -> v.getName().equals(typeVariable))
+                        .flatMap(v -> v.getProperties(IdProperty.class).map(vp -> new IdPredicate(vp, v, parent)))
+                        .findFirst().orElse(null);
+            }
+        }
+
+        atoms.add(new Relation(relVar.admin(), predicate, parent));
+        if (predicate != null) atoms.add(predicate);
         return atoms;
     }
 

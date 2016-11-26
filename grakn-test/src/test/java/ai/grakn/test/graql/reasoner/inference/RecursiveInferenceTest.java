@@ -66,8 +66,6 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        //assertEquals(Sets.newHashSet(qb.<MatchQuery>parse(queryString)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -94,7 +92,6 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**as above but both directions*/
@@ -112,7 +109,6 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -133,7 +129,6 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        //assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -169,10 +164,10 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; select $Y;";
+        String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; select $Y, $name;";
         MatchQuery query = qb.parse(queryString);
 
-        String explicitQuery = "match $Y has name $name;{$name value 'd';} or {$name value 'g';}; select $Y;";
+        String explicitQuery = "match $Y has name $name;{$name value 'd';} or {$name value 'g';};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
