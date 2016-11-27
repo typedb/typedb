@@ -1,6 +1,6 @@
 # GRAKN.AI
 
-[![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases)
+[![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
 [![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
 [![Coverage Status](https://coveralls.io/repos/github/graknlabs/grakn/badge.svg?branch=master)](https://coveralls.io/github/graknlabs/grakn?branch=master)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
