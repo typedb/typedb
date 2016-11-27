@@ -196,10 +196,10 @@ public class Relation extends TypeAtom{
                         //Check for any constraints on the variables
                         String chVar = childRoleVarTypeMap.get(parentRole).getKey();
                         String pVar = entry.getValue().getKey();
-                        String chId = child.getBody().getIdPredicate(chVar).getPredicateValue();
-                        String pId = parent.getIdPredicate(pVar).getPredicateValue();
-                        if (!chId.isEmpty() && !pId.isEmpty())
-                            ruleRelevant &= chId.equals(pId);
+                        Predicate childPredicate = child.getBody().getIdPredicate(chVar);
+                        Predicate parentPredicate = parent.getIdPredicate(pVar);
+                        if (childPredicate != null && parentPredicate != null)
+                            ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
                     }
                 }
             }
