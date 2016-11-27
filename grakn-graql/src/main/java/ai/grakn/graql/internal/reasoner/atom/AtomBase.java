@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;

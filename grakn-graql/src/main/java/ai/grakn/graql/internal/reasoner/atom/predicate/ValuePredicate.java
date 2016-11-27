@@ -16,12 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 

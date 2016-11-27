@@ -23,17 +23,15 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.internal.reasoner.atom.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

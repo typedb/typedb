@@ -25,8 +25,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 
-import ai.grakn.graql.internal.reasoner.atom.Binary;
-import ai.grakn.graql.internal.reasoner.atom.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
