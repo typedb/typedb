@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
 [![Coverage Status](https://coveralls.io/repos/github/graknlabs/grakn/badge.svg?branch=master)](https://coveralls.io/github/graknlabs/grakn?branch=master)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
+[![Download count](https://img.shields.io/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
 
 Copyright (C) 2016  Grakn Labs Limited.  
 
