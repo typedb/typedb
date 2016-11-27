@@ -21,7 +21,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import java.util.HashSet;
 import java.util.Set;
 
 public class TypeAtom extends Binary{
@@ -64,6 +63,10 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    public Set<Predicate> getValuePredicates() { return new HashSet<>();}
+    public Set<Predicate> getIdPredicates() {
+        Set<Predicate> idPredicates = super.getIdPredicates();
+        if (getPredicate() != null) idPredicates.add(getPredicate());
+        return idPredicates;
+    }
 }
 
