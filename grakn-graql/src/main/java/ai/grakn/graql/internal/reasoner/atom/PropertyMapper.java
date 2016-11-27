@@ -19,6 +19,9 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.admin.RelationPlayer;
+import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
+import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
@@ -26,6 +29,9 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
+import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -66,6 +72,12 @@ public class PropertyMapper {
             return map((IsaProperty)prop, var, vars, parent);
         else if (prop instanceof HasResourceProperty)
             return map((HasResourceProperty)prop, var, vars, parent);
+        else if (prop instanceof IsAbstractProperty)
+            return map((IsAbstractProperty)prop, var, vars, parent);
+        else if (prop instanceof DataTypeProperty)
+            return map((DataTypeProperty)prop, var, vars, parent);
+        else if (prop instanceof RegexProperty)
+            return map((RegexProperty)prop, var, vars, parent);
         else
             throw new IllegalArgumentException(ErrorMessage.GRAQL_PROPERTY_NOT_MAPPED.getMessage(prop.toString()));
     }
@@ -115,6 +127,18 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(ValueProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         return Sets.newHashSet(new ValuePredicate(prop, var, parent));
+    }
+
+    private static Set<Atomic> map(RegexProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+        return Sets.newHashSet(new RegexAtom(prop, var, parent));
+    }
+
+    private static Set<Atomic> map(DataTypeProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+        return Sets.newHashSet(new DataTypeAtom(prop, var, parent));
+    }
+
+    private static Set<Atomic> map(IsAbstractProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+        return Sets.newHashSet(new IsAbstractAtom(prop, var, parent));
     }
 
     private static Set<Atomic> map(SubProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {

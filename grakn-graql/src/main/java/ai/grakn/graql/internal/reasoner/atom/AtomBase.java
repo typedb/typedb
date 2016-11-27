@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -103,7 +104,14 @@ public abstract class AtomBase implements Atomic{
         }
     }
 
-    public abstract Map<String, String> getUnifiers(Atomic parentAtom);
+    public Map<String, String> getUnifiers(Atomic parentAtom) {
+        if (parentAtom.getClass() != this.getClass())
+            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+        Map<String, String> map = new HashMap<>();
+        if (!this.getVarName().equals(parentAtom.getVarName()))
+            map.put(this.getVarName(), parentAtom.getVarName());
+        return map;
+    }
     public Set<Predicate> getPredicates(){ return new HashSet<>();}
 }
 
