@@ -93,8 +93,8 @@ public class InsertQueryExecutor {
         //noinspection OptionalGetWithoutIsPresent
         varsByTypeName = ImmutableMap.copyOf(
                 vars.stream()
-                        .filter(var -> var.getName().isPresent())
-                        .collect(Collectors.groupingBy(var -> var.getName().get()))
+                        .filter(var -> var.getTypeName().isPresent())
+                        .collect(Collectors.groupingBy(var -> var.getTypeName().get()))
         );
     }
 
@@ -167,9 +167,9 @@ public class InsertQueryExecutor {
 
         // If type provided, then 'put' the concept, else 'get' it by ID or name
         Optional<Concept> concept = optionalOr(
-                typeConcept.map(type -> putConceptByType(var.getName(), var.getId(), var, type)),
+                typeConcept.map(type -> putConceptByType(var.getTypeName(), var.getId(), var, type)),
                 var.getId().map(graph::<Concept>getConcept),
-                var.getName().map(graph::getType)
+                var.getTypeName().map(graph::getType)
         );
 
         if (concept.isPresent()) {
@@ -178,7 +178,7 @@ public class InsertQueryExecutor {
             String message;
 
             if (subVar.isPresent()) {
-                String subId = subVar.get().getName().orElse("<no-name>");
+                String subId = subVar.get().getTypeName().orElse("<no-name>");
                 message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), subId);
             } else {
                 message = var.getId().map(ErrorMessage.INSERT_WITHOUT_TYPE::getMessage)
@@ -214,7 +214,7 @@ public class InsertQueryExecutor {
             var = Patterns.mergeVars(varsToMerge);
 
             // And finally merge variables referred to by type name...
-            boolean byTypeNameChange = var.getName().map(id -> varsToMerge.addAll(varsByTypeName.get(id))).orElse(false);
+            boolean byTypeNameChange = var.getTypeName().map(id -> varsToMerge.addAll(varsByTypeName.get(id))).orElse(false);
             var = Patterns.mergeVars(varsToMerge);
 
             changed = byVarNameChange | byIdChange | byTypeNameChange;

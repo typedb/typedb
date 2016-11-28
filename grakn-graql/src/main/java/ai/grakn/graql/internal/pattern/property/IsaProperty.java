@@ -84,7 +84,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
-        type.getName().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
+        type.getTypeName().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
             throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getName()));
         });
     }

@@ -46,7 +46,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        String resourceTypeName = resourceType.getName().orElseThrow(
+        String resourceTypeName = resourceType.getTypeName().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 

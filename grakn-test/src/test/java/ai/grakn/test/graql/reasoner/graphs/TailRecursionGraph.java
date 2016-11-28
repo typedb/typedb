@@ -46,20 +46,19 @@ public class TailRecursionGraph extends TestGraph {
         EntityType bEntity = graknGraph.getEntityType("b-entity");
         RelationType Q = graknGraph.getRelationType("Q");
 
-        String a0Id = putEntity("a0", aEntity).getId();
-        String[][] bInstancesIds = new String[m + 2][n + 2];
-        for (int i = 1; i <= m; i++)
-            for (int j = 1; j <= n; j++)
-                bInstancesIds[i][j] = putEntity("b" + i + j, bEntity).getId();
+        putEntity("a0", aEntity);
+        for(int i = 1 ; i <= m + 1 ;i++)
+            for(int j = 1 ; j <= n ;j++)
+                putEntity("b" + i + "," + j, bEntity);
 
         for (int j = 1; j <= n; j++) {
             Q.addRelation()
-                    .putRolePlayer(Qfrom, graknGraph.getConcept(a0Id))
-                    .putRolePlayer(Qto, graknGraph.getConcept(bInstancesIds[1][j]));
-            for (int i = 1; i <= m; i++) {
+                    .putRolePlayer(Qfrom, getInstance("a0"))
+                    .putRolePlayer(Qto, getInstance("b1" + "," + j));
+            for(int i = 1 ; i <= m ;i++) {
                 Q.addRelation()
-                        .putRolePlayer(Qfrom, graknGraph.getConcept(bInstancesIds[i][j]))
-                        .putRolePlayer(Qto, graknGraph.getConcept(bInstancesIds[i + 1][j]));
+                        .putRolePlayer(Qfrom, getInstance("b" + i + "," + j))
+                        .putRolePlayer(Qto, getInstance("b" + (i + 1) + "," + j));
             }
         }
     }

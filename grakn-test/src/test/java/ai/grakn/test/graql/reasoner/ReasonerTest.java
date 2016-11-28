@@ -63,14 +63,14 @@ public class ReasonerTest extends AbstractEngineTest{
         RelationType parent = graph.getRelationType("sublocate");
         RelationType child = graph.getRelationType("resides");
 
-        roleMap.put(graph.getRoleType("member-location").getId(), graph.getRoleType("subject-location").getId());
-        roleMap.put(graph.getRoleType("container-location").getId(), graph.getRoleType("located-subject").getId());
+        roleMap.put(graph.getRoleType("member-location").getName(), graph.getRoleType("subject-location").getName());
+        roleMap.put(graph.getRoleType("container-location").getName(), graph.getRoleType("located-subject").getName());
 
         Pattern body = and(graph.graql().parsePatterns("(subject-location: $x, located-subject: $x1) isa resides;"));
         Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
 
         InferenceRule R2 = new InferenceRule(graph.getMetaRuleInference().addRule(body, head), graph);
-        Rule rule = Utility.createSubPropertyRule(parent , child, roleMap, graph);
+        Rule rule = Utility.createSubPropertyRule(parent, child, roleMap, graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -82,7 +82,7 @@ public class ReasonerTest extends AbstractEngineTest{
         GraknGraph graph = SNBGraph.getGraph();
 
         Rule rule = Utility.createTransitiveRule(graph.getRelationType("sublocate"),
-                graph.getRoleType("member-location").getId(), graph.getRoleType("container-location").getId(), graph);
+                graph.getRoleType("member-location").getName(), graph.getRoleType("container-location").getName(), graph);
 
         InferenceRule R = new InferenceRule(rule, graph);
 
@@ -116,11 +116,19 @@ public class ReasonerTest extends AbstractEngineTest{
         RelationType sublocate = graph.getRelationType("sublocate");
 
         LinkedHashMap<RelationType, Pair<String, String>> chain = new LinkedHashMap<>();
+<<<<<<< HEAD
         chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getId(), graph.getRoleType("subject-location").getId()));
         chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getId(), graph.getRoleType("container-location").getId()));
 
         Rule rule = Utility.createPropertyChainRule(resides, graph.getRoleType("located-subject").getId(),
                 graph.getRoleType("subject-location").getId(), chain, graph);
+=======
+        chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getName(), graph.getRoleType("subject-location").getName()));
+        chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getName(), graph.getRoleType("container-location").getName()));
+
+        Rule rule = Utility.createPropertyChainRule(resides, graph.getRoleType("located-subject").getName(),
+                graph.getRoleType("subject-location").getName(), chain, graph);
+>>>>>>> Propagate removing getters to reasoner (#15)
         InferenceRule R = new InferenceRule(rule, graph);
 
         Pattern body = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $y) isa resides;" +
@@ -135,7 +143,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testIdComma(){
         GraknGraph graph = SNBGraph.getGraph();
-        String queryString = "match $x isa Person, has name 'Bob';";
+        String queryString = "match $x isa person, has name 'Bob';";
         Query query = new Query(queryString, graph);
         assertTrue(query.getAtoms().size() == 4);
     }
@@ -297,12 +305,12 @@ public class ReasonerTest extends AbstractEngineTest{
         String queryString = "match $x isa $type;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
         String queryString2 = "match $y has name 'Poland';" +
-                "{$x isa $type;$type id 'university';$x has name 'Warsaw-Polytechnics';} or" +
-                "{$x isa $type;$type id 'university';$x has name 'University-of-Warsaw';} or" +
-                "{$x isa $type;{$type id 'city';} or {$type id 'geoObject';};$x has name 'Warsaw';} or" +
-                "{$x isa $type;{$type id 'city';} or {$type id 'geoObject';};$x has name 'Wroclaw';} or" +
-                "{$x isa $type;{$type id 'region';} or {$type id 'geoObject';};$x has name 'Masovia';} or" +
-                "{$x isa $type;{$type id 'region';} or {$type id 'geoObject';};$x has name 'Silesia';};";
+                "{$x isa $type;$type type-name 'university';$x has name 'Warsaw-Polytechnics';} or" +
+                "{$x isa $type;$type type-name 'university';$x has name 'University-of-Warsaw';} or" +
+                "{$x isa $type;{$type type-name 'city';} or {$type type-name 'geoObject';};$x has name 'Warsaw';} or" +
+                "{$x isa $type;{$type type-name 'city';} or {$type type-name 'geoObject';};$x has name 'Wroclaw';} or" +
+                "{$x isa $type;{$type type-name 'region';} or {$type type-name 'geoObject';};$x has name 'Masovia';} or" +
+                "{$x isa $type;{$type type-name 'region';} or {$type type-name 'geoObject';};$x has name 'Silesia';};";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().parse(queryString2);
 
@@ -313,11 +321,11 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testTypeVar3(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $x isa $type;$type id 'university';" +
+        String queryString = "match $x isa $type;$type type-name 'university';" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
         String queryString2 = "match $y has name 'Poland';" +
-                "{$x isa $type;$type id 'university';$x has name 'Warsaw-Polytechnics';} or" +
-                "{$x isa $type;$type id 'university';$x has name 'University-of-Warsaw';};";
+                "{$x isa $type;$type type-name 'university';$x has name 'Warsaw-Polytechnics';} or" +
+                "{$x isa $type;$type type-name 'university';$x has name 'University-of-Warsaw';};";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().parse(queryString2);
 
@@ -330,7 +338,7 @@ public class ReasonerTest extends AbstractEngineTest{
         GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type sub geoObject;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';$x has name $name;";
-        String queryString2 = "match $x isa $type;{$type id 'region';} or {$type id 'city';} or {$type id 'geoObject';};" +
+        String queryString2 = "match $x isa $type;{$type type-name 'region';} or {$type type-name 'city';} or {$type type-name 'geoObject';};" +
                 "$y isa country;$y has name 'Poland';(geo-entity: $x, entity-location: $y) isa is-located-in;$x has name $name;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().parse(queryString2);
@@ -374,7 +382,7 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testPlaysRole2(){
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
-        String queryString2 = "match $x isa person;$y isa $type;{$type id 'product';} or {$type id 'tag';};($x, $y) isa recommendation;";
+        String queryString2 = "match $x isa person;$y isa $type;{$type type-name 'product';} or {$type type-name 'tag';};($x, $y) isa recommendation;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().parse(queryString2);
 
@@ -489,7 +497,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testTypeVariable(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $x isa $type;$type id 'city';"+
+        String queryString = "match $x isa $type;$type type-name 'city';"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;select $x, $y;";
         String queryString2 = "match $x isa city;"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;";
@@ -503,7 +511,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testTypeVariable2(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $x isa $type;$type id 'city';"+
+        String queryString = "match $x isa $type;$type type-name 'city';"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;$y has name 'Poland';select $x, $y;";
         String queryString2 = "match $x isa city;"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in;$y has name 'Poland'; $y isa country;";
@@ -573,7 +581,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testRelationTypeVar(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match (geo-entity: $x) isa $type;$type id 'is-located-in'; select $x;";
+        String queryString = "match (geo-entity: $x) isa $type;$type type-name 'is-located-in'; select $x;";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
@@ -588,7 +596,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testRelationTypeVar2(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match (geo-entity: $x) isa $type;$type id 'is-located-in';";
+        String queryString = "match (geo-entity: $x) isa $type;$type type-name 'is-located-in';";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
