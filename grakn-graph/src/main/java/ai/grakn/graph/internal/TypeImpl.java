@@ -30,12 +30,10 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -72,15 +70,11 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     public Collection<RoleType> playsRoles() {
         Set<RoleType> rolesPlayed = new HashSet<>();
+        Set<RoleTypeImpl> directRoleTypes = getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE);
 
-
-
-        Iterator<Edge> edges = getVertex().edges(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE.getLabel());
-
-        edges.forEachRemaining(edge -> {
-            RoleTypeImpl roleType = getGraknGraph().getElementFactory().buildRoleType(edge.inVertex(), null);
-            roleType.subTypes().forEach(role -> rolesPlayed.add(role.asRoleType()));
-        });
+        for (RoleTypeImpl directRoleType : directRoleTypes) {
+            rolesPlayed.addAll(directRoleType.getSubHierarchySuperSet());
+        }
 
         return rolesPlayed;
     }
