@@ -69,14 +69,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Collection<RoleType> playsRoles() {
-        Set<RoleType> rolesPlayed = new HashSet<>();
-        Set<RoleTypeImpl> directRoleTypes = getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE);
-
-        for (RoleTypeImpl directRoleType : directRoleTypes) {
-            rolesPlayed.addAll(directRoleType.getSubHierarchySuperSet());
-        }
-
-        return rolesPlayed;
+        return getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE);
     }
 
     /**

@@ -27,6 +27,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -139,6 +140,33 @@ class ValidateGlobalRules {
      * @param roleType The entity type to validate
      */
     @SuppressWarnings("unchecked")
+    static Collection<Type> validateRolesPlayedSchema(RoleTypeImpl roleType){
+        RoleType superRoleType = roleType.superType();
+        if(superRoleType == null){ //No super role type no validation. I.e R1 sub R2 does not exist
+            return Collections.emptyList();
+        }
+
+        Set<Type> invalidTypes = new HashSet<>();
+        Collection<Type> typesAllowedToPlay = roleType.playedByTypes();
+        for (Type typeAllowedToPlay : typesAllowedToPlay) {
+
+            //Getting T1 sub* T2
+            Set<Type> superTypesAllowedToPlay = ((TypeImpl) typeAllowedToPlay).getSubHierarchySuperSet();
+            boolean superRoleTypeFound = false;
+
+            for (Type superTypeAllowedToPlay : superTypesAllowedToPlay) {
+                if(superTypeAllowedToPlay.playsRoles().contains(superRoleType)){
+                    superRoleTypeFound = true;
+                    break;
+                }
+            }
+
+            if(!superRoleTypeFound){ //We found a type whose super set cannot play R2
+                invalidTypes.add(typeAllowedToPlay);
+            }
+        }
+
+        return invalidTypes;
     static Collection<RoleType> validateRolesPlayedSchema(RoleTypeImpl roleType){
         return new HashSet<>();
     static boolean validateInstancePlaysAllRequiredRoles(Instance instance) {

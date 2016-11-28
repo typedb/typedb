@@ -28,13 +28,12 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -321,18 +320,6 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
 
-    /*## 3: negative (schema)
-
-    person isa entity-type
-    plays-role parent;
-
-    man sub person
-    plays-role relative;
-
-    relative isa role-type;
-
-    parent sub relative;*/
-
     @Test
     public void tesRoleToRolePlayersSchemaValidationInvalid1() throws GraknValidationException {
         RoleType relative = graknGraph.putRoleType("relative");
@@ -345,37 +332,28 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putRelationType("filler").hasRole(parent).hasRole(relative);
 
         expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(containsString(
+                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(person.getId(), parent.superType().getId())));
 
         graknGraph.commit();
     }
+
 
     @Test
     public void tesRoleToRolePlayersSchemaValidationInvalid2() throws GraknValidationException {
-        RoleType parent = graknGraph.putRoleType("parent");
-        RoleType mother = graknGraph.putRoleType("mother");//.superType(parent); is what is required to make this valid
-        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType relative = graknGraph.putRoleType("relative");
+        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
 
-        RoleType child = graknGraph.putRoleType("child");
-        RoleType childSub1 = graknGraph.putRoleType("childSub1").superType(child);
-        RoleType childSub2 = graknGraph.putRoleType("childSub2").superType(child);
+        EntityType company = graknGraph.putEntityType("company").playsRole(parent);
+        EntityType person = graknGraph.putEntityType("person").playsRole(relative);
 
-        EntityType person = graknGraph.putEntityType("person").playsRole(parent);
-        graknGraph.putEntityType("man").superType(person).playsRole(father);
-        EntityType woman = graknGraph.putEntityType("woman").superType(person).playsRole(mother);
-
-        graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
-        graknGraph.putRelationType("fatherHood").hasRole(father).hasRole(childSub1);
-        graknGraph.putRelationType("motherHood").hasRole(mother).hasRole(childSub2);
-
-        RoleType [] invalidRoles = {parent};
-
-        String errorMessage = ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.
-                getMessage(woman.getId(), Arrays.toString(invalidRoles));
+        //Padding to get rid of irrelevant errors
+        graknGraph.putRelationType("filler").hasRole(parent).hasRole(relative);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(containsString(errorMessage)));
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(company.getId(), parent.superType().getId()))));
 
         graknGraph.commit();
     }
-
 }

@@ -20,10 +20,10 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -128,11 +128,12 @@ class Validator {
         if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
             errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getId()));
 
-        Collection<RoleType> invalidRoleType = ValidateGlobalRules.validateRolesPlayedSchema(roleType);
+        Collection<Type> invalidTypes = ValidateGlobalRules.validateRolesPlayedSchema(roleType);
 
-        if(!invalidRoleType.isEmpty()){
-            String invalidRoleTypes = Arrays.toString(invalidRoleType.toArray());
-            errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(roleType.getId(), invalidRoleTypes));
+        if(!invalidTypes.isEmpty()){
+            invalidTypes.forEach(invalidType -> {
+                errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(invalidType.getId(), roleType.superType().getId()));
+            });
         }
     }
 

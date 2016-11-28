@@ -100,8 +100,7 @@ public class TypeTest extends GraphTestBase{
         assertTrue(creature.playsRoles().contains(monster));
         assertTrue(creature.playsRoles().contains(animal));
 
-        assertEquals(2, creatureSub.playsRoles().size());
-        assertTrue(creatureSub.playsRoles().contains(monster));
+        assertEquals(1, creatureSub.playsRoles().size());
         assertTrue(creatureSub.playsRoles().contains(monsterSub));
     }
 
