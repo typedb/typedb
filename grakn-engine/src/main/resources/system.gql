@@ -32,3 +32,8 @@ scheduled-task has-resource status,
                has-resource task-exception,
                has-resource task-checkpoint
                has-resource task-configuration;
+
+# Keep track of all keyspaces in system.
+keyspace isa entity-type;
+keyspace-name isa resource-type, datatype string;
+keyspace has-resource keyspace-name;
