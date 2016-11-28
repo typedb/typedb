@@ -36,7 +36,7 @@ public abstract class AtomBase implements Atomic{
 
     public AtomBase(VarAdmin pattern, Query par) {
         this.atomPattern = pattern;
-        this.varName = pattern.getName();
+        this.varName = pattern.getVarName();
         this.parent = par;
     }
 

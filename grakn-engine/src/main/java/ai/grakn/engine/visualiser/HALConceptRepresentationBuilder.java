@@ -30,7 +30,13 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class HALConceptRepresentationBuilder {
@@ -118,12 +124,13 @@ public class HALConceptRepresentationBuilder {
             //if in the current var is expressed some kind of relation (e.g. ($x,$y))
             if (var.getProperty(RelationProperty.class).isPresent()) {
                 //collect all the role players in the current var's relations (e.g. 'x' and 'y')
-                final List<String> rolePlayersInVar = var.getProperty(RelationProperty.class).get()
+                final List<String> rolePlayersInVar = new ArrayList<>();
+                        var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().map(x -> {
-                            roleTypes.put(x.getRolePlayer().getName(),
+                            roleTypes.put(x.getRolePlayer().getVarName(),
                                     (x.getRoleType().isPresent()) ? x.getRoleType().get().getId().get() : HAS_ROLE_EDGE);
                             return x.getRolePlayer().getName();
-                        }).collect(Collectors.toList());
+                        }).forEach(result -> {rolePlayersInVar.add(result.get());});
                 //if it is a binary or ternary relation
                 if (rolePlayersInVar.size() > 1) {
                     rolePlayersInVar.forEach(rolePlayer -> {

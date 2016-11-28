@@ -86,7 +86,7 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(RelationProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        Var relVar = var.isUserDefinedName()? Graql.var(var.getName()) : Graql.var();
+        Var relVar = var.isUserDefinedName()? Graql.var(var.getVarName()) : Graql.var();
         Set<RelationPlayer> relationPlayers = prop.getRelationPlayers().collect(Collectors.toSet());
         relationPlayers.forEach(rp -> {
             VarAdmin role = rp.getRoleType().orElse(null);
@@ -102,7 +102,7 @@ public class PropertyMapper {
         if (isaProp != null) {
             VarAdmin isaVar = isaProp.getType();
             String type = isaVar.getId().orElse("");
-            String typeVariable = type.isEmpty()? isaVar.getName() : "rel-" + UUID.randomUUID().toString();
+            String typeVariable = type.isEmpty()? isaVar.getVarName() : "rel-" + UUID.randomUUID().toString();
             relVar.isa(Graql.var(typeVariable));
             if (!type.isEmpty()) {
                 VarAdmin idVar = Graql.var(typeVariable).id(isaProp.getProperty()).admin();
@@ -139,10 +139,10 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(SubProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getName();
+        String varName = var.getVarName();
         VarAdmin typeVar = prop.getSuperType();
         String typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getName() : varName + "-sub-" + UUID.randomUUID().toString();
+                typeVar.getVarName() : varName + "-sub-" + UUID.randomUUID().toString();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
@@ -153,10 +153,10 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(PlaysRoleProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getName();
+        String varName = var.getVarName();
         VarAdmin typeVar = prop.getRole();
         String typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getName() : varName + "-plays-role-" + UUID.randomUUID().toString();
+                typeVar.getVarName() : varName + "-plays-role-" + UUID.randomUUID().toString();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
@@ -182,10 +182,10 @@ public class PropertyMapper {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return atoms;
 
-        String varName = var.getName();
+        String varName = var.getVarName();
         VarAdmin typeVar = prop.getType();
         String typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getName() : varName + "-type-" + UUID.randomUUID().toString();
+                typeVar.getVarName() : varName + "-type-" + UUID.randomUUID().toString();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part
@@ -197,11 +197,11 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(HasResourceProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getName();
+        String varName = var.getVarName();
         Optional<String> type = prop.getType();
         VarAdmin valueVar = prop.getResource();
         String valueVariable = valueVar.isUserDefinedName() ?
-                valueVar.getName() : varName + "-" + type.orElse("") + "-" + UUID.randomUUID().toString();
+                valueVar.getVarName() : varName + "-" + type.orElse("") + "-" + UUID.randomUUID().toString();
         Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
         atoms.addAll(predicates);
 

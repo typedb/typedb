@@ -62,7 +62,7 @@ public class Resource extends Binary{
     @Override
     protected void setValueVariable(String var) {
         super.setValueVariable(var);
-        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setName(var));
+        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setVarName(var));
     }
 
     @Override

@@ -47,6 +47,11 @@ class NameFragment extends AbstractFragment {
     }
 
     @Override
+    public double fragmentCost(double previousCost) {
+        return 1;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -63,10 +68,5 @@ class NameFragment extends AbstractFragment {
         int result = super.hashCode();
         result = 31 * result + (name != null ? name.hashCode() : 0);
         return result;
-    }
-
-    @Override
-    public long fragmentCost(long previousCost) {
-        return 1;
     }
 }

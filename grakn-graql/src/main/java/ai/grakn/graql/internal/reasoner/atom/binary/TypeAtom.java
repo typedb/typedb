@@ -47,7 +47,7 @@ public class TypeAtom extends Binary{
     @Override
     protected void setValueVariable(String var) {
         super.setValueVariable(var);
-        atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setName(var));
+        atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setVarName(var));
     }
 
     @Override

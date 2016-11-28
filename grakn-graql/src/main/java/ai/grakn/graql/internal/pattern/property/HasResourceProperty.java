@@ -36,7 +36,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.id;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
@@ -127,7 +127,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Stream<VarAdmin> getTypes() {
         if (resourceType.isPresent()) {
-            return Stream.of(id(resourceType.get()).admin());
+            return Stream.of(name(resourceType.get()).admin());
         } else {
             return Stream.empty();
         }

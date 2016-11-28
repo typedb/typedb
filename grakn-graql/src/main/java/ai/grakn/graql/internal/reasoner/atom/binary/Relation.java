@@ -37,7 +37,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
-import java.util.UUID;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -46,6 +45,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 
@@ -86,7 +86,7 @@ public class Relation extends TypeAtom{
     @Override
     protected String extractValueVariableName(VarAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null? isaProp.getType().getName() : "";
+        return isaProp != null? isaProp.getType().getVarName() : "";
     }
 
     @Override
@@ -94,7 +94,7 @@ public class Relation extends TypeAtom{
         IsaProperty isaProp = atomPattern.asVar().getProperty(IsaProperty.class).orElse(null);
         if (isaProp != null) {
             super.setValueVariable(var);
-            atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setName(var));
+            atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setVarName(var));
         }
     }
 
