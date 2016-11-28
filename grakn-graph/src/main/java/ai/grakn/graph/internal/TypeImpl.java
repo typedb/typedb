@@ -30,12 +30,10 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -71,29 +69,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Collection<RoleType> playsRoles() {
-        Set<RoleType> rolesPlayed = new HashSet<>();
-        Iterator<Edge> edges = getVertex().edges(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE.getLabel());
-
-        edges.forEachRemaining(edge -> {
-            RoleTypeImpl roleType = getGraknGraph().getElementFactory().buildRoleType(edge.inVertex(), null);
-            roleType.subTypes().forEach(role -> rolesPlayed.add(role.asRoleType()));
-        });
-
-        return rolesPlayed;
-    }
-
-    /**
-     *
-     * @return This type's super type
-     */
-    @Override
-    @SuppressWarnings("unchecked")
-    public T superType() {
-        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(concept == null)
-            return null;
-        else
-            return (T) concept;
+        return getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE);
     }
 
     /**
@@ -116,17 +92,18 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      *
      * @return All outgoing sub parents including itself
      */
-    Set<TypeImpl<?, ?>> getSubHierarchySuperSet() {
-        Set<TypeImpl<?, ?>> superSet= new HashSet<>();
-        superSet.add(this);
-        TypeImpl subParent = getParentSub();
+    Set<T> getSubHierarchySuperSet() {
+        Set<T> superSet= new HashSet<>();
+        superSet.add(getThis());
+        T subParent = superType();
 
         while(subParent != null){
             if(superSet.contains(subParent))
                 throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
             else
                 superSet.add(subParent);
-            subParent = subParent.getParentSub();
+            //noinspection unchecked
+            subParent = (T) subParent.superType();
         }
 
         return superSet;
@@ -142,8 +119,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         Set<T> results = new HashSet<>();
         results.add((T) root);
 
-        Collection<TypeImpl> children = root.getSubConceptTypes();
-        for(TypeImpl child: children){
+        Collection<TypeImpl<Type, Concept>> children = root.getSubConceptTypes();
+        for(TypeImpl<Type, Concept> child: children){
             results.addAll(nextSubLevel(child));
         }
 
@@ -163,9 +140,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      *
      * @return All of the concepts direct sub children spanning a single level.
      */
-    private Collection<TypeImpl> getSubConceptTypes(){
-        Collection<TypeImpl> subSet = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(concept -> subSet.add((TypeImpl) concept));
+    private Collection<TypeImpl<Type, Concept>> getSubConceptTypes(){
+        Collection<TypeImpl<Type, Concept>> subSet = new HashSet<>();
+        getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(concept -> subSet.add((TypeImpl<Type, Concept>) concept));
         return subSet;
     }
 
@@ -186,7 +163,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl concept = getGraknGraph().getElementFactory().buildUnknownConcept(vertex);
+            ConceptImpl<Concept, Type> concept = getGraknGraph().getElementFactory().buildUnknownConcept(vertex);
             if(!Schema.BaseType.CASTING.name().equals(concept.getBaseType())){
                 instances.add((V) concept);
             }

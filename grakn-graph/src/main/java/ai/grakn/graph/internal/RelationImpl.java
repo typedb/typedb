@@ -47,7 +47,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public Set<CastingImpl> getMappingCasting() {
         Set<CastingImpl> castings = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(casting.asCasting()));
+        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(((CastingImpl) casting)));
         return castings;
     }
 

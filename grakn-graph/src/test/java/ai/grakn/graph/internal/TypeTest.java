@@ -80,22 +80,28 @@ public class TypeTest extends GraphTestBase{
 
     @Test
     public void testGetPlayedRole() throws Exception{
-        EntityType creature = graknGraph.putEntityType("creature");
         RoleType monster = graknGraph.putRoleType("monster");
         RoleType animal = graknGraph.putRoleType("animal");
         RoleType monsterSub = graknGraph.putRoleType("monsterSub");
 
+        EntityType creature = graknGraph.putEntityType("creature");
+        EntityType creatureSub = graknGraph.putEntityType("creatureSub").superType(creature);
+
         assertEquals(0, creature.playsRoles().size());
+        assertEquals(0, creatureSub.playsRoles().size());
 
         creature.playsRole(monster);
         creature.playsRole(animal);
         monsterSub.superType(monster);
 
-        assertEquals(3, creature.playsRoles().size());
+        creatureSub.playsRole(monsterSub);
+
+        assertEquals(2, creature.playsRoles().size());
         assertTrue(creature.playsRoles().contains(monster));
         assertTrue(creature.playsRoles().contains(animal));
-        assertTrue(creature.playsRoles().contains(monsterSub));
-        assertTrue(creature.playsRoles().contains(monsterSub));
+
+        assertEquals(1, creatureSub.playsRoles().size());
+        assertTrue(creatureSub.playsRoles().contains(monsterSub));
     }
 
     @Test

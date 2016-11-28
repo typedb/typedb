@@ -18,11 +18,17 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
+import ai.grakn.util.ErrorMessage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Handles calling the relevant validation depending on the type of the concept.
@@ -61,6 +67,7 @@ class Validator {
                     validateCasting((CastingImpl) nextToValidate);
                 } else if (nextToValidate.isType()) {
                     validateType((TypeImpl) nextToValidate);
+
                     if (nextToValidate.isRoleType()) {
                         validateRoleType((RoleTypeImpl) nextToValidate);
                     } else if (nextToValidate.isRelationType()) {
@@ -120,6 +127,14 @@ class Validator {
     private void validateRoleType(RoleTypeImpl roleType){
         if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
             errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getId()));
+
+        Collection<Type> invalidTypes = ValidateGlobalRules.validateRolesPlayedSchema(roleType);
+
+        if(!invalidTypes.isEmpty()){
+            invalidTypes.forEach(invalidType -> {
+                errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(invalidType.getId(), roleType.superType().getId()));
+            });
+        }
     }
 
     /**
@@ -131,6 +146,10 @@ class Validator {
             errorsFound.add(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getId()));
     }
 
+    /**
+     * Validation rules exclusive to instances
+     * @param instance The instance to validate
+     */
     private void validateInstance(InstanceImpl instance) {
         if (!ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance))
             errorsFound.add(ErrorMessage.VALIDATION_INSTANCE.getMessage(instance.getId()));

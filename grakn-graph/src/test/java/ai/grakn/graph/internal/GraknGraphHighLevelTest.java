@@ -518,7 +518,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(pacinoToOthers.contains(pacino));
         assertTrue(pacinoToOthers.contains(thing));
 
-        graknGraph.getTinkerPopGraph().traversal().V(pacino.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).iterator().next().getBaseIdentifier()).next().remove();
+        graknGraph.getTinkerPopGraph().traversal().V(((ConceptImpl<Concept, Type>) pacino.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).iterator().next()).getBaseIdentifier()).next().remove();
 
         godfatherToOthers = godfather.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);
         pacinoToOthers = pacino.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT);

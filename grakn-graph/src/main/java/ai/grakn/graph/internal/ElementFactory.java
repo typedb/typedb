@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
@@ -108,7 +109,7 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    ConceptImpl buildUnknownConcept(Vertex v){
+    <X extends Concept> X buildUnknownConcept(Vertex v){
         Schema.BaseType type;
         try {
             type = Schema.BaseType.valueOf(v.label());
@@ -154,7 +155,8 @@ final class ElementFactory {
                 concept = buildRuleType(v, null);
                 break;
         }
-        return concept;
+        //noinspection unchecked
+        return (X) concept;
     }
 
     TypeImpl buildSpecificConceptType(Vertex vertex, Type type){
