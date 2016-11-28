@@ -52,7 +52,7 @@ public abstract class GraknEngineTestBase {
     @AfterClass
     public static void takeDownControllers() throws InterruptedException {
         GraknEngineServer.stop();
-        Thread.sleep(5000);
+        Thread.sleep(10000);
     }
 
     protected String getPath(String file){
