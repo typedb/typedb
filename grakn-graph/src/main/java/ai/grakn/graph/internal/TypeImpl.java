@@ -262,15 +262,24 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         return getThis();
     }
 
+    T playsRole(RoleType roleType, boolean required) {
+        checkTypeMutation();
+        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
+
+        if (required) {
+            edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
+        }
+
+        return getThis();
+    }
+
     /**
      *
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
     public T playsRole(RoleType roleType) {
-        checkTypeMutation();
-        putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
-        return getThis();
+        return playsRole(roleType, false);
     }
 
     /**
@@ -328,6 +337,20 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         }
     }
 
+    private RelationType hasResource(ResourceType resourceType, boolean required) {
+        String resourceTypeId = resourceType.getId();
+        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+
+        this.playsRole(ownerRole, required);
+        ((ResourceTypeImpl) resourceType).playsRole(valueRole, required);
+
+        return getGraknGraph().
+                putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId)).
+                hasRole(ownerRole).
+                hasRole(valueRole);
+    }
+
     /**
      * Creates a relation type which allows this type and a resource type to be linked.
      * @param resourceType The resource type which instances of this type should be allowed to play.
@@ -335,16 +358,11 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public RelationType hasResource(ResourceType resourceType){
-        String resourceTypeId = resourceType.getId();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        return hasResource(resourceType, false);
+    }
 
-        this.playsRole(ownerRole);
-        resourceType.playsRole(valueRole);
-
-        return getGraknGraph().
-                putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId)).
-                hasRole(ownerRole).
-                hasRole(valueRole);
+    @Override
+    public RelationType key(ResourceType resourceType) {
+        return hasResource(resourceType, true);
     }
 }

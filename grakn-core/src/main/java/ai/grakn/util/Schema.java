@@ -135,7 +135,8 @@ public final class Schema {
         FROM_ID(String.class),
         FROM_ROLE(String.class),
         FROM_TYPE(String.class),
-        SHORTCUT_HASH(String.class);
+        SHORTCUT_HASH(String.class),
+        REQUIRED(Boolean.class);
 
         private final Class dataType;
         EdgeProperty(Class dataType){

@@ -52,8 +52,11 @@ class Validator {
 
         for(ConceptImpl nextToValidate: validationList){
             if(nextToValidate.isAlive()) {
-                if (nextToValidate.isRelation()) {
-                    validateRelation((RelationImpl) nextToValidate);
+                if (nextToValidate.isInstance()) {
+                    validateInstance((InstanceImpl) nextToValidate);
+                    if (nextToValidate.isRelation()) {
+                        validateRelation((RelationImpl) nextToValidate);
+                    }
                 } else if (nextToValidate.isCasting()) {
                     validateCasting((CastingImpl) nextToValidate);
                 } else if (nextToValidate.isType()) {
@@ -126,5 +129,10 @@ class Validator {
     private void validateRelationType(RelationTypeImpl relationType){
         if(!ValidateGlobalRules.validateHasMinimumRoles(relationType))
             errorsFound.add(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getId()));
+    }
+
+    private void validateInstance(InstanceImpl instance) {
+        if (!ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance))
+            errorsFound.add(ErrorMessage.VALIDATION_INSTANCE.getMessage(instance.getId()));
     }
 }
