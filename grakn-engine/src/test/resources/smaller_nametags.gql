@@ -1,0 +1,11 @@
+insert
+has name_tag_id "X4d616e75656c20417a656e6861" isa name_tag has name_tag_string "Manuel Azenha";
+has name_tag_id "X44616e69656c61204675696f726561" isa name_tag has name_tag_string "Daniela Fuiorea";
+has name_tag_id "X422e20476174686d616e6e" isa name_tag has name_tag_string "B. Gathmann";
+has name_tag_id "X416e6472657720522e2057656262" isa name_tag has name_tag_string "Andrew R. Webb";
+has name_tag_id "X4b61692d6d696e204368616e67" isa name_tag has name_tag_string "Kai-min Chang";
+has name_tag_id "X4a752d4d696e205a68616f" isa name_tag has name_tag_string "Ju-Min Zhao";
+has name_tag_id "X4a656e6e69666572204d656c6f6f6e" isa name_tag has name_tag_string "Jennifer Meloon";
+has name_tag_id "X532e20492e204b68617368696e" isa name_tag has name_tag_string "S. I. Khashin";
+has name_tag_id "X4d617274696e204872746967" isa name_tag has name_tag_string "Martin Hrtig";
+has name_tag_id "X4c656f6e6172646f20522e206465206c61204372757a" isa name_tag has name_tag_string "Leonardo R. de la Cruz";

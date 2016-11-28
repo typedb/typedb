@@ -45,21 +45,21 @@ public class ImportControllerTest extends GraknEngineTestBase {
 
     @Test
     public void testLoadOntologyAndData() {
-        String dataPath = getPath("small_nametags.gql");
+        String dataPath = getPath("smaller_nametags.gql");
         Json body = Json.object("path", dataPath);
         runAndAssertCorrect(body, keyspace);
     }
 
     @Test
     public void testLoadOntologyAndDataDistributed() {
-        String dataPath = getPath("small_nametags.gql");
+        String dataPath = getPath("smaller_nametags.gql");
         Json body = Json.object("path", dataPath, "hosts", Json.array().add(Grakn.DEFAULT_URI));
         runAndAssertCorrect(body, keyspace);
     }
 
     @Test
     public void testLoadOntologyAndDataOnCustomKeyspace(){
-        String dataPath = getPath("small_nametags.gql");
+        String dataPath = getPath("smaller_nametags.gql");
         String customGraph = "importgraph";
         Json body = Json.object("path", dataPath);
 
@@ -78,7 +78,7 @@ public class ImportControllerTest extends GraknEngineTestBase {
         dataResponse.then().assertThat().statusCode(200);
 
         try {
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -88,8 +88,8 @@ public class ImportControllerTest extends GraknEngineTestBase {
         GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
 
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
-        assertEquals(nameTags.size(), 100);
-        assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+        assertEquals(nameTags.size(), 10);
+        assertNotNull(graph.getResourcesByValue("X4a656e6e69666572204d656c6f6f6e").iterator().next().getId());
         graph.clear();
         graph.close();
     }
