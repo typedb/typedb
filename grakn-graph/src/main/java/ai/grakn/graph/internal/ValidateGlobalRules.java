@@ -49,11 +49,10 @@ class ValidateGlobalRules {
      */
     static boolean validatePlaysRoleStructure(CastingImpl casting) {
         InstanceImpl rolePlayer = casting.getRolePlayer();
-        Type currentConcept = rolePlayer.getParentIsa();
+        TypeImpl currentConcept = rolePlayer.getParentIsa();
         RoleType roleType = casting.getRole();
 
         boolean satisfiesPlaysRole = false;
-        Set<EdgeImpl> requiredPlaysRoles = new HashSet<>();
 
         while(currentConcept != null){
             Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
@@ -161,36 +160,31 @@ class ValidateGlobalRules {
                 }
             }
 
-            if(!superRoleTypeFound){ //We found a type whose super set cannot play R2
+            if(!superRoleTypeFound){ //We found a type whose parent cannot play R2
                 invalidTypes.add(typeAllowedToPlay);
             }
         }
 
         return invalidTypes;
-    static Collection<RoleType> validateRolesPlayedSchema(RoleTypeImpl roleType){
-        return new HashSet<>();
+    }
+
     static boolean validateInstancePlaysAllRequiredRoles(Instance instance) {
         TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
 
         while(currentConcept != null){
             Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
-
             for (EdgeImpl edge : edges) {
                 Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
-
                 if (required) {
                     RoleType roleType = edge.getTarget().asRoleType();
-
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
                         return false;
                     }
                 }
             }
-
             currentConcept = currentConcept.getParentSub();
         }
-
         return true;
     }
 }
