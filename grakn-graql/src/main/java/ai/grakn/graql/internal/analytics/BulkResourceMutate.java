@@ -135,7 +135,7 @@ public class BulkResourceMutate<T> {
                             relation.rolePlayers().containsKey(resourceValue))
                     .filter(relation -> {
                         Instance rolePlayer = relation.rolePlayers().get(resourceValue);
-                        return rolePlayer == null || rolePlayer.type().getId().equals(resourceTypeId);
+                        return rolePlayer == null || rolePlayer.type().getName().equals(resourceTypeName);
                     }).collect(Collectors.toList());
 
             relations.forEach(relation -> LOGGER.debug("Assertions currently attached: " + relation.toString()));

@@ -21,31 +21,30 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.Pattern;
-import com.google.common.collect.Sets;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collector;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
@@ -311,7 +310,11 @@ public class Analytics {
         path.add(destinationId);
         LOGGER.info("ShortestPathVertexProgram is done");
         graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
-        return path.stream().map(graph::getConcept).collect(Collectors.toList());
+        List<Concept> resultList = new ArrayList<>();
+        for (String id : path) {
+            resultList.add(graph.getConcept(id));
+        }
+        return resultList;
     }
 
     /**

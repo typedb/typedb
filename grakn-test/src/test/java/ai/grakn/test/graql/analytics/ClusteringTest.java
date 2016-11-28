@@ -20,11 +20,12 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.Graql;
+import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -34,10 +35,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -49,11 +46,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -204,7 +198,7 @@ public class ClusteringTest extends AbstractGraphTest {
 
     private void checkConnectedComponent(String id, String expectedClusterLabel) {
         Collection<Resource<?>> resources =
-                graph.getInstance(id).resources(graph.getResourceType(Analytics.connectedComponent));
+                graph.getConcept(id).asInstance().resources(graph.getResourceType(Analytics.connectedComponent));
         assertEquals(1, resources.size());
         assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
     }

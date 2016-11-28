@@ -49,7 +49,7 @@ property       : 'isa' variable                   # isa
                | 'sub' variable                   # sub
                | 'has-role' variable              # hasRole
                | 'plays-role' variable            # playsRole
-               | 'has-scope' variable             # hasScope
+               | 'has-scope' VARIABLE             # hasScope
                | 'id' id                          # propId
                | 'type-name' name                 # propName
                | 'value' predicate?               # propValue

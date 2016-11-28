@@ -145,7 +145,7 @@ public class GraknStateStorage implements StateStorage {
         if(id == null)
             return null;
 
-        Instance instance = graph.getInstance(id);
+        Instance instance = graph.getConcept(id);
         Resource<?> name = instance.resources(graph.getResourceType(TASK_CLASS_NAME)).stream().findFirst().orElse(null);
         if(name == null) {
             LOG.error("Could not get 'task-class-name' for "+id);
