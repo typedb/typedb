@@ -22,9 +22,6 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Lists;
-import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import mjson.Json;
 import spark.utils.IOUtils;
@@ -42,8 +39,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
-
-import static ai.grakn.engine.loader.TransactionState.State;
 
 /**
  * RESTLoader that distributes computation to multiple Grakn Engine instances
@@ -66,7 +61,7 @@ public class DistributedLoader extends Loader {
     private static final String POST = "http://%s:" +
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
             REST.WebPath.NEW_TRANSACTION_URI + "?" +
-            REST.Request.GRAPH_NAME_PARAM + "=%s";
+            REST.Request.KEYSPACE_PARAM + "=%s";
 
     private static final String GET = "http://%s:" +
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +

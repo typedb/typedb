@@ -42,7 +42,7 @@ public class TransactionControllerTest extends GraknEngineTestBase {
 
     @Before
     public void setUp() throws Exception {
-        keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
         GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
         graph.putEntityType("Man");
         graph.commit();

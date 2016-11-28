@@ -172,7 +172,7 @@ public class MigrationCLI {
     }
 
     public String getKeyspace(){
-        return cmd.getOptionValue("k", properties.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY));
+        return cmd.getOptionValue("k", properties.getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY));
     }
 
     public String getOption(String opt){

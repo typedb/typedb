@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -35,9 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.util.ErrorMessage;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -47,11 +44,9 @@ import java.util.stream.Collectors;
 public class InferenceRule {
 
     private final Query body;
-    private AtomicQuery head;
-    private final Rule rule;
+    private final AtomicQuery head;
 
-    public InferenceRule(Rule rl, GraknGraph graph){
-        this.rule = rl;
+    public InferenceRule(Rule rule, GraknGraph graph){
         QueryBuilder qb = graph.graql();
         body = new Query(qb.match(rule.getLHS()), graph);
         head = new AtomicQuery(qb.match(rule.getRHS()), graph);
@@ -59,17 +54,6 @@ public class InferenceRule {
 
     public Query getBody(){return body;}
     public AtomicQuery getHead(){return head;}
-
-    private Type getRuleConclusionType() {
-        Set<Type> types = new HashSet<>();
-        Collection<Type> unfilteredTypes = rule.getConclusionTypes();
-        types.addAll(unfilteredTypes.stream().filter(type -> !type.isRoleType()).collect(Collectors.toList()));
-
-        if (types.size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(rule.getId()));
-
-        return types.iterator().next();
-    }
 
     /**
      * @return a conclusion atom which parent contains all atoms in the rule

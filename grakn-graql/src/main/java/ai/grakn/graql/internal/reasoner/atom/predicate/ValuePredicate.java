@@ -38,10 +38,6 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
     public ValuePredicate(ValueProperty prop, VarAdmin var, Query par){ this(createValueVar(var.getName(), prop.getPredicate()), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
-    public ValuePredicate(String name, ValuePredicateAdmin pred, Query parent) {
-        super(createValueVar(name, pred), parent);
-        this.predicate = pred;
-    }
 
     public static VarAdmin createValueVar(String name, ValuePredicateAdmin pred) {
         return Graql.var(name).value(pred).admin();

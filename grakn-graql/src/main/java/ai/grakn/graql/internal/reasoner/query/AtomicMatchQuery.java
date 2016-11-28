@@ -40,11 +40,6 @@ public class AtomicMatchQuery extends AtomicQuery{
         answers = new QueryAnswers(ans);
     }
 
-    public AtomicMatchQuery(AtomicMatchQuery query){
-        super(query);
-        answers = new QueryAnswers(query.getAnswers());
-    }
-
     @Override
     public Stream<Map<String, Concept>> stream() {return answers.stream();}
 

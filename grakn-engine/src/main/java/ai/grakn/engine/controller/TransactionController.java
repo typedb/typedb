@@ -47,7 +47,7 @@ import static spark.Spark.post;
 public class TransactionController {
 
     RESTLoader loader;
-    String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+    String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
     private final Logger LOG = LoggerFactory.getLogger(TransactionController.class);
 
 
@@ -68,7 +68,7 @@ public class TransactionController {
             notes = "The body of the request should be a JSON array of the insert Graql strings.")
     @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String newTransactionREST(Request req, Response res) {
-        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
         UUID uuid = loader.addJob(currentGraphName, Json.read(req.body()));
         if (uuid != null) {

@@ -23,10 +23,10 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.ImportController;
-import ai.grakn.engine.controller.RemoteShellController;
 import ai.grakn.engine.controller.StatusController;
 import ai.grakn.engine.controller.TransactionController;
 import ai.grakn.engine.controller.VisualiserController;
+import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.exception.GraknValidationException;
@@ -47,6 +47,8 @@ import static spark.Spark.exception;
 import static spark.Spark.ipAddress;
 import static spark.Spark.port;
 import static spark.Spark.staticFiles;
+import static spark.Spark.webSocket;
+import static spark.Spark.webSocketIdleTimeoutMillis;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -55,15 +57,14 @@ import static spark.Spark.staticFiles;
 public class GraknEngineServer {
 
     private static ConfigProperties prop = ConfigProperties.getInstance();
-    private static Logger LOG = null;
+    private static Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
+    private static final int WEBSOCKET_TIMEOUT = 3600000;
 
     public static void main(String[] args) {
         start();
     }
 
     public static void start() {
-
-        LOG = LoggerFactory.getLogger(GraknEngineServer.class);
 
         // Set host name
         ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
@@ -74,8 +75,11 @@ public class GraknEngineServer {
         // Set the external static files folder
         staticFiles.externalLocation(prop.getPath(ConfigProperties.STATIC_FILES_PATH));
 
+        // Start the websocket for Graql
+        webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
+        webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
+
         // Start all the controllers
-        new RemoteShellController();
         new VisualiserController();
         new GraphFactoryController();
         new ImportController();

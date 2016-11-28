@@ -25,7 +25,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
@@ -201,10 +200,10 @@ public class Relation extends TypeAtom{
                         //Check for any constraints on the variables
                         String chVar = childRoleVarTypeMap.get(parentRole).getKey();
                         String pVar = entry.getValue().getKey();
-                        String chId = child.getBody().getIdPredicate(chVar).getPredicateValue();
-                        String pId = parent.getIdPredicate(pVar).getPredicateValue();
-                        if (!chId.isEmpty() && !pId.isEmpty())
-                            ruleRelevant &= chId.equals(pId);
+                        Predicate childPredicate = child.getBody().getIdPredicate(chVar);
+                        Predicate parentPredicate = parent.getIdPredicate(pVar);
+                        if (childPredicate != null && parentPredicate != null)
+                            ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
                     }
                 }
             }
@@ -224,12 +223,6 @@ public class Relation extends TypeAtom{
                     .flatMap(rule -> rule.getConclusionTypes().stream())
                     .filter(Type::isRelationType).count() != 0;
         }
-    }
-
-    private void updatePattern(PatternAdmin newPattern){
-        PatternAdmin oldPattern = atomPattern;
-        atomPattern = newPattern;
-        getParentQuery().replacePattern(oldPattern, newPattern);
     }
 
     public boolean hasExplicitRoleTypes(){
@@ -265,7 +258,7 @@ public class Relation extends TypeAtom{
             typeId = type.getId();
             String typeVariable = "rel-" + UUID.randomUUID().toString();
             addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin()));
-            updatePattern(atomPattern.asVar().isa(Graql.var(typeVariable)).admin());
+            atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         }
     }
 
@@ -280,14 +273,14 @@ public class Relation extends TypeAtom{
 
     @Override
     public Set<Predicate> getIdPredicates() {
-        Set<Predicate> relevantPredicates = super.getIdPredicates();
+        Set<Predicate> idPredicates = super.getIdPredicates();
         //from types
         getTypeConstraints()
                 .forEach(atom -> {
                     Predicate predicate = getParentQuery().getIdPredicate(atom.getValueVariable());
-                    if (predicate != null) relevantPredicates.add(predicate);
+                    if (predicate != null) idPredicates.add(predicate);
                 });
-        return relevantPredicates;
+        return idPredicates;
     }
 
     @Override
@@ -451,7 +444,7 @@ public class Relation extends TypeAtom{
                 .forEach( var -> roleMap.put(var, null));
 
         //pattern mutation!
-        updatePattern(constructRelationVar(isUserDefinedName()? varName : "", getValueVariable(), roleMap));
+        atomPattern = constructRelationVar(isUserDefinedName()? varName : "", getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
 
         return roleVarTypeMap;

@@ -43,7 +43,6 @@ public class AtomicQuery extends Query{
 
     private Atom atom;
     private AtomicQuery parent = null;
-
     final private Set<AtomicQuery> children = new HashSet<>();
 
     public AtomicQuery(String rhs, GraknGraph graph){
@@ -58,20 +57,14 @@ public class AtomicQuery extends Query{
 
     public AtomicQuery(AtomicQuery q){
         super(q);
-        Atom coreAtom = null;
-        Iterator<Atom> it = getAtoms().stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
-        while(it.hasNext() && coreAtom == null) {
-            Atom at = it.next();
-            if (at.equals(q.getAtom())) coreAtom = at;
-        }
-        atom = coreAtom;
+        atom = selectAtoms().stream().findFirst().orElse(null);
         parent = q.getParent();
         children.addAll(q.getChildren());
     }
 
     public AtomicQuery(Atom at, Set<String> vars) {
         super(at, vars);
-        atom = selectAtoms().iterator().next();
+        atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
     @Override
@@ -112,7 +105,7 @@ public class AtomicQuery extends Query{
     @Override
     public boolean addAtom(Atomic at) {
         if(super.addAtom(at)){
-            if(atom == null && at.isAtom()) atom = (Atom) at;
+            if(atom == null && at.isSelectable()) atom = (Atom) at;
             return true;
         }
         else return false;
@@ -153,9 +146,8 @@ public class AtomicQuery extends Query{
                                         .filter(entry -> roleMap.containsKey(entry.getKey()))
                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                                roleplayers.entrySet().forEach(entry -> {
-                                    answer.put(roleMap.get(entry.getKey()).getKey(), entry.getValue());
-                                });
+                                roleplayers.entrySet().forEach(entry ->
+                                        answer.put(roleMap.get(entry.getKey()).getKey(), entry.getValue()));
                             }
                             insertAnswers.add(answer);
                         });
@@ -168,7 +160,8 @@ public class AtomicQuery extends Query{
 
     /**
      * Add explicit IdPredicates and materialise
-     * @subs IdPredicates of variables
+     * @param subs IdPredicates of variables
+     * @return Materialised answers
      */
     public QueryAnswers materialise(Set<IdPredicate> subs) {
         QueryAnswers insertAnswers = new QueryAnswers();
@@ -177,24 +170,26 @@ public class AtomicQuery extends Query{
 
         //extrapolate if needed
         Atom at = queryToMaterialise.getAtom();
-        if(atom.isRelation() &&
-                (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
-            Relation atom = (Relation) at;
-            RelationType relType = (RelationType) atom.getType();
-            Set<String> vars = atom.getRolePlayers();
-            Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
+        if(at.isRelation()){
+            Relation relAtom = (Relation) at;
+            Set<String> rolePlayers = relAtom.getRolePlayers();
+            if (relAtom.getRoleVarTypeMap().size() != rolePlayers.size()) {
+                RelationType relType = (RelationType) atom.getType();
+                Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
+                Set<Map<String, String>> roleMaps = new HashSet<>();
+                Utility.computeRoleCombinations(rolePlayers , roles, new HashMap<>(), roleMaps);
 
-            Set<Map<String, String>> roleMaps = new HashSet<>();
-            Utility.computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
-
-            queryToMaterialise.removeAtom(atom);
-            roleMaps.forEach( map -> {
-                Relation relationWithRoles = new Relation(atom.getVarName(), atom.getValueVariable(),
-                        map, atom.getPredicate(), queryToMaterialise);
-                queryToMaterialise.addAtom(relationWithRoles);
+                queryToMaterialise.removeAtom(relAtom);
+                roleMaps.forEach(map -> {
+                    Relation relationWithRoles = new Relation(atom.getVarName(), relAtom.getValueVariable(),
+                            map, relAtom.getPredicate(), queryToMaterialise);
+                    queryToMaterialise.addAtom(relationWithRoles);
+                    insertAnswers.addAll(queryToMaterialise.materialiseComplete());
+                    queryToMaterialise.removeAtom(relationWithRoles);
+                });
+            }
+            else
                 insertAnswers.addAll(queryToMaterialise.materialiseComplete());
-                queryToMaterialise.removeAtom(relationWithRoles);
-            });
         }
         else
             insertAnswers.addAll(queryToMaterialise.materialiseComplete());

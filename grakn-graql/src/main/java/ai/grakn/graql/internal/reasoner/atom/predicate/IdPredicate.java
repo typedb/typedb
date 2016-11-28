@@ -45,11 +45,6 @@ public class IdPredicate extends Predicate<String>{
         this.predicate = con.getId();
     }
 
-    public IdPredicate(String varName, Concept con, Query parent) {
-        this(varName, con);
-        setParentQuery(parent);
-    }
-
     public static VarAdmin createIdVar(String varName, String typeId){
         return Graql.var(varName).id(typeId).admin();
     }
