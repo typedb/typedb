@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.ImportController;
 import ai.grakn.engine.controller.StatusController;
 import ai.grakn.engine.controller.TransactionController;
-import ai.grakn.engine.controller.VisualizerController;
+import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
@@ -80,7 +80,7 @@ public class GraknEngineServer {
         webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         // Start all the controllers
-        new VisualizerController();
+        new VisualiserController();
         new GraphFactoryController();
         new ImportController();
         new CommitLogController();

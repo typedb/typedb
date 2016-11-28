@@ -19,7 +19,7 @@
 package ai.grakn.engine.visualiser;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.engine.controller.VisualizerController;
+import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.util.REST;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 
 public class HALConceptRepresentationBuilder {
 
-    private final static Logger LOG = LoggerFactory.getLogger(VisualizerController.class);
+    private final static Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
     private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y); select $r;";
     private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
