@@ -32,6 +32,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -279,6 +281,33 @@ public class ValidatorTest extends GraphTestBase{
         playsChar.addRelation().
                 putRolePlayer(personPlayingCharacter, matt).
                 putRolePlayer(characterBeingPlayed, walker);
+
+        graknGraph.commit();
+    }
+
+    @Test
+    public void tesInvalidRoleToRolePlayersSchemaValidation() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType mother = graknGraph.putRoleType("mother");//.superType(parent); is what is required to make this valid
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+
+        RoleType child = graknGraph.putRoleType("child");
+        RoleType childSub1 = graknGraph.putRoleType("childSub1").superType(child);
+        RoleType childSub2 = graknGraph.putRoleType("childSub2").superType(child);
+
+        EntityType person = graknGraph.putEntityType("person").playsRole(parent);
+        graknGraph.putEntityType("man").playsRole(father);
+        EntityType woman = graknGraph.putEntityType("woman").playsRole(mother);
+
+        graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
+        graknGraph.putRelationType("fatherHood").hasRole(father).hasRole(childSub1);
+        graknGraph.putRelationType("motherHood").hasRole(mother).hasRole(childSub2);
+
+        String errorMessage = ErrorMessage.VALIDATION_ROLE_TO_ROLE_PLAYER_SCHEMA.
+                getMessage(woman.getId(), mother.getId(), person.getId(), woman.getId());
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(errorMessage)));
 
         graknGraph.commit();
     }
