@@ -27,6 +27,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -38,7 +39,6 @@ class ValidateGlobalRules {
         throw new UnsupportedOperationException();
     }
 
-    /*------------------------------------------------- System Rules -------------------------------------------------*/
     /**
      * This method checks if the plays-role edge has been added successfully. It does so By checking
      * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS_ROLE-> X =
@@ -74,8 +74,6 @@ class ValidateGlobalRules {
 
         return satisfiesPlaysRole;
     }
-
-    /*------------------------------------------------- Axiom Rules --------------------------------------------------*/
 
     /**
      *
@@ -126,9 +124,11 @@ class ValidateGlobalRules {
         return true;
     }
 
-
-
-    /*--------------------------------------- Global Related TO Local Rules ------------------------------------------*/
+    /**
+     *
+     * @param conceptType The concept type to be validated
+     * @return true if the conceptType is abstract and has not incoming edges
+     */
     static boolean validateIsAbstractHasNoIncomingIsaEdges(TypeImpl conceptType){
         return !conceptType.getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
     }

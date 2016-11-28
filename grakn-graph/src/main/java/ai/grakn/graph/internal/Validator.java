@@ -18,12 +18,17 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.EntityType;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
+import ai.grakn.util.ErrorMessage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Handles calling the relevant validation depending on the type of the concept.
@@ -67,8 +72,6 @@ class Validator {
                         validateRoleType((RoleTypeImpl) nextToValidate);
                     } else if (nextToValidate.isRelationType()) {
                         validateRelationType((RelationTypeImpl) nextToValidate);
-                    } else if (nextToValidate.isEntityType()){
-                        validateEntityTypeRoles((EntityTypeImpl) nextToValidate);
                     }
                 }
             }
@@ -115,6 +118,13 @@ class Validator {
     private void validateType(TypeImpl conceptType){
         if(conceptType.isAbstract() && !ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType))
             errorsFound.add(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(conceptType.getId()));
+
+        Collection<RoleType> invalidRoleType = ValidateGlobalRules.validateRolesPlayedSchema(conceptType);
+
+        if(!invalidRoleType.isEmpty()){
+            String invalidRoleTypes = Arrays.toString(invalidRoleType.toArray());
+            errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(conceptType.getId(), invalidRoleTypes));
+        }
     }
 
     /**
