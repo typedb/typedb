@@ -93,12 +93,12 @@ public class GraknTitanGraphFactoryTest {
     public void productionIndexConstructionTest() throws InterruptedException {
         TitanManagement management = sharedGraph.openManagement();
 
-        assertEquals("byItemIdentifier", management.getGraphIndex("byItemIdentifier").toString());
+        assertEquals("byIndex", management.getGraphIndex("byIndex").toString());
         assertEquals("byValueString", management.getGraphIndex("byValueString").toString());
         assertEquals("byValueLong", management.getGraphIndex("byValueLong").toString());
         assertEquals("byValueDouble", management.getGraphIndex("byValueDouble").toString());
         assertEquals("byValueBoolean", management.getGraphIndex("byValueBoolean").toString());
-        assertEquals("ITEM_IDENTIFIER", management.getPropertyKey("ITEM_IDENTIFIER").toString());
+        assertEquals("NAME", management.getPropertyKey("NAME").toString());
         assertEquals("VALUE_STRING", management.getPropertyKey("VALUE_STRING").toString());
         assertEquals("VALUE_LONG", management.getPropertyKey("VALUE_LONG").toString());
         assertEquals("VALUE_BOOLEAN", management.getPropertyKey("VALUE_BOOLEAN").toString());
@@ -165,92 +165,6 @@ public class GraknTitanGraphFactoryTest {
 
         assertEquals(mg1, mg2);
         assertEquals(graph1, graph2);
-    }
-
-    @Ignore //TODO: Check the validity of this test. It is failing randomly
-    @Test
-    public void testIndexedEdgesFasterThanStandardReverseOrder() throws InterruptedException {
-
-        int nTimes = 100; // number of times to run specific traversal
-
-        // Indexed Lookup /////////////////////////////////////////////////////
-        // time the same query multiple times
-        Vertex first = indexGraph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), String.valueOf(0)).next();
-        List<Object> indexResult = new ArrayList<>();
-        double startTime = System.nanoTime();
-        for (int i=0; i<nTimes; i++) {
-            indexResult = indexGraph.traversal().V(first).
-                    outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                    has(Schema.EdgeProperty.TO_ROLE_NAME.name(), String.valueOf(1)).inV().
-                    values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
-        }
-        double endTime = System.nanoTime();
-        double indexDuration = (endTime - startTime);  // this is the difference (divide by 1000000 to get milliseconds).
-
-        // Non-Indexed Lookup /////////////////////////////////////////////////////
-        // time the same query multiple times
-        first = noIndexGraph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(),String.valueOf(0)).next();
-        List<Object> result = new ArrayList<>();
-        startTime = System.nanoTime();
-        for (int i=0; i<nTimes; i++) {
-            result = noIndexGraph.traversal().V(first).
-                    outE(Schema.EdgeLabel.ISA.getLabel()).
-                    has(Schema.ConceptProperty.TYPE.name(), String.valueOf(1)).inV().
-                    values(Schema.ConceptProperty.ITEM_IDENTIFIER.name()).toList();
-        }
-        endTime = System.nanoTime();
-        double duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-
-        System.out.println("Indexed lookup (ms): " + indexDuration / 1E6);
-        System.out.println("Non-Indexed lookup (ms): " + duration / 1E6);
-
-        // check that the indexed version is at least twice as fast
-        assertEquals(indexResult, result);
-        assertTrue(indexDuration < duration / 2);
-
-    }
-
-
-    @Test
-    public void retrieveOrderedEdgeViaVertexCentricIndexTest() throws InterruptedException {
-        // For some reason the first query will take longer by default.
-        // Therefore the query that is expected to run fastest is placed first.
-
-        int nTimes = 100; // number of times to run specific traversal
-
-        // Gremlin Indexed Lookup ////////////////////////////////////////////////////
-
-        // time the same query multiple times
-        Vertex first = indexGraph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
-        List<Object> gremlinIndexedTraversalResult = new ArrayList<>();
-        double startTime = System.nanoTime();
-        for (int i=0; i<nTimes; i++) {
-            gremlinIndexedTraversalResult = indexGraph.traversal().V(first).
-                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr).range(0, 10)).
-                    inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
-        }
-        double endTime = System.nanoTime();
-        double gremlinIndexedTraversalDuration = (endTime - startTime);  // this is the difference (divide by 1000000 to get milliseconds).
-
-        // Non-Indexed Gremlin Lookup ////////////////////////////////////////////////////
-
-        // time the same query multiple times
-        first = noIndexGraph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), String.valueOf(0)).next();
-        List<Object> gremlinTraversalResult = new ArrayList<>();
-        startTime = System.nanoTime();
-        for (int i=0; i < nTimes; i++) {
-            gremlinTraversalResult = noIndexGraph.traversal().V(first).
-                    local(__.outE(Schema.EdgeLabel.ISA.getLabel()).order().by(Schema.ConceptProperty.TYPE.name(), Order.decr).range(0, 10)).
-                    inV().values(Schema.ConceptProperty.ITEM_IDENTIFIER.name()).toList();
-        }
-        endTime = System.nanoTime();
-        double gremlinTraversalDuration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-
-        System.out.println("Indexed lookup (ms): " + gremlinIndexedTraversalDuration/1E6);
-        System.out.println("Non-Indexed lookup (ms): " + gremlinTraversalDuration/1E6);
-
-        assertEquals(gremlinIndexedTraversalResult, gremlinTraversalResult);
-        assertTrue(gremlinIndexedTraversalDuration < gremlinTraversalDuration/2);
     }
 
     @Test
@@ -350,10 +264,7 @@ public class GraknTitanGraphFactoryTest {
     }
 
     private void assertIndexCorrect(Graph graph) {
-        assertTrue(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "www.grakn.com/action-movie/").hasNext());
         assertEquals(2, graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
-        assertFalse(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "mind").hasNext());
-        assertFalse(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "www").hasNext());
         assertFalse(graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
     }
 
