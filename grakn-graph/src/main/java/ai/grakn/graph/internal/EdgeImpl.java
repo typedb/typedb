@@ -83,12 +83,19 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @return The value of the property
      */
-    Object getProperty(Schema.EdgeProperty type){
-        org.apache.tinkerpop.gremlin.structure.Property property = edge.property(type.name());
+    <X> X getProperty(Schema.EdgeProperty type){
+        org.apache.tinkerpop.gremlin.structure.Property<X> property = edge.property(type.name());
         if(property != null && property.isPresent())
             return property.value();
         else
             return null;
+    }
+
+    Boolean getPropertyBoolean(Schema.EdgeProperty key){
+        Boolean value = getProperty(key);
+        if(value == null)
+            return false;
+        return value;
     }
 
     /**

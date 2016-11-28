@@ -407,5 +407,74 @@ public class TypeTest extends GraphTestBase{
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
         relationType.hasRoles().forEach(role -> assertTrue(role.isImplicit()));
+
+        // Check that resource is not required
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertFalse(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+    }
+
+    @Test
+    public void testKey(){
+        String resourceTypeId = "Resource Type";
+        EntityType entityType = graknGraph.putEntityType("Entity1");
+        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+
+        RelationType relationType = entityType.key(resourceType);
+        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relationType.getId());
+
+        Set<String> roleIds = relationType.hasRoles().stream().map(Concept::getId).collect(Collectors.toSet());
+        assertEquals(2, roleIds.size());
+
+        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId)));
+        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId)));
+
+        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), entityType.playsRoles().iterator().next().getId());
+        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), resourceType.playsRoles().iterator().next().getId());
+
+        //Check everything is implicit
+        assertTrue(relationType.isImplicit());
+        relationType.hasRoles().forEach(role -> assertTrue(role.isImplicit()));
+
+        // Check that resource is required
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+    }
+
+    @Test
+    public void testHasResourceThenKey(){
+        EntityType entityType = graknGraph.putEntityType("Entity1");
+        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+
+        RelationType relationTypeHasResource = entityType.hasResource(resourceType);
+        RelationType relationTypeKey = entityType.key(resourceType);
+
+        assertEquals(relationTypeHasResource, relationTypeKey);
+
+        // Check that resource is required
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+    }
+
+    @Test
+    public void testKeyThenHasResource(){
+        EntityType entityType = graknGraph.putEntityType("Entity1");
+        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+
+        RelationType relationTypeKey = entityType.key(resourceType);
+        RelationType relationTypeHasResource = entityType.hasResource(resourceType);
+
+        assertEquals(relationTypeHasResource, relationTypeKey);
+
+        // Check that resource is required
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 }

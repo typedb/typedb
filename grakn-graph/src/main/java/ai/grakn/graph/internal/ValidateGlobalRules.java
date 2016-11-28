@@ -18,14 +18,11 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.RelationType;
-import ai.grakn.exception.MoreThanOneEdgeException;
-import ai.grakn.util.Schema;
-import ai.grakn.util.Schema;
-import ai.grakn.exception.MoreThanOneEdgeException;
-import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.MoreThanOneEdgeException;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
@@ -53,16 +50,29 @@ class ValidateGlobalRules {
         InstanceImpl rolePlayer = casting.getRolePlayer();
         TypeImpl<?, ?> currentConcept = rolePlayer.getParentIsa();
         RoleType roleType = casting.getRole();
-        Set<Concept> visitedConcepts = new HashSet<>();
+
+        boolean satisfiesPlaysRole = false;
+        Set<EdgeImpl> requiredPlaysRoles = new HashSet<>();
 
         while(currentConcept != null){
-            visitedConcepts.add(currentConcept);
-            if(currentConcept.playsRoles().contains(roleType))
-                return true;
+            Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
+
+            for (EdgeImpl edge : edges) {
+                if (edge.getTarget().equals(roleType)) {
+                    satisfiesPlaysRole = true;
+
+                    // Assert unique relation for this role type
+                    Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
+                    if (required && rolePlayer.relations(roleType).size() != 1) {
+                        return false;
+                    }
+                }
+            }
+
             currentConcept = currentConcept.getParentSub();
         }
 
-        return false;
+        return satisfiesPlaysRole;
     }
 
     /*------------------------------------------------- Axiom Rules --------------------------------------------------*/
@@ -121,5 +131,30 @@ class ValidateGlobalRules {
     /*--------------------------------------- Global Related TO Local Rules ------------------------------------------*/
     static boolean validateIsAbstractHasNoIncomingIsaEdges(TypeImpl conceptType){
         return !conceptType.getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
+    }
+
+    static boolean validateInstancePlaysAllRequiredRoles(Instance instance) {
+        TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
+
+        while(currentConcept != null){
+            Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
+
+            for (EdgeImpl edge : edges) {
+                Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
+
+                if (required) {
+                    RoleType roleType = edge.getTarget().asRoleType();
+
+                    // Assert there is a relation for this type
+                    if (instance.relations(roleType).isEmpty()) {
+                        return false;
+                    }
+                }
+            }
+
+            currentConcept = currentConcept.getParentSub();
+        }
+
+        return true;
     }
 }

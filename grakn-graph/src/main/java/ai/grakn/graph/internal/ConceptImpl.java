@@ -643,15 +643,16 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     //--------- Create Links -------//
     /**
-     *
-     * @param to the target concept
+     *  @param to the target concept
      * @param type the type of the edge to create
      */
-    void putEdge(Concept to, Schema.EdgeLabel type){
+    EdgeImpl putEdge(Concept to, Schema.EdgeLabel type){
         ConceptImpl toConcept = (ConceptImpl) to;
         GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(!traversal.hasNext())
-            addEdge(toConcept, type);
+            return addEdge(toConcept, type);
+        else
+            return graknGraph.getElementFactory().buildEdge(traversal.next(), graknGraph);
     }
 
     /**
