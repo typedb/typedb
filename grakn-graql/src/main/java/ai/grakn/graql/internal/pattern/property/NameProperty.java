@@ -23,31 +23,31 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.util.StringConverter;
 
-public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
+public class NameProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
-    private final String id;
+    private final String name;
 
-    public IdProperty(String id) {
-        this.id = id;
+    public NameProperty(String name) {
+        this.name = name;
     }
 
-    public String getId() {
-        return id;
+    public String getNameValue() {
+        return name;
     }
 
     @Override
     public String getName() {
-        return "id";
+        return "type-name";
     }
 
     @Override
     public String getProperty() {
-        return StringConverter.idToString(id);
+        return StringConverter.idToString(name);
     }
 
     @Override
     public Fragment getFragment(String start) {
-        return Fragments.id(start, id);
+        return Fragments.name(start, name);
     }
 
     @Override
@@ -55,14 +55,14 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        IdProperty that = (IdProperty) o;
+        NameProperty that = (NameProperty) o;
 
-        return id.equals(that.id);
+        return name.equals(that.name);
 
     }
 
     @Override
     public int hashCode() {
-        return id.hashCode();
+        return name.hashCode();
     }
 }

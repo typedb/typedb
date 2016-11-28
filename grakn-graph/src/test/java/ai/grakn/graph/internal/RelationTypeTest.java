@@ -66,10 +66,10 @@ public class RelationTypeTest extends GraphTestBase{
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_ALREADY_TAKEN.getMessage(original.getId(), original.toString()))
+                containsString(ErrorMessage.ID_ALREADY_TAKEN.getMessage(original.getName(), original.toString()))
         ));
 
-        graknGraph.putRelationType(original.getId());
+        graknGraph.putRelationType(original.getName());
     }
 
     @Test

@@ -5,127 +5,127 @@ insert
 
 # This should help manage things with a name, things with
 # multiple names and conflicts.
-id "entity_with_name" isa relation-type has-role named_entity has-role name_of_named_entity;
-id "name_of_named_entity" isa role-type;
-id "named_entity" isa role-type;
+type-name "entity_with_name" isa relation-type has-role named_entity has-role name_of_named_entity;
+type-name "name_of_named_entity" isa role-type;
+type-name "named_entity" isa role-type;
 
 # The reason I am using an entitiy instead of a resource is that
 # there will be a lot of entities with the same name
-id "name_tag" isa entity-type plays-role name_of_named_entity plays-role journal_tag plays-role publisher_tag plays-role author_tag plays-role editor_tag has-resource name_tag_id has-resource name_tag_string;
+type-name "name_tag" isa entity-type plays-role name_of_named_entity plays-role journal_tag plays-role publisher_tag plays-role author_tag plays-role editor_tag has-resource name_tag_id has-resource name_tag_string;
 
 # I should probably use the value of name_tag, but I am still
 # not able to.
-id "name_tag_string" isa resource-type datatype string;
+type-name "name_tag_string" isa resource-type datatype string;
 
-id "name_tag_id" isa resource-type datatype string;
+type-name "name_tag_id" isa resource-type datatype string;
 
   ## DBLP record entities, i.e. first order children
-id "dblp_record" isa entity-type plays-role editor_target plays-role publisher_target plays-role authored_record plays-role journal_target plays-role note_target plays-role referenced_record plays-role referencing_record has-resource dblp_mdate has-resource dblp_title has-resource dblp_booktitle has-resource dblp_pages has-resource dblp_year has-resource dblp_address has-resource dblp_volume has-resource dblp_number has-resource dblp_month has-resource dblp_url has-resource dblp_ee has-resource dblp_cdrom has-resource dblp_cite has-resource dblp_isbn has-resource dblp_series has-resource dblp_school has-resource dblp_chapter;
+type-name "dblp_record" isa entity-type plays-role editor_target plays-role publisher_target plays-role authored_record plays-role journal_target plays-role note_target plays-role referenced_record plays-role referencing_record has-resource dblp_mdate has-resource dblp_title has-resource dblp_booktitle has-resource dblp_pages has-resource dblp_year has-resource dblp_address has-resource dblp_volume has-resource dblp_number has-resource dblp_month has-resource dblp_url has-resource dblp_ee has-resource dblp_cdrom has-resource dblp_cite has-resource dblp_isbn has-resource dblp_series has-resource dblp_school has-resource dblp_chapter;
 
-id "dblp_article" sub dblp_record;
+type-name "dblp_article" sub dblp_record;
 
-id "dblp_inproceedings" sub dblp_record;
+type-name "dblp_inproceedings" sub dblp_record;
 
-id "dblp_proceedings" sub dblp_record;
+type-name "dblp_proceedings" sub dblp_record;
 
-id "dblp_book" sub dblp_record;
+type-name "dblp_book" sub dblp_record;
 
-id "dblp_incollection" sub dblp_record;
+type-name "dblp_incollection" sub dblp_record;
 
-id "dblp_phdthesis" sub dblp_record;
+type-name "dblp_phdthesis" sub dblp_record;
 
-id "dblp_masterthesis" sub dblp_record;
+type-name "dblp_masterthesis" sub dblp_record;
 
-id "dblp_www" sub dblp_record;
+type-name "dblp_www" sub dblp_record;
 
 
     ### DBLP resources. Mostly attributes of the records
 
 # This is a special one: it contains the date of the last
 # modification of the record
-id "dblp_mdate" isa resource-type	datatype string	;
+type-name "dblp_mdate" isa resource-type	datatype string	;
 
-id "dblp_title" isa resource-type	datatype string	;
+type-name "dblp_title" isa resource-type	datatype string	;
 
-id "dblp_booktitle" isa resource-type	datatype string	;
+type-name "dblp_booktitle" isa resource-type	datatype string	;
 
-id "dblp_pages" isa resource-type	datatype string	;
+type-name "dblp_pages" isa resource-type	datatype string	;
 
-id "dblp_year" isa resource-type datatype string;
+type-name "dblp_year" isa resource-type datatype string;
 
-id "dblp_address" isa resource-type	datatype string	;
+type-name "dblp_address" isa resource-type	datatype string	;
 
-id "dblp_volume" isa resource-type datatype string;
+type-name "dblp_volume" isa resource-type datatype string;
 
-id "dblp_number" isa resource-type datatype string;
+type-name "dblp_number" isa resource-type datatype string;
 
-id "dblp_month" isa resource-type datatype string	;
+type-name "dblp_month" isa resource-type datatype string;
 
-id "dblp_url" isa resource-type	datatype string	;
+type-name "dblp_url" isa resource-type	datatype string	;
 
-id "dblp_ee" isa resource-type datatype string;
+type-name "dblp_ee" isa resource-type datatype string;
 
-id "dblp_cdrom" isa resource-type	datatype string	;
+type-name "dblp_cdrom" isa resource-type	datatype string	;
 
-id "dblp_cite" isa resource-type datatype string;
+type-name "dblp_cite" isa resource-type datatype string;
 
-id "dblp_isbn" isa resource-type datatype string;
+type-name "dblp_isbn" isa resource-type datatype string;
 
-id "dblp_series" isa resource-type datatype string;
+type-name "dblp_series" isa resource-type datatype string;
 
-id "dblp_school" isa resource-type datatype string;
+type-name "dblp_school" isa resource-type datatype string;
 
-id "dblp_chapter" isa resource-type	datatype string	;
+type-name "dblp_chapter" isa resource-type	datatype string	;
 
 # These are named entity relationships, so should be treated carefully
 # Each of these attaches a name tag to a record
 
       ### Author is a named entity with a couple of resources
-id "dblp_author" sub entity_with_name has-role authored_record has-role author_tag has-resource author_number has-resource is_last_author;
-id "authored_record" sub named_entity;
-id "author_tag" sub name_of_named_entity;
+type-name "dblp_author" sub entity_with_name has-role authored_record has-role author_tag has-resource author_number has-resource is_last_author;
+type-name "authored_record" sub named_entity;
+type-name "author_tag" sub name_of_named_entity;
 
-id "author_number" isa resource-type datatype long;
+type-name "author_number" isa resource-type datatype long;
 
 # I am not sure if I want to use this, but being last author
 # matters in some fields
-id "is_last_author" isa resource-type	datatype boolean;
+type-name "is_last_author" isa resource-type	datatype boolean;
 
 
     ### The other named entities are editors, journals or tags
 
-id "dblp_editor" sub entity_with_name	has-role editor_target has-role editor_tag;
-id "editor_target" sub named_entity;
-id "editor_tag" sub name_of_named_entity;
+type-name "dblp_editor" sub entity_with_name	has-role editor_target has-role editor_tag;
+type-name "editor_target" sub named_entity;
+type-name "editor_tag" sub name_of_named_entity;
 
-id "dblp_journal" sub entity_with_name has-role journal_target has-role journal_tag;
-id "journal_target" sub named_entity;
-id "journal_tag" sub name_of_named_entity;
+type-name "dblp_journal" sub entity_with_name has-role journal_target has-role journal_tag;
+type-name "journal_target" sub named_entity;
+type-name "journal_tag" sub name_of_named_entity;
 
-id "dblp_publisher" sub entity_with_name has-role publisher_target has-role publisher_tag;
-id "publisher_target" sub named_entity;
-id "publisher_tag" sub name_of_named_entity;
+type-name "dblp_publisher" sub entity_with_name has-role publisher_target has-role publisher_tag;
+type-name "publisher_target" sub named_entity;
+type-name "publisher_tag" sub name_of_named_entity;
 
 # Crossref is a special case it is just a link to another resource
-id "dblp_crossref" isa relation-type has-role referencing_record has-role referenced_record;
-id "referenced_record" isa role-type;
-id "referencing_record" isa role-type;
+type-name "dblp_crossref" isa relation-type has-role referencing_record has-role referenced_record;
+type-name "referenced_record" isa role-type;
+type-name "referencing_record" isa role-type;
 
 # Note has a value (the note string) and might have a note
 # type (for example "affiliation") type gets attached like a
 # name
-id "dblp_note" sub entity_with_name has-role note_target has-role note_tag_role;
-id "note_target" sub named_entity;
-id "note_tag_role" sub name_of_named_entity;
+type-name "dblp_note" sub entity_with_name has-role note_target has-role note_tag_role;
+type-name "note_target" sub named_entity;
+type-name "note_tag_role" sub name_of_named_entity;
 
-id "typed_note_tag" sub entity_with_name has-role typed_note_target has-role note_type_tag;
-id "typed_note_target" sub named_entity;
-id "note_type_tag" sub name_of_named_entity;
+type-name "typed_note_tag" sub entity_with_name has-role typed_note_target has-role note_type_tag;
+type-name "typed_note_target" sub named_entity;
+type-name "note_type_tag" sub name_of_named_entity;
 
-id "note_tag" isa entity-type	has-resource dblp_note_string plays-role named_entity plays-role name_of_named_entity;
+type-name "note_tag" isa entity-type	has-resource dblp_note_string plays-role named_entity plays-role name_of_named_entity;
 
-id "dblp_note_type" isa entity-type	plays-role name_of_named_entity	has-resource dblp_note_type_string;
+type-name "dblp_note_type" isa entity-type	plays-role name_of_named_entity	has-resource dblp_note_type_string;
 
-id "dblp_note_string" isa resource-type	datatype string	;
+type-name "dblp_note_string" isa resource-type	datatype string	;
 
-id "dblp_note_type_string" isa resource-type datatype string;
+type-name "dblp_note_type_string" isa resource-type datatype string;

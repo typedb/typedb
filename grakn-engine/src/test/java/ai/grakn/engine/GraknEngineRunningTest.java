@@ -52,7 +52,7 @@ public class GraknEngineRunningTest {
 
         // Check that we've loaded the ontology
         GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
-        assertEquals(1, graph.graql().match(var("x").id("scheduled-task")).execute().size());
+        assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
 
         GraknEngineServer.stop();
         Thread.sleep(5000);

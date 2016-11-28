@@ -30,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static ai.grakn.graql.Graql.name;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -138,8 +139,8 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
 
         QueryBuilder emptyQb = empty.graql();
         emptyQb.insert(
-                Graql.id("person").isa("entity-type"),
-                Graql.id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
+                name("person").isa("entity-type"),
+                name("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         exception.expect(ConceptException.class);

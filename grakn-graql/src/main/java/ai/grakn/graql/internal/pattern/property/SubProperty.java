@@ -26,12 +26,6 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -61,8 +55,8 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outSub(start, superType.getName()),
-                Fragments.inSub(superType.getName(), start)
+                Fragments.outSub(start, superType.getVarName()),
+                Fragments.inSub(superType.getVarName(), start)
         ));
     }
 

@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
     InstanceImpl(Vertex v, V type, AbstractGraknGraph graknGraph) {
         super(v, type, graknGraph);
-        generateInstanceId(type);
     }
 
     /**
@@ -114,14 +113,14 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<String> roleTypeItemIdentifier = Arrays.stream(roleTypes).map(Concept::getId).collect(Collectors.toSet());
+        Set<String> roleTypeNames = Arrays.stream(roleTypes).map(RoleType::getName).collect(Collectors.toSet());
 
         InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
             CastingImpl casting = c.asCasting();
-            if (roleTypeItemIdentifier.size() != 0) {
-                if (roleTypeItemIdentifier.contains(casting.getType()))
+            if (roleTypeNames.size() != 0) {
+                if (roleTypeNames.contains(casting.getType()))
                     relations.addAll(casting.getRelations());
             } else {
                 relations.addAll(casting.getRelations());
@@ -151,14 +150,13 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public Relation hasResource(Resource resource){
-        ResourceType type = resource.type();
-
-        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
+        String name = resource.type().getName();
+        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getId(name));
+        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(name));
+        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getId(), resource.type().getId()));
+            throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getName(), resource.type().getName()));
         }
 
         Relation relation = hasResource.addRelation();

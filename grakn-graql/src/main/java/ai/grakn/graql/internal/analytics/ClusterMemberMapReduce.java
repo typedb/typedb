@@ -42,7 +42,7 @@ class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
         if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
                 vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
             emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
-                    Collections.singleton(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name())));
+                    Collections.singleton(vertex.id().toString()));
             return;
         }
         emitter.emit(NullObject.instance(), Collections.emptySet());

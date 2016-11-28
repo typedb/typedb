@@ -116,7 +116,7 @@ public class GremlinQuery {
     }
 
     /**
-     * @return a stream of concept IDs mentioned in the query
+     * @return a stream of concept names mentioned in the query
      */
     public Stream<String> getConcepts() {
         return innerQueries.stream().flatMap(ConjunctionQuery::getConcepts);

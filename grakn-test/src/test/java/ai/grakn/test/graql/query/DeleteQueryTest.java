@@ -18,19 +18,17 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractMovieGraphTest;
-import ai.grakn.util.Schema;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
@@ -54,7 +52,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testDeleteMultiple() {
-        qb.insert(var().id("fake-type").isa(Schema.MetaSchema.ENTITY_TYPE.getId())).execute();
+        qb.insert(name("fake-type").isa(Schema.MetaSchema.ENTITY_TYPE.getId())).execute();
         qb.insert(var("x").isa("fake-type"), var("y").isa("fake-type")).execute();
 
         assertEquals(2, qb.match(var("x").isa("fake-type")).stream().count());
@@ -89,14 +87,14 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testDeleteSpecificEdge() {
-        Var actor = var().id("has-cast").hasRole("actor");
-        Var productionWithCast = var().id("has-cast").hasRole("production-with-cast");
+        Var actor = name("has-cast").hasRole("actor");
+        Var productionWithCast = name("has-cast").hasRole("production-with-cast");
 
         assertTrue(qb.match(actor).ask().execute());
         assertTrue(qb.match(productionWithCast).ask().execute());
 
-        qb.match(var("x").id("has-cast")).delete(var("x").hasRole("actor")).execute();
-        assertTrue(qb.match(var().id("has-cast")).ask().execute());
+        qb.match(var("x").name("has-cast")).delete(var("x").hasRole("actor")).execute();
+        assertTrue(qb.match(name("has-cast")).ask().execute());
         assertFalse(qb.match(actor).ask().execute());
         assertTrue(qb.match(productionWithCast).ask().execute());
 

@@ -32,7 +32,11 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
 
     @Override
     public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
-        return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
+        try {
+            return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
+        } catch (NumberFormatException e){
+            return null;
+        }
     }
 
     @Override

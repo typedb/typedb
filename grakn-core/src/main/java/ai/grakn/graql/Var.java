@@ -42,6 +42,12 @@ public interface Var extends Pattern {
     Var id(String id);
 
     /**
+     * @param name a string that this variable's name must match
+     * @return this
+     */
+    Var name(String name);
+
+    /**
      * this variable must have a value
      * @return this
      */

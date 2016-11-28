@@ -55,8 +55,8 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outPlaysRole(start, role.getName()),
-                Fragments.inPlaysRole(role.getName(), start)
+                Fragments.outPlaysRole(start, role.getVarName()),
+                Fragments.inPlaysRole(role.getVarName(), start)
         ));
     }
 
