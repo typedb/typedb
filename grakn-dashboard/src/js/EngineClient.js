@@ -79,7 +79,7 @@ export default class EngineClient {
      */
     graqlShell(query, fn) {
         this.request({
-            url: "/shell/match?query=" + query,
+            url: "/graph/match?query=" + query,
             callback: fn,
             dataType: "text",
             contentType: "application/text"
@@ -133,7 +133,7 @@ export default class EngineClient {
      */
     getMetaTypes(fn) {
         this.request({
-            url: "/shell/metaTypeInstances",
+            url: "/graph/ontology",
             callback: fn
         });
     }

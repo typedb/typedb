@@ -52,9 +52,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.controller.RequestUtil.getAsList;
-import static ai.grakn.engine.controller.RequestUtil.getAsString;
-import static ai.grakn.engine.controller.RequestUtil.getKeyspace;
+import static ai.grakn.engine.controller.Utilities.getAsList;
+import static ai.grakn.engine.controller.Utilities.getAsString;
+import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static spark.Spark.before;
 import static spark.Spark.halt;
 import static spark.Spark.post;
