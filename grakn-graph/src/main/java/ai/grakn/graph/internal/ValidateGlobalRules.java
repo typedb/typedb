@@ -133,6 +133,14 @@ class ValidateGlobalRules {
         return !conceptType.getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
     }
 
+    /**
+     * Schema validation which makes sure that the roles the entity type plays are correct. They are correct if
+     * For every T1 such that T1 plays-role R1 there must exist some T2, such that T1 sub* T2 and T2 plays-role R2
+     * @param roleType The entity type to validate
+     */
+    @SuppressWarnings("unchecked")
+    static Collection<RoleType> validateRolesPlayedSchema(RoleTypeImpl roleType){
+        return new HashSet<>();
     static boolean validateInstancePlaysAllRequiredRoles(Instance instance) {
         TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
 

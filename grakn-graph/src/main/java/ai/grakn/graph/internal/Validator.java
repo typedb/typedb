@@ -118,13 +118,6 @@ class Validator {
     private void validateType(TypeImpl conceptType){
         if(conceptType.isAbstract() && !ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType))
             errorsFound.add(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(conceptType.getId()));
-
-        Collection<RoleType> invalidRoleType = ValidateGlobalRules.validateRolesPlayedSchema(conceptType);
-
-        if(!invalidRoleType.isEmpty()){
-            String invalidRoleTypes = Arrays.toString(invalidRoleType.toArray());
-            errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(conceptType.getId(), invalidRoleTypes));
-        }
     }
 
     /**
@@ -134,6 +127,13 @@ class Validator {
     private void validateRoleType(RoleTypeImpl roleType){
         if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
             errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getId()));
+
+        Collection<RoleType> invalidRoleType = ValidateGlobalRules.validateRolesPlayedSchema(roleType);
+
+        if(!invalidRoleType.isEmpty()){
+            String invalidRoleTypes = Arrays.toString(invalidRoleType.toArray());
+            errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(roleType.getId(), invalidRoleTypes));
+        }
     }
 
     /**
