@@ -84,7 +84,7 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, keyspace)
                 .queryParam(QUERY_FIELD, "match $x isa Man;")
-                .contentType(HAL_CONTENTTYPE)
+                .accept(HAL_CONTENTTYPE)
                 .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
                 .then().statusCode(200).extract().response().andReturn();
         JSONArray resultArray = new JSONArray(response.getBody().asString());
@@ -96,7 +96,7 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, keyspace)
                 .queryParam(QUERY_FIELD, "match $x isa Man;")
-                .contentType(GRAQL_CONTENTTYPE)
+                .accept(GRAQL_CONTENTTYPE)
                 .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
                 .then().statusCode(200).extract().response().andReturn();
 
