@@ -78,7 +78,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
             if (roleType.isPresent()) {
-                Optional<String> roleTypeName = roleType.get().getName();
+                Optional<String> roleTypeName = roleType.get().getTypeName();
 
                 if (roleTypeName.isPresent()) {
                     shortcutTraversal.addRel(roleTypeName.get(), relationPlayer.getRolePlayer().getVarName());
@@ -197,11 +197,11 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         Set<String> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
-                .map(VarAdmin::getName).flatMap(CommonUtil::optionalToStream)
+                .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
         Optional<String> maybeName =
-                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getName);
+                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeName);
 
         maybeName.ifPresent(name -> {
             RelationType relationType = graph.getRelationType(name);

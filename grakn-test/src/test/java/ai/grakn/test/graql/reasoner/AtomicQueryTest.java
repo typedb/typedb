@@ -87,19 +87,6 @@ public class AtomicQueryTest extends AbstractEngineTest{
     }
 
     @Test
-    @Ignore
-    public void testErrorOnMaterialize(){
-        exception.expect(IllegalStateException.class);
-        String queryString = "match ($x, $y) isa recommendation;";
-        IdPredicate sub = new IdPredicate("x", getConcept("Bob"));
-        AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        AtomicQuery atomicQuery2 = new AtomicQuery(atomicQuery);
-        atomicQuery2.addAtomConstraints(Sets.newHashSet(sub));
-        exception.expectMessage(ErrorMessage.MATERIALIZATION_ERROR.getMessage());
-        atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", getConcept("Bob"))));
-    }
-
-    @Test
     public void testMaterialize(){
         assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
 
@@ -145,12 +132,12 @@ public class AtomicQueryTest extends AbstractEngineTest{
         GraknGraph lgraph = AdmissionsGraph.getGraph();
         String queryString = "match $x isa $x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680;" +
                 "$x has GRE $x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45;" +
-                "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 id 'applicant';" +
+                "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 type-name 'applicant';" +
                 "$x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45 value > 1099;";
 
         String queryString2 = "match $x isa $x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6;" +
                 "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
-                "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 id 'applicant';" +
+                "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 type-name 'applicant';" +
                 "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
         AtomicQuery parentQuery = new AtomicQuery(queryString, lgraph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, lgraph);

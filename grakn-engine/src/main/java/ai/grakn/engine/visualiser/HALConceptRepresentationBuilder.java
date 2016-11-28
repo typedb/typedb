@@ -129,7 +129,7 @@ public class HALConceptRepresentationBuilder {
                         .getRelationPlayers().map(x -> {
                             roleTypes.put(x.getRolePlayer().getVarName(),
                                     (x.getRoleType().isPresent()) ? x.getRoleType().get().getId().get() : HAS_ROLE_EDGE);
-                            return x.getRolePlayer().getName();
+                            return x.getRolePlayer().getTypeName();
                         }).forEach(result -> {rolePlayersInVar.add(result.get());});
                 //if it is a binary or ternary relation
                 if (rolePlayersInVar.size() > 1) {

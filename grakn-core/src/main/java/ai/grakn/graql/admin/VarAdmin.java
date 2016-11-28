@@ -88,11 +88,12 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
-    Optional<String> getName();
+    Optional<String> getTypeName();
 
     /**
      * @return all variables that this variable references
      */
+
     Set<VarAdmin> getInnerVars();
 
     /**

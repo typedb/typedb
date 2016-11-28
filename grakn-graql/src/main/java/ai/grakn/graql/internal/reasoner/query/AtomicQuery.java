@@ -184,9 +184,9 @@ public class AtomicQuery extends Query{
                 Utility.computeRoleCombinations(rolePlayers , roles, new HashMap<>(), roleMaps);
 
                 queryToMaterialise.removeAtom(relAtom);
-                roleMaps.forEach(map -> {
+                roleMaps.forEach(roleMap -> {
                     Relation relationWithRoles = new Relation(atom.getVarName(), relAtom.getValueVariable(),
-                            map, relAtom.getPredicate(), queryToMaterialise);
+                            roleMap, relAtom.getPredicate(), queryToMaterialise);
                     queryToMaterialise.addAtom(relationWithRoles);
                     insertAnswers.addAll(queryToMaterialise.materialiseComplete());
                     queryToMaterialise.removeAtom(relationWithRoles);
