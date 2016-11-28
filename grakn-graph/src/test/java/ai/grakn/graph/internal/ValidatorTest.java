@@ -303,7 +303,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putRelationType("fatherHood").hasRole(father).hasRole(childSub1);
         graknGraph.putRelationType("motherHood").hasRole(mother).hasRole(childSub2);
 
-        String errorMessage = ErrorMessage.VALIDATION_ROLE_TO_ROLE_PLAYER_SCHEMA.
+        String errorMessage = ErrorMessage.VALIDATION_ROLE_ENTITY_SCHEMA_MISSING_SUPER_ROLE_TYPE.
                 getMessage(woman.getId(), mother.getId(), person.getId(), woman.getId());
 
         expectedException.expect(GraknValidationException.class);

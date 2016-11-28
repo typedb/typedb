@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.EntityType;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
@@ -61,10 +62,13 @@ class Validator {
                     validateCasting((CastingImpl) nextToValidate);
                 } else if (nextToValidate.isType()) {
                     validateType((TypeImpl) nextToValidate);
+
                     if (nextToValidate.isRoleType()) {
                         validateRoleType((RoleTypeImpl) nextToValidate);
                     } else if (nextToValidate.isRelationType()) {
                         validateRelationType((RelationTypeImpl) nextToValidate);
+                    } else if (nextToValidate.isEntityType()){
+                        validateEntityTypeRoles((EntityTypeImpl) nextToValidate);
                     }
                 }
             }
@@ -134,5 +138,31 @@ class Validator {
     private void validateInstance(InstanceImpl instance) {
         if (!ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance))
             errorsFound.add(ErrorMessage.VALIDATION_INSTANCE.getMessage(instance.getId()));
+    }
+
+    /**
+     * Schema validation which makes sure that the roles the entity type plays are correct. They are correct if
+     * For every T1 such that T1 plays-role R1 there must exist some T2, such that T1 sub* T2 and T2 plays-role R2
+     * @param entityType The entity type to validate
+     */
+    private void validateEntityTypeRoles(EntityTypeImpl entityType){
+        Collection<RoleType> rolesPlayedBySuper = new HashSet<>();
+        EntityType superEntityType = entityType.superType();
+
+        if(superEntityType != null)
+            rolesPlayedBySuper = superEntityType.playsRoles();
+
+        for (RoleType roleType : entityType.playsRoles()) {
+            RoleType superRoleType = roleType.superType();
+
+            //If my role type has super then we need to make sure I have a super entity type which plays that role.
+            if(superRoleType != null){
+                if(superEntityType == null){
+                    errorsFound.add(ErrorMessage.VALIDATION_ROLE_ENTITY_SCHEMA_MISSING_SUPER_ENTITY_TYPE.getMessage(entityType.getId(), roleType.getId(), superRoleType.getId(), entityType.getId(), null));
+                } else if(!rolesPlayedBySuper.contains(superRoleType)){
+                    errorsFound.add(ErrorMessage.VALIDATION_ROLE_ENTITY_SCHEMA_MISSING_SUPER_ROLE_TYPE.getMessage(entityType.getId(), roleType.getId(), superEntityType.getId(), entityType.getId()));
+                }
+            }
+        }
     }
 }
