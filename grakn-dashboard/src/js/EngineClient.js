@@ -27,6 +27,7 @@ export default class EngineClient {
         this.contentType = 'application/json; charset=utf-8';
         this.dataType = 'json';
         this.cache = false;
+        this.accepts = { hal: "application/hal+json" };
     }
 
     // can use queue of pending requests here..
@@ -51,6 +52,7 @@ export default class EngineClient {
                 contentType: requestData.contentType || this.contentType,
                 dataType: requestData.dataType || this.dataType,
                 cache: requestData.cache || this.cache,
+                accepts: requestData.accepts || this.accepts,
                 data: requestData.data,
                 url: requestData.url
             }).done(function(r) {
@@ -82,7 +84,8 @@ export default class EngineClient {
             url: "/graph/match?query=" + query,
             callback: fn,
             dataType: "text",
-            contentType: "application/text"
+            contentType: "application/text",
+            accepts: { text: "application/graql"}
         });
     }
 
@@ -104,7 +107,8 @@ export default class EngineClient {
     graqlHAL(query, useReasoner, fn) {
         this.request({
             url: "/graph/match?query=" + query + "&reasoner=" + useReasoner,
-            callback: fn
+            callback: fn, 
+            accepts: { json: "application/hal+json"}
         });
     }
 

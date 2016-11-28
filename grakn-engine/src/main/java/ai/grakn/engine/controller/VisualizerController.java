@@ -69,7 +69,7 @@ import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
 @Path("/graph")
 @Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
 @Produces({"application/json", "text/plain"})
-public class GraphController {
+public class VisualizerController {
 
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
@@ -79,7 +79,7 @@ public class GraphController {
     private final static String COMPUTE_RESPONSE_FIELD = "response";
 
     //TODO: implement a pagination system.
-    public GraphController() {
+    public VisualizerController() {
         get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::conceptById);
         get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + ID_PARAMETER, this::conceptByIdOntology);
         get(REST.WebPath.GRAPH_ONTOLOGY_URI, this::ontology);

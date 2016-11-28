@@ -42,7 +42,7 @@ public abstract class Utilities {
     }
 
     public static String getContenttype(Request request){
-        return request.contentType().split(";")[0];
+        return request.headers("Accept").split(",")[0];
     }
 
     public static String getAsString(String property, String request){

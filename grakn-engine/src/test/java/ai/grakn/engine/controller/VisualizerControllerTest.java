@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
-public class GraphControllerTest extends GraknEngineTestBase {
+public class VisualizerControllerTest extends GraknEngineTestBase {
 
     private static String keyspace = "specialtestgraph";
     private String entityId;
