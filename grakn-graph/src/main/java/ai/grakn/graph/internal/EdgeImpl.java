@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
@@ -58,7 +59,7 @@ class EdgeImpl {
      *
      * @return The source of the edge.
      */
-    public ConceptImpl getSource(){
+    public <X extends Concept> X getSource(){
         return graknGraph.getElementFactory().buildUnknownConcept(edge.outVertex());
     }
 
@@ -66,7 +67,7 @@ class EdgeImpl {
      *
      * @return The target of the edge
      */
-    public ConceptImpl getTarget(){
+    public <X extends Concept> X getTarget(){
         return graknGraph.getElementFactory().buildUnknownConcept(edge.inVertex());
     }
 

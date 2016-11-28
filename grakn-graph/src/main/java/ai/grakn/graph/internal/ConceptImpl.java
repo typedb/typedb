@@ -466,8 +466,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one outgoing edge of a specific type
      */
-    protected Concept getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
-        Set<ConceptImpl> concepts = getOutgoingNeighbours(edgeLabel);
+    protected <X extends Concept> X getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
+        Set<X> concepts = getOutgoingNeighbours(edgeLabel);
         if(concepts.size() == 1){
             return concepts.iterator().next();
         } else if(concepts.isEmpty()){
@@ -482,11 +482,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
-    protected Set<ConceptImpl> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
-        Set<ConceptImpl> outgoingNeighbours = new HashSet<>();
+    protected <X extends Concept> Set<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
+        Set<X> outgoingNeighbours = new HashSet<>();
 
         getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
-            ConceptImpl found = edge.getTarget();
+            X found = edge.getTarget();
             if(found != null){
                 outgoingNeighbours.add(found);
             }
@@ -499,8 +499,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one incoming edge of a specific type
      */
-    Concept getIncomingNeighbour(Schema.EdgeLabel edgeLabel){
-        Set<ConceptImpl> concepts = getIncomingNeighbours(edgeLabel);
+    <X extends Concept> X getIncomingNeighbour(Schema.EdgeLabel edgeLabel){
+        Set<X> concepts = getIncomingNeighbours(edgeLabel);
         if(concepts.size() == 1){
             return concepts.iterator().next();
         } else if(concepts.isEmpty()){
@@ -514,10 +514,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
-    protected Set<ConceptImpl> getIncomingNeighbours(Schema.EdgeLabel edgeType){
-        Set<ConceptImpl> incomingNeighbours = new HashSet<>();
+    protected <X extends Concept> Set<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
+        Set<X> incomingNeighbours = new HashSet<>();
         getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
-            ConceptImpl found = edge.getSource();
+            X found = edge.getSource();
             if(found != null){
                 incomingNeighbours.add(found);
             }

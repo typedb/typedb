@@ -64,9 +64,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     @Override
     public Collection<Type> playedByTypes() {
         Collection<Type> types = new HashSet<>();
-        getSubHierarchySuperSet().forEach(r -> {
-            r.getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).forEach(c -> types.add(c.asType()));
-        });
+        getSubHierarchySuperSet().forEach(r -> ((RoleTypeImpl)r).getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).
+                forEach(c -> types.add(c.asType())));
         return types;
     }
 

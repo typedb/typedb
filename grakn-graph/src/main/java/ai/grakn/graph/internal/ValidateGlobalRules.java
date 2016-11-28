@@ -21,12 +21,12 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -48,7 +48,7 @@ class ValidateGlobalRules {
      */
     static boolean validatePlaysRoleStructure(CastingImpl casting) {
         InstanceImpl rolePlayer = casting.getRolePlayer();
-        TypeImpl<?, ?> currentConcept = rolePlayer.getParentIsa();
+        Type currentConcept = rolePlayer.getParentIsa();
         RoleType roleType = casting.getRole();
 
         boolean satisfiesPlaysRole = false;
