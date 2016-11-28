@@ -144,7 +144,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 }
                 break;
             default:
-                if (memory.get(FOUND_PATH)) {
+                if ((Boolean)memory.get(FOUND_PATH)) {
                     String id = vertex.id().toString(); //This will likely have to change as we support more and more vendors.
                     if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
                         LOGGER.debug("Traversing back to vertex " + id);

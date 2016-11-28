@@ -22,10 +22,11 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.RelationType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
@@ -310,11 +311,7 @@ public class Analytics {
         path.add(destinationId);
         LOGGER.info("ShortestPathVertexProgram is done");
         graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
-        List<Concept> resultList = new ArrayList<>();
-        for (String id : path) {
-            resultList.add(graph.getConcept(id));
-        }
-        return resultList;
+        return path.stream().map(graph::<Instance>getConcept).collect(Collectors.toList());
     }
 
     /**
@@ -416,7 +413,7 @@ public class Analytics {
      * Add the analytics elements to the ontology of the graph specified in <code>keySpace</code>. The ontology elements
      * are related to the resource type <code>resourceTypeName</code> used to persist data computed by analytics.
      *
-     * @param resourceTypeName   the ID of a resource type used to persist information
+     * @param resourceTypeName the ID of a resource type used to persist information
      * @param resourceDataType the datatype of the resource type
      */
     private void mutateResourceOntology(String resourceTypeName, ResourceType.DataType resourceDataType) {
