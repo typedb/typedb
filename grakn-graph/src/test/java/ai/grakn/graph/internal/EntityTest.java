@@ -29,6 +29,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
@@ -290,5 +291,82 @@ public class EntityTest extends GraphTestBase{
         ));
 
         entity.hasResource(resource);
+    }
+
+    @Test
+    public void testKey(){
+        String resourceTypeId = "A Resource Thing";
+        EntityType entityType = graknGraph.putEntityType("A Thing");
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        entityType.key(resourceType);
+
+        Entity entity = entityType.addEntity();
+        Resource resource = resourceType.putResource("A resource thing");
+
+        Relation relation = entity.hasResource(resource);
+        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relation.type().getId());
+
+        relation.rolePlayers().entrySet().forEach(entry -> {
+            RoleType roleType = entry.getKey();
+            Instance instance = entry.getValue();
+
+            if(instance.equals(entity)){
+                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), roleType.getId());
+            } else {
+                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), roleType.getId());
+            }
+        });
+    }
+
+    @Test
+    public void testMultipleResources() throws GraknValidationException {
+        String resourceTypeId = "A Resource Thing";
+        EntityType entityType = graknGraph.putEntityType("A Thing");
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        entityType.hasResource(resourceType);
+
+        Entity entity = entityType.addEntity();
+        Resource resource1 = resourceType.putResource("A resource thing");
+        Resource resource2 = resourceType.putResource("Another resource thing");
+
+        Relation relation1 = entity.hasResource(resource1);
+        Relation relation2 = entity.hasResource(resource2);
+
+        assertNotEquals(relation1, relation2);
+
+        graknGraph.validateGraph();
+    }
+
+    @Test
+    public void testMultipleKeys() throws GraknValidationException {
+        String resourceTypeId = "A Resource Thing";
+        EntityType entityType = graknGraph.putEntityType("A Thing");
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        entityType.key(resourceType);
+
+        Entity entity = entityType.addEntity();
+        Resource resource1 = resourceType.putResource("A resource thing");
+        Resource resource2 = resourceType.putResource("Another resource thing");
+
+        Relation relation1 = entity.hasResource(resource1);
+        Relation relation2 = entity.hasResource(resource2);
+
+        assertNotEquals(relation1, relation2);
+
+        expectedException.expect(GraknValidationException.class);
+        graknGraph.validateGraph();
+    }
+
+    @Test
+    public void testNoKey() throws GraknValidationException {
+        String resourceTypeId = "A Resource Thing";
+        EntityType entityType = graknGraph.putEntityType("A Thing");
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        entityType.key(resourceType);
+
+        entityType.addEntity();
+
+        expectedException.expect(GraknValidationException.class);
+        graknGraph.validateGraph();
     }
 }

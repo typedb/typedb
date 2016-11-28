@@ -67,6 +67,7 @@ public enum ErrorMessage {
     VALIDATION_IS_ABSTRACT("The abstract Type ['%s'] should not have any instances \n"),
     VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any RelationType. \n"),
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
+    VALIDATION_INSTANCE("Instance ['%s'] does not play all required roles \n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),

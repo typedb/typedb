@@ -108,7 +108,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     }
 
     @Test
-    public void testValidatePlaysRoleStructureRequired() {
+    public void testValidatePlaysRoleStructureUnique() {
         RoleType role1 = graknGraph.putRoleType("role1");
         RoleType role2 = graknGraph.putRoleType("role2");
         RelationType relationType = graknGraph.putRelationType("rt").hasRole(role1).hasRole(role2);
