@@ -30,8 +30,8 @@ public class DataTypeAtom extends AtomBase {
 
     private final ResourceType.DataType<?> datatype;
 
-    public DataTypeAtom(DataTypeProperty prop, VarAdmin var, Query parent){
-        super(Graql.var(var.getName()).datatype(prop.getDatatype()).admin(), parent);
+    public DataTypeAtom(String varName, DataTypeProperty prop, Query parent){
+        super(Graql.var(varName).datatype(prop.getDatatype()).admin(), parent);
         this.datatype = prop.getDatatype();
     }
 

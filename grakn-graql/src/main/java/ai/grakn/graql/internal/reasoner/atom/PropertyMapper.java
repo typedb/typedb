@@ -108,12 +108,8 @@ public class PropertyMapper {
                 VarAdmin idVar = Graql.var(typeVariable).id(isaProp.getProperty()).admin();
                 predicate = new IdPredicate(idVar, parent);
             }
-            else {
-                predicate = vars.stream()
-                        .filter(v -> v.getName().equals(typeVariable))
-                        .flatMap(v -> v.getProperties(IdProperty.class).map(vp -> new IdPredicate(vp, v, parent)))
-                        .findFirst().orElse(null);
-            }
+            else
+                predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         }
 
         atoms.add(new Relation(relVar.admin(), predicate, parent));
@@ -122,23 +118,23 @@ public class PropertyMapper {
     }
 
     private static Set<Atomic> map(IdProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
-        return Sets.newHashSet(new IdPredicate(prop, var, parent));
+        return Sets.newHashSet(new IdPredicate(var.getName(), prop, parent));
     }
 
     private static Set<Atomic> map(ValueProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
-        return Sets.newHashSet(new ValuePredicate(prop, var, parent));
+        return Sets.newHashSet(new ValuePredicate(var.getName(), prop, parent));
     }
 
     private static Set<Atomic> map(RegexProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
-        return Sets.newHashSet(new RegexAtom(prop, var, parent));
+        return Sets.newHashSet(new RegexAtom(var.getName(), prop, parent));
     }
 
     private static Set<Atomic> map(DataTypeProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
-        return Sets.newHashSet(new DataTypeAtom(prop, var, parent));
+        return Sets.newHashSet(new DataTypeAtom(var.getName(), prop, parent));
     }
 
     private static Set<Atomic> map(IsAbstractProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
-        return Sets.newHashSet(new IsAbstractAtom(prop, var, parent));
+        return Sets.newHashSet(new IsAbstractAtom(var.getName(), prop, parent));
     }
 
     private static Set<Atomic> map(SubProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
@@ -221,15 +217,18 @@ public class PropertyMapper {
         return atoms;
     }
 
+    private static IdPredicate getUserDefinedIdPredicate(String typeVariable, Set<VarAdmin> vars, Query parent){
+        return  vars.stream()
+                .filter(v -> v.getName().equals(typeVariable))
+                .flatMap(v -> v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
+                .findFirst().orElse(null);
+    }
+
     private static IdPredicate getIdPredicate(String typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, Query parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.isUserDefinedName()){
-            predicate = vars.stream()
-                    .filter(v -> v.getName().equals(typeVariable))
-                    .flatMap(v -> v.getProperties(IdProperty.class).map(vp -> new IdPredicate(vp, v, parent)))
-                    .findFirst().orElse(null);
-        }
+        if(typeVar.isUserDefinedName())
+            predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         else{
             IdProperty idProp = typeVar.getProperty(IdProperty.class).orElse(null);
             if (idProp != null) predicate = new IdPredicate(IdPredicate.createIdVar(typeVariable, idProp.getId()), parent);
@@ -242,7 +241,7 @@ public class PropertyMapper {
         if(valueVar.isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getName().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(vp, v, parent)))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getName(),vp, parent)))
                     .forEach(predicates::add);
         }
         //add value atom

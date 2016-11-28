@@ -34,6 +34,8 @@ import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import java.util.LinkedHashMap;
+import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -101,6 +103,29 @@ public class ReasonerTest extends AbstractEngineTest{
 
         Pattern body = and(graph.graql().parsePatterns("($x, $y) isa knows;"));
         Pattern head = and(graph.graql().parsePatterns("($x, $x) isa knows;"));
+
+        InferenceRule R2 = new InferenceRule(graph.getMetaRuleInference().addRule(body, head), graph);
+        assertTrue(R.getHead().equals(R2.getHead()));
+        assertTrue(R.getBody().equals(R2.getBody()));
+    }
+
+    @Test
+    public void testPropertyChainRule() {
+        GraknGraph graph = SNBGraph.getGraph();
+        RelationType resides = graph.getRelationType("resides");
+        RelationType sublocate = graph.getRelationType("sublocate");
+
+        LinkedHashMap<RelationType, Pair<String, String>> chain = new LinkedHashMap<>();
+        chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getId(), graph.getRoleType("subject-location").getId()));
+        chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getId(), graph.getRoleType("container-location").getId()));
+
+        Rule rule = Utility.createPropertyChainRule(resides, graph.getRoleType("located-subject").getId(),
+                graph.getRoleType("subject-location").getId(), chain, graph);
+        InferenceRule R = new InferenceRule(rule, graph);
+
+        Pattern body = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $y) isa resides;" +
+                "(member-location: $z, container-location: $y) isa sublocate;"));
+        Pattern head = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $z) isa resides;"));
 
         InferenceRule R2 = new InferenceRule(graph.getMetaRuleInference().addRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -582,6 +607,38 @@ public class ReasonerTest extends AbstractEngineTest{
         MatchQuery query = lgraph.graql().<MatchQuery>parse(queryString);
         Reasoner reasoner = new Reasoner(lgraph);
         printAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+    }
+
+    @Test
+    public void testIsAbstract(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $x is-abstract;";
+        Query query = new Query(queryString, lgraph);
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
+        printAnswers(answers);
+        printAnswers(expAnswers);
+        assertEquals(answers, expAnswers);
+    }
+
+    @Test
+    public void testTypeRegex(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = " match $x isa resource-type, regex /name/;";
+        Query query = new Query(queryString, lgraph);
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
+        assertEquals(answers, expAnswers);
+    }
+
+    @Test
+    public void testDataType(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = " match $x isa resource-type, datatype string;";
+        Query query = new Query(queryString, lgraph);
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
+        assertEquals(answers, expAnswers);
     }
 }
 

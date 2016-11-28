@@ -36,7 +36,8 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public ValuePredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-    public ValuePredicate(ValueProperty prop, VarAdmin var, Query par){ this(createValueVar(var.getName(), prop.getPredicate()), par);}
+    public ValuePredicate(String varName, ValueProperty prop, Query par){
+        this(createValueVar(varName, prop.getPredicate()), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
     public static VarAdmin createValueVar(String name, ValuePredicateAdmin pred) {

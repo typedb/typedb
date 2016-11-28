@@ -33,8 +33,8 @@ public class IdPredicate extends Predicate<String>{
     public IdPredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-    public IdPredicate(IdProperty prop, VarAdmin var, Query par){
-        this(createIdVar(var.getName(), prop.getId()), par);
+    public IdPredicate(String varName, IdProperty prop, Query par){
+        this(createIdVar(varName, prop.getId()), par);
     }
     public IdPredicate(IdPredicate a) {
         super(a);
