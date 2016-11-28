@@ -173,7 +173,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                 notFound = false;
                 type = concept.asType();
             } else {
-                currentConcept = currentConcept.getParentSub();
+                currentConcept = (ConceptImpl) currentConcept.superType();
                 if(visitedConcepts.contains(currentConcept)){
                     throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
                 }
@@ -181,8 +181,20 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
             }
         }
-
         return (V) type;
+    }
+
+    /**
+     *
+     * @return This type's super type
+     */
+    @SuppressWarnings("unchecked")
+    public T superType() {
+        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
+        if(concept == null)
+            return null;
+        else
+            return (T) concept;
     }
 
     /**

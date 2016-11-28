@@ -86,20 +86,6 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     }
 
     /**
-     *
-     * @return This type's super type
-     */
-    @Override
-    @SuppressWarnings("unchecked")
-    public T superType() {
-        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(concept == null)
-            return null;
-        else
-            return (T) concept;
-    }
-
-    /**
      * Deletes the concept as a type
      */
     @Override
