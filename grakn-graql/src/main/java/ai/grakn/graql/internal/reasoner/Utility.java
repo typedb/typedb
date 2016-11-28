@@ -24,7 +24,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
@@ -32,29 +31,12 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
 
 import java.util.*;
 
 public class Utility {
-
-    public static void printMatchQueryResults(MatchQuery sq) {
-        List<Map<String, Concept>> results = Lists.newArrayList(sq);
-
-        for (Map<String, Concept> result : results) {
-            for (Map.Entry<String, Concept> entry : result.entrySet()) {
-                Concept concept = entry.getValue();
-                System.out.print(entry.getKey() + ": " + concept.getId() + " : ");
-
-                if (concept.isResource()) {
-                    System.out.print(concept.asResource().getValue() + " ");
-                }
-            }
-            System.out.println();
-        }
-    }
 
     public static void printAnswers(Set<Map<String, Concept>> answers) {
         answers.forEach(result -> {

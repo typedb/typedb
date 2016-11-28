@@ -138,9 +138,11 @@ public abstract class Binary extends Atom {
         Set<Predicate> idPredicates = getParentQuery().getIdPredicates().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
-        if (getPredicate() != null) idPredicates.add(getPredicate());
         return idPredicates;
     }
+
+    @Override
+    public Set<Predicate> getValuePredicates(){ return new HashSet<>();}
 
     @Override
     public Set<Predicate> getPredicates() {

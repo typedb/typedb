@@ -33,13 +33,13 @@ public class Resource extends Binary{
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getRuleConclusionAtom();
+        Atom ruleAtom = child.getHead().getAtom();
         if(!(ruleAtom instanceof Resource)) return false;
         Resource childAtom = (Resource) ruleAtom;
-        Query parent = getParentQuery();
-        String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
-        String parentVal = parent.getValuePredicate(getValueVariable());
-        return parentVal.isEmpty() || childVal.isEmpty() || parentVal.equals(childVal);
+        Predicate childPredicate = childAtom.getPredicate();
+        Predicate parentPredicate = getPredicate();
+        return childPredicate == null || parentPredicate == null
+                || parentPredicate.getPredicateValue().equals(childPredicate.getPredicateValue());
     }
 
     @Override
