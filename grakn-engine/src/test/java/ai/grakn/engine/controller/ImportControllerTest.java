@@ -97,7 +97,7 @@ public class ImportControllerTest extends GraknEngineTestBase {
     private void waitToFinish() {
         final long initial = new Date().getTime();
 
-        while ((new Date().getTime())-initial < 30000) {
+        while ((new Date().getTime())-initial < 60000) {
             Response response = post(REST.WebPath.IMPORT_DATA_URI);
             if (response.statusCode() != 423)
                 break;

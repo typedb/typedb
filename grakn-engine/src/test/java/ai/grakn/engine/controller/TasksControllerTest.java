@@ -46,7 +46,6 @@ public class TasksControllerTest extends GraknEngineTestBase {
     private TaskManager taskManager;
     private String singleTask;
 
-    @Ignore
     @Before
     public void setUp() throws Exception {
         taskManager = InMemoryTaskManager.getInstance();
