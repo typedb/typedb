@@ -428,16 +428,16 @@ public class TypeTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         RelationType relationType = entityType.key(resourceType);
-        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relationType.getId());
+        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relationType.getName());
 
-        Set<String> roleIds = relationType.hasRoles().stream().map(Concept::getId).collect(Collectors.toSet());
+        Set<String> roleIds = relationType.hasRoles().stream().map(RoleType::getName).collect(Collectors.toSet());
         assertEquals(2, roleIds.size());
 
         assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId)));
         assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId)));
 
-        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), entityType.playsRoles().iterator().next().getId());
-        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), resourceType.playsRoles().iterator().next().getId());
+        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), entityType.playsRoles().iterator().next().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), resourceType.playsRoles().iterator().next().getName());
 
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
