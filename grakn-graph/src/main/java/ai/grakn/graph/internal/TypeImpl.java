@@ -317,9 +317,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     /**
      * Creates a relation type which allows this type and a resource type to be linked.
      * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param required Indicates if the resource is required on the entity
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
-    @Override
     public RelationType hasResource(ResourceType resourceType, boolean required){
         String resourceTypeId = resourceType.getName();
         RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
