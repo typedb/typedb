@@ -54,7 +54,7 @@ public class BlockingLoaderTest extends GraknEngineTestBase {
 
     @Before
     public void setUp() throws Exception {
-        keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        keyspace = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
         graph = GraphFactory.getInstance().getGraph(keyspace);
         loader = new BlockingLoader(keyspace);
     }

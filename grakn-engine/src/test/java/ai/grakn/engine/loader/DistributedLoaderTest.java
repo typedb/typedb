@@ -58,7 +58,7 @@ public class DistributedLoaderTest extends GraknEngineTestBase {
 
     @Before
     public void setUp() throws Exception {
-        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
         loader = new DistributedLoader(graphName, Collections.singletonList("localhost"));
         graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
     }

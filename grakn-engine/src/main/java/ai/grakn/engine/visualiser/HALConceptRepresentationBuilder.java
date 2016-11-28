@@ -21,7 +21,6 @@ package ai.grakn.engine.visualiser;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;

@@ -18,14 +18,28 @@
 
 package ai.grakn.engine;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.RestAssured;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
+import static java.util.stream.Collectors.joining;
+
 public abstract class GraknEngineTestBase {
+
+    private final Logger LOG = LoggerFactory.getLogger(GraknEngineTestBase.class);
+
     @BeforeClass
     public static void setupControllers() throws InterruptedException {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
@@ -39,5 +53,35 @@ public abstract class GraknEngineTestBase {
     public static void takeDownControllers() throws InterruptedException {
         GraknEngineServer.stop();
         Thread.sleep(5000);
+    }
+
+    protected String getPath(String file){
+        return GraknEngineTestBase.class.getClassLoader().getResource(file).getPath();
+    }
+
+    protected String readFileAsString(String file){
+        try {
+            return Files.readAllLines(Paths.get(getPath(file)), StandardCharsets.UTF_8)
+                    .stream().collect(joining("\n"));
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void loadOntology(String file, String graphName) {
+        LOG.debug("Loading new ontology .. ");
+
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(graphName)) {
+
+            String ontology = readFileAsString(file);
+
+            graph.graql().parse(ontology).execute();
+            graph.commit();
+
+        } catch (GraknValidationException e){
+            throw new RuntimeException(e);
+        }
+
+        LOG.debug("Ontology loaded. ");
     }
 }

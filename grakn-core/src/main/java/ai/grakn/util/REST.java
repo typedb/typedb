@@ -22,20 +22,14 @@ public class REST {
 
     public static class WebPath{
         public static final String IMPORT_DATA_URI =  "/import/batch/data";
-        public static final String IMPORT_DISTRIBUTED_URI =  "/import/distribute/data";
-
         public static final String GRAPH_FACTORY_URI = "/graph_factory";
 
-        public static final String META_TYPE_INSTANCES_URI = "/shell/metaTypeInstances";
-        public static final String MATCH_QUERY_URI = "/shell/match";
         public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
         public static final String GRAPH_ANALYTICS_QUERY_URI = "/graph/analytics";
         public static final String GRAPH_PRE_MATERIALISE_QUERY_URI = "/graph/preMaterialiseAll";
-
-
+        public static final String GRAPH_ONTOLOGY_URI = "/graph/ontology" ;
         public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
         public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
-
 
         public static final String COMMIT_LOG_URI = "/commit_log";
 
@@ -44,9 +38,7 @@ public class REST {
         public static final String LOADER_STATE_URI = "/transaction/loaderState";
         public static final String GET_STATUS_CONFIG_URI = "/status/config";
 
-
         public static final String REMOTE_SHELL_URI = "/shell/remote";
-
 
         public static final String ALL_TASKS_URI = "/tasks/all";
         public static final String TASKS_URI = "/tasks";
@@ -55,9 +47,10 @@ public class REST {
 
     public static class Request{
         public static final String PATH_FIELD = "path";
+        public static final String HOSTS_FIELD = "hosts";
         public static final String QUERY_FIELD = "query";
         public static final String ID_PARAMETER = ":id";
-        public static final String GRAPH_NAME_PARAM = "graphName";
+        public static final String KEYSPACE_PARAM = "keyspace";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String UUID_PARAMETER = ":uuid";
         public static final String TASK_STATUS_PARAMETER = "status";
@@ -69,6 +62,8 @@ public class REST {
         public static final String TASK_STOP = "/stop";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
+        public static final String HAL_CONTENTTYPE = "application/hal+json";
+        public static final String GRAQL_CONTENTTYPE = "application/graql";
     }
 
     public static class GraphConfig{
