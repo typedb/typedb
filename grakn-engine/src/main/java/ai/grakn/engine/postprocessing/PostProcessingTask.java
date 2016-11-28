@@ -18,30 +18,28 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.engine.loader.RESTLoader;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.util.ConfigProperties;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
+import static ai.grakn.engine.util.ConfigProperties.TIME_LAPSE;
+
 public class PostProcessingTask implements BackgroundTask {
-    private final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
-    private static long timeLapse;
-    private PostProcessing postProcessing;
+    private static final ConfigProperties properties = ConfigProperties.getInstance();
+    private static final PostProcessing postProcessing = PostProcessing.getInstance();
+    private static final Cache cache = Cache.getInstance();
 
-    public PostProcessingTask() {
-        timeLapse = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.TIME_LAPSE);
-        postProcessing = PostProcessing.getInstance();
-    }
+    private static final long timeLapse = properties.getPropertyAsLong(TIME_LAPSE);
 
+    /**
+     * Run postprocessing only if enough time has passed since the last job was added
+     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
+     * @param configuration
+     */
     public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
-        if(RESTLoader.getInstance().getLoadingJobs() != 0)
-            return;
-
-        long lastJob = RESTLoader.getInstance().getLastJobFinished();
+        long lastJob = cache.getLastTimeJobAdded();
         long currentTime = System.currentTimeMillis();
         if((currentTime - lastJob) >= timeLapse)
             postProcessing.run();

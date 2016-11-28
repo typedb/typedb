@@ -18,7 +18,12 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.*;
+import ai.grakn.engine.backgroundtasks.BackgroundTask;
+import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -32,15 +37,28 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
-import javax.ws.rs.*;
-
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
 import java.util.Date;
 
-import static ai.grakn.util.REST.Request.*;
-import static ai.grakn.util.REST.WebPath.*;
 import static spark.Spark.get;
 import static spark.Spark.put;
 import static spark.Spark.post;
+
+import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_STOP;
+import static ai.grakn.util.REST.Request.OFFSET_PARAM;
+import static ai.grakn.util.REST.Request.LIMIT_PARAM;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
@@ -91,9 +109,6 @@ public class TasksController {
             result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
         }
 
-        System.out.println("result length: "+result.length());
-        System.out.println(" all response: "+result.toString());
-
         response.type("application/json");
         return result;
     }
@@ -138,29 +153,31 @@ public class TasksController {
             @ApiImplicitParam(name = "runAt", value = "Time to run at as milliseconds since the UNIX epoch", required = true, dataType = "long", paramType = "query"),
             @ApiImplicitParam(name = "interval",value = "If set the task will be marked as recurring and the value will be the time in milliseconds between repeated executions of this task. Value should be as Long.",
                     dataType = "long", paramType = "query"),
-            @ApiImplicitParam(name = "configuration", value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "query")
+            @ApiImplicitParam(name = "configuration", value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
     })
     private String scheduleTask(Request request, Response response) {
         String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
         String createdBy = request.queryParams(TASK_CREATOR_PARAMETER);
+        String runAt = request.queryParams(TASK_RUN_AT_PARAMETER);
+
         Long interval = 0L;
         JSONObject configuration = new JSONObject();
 
         if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null)
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
-        if(request.queryParams(TASK_CONFIGURATION_PARAMETER) != null)
-            configuration = new JSONObject(request.queryParams(TASK_CONFIGURATION_PARAMETER));
+        if(request.body() != null)
+            configuration = new JSONObject(request.body());
 
-        if(className == null || createdBy == null)
+        if(className == null || createdBy == null || runAt == null)
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
 
         try {
-            Date runAt = new Date(Long.valueOf(request.queryParams(TASK_RUN_AT_PARAMETER)));
+            Date runAtDate = new Date(Long.valueOf(runAt));
 
             Class<?> clazz = Class.forName(className);
             BackgroundTask task = (BackgroundTask)clazz.newInstance();
 
-            String id = taskManager.scheduleTask(task, createdBy, runAt, interval, configuration);
+            String id = taskManager.scheduleTask(task, createdBy, runAtDate, interval, configuration);
             JSONObject resp = new JSONObject()
                     .put("id", id);
 
