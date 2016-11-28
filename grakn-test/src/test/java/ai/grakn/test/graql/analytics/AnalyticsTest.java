@@ -220,7 +220,7 @@ public class AnalyticsTest extends AbstractGraphTest {
     private void checkDegrees(Map<String, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.getInstance(entry.getKey()).resources(graph.getResourceType(Analytics.degree));
+                    graph.getConcept(entry.getKey()).asInstance().resources(graph.getResourceType(Analytics.degree));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(), resources.iterator().next().getValue());
         });
