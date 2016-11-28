@@ -19,10 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.test.AbstractEngineTest;
-import com.google.common.collect.Sets;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
@@ -31,24 +28,17 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
-import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;

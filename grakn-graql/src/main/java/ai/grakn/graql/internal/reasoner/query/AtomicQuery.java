@@ -27,13 +27,13 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import java.util.*;
 import java.util.stream.Collectors;
