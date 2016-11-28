@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -32,12 +33,12 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
@@ -118,8 +119,10 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        resources(concept).stream()
-                .filter(r -> resourceType.map(type -> r.type().getId().equals(type)).orElse(true))
+        ResourceType[] resourceTypes =
+                optionalToStream(resourceType.map(graph::getResourceType)).toArray(ResourceType[]::new);
+
+        concept.asInstance().resources(resourceTypes).stream()
                 .filter(r -> predicate.flatMap(ValuePredicateAdmin::getPredicate).map(p -> p.test(r.getValue())).orElse(true))
                 .forEach(Concept::delete);
     }
@@ -130,18 +133,6 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
             return Stream.of(name(resourceType.get()).admin());
         } else {
             return Stream.empty();
-        }
-    }
-
-    /**
-     * @return all resources on the given concept
-     */
-    private Collection<Resource<?>> resources(Concept concept) {
-        // Get resources attached to a concept
-        if (concept.isInstance()) {
-            return concept.asInstance().resources();
-        } else {
-            return new HashSet<>();
         }
     }
 
