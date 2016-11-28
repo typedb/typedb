@@ -160,7 +160,7 @@ public class GraknStateStorage implements StateStorage {
 
         resources.forEach(x -> x.values().forEach(y -> {
             Resource<?> r = y.asResource();
-            buildState(state, r.type().getId(), r.getValue());
+            buildState(state, r.type().getName(), r.getValue());
         }));
 
         return state;
