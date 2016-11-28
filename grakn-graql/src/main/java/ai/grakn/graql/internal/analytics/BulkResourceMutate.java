@@ -80,7 +80,6 @@ public class BulkResourceMutate<T> {
 
     void putValue(Vertex vertex, T value) {
         currentNumberOfVertices++;
-        initialiseGraph();
 
         LOGGER.debug("Considering vertex: " + vertex);
         vertex.properties().forEachRemaining(p -> LOGGER.debug("Vertex property: " + p.toString()));
@@ -104,13 +103,14 @@ public class BulkResourceMutate<T> {
             try {
                 persistResources();
             } catch (Exception e) {
-                LOGGER.debug(e.getMessage());
+                LOGGER.info("Exception: " + e.getMessage());
                 hasFailed = true;
                 numberOfFailures++;
-                LOGGER.debug("Number of failures: " + numberOfFailures);
+                LOGGER.info("Number of failures: " + numberOfFailures);
                 if (!(numberOfFailures < numberOfRetries)) {
                     LOGGER.debug("REACHED MAX NUMBER OF RETRIES !!!!!!!!");
-                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeName, e.getMessage()), e);
+                    throw new RuntimeException(
+                            ErrorMessage.BULK_PERSIST.getMessage(resourceTypeName, e.getMessage()), e);
                 }
             }
         } while (hasFailed);
