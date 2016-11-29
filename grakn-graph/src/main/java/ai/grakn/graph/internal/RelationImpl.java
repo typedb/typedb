@@ -55,11 +55,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Sets the internal hash in order to perform a faster lookup
      */
     public void setHash(){
-        Map<RoleType, Instance> roleMap = rolePlayers();
-        if(roleMap == null || roleMap.isEmpty())
-            setUniqueProperty(Schema.ConceptProperty.INDEX, "RelationBaseId_" + getBaseIdentifier() + UUID.randomUUID().toString());
-        else
-            setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), roleMap));
+        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), rolePlayers()));
     }
 
     /**
@@ -151,23 +147,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         }
 
         //Do the actual put of the role and role player
-        if(getGraknGraph().isBatchLoadingEnabled()) {
-            return addNewRolePlayer(null, roleType, instance);
-        } else {
-            Map<RoleType, Instance> roleMap = rolePlayers();
-            roleMap.put(roleType, instance);
-            Relation otherRelation = getGraknGraph().getRelation(type(), roleMap);
-
-            if(otherRelation == null){
-                return addNewRolePlayer(roleMap, roleType, instance);
-            }
-
-            if(!this.equals(otherRelation)){
-                throw new ConceptException(ErrorMessage.RELATION_EXISTS.getMessage(otherRelation));
-            } else {
-                return this;
-            }
-        }
+        return addNewRolePlayer(roleType, instance);
     }
 
     /**
@@ -176,7 +156,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @param instance The new role player.
      * @return The Relation itself
      */
-    private Relation addNewRolePlayer(Map<RoleType, Instance> roleMap, RoleType roleType, Instance instance){
+    private Relation addNewRolePlayer(RoleType roleType, Instance instance){
         if(instance != null)
             getGraknGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
         return this;
@@ -241,9 +221,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     @Override
     public String toString(){
-        String description = "ID [" + getId() +  "] Type [" + type().getId() + "] Roles and Roleplayers: \n";
+        String description = "ID [" + getId() +  "] Type [" + type().getId() + "] Roles and Role Players: \n";
         for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
-            description += "    Role [" + entry.getKey().getId() + "] played by [" + entry.getValue().getId() + "]";
+            if(entry.getValue() == null){
+                description += "    Role [" + entry.getKey().getId() + "] not played by any instance \n";
+            } else {
+                description += "    Role [" + entry.getKey().getId() + "] played by [" + entry.getValue().getId() + "] \n";
+            }
         }
         return description;
     }
