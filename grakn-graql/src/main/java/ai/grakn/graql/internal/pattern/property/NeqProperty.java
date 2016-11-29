@@ -39,4 +39,19 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(var);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NeqProperty that = (NeqProperty) o;
+
+        return var.equals(that.var);
+    }
+
+    @Override
+    public int hashCode() {
+        return var.hashCode();
+    }
 }
