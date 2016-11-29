@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
@@ -40,6 +41,12 @@ import static ai.grakn.graql.internal.util.StringConverter.valueToString;
  * Default printer that prints results in Graql syntax
  */
 class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
+
+    private final ResourceType[] resourceTypes;
+
+    GraqlPrinter(ResourceType... resourceTypes) {
+        this.resourceTypes = resourceTypes;
+    }
 
     @Override
     public String build(Function<StringBuilder, StringBuilder> builder) {
@@ -78,6 +85,15 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             if (concept.isRule()) {
                 sb.append(colorKeyword(" lhs ")).append("{ ").append(concept.asRule().getLHS()).append(" }");
                 sb.append(colorKeyword(" rhs ")).append("{ ").append(concept.asRule().getRHS()).append(" }");
+            }
+
+            // Display any requested resources
+            if (concept.isInstance() && resourceTypes.length > 0) {
+                concept.asInstance().resources(resourceTypes).forEach(resource -> {
+                    String resourceType = colorType(idToString(resource.type().getId()));
+                    String value = valueToString(resource.getValue());
+                    sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
+                });
             }
 
             return sb;
