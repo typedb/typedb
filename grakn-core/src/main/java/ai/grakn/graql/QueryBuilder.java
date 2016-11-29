@@ -54,6 +54,12 @@ public interface QueryBuilder {
      */
     InsertQuery insert(Collection<? extends Var> vars);
 
+    /**
+     * @return a compute query that will compute analytics query
+     */
+    ComputeQueryBuilder compute();
+
+    //TODO: Get rid of the three compute methods with parameters
     ComputeQuery compute(String computeMethod);
 
     ComputeQuery compute(String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds);

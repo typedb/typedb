@@ -28,10 +28,13 @@ import java.util.*;
 /**
  * Core Grakn implementation of the common methods on the MapReduce and VertexProgram interfaces.
  */
-abstract class CommonOLAP {
+public abstract class CommonOLAP {
 
     private static final String PREFIX_SELECTED_TYPE_KEY = "SELECTED_TYPE";
     private static final String PREFIX_PERSISTENT_PROPERTIES = "PERSISTENT";
+
+    public static final String degree = "degree";
+    public static final String connectedComponent = "connectedComponent";
 
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.

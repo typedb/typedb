@@ -174,6 +174,7 @@ public enum ErrorMessage {
     GRAQL_PROPERTY_NOT_MAPPED("Graql property [%s] could not be mapped"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
+    RESOURCE_TYPE_NOT_SPECIFIED("no resource type provided for compute query."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist."),
     NO_PATH_EXIST("There is no path between the two instances."),
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),

@@ -36,11 +36,15 @@ import static java.util.stream.Collectors.joining;
 class ComputeQueryImpl implements ComputeQuery {
 
     private final Optional<GraknGraph> graph;
-    private final Set<String> subTypeIds;
-    private final Set<String> statisticsResourceTypeIds;
-    private final String computeMethod;
-    private final String from;
-    private final String to;
+    private Set<String> subTypeIds;
+    private Set<String> statisticsResourceTypeIds;
+    private String computeMethod;
+    private String from;
+    private String to;
+
+    ComputeQueryImpl(Optional<GraknGraph> graph) {
+        this.graph = graph;
+    }
 
     ComputeQueryImpl(Optional<GraknGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds, String from, String to) {
         this.graph = graph;
@@ -173,6 +177,11 @@ class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public ComputeQuery infer() {
+        return this;
+    }
+
+    @Override
+    public ComputeQuery in(String... subTypeNames) {
         return this;
     }
 }

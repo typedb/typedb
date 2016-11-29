@@ -18,13 +18,10 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.graql.*;
 import com.google.common.collect.ImmutableCollection;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.AskQueryAdmin;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
@@ -80,6 +77,10 @@ public class Queries {
 
     public static DeleteQueryAdmin delete(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
         return new DeleteQueryImpl(deleters, matchQuery);
+    }
+
+    public static ComputeQueryBuilder compute(Optional<GraknGraph> graph) {
+        return new ComputeQueryBuilderImpl(graph);
     }
 
     public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod) {

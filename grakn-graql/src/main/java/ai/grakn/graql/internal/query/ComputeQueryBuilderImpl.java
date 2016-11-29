@@ -16,20 +16,31 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.internal.query.analytics.MinQueryImpl;
 
-/**
- * A query that triggers an OLAP computation on a graph.
- */
-public interface ComputeQuery<T> extends Query<T> {
+import java.util.Optional;
+
+public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
+
+    private Optional<GraknGraph> graph;
+
+    ComputeQueryBuilderImpl(Optional<GraknGraph> graph) {
+        this.graph = graph;
+    }
 
     @Override
-    ComputeQuery<T> withGraph(GraknGraph graph);
+    public ComputeQueryBuilder withGraph(GraknGraph graph) {
+        this.graph = Optional.of(graph);
+        return this;
+    }
 
     @Override
-    ComputeQuery<T> infer();
-
-    ComputeQuery<T> in(String... subTypeNames);
+    public MinQuery min() {
+        return new MinQueryImpl();
+    }
 }

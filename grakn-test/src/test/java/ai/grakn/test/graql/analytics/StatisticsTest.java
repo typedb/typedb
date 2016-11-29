@@ -24,6 +24,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
@@ -162,6 +163,11 @@ public class StatisticsTest extends AbstractGraphTest {
     public void testMinAndMax() throws Exception {
         // resource-type has no instance
         addOntologyAndEntities();
+
+        Optional<Number> min = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
+        assertFalse(min.isPresent());
+
+
         computer = new Analytics(keyspace, new HashSet<>(),
                 Collections.singleton(resourceType1));
         assertFalse(computer.min().isPresent());
@@ -178,6 +184,10 @@ public class StatisticsTest extends AbstractGraphTest {
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
+
+        min = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
+        assertFalse(min.isPresent());
+
         computer = new Analytics(keyspace, new HashSet<>(),
                 Collections.singleton(resourceType1));
         assertFalse(computer.min().isPresent());
@@ -193,6 +203,9 @@ public class StatisticsTest extends AbstractGraphTest {
 
         // connect entity and resources
         addResourceRelations();
+        min = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
+        assertEquals(1.2, min.get().doubleValue(), delta);
+
         computer = new Analytics(keyspace, new HashSet<>(),
                 Collections.singleton(resourceType1));
         assertEquals(1.2, computer.min().get().doubleValue(), delta);
