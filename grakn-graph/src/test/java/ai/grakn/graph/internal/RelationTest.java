@@ -66,16 +66,18 @@ public class RelationTest extends GraphTestBase{
 
     @Before
     public void buildGraph(){
-        type = graknGraph.putEntityType("Main concept Type");
-        relationType = graknGraph.putRelationType("Main relation type");
+        role1 = (RoleTypeImpl) graknGraph.putRoleType("Role 1");
+        role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
+        role3 = (RoleTypeImpl) graknGraph.putRoleType("Role 3");
+
+        type = graknGraph.putEntityType("Main concept Type").playsRole(role1).playsRole(role2).playsRole(role3);
+        relationType = graknGraph.putRelationType("Main relation type").hasRole(role1).hasRole(role2).hasRole(role3);
+
+        rolePlayer1 = (InstanceImpl) type.addEntity();
+        rolePlayer2 = (InstanceImpl) type.addEntity();
+        rolePlayer3 = null;
 
         relation = (RelationImpl) relationType.addRelation();
-        role1 = (RoleTypeImpl) graknGraph.putRoleType("Role 1");
-        rolePlayer1 = (InstanceImpl) type.addEntity();
-        role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
-        rolePlayer2 = (InstanceImpl) type.addEntity();
-        role3 = (RoleTypeImpl) graknGraph.putRoleType("Role 3");
-        rolePlayer3 = null;
 
         casting1 = graknGraph.putCasting(role1, rolePlayer1, relation);
         casting2 = graknGraph.putCasting(role2, rolePlayer2, relation);
@@ -227,7 +229,7 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void testRelationHash(){
+    public void testRelationHash() throws GraknValidationException {
         TreeMap<RoleType, Instance> roleMap = new TreeMap<>();
         EntityType type = graknGraph.putEntityType("concept type");
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
@@ -237,6 +239,8 @@ public class RelationTest extends GraphTestBase{
         Instance instance2 = type.addEntity();
 
         RelationImpl relation = (RelationImpl) relationType.addRelation();
+
+        graknGraph.commit();
         assertTrue(relation.getIndex().startsWith("RelationBaseId_" + relation.getBaseIdentifier()));
 
         relation.putRolePlayer(roleType1, instance1);

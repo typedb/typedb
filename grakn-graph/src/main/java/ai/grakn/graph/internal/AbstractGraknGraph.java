@@ -485,7 +485,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
                 }
             }
         }
-        ((RelationImpl)relation).setHash(relation.rolePlayers());
     }
 
     private void putShortcutEdge(Relation  relation, RelationType  relationType, RoleType fromRole, Instance from, RoleType  toRole, Instance to){

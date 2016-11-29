@@ -53,9 +53,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     /**
      * Sets the internal hash in order to perform a faster lookup
-     * @param roleMap The roles and their corresponding role players
      */
-    public void setHash(Map<RoleType, Instance> roleMap){
+    public void setHash(){
+        Map<RoleType, Instance> roleMap = rolePlayers();
         if(roleMap == null || roleMap.isEmpty())
             setUniqueProperty(Schema.ConceptProperty.INDEX, "RelationBaseId_" + getBaseIdentifier() + UUID.randomUUID().toString());
         else
@@ -179,13 +179,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     private Relation addNewRolePlayer(Map<RoleType, Instance> roleMap, RoleType roleType, Instance instance){
         if(instance != null)
             getGraknGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
-
-        if(getGraknGraph().isBatchLoadingEnabled()){
-            setHash(null);
-        } else {
-            setHash(roleMap);
-        }
-
         return this;
     }
 

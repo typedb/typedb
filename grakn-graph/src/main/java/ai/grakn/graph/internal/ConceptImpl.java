@@ -78,8 +78,14 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     private T setProperty(String key, Object value){
         if(value == null)
             vertex.property(key).remove();
-        else
-            vertex.property(key, value);
+        else {
+            VertexProperty<Object> foundProperty = vertex.property(key);
+            if(foundProperty.isPresent() && foundProperty.value().equals(value)){
+               return getThis();
+            } else {
+                vertex.property(key, value);
+            }
+        }
         return getThis();
     }
 
