@@ -245,4 +245,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
         super.innerDelete();
     }
+
+    @Override
+    public String toString(){
+        String description = "ID [" + getId() +  "] Type [" + type().getId() + "] Roles and Roleplayers: \n";
+        for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
+            description += "    Role [" + entry.getKey().getId() + "] played by [" + entry.getValue().getId() + "]";
+        }
+        return description;
+    }
 }

@@ -359,4 +359,23 @@ public class RelationTest extends GraphTestBase{
 
         assertEquals(1, entity.relations().size());
     }
+
+    @Test
+    public void testRelationToString(){
+        RoleType roleType1 = graknGraph.putRoleType("role type 1");
+        RoleType roleType2 = graknGraph.putRoleType("role type 2");
+        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        Instance instance1 = type.addEntity();
+        Instance instance2 = type.addEntity();
+
+        Relation relation = relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+
+        String mainDescription = "ID [" + relation.getId() +  "] Type [" + relation.type().getId() + "] Roles and Roleplayers:";
+        String rolerp1 = "    Role [" + roleType1.getId() + "] played by [" + instance1.getId() + "]";
+        String rolerp2 = "    Role [" + roleType2.getId() + "] played by [" + instance2.getId() + "]";
+
+        assertTrue("Relation toString missing main description", relation.toString().contains(mainDescription));
+        assertTrue("Relation toString missing role and role player definition", relation.toString().contains(rolerp1));
+        assertTrue("Relation toString missing role and role player definition", relation.toString().contains(rolerp2));
+    }
 }
