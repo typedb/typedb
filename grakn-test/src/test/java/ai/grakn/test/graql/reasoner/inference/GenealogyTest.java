@@ -48,8 +48,9 @@ public class GenealogyTest extends AbstractEngineTest{
 
     @BeforeClass
     public static void setUpClass() {
-        graph = GenealogyGraph.getGraph();
-        reasoner = new Reasoner(graph);
+        GenealogyGraph genealogyGraph = new GenealogyGraph();
+        reasoner = new Reasoner(genealogyGraph.graph());
+        graph = genealogyGraph.graph();
         qb = graph.graql();
 
         /*

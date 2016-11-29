@@ -95,6 +95,24 @@ public class InMemoryTaskManager implements TaskManager {
         return id;
     }
 
+    public CompletableFuture completableFuture(String taskId) {
+        if(!instantiatedTasks.containsKey(taskId)){
+            return null;
+        }
+
+        try {
+            return CompletableFuture.runAsync(() -> {
+                try {
+                    instantiatedTasks.get(taskId).getKey().get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (Throwable t){
+            throw new RuntimeException(t);
+        }
+    }
+
     public TaskManager stopTask(String id, String requesterName) {
         stateUpdateLock.lock();
 

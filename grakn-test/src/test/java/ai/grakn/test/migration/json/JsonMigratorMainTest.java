@@ -99,6 +99,7 @@ public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
+        graph = factory.getGraph();
 
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());

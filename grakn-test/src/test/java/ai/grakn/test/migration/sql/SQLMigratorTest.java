@@ -123,6 +123,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
 
             migrate(new SQLMigrator(query, template, connection));
 
+            graph = factory.getGraph();
             Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));

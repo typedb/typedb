@@ -41,11 +41,10 @@ import static spark.Spark.post;
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
  */
 public class CommitLogController {
-    private final Cache cache;
+    private final Cache cache = Cache.getInstance();
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
     public CommitLogController(){
-        cache = Cache.getInstance();
         post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
         delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }

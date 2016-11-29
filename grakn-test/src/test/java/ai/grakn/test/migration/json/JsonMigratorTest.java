@@ -67,6 +67,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         migrate(new JsonMigrator(template, getFile("json", "simple-schema/data.json")));
 
+        graph = factory.getGraph();
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
@@ -113,6 +114,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         migrate(new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
 
+        graph = factory.getGraph();
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
         assertEquals(1, things.size());
@@ -145,6 +147,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
+        graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
 
@@ -168,6 +171,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
+        graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
     }

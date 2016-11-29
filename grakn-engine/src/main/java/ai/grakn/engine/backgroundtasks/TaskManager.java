@@ -21,6 +21,7 @@ package ai.grakn.engine.backgroundtasks;
 import org.json.JSONObject;
 
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 
 public interface TaskManager {
     /**
@@ -36,6 +37,13 @@ public interface TaskManager {
      * @return Assigned ID of task scheduled for later execution.
      */
     String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration);
+
+    /**
+     * Return a future that allows registering asynchronous callbacks triggered when a task is completed.
+     * @param taskId ID of task to track
+     * @return A CompletableFuture instance monitoring the status of the given task.
+     */
+    CompletableFuture completableFuture(String taskId);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

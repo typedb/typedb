@@ -62,7 +62,9 @@ public class TestGraph {
         commit();
     }
 
-    public GraknGraph graph(){ return graknGraph;}
+    public GraknGraph graph(){
+        return Grakn.factory(Grakn.DEFAULT_URI, graknGraph.getKeyspace()).getGraph();
+    }
 
     public static GraknGraph getGraph() {
         return new TestGraph().graph();

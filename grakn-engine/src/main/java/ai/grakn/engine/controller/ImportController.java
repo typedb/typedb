@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.loader.BlockingLoader;
-import ai.grakn.engine.loader.DistributedLoader;
 import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderImpl;
+import ai.grakn.engine.loader.client.LoaderClient;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.Graql;
@@ -125,7 +125,7 @@ public class ImportController {
      * @return Loader configured to the provided keyspace
      */
     private Loader getLoader(String keyspace, Collection<String> hosts){
-        return hosts == null ? new BlockingLoader(keyspace) :new DistributedLoader(keyspace, hosts);
+        return hosts == null ? new LoaderImpl(keyspace) :new LoaderClient(keyspace, hosts);
     }
 
     /**
