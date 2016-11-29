@@ -29,8 +29,10 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.fasterxml.jackson.databind.node.DecimalNode;
 import com.google.common.collect.Sets;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -67,6 +69,21 @@ public class GenealogyTest extends AbstractEngineTest{
     match (child: $x, parent: $y) isa parentship;
     match (spouse1: $x, spouse2: $y) isa marriage;
     */
+
+    @Test
+    public void testNonEquals(){
+        String queryString= "match " +
+                "$w isa wedding has confidence 'high';" +
+                "$rel1 (happening: $w, protagonist: $s1) isa event-protagonist;" +
+                "$rel1 has role 'spouse';"+
+                "$rel2 (happening: $w, protagonist: $s2) isa event-protagonist;" +
+                "$rel2 has role 'spouse';" +
+                "$s1 != $s2;select $s1, $s2;";
+        Query query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        printAnswers(answers);
+        assertTrue(!hasDuplicates(answers));
+    }
 
     @Test
     public void testSpecificPerson(){
@@ -122,6 +139,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertTrue(answers.size() == 66);
+        assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
@@ -166,6 +184,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
+        assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
     }
 
@@ -177,6 +196,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
+        assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
     }
 
@@ -186,6 +206,7 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
@@ -208,6 +229,7 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
@@ -217,6 +239,7 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
@@ -227,6 +250,7 @@ public class GenealogyTest extends AbstractEngineTest{
 
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(!answers.isEmpty());
+        assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
@@ -458,5 +482,19 @@ public class GenealogyTest extends AbstractEngineTest{
             isOk = c.asResource().getValue().equals(value);
         }
         return isOk;
+    }
+
+    private boolean hasDuplicates(QueryAnswers answers){
+        boolean hasDuplicates = false;
+        Iterator<Map<String, Concept>> it = answers.iterator();
+        while(it.hasNext() && !hasDuplicates){
+            Map<String, Concept> answer = it.next();
+            Set<Concept> existing = new HashSet<>();
+            hasDuplicates = answer.entrySet()
+                    .stream()
+                    .filter(entry -> existing.add(entry.getValue()))
+                    .count() == answer.size();
+        }
+        return hasDuplicates;
     }
 }

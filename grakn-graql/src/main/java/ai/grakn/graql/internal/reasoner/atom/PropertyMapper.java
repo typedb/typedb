@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
+import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -72,6 +73,8 @@ public class PropertyMapper {
             return map((IsaProperty)prop, var, vars, parent);
         else if (prop instanceof HasResourceProperty)
             return map((HasResourceProperty)prop, var, vars, parent);
+        else if (prop instanceof NeqProperty)
+            return map((NeqProperty) prop, var, vars, parent);
         else if (prop instanceof IsAbstractProperty)
             return map((IsAbstractProperty)prop, var, vars, parent);
         else if (prop instanceof DataTypeProperty)
@@ -115,6 +118,10 @@ public class PropertyMapper {
         atoms.add(new Relation(relVar.admin(), predicate, parent));
         if (predicate != null) atoms.add(predicate);
         return atoms;
+    }
+
+    private static Set<Atomic> map(NeqProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+        return Sets.newHashSet(new NotEquals(var.getName(), prop, parent));
     }
 
     private static Set<Atomic> map(IdProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
