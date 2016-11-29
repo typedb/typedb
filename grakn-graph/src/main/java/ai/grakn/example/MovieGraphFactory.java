@@ -19,18 +19,17 @@
 package ai.grakn.example;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -139,7 +138,7 @@ public class MovieGraphFactory {
 
         genre = graknGraph.putEntityType("genre").playsRole(genreOfProduction);
 
-        genre.hasResource(name);
+        genre.key(name);
 
         character = graknGraph.putEntityType("character")
                 .playsRole(characterBeingPlayed);

@@ -24,6 +24,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.example.MovieGraphFactory;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class InsertQueryTest extends AbstractMovieGraphTest {
@@ -409,6 +411,104 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
         assertTrue(qb.match(id("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
         assertTrue(qb.match(id("a-new-resource-type").playsRole("has-a-new-resource-type-value")).ask().execute());
+    }
+
+    @Test
+    public void testKey() {
+        qb.insert(
+                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING)
+        ).execute();
+
+        // Make sure a-new-type can have the given resource type as a key or otherwise
+        assertTrue(qb.match(id("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(id("a-new-type").isa("entity-type").key("a-new-resource-type")).ask().execute());
+        assertFalse(qb.match(id("a-new-type").isa("entity-type").key("title")).ask().execute());
+        assertFalse(qb.match(id("movie").isa("entity-type").key("a-new-resource-type")).ask().execute());
+
+        // Make sure the expected ontology elements are created
+        assertTrue(qb.match(id("has-a-new-resource-type").isa("relation-type")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type-owner").isa("role-type")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type-value").isa("role-type")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-owner")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
+        assertTrue(qb.match(id("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
+        assertTrue(qb.match(id("a-new-resource-type").playsRole("has-a-new-resource-type-value")).ask().execute());
+    }
+
+    @Test
+    public void testKeyCorrectUsage() throws GraknValidationException {
+        // This should only run on tinker because it commits
+        assumeTrue(usingTinker());
+
+        qb.insert(
+                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                var().isa("a-new-type").has("a-new-resource-type", "hello")
+        ).execute();
+
+        graph.commit();
+    }
+
+    @Test
+    public void testKeyUniqueOwner() throws GraknValidationException {
+        // This should only run on tinker because it commits
+        assumeTrue(usingTinker());
+
+        qb.insert(
+                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
+        ).execute();
+
+        exception.expect(GraknValidationException.class);
+        graph.commit();
+    }
+
+    @Test
+    public void testKeyUniqueValue() throws GraknValidationException {
+        // This should only run on tinker because it commits
+        assumeTrue(usingTinker());
+
+        qb.insert(
+                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                var().isa("a-new-type").has("a-new-resource-type", "hello"),
+                var().isa("a-new-type").has("a-new-resource-type", "hello")
+        ).execute();
+
+        exception.expect(GraknValidationException.class);
+        graph.commit();
+    }
+
+    @Test
+    public void testKeyRequiredOwner() throws GraknValidationException {
+        // This should only run on tinker because it commits
+        assumeTrue(usingTinker());
+
+        qb.insert(
+                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                var().isa("a-new-type")
+        ).execute();
+
+        exception.expect(GraknValidationException.class);
+        graph.commit();
+    }
+
+    @Test
+    public void testKeyRequiredValue() throws GraknValidationException {
+        // This should only run on tinker because it commits
+        assumeTrue(usingTinker());
+
+        qb.insert(
+                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                var().isa("a-new-resource-type").value("hello")
+        ).execute();
+
+        exception.expect(GraknValidationException.class);
+        graph.commit();
     }
 
     @Test

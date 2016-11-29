@@ -165,6 +165,18 @@ public interface Var extends Pattern {
     Var hasResource(Var type);
 
     /**
+     * @param type a resource type that this type variable can be one-to-one related to
+     * @return this
+     */
+    Var key(String type);
+
+    /**
+     * @param type a resource type that this type variable can be one-to-one related to
+     * @return this
+     */
+    Var key(Var type);
+
+    /**
      * the variable must be a relation with the given roleplayer
      *
      * @param roleplayer a variable representing a roleplayer

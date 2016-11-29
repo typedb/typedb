@@ -85,12 +85,12 @@ public class Fragments {
         return new DataTypeFragment(start, dataType);
     }
 
-    public static InPlaysRoleFragment inPlaysRole(String start, String end) {
-        return new InPlaysRoleFragment(start, end);
+    public static InPlaysRoleFragment inPlaysRole(String start, String end, boolean required) {
+        return new InPlaysRoleFragment(start, end, required);
     }
 
-    public static OutPlaysRoleFragment outPlaysRole(String start, String end) {
-        return new OutPlaysRoleFragment(start, end);
+    public static OutPlaysRoleFragment outPlaysRole(String start, String end, boolean required) {
+        return new OutPlaysRoleFragment(start, end, required);
     }
 
     public static InCastingFragment inCasting(String start, String end) {

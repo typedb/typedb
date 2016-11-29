@@ -552,6 +552,11 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         assertEquals("match $x has-scope $y;", parse("match $x has-scope $y;").toString());
     }
 
+    @Test
+    public void testParseKey() {
+        assertEquals("match $x key name;", parse("match $x key name;").toString());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMultipleQueriesThrowsIllegalArgumentException() {
         qb.<InsertQuery>parse("insert $x isa movie; insert $y isa movie").execute();
