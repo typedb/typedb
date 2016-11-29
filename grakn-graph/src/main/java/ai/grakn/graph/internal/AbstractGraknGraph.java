@@ -121,28 +121,28 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            type.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.TYPE.getId());
+            type.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.TYPE.getName());
 
             TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            entityType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ENTITY_TYPE.getId());
+            entityType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ENTITY_TYPE.getName());
 
             TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            relationType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RELATION_TYPE.getId());
+            relationType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RELATION_TYPE.getName());
 
             TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            resourceType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RESOURCE_TYPE.getId());
+            resourceType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RESOURCE_TYPE.getName());
 
             TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            roleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ROLE_TYPE.getId());
+            roleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ROLE_TYPE.getName());
 
             TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            ruleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RULE_TYPE.getId());
+            ruleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RULE_TYPE.getName());
 
             RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
-            inferenceRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.INFERENCE_RULE.getId());
+            inferenceRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.INFERENCE_RULE.getName());
 
             RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
-            constraintRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.CONSTRAINT_RULE.getId());
+            constraintRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.CONSTRAINT_RULE.getName());
 
             type.setType(type.getName());
             relationType.setType(type.getName());
@@ -238,7 +238,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     }
 
     private Vertex putVertex(String name, Schema.BaseType baseType){
-        if(Schema.MetaSchema.isMetaId(name)){
+        if(Schema.MetaSchema.isMetaName(name)){
             throw new ConceptException(ErrorMessage.ID_RESERVED.getMessage(name));
         }
 
@@ -388,42 +388,42 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     @Override
     public Type getMetaType() {
-        return getTypeByName(Schema.MetaSchema.TYPE.getId());
+        return getTypeByName(Schema.MetaSchema.TYPE.getName());
     }
 
     @Override
     public Type getMetaRelationType() {
-        return getTypeByName(Schema.MetaSchema.RELATION_TYPE.getId());
+        return getTypeByName(Schema.MetaSchema.RELATION_TYPE.getName());
     }
 
     @Override
     public Type getMetaRoleType() {
-        return getTypeByName(Schema.MetaSchema.ROLE_TYPE.getId());
+        return getTypeByName(Schema.MetaSchema.ROLE_TYPE.getName());
     }
 
     @Override
     public Type getMetaResourceType() {
-        return getTypeByName(Schema.MetaSchema.RESOURCE_TYPE.getId());
+        return getTypeByName(Schema.MetaSchema.RESOURCE_TYPE.getName());
     }
 
     @Override
     public Type getMetaEntityType() {
-        return getTypeByName(Schema.MetaSchema.ENTITY_TYPE.getId());
+        return getTypeByName(Schema.MetaSchema.ENTITY_TYPE.getName());
     }
 
     @Override
     public Type getMetaRuleType(){
-        return getTypeByName(Schema.MetaSchema.RULE_TYPE.getId());
+        return getTypeByName(Schema.MetaSchema.RULE_TYPE.getName());
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getTypeByName(Schema.MetaSchema.INFERENCE_RULE.getId()).asRuleType();
+        return getTypeByName(Schema.MetaSchema.INFERENCE_RULE.getName()).asRuleType();
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getTypeByName(Schema.MetaSchema.CONSTRAINT_RULE.getId()).asRuleType();
+        return getTypeByName(Schema.MetaSchema.CONSTRAINT_RULE.getName()).asRuleType();
     }
 
     //-----------------------------------------------Casting Functionality----------------------------------------------

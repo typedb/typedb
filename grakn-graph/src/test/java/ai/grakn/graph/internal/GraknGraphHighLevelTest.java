@@ -620,7 +620,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void testGraqlQuery(){
-        String entityType = Schema.MetaSchema.ENTITY_TYPE.getId();
+        String entityType = Schema.MetaSchema.ENTITY_TYPE.getName();
         EntityType type1 = graknGraph.putEntityType("Concept Type ");
         EntityType type2 = graknGraph.putEntityType("Concept Type 1");
 

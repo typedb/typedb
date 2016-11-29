@@ -911,9 +911,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
 
         graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
+        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
         thing.playsRole(degreeOwner);

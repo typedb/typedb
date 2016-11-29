@@ -176,9 +176,9 @@ public class BulkResourceMutate<T> {
 
     private void refreshOntologyElements() {
         resourceType = graph.getResourceType(resourceTypeName);
-        resourceOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeName));
-        resourceValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeName));
-        relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeName));
+        resourceOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
+        resourceValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
+        relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
     }
 
     private void initialiseGraph() {

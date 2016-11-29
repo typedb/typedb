@@ -154,7 +154,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypeNames.stream()
-                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubtypes.addAll(subtypeNames);
         allSubtypes.addAll(statisticsResourceTypeNames);
 
@@ -177,7 +177,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypeNames.stream()
-                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubtypes.addAll(subtypeNames);
         allSubtypes.addAll(statisticsResourceTypeNames);
 
@@ -200,7 +200,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypeNames.stream()
-                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubtypes.addAll(subtypeNames);
         allSubtypes.addAll(statisticsResourceTypeNames);
 
@@ -223,7 +223,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypeNames.stream()
-                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubtypes.addAll(subtypeNames);
         allSubtypes.addAll(statisticsResourceTypeNames);
 
@@ -247,7 +247,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypeNames.stream()
-                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubtypes.addAll(subtypeNames);
         allSubtypes.addAll(statisticsResourceTypeNames);
 
@@ -269,7 +269,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypeNames.stream()
-                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubtypes.addAll(subtypeNames);
         allSubtypes.addAll(statisticsResourceTypeNames);
 
@@ -453,11 +453,11 @@ public class Analytics {
 
             ResourceType resource = graph.getResourceType(resourceTypeId);
             if (resource == null) continue;
-            RoleType degreeOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+            RoleType degreeOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
             if (degreeOwner == null) continue;
-            RoleType degreeValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+            RoleType degreeValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
             if (degreeValue == null) continue;
-            RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId));
+            RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId));
             if (relationType == null) continue;
 
             for (String type : subtypeNames) {

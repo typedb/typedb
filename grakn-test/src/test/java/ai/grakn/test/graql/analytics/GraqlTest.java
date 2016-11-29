@@ -158,9 +158,9 @@ public class GraqlTest extends AbstractGraphTest {
 
         String resourceTypeId = "resource";
 
-        RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
+        RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+        RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
                 .hasRole(resourceOwner)
                 .hasRole(resourceValue);
 

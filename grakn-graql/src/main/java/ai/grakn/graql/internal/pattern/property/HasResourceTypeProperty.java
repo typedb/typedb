@@ -52,13 +52,13 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = Graql.name(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeName))
-                .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
-        valueRole = Graql.name(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeName))
-                .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
+        ownerRole = Graql.name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName))
+                .isa(Schema.MetaSchema.ROLE_TYPE.getName()).admin();
+        valueRole = Graql.name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName))
+                .isa(Schema.MetaSchema.ROLE_TYPE.getName()).admin();
 
-        relationType = Graql.name(Schema.Resource.HAS_RESOURCE.getId(resourceTypeName))
-                .isa(Schema.MetaSchema.RELATION_TYPE.getId())
+        relationType = Graql.name(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName))
+                .isa(Schema.MetaSchema.RELATION_TYPE.getName())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
         ownerPlaysRole = new PlaysRoleProperty(ownerRole, required);

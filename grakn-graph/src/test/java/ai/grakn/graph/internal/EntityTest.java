@@ -242,16 +242,16 @@ public class EntityTest extends GraphTestBase{
         Resource resource = resourceType.putResource("A resource thing");
 
         Relation relation = entity.hasResource(resource);
-        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relation.type().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relation.type().getName());
 
         relation.rolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
             Instance instance = entry.getValue();
 
             if(instance.equals(entity)){
-                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), roleType.getName());
             } else {
-                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), roleType.getName());
             }
         });
     }
@@ -283,16 +283,16 @@ public class EntityTest extends GraphTestBase{
         Resource resource = resourceType.putResource("A resource thing");
 
         Relation relation = entity.hasResource(resource);
-        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relation.type().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relation.type().getName());
 
         relation.rolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
             Instance instance = entry.getValue();
 
             if(instance.equals(entity)){
-                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), roleType.getName());
             } else {
-                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), roleType.getName());
             }
         });
     }

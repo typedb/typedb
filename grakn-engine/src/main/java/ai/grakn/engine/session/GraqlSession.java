@@ -291,7 +291,7 @@ class GraqlSession {
     private static Stream<String> getTypes(GraknGraph graph) {
         Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
 
-        Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getId);
+        Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getName);
 
         return Stream.concat(types, metaTypes);
     }

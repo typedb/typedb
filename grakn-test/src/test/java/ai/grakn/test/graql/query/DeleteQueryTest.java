@@ -52,7 +52,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testDeleteMultiple() {
-        qb.insert(name("fake-type").isa(Schema.MetaSchema.ENTITY_TYPE.getId())).execute();
+        qb.insert(name("fake-type").isa(Schema.MetaSchema.ENTITY_TYPE.getName())).execute();
         qb.insert(var("x").isa("fake-type"), var("y").isa("fake-type")).execute();
 
         assertEquals(2, qb.match(var("x").isa("fake-type")).stream().count());

@@ -308,8 +308,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     protected void checkTypeMutation(){
         getGraknGraph().checkOntologyMutation();
         for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
-            if(metaSchema.getId().equals(getName())){
-                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getId()));
+            if(metaSchema.getName().equals(getName())){
+                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getName()));
             }
         }
     }
@@ -322,14 +322,14 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     public RelationType hasResource(ResourceType resourceType, boolean required){
         String resourceTypeId = resourceType.getName();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
 
         this.playsRole(ownerRole, required);
         ((ResourceTypeImpl) resourceType).playsRole(valueRole, required);
 
         return getGraknGraph().
-                putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId)).
+                putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId)).
                 hasRole(ownerRole).
                 hasRole(valueRole);
     }

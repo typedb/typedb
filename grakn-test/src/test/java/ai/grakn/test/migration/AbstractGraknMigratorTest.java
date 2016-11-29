@@ -103,9 +103,9 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     protected void assertResourceTypeRelationExists(String name, DataType datatype, Type owner){
         ResourceType resource = assertResourceTypeExists(name, datatype);
 
-        RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(name));
-        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(name));
-        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
+        RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(name));
+        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
+        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         assertNotNull(relationType);
         assertNotNull(roleOwner);
@@ -158,8 +158,8 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     }
 
     protected Stream<Resource> getResources(Instance instance, String name) {
-        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(name));
-        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
+        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
+        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         Collection<Relation> relations = instance.relations(roleOwner);
         return relations.stream().map(r -> r.rolePlayers().get(roleOther).asResource());

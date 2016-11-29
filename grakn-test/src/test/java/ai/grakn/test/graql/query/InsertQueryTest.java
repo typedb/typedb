@@ -174,10 +174,10 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertOntology() {
         qb.insert(
-                name("pokemon").isa(Schema.MetaSchema.ENTITY_TYPE.getId()),
-                name("evolution").isa(Schema.MetaSchema.RELATION_TYPE.getId()),
-                name("evolves-from").isa(Schema.MetaSchema.ROLE_TYPE.getId()),
-                name("evolves-to").isa(Schema.MetaSchema.ROLE_TYPE.getId()),
+                name("pokemon").isa(Schema.MetaSchema.ENTITY_TYPE.getName()),
+                name("evolution").isa(Schema.MetaSchema.RELATION_TYPE.getName()),
+                name("evolves-from").isa(Schema.MetaSchema.ROLE_TYPE.getName()),
+                name("evolves-to").isa(Schema.MetaSchema.ROLE_TYPE.getName()),
                 name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
                 name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
 
@@ -188,10 +188,10 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).execute();
 
-        assertTrue(qb.match(name("pokemon").isa(Schema.MetaSchema.ENTITY_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(name("evolution").isa(Schema.MetaSchema.RELATION_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(name("evolves-from").isa(Schema.MetaSchema.ROLE_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(name("evolves-to").isa(Schema.MetaSchema.ROLE_TYPE.getId())).ask().execute());
+        assertTrue(qb.match(name("pokemon").isa(Schema.MetaSchema.ENTITY_TYPE.getName())).ask().execute());
+        assertTrue(qb.match(name("evolution").isa(Schema.MetaSchema.RELATION_TYPE.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").isa(Schema.MetaSchema.ROLE_TYPE.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").isa(Schema.MetaSchema.ROLE_TYPE.getName())).ask().execute());
         assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
@@ -217,8 +217,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertIsAbstract() {
         qb.insert(
-                name("concrete-type").isa(Schema.MetaSchema.ENTITY_TYPE.getId()),
-                name("abstract-type").isAbstract().isa(Schema.MetaSchema.ENTITY_TYPE.getId())
+                name("concrete-type").isa(Schema.MetaSchema.ENTITY_TYPE.getName()),
+                name("abstract-type").isAbstract().isa(Schema.MetaSchema.ENTITY_TYPE.getName())
         ).execute();
 
         assertFalse(qb.match(name("concrete-type").isAbstract()).ask().execute());
@@ -228,7 +228,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                name("my-type").isa(Schema.MetaSchema.RESOURCE_TYPE.getId()).datatype(ResourceType.DataType.LONG)
+                name("my-type").isa(Schema.MetaSchema.RESOURCE_TYPE.getName()).datatype(ResourceType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").name("my-type"));
@@ -240,7 +240,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                name("my-type").isa(Schema.MetaSchema.RESOURCE_TYPE.getId()).datatype(ResourceType.DataType.STRING),
+                name("my-type").isa(Schema.MetaSchema.RESOURCE_TYPE.getName()).datatype(ResourceType.DataType.STRING),
                 name("sub-type").sub("my-type")
         ).execute();
 
@@ -253,8 +253,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                name("marriage").isa(Schema.MetaSchema.RELATION_TYPE.getId()).hasRole("spouse1").hasRole("spouse2"),
-                name("spouse").isa(Schema.MetaSchema.ROLE_TYPE.getId()).isAbstract(),
+                name("marriage").isa(Schema.MetaSchema.RELATION_TYPE.getName()).hasRole("spouse1").hasRole("spouse2"),
+                name("spouse").isa(Schema.MetaSchema.ROLE_TYPE.getName()).isAbstract(),
                 name("spouse1").sub("spouse"),
                 name("spouse2").sub("spouse")
         ).execute();
@@ -326,7 +326,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertReferenceByName() {
         qb.insert(
-                name("new-type").isa(Schema.MetaSchema.ENTITY_TYPE.getId()),
+                name("new-type").isa(Schema.MetaSchema.ENTITY_TYPE.getName()),
                 name("new-type").isAbstract(),
                 name("new-type").playsRole("has-title-owner"),
                 var("x").isa("new-type")
@@ -348,7 +348,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertRuleType() {
-        assertInsert(var("x").name("my-inference-rule").isa(Schema.MetaSchema.RULE_TYPE.getId()));
+        assertInsert(var("x").name("my-inference-rule").isa(Schema.MetaSchema.RULE_TYPE.getName()));
     }
 
     @Test
@@ -537,16 +537,16 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        qb.insert(name("my-resource").isa(Schema.MetaSchema.RESOURCE_TYPE.getId())).execute();
+        qb.insert(name("my-resource").isa(Schema.MetaSchema.RESOURCE_TYPE.getName())).execute();
     }
 
     @Test
     public void testErrorWhenAddingMetaType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.RELATION_TYPE.getId()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.RELATION_TYPE.getName()))
         );
-        qb.insert(name("my-thing").sub(Schema.MetaSchema.RELATION_TYPE.getId())).execute();
+        qb.insert(name("my-thing").sub(Schema.MetaSchema.RELATION_TYPE.getName())).execute();
     }
 
     @Test

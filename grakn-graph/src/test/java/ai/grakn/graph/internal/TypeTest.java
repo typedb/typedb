@@ -399,16 +399,16 @@ public class TypeTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         RelationType relationType = entityType.hasResource(resourceType);
-        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relationType.getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relationType.getName());
 
         Set<String> roleNames = relationType.hasRoles().stream().map(Type::getName).collect(Collectors.toSet());
         assertEquals(2, roleNames.size());
 
-        assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId)));
-        assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId)));
+        assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
+        assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId)));
 
-        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), entityType.playsRoles().iterator().next().getName());
-        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), resourceType.playsRoles().iterator().next().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), entityType.playsRoles().iterator().next().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), resourceType.playsRoles().iterator().next().getName());
 
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
@@ -428,16 +428,16 @@ public class TypeTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         RelationType relationType = entityType.key(resourceType);
-        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relationType.getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relationType.getName());
 
         Set<String> roleIds = relationType.hasRoles().stream().map(RoleType::getName).collect(Collectors.toSet());
         assertEquals(2, roleIds.size());
 
-        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId)));
-        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId)));
+        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
+        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId)));
 
-        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), entityType.playsRoles().iterator().next().getName());
-        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), resourceType.playsRoles().iterator().next().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), entityType.playsRoles().iterator().next().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), resourceType.playsRoles().iterator().next().getName());
 
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
