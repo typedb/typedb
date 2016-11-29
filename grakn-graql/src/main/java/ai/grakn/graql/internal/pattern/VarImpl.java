@@ -213,7 +213,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var key(String type) {
-        return key(Graql.var().id(type));
+        return key(Graql.var().name(type));
     }
 
     @Override
