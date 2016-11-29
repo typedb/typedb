@@ -70,6 +70,8 @@ class FactoryBuilder {
                 throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
             }
             openFactories.put(key, internalFactory);
+            if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME))
+            	new SystemKeyspace(engineUrl, config).loadSystemOntology();
         }
         return openFactories.get(key);
     }

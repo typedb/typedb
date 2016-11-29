@@ -28,7 +28,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grakn-core</artifactId>
-
+    
     <dependencies>
         <!-- Tinkerpop3 core -->
         <dependency>
