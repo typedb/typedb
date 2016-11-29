@@ -61,7 +61,6 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         run(args);
 
         graph = factory.getGraph();
-
         EntityType top = graph.getEntityType("tThing");
         EntityType type = graph.getEntityType("tAuthor");
         assertNotNull(type);

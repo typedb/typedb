@@ -32,10 +32,6 @@ public class REST {
         public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
 
         public static final String COMMIT_LOG_URI = "/commit_log";
-
-        public static final String NEW_TRANSACTION_URI = "/transaction/new";
-        public static final String TRANSACTION_STATUS_URI = "/transaction/status/";
-        public static final String LOADER_STATE_URI = "/transaction/loaderState";
         public static final String GET_STATUS_CONFIG_URI = "/status/config";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
@@ -45,7 +41,7 @@ public class REST {
         public static final String TASKS_SCHEDULE_URI ="/tasks/schedule";
     }
 
-    public static class Request{
+    public static class Request {
         public static final String PATH_FIELD = "path";
         public static final String HOSTS_FIELD = "hosts";
         public static final String QUERY_FIELD = "query";
@@ -59,6 +55,7 @@ public class REST {
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_CONFIGURATION_PARAMETER = "configuration";
+        public static final String TASK_LOADER_INSERTS = "inserts";
         public static final String TASK_STOP = "/stop";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
@@ -74,7 +71,7 @@ public class REST {
 
     public static class HttpConn{
         public static final String INSERT_PREFIX = "insert ";
-        public static final int HTTP_TRANSACTION_CREATED = 201;
+        public static final int OK = 200;
         public static final String UTF8 = "UTF8";
         public static final String CONTENT_LENGTH = "Content-Length";
         public static final String CONTENT_TYPE = "Content-Type";

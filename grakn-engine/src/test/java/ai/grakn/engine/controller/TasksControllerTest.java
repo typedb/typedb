@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 
-public class TaskControllerTest extends GraknEngineTestBase {
+public class TasksControllerTest extends GraknEngineTestBase {
     private TaskManager taskManager;
     private String singleTask;
 

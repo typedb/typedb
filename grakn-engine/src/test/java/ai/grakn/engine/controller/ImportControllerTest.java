@@ -18,7 +18,9 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Entity;
 import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.response.Response;
 import ai.grakn.engine.GraknEngineTestBase;
@@ -27,9 +29,14 @@ import ai.grakn.util.REST;
 import mjson.Json;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.Date;
+
 import static com.jayway.restassured.RestAssured.given;
 import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static com.jayway.restassured.RestAssured.post;
+import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ImportControllerTest extends GraknEngineTestBase {
@@ -38,21 +45,21 @@ public class ImportControllerTest extends GraknEngineTestBase {
 
     @Test
     public void testLoadOntologyAndData() {
-        String dataPath = getPath("small_nametags.gql");
+        String dataPath = getPath("smaller_nametags.gql");
         Json body = Json.object("path", dataPath);
         runAndAssertCorrect(body, keyspace);
     }
 
     @Test
     public void testLoadOntologyAndDataDistributed() {
-        String dataPath = getPath("small_nametags.gql");
-        Json body = Json.object("path", dataPath, "hosts", Json.array().add("127.0.0.1"));
+        String dataPath = getPath("smaller_nametags.gql");
+        Json body = Json.object("path", dataPath, "hosts", Json.array().add(Grakn.DEFAULT_URI));
         runAndAssertCorrect(body, keyspace);
     }
 
     @Test
     public void testLoadOntologyAndDataOnCustomKeyspace(){
-        String dataPath = getPath("small_nametags.gql");
+        String dataPath = getPath("smaller_nametags.gql");
         String customGraph = "importgraph";
         Json body = Json.object("path", dataPath);
 
@@ -70,16 +77,36 @@ public class ImportControllerTest extends GraknEngineTestBase {
 
         dataResponse.then().assertThat().statusCode(200);
 
-        //TODO: find a proper way to notify a client when loading is done. Something slightly more elegant than a thread sleep.
         try {
-            Thread.sleep(10000);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
+        waitToFinish();
+
         GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
-        assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+
+        Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
+        assertEquals(nameTags.size(), 10);
+        assertNotNull(graph.getResourcesByValue("X4a656e6e69666572204d656c6f6f6e").iterator().next().getId());
         graph.clear();
         graph.close();
+    }
+
+    private void waitToFinish() {
+        final long initial = new Date().getTime();
+
+        while ((new Date().getTime())-initial < 60000) {
+            Response response = post(REST.WebPath.IMPORT_DATA_URI);
+            if (response.statusCode() != 423)
+                break;
+
+            try {
+                Thread.sleep(100);
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -47,12 +47,10 @@ import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest extends GraknEngineTestBase {
     public final String KEYSPACE = "test";
-    private Cache cache;
+    private Cache cache = Cache.getInstance();
 
     @Before
     public void setUp() throws Exception {
-        cache = Cache.getInstance();
-
         String commitLog = "{\n" +
                 "    \"concepts\":[\n" +
                 "        {\"id\":\"1\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
