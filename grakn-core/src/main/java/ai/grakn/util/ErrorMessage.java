@@ -69,6 +69,7 @@ public enum ErrorMessage {
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
     VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type ['%s'] is playing role ['%s'] which it is not allowed \n"),
     VALIDATION_INSTANCE("Instance ['%s'] does not play all required roles \n"),
+    VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role players: ['%s'] \n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),

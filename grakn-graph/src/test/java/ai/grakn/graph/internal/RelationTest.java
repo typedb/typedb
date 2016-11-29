@@ -25,6 +25,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
@@ -298,6 +299,25 @@ public class RelationTest extends GraphTestBase{
         ));
 
         relation2.putRolePlayer(roleType2, instance2);
+    }
+
+    @Test
+    public void testCreateDuplicateRelationsFail() throws GraknValidationException {
+        RoleType roleType1 = graknGraph.putRoleType("role type 1");
+        RoleType roleType2 = graknGraph.putRoleType("role type 2");
+        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        Instance instance1 = type.addEntity();
+        Instance instance2 = type.addEntity();
+
+        Relation relation1 = relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        Relation relation2 = relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()))
+        ));
+
+        graknGraph.commit();
     }
 
     @Test
