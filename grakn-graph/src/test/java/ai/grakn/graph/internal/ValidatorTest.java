@@ -128,9 +128,9 @@ public class ValidatorTest extends GraphTestBase{
         CastingImpl casting1 = (CastingImpl) assertion.getMappingCasting().toArray()[0];
         CastingImpl casting2 = (CastingImpl) assertion.getMappingCasting().toArray()[1];
         assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_CASTING.getMessage(
-                casting1.getRolePlayer().type().getId(), casting1.getRolePlayer().getId(), casting1.getRole().getId())));
+                casting1.getRolePlayer().type().getName(), casting1.getRolePlayer().getId(), casting1.getRole().getName())));
         assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_CASTING.getMessage(
-                casting2.getRolePlayer().type().getId(), casting2.getRolePlayer().getId(), casting2.getRole().getId())));
+                casting2.getRolePlayer().type().getName(), casting2.getRolePlayer().getId(), casting2.getRole().getName())));
     }
 
     @Test
@@ -139,7 +139,7 @@ public class ValidatorTest extends GraphTestBase{
         Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(1, validator.getErrorsFound().size());
-        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(alone.getId())));
+        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(alone.getName())));
     }
 
     @Test
@@ -148,7 +148,7 @@ public class ValidatorTest extends GraphTestBase{
         Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(1, validator.getErrorsFound().size());
-        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getId())));
+        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getName())));
     }
 
     @Test
@@ -204,10 +204,10 @@ public class ValidatorTest extends GraphTestBase{
 
         validator.validate();
 
-        assertTrue((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x1.getId()))));
-        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x2.getId()))));
-        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x3.getId()))));
-        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x4.getId()))));
+        assertTrue((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x1.getName()))));
+        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x2.getName()))));
+        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x3.getName()))));
+        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x4.getName()))));
     }
 
     @Test
@@ -333,7 +333,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(containsString(
-                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(person.getId(), parent.superType().getId())));
+                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(person.getName(), parent.superType().getName())));
 
         graknGraph.commit();
     }
@@ -352,7 +352,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(company.getId(), parent.superType().getId()))));
+                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(company.getName(), parent.superType().getName()))));
 
         graknGraph.commit();
     }
