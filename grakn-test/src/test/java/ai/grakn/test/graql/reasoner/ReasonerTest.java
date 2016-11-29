@@ -116,19 +116,12 @@ public class ReasonerTest extends AbstractEngineTest{
         RelationType sublocate = graph.getRelationType("sublocate");
 
         LinkedHashMap<RelationType, Pair<String, String>> chain = new LinkedHashMap<>();
-<<<<<<< HEAD
-        chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getId(), graph.getRoleType("subject-location").getId()));
-        chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getId(), graph.getRoleType("container-location").getId()));
 
-        Rule rule = Utility.createPropertyChainRule(resides, graph.getRoleType("located-subject").getId(),
-                graph.getRoleType("subject-location").getId(), chain, graph);
-=======
         chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getName(), graph.getRoleType("subject-location").getName()));
         chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getName(), graph.getRoleType("container-location").getName()));
 
         Rule rule = Utility.createPropertyChainRule(resides, graph.getRoleType("located-subject").getName(),
                 graph.getRoleType("subject-location").getName(), chain, graph);
->>>>>>> Propagate removing getters to reasoner (#15)
         InferenceRule R = new InferenceRule(rule, graph);
 
         Pattern body = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $y) isa resides;" +
