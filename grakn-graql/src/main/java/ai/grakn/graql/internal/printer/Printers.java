@@ -19,17 +19,23 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.Printer;
+import mjson.Json;
+
+import java.util.function.Function;
 
 public class Printers {
 
     private Printers() {}
 
-    public static Printer graql() {
+    public static Printer<Function<StringBuilder, StringBuilder>> graql() {
         return new GraqlPrinter();
     }
 
-    public static Printer json() {
+    public static Printer<Json> json() {
         return new JsonPrinter();
+    }
+
+    public static Printer hal() {
+        return new HALPrinter();
     }
 }

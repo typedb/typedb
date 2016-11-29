@@ -52,9 +52,9 @@ import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
 import static java.lang.Boolean.parseBoolean;
 import static ai.grakn.factory.GraphFactory.getInstance;
-import static ai.grakn.engine.visualiser.HALConceptRepresentationBuilder.renderHALArrayData;
-import static ai.grakn.engine.visualiser.HALConceptRepresentationBuilder.renderHALConceptData;
-import static ai.grakn.engine.visualiser.HALConceptRepresentationBuilder.renderHALConceptOntology;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
 
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.QUERY_FIELD;
