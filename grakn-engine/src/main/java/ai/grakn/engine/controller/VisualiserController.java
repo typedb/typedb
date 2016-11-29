@@ -172,9 +172,8 @@ public class VisualiserController {
                     return formatAsHAL(matchQuery);
                 case GRAQL_CONTENTTYPE:
                     return formatAsGraql(matchQuery);
+                default: return formatAsGraql(matchQuery);
             }
-
-            throw new IllegalArgumentException("Incorrect content type");
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
