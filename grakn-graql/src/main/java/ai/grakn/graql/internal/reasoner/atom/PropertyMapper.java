@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -66,6 +67,8 @@ public class PropertyMapper {
             return map((SubProperty)prop, var, vars, parent);
         else if (prop instanceof PlaysRoleProperty)
             return map((PlaysRoleProperty)prop, var, vars, parent);
+        else if (prop instanceof HasRoleProperty)
+            return map((HasRoleProperty)prop, var, vars, parent);
         else if (prop instanceof HasResourceTypeProperty)
             return map((HasResourceTypeProperty)prop, var, vars, parent);
         else if (prop instanceof IsaProperty)
@@ -162,6 +165,23 @@ public class PropertyMapper {
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
         atoms.add(new TypeAtom(resVar, parent));
         if (predicate != null) atoms.add(predicate);
+        return atoms;
+    }
+
+    private static Set<Atomic> map(HasRoleProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+
+        //TODO
+        Set<Atomic> atoms = new HashSet<>();
+        String varName = var.getName();
+        VarAdmin typeVar = prop.getRole();
+        String relVariable = var.isUserDefinedName()?  var.getName() :"";
+        String roleVariable = typeVar.isUserDefinedName() ? typeVar.getName() : "";
+
+        //IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+
+        //VarAdmin resVar = Graql.var(varName).hasRole(Graql.var(typeVariable)).admin();
+        //atoms.add(new TypeAtom(resVar, parent));
+        //if (predicate != null) atoms.add(predicate);
         return atoms;
     }
 

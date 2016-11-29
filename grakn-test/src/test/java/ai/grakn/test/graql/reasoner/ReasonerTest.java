@@ -20,6 +20,7 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -639,6 +640,22 @@ public class ReasonerTest extends AbstractEngineTest{
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
         assertEquals(answers, expAnswers);
+    }
+
+    @Test
+    public void testHasRole(){
+        GraknGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match ($x, $y) isa $rel-type;$rel-type has-role geo-entity;" +
+                "$y isa country;$y has name 'Poland';";
+        String queryString2 = "match $x isa $type;$y isa country;$y has name 'Poland';" +
+                "($x, $y) isa is-located-in;";
+        PatternAdmin hR = lgraph.graql().parsePattern("is-located-in has-role $x").admin();
+        PatternAdmin hR2 = lgraph.graql().parsePattern("$rel-type has-role geo-entity").admin();
+        MatchQuery query = new Query(queryString, lgraph);
+       // MatchQuery query2 = new Query(queryString2, lgraph);
+
+        //Reasoner reasoner = new Reasoner(lgraph);
+        //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 }
 
