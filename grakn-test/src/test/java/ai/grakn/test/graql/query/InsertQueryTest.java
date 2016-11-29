@@ -416,24 +416,24 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testKey() {
         qb.insert(
-                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING)
+                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertTrue(qb.match(id("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());
-        assertTrue(qb.match(id("a-new-type").isa("entity-type").key("a-new-resource-type")).ask().execute());
-        assertFalse(qb.match(id("a-new-type").isa("entity-type").key("title")).ask().execute());
-        assertFalse(qb.match(id("movie").isa("entity-type").key("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").isa("entity-type").key("a-new-resource-type")).ask().execute());
+        assertFalse(qb.match(name("a-new-type").isa("entity-type").key("title")).ask().execute());
+        assertFalse(qb.match(name("movie").isa("entity-type").key("a-new-resource-type")).ask().execute());
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(id("has-a-new-resource-type").isa("relation-type")).ask().execute());
-        assertTrue(qb.match(id("has-a-new-resource-type-owner").isa("role-type")).ask().execute());
-        assertTrue(qb.match(id("has-a-new-resource-type-value").isa("role-type")).ask().execute());
-        assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-owner")).ask().execute());
-        assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
-        assertTrue(qb.match(id("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
-        assertTrue(qb.match(id("a-new-resource-type").playsRole("has-a-new-resource-type-value")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type").isa("relation-type")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type-owner").isa("role-type")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type-value").isa("role-type")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type").hasRole("has-a-new-resource-type-owner")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
+        assertTrue(qb.match(name("a-new-resource-type").playsRole("has-a-new-resource-type-value")).ask().execute());
     }
 
     @Test
@@ -442,8 +442,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
@@ -456,8 +456,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
@@ -471,8 +471,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello"),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
@@ -487,8 +487,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type")
         ).execute();
 
@@ -502,8 +502,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                id("a-new-type").isa("entity-type").key("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-resource-type").value("hello")
         ).execute();
 
