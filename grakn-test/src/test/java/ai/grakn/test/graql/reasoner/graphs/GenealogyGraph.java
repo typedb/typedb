@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.csv.CSVMigrator;
@@ -66,15 +65,9 @@ public class GenealogyGraph extends TestGraph{
 
             Migrator marriageMigrator = new CSVMigrator(marriageTemplate, marriageFile);
             MigrationLoader.load(graph(), marriageMigrator);
-
-            commit();
         } catch (IOException e){
             throw new RuntimeException(e);
         }
-    }
-
-    public static GraknGraph getGraph() {
-        return new GenealogyGraph().graph();
     }
 
     public static Path getResource(String resourceName){
