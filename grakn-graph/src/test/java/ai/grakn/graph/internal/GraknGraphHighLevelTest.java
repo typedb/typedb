@@ -359,11 +359,6 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(uniqueCollection.contains(movieGenre.getBaseIdentifier()));
         assertTrue(uniqueCollection.contains(crime.getBaseIdentifier()));
 
-        graknGraph.getRelation(movieHasGenre, roleMap);
-        graknGraph.getRelation(movieHasGenre, roleMap);
-        graknGraph.getRelation(movieHasGenre, roleMap);
-        graknGraph.getRelation(movieHasGenre, roleMap);
-
         assertEquals(Schema.BaseType.ENTITY.name(), pacino.getBaseType());
         for(CastingImpl casting: assertion.getMappingCasting()){
             assertEquals(casting.getRolePlayer().getBaseType(), Schema.BaseType.ENTITY.name());

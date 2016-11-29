@@ -18,11 +18,10 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.exception.NoEdgeException;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.MoreThanOneEdgeException;
+import ai.grakn.exception.NoEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,10 +30,8 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class CastingTest extends GraphTestBase{
@@ -121,23 +118,4 @@ public class CastingTest extends GraphTestBase{
         casting.addEdge((ConceptImpl) anotherConcept, Schema.EdgeLabel.ROLE_PLAYER);
         casting.getRolePlayer();
     }
-
-    @Test
-    public void testGetAssertion(){
-        RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
-        RelationTypeImpl genericRelation = (RelationTypeImpl) graknGraph.putRelationType("gr");
-        RelationTypeImpl resourceType = (RelationTypeImpl) graknGraph.putRelationType("rt");
-        RelationImpl relationValue = (RelationImpl) resourceType.addRelation();
-
-        relation.addEdge(genericRelation, Schema.EdgeLabel.ISA);
-        relationValue.addEdge(resourceType, Schema.EdgeLabel.ISA);
-
-        CastingImpl casting2 = graknGraph.putCasting(role2, rolePlayer, relationValue);
-
-        assertTrue(casting.getRelations().contains(relation));
-        assertTrue(casting2.getRelations().contains(relationValue));
-        assertThat(casting.getRelations().iterator().next(), instanceOf(Relation.class));
-        assertThat(casting2.getRelations().iterator().next(), instanceOf(Relation.class));
-    }
-
 }
