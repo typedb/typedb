@@ -38,6 +38,9 @@ public class HALConceptOntology {
 
     private Representation halResource;
 
+    private String rootConceptId;
+
+
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
     private final static String ROOT_CONCEPT = "type";
@@ -58,11 +61,13 @@ public class HALConceptOntology {
     private final static String VALUE_PROPERTY = "value";
 
 
-    public HALConceptOntology(Concept concept) {
+    public HALConceptOntology(Concept concept,String rootConceptId) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
         resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
+        this.rootConceptId=rootConceptId;
+
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
@@ -79,10 +84,10 @@ public class HALConceptOntology {
         if (concept.isInstance())
             resource.withProperty(ID_PROPERTY, concept.getId())
                     .withProperty(TYPE_PROPERTY, concept.type().getId())
-                    .withProperty(BASETYPE_PROPERTY, concept.type().type().getId());
+                    .withProperty(BASETYPE_PROPERTY, concept.type().type().getName());
         else // temp fix until a new behaviour is defined
-            resource.withProperty(ID_PROPERTY, concept.getId())
-                    .withProperty(TYPE_PROPERTY, (concept.type() == null) ? ROOT_CONCEPT : concept.type().getId())
+            resource.withProperty(ID_PROPERTY, concept.asType().getName())
+                    .withProperty(TYPE_PROPERTY, (concept.type() == null) ? ROOT_CONCEPT : concept.type().getName())
                     .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT);
 
         if (concept.isResource()) {
@@ -100,8 +105,8 @@ public class HALConceptOntology {
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
         } else {
-            if (!concept.getId().equals(ROOT_CONCEPT)) {
-                HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT)
+            if (!concept.getId().equals(rootConceptId)) {
+                HALType = factory.newRepresentation(resourceLinkPrefix + rootConceptId)
                         .withProperty(ID_PROPERTY, ROOT_CONCEPT)
                         .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
                         .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
