@@ -450,19 +450,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @return The result of following one outgoing sub edge to a Type.
-     */
-    public TypeImpl getParentSub(){
-        Concept subParent = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(subParent != null){
-            return (TypeImpl) subParent;
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     *
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one outgoing edge of a specific type
      */

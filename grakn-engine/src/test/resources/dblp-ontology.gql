@@ -20,7 +20,7 @@ type-name "name_tag_string" isa resource-type datatype string;
 type-name "name_tag_id" isa resource-type datatype string;
 
 ## DBLP record entities, i.e. first order children
-type-name "dblp_record" isa entity-type plays-role editor_target plays-role publisher_target plays-role authored_record plays-role journal_target plays-role note_target plays-role referenced_record plays-role referencing_record has-resource dblp_mdate has-resource dblp_title has-resource dblp_booktitle has-resource dblp_pages has-resource dblp_year has-resource dblp_address has-resource dblp_volume has-resource dblp_number has-resource dblp_month has-resource dblp_url has-resource dblp_ee has-resource dblp_cdrom has-resource dblp_cite has-resource dblp_isbn has-resource dblp_series has-resource dblp_school has-resource dblp_chapter;
+type-name "dblp_record" isa entity-type plays-role named_entity plays-role editor_target plays-role publisher_target plays-role authored_record plays-role journal_target plays-role note_target plays-role referenced_record plays-role referencing_record has-resource dblp_mdate has-resource dblp_title has-resource dblp_booktitle has-resource dblp_pages has-resource dblp_year has-resource dblp_address has-resource dblp_volume has-resource dblp_number has-resource dblp_month has-resource dblp_url has-resource dblp_ee has-resource dblp_cdrom has-resource dblp_cite has-resource dblp_isbn has-resource dblp_series has-resource dblp_school has-resource dblp_chapter;
 
 type-name "dblp_article" sub dblp_record;
 

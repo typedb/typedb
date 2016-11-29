@@ -131,18 +131,6 @@ public class ConceptTest extends GraphTestBase{
     }
 
     @Test
-    public void testGetParentSub(){
-        TypeImpl conceptType = (TypeImpl) graknGraph.putEntityType("conceptType");
-        assertNull(conceptType.getParentSub());
-        TypeImpl conceptParent = (TypeImpl) graknGraph.putEntityType("CP");
-        conceptType.superType(conceptParent);
-        Concept foundConcept = conceptType.getParentSub();
-        assertEquals(conceptParent, foundConcept);
-        assertNull(conceptParent.getParentSub());
-        assertNull(conceptType.getParentIsa());
-    }
-
-    @Test
     public void testToString() {
         EntityType concept = graknGraph.putEntityType("a");
         Instance concept2 = concept.addEntity();
