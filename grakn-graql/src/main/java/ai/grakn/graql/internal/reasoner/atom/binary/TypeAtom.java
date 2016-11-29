@@ -41,13 +41,13 @@ public class TypeAtom extends Binary{
 
     @Override
     protected String extractValueVariableName(VarAdmin var) {
-        return var.getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).getName();
+        return var.getProperties().findFirst().orElse(null).getTypes().findFirst().orElse(null).getVarName();
     }
 
     @Override
     protected void setValueVariable(String var) {
         super.setValueVariable(var);
-        atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setName(var));
+        atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setVarName(var));
     }
 
     @Override
@@ -61,7 +61,7 @@ public class TypeAtom extends Binary{
     @Override
     public Type getType() {
         return getPredicate() != null ?
-                getParentQuery().getGraph().orElse(null).getType(getPredicate().getPredicateValue()) : null;
+                getParentQuery().graph().getConcept(getPredicate().getPredicateValue()) : null;
     }
 
     @Override

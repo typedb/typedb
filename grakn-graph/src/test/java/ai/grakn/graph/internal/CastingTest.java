@@ -59,7 +59,7 @@ public class CastingTest extends GraphTestBase{
     public void testEquals() throws Exception {
         Graph graph = graknGraph.getTinkerPopGraph();
         Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
-        CastingImpl castingCopy = (CastingImpl) graknGraph.getConcept(v.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
+        CastingImpl castingCopy = (CastingImpl) graknGraph.getConcept(v.id().toString());
         assertEquals(casting, castingCopy);
 
         EntityType type = graknGraph.putEntityType("Another entity type");
@@ -81,9 +81,8 @@ public class CastingTest extends GraphTestBase{
 
         String id = UUID.randomUUID().toString();
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
 
-        CastingImpl casting2 = (CastingImpl) graknGraph.getConcept(id);
+        CastingImpl casting2 = (CastingImpl) graknGraph.getConcept(vertex.id().toString());
         boolean exceptionThrown = false;
         try{
             casting2.getRole();

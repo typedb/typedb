@@ -74,7 +74,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_CASTING.getMessage(woman.getId(), alice.getId(), wife.getId()))
+                containsString(ErrorMessage.VALIDATION_CASTING.getMessage(woman.getName(), alice.getId(), wife.getName()))
         ));
 
         graknGraph.commit();
@@ -88,14 +88,14 @@ public class OntologyMutationTest extends GraphTestBase{
         String rolePlayers = "";
         for(Map.Entry<RoleType, Instance> entry: relation.rolePlayers().entrySet()){
             if(entry.getKey() != null)
-                roles = roles + entry.getKey().getId() + ",";
+                roles = roles + entry.getKey().getName() + ",";
             if(entry.getValue() != null)
                 rolePlayers = rolePlayers + entry.getValue().getId() + ",";
         }
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), marriage.getId(),
+                containsString(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), marriage.getName(),
                         roles.split(",").length, roles,
                         rolePlayers.split(",").length, roles))
         ));
@@ -109,7 +109,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_CASTING.getMessage(man.getId(), bob.getId(), husband.getId()))
+                containsString(ErrorMessage.VALIDATION_CASTING.getMessage(man.getName(), bob.getId(), husband.getName()))
         ));
 
         graknGraph.commit();
@@ -121,7 +121,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(man.getId()))
+                containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(man.getName()))
         ));
 
         graknGraph.commit();

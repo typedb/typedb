@@ -159,7 +159,7 @@ final class ElementFactory {
         return (X) concept;
     }
 
-    TypeImpl buildSpecificConceptType(Vertex vertex, Type type){
+    TypeImpl buildSpecificType(Vertex vertex, Type type){
         Schema.BaseType baseType = Schema.BaseType.valueOf(vertex.label());
         TypeImpl conceptType;
         switch (baseType){

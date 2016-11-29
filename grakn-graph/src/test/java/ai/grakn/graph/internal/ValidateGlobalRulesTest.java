@@ -82,7 +82,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         }
 
         ((Edge) graknGraph.getTinkerTraversal().
-                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
+                hasId(werewolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
         ((Edge) graknGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.SUB.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
         ((Edge) graknGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();

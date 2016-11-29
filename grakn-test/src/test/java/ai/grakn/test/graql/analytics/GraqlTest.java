@@ -19,11 +19,16 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
-import ai.grakn.concept.*;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
@@ -33,9 +38,15 @@ import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -69,6 +80,9 @@ public class GraqlTest extends AbstractGraphTest {
         keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
+        logger.setLevel(Level.DEBUG);
+
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
     }
 
@@ -126,7 +140,7 @@ public class GraqlTest extends AbstractGraphTest {
 
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.getInstance(entry.getKey()).resources(graph.getResourceType(Analytics.degree));
+                    graph.getConcept(entry.getKey()).asInstance().resources(graph.getResourceType(Analytics.degree));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(),resources.iterator().next().getValue());
         });
@@ -144,9 +158,9 @@ public class GraqlTest extends AbstractGraphTest {
 
         String resourceTypeId = "resource";
 
-        RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
+        RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+        RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
                 .hasRole(resourceOwner)
                 .hasRole(resourceValue);
 

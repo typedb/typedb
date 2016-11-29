@@ -67,30 +67,30 @@ public class NguyenGraph extends TestGraph{
         }
 
         R.addRelation()
-                .putRolePlayer(Rfrom, graknGraph.getInstance(dId))
-                .putRolePlayer(Rto, graknGraph.getInstance(eId));
+                .putRolePlayer(Rfrom, graknGraph.getConcept(dId))
+                .putRolePlayer(Rto, graknGraph.getConcept(eId));
 
         P.addRelation()
-                .putRolePlayer(Pfrom, graknGraph.getInstance(cId))
-                .putRolePlayer(Pto, graknGraph.getInstance(dId));
+                .putRolePlayer(Pfrom, graknGraph.getConcept(cId))
+                .putRolePlayer(Pto, graknGraph.getConcept(dId));
 
         Q.addRelation()
-                .putRolePlayer(Qfrom, graknGraph.getInstance(eId))
-                .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[0]));
+                .putRolePlayer(Qfrom, graknGraph.getConcept(eId))
+                .putRolePlayer(Qto, graknGraph.getConcept(aInstancesIds[0]));
 
         for(int i = 0 ; i <= n ;i++){
             P.addRelation()
-                    .putRolePlayer(Pfrom, graknGraph.getInstance(bInstancesIds[i]))
-                    .putRolePlayer(Pto, graknGraph.getInstance(cId));
+                    .putRolePlayer(Pfrom, graknGraph.getConcept(bInstancesIds[i]))
+                    .putRolePlayer(Pto, graknGraph.getConcept(cId));
             P.addRelation()
-                    .putRolePlayer(Pfrom, graknGraph.getInstance(cId))
-                    .putRolePlayer(Pto, graknGraph.getInstance(bInstancesIds[i]));
+                    .putRolePlayer(Pfrom, graknGraph.getConcept(cId))
+                    .putRolePlayer(Pto, graknGraph.getConcept(bInstancesIds[i]));
             Q.addRelation()
-                    .putRolePlayer(Qfrom, graknGraph.getInstance(aInstancesIds[i]))
-                    .putRolePlayer(Qto, graknGraph.getInstance(bInstancesIds[i]));
+                    .putRolePlayer(Qfrom, graknGraph.getConcept(aInstancesIds[i]))
+                    .putRolePlayer(Qto, graknGraph.getConcept(bInstancesIds[i]));
             Q.addRelation()
-                    .putRolePlayer(Qfrom, graknGraph.getInstance(bInstancesIds[i]))
-                    .putRolePlayer(Qto, graknGraph.getInstance(aInstancesIds[i+1]));
+                    .putRolePlayer(Qfrom, graknGraph.getConcept(bInstancesIds[i]))
+                    .putRolePlayer(Qto, graknGraph.getConcept(aInstancesIds[i+1]));
         }
     }
 }

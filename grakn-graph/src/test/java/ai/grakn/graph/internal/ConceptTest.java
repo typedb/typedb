@@ -80,11 +80,6 @@ public class ConceptTest extends GraphTestBase{
     }
 
     @Test
-    public void testItemIdentifier() {
-        assertEquals("main_concept", concept.getId());
-    }
-
-    @Test
     public void testGetVertex(){
         assertNotNull(concept.getBaseIdentifier());
     }
@@ -106,7 +101,7 @@ public class ConceptTest extends GraphTestBase{
     @Test
     public void testEquality() {
         ConceptImpl c1= (ConceptImpl) graknGraph.putEntityType("Value_1");
-        Concept c1_copy = graknGraph.getConcept("Value_1");
+        Concept c1_copy = graknGraph.getEntityType("Value_1");
         Concept c1_copy_copy = graknGraph.putEntityType("Value_1");
 
         Concept c2 = graknGraph.putEntityType("Value_2");
@@ -133,12 +128,6 @@ public class ConceptTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("Entiy Type");
         Entity entity = entityType.addEntity();
         assertEquals(entityType, entity.type());
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void getBaseTypeTestFail() {
-        RelationType concept = graknGraph.putRelationType("relType");
-        graknGraph.putRoleType(concept.getId());
     }
 
     @Test

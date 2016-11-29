@@ -17,12 +17,7 @@
  */
 package ai.grakn.migration.owl;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.ResourceType;
 import org.semanticweb.owlapi.model.IRI;
-
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.ResourceType;
 
 /**
  * <p>
@@ -81,40 +76,34 @@ public interface Namer {
      * Make a name for the role type corresponding to the object (i.e. range) of an OWL object
      * property.
      *  
-     * @param relationId The id of the Grakn <code>RelationType</code>.
+     * @param relationName The name of the Grakn <code>RelationType</code>.
      */
-    default String objectRole(String relationId) {
-        return OwlModel.OBJECT.owlname() + "-" + relationId;
+    default String objectRole(String relationName) {
+        return OwlModel.OBJECT.owlname() + "-" + relationName;
     }
     /**
      * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
      * property.
      *  
-     * @param relationId The id of the Grakn <code>RelationType</code>.
+     * @param relationName The name of the Grakn <code>RelationType</code>.
      */
-    default String subjectRole(String relationId) {
-        return OwlModel.SUBJECT.owlname() + "-" + relationId;
+    default String subjectRole(String relationName) {
+        return OwlModel.SUBJECT.owlname() + "-" + relationName;
     }
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
-    default String entityRole(String resourceId) {
-        return "has-" + resourceId + "-owner";
+    default String entityRole(String resourceTypeName) {
+        return "has-" + resourceTypeName + "-owner";
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
      */
-    default String resourceRelation(String resourceId) { return "has-" + resourceId;}
+    default String resourceRelation(String resourceTypeName) { return "has-" + resourceTypeName;}
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
-    default String resourceRole(String resourceId) {
-        return "has-" + resourceId + "-value";
+    default String resourceRole(String resourceTypeName) {
+        return "has-" + resourceTypeName + "-value";
     }
-    /**
-     * Make an identifier for a resource of a given type to be associated with a given entity.
-     */
-    default String resourceId(Entity entity, ResourceType<?> resourceType) {
-        return "resource-" + resourceType.getId() + "-" + entity.getId();
-    }   
 }

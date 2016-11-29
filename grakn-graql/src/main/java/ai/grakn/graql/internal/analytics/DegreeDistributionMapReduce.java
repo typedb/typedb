@@ -38,7 +38,7 @@ class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
             emitter.emit(vertex.value(DegreeVertexProgram.DEGREE),
-                    Collections.singleton(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name())));
+                    Collections.singleton(vertex.id().toString()));
         }
     }
 

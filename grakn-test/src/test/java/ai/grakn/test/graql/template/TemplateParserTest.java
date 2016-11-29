@@ -19,13 +19,15 @@
 package ai.grakn.test.graql.template;
 
 import ai.grakn.exception.GraqlParsingException;
-import ai.grakn.exception.GraqlParsingException;
 import ai.grakn.graql.Graql;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -581,8 +583,8 @@ public class TemplateParserTest {
 
     @Test
     public void concatReplaceTest(){
-        String template = "insert (pokemon-with-type: <pokemon_id>-pokemon, type-of-pokemon: <type_id>-type) isa has-type;";
-        String expected = "insert isa has-type (pokemon-with-type: \"124-pokemon\", type-of-pokemon: \"124-type\");";
+        String template = "insert <pokemon_id>-pokemon isa pokemon;\n<type_id>-type isa pokemon-type;";
+        String expected = "insert type-name \"124-pokemon\" isa pokemon;\ntype-name \"124-type\" isa pokemon-type;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("pokemon_id", 124);
@@ -608,21 +610,21 @@ public class TemplateParserTest {
     @Test
     public void doubleQuotesInSingleQuotesTest(){
         String template = "insert thing has quotes \"'in' quotes\";";
-        String expected = "insert id \"thing\" has quotes \"\\'in\\' quotes\";";
+        String expected = "insert type-name thing has quotes \"\\'in\\' quotes\";";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void singleQuotesInSingleQuotesTest(){
         String template = "insert thing has quotes '\"in\" quotes';";
-        String expected = "insert has quotes \"\\\"in\\\" quotes\" id \"thing\";";
+        String expected = "insert has quotes \"\\\"in\\\" quotes\" type-name thing;";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void escapedDoubleQuotesInDoubleQuotesTest(){
         String template = "insert thing has quotes \"\\\"in\\\" quotes\";";
-        String expected = "insert has quotes \"\\\"in\\\" quotes\" id \"thing\";";
+        String expected = "insert has quotes \"\\\"in\\\" quotes\" type-name thing;";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
