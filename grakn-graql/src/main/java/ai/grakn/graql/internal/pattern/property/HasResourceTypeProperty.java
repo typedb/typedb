@@ -18,8 +18,6 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
@@ -44,8 +42,11 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     private final PlaysRoleProperty ownerPlaysRole;
 
-    public HasResourceTypeProperty(VarAdmin resourceType) {
+    private final boolean required;
+
+    public HasResourceTypeProperty(VarAdmin resourceType, boolean required) {
         this.resourceType = resourceType;
+        this.required = required;
 
         String resourceTypeId = resourceType.getId().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
@@ -60,7 +61,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 .isa(Schema.MetaSchema.RELATION_TYPE.getId())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
-        ownerPlaysRole = new PlaysRoleProperty(ownerRole);
+        ownerPlaysRole = new PlaysRoleProperty(ownerRole, required);
     }
 
     public VarAdmin getResourceType() {
@@ -69,7 +70,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public String getName() {
-        return "has-resource";
+        return required ? "key" : "has-resource";
     }
 
     @Override
@@ -83,7 +84,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         traversals.addAll(ownerPlaysRole.match(start));
 
-        PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole);
+        PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole, required);
         traversals.addAll(valuePlaysRole.match(resourceType.getName()));
 
         return traversals;
@@ -108,7 +109,12 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Type entityTypeConcept = concept.asType();
         ResourceType resourceTypeConcept = insertQueryExecutor.getConcept(resourceType).asResourceType();
-        entityTypeConcept.hasResource(resourceTypeConcept);
+
+        if (required) {
+            entityTypeConcept.key(resourceTypeConcept);
+        } else {
+            entityTypeConcept.hasResource(resourceTypeConcept);
+        }
     }
 
     @Override

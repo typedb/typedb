@@ -639,6 +639,23 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); select $a1, $a2;").execute();
     }
 
+    @Test
+    public void testMatchHasResource() {
+        MatchQuery query = qb.match(var("x").hasResource("name"));
+
+        QueryUtil.assertResultsMatch(
+                query, "x", null, Lists.newArrayList(),
+                "person", "language", "genre", "a-rule-type", "cluster", "character"
+        );
+    }
+
+    @Test
+    public void testMatchKey() {
+        MatchQuery query = qb.match(var("x").key("name"));
+
+        QueryUtil.assertResultsMatch(query, "x", null, Lists.newArrayList(), "genre");
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMatchEmpty() {
         qb.match().execute();

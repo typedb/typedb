@@ -33,9 +33,11 @@ import java.util.stream.Stream;
 public class PlaysRoleProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin role;
+    private final boolean required;
 
-    public PlaysRoleProperty(VarAdmin role) {
+    public PlaysRoleProperty(VarAdmin role, boolean required) {
         this.role = role;
+        this.required = required;
     }
 
     public VarAdmin getRole() {
@@ -55,8 +57,8 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outPlaysRole(start, role.getName()),
-                Fragments.inPlaysRole(role.getName(), start)
+                Fragments.outPlaysRole(start, role.getName(), required),
+                Fragments.inPlaysRole(role.getName(), start, required)
         ));
     }
 

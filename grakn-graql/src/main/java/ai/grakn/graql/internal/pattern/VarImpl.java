@@ -187,7 +187,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var playsRole(Var type) {
-        return addProperty(new PlaysRoleProperty(type.admin()));
+        return addProperty(new PlaysRoleProperty(type.admin(), false));
     }
 
     @Override
@@ -202,7 +202,17 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasResource(Var type) {
-        return addProperty(new HasResourceTypeProperty(type.admin()));
+        return addProperty(new HasResourceTypeProperty(type.admin(), false));
+    }
+
+    @Override
+    public Var key(String type) {
+        return key(Graql.var().id(type));
+    }
+
+    @Override
+    public Var key(Var type) {
+        return addProperty(new HasResourceTypeProperty(type.admin(), true));
     }
 
     @Override
