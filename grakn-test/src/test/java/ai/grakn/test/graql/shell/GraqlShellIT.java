@@ -245,6 +245,16 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testHALOutput() throws Exception {
+        String[] result = testShell("", "-e", "match $x sub type;", "-o", "hal").split("\n");
+        assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
+        Json json = Json.read(result[0]);
+        Json x = json.at("x");
+        assertTrue(x.has("_id"));
+        assertTrue(x.has("_baseType"));
+    }
+
+    @Test
     public void testRollbackSemicolon() throws Exception {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
