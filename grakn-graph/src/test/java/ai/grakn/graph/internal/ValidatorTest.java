@@ -285,7 +285,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
 
-    /*----------------------------------- Entity Type to Role Type Validation ----------------------------------------*/
+    /*------------------------------- Entity Type to Role Type Validation (Schema) -----------------------------------*/
     @Test
     public void testRoleToRolePlayersSchemaValidationValid1() throws GraknValidationException {
         RoleType relative = graknGraph.putRoleType("relative");
@@ -355,5 +355,105 @@ public class ValidatorTest extends GraphTestBase{
                 ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(company.getName(), parent.superType().getName()))));
 
         graknGraph.commit();
+    }
+
+    /*-------------------------------- Entity Type to Role Type Validation (Data) ------------------------------------*/
+
+    @Test
+    public void testRoleToRolePlayersDataValidationValid1(){
+        /*
+        person isa entity-type
+	        plays-role parent
+	        plays-role child;
+
+        company isa entity-type
+	        plays-role parent;
+
+        parent isa role-type;
+        child isa role-type;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role child;
+         */
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationValid2(){
+        /*
+        person isa entity-type
+        	plays-role parent
+        	plays-role child;
+        man sub person;
+        one-eyed-man sub man;
+
+        parent isa role-type;
+        child isa role-type;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role child;
+
+        $x isa one-eyed-man;
+        $y isa person;
+            (parent:$x, child:$y) isa parenthood;
+         */
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationInvalid1(){
+        /*
+        person isa entity-type
+	        plays-role parent
+	    plays-role child;
+        man isa entity-type;
+
+        parent isa role-type;
+        child isa role-type;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role child;
+
+        $x isa man;
+        $y isa person;
+        (parent:$x, child:$y) isa parenthood;
+         */
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationInvalid2(){
+        /*
+        person isa entity-type
+	    plays-role child;
+
+        parent isa role-type;
+        child isa role-type;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role child;
+
+        $x isa person;
+        $y isa person;
+        (parent:$x, child:$y) isa parenthood;
+         */
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationInvalid3(){
+        /*
+        person isa entity-type
+	        plays-role child;
+        man sub person
+	        plays-role parent;
+
+        parent isa role-type;
+        child isa role-type;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role child;
+
+        $x isa person;
+        $y isa person;
+        (parent:$x, child:$y) isa parenthood;
+         */
     }
 }
