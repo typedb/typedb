@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.analytics.MeanQuery;
+import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
+import ai.grakn.graql.internal.analytics.MeanMapReduce;
+import ai.grakn.graql.internal.analytics.MedianVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
@@ -30,50 +32,49 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
+public class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
-    public MinQueryImpl(Optional<GraknGraph> graph) {
+    public MedianQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
     @Override
     public Optional<Number> execute() {
-        LOGGER.info("MinMapReduce is called");
+        LOGGER.info("MedianVertexProgram is called");
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes),
-                new MinMapReduce(statisticsResourceTypeNames, dataType));
-        Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
-        LOGGER.info("MinMapReduce is done");
-        return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
+        ComputerResult result = getGraphComputer().compute(
+                new MedianVertexProgram(allSubTypes, statisticsResourceTypeNames, dataType));
+        LOGGER.info("MedianVertexProgram is done");
+        return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
     }
 
     @Override
-    public MinQuery of(String... resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MedianQuery of(String... resourceTypeNames) {
+        return (MedianQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery of(Collection<String> resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MedianQuery of(Collection<String> resourceTypeNames) {
+        return (MedianQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery in(String... subTypeNames) {
-        return (MinQuery) super.in();
+    public MedianQuery in(String... subTypeNames) {
+        return (MedianQuery) super.in();
     }
 
     @Override
-    public MinQuery in(Collection<String> subTypeNames) {
-        return (MinQuery) super.in();
+    public MedianQuery in(Collection<String> subTypeNames) {
+        return (MedianQuery) super.in();
     }
 
     @Override
-    public MinQuery withGraph(GraknGraph graph) {
-        return (MinQuery) super.withGraph(graph);
+    public MedianQuery withGraph(GraknGraph graph) {
+        return (MedianQuery) super.withGraph(graph);
     }
 
 }

@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.ComputeQueryBuilder;
-import ai.grakn.graql.analytics.MinQuery;
-import ai.grakn.graql.internal.query.analytics.MinQueryImpl;
+import ai.grakn.graql.analytics.*;
+import ai.grakn.graql.internal.query.analytics.*;
 
 import java.util.Optional;
 
@@ -41,6 +41,31 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
     @Override
     public MinQuery min() {
-        return new MinQueryImpl();
+        return new MinQueryImpl(graph);
+    }
+
+    @Override
+    public MaxQuery max() {
+        return new MaxQueryImpl(graph);
+    }
+
+    @Override
+    public SumQuery sum() {
+        return new SumQueryImpl(graph);
+    }
+
+    @Override
+    public MeanQuery mean() {
+        return new MeanQueryImpl(graph);
+    }
+
+    @Override
+    public StdQuery std() {
+        return new StdQueryImpl(graph);
+    }
+
+    @Override
+    public MedianQuery median() {
+        return new MedianQueryImpl(graph);
     }
 }

@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
+import ai.grakn.graql.internal.analytics.MaxMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
@@ -30,50 +30,50 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
+public class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MaxQuery {
 
-    public MinQueryImpl(Optional<GraknGraph> graph) {
+    public MaxQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
     @Override
     public Optional<Number> execute() {
-        LOGGER.info("MinMapReduce is called");
+        LOGGER.info("MaxMapReduce is called");
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes),
-                new MinMapReduce(statisticsResourceTypeNames, dataType));
-        Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
-        LOGGER.info("MinMapReduce is done");
-        return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
+                new MaxMapReduce(statisticsResourceTypeNames, dataType));
+        Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        LOGGER.info("MaxMapReduce is done");
+        return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
     }
 
     @Override
-    public MinQuery of(String... resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MaxQuery of(String... resourceTypeNames) {
+        return (MaxQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery of(Collection<String> resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MaxQuery of(Collection<String> resourceTypeNames) {
+        return (MaxQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery in(String... subTypeNames) {
-        return (MinQuery) super.in();
+    public MaxQuery in(String... subTypeNames) {
+        return (MaxQuery) super.in();
     }
 
     @Override
-    public MinQuery in(Collection<String> subTypeNames) {
-        return (MinQuery) super.in();
+    public MaxQuery in(Collection<String> subTypeNames) {
+        return (MaxQuery) super.in();
     }
 
     @Override
-    public MinQuery withGraph(GraknGraph graph) {
-        return (MinQuery) super.withGraph(graph);
+    public MaxQuery withGraph(GraknGraph graph) {
+        return (MaxQuery) super.withGraph(graph);
     }
 
 }

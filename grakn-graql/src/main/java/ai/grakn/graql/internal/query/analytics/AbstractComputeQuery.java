@@ -32,28 +32,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
+public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     public static final String degree = "degree";
     public static final String connectedComponent = "connectedComponent";
     private static final int numberOfOntologyChecks = 10;
 
-    static final Logger LOGGER = LoggerFactory.getLogger(Analytics.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(AbstractComputeQuery.class);
 
     Optional<GraknGraph> graph = Optional.empty();
     String keySpace;
-
     Set<String> subTypeNames = new HashSet<>();
-    Set<String> statisticsResourceTypeNames = new HashSet<>();
-    Map<String, String> resourceTypesDataTypeMap = new HashMap<>();
 
     @Override
     public ComputeQuery<T> withGraph(GraknGraph graph) {
@@ -68,6 +61,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     @Override
     public ComputeQuery<T> in(String... subTypeNames) {
+        this.subTypeNames = Sets.newHashSet(subTypeNames);
+        return this;
+    }
+
+    @Override
+    public ComputeQuery<T> in(Collection<String> subTypeNames) {
         this.subTypeNames = Sets.newHashSet(subTypeNames);
         return this;
     }

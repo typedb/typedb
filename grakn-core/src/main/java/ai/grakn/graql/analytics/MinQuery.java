@@ -18,15 +18,27 @@
 
 package ai.grakn.graql.analytics;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.ComputeQuery;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public interface MinQuery extends ComputeQuery<Optional<Number>> {
 
+    MinQuery of(String... resourceTypeNames);
+
+    MinQuery of(Collection<String> resourceTypeNames);
+
+    @Override
+    MinQuery in(String... subTypeNames);
+
+    @Override
+    MinQuery in(Collection<String> subTypeNames);
+
     @Override
     Optional<Number> execute();
 
-    MinQuery of(String... resourceTypeNames);
-
+    @Override
+    MinQuery withGraph(GraknGraph graph);
 }

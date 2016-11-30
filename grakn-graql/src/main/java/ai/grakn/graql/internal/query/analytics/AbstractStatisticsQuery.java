@@ -24,10 +24,10 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
@@ -35,7 +35,15 @@ import static ai.grakn.graql.Graql.var;
 
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
+    Set<String> statisticsResourceTypeNames = new HashSet<>();
+    Map<String, String> resourceTypesDataTypeMap = new HashMap<>();
+
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeNames) {
+        this.statisticsResourceTypeNames = Sets.newHashSet(statisticsResourceTypeNames);
+        return this;
+    }
+
+    AbstractStatisticsQuery<T> setStatisticsResourceType(Collection<String> statisticsResourceTypeNames) {
         this.statisticsResourceTypeNames = Sets.newHashSet(statisticsResourceTypeNames);
         return this;
     }
@@ -109,5 +117,13 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
         return graph.graql().match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+    }
+
+    Set<String> getCombinedSubTypes() {
+        Set<String> allSubTypes = statisticsResourceTypeNames.stream()
+                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubTypes.addAll(subTypeNames);
+        allSubTypes.addAll(statisticsResourceTypeNames);
+        return allSubTypes;
     }
 }

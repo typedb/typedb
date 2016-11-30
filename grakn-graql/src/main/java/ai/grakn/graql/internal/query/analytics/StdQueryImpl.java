@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.analytics.MeanQuery;
+import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
+import ai.grakn.graql.internal.analytics.MeanMapReduce;
+import ai.grakn.graql.internal.analytics.StdMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
@@ -30,50 +32,54 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
+public class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
 
-    public MinQueryImpl(Optional<GraknGraph> graph) {
+    public StdQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MinMapReduce is called");
+    public Optional<Double> execute() {
+        LOGGER.info("StdMapReduce is called");
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes),
-                new MinMapReduce(statisticsResourceTypeNames, dataType));
-        Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
-        LOGGER.info("MinMapReduce is done");
-        return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
+                new StdMapReduce(statisticsResourceTypeNames, dataType));
+        Map<String, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
+        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
+        double sum = stdTuple.get(StdMapReduce.SUM);
+        double count = stdTuple.get(StdMapReduce.COUNT);
+        LOGGER.info("StdMapReduce is done");
+        return Optional.of(Math.sqrt(squareSum / count - (sum / count) * (sum / count)));
     }
 
     @Override
-    public MinQuery of(String... resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public StdQuery of(String... resourceTypeNames) {
+        return (StdQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery of(Collection<String> resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public StdQuery of(Collection<String> resourceTypeNames) {
+        return (StdQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery in(String... subTypeNames) {
-        return (MinQuery) super.in();
+    public StdQuery in(String... subTypeNames) {
+        return (StdQuery) super.in();
     }
 
     @Override
-    public MinQuery in(Collection<String> subTypeNames) {
-        return (MinQuery) super.in();
+    public StdQuery in(Collection<String> subTypeNames) {
+        return (StdQuery) super.in();
     }
 
     @Override
-    public MinQuery withGraph(GraknGraph graph) {
-        return (MinQuery) super.withGraph(graph);
+    public StdQuery withGraph(GraknGraph graph) {
+        return (StdQuery) super.withGraph(graph);
     }
 
 }

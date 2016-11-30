@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
+import ai.grakn.graql.internal.analytics.MeanMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
@@ -30,50 +30,51 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
+public class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
 
-    public MinQueryImpl(Optional<GraknGraph> graph) {
+    public MeanQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
     @Override
-    public Optional<Number> execute() {
-        LOGGER.info("MinMapReduce is called");
+    public Optional<Double> execute() {
+        LOGGER.info("MeanMapReduce is called");
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes),
-                new MinMapReduce(statisticsResourceTypeNames, dataType));
-        Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
-        LOGGER.info("MinMapReduce is done");
-        return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
+                new MeanMapReduce(statisticsResourceTypeNames, dataType));
+        Map<String, Map<String, Double>> mean = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
+        LOGGER.info("MeanMapReduce is done");
+        return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
     }
 
     @Override
-    public MinQuery of(String... resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MeanQuery of(String... resourceTypeNames) {
+        return (MeanQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery of(Collection<String> resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MeanQuery of(Collection<String> resourceTypeNames) {
+        return (MeanQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery in(String... subTypeNames) {
-        return (MinQuery) super.in();
+    public MeanQuery in(String... subTypeNames) {
+        return (MeanQuery) super.in();
     }
 
     @Override
-    public MinQuery in(Collection<String> subTypeNames) {
-        return (MinQuery) super.in();
+    public MeanQuery in(Collection<String> subTypeNames) {
+        return (MeanQuery) super.in();
     }
 
     @Override
-    public MinQuery withGraph(GraknGraph graph) {
-        return (MinQuery) super.withGraph(graph);
+    public MeanQuery withGraph(GraknGraph graph) {
+        return (MeanQuery) super.withGraph(graph);
     }
 
 }

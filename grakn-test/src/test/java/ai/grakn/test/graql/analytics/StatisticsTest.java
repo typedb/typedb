@@ -27,10 +27,12 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import ai.grakn.exception.GraknValidationException;
 import org.junit.Before;
@@ -74,6 +76,9 @@ public class StatisticsTest extends AbstractGraphTest {
         keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
+        logger.setLevel(Level.DEBUG);
+
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
         logger.setLevel(Level.DEBUG);
     }
 
@@ -161,71 +166,91 @@ public class StatisticsTest extends AbstractGraphTest {
 
     @Test
     public void testMinAndMax() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        Optional<Number> result;
+
         // resource-type has no instance
         addOntologyAndEntities();
 
-        Optional<Number> min = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
-        assertFalse(min.isPresent());
+        result = Graql.compute().min().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().withGraph(graph).min().of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().min().withGraph(graph).of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().min().of(resourceType2).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().min().of(Sets.newHashSet(resourceType2, resourceType5)).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().min().of(resourceType2).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().withGraph(graph).min().of(resourceType2).execute();
+        assertFalse(result.isPresent());
 
-
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.min().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.min().isPresent());
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.max().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.max().isPresent());
-
+        result = Graql.compute().max().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().max().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().withGraph(graph).max().of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().max().withGraph(graph).of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().max().of(resourceType2).in(Collections.emptyList()).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().max().of(Sets.newHashSet(resourceType2, resourceType5)).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().max().of(resourceType2).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().withGraph(graph).max().of(resourceType2).execute();
+        assertFalse(result.isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        min = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
-        assertFalse(min.isPresent());
+        result = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().min().of(resourceType1).in().withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().min().of(resourceType2).in(thing, anotherThing).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().min().of(resourceType2).withGraph(graph).in(anotherThing).execute();
+        assertFalse(result.isPresent());
 
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.min().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.min().isPresent());
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.min().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(anotherThing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.min().isPresent());
+        result = Graql.compute().max().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().max().of(resourceType1).in().withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().max().of(resourceType2).in(thing, anotherThing).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().max().of(resourceType2).withGraph(graph).in(anotherThing).execute();
+        assertFalse(result.isPresent());
 
         // connect entity and resources
         addResourceRelations();
-        min = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
-        assertEquals(1.2, min.get().doubleValue(), delta);
 
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertEquals(1.2, computer.min().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, Collections.singleton(thing),
-                Collections.singleton(resourceType2));
-        assertEquals(-1L, computer.min().get());
-        computer = new Analytics(keyspace, Collections.singleton(thing),
-                Sets.newHashSet(resourceType2, resourceType5));
-        assertEquals(-7L, computer.min().get());
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertEquals(1.8, computer.max().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Sets.newHashSet(resourceType1, resourceType6));
-        assertEquals(7.5, computer.max().get().doubleValue(), delta);
-        // TODO: fix this test
-        computer = new Analytics(keyspace, Collections.singleton(anotherThing),
-                Collections.singleton(resourceType2));
-        assertEquals(4L, computer.max().get());
+        result = graph.graql().compute().min().of(resourceType1).in(Collections.emptySet()).execute();
+        assertEquals(1.2, result.get().doubleValue(), delta);
+        result = Graql.compute().min().in(thing).of(resourceType2).withGraph(graph).execute();
+        assertEquals(-1L, result.get());
+        result = graph.graql().compute().min().in(thing).of(resourceType2, resourceType5).execute();
+        assertEquals(-7L, result.get());
+        result = graph.graql().compute().min().in(thing, thing, thing).of(resourceType2, resourceType5).execute();
+        assertEquals(-7L, result.get());
 
+        result = Graql.compute().max().in().withGraph(graph).of(resourceType1).execute();
+        assertEquals(1.8, result.get().doubleValue(), delta);
+        result = graph.graql().compute().max().of(resourceType1, resourceType6).execute();
+        assertEquals(7.5, result.get().doubleValue(), delta);
+        result = graph.graql().compute().max().of(Lists.newArrayList(resourceType1, resourceType6)).execute();
+        assertEquals(7.5, result.get().doubleValue(), delta);
+
+        // TODO: fix this test: we need to check the type of the resource owner, not just the type or relation
+        result = graph.graql().compute().max().in(anotherThing).of(resourceType2).execute();
+        assertEquals(4L, result.get());
     }
 
     @Test
@@ -233,38 +258,51 @@ public class StatisticsTest extends AbstractGraphTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
+        Optional<Number> result;
+
         // resource-type has no instance
         addOntologyAndEntities();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.sum().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.sum().isPresent());
+
+        result = Graql.compute().sum().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().sum().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().withGraph(graph).sum().of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().sum().withGraph(graph).of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().sum().of(resourceType2).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().sum().of(Sets.newHashSet(resourceType2, resourceType5)).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().sum().of(resourceType2).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().withGraph(graph).sum().of(resourceType2).execute();
+        assertFalse(result.isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.sum().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.sum().isPresent());
+
+        result = Graql.compute().sum().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().sum().of(resourceType1).in().withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().sum().of(resourceType2).in(thing, anotherThing).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().sum().of(resourceType2).withGraph(graph).in(anotherThing).execute();
+        assertFalse(result.isPresent());
 
         // connect entity and resources
         addResourceRelations();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertEquals(4.5, computer.sum().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, Collections.singleton((thing)),
-                Collections.singleton((resourceType2)));
-        assertEquals(3L, computer.sum().get());
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Sets.newHashSet((resourceType1), (resourceType6)));
-        assertEquals(27.0, computer.sum().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, Sets.newHashSet((thing), (anotherThing)),
-                Sets.newHashSet((resourceType2), (resourceType5)));
-        assertEquals(-18L, computer.sum().get());
+
+        result = Graql.compute().sum().of(resourceType1).withGraph(graph).execute();
+        assertEquals(4.5, result.get().doubleValue(), delta);
+        result = Graql.compute().sum().of(resourceType2).in(thing).withGraph(graph).execute();
+        assertEquals(3L, result.get());
+        result = graph.graql().compute().sum().of(resourceType1, resourceType6).execute();
+        assertEquals(27.0, result.get().doubleValue(), delta);
+        result = graph.graql().compute().sum().of(resourceType2, resourceType5).in(thing, anotherThing).execute();
+        assertEquals(-18L, result.get());
     }
 
     @Test
@@ -272,38 +310,51 @@ public class StatisticsTest extends AbstractGraphTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
+        Optional<Double> result;
+
         // resource-type has no instance
         addOntologyAndEntities();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.mean().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.mean().isPresent());
+
+        result = Graql.compute().mean().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().mean().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().withGraph(graph).mean().of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().mean().withGraph(graph).of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().mean().of(resourceType2).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().mean().of(Sets.newHashSet(resourceType2, resourceType5)).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().mean().of(resourceType2).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().withGraph(graph).mean().of(resourceType2).execute();
+        assertFalse(result.isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.mean().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.mean().isPresent());
+
+        result = Graql.compute().mean().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().mean().of(resourceType1).in().withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().mean().of(resourceType2).in(thing, anotherThing).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().mean().of(resourceType2).withGraph(graph).in(anotherThing).execute();
+        assertFalse(result.isPresent());
 
         // connect entity and resources
         addResourceRelations();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton((resourceType1)));
-        assertEquals(1.5, computer.mean().get(), delta);
-        computer = new Analytics(keyspace, Collections.singleton((thing)),
-                Collections.singleton((resourceType2)));
-        assertEquals(1D, computer.mean().get(), delta);
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Sets.newHashSet((resourceType1), (resourceType6)));
-        assertEquals(4.5, computer.mean().get(), delta);
-        computer = new Analytics(keyspace, Sets.newHashSet((thing), (anotherThing)),
-                Sets.newHashSet((resourceType2), (resourceType5)));
-        assertEquals(-3D, computer.mean().get(), delta);
+
+        result = Graql.compute().withGraph(graph).mean().of(resourceType1).execute();
+        assertEquals(1.5, result.get(), delta);
+        result = Graql.compute().mean().in(thing).of(resourceType2).withGraph(graph).execute();
+        assertEquals(1D, result.get(), delta);
+        result = graph.graql().compute().mean().of(resourceType1, resourceType6).execute();
+        assertEquals(4.5, result.get(), delta);
+        result = graph.graql().compute().mean().in(anotherThing).of(resourceType2, resourceType5).execute();
+        assertEquals(-3D, result.get(), delta);
     }
 
     @Test
@@ -311,38 +362,51 @@ public class StatisticsTest extends AbstractGraphTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
+        Optional<Double> result;
+
         // resource-type has no instance
         addOntologyAndEntities();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.std().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.std().isPresent());
+
+        result = Graql.compute().std().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().std().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().withGraph(graph).std().of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().std().withGraph(graph).of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().std().of(resourceType2).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().std().of(Sets.newHashSet(resourceType2, resourceType5)).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().std().of(resourceType2).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().withGraph(graph).std().of(resourceType2).execute();
+        assertFalse(result.isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.std().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.std().isPresent());
+
+        result = Graql.compute().std().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().std().of(resourceType1).in().withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().std().of(resourceType2).in(thing, anotherThing).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().std().of(resourceType2).withGraph(graph).in(anotherThing).execute();
+        assertFalse(result.isPresent());
 
         // connect entity and resources
         addResourceRelations();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton((resourceType1)));
-        assertEquals(Math.sqrt(0.18 / 3), computer.std().get(), delta);
-        computer = new Analytics(keyspace, Collections.singleton((thing)),
-                Collections.singleton((resourceType2)));
-        assertEquals(Math.sqrt(14.0 / 3), computer.std().get(), delta);
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Sets.newHashSet((resourceType1), (resourceType6)));
-        assertEquals(Math.sqrt(54.18 / 6), computer.std().get(), delta);
-        computer = new Analytics(keyspace, Sets.newHashSet((thing), (anotherThing)),
-                Sets.newHashSet((resourceType2), (resourceType5)));
-        assertEquals(Math.sqrt(110.0 / 6), computer.std().get(), delta);
+
+        result = Graql.compute().std().of(resourceType1).withGraph(graph).execute();
+        assertEquals(Math.sqrt(0.18 / 3), result.get(), delta);
+        result = Graql.compute().std().of(resourceType2).withGraph(graph).in(thing).execute();
+        assertEquals(Math.sqrt(14.0 / 3), result.get(), delta);
+        result = graph.graql().compute().std().of(resourceType1, resourceType6).execute();
+        assertEquals(Math.sqrt(54.18 / 6), result.get(), delta);
+        result = graph.graql().compute().std().of(resourceType2, resourceType5).in(thing, anotherThing).execute();
+        assertEquals(Math.sqrt(110.0 / 6), result.get(), delta);
     }
 
     @Test
@@ -350,46 +414,55 @@ public class StatisticsTest extends AbstractGraphTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
+        Optional<Number> result;
+
         // resource-type has no instance
         addOntologyAndEntities();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.median().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.median().isPresent());
+
+        result = Graql.compute().median().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().median().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().withGraph(graph).median().of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().median().withGraph(graph).of(resourceType1).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().median().of(resourceType2).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().median().of(Sets.newHashSet(resourceType2, resourceType5)).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().median().of(resourceType2).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().withGraph(graph).median().of(resourceType2).execute();
+        assertFalse(result.isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton(resourceType1));
-        assertFalse(computer.median().isPresent());
-        computer = new Analytics(keyspace, Sets.newHashSet(thing),
-                Collections.singleton(resourceType2));
-        assertFalse(computer.median().isPresent());
+
+        result = Graql.compute().median().of(resourceType1).withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().median().of(resourceType1).in().withGraph(graph).execute();
+        assertFalse(result.isPresent());
+        result = graph.graql().compute().median().of(resourceType2).in(thing, anotherThing).execute();
+        assertFalse(result.isPresent());
+        result = Graql.compute().median().of(resourceType2).withGraph(graph).in(anotherThing).execute();
+        assertFalse(result.isPresent());
 
         // connect entity and resources
         addResourceRelations();
 
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton((resourceType1)));
-        assertEquals(1.5D, computer.median().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton((resourceType6)));
-        assertEquals(7.5D, computer.median().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Sets.newHashSet(resourceType1, resourceType6));
-        assertEquals(1.8D, computer.median().get().doubleValue(), delta);
-
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Collections.singleton((resourceType2)));
-        assertEquals(0L, computer.median().get().longValue());
-        computer = new Analytics(keyspace, Collections.singleton((thing)),
-                Collections.singleton((resourceType5)));
-        assertEquals(-7L, computer.median().get().longValue());
-        computer = new Analytics(keyspace, Sets.newHashSet((thing), (anotherThing)),
-                Sets.newHashSet((resourceType2), (resourceType5)));
-        assertEquals(-7L, computer.median().get().longValue());
+        result = graph.graql().compute().median().of(resourceType1).in().execute();
+        assertEquals(1.5D, result.get().doubleValue(), delta);
+        result = Graql.compute().withGraph(graph).median().of(resourceType6).execute();
+        assertEquals(7.5D, result.get().doubleValue(), delta);
+        result = graph.graql().compute().median().of(resourceType1, resourceType6).execute();
+        assertEquals(1.8D, result.get().doubleValue(), delta);
+        result = Graql.compute().withGraph(graph).median().of(resourceType2).execute();
+        assertEquals(0L, result.get().longValue());
+        result = Graql.compute().withGraph(graph).median().in(thing).of(resourceType5).execute();
+        assertEquals(-7L, result.get().longValue());
+        result = graph.graql().compute().median().in(thing, anotherThing).of(resourceType2, resourceType5).execute();
+        assertEquals(-7L, result.get().longValue());
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {

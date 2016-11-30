@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.util.ErrorMessage;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -183,5 +184,10 @@ class ComputeQueryImpl implements ComputeQuery {
     @Override
     public ComputeQuery in(String... subTypeNames) {
         return this;
+    }
+
+    @Override
+    public ComputeQuery in(Collection subTypeNames) {
+        return null;
     }
 }
