@@ -194,7 +194,7 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                sendBatchRequest(uriString, cmd.getOptionValue("b"));
+                sendBatchRequest(uriString, cmd.getOptionValue("b"), keyspace);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -232,10 +232,10 @@ public class GraqlShell {
             return lines.stream().collect(Collectors.joining("\n"));
     }
 
-    private static void sendBatchRequest(String uriString, String graqlPath) throws IOException {
+    private static void sendBatchRequest(String uriString, String graqlPath, String keyspace) throws IOException {
         byte[] out = ("{\"path\": \"" + escapeJavaScript(graqlPath) + "\"}").getBytes(StandardCharsets.UTF_8);
 
-        URL url = new URL("http://" + uriString + IMPORT_DATA_URI);
+        URL url = new URL("http://" + uriString + IMPORT_DATA_URI + "?keyspace=" + keyspace);
         URLConnection con = url.openConnection();
         HttpURLConnection http = (HttpURLConnection) con;
         http.setRequestMethod("POST");
