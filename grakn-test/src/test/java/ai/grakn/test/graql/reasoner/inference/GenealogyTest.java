@@ -141,8 +141,8 @@ public class GenealogyTest extends AbstractEngineTest{
     }
 
     //It is expected that results are different due to how rules are defined
-    @Test
     @Ignore
+    @Test
     public void testParentship2() {
         String queryString = "match (child: $x, $y) isa parentship;select $x;";
         String queryString2 = "match (child: $x) isa parentship;";
@@ -163,8 +163,8 @@ public class GenealogyTest extends AbstractEngineTest{
         assertTrue(answers.isEmpty());
     }
 
-    @Test
     @Ignore
+    @Test
     public void testMarriageType() {
         String queryString = "match $x isa marriage;";
         MatchQuery query = new Query(queryString, graph);
@@ -173,8 +173,8 @@ public class GenealogyTest extends AbstractEngineTest{
     }
 
     //TODO need to do all combinations for roles missing
-    @Test
     @Ignore
+    @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
@@ -207,8 +207,8 @@ public class GenealogyTest extends AbstractEngineTest{
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
-    @Test
     @Ignore
+    @Test
     public void testMarriage2(){
         String queryString = "match ($r: $x) isa marriage; $r isa wife;";
     }
