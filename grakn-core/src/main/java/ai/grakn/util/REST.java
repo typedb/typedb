@@ -23,7 +23,8 @@ public class REST {
     public static class WebPath{
         public static final String IMPORT_DATA_URI =  "/import/batch/data";
         public static final String GRAPH_FACTORY_URI = "/graph_factory";
-
+        public static final String KEYSPACE_LIST = "/keyspaces";
+        
         public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
         public static final String GRAPH_ANALYTICS_QUERY_URI = "/graph/analytics";
         public static final String GRAPH_PRE_MATERIALISE_QUERY_URI = "/graph/preMaterialiseAll";
