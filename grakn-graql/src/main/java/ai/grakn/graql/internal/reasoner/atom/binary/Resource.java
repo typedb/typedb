@@ -56,13 +56,13 @@ public class Resource extends Binary{
     protected String extractValueVariableName(VarAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getName() : "";
+        return resVar.isUserDefinedName()? resVar.getVarName() : "";
     }
 
     @Override
     protected void setValueVariable(String var) {
         super.setValueVariable(var);
-        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setName(var));
+        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setVarName(var));
     }
 
     @Override

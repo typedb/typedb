@@ -75,18 +75,18 @@ public final class Schema {
         CONSTRAINT_RULE("constraint-rule");
 
 
-        private final String id;
+        private final String name;
         MetaSchema(String i){
-            id = i;
+            name = i;
         }
 
-        public String getId(){
-            return id;
+        public String getName(){
+            return name;
         }
 
-        public static boolean isMetaId(String id){
+        public static boolean isMetaName(String name){
             for (MetaSchema metaSchema : MetaSchema.values()) {
-                if(metaSchema.getId().equals(id))
+                if(metaSchema.getName().equals(name))
                     return true;
             }
             return false;
@@ -105,7 +105,7 @@ public final class Schema {
      */
     public enum ConceptProperty {
         //Unique Properties
-        ITEM_IDENTIFIER(String.class), INDEX(String.class),
+        NAME(String.class), INDEX(String.class),
 
         //Other Properties
         TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
@@ -128,13 +128,13 @@ public final class Schema {
     public enum EdgeProperty {
         ROLE_TYPE(String.class),
         RELATION_ID(String.class),
-        RELATION_TYPE_ID(String.class),
+        RELATION_TYPE_NAME(String.class),
         TO_ID(String.class),
-        TO_ROLE(String.class),
-        TO_TYPE(String.class),
+        TO_ROLE_NAME(String.class),
+        TO_TYPE_NAME(String.class),
         FROM_ID(String.class),
-        FROM_ROLE(String.class),
-        FROM_TYPE(String.class),
+        FROM_ROLE_NAME(String.class),
+        FROM_TYPE_NAME(String.class),
         SHORTCUT_HASH(String.class),
         REQUIRED(Boolean.class);
 
@@ -152,17 +152,17 @@ public final class Schema {
      */
     public enum Resource{
         /**
-         * The id of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
+         * The name of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
          */
         HAS_RESOURCE("has-%s"),
 
         /**
-         * The id of a role in has-resource, played by the owner of the resource
+         * The name of a role in has-resource, played by the owner of the resource
          */
         HAS_RESOURCE_OWNER("has-%s-owner"),
 
         /**
-         * The id of a role in has-resource, played by the resource
+         * The name of a role in has-resource, played by the resource
          */
         HAS_RESOURCE_VALUE("has-%s-value");
 
@@ -172,8 +172,8 @@ public final class Schema {
             this.name = name;
         }
 
-        public String getId(String resourceTypeId) {
-            return String.format(name, resourceTypeId);
+        public String getName(String resourceTypeName) {
+            return String.format(name, resourceTypeName);
         }
     }
 }

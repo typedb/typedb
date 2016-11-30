@@ -126,7 +126,7 @@ public class OWLMigrator {
     }
 
     public <T> Entity getEntity(T id, ResourceType<T> rtype){
-        Resource<T> iri = graph.getResource(id, rtype);
+        Resource<T> iri = rtype.getResource(id);
         Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
@@ -160,7 +160,7 @@ public class OWLMigrator {
 
     public Entity entity(OWLNamedIndividual individual) {
         String id = namer.individualEntityName(individual.getIRI());
-        Entity entity = graph.getEntity(id);
+        Entity entity = graph.getConcept(id);
         if (entity != null)
             return entity;
         OWLClass owlclass = eval(() -> {
@@ -202,21 +202,21 @@ public class OWLMigrator {
     }
     
     public RoleType subjectRole(RelationType relType) {
-        return graph.putRoleType(namer.subjectRole(relType.getId()));
+        return graph.putRoleType(namer.subjectRole(relType.getName()));
     }
 
     public RoleType objectRole(RelationType relType) {
-        return graph.putRoleType(namer.objectRole(relType.getId()));
+        return graph.putRoleType(namer.objectRole(relType.getName()));
     }
 
     public RoleType entityRole(EntityType entityType, ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getId()));
+        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getName()));
         entityType.playsRole(roleType);
         return roleType;
     }
     
     public RoleType resourceRole(ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getId()));
+        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getName()));
         resourceType.playsRole(roleType);
         return roleType;
     }

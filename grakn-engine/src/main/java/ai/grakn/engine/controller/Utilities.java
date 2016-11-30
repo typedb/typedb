@@ -41,7 +41,7 @@ public abstract class Utilities {
         return keyspace == null ? defaultKeyspace : keyspace;
     }
 
-    public static String getContenttype(Request request){
+    public static String getAcceptType(Request request){
         return request.headers("Accept").split(",")[0];
     }
 

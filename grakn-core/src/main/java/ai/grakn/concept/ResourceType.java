@@ -81,6 +81,14 @@ public interface ResourceType<D> extends Type {
 
     /**
      *
+     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
+     * @param value A value which a Resource in the graph may be holding
+     * @return The Resource with the provided value and type or null if no such Resource exists.
+     */
+    <V> Resource<V> getResource(V value);
+
+    /**
+     *
      * @return The sub types of this Resource Type
      */
     Collection<ResourceType<D>> subTypes();

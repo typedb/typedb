@@ -140,7 +140,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             if(resource.type().isUnique()) {
 
                 GraphTraversal traversal = getGraknGraph().getTinkerTraversal().
-                        has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resource.getId()).
+                        hasId(resource.getId()).
                         out(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {

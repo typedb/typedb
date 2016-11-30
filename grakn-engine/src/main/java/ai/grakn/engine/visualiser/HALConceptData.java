@@ -41,12 +41,13 @@ public class HALConceptData {
 
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
-    private final static String ROOT_CONCEPT = "type";
     private final static String ISA_EDGE = "isa";
     private final static String SUB_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
+    private final static String ROOT_CONCEPT = "type";
+
 
     // - State properties
 
@@ -58,11 +59,13 @@ public class HALConceptData {
 
     private boolean embedType;
     private Set<String> typesInQuery = null;
+    private String rootConceptId;
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<String> typesInQuery) {
+    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<String> typesInQuery, String rootConceptId) {
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
+        this.rootConceptId=rootConceptId;
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
         resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
@@ -80,12 +83,12 @@ public class HALConceptData {
         generateStateAndLinks(halResource, concept);
 
         if (embedType && concept.type() != null &&
-                (typesInQuery.contains(concept.type().getId())
+                (typesInQuery.contains(concept.type().getName())
                         || (concept.type().superType() != null &&
-                        typesInQuery.contains(concept.type().superType().getId()))))
+                        typesInQuery.contains(concept.type().superType().getName()))))
             embedType(halResource, concept);
 
-        if (concept.type() == null && typesInQuery.contains(ROOT_CONCEPT))
+        if (concept.type() == null)
             embedType(halResource, concept);
 
         if (concept.isType() && concept.asType().superType() != null)
@@ -151,7 +154,7 @@ public class HALConceptData {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + currentInstance.getId())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(instanceResource, currentInstance, separationDegree - 1);
-            halResource.withRepresentation(roleType.getId(), instanceResource);
+            halResource.withRepresentation(roleType.getName(), instanceResource);
         });
     }
 
@@ -172,8 +175,8 @@ public class HALConceptData {
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
         } else {
-            if (!concept.getId().equals(ROOT_CONCEPT)) {
-                HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT)
+            if (!concept.getId().equals(rootConceptId)) {
+                HALType = factory.newRepresentation(resourceLinkPrefix + rootConceptId)
                         .withProperty(ID_PROPERTY, ROOT_CONCEPT)
                         .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
                         .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
@@ -192,11 +195,11 @@ public class HALConceptData {
         //State
         if (concept.isInstance())
             resource.withProperty(ID_PROPERTY, concept.getId())
-                    .withProperty(TYPE_PROPERTY, concept.type().getId())
-                    .withProperty(BASETYPE_PROPERTY, concept.type().type().getId());
+                    .withProperty(TYPE_PROPERTY, concept.type().getName())
+                    .withProperty(BASETYPE_PROPERTY, concept.type().type().getName());
         else // temp fix until a new behaviour is defined
-            resource.withProperty(ID_PROPERTY, concept.getId())
-                    .withProperty(TYPE_PROPERTY, (concept.type() == null) ? ROOT_CONCEPT : concept.type().getId())
+            resource.withProperty(ID_PROPERTY, concept.asType().getName())
+                    .withProperty(TYPE_PROPERTY, (concept.type() == null) ? ROOT_CONCEPT : concept.type().getName())
                     .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT);
 
         if (concept.isResource()) {
@@ -220,7 +223,7 @@ public class HALConceptData {
             Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(embeddedResource, currentResource);
-            resource.withRepresentation(currentResource.type().getId(), embeddedResource);
+            resource.withRepresentation(currentResource.type().getName(), embeddedResource);
         });
     }
 
@@ -241,7 +244,7 @@ public class HALConceptData {
                         isResource = true;
                     } else {
                         if (entry.getValue().getId().equals(entity.getId()))
-                            rolePlayedByCurrentConcept = entry.getKey().getId();
+                            rolePlayedByCurrentConcept = entry.getKey().getName();
                     }
                 }
             }
@@ -266,13 +269,13 @@ public class HALConceptData {
                 Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
                         .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
                 handleConcept(roleResource, instance, separationDegree - 1);
-                halResource.withRepresentation(roleType.getId(), roleResource);
+                halResource.withRepresentation(roleType.getName(), roleResource);
             }
         });
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
-        if (!type.getId().equals(ROOT_CONCEPT)) {
+        if (!type.getName().equals(rootConceptId)) {
             type.instances().parallelStream().forEach(instance -> {
 
                 if (instance.isType() && instance.asType().isImplicit()) return;
@@ -283,9 +286,9 @@ public class HALConceptData {
                 halResource.withRepresentation(ISA_EDGE, instanceResource);
             });
         }
-        type.subTypes().forEach(instance -> {
+        type.subTypes().stream().forEach(instance -> {
             // let's not put the current type in its own embedded
-            if (!instance.getId().equals(type.getId())) {
+            if (!instance.getName().equals(type.getName())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 handleConcept(instanceResource, instance, separationDegree - 1);

@@ -69,7 +69,7 @@ class ValidateGlobalRules {
                 }
             }
 
-            currentConcept = currentConcept.getParentSub();
+            currentConcept = (TypeImpl) currentConcept.superType();
         }
 
         return satisfiesPlaysRole;
@@ -183,7 +183,7 @@ class ValidateGlobalRules {
                     }
                 }
             }
-            currentConcept = currentConcept.getParentSub();
+            currentConcept = (TypeImpl) currentConcept.superType();
         }
         return true;
     }

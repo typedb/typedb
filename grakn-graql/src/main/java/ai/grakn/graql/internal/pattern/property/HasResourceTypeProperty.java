@@ -48,17 +48,17 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        String resourceTypeId = resourceType.getId().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
+        String resourceTypeName = resourceType.getTypeName().orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = Graql.id(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId))
-                .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
-        valueRole = Graql.id(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId))
-                .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
+        ownerRole = Graql.name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName))
+                .isa(Schema.MetaSchema.ROLE_TYPE.getName()).admin();
+        valueRole = Graql.name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName))
+                .isa(Schema.MetaSchema.ROLE_TYPE.getName()).admin();
 
-        relationType = Graql.id(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
-                .isa(Schema.MetaSchema.RELATION_TYPE.getId())
+        relationType = Graql.name(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName))
+                .isa(Schema.MetaSchema.RELATION_TYPE.getName())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
         ownerPlaysRole = new PlaysRoleProperty(ownerRole, required);
@@ -85,7 +85,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         traversals.addAll(ownerPlaysRole.match(start));
 
         PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole, required);
-        traversals.addAll(valuePlaysRole.match(resourceType.getName()));
+        traversals.addAll(valuePlaysRole.match(resourceType.getVarName()));
 
         return traversals;
     }

@@ -140,12 +140,13 @@ public class AtomicTest extends AbstractEngineTest{
         Atom atom = query.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
-        queryString = "match isa owns, ($z, $y); $z isa country; select $y, $z;";
-        query = new AtomicQuery(queryString, graph);
-        atom = query.getAtom();
+        String queryString2 = "match isa owns, ($z, $y); $z isa country; select $y, $z;";
+        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
+        Atom atom2 = query2.getAtom();
 
-        Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
-        assert(roleMap.size() == 2 && roleMap2.size() == 2);
+        Map<RoleType, Pair<String, Type>> roleMap2 = atom2.getRoleVarTypeMap();
+        assertTrue(roleMap.size() == 2 && roleMap2.size() == 2);
+        assertTrue(roleMap.keySet().equals(roleMap2.keySet()));
     }
 
     @Test
@@ -156,11 +157,12 @@ public class AtomicTest extends AbstractEngineTest{
         Atom atom = query.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
-        queryString = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa rocket; select $x, $y, $z;";
-        query = new AtomicQuery(queryString, graph);
-        atom = query.getAtom();
-        Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
-        assert(roleMap.size() == 3 && roleMap2.size() == 3);
+        String queryString2 = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa rocket; select $x, $y, $z;";
+        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
+        Atom atom2 = query2.getAtom();
+        Map<RoleType, Pair<String, Type>> roleMap2 = atom2.getRoleVarTypeMap();
+        assertTrue(roleMap.size() == 3 && roleMap2.size() == 3);
+        assertTrue(roleMap.keySet().equals(roleMap2.keySet()));
     }
 
 
