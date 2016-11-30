@@ -60,7 +60,7 @@ public class QueryTest extends AbstractEngineTest {
                 .create(qb.<MatchQuery>parse("match $x value 'Bob';").admin().getPattern().getPatterns().iterator().next());
         assertTrue(query.containsAtom(vpAtom));
         assertEquals(query.getValuePredicate("x"), "Bob");
-        assertEquals(query.getIdPredicate("x").getPredicateValue(), "person");
+        assertEquals(query.getIdPredicate("x").getPredicateValue(), graph.getType("person").getId());
     }
 
     @Test

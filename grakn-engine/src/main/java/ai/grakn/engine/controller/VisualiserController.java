@@ -46,15 +46,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.controller.Utilities.getContenttype;
+import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
 import static java.lang.Boolean.parseBoolean;
 import static ai.grakn.factory.GraphFactory.getInstance;
-import static ai.grakn.engine.visualiser.HALConceptRepresentationBuilder.renderHALArrayData;
-import static ai.grakn.engine.visualiser.HALConceptRepresentationBuilder.renderHALConceptData;
-import static ai.grakn.engine.visualiser.HALConceptRepresentationBuilder.renderHALConceptOntology;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
 
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.QUERY_FIELD;
@@ -77,6 +77,8 @@ public class VisualiserController {
     private final static String SHORTEST_PATH_QUERY = "path";
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
+    private final static String ROOT_CONCEPT = "type";
+
 
     //TODO: implement a pagination system.
     public VisualiserController() {
@@ -121,7 +123,7 @@ public class VisualiserController {
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
-            return renderHALConceptOntology(concept);
+            return renderHALConceptOntology(concept, graph.getType(ROOT_CONCEPT).getId());
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
@@ -167,12 +169,12 @@ public class VisualiserController {
             MatchQuery matchQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
             matchQuery = useReasoner ? new Reasoner(graph).resolveToQuery(matchQuery, true) : matchQuery;
 
-            switch (getContenttype(req)){
+            switch (getAcceptType(req)){
                 case HAL_CONTENTTYPE:
-                    return formatAsHAL(matchQuery);
+                    return formatAsHAL(matchQuery,graph.getType(ROOT_CONCEPT).getId());
                 case GRAQL_CONTENTTYPE:
                     return formatAsGraql(matchQuery);
-                default: return formatAsGraql(matchQuery);
+                default: return formatAsHAL(matchQuery,graph.getType(ROOT_CONCEPT).getId());
             }
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -192,6 +194,7 @@ public class VisualiserController {
 
             ComputeQuery computeQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
             JSONObject response = new JSONObject();
+            String rootConceptId = graph.getType(ROOT_CONCEPT).getId();
 
             if (req.queryParams(QUERY_FIELD).contains(SHORTEST_PATH_QUERY)) {
                 response.put(COMPUTE_RESPONSE_TYPE, "HAL");
@@ -227,9 +230,9 @@ public class VisualiserController {
      * @param query query to format
      * @return HAL representation
      */
-    private String formatAsHAL(MatchQuery query){
+    private String formatAsHAL(MatchQuery query, String rootConceptId){
         Collection<Map<String, Concept>> results = query.stream().collect(toList());
-        return renderHALArrayData(query, results).toString();
+        return renderHALArrayData(query, results, rootConceptId).toString();
     }
 
     /**
@@ -249,6 +252,6 @@ public class VisualiserController {
      * @return JSONArray with IDs of instances
      */
     private JSONArray instances(Type type){
-        return new JSONArray(type.instances().stream().map(Concept::getId).toArray());
+        return new JSONArray(type.instances().stream().map(x->x.asType().getName()).toArray());
     }
 }

@@ -102,7 +102,6 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
 
         String graql = response.getBody().asString();
         assertTrue(graql.contains("isa Man"));
-        assertTrue(graql.contains("id \"" + entityId + "\""));
     }
 
     @Test
@@ -122,7 +121,6 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
         JSONObject embeddedType = message.getJSONObject("_embedded").getJSONArray("isa").getJSONObject(0);
         assertEquals(embeddedType.getString("_baseType"),"type");
         assertEquals(embeddedType.getString("_type"),"entity-type");
-        assertEquals(embeddedType.getString("_id"),"Man");
     }
 
     @Ignore

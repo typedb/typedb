@@ -103,9 +103,9 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     protected void assertResourceTypeRelationExists(String name, DataType datatype, Type owner){
         ResourceType resource = assertResourceTypeExists(name, datatype);
 
-        RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(name));
-        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(name));
-        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
+        RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(name));
+        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
+        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         assertNotNull(relationType);
         assertNotNull(roleOwner);
@@ -124,16 +124,6 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         assertEquals(resourceValue, owner.resources(resourceType).stream()
                 .map(Resource::getValue)
                 .findFirst().get());
-    }
-
-    protected void assertRelationBetweenTypesExists(Type type1, Type type2, String relation){
-        RelationType relationType = graph.getRelationType(relation);
-
-        RoleType role1 = type1.playsRoles().stream().filter(r -> r.relationType().getId().equals(relation)).findFirst().get();
-        RoleType role2 = type2.playsRoles().stream().filter(r -> r.relationType().getId().equals(relation)).findFirst().get();
-
-        assertTrue(relationType.hasRoles().contains(role1));
-        assertTrue(relationType.hasRoles().contains(role2));
     }
 
     protected void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
@@ -168,8 +158,8 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     }
 
     protected Stream<Resource> getResources(Instance instance, String name) {
-        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(name));
-        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
+        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
+        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         Collection<Relation> relations = instance.relations(roleOwner);
         return relations.stream().map(r -> r.rolePlayers().get(roleOther).asResource());
@@ -189,10 +179,10 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         ResourceType<String> name = graph.getResourceType("name");
         ResourceType<String> death = graph.getResourceType("death");
 
-        Entity puffball = graph.getResource("Puffball", name).ownerInstances().iterator().next().asEntity();
+        Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
         assertEquals(0, puffball.resources(death).size());
 
-        Entity bowser = graph.getResource("Bowser", name).ownerInstances().iterator().next().asEntity();
+        Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
         assertEquals(1, bowser.resources(death).size());
     }
 
@@ -204,16 +194,16 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         ResourceType<String> typeid = graph.getResourceType("type-id");
         ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
 
-        Entity grass = graph.getResource("12", typeid).ownerInstances().iterator().next().asEntity();
-        Entity poison = graph.getResource("4", typeid).ownerInstances().iterator().next().asEntity();
-        Entity bulbasaur = graph.getResource("1", pokedexno).ownerInstances().iterator().next().asEntity();
+        Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
+        Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
+        Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
         RelationType relation = graph.getRelationType("has-type");
 
         assertNotNull(grass);
         assertNotNull(poison);
         assertNotNull(bulbasaur);
 
-        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getId());
-        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getId());
+        assertRelationBetweenInstancesExists(bulbasaur, grass, relation.getName());
+        assertRelationBetweenInstancesExists(bulbasaur, poison, relation.getName());
     }
 }

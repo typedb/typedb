@@ -18,14 +18,14 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -46,7 +46,6 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -71,17 +70,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     }
 
     /**
-     * Generates and saves a readable entity id
-     * @param type the type of this concept
-     */
-    protected void generateInstanceId(V type){
-        if(getId() == null){
-            String id = getBaseType() + "-" + type.getId() + "-" + UUID.randomUUID().toString();
-            setImmutableProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, id, getId(), Function.identity());
-        }
-    }
-
-    /**
      *
      * @param key The key of the property to mutate
      * @param value The value to commit into the property
@@ -90,8 +78,14 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     private T setProperty(String key, Object value){
         if(value == null)
             vertex.property(key).remove();
-        else
-            vertex.property(key, value);
+        else {
+            VertexProperty<Object> foundProperty = vertex.property(key);
+            if(foundProperty.isPresent() && foundProperty.value().equals(value)){
+               return getThis();
+            } else {
+                vertex.property(key, value);
+            }
+        }
         return getThis();
     }
 
@@ -133,7 +127,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return True if the concept can be updated. I.e. the value is unique for the property.
      */
     private boolean updateAllowed(Schema.ConceptProperty key, String value) {
-        ConceptImpl fetchedConcept = graknGraph.getConcept(key, value);
+        Concept fetchedConcept = graknGraph.getConcept(key, value);
         return fetchedConcept == null || this.equals(fetchedConcept);
     }
 
@@ -436,7 +430,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         if(type != null){
             TypeImpl currentIsa = getParentIsa();
             if(currentIsa == null){
-                setType(String.valueOf(type.getId()));
+                setType(String.valueOf(type.getName()));
                 putEdge(type, Schema.EdgeLabel.ISA);
             } else if(!currentIsa.equals(type)){
                 throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
@@ -455,19 +449,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         Concept isaParent = getOutgoingNeighbour(Schema.EdgeLabel.ISA);
         if(isaParent != null){
             return (TypeImpl) isaParent;
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     *
-     * @return The result of following one outgoing sub edge to a Type.
-     */
-    public TypeImpl getParentSub(){
-        Concept subParent = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(subParent != null){
-            return (TypeImpl) subParent;
         } else {
             return null;
         }
@@ -607,7 +588,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public String getId(){
-        return getProperty(Schema.ConceptProperty.ITEM_IDENTIFIER);
+        return getBaseIdentifier().toString();
     }
 
     /**
@@ -674,10 +655,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The edge created
      */
     public EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
+        EdgeImpl newEdge = getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), graknGraph);
+
         graknGraph.getConceptLog().putConcept(this);
         graknGraph.getConceptLog().putConcept(toConcept);
 
-        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), graknGraph);
+        return newEdge;
     }
 
     /**

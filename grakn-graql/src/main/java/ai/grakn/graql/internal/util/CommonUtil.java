@@ -57,12 +57,9 @@ public class CommonUtil {
         return tryNext(iterable.iterator());
     }
 
-    public static <T> Optional<T> optionalOr(Optional<T> first, Optional<T> second) {
-        if (first.isPresent()) {
-            return first;
-        } else {
-            return second;
-        }
+    @SafeVarargs
+    public static <T> Optional<T> optionalOr(Optional<T>... options) {
+        return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
     }
 
     public static <T> Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>> toImmutableSet() {

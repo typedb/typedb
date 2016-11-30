@@ -115,12 +115,12 @@ class ConjunctionQuery {
     }
 
     /**
-     * @return a stream of concept IDs mentioned in the query
+     * @return a stream of concept names mentioned in the query
      */
     Stream<String> getConcepts() {
         return vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .flatMap(v -> v.getTypeIds().stream());
+                .flatMap(v -> v.getTypeNames().stream());
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {
@@ -137,7 +137,7 @@ class ConjunctionQuery {
             shortcutTraversal.setInvalid();
         }
 
-        String start = var.getName();
+        String start = var.getVarName();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

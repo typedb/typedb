@@ -1,10 +1,10 @@
-package ai.grakn.engine.visualiser;
+package ai.grakn.graql.internal.hal;
 
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
-public class HALGeneratedRelation {
+class HALGeneratedRelation {
 
     private RepresentationFactory factory;
 
@@ -18,11 +18,11 @@ public class HALGeneratedRelation {
     private final static String BASETYPE_PROPERTY = "_baseType";
     private final static String DIRECTION_PROPERTY = "_direction";
 
-    public HALGeneratedRelation() {
+    HALGeneratedRelation() {
         this.factory = new StandardRepresentationFactory();
     }
 
-    public Representation getNewGeneratedRelation(String assertionID, String relationType) {
+    Representation getNewGeneratedRelation(String assertionID, String relationType) {
         Representation assertionResource = factory.newRepresentation(assertionID)
                 .withProperty(ID_PROPERTY, "temp-assertion")
                 .withProperty(TYPE_PROPERTY, relationType)

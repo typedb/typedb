@@ -6,7 +6,6 @@ lhs {(located-subject: $x, subject-location: $y) isa resides;
 (member-location: $y, container-location: $z) isa sublocate;
 },
 rhs {(located-subject: $x, subject-location: $z) isa resides;};
-#introduces ambiguity in rule ->rhs {($x, $z) isa resides;};
 
 # transitivity of sublocate
 isa inference-rule,

@@ -157,7 +157,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
         //noinspection unchecked
         GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), getId())
+                .has(Schema.ConceptProperty.NAME.name(), getName())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
@@ -232,10 +232,13 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             });
         }
 
-        deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
-        deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-        putEdge(type, Schema.EdgeLabel.SUB);
-        type(); //Check if there is a circular sub loop
+        if(currentSuperType == null || !currentSuperType.equals(type)) {
+            deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
+            deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
+            putEdge(type, Schema.EdgeLabel.SUB);
+            type(); //Check if there is a circular sub loop
+        }
+        
         return getThis();
     }
 
@@ -282,7 +285,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     public String toString(){
         String message = super.toString();
-        message = message + " - Abstract [" + isAbstract() + "] ";
+        message = message + " - Name [" + getName() + "] - Abstract [" + isAbstract() + "] ";
         return message;
     }
 
@@ -308,24 +311,53 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     protected void checkTypeMutation(){
         getGraknGraph().checkOntologyMutation();
         for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
-            if(metaSchema.getId().equals(getId())){
-                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getId()));
+            if(metaSchema.getName().equals(getName())){
+                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getName()));
             }
         }
     }
 
-    private RelationType hasResource(ResourceType resourceType, boolean required) {
-        String resourceTypeId = resourceType.getId();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+    /**
+     * Creates a relation type which allows this type and a resource type to be linked.
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param required Indicates if the resource is required on the entity
+     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     */
+    public RelationType hasResource(ResourceType resourceType, boolean required){
+        String resourceTypeName = resourceType.getName();
+        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
+        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
+        RelationType relationType = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName)).
+                hasRole(ownerRole).
+                hasRole(valueRole);
+
+        //Linking with ako structure if present
+        ResourceType resourceTypeSuper = resourceType.superType();
+        if(resourceTypeSuper != null){
+            String superName = resourceTypeSuper.getName();
+            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
+            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
+            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
+                    hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
+
+            ownerRole.superType(ownerRoleSuper);
+            valueRole.superType(valueRoleSuper);
+            relationType.superType(relationTypeSuper);
+        }
 
         this.playsRole(ownerRole, required);
         ((ResourceTypeImpl) resourceType).playsRole(valueRole, required);
 
-        return getGraknGraph().
-                putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId)).
-                hasRole(ownerRole).
-                hasRole(valueRole);
+        return relationType;
+    }
+
+    /**
+     *
+     * @return The name of this type
+     */
+    @Override
+    public String getName() {
+        return getProperty(Schema.ConceptProperty.NAME);
     }
 
     /**

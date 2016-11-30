@@ -18,11 +18,6 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
@@ -32,7 +27,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 
 import java.util.Collection;
-import java.util.Collections;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
@@ -50,13 +44,13 @@ public class InstanceMapper {
      */
     public static Var map(Instance instance){
         Var mapped = var();
-        if(instance instanceof Entity){
+        if(instance.isEntity()){
             mapped = map(instance.asEntity());
-        } else if(instance instanceof Resource){
+        } else if(instance.isResource()){
             mapped = map(instance.asResource());
-        } else if(instance instanceof Relation){
+        } else if(instance.isRelation()){
             mapped = map(instance.asRelation());
-        } else if(instance instanceof Rule){
+        } else if(instance.isRule()){
             mapped = map(instance.asRule());
         }
 
@@ -126,7 +120,7 @@ public class InstanceMapper {
      */
     private static Var hasResources(Var var, Instance instance){
         for(Resource resource:instance.resources()){
-           var = var.has(resource.type().getId(), resource.getValue());
+           var = var.has(resource.type().getName(), resource.getValue());
         }
         return var;
     }
@@ -139,7 +133,7 @@ public class InstanceMapper {
      */
     private static  Var roleplayers(Var var, Relation relation){
         for(RoleType role:relation.rolePlayers().keySet()){
-            var = var.rel(role.getId(), relation.rolePlayers().get(role).getId());
+            var = var.rel(role.getName(), relation.rolePlayers().get(role).getId());
         }
         return var;
     }
@@ -150,7 +144,7 @@ public class InstanceMapper {
      * @return var patterns representing given instance
      */
     private static  Var base(Instance instance){
-        Var var = var(instance.getId()).isa(instance.type().getId());
+        Var var = var(instance.getId()).isa(instance.type().getName());
         return hasResources(var, instance);
     }
 
@@ -160,13 +154,13 @@ public class InstanceMapper {
      * @return true if the relation is a has-resource relation
      */
     private static boolean isHasResourceRelation(Relation relation){
-        String relationType = relation.type().getId();
+        String relationType = relation.type().getName();
 
         if(!relationType.startsWith("has-")){
             return false;
         }
 
-        Collection<String> roles = relation.rolePlayers().keySet().stream().map(Concept::getId).collect(toSet());
+        Collection<String> roles = relation.rolePlayers().keySet().stream().map(RoleType::getName).collect(toSet());
 
         return  roles.size() == 2 &&
                 roles.contains(relationType + "-value") &&
@@ -181,8 +175,8 @@ public class InstanceMapper {
     private static boolean isHasResourceResource(Resource resource){
         ResourceType resourceType = resource.type();
 
-        boolean playsRole = resourceType.playsRoles().stream().map(Concept::getId)
-                .allMatch(c -> c.equals("has-" + resourceType.getId() + "-value"));
+        boolean playsRole = resourceType.playsRoles().stream().map(RoleType::getName)
+                .allMatch(c -> c.equals("has-" + resourceType.getName() + "-value"));
         return !resource.ownerInstances().isEmpty() && playsRole;
     }
 }

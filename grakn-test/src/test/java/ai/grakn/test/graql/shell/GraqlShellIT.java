@@ -18,12 +18,10 @@
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.AbstractRollbackGraphTest;
-import com.google.common.base.Strings;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.AbstractRollbackGraphTest;
+import com.google.common.base.Strings;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -47,6 +45,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
+@Ignore
 public class GraqlShellIT extends AbstractRollbackGraphTest {
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -243,6 +242,16 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
         Json x = json.at("x");
         assertTrue(x.has("id"));
         assertFalse(x.has("isa"));
+    }
+
+    @Test
+    public void testHALOutput() throws Exception {
+        String[] result = testShell("", "-e", "match $x sub type;", "-o", "hal").split("\n");
+        assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
+        Json json = Json.read(result[0]);
+        Json x = json.at("x");
+        assertTrue(x.has("_id"));
+        assertTrue(x.has("_baseType"));
     }
 
     @Test

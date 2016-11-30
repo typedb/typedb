@@ -98,7 +98,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             Schema.ConceptProperty property = dataType().getConceptProperty();
             setImmutableProperty(property, castValue(value), getProperty(property), Function.identity());
 
-            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getId(), value.toString()));
+            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type(), value.toString()));
         } catch (ClassCastException e) {
             throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
         }
@@ -106,11 +106,12 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
 
     /**
      *
+     * @param resourceType it's resource type
      * @param value The value of the resource
      * @return A unique id for the resource
      */
-    public static String generateResourceIndex(String typeId, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + typeId + "-" + value;
+    public static String generateResourceIndex(ResourceType resourceType, String value){
+        return Schema.BaseType.RESOURCE.name() + "-" + resourceType.getName() + "-" + value;
     }
 
     /**

@@ -18,11 +18,10 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.exception.NoEdgeException;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.MoreThanOneEdgeException;
+import ai.grakn.exception.NoEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,10 +30,8 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class CastingTest extends GraphTestBase{
@@ -59,7 +56,7 @@ public class CastingTest extends GraphTestBase{
     public void testEquals() throws Exception {
         Graph graph = graknGraph.getTinkerPopGraph();
         Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
-        CastingImpl castingCopy = (CastingImpl) graknGraph.getConcept(v.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
+        CastingImpl castingCopy = (CastingImpl) graknGraph.getConcept(v.id().toString());
         assertEquals(casting, castingCopy);
 
         EntityType type = graknGraph.putEntityType("Another entity type");
@@ -81,9 +78,8 @@ public class CastingTest extends GraphTestBase{
 
         String id = UUID.randomUUID().toString();
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
 
-        CastingImpl casting2 = (CastingImpl) graknGraph.getConcept(id);
+        CastingImpl casting2 = (CastingImpl) graknGraph.getConcept(vertex.id().toString());
         boolean exceptionThrown = false;
         try{
             casting2.getRole();
@@ -122,23 +118,4 @@ public class CastingTest extends GraphTestBase{
         casting.addEdge((ConceptImpl) anotherConcept, Schema.EdgeLabel.ROLE_PLAYER);
         casting.getRolePlayer();
     }
-
-    @Test
-    public void testGetAssertion(){
-        RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
-        RelationTypeImpl genericRelation = (RelationTypeImpl) graknGraph.putRelationType("gr");
-        RelationTypeImpl resourceType = (RelationTypeImpl) graknGraph.putRelationType("rt");
-        RelationImpl relationValue = (RelationImpl) resourceType.addRelation();
-
-        relation.addEdge(genericRelation, Schema.EdgeLabel.ISA);
-        relationValue.addEdge(resourceType, Schema.EdgeLabel.ISA);
-
-        CastingImpl casting2 = graknGraph.putCasting(role2, rolePlayer, relationValue);
-
-        assertTrue(casting.getRelations().contains(relation));
-        assertTrue(casting2.getRelations().contains(relationValue));
-        assertThat(casting.getRelations().iterator().next(), instanceOf(Relation.class));
-        assertThat(casting2.getRelations().iterator().next(), instanceOf(Relation.class));
-    }
-
 }

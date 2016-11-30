@@ -98,6 +98,8 @@ lhs
 $rel1 (happening: $w, protagonist: $s1) isa event-protagonist;
 $rel1 has role "spouse";
 $rel2 (happening: $w, protagonist: $s2) isa event-protagonist;
-$rel2 has role "spouse";}
+$rel2 has role "spouse";
+$s1 != $s2;
+}
 rhs
 {(spouse1: $s1, spouse2: $s2) isa marriage;};

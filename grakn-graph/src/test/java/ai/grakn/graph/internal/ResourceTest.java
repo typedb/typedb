@@ -94,15 +94,15 @@ public class ResourceTest extends GraphTestBase{
         Resource<Double> resource7 = doubles.putResource(1.0);
         Resource<Boolean> resource8 = booleans.putResource(true);
 
-        assertEquals("1", graknGraph.getResource(resource1.getId()).getValue());
-        assertEquals(1L, graknGraph.getResource(resource2.getId()).getValue());
-        assertEquals(1.0, graknGraph.getResource(resource3.getId()).getValue());
-        assertEquals(true, graknGraph.getResource(resource4.getId()).getValue());
+        assertEquals("1", graknGraph.getConcept(resource1.getId()).asResource().getValue());
+        assertEquals(1L, graknGraph.getConcept(resource2.getId()).asResource().getValue());
+        assertEquals(1.0, graknGraph.getConcept(resource3.getId()).asResource().getValue());
+        assertEquals(true, graknGraph.getConcept(resource4.getId()).asResource().getValue());
 
-        assertThat(graknGraph.getResource(resource1.getId()).getValue(), instanceOf(String.class));
-        assertThat(graknGraph.getResource(resource2.getId()).getValue(), instanceOf(Long.class));
-        assertThat(graknGraph.getResource(resource3.getId()).getValue(), instanceOf(Double.class));
-        assertThat(graknGraph.getResource(resource4.getId()).getValue(), instanceOf(Boolean.class));
+        assertThat(graknGraph.getConcept(resource1.getId()).asResource().getValue(), instanceOf(String.class));
+        assertThat(graknGraph.getConcept(resource2.getId()).asResource().getValue(), instanceOf(Long.class));
+        assertThat(graknGraph.getConcept(resource3.getId()).asResource().getValue(), instanceOf(Double.class));
+        assertThat(graknGraph.getConcept(resource4.getId()).asResource().getValue(), instanceOf(Boolean.class));
 
         assertEquals(1, graknGraph.getResourcesByValue("1").size());
         assertEquals(1, graknGraph.getResourcesByValue(1L).size());

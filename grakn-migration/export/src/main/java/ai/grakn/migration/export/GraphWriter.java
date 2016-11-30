@@ -82,6 +82,6 @@ public class GraphWriter {
     private Stream<Type> types(){
         return graph.getMetaType().instances().stream()
                 .map(Concept::asType)
-                .filter(t -> !reserved.contains(t.getId()));
+                .filter(t -> !reserved.contains(t.getName()));
     }
 }

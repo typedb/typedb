@@ -46,14 +46,15 @@
             <version>${spark-core.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.theoryinpractise</groupId>
-            <artifactId>halbuilder-standard</artifactId>
-            <version>${halbuilder-standard.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-jersey2-jaxrs</artifactId>
             <version>${swagger.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.sharegov</groupId>
