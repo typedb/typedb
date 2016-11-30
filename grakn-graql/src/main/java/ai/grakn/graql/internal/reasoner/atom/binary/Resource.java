@@ -82,4 +82,11 @@ public class Resource extends Binary{
                 .filter(atom -> atom.getVarName().equals(getValueVariable()))
                 .collect(Collectors.toSet());
     }
+
+    @Override
+    public Set<String> getSelectedNames(){
+        Set<String> vars = super.getSelectedNames();
+        if(getPredicate() != null) vars.addAll(getPredicate().getSelectedNames());
+        return vars;
+    }
 }

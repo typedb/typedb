@@ -98,6 +98,7 @@ public abstract class Predicate<T> extends AtomBase {
         return map;
     }
 
+    public T getPredicate(){ return predicate;}
     public abstract String getPredicateValue();
     protected abstract T extractPredicate(VarAdmin pattern);
 }
