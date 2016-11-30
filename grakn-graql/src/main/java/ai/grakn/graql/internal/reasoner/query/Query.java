@@ -28,7 +28,10 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.HasRole;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
@@ -52,6 +55,7 @@ public class Query implements MatchQueryInternal {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this, graph));
+        inferTypes();
     }
 
     public Query(String query, GraknGraph graph) {
@@ -62,6 +66,7 @@ public class Query implements MatchQueryInternal {
         this.graph = q.getGraph().orElse(null);
         this.selectVars = q.getSelectedNames();
         q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
+        inferTypes();
     }
 
     protected Query(Atom atom, Set<String> vars) {
@@ -73,6 +78,7 @@ public class Query implements MatchQueryInternal {
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
         selectVars.retainAll(getVarSet());
+        inferTypes();
     }
 
     //alpha-equivalence equality
@@ -99,6 +105,36 @@ public class Query implements MatchQueryInternal {
 
     @Override
     public String toString() { return getMatchQuery().toString();}
+
+    private void inferTypes(){
+        //TODO NB: only relations at the moment
+        getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(Atom::isRelation).map(at -> (Relation) at)
+                .filter(at -> at.getPredicate() == null)
+                .forEach( relation -> {
+                    String valueVariable = relation.getValueVariable();
+                    HasRole hrAtom = getAtoms().stream()
+                            .filter(at -> at.getVarName().equals(valueVariable))
+                            .filter(at -> at instanceof HasRole).map(at -> (HasRole) at)
+                            .findFirst().orElse(null);
+                    if (hrAtom != null) {
+                        AtomicQuery hrQuery = new AtomicMatchQuery(hrAtom, Sets.newHashSet(hrAtom.getVarName()));
+                        hrQuery.DBlookup();
+                        if (hrQuery.getAnswers().size() != 1)
+                            throw new IllegalStateException("ambigious answer to has-role query");
+                        IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
+                                hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), this);
+
+                        Relation newRelation = new Relation(relation.getPattern().asVar(), newPredicate, this);
+                        removeAtom(hrAtom.getPredicate());
+                        removeAtom(hrAtom);
+                        removeAtom(relation);
+                        addAtom(newRelation);
+                        addAtom(newPredicate);
+                    }
+                });
+    }
 
     @Override
     public Set<Type> getTypes(GraknGraph graph){ return getMatchQuery().admin().getTypes(graph);}
@@ -139,7 +175,6 @@ public class Query implements MatchQueryInternal {
         Iterator<Atomic> it = atomSet.iterator();
         while(it.hasNext() && !ruleResolvable)
             ruleResolvable = it.next().isRuleResolvable();
-
         return ruleResolvable;
     }
 

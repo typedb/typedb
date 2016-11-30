@@ -650,16 +650,14 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testHasRole() {
         GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match ($x, $y) isa $rel-type;$rel-type has-role geo-entity;" +
-                "$y isa country;$y has name 'Poland';";
-        String queryString2 = "match $x isa $type;$y isa country;$y has name 'Poland';" +
-                "($x, $y) isa is-located-in;";
-        PatternAdmin hR = lgraph.graql().parsePattern("is-located-in has-role $x").admin();
-        PatternAdmin hR2 = lgraph.graql().parsePattern("$rel-type has-role geo-entity").admin();
+                "$y isa country;$y has name 'Poland';select $x;";
+        String queryString2 = "match $y isa country;" +
+                "($x, $y) isa is-located-in;$y has name 'Poland'; select $x;";
         MatchQuery query = new Query(queryString, lgraph);
-        // MatchQuery query2 = new Query(queryString2, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
 
-        //Reasoner reasoner = new Reasoner(lgraph);
-        //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
     //TODO Ignored due to bug in graql leading to no results for $y value > $x
     @Ignore

@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.reasoner.atom.binary.HasRole;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
@@ -91,8 +92,6 @@ public class PropertyMapper {
         else
             throw new IllegalArgumentException(ErrorMessage.GRAQL_PROPERTY_NOT_MAPPED.getMessage(prop.toString()));
     }
-
-    //TODO all these should eventually go into atom constructors
 
     private static Set<Atomic> map(RelationProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
@@ -185,19 +184,17 @@ public class PropertyMapper {
     }
 
     private static Set<Atomic> map(HasRoleProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
-
-        //TODO
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getVarName();
-        VarAdmin typeVar = prop.getRole();
-        String relVariable = var.isUserDefinedName()?  var.getVarName() :"";
-        String roleVariable = typeVar.isUserDefinedName() ? typeVar.getVarName() : "";
+        VarAdmin roleVar = prop.getRole();
+        String roleVariable = roleVar.getVarName();
+        IdPredicate relPredicate = getIdPredicate(varName, var, vars, parent, graph);
+        IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent, graph);
 
-        //IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
-
-        //VarAdmin resVar = Graql.var(varName).hasRole(Graql.var(typeVariable)).admin();
-        //atoms.add(new TypeAtom(resVar, parent));
-        //if (predicate != null) atoms.add(predicate);
+        VarAdmin hrVar = Graql.var(varName).hasRole(Graql.var(roleVariable)).admin();
+        atoms.add(new HasRole(hrVar, relPredicate, rolePredicate, parent));
+        if (relPredicate != null) atoms.add(relPredicate);
+        if (rolePredicate != null) atoms.add(rolePredicate);
         return atoms;
     }
 
@@ -205,7 +202,7 @@ public class PropertyMapper {
         Set<Atomic> atoms = new HashSet<>();
         String varName = var.getVarName();
         String typeName = prop.getResourceType().getTypeName().orElse("");
-        //!!!HasResourceType is a special case and it doesn't allow variables as resource types!!!
+        //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
 
         //isa part
         VarAdmin resVar = Graql.var(varName).hasResource(typeName).admin();
