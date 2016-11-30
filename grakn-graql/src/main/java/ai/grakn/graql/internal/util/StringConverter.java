@@ -73,7 +73,7 @@ public class StringConverter {
     }
 
     /**
-     * @param id an id of a concept
+     * @param id an ID or name of a type
      * @return
      * The id of the concept correctly escaped in graql.
      * If the ID doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
