@@ -98,6 +98,10 @@ class Validator {
                     roles.split(",").length, roles,
                     rolePlayers.split(",").length, roles));
         }
+
+        if(!ValidateGlobalRules.validateRelationIsUnique(relation)){
+            errorsFound.add(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation));
+        }
     }
 
     /**

@@ -18,9 +18,9 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.util.Schema;
-
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,13 +34,16 @@ import java.util.stream.Collectors;
  */
 public class ConceptLog {
     private Set<ConceptImpl> modifiedConcepts;
-    private Set<ConceptImpl> modifiedCastings;
-    private Set<ConceptImpl> modifiedResources;
+    private Set<CastingImpl> modifiedCastings;
+    private Set<ResourceImpl> modifiedResources;
+    private Map<String, RelationImpl> modifiedRelations;
+
 
     ConceptLog() {
         modifiedCastings = new HashSet<>();
         modifiedConcepts = new HashSet<>();
         modifiedResources = new HashSet<>();
+        modifiedRelations = new HashMap<>();
     }
 
     /**
@@ -59,10 +62,17 @@ public class ConceptLog {
     public void putConcept(ConceptImpl concept) {
         if(!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
-            if (Schema.BaseType.CASTING.name().equals(concept.getBaseType()))
-                modifiedCastings.add(concept);
-            if (Schema.BaseType.RESOURCE.name().equals(concept.getBaseType()))
-                modifiedResources.add(concept);
+
+            if(concept.isCasting())
+                modifiedCastings.add(concept.asCasting());
+            if(concept.isResource())
+                modifiedResources.add((ResourceImpl) concept);
+        }
+
+        //Caching of relations in memory so they can be retreived without needing a commit
+        if(concept.isRelation()){
+            RelationImpl relation = (RelationImpl) concept;
+            modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.rolePlayers()), relation);
         }
     }
 
@@ -99,6 +109,14 @@ public class ConceptLog {
         modifiedConcepts.remove(c);
         modifiedCastings.remove(c);
         modifiedResources.remove(c);
+    }
+
+    /**
+     * Gets a cached relation by index. This way we can find non committed relations quickly.
+     * @param index
+     */
+    public RelationImpl getCachedRelation(String index){
+        return modifiedRelations.get(index);
     }
 
 }
