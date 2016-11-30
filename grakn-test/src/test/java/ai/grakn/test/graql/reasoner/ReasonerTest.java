@@ -655,11 +655,10 @@ public class ReasonerTest extends AbstractEngineTest{
                 "($x, $y) isa is-located-in;$y has name 'Poland'; select $x;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
-
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
-
+    
     @Test
     public void testResourceComparison(){
         GraknGraph lgraph = SNBGraph.getGraph();

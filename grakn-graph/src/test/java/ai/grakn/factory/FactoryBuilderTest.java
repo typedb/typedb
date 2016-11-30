@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertThat;
 public class FactoryBuilderTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn-tinker.properties";
     private final static String KEYSPACE = "keyspace";
-    private final static String ENGINE_URL = "rubbish";
+    private final static String ENGINE_URL = Grakn.IN_MEMORY;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -74,7 +75,7 @@ public class FactoryBuilderTest {
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage("rubbish"))
         ));
-        FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, "rubbish");
+        FactoryBuilder.getFactory(KEYSPACE, "rubbish", "rubbish");
     }
 
 }

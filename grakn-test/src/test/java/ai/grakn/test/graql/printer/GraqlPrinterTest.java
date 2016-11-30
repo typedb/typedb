@@ -18,28 +18,25 @@
 
 package ai.grakn.test.graql.printer;
 
+import ai.grakn.concept.Instance;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.AbstractMovieGraphTest;
-import org.junit.Before;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 
 public class GraqlPrinterTest extends AbstractMovieGraphTest {
 
-    private Printer printer;
-
-    @Before
-    public void setUp() {
-        printer = Printers.graql();
-    }
-
     @Test
     public void testRelationOutput() {
+        Printer printer = Printers.graql();
+
         MatchQuery query = graph.graql().match(var("r").isa("has-cast")
                 .rel(var().has("name", "Al Pacino"))
                 .rel(var().has("name", "Michael Corleone"))
@@ -51,5 +48,36 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
         assertThat(relationString, containsString("actor"));
         assertThat(relationString, containsString("production-with-cast"));
         assertThat(relationString, containsString("character-being-played"));
+    }
+
+    @Test
+    public void testResourceOutputNoResources() {
+        Printer printer = Printers.graql();
+
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
+
+        String repr = printer.graqlString(godfather);
+
+        assertThat(
+                repr,
+                allOf(containsString("movie"), not(containsString("title")), not(containsString("Godfather")))
+        );
+    }
+
+    @Test
+    public void testResourceOutputWithResource() {
+        Printer printer = Printers.graql(
+                graph.getResourceType("title"), graph.getResourceType("tmdb-vote-count"), graph.getResourceType("name")
+        );
+
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
+
+        String repr = printer.graqlString(godfather);
+
+        //noinspection unchecked
+        assertThat(repr, allOf(
+                containsString("movie"), containsString("has"), containsString("title"), containsString("\"Godfather\""),
+                containsString("tmdb-vote-count"), containsString("1000"), not(containsString("name"))
+        ));
     }
 }

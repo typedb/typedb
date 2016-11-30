@@ -20,6 +20,8 @@ package ai.grakn.factory;
 
 import com.orientechnologies.orient.core.metadata.schema.OImmutableClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
+
+import ai.grakn.Grakn;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -67,6 +69,8 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
     private OrientGraph configureGraph(String name, String address){
         boolean schemaDefinitionRequired = false;
+        if (Grakn.IN_MEMORY.equals(address))
+        	address = "memory";
         OrientGraphFactory factory = getFactory(name, address);
         OrientGraph graph = factory.getNoTx();
 
