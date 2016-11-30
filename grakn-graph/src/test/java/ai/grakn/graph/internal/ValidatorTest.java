@@ -360,100 +360,99 @@ public class ValidatorTest extends GraphTestBase{
     /*-------------------------------- Entity Type to Role Type Validation (Data) ------------------------------------*/
 
     @Test
-    public void testRoleToRolePlayersDataValidationValid1(){
-        /*
-        person isa entity-type
-	        plays-role parent
-	        plays-role child;
+    public void testRoleToRolePlayersDataValidationValid1() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
 
-        company isa entity-type
-	        plays-role parent;
+        EntityType person = graknGraph.putEntityType("person").playsRole(parent).playsRole(child);
+        EntityType man = graknGraph.putEntityType("man").superType(person);
+        EntityType oneEyedMan = graknGraph.putEntityType("oneEyedMan").superType(man);
 
-        parent isa role-type;
-        child isa role-type;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role child;
-         */
+        Entity x = oneEyedMan.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        graknGraph.commit();
     }
     @Test
-    public void testRoleToRolePlayersDataValidationValid2(){
-        /*
-        person isa entity-type
-        	plays-role parent
-        	plays-role child;
-        man sub person;
-        one-eyed-man sub man;
+    public void testRoleToRolePlayersDataValidationValid2() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
 
-        parent isa role-type;
-        child isa role-type;
+        EntityType person = graknGraph.putEntityType("person").playsRole(parent).playsRole(child);
+        EntityType company = graknGraph.putEntityType("company").playsRole(parent);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role child;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
 
-        $x isa one-eyed-man;
-        $y isa person;
-            (parent:$x, child:$y) isa parenthood;
-         */
+        Entity x = company.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        graknGraph.commit();
     }
     @Test
-    public void testRoleToRolePlayersDataValidationInvalid1(){
-        /*
-        person isa entity-type
-	        plays-role parent
-	    plays-role child;
-        man isa entity-type;
+    public void testRoleToRolePlayersDataValidationInvalid1() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
 
-        parent isa role-type;
-        child isa role-type;
+        EntityType person = graknGraph.putEntityType("person").playsRole(parent).playsRole(child);
+        EntityType man = graknGraph.putEntityType("man");
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role child;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
 
-        $x isa man;
-        $y isa person;
-        (parent:$x, child:$y) isa parenthood;
-         */
+        Entity x = man.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_CASTING.getMessage(man.getName(), x.getId(), parent.getName()))));
+
+        graknGraph.commit();
     }
     @Test
-    public void testRoleToRolePlayersDataValidationInvalid2(){
-        /*
-        person isa entity-type
-	    plays-role child;
+    public void testRoleToRolePlayersDataValidationInvalid2() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
 
-        parent isa role-type;
-        child isa role-type;
+        EntityType person = graknGraph.putEntityType("person").playsRole(child);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role child;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
 
-        $x isa person;
-        $y isa person;
-        (parent:$x, child:$y) isa parenthood;
-         */
+        Entity x = person.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+
+        graknGraph.commit();
     }
     @Test
-    public void testRoleToRolePlayersDataValidationInvalid3(){
-        /*
-        person isa entity-type
-	        plays-role child;
-        man sub person
-	        plays-role parent;
+    public void testRoleToRolePlayersDataValidationInvalid3() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
 
-        parent isa role-type;
-        child isa role-type;
+        EntityType person = graknGraph.putEntityType("person").playsRole(child);
+        EntityType man = graknGraph.putEntityType("man").playsRole(child);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role child;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
 
-        $x isa person;
-        $y isa person;
-        (parent:$x, child:$y) isa parenthood;
-         */
+        Entity x = person.addEntity();
+        Entity y = person.addEntity();
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+
+        graknGraph.commit();
     }
 }
