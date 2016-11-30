@@ -165,10 +165,10 @@ export default {
         };
     },
 
-    created: () => {
+    created() {
         this.engineClient = new EngineClient();
     },
-    mounted: () => {
+    mounted() {
         this.$nextTick(function() {
             this.engineClient.getConfig(this.engineStatus);
         });
