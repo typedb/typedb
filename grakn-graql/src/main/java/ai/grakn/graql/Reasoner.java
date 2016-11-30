@@ -163,6 +163,7 @@ public class Reasoner {
                 }
 
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
+                        .filterNonEquals(ruleBody)
                         .filterVars(ruleHead.getSelectedNames())
                         .filterKnown(atomicQuery.getAnswers());
                 QueryAnswers newAnswers = new QueryAnswers();
@@ -220,8 +221,9 @@ public class Reasoner {
                 }
 
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
+                        .filterNonEquals(atomicQuery)
                         .filterVars(atomicQuery.getSelectedNames())
-                        .filterKnown(atomicQuery.getAnswers());;
+                        .filterKnown(atomicQuery.getAnswers());
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource()
                         || atom.isUserDefinedName() && atom.isRelation() )
@@ -282,7 +284,9 @@ public class Reasoner {
             QueryAnswers subAnswers = resolveAtomicQuery(atomicQuery, materialise);
             answers = answers.join(subAnswers);
         }
-        return answers.filterVars(query.getSelectedNames());
+        return answers
+                .filterNonEquals(query)
+                .filterVars(query.getSelectedNames());
     }
 
     public void precomputeInferences(){

@@ -474,7 +474,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
                 }
             }
         }
-        ((RelationImpl)relation).setHash(relation.rolePlayers());
     }
 
     private void putShortcutEdge(Relation  relation, RelationType  relationType, RoleType fromRole, Instance from, RoleType  toRole, Instance to){
@@ -532,7 +531,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
         String hash = RelationImpl.generateNewHash(relationType, roleMap);
-        Concept concept = getConcept(Schema.ConceptProperty.INDEX, hash);
+        Concept concept = getConceptLog().getCachedRelation(hash);
+
+        if(concept == null)
+            concept = getConcept(Schema.ConceptProperty.INDEX, hash);
+
         if(concept == null)
             return null;
         return concept.asRelation();

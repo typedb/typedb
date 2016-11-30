@@ -22,6 +22,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -168,6 +169,11 @@ class ValidateGlobalRules {
         return invalidTypes;
     }
 
+    /**
+     *
+     * @param instance The instance to check
+     * @return true if the required roles are played
+     */
     static boolean validateInstancePlaysAllRequiredRoles(Instance instance) {
         TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
 
@@ -186,5 +192,19 @@ class ValidateGlobalRules {
             currentConcept = (TypeImpl) currentConcept.superType();
         }
         return true;
+    }
+
+    /**
+     *
+     * @param relation The relation whose hash needs to be set.
+     * @return true if the relation is unique.
+     */
+    static boolean validateRelationIsUnique(RelationImpl relation){
+        try{
+            relation.setHash();
+            return true;
+        } catch (ConceptNotUniqueException e){
+            return false;
+        }
     }
 }

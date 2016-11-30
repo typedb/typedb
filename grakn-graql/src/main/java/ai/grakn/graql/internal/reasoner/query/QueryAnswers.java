@@ -25,6 +25,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 
+import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import java.util.Collection;
@@ -82,6 +83,17 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return new QueryAnswers(this.stream()
                 .filter(answer -> answer.size() == vars.size())
                 .collect(Collectors.toSet()));
+    }
+
+    public QueryAnswers filterNonEquals(Query query){
+        Set<NotEquals> filters = query.getAtoms().stream()
+                .filter(at -> at.getClass() == NotEquals.class)
+                .map(at -> (NotEquals) at)
+                .collect(Collectors.toSet());
+        if(filters.isEmpty()) return this;
+        QueryAnswers results = new QueryAnswers(this);
+        for (NotEquals filter : filters) results = filter.filter(results);
+        return results;
     }
 
     public QueryAnswers filterByTypes(Set<String> vars, Map<String, Type> varTypeMap){

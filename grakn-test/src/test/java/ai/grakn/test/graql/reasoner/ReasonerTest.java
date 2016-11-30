@@ -472,20 +472,23 @@ public class ReasonerTest extends AbstractEngineTest{
         assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
-    @Test
     @Ignore
+    @Test
     //Bug with unification, perhaps should unify select vars not atom vars
     public void testVarContraction3(){
         GraknGraph graph = SNBGraph.getGraph();
-        Pattern body = graph.graql().parsePattern("$x isa person;");
-        Pattern head = graph.graql().parsePattern("($x, $x) isa knows;");
+        Pattern body = graph.graql().parsePattern("$x isa person");
+        Pattern head = graph.graql().parsePattern("($x, $x) isa knows");
         graph.getMetaRuleInference().addRule(body, head);
 
-        String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
+        String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
-        assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        Query query = new Query(queryString, graph);
+        QueryAnswers answers = reasoner.resolve(query);
+        printAnswers(answers);
+        //assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -644,7 +647,7 @@ public class ReasonerTest extends AbstractEngineTest{
     }
 
     @Test
-    public void testHasRole(){
+    public void testHasRole() {
         GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match ($x, $y) isa $rel-type;$rel-type has-role geo-entity;" +
                 "$y isa country;$y has name 'Poland';";
@@ -653,10 +656,38 @@ public class ReasonerTest extends AbstractEngineTest{
         PatternAdmin hR = lgraph.graql().parsePattern("is-located-in has-role $x").admin();
         PatternAdmin hR2 = lgraph.graql().parsePattern("$rel-type has-role geo-entity").admin();
         MatchQuery query = new Query(queryString, lgraph);
-       // MatchQuery query2 = new Query(queryString2, lgraph);
+        // MatchQuery query2 = new Query(queryString2, lgraph);
 
         //Reasoner reasoner = new Reasoner(lgraph);
         //assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+    //TODO Ignored due to bug in graql leading to no results for $y value > $x
+    @Ignore
+    @Test
+    public void testResourceComparison(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        //recommendations for people older than Denis - Frank, Karl and Gary
+        String queryString = "match $b has name 'Denis', has age $x; $p has age $y; $y value > $x;"+
+                "$pr isa product;($p, $pr) isa recommendation;select $p, $pr;";
+        String explicitQuery = "match $p isa person, has name $xName;$pr isa product, has name $yName;" +
+                "{$xName value 'Frank';$yName value 'Nocturnes';} or" +
+                "{$xName value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
+                "{$xName value 'Gary';$yName value 'The Wall';};select $p, $pr;";
+        Reasoner reasoner = new Reasoner(lgraph);
+        Query query = new Query(queryString, lgraph);
+        assertEquals(reasoner.resolve(query), new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(explicitQuery))));
+    }
+
+    //TODO Ignored due to bug in graql leading to no results for $y value > $x
+    @Ignore
+    @Test
+    public void testResourceComparison2(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $p1 has age $x;$p2 has age $y;$x value > $y;" +
+                "$pr isa product;($p, $pr) isa recommendation;";
+        Query query = new Query(queryString, lgraph);
+        Reasoner reasoner = new Reasoner(lgraph);
+        printAnswers(reasoner.resolve(query));
     }
 }
 

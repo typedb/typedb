@@ -8,13 +8,13 @@ $uk isa country, has name "UK";
 $italy isa country, has name "Italy";
 $europe isa continent, has name "Europe";
 
-$alice isa person, has name "Alice";
+$alice isa person, has name "Alice", has age 19;
 $bob isa person, has name "Bob", has age 21, has gender "male";
-$charlie isa person, has name 'Charlie';
-$denis isa person, has name "Denis";
-$frank isa person, has name "Frank";
-$gary isa person, has name "Gary";
-$karl isa person, has name"Karl Fischer";
+$charlie isa person, has name "Charlie", has age 23;
+$denis isa person, has name "Denis", has age 25;
+$frank isa person, has name "Frank", has age 27;
+$gary isa person, has name "Gary", has age 29;
+$karl isa person, has name "Karl Fischer", has age 31;
 $forum1 isa forum, has name "forum1";
 
 (acquaintance1: $bob, acquaintance2: $charlie) isa knows;

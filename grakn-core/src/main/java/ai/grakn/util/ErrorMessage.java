@@ -35,7 +35,6 @@ public enum ErrorMessage {
     REGEX_INSTANCE_FAILURE("The regex ['%s'] cannot be applied because instance ['%s'] of the Resource Type does not " +
             "conform to the regular expressions"),
     REGEX_NOT_STRING("The Resource Type ['%s'] is not of type String so it cannot support regular expressions"),
-    RELATION_EXISTS("The Relation with the provided role players already exists ['%s']."),
     ID_RESERVED("The ID ['%s'] is reserved and cannot be used"),
     ROLE_IS_NULL("The provided role cannot be null with roleplayer ['%s']"),
     RESOURCE_TYPE_CANNOT_BE_UNIQUE("The resource type ['%s'] cannot be set to unique because it's resources have " +
@@ -69,6 +68,7 @@ public enum ErrorMessage {
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
     VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type ['%s'] is playing role ['%s'] which it is not allowed \n"),
     VALIDATION_INSTANCE("Instance ['%s'] does not play all required roles \n"),
+    VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player ['%s'] \n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),

@@ -359,11 +359,6 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertTrue(uniqueCollection.contains(movieGenre.getBaseIdentifier()));
         assertTrue(uniqueCollection.contains(crime.getBaseIdentifier()));
 
-        graknGraph.getRelation(movieHasGenre, roleMap);
-        graknGraph.getRelation(movieHasGenre, roleMap);
-        graknGraph.getRelation(movieHasGenre, roleMap);
-        graknGraph.getRelation(movieHasGenre, roleMap);
-
         assertEquals(Schema.BaseType.ENTITY.name(), pacino.getBaseType());
         for(CastingImpl casting: assertion.getMappingCasting()){
             assertEquals(casting.getRolePlayer().getBaseType(), Schema.BaseType.ENTITY.name());
@@ -550,20 +545,11 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         Instance thing = type.addEntity();
         Instance godfather = type.addEntity();
 
-        Instance pacino2 = type.addEntity();
-        Instance thing2 = type.addEntity();
-        Instance godfather2 = type.addEntity();
-
         assertEquals(0, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
         RelationImpl relation = (RelationImpl) cast.addRelation().
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
         assertEquals(1, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
         assertEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
-
-        relation = (RelationImpl) cast.addRelation().
-                putRolePlayer(actor, pacino2).putRolePlayer(actor2, thing2).putRolePlayer(actor3, godfather2);
-
-        assertTrue(relation.getIndex().startsWith("RelationBaseId_" + String.valueOf(relation.getBaseIdentifier())));
     }
 
     @Test

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.visualiser;
+package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.*;
 import ai.grakn.util.REST;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  * Class used to build the HAL representation of a given concept.
  */
 
-public class HALConceptData {
+class HALConceptData {
 
     private RepresentationFactory factory;
 
@@ -59,13 +59,11 @@ public class HALConceptData {
 
     private boolean embedType;
     private Set<String> typesInQuery = null;
-    private String rootConceptId;
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<String> typesInQuery, String rootConceptId) {
+    HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<String> typesInQuery) {
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
-        this.rootConceptId=rootConceptId;
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
         resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
@@ -169,23 +167,13 @@ public class HALConceptData {
 
         // temp fix until a new behaviour is defined
         Representation HALType;
+
         if (concept.type() != null) {
             HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
-        } else {
-            if (!concept.getId().equals(rootConceptId)) {
-                HALType = factory.newRepresentation(resourceLinkPrefix + rootConceptId)
-                        .withProperty(ID_PROPERTY, ROOT_CONCEPT)
-                        .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
-                        .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
-                        .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
-                        .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
-                halResource.withRepresentation(SUB_EDGE, HALType);
-            }
         }
-
     }
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
@@ -275,7 +263,7 @@ public class HALConceptData {
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
-        if (!type.getName().equals(rootConceptId)) {
+        if (!type.getName().equals(ROOT_CONCEPT)) {
             type.instances().parallelStream().forEach(instance -> {
 
                 if (instance.isType() && instance.asType().isImplicit()) return;
@@ -301,7 +289,7 @@ public class HALConceptData {
         return halResource.toString(RepresentationFactory.HAL_JSON);
     }
 
-    public Representation getRepresentation() {
+    Representation getRepresentation() {
         return halResource;
     }
 }
