@@ -22,10 +22,21 @@ askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchQuery? insert varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
-computeQuery   : 'compute' name ('from' name 'to' name)? ('of' statTypes)? ('in' subgraph)? ';' ;
+computeQuery   : 'compute' computeMethod ;
 
-statTypes      : nameList ;
-subgraph       : nameList ;
+computeMethod  : min | max | median | mean | std | sum ;
+
+min            : 'min'    ('of' ofList)? ('in' inList)? ;
+max            : 'max'    ('of' ofList)? ('in' inList)? ;
+median         : 'median' ('of' ofList)? ('in' inList)? ;
+mean           : 'mean'   ('of' ofList)? ('in' inList)? ;
+std            : 'std'    ('of' ofList)? ('in' inList)? ;
+sum            : 'sum'    ('of' ofList)? ('in' inList)? ;
+count          : 'count'  ('in' inList)? ;
+path           : 'path'   'from' name 'to' name ('in' inList)? ;
+
+ofList         : nameList ;
+inList         : nameList ;
 nameList       : name (',' name)* ;
 
 aggregate      : id argument*                     # customAgg

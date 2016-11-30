@@ -34,6 +34,14 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.analytics.CountQuery;
+import ai.grakn.graql.analytics.MaxQuery;
+import ai.grakn.graql.analytics.MeanQuery;
+import ai.grakn.graql.analytics.MedianQuery;
+import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.StdQuery;
+import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -42,7 +50,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -171,40 +178,134 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
-        // TODO: Allow registering additional compute methods
-        String computeMethod = visitName(ctx.name(0));
-
-        String from = null;
-        String to = null;
-
-        if (ctx.name().size() > 1) {
-            from = visitName(ctx.name(1));
-            to = visitName(ctx.name(2));
-        }
-
-        Set<String> statisticsResourceTypeIds = new HashSet<>(), subTypeIds = new HashSet<>();
-
-        if (ctx.subgraph() != null) {
-            subTypeIds = visitSubgraph(ctx.subgraph());
-        }
-
-        if (ctx.statTypes() != null) {
-            statisticsResourceTypeIds = visitStatTypes(ctx.statTypes());
-        }
-
-        if (ctx.name().size() > 1) return queryBuilder.compute(computeMethod, from, to, subTypeIds);
-
-        return queryBuilder.compute(computeMethod, subTypeIds, statisticsResourceTypeIds);
+    public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
+        return visitComputeMethod(ctx.computeMethod());
     }
 
     @Override
-    public Set<String> visitStatTypes(GraqlParser.StatTypesContext ctx) {
+    public MinQuery visitMin(GraqlParser.MinContext ctx) {
+        MinQuery min = queryBuilder.compute().min();
+
+        if (ctx.ofList() != null) {
+            min = min.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            min = min.in(visitInList(ctx.inList()));
+        }
+
+        return min;
+    }
+
+    @Override
+    public MaxQuery visitMax(GraqlParser.MaxContext ctx) {
+        MaxQuery max = queryBuilder.compute().max();
+
+        if (ctx.ofList() != null) {
+            max = max.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            max = max.in(visitInList(ctx.inList()));
+        }
+
+        return max;
+    }
+
+    @Override
+    public MedianQuery visitMedian(GraqlParser.MedianContext ctx) {
+        MedianQuery median = queryBuilder.compute().median();
+
+        if (ctx.ofList() != null) {
+            median = median.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            median = median.in(visitInList(ctx.inList()));
+        }
+
+        return median;
+    }
+
+    @Override
+    public MeanQuery visitMean(GraqlParser.MeanContext ctx) {
+        MeanQuery mean = queryBuilder.compute().mean();
+
+        if (ctx.ofList() != null) {
+            mean = mean.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            mean = mean.in(visitInList(ctx.inList()));
+        }
+
+        return mean;
+    }
+
+    @Override
+    public StdQuery visitStd(GraqlParser.StdContext ctx) {
+        StdQuery std = queryBuilder.compute().std();
+
+        if (ctx.ofList() != null) {
+            std = std.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            std = std.in(visitInList(ctx.inList()));
+        }
+
+        return std;
+    }
+
+    @Override
+    public SumQuery visitSum(GraqlParser.SumContext ctx) {
+        SumQuery sum = queryBuilder.compute().sum();
+
+        if (ctx.ofList() != null) {
+            sum = sum.of(visitOfList(ctx.ofList()));
+        }
+
+        if (ctx.inList() != null) {
+            sum = sum.in(visitInList(ctx.inList()));
+        }
+
+        return sum;
+    }
+
+    @Override
+    public CountQuery visitCount(GraqlParser.CountContext ctx) {
+        CountQuery count = queryBuilder.compute().count();
+
+        if (ctx.inList() != null) {
+            count = count.in(visitInList(ctx.inList()));
+        }
+
+        return count;
+    }
+
+    @Override
+    public PathQuery visitPath(GraqlParser.PathContext ctx) {
+        PathQuery path = queryBuilder.compute().path().from(visitName(ctx.name(0))).to(visitName(ctx.name(1)));
+
+        if (ctx.inList() != null) {
+            path = path.in(visitInList(ctx.inList()));
+        }
+
+        return path;
+    }
+
+    @Override
+    public ComputeQuery<?> visitComputeMethod(GraqlParser.ComputeMethodContext ctx) {
+        return (ComputeQuery<?>) super.visitComputeMethod(ctx);
+    }
+
+    @Override
+    public Set<String> visitInList(GraqlParser.InListContext ctx) {
         return visitNameList(ctx.nameList());
     }
 
     @Override
-    public Set<String> visitSubgraph(GraqlParser.SubgraphContext ctx) {
+    public Set<String> visitOfList(GraqlParser.OfListContext ctx) {
         return visitNameList(ctx.nameList());
     }
 
