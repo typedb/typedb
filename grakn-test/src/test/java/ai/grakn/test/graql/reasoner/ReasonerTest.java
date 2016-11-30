@@ -655,7 +655,6 @@ public class ReasonerTest extends AbstractEngineTest{
                 "($x, $y) isa is-located-in;$y has name 'Poland'; select $x;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
-
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
@@ -667,34 +666,39 @@ public class ReasonerTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(lgraph);
         Query query = new Query(queryString, lgraph);
     }
-
-    //TODO Ignored due to bug in graql leading to no results for $y value > $x
-    @Ignore
+    
     @Test
     public void testResourceComparison(){
         GraknGraph lgraph = SNBGraph.getGraph();
-        //recommendations for people older than Denis - Frank, Karl and Gary
-        String queryString = "match $b has name 'Denis', has age $x; $p has age $y; $y value > $x;"+
-                "$pr isa product;($p, $pr) isa recommendation;select $p, $pr;";
-        String explicitQuery = "match $p isa person, has name $xName;$pr isa product, has name $yName;" +
-                "{$xName value 'Frank';$yName value 'Nocturnes';} or" +
-                "{$xName value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
-                "{$xName value 'Gary';$yName value 'The Wall';};select $p, $pr;";
+        //recommendations of products for people older than Denis - Frank, Karl and Gary
+        String queryString = "match $b has name 'Denis', has age $x; $p has name $name, has age $y; $y value > $x;"+
+                "$pr isa product;($p, $pr) isa recommendation;select $p, $y, $pr, $name;";
+        String explicitQuery = "match $p isa person, has age $y, has name $name;$pr isa product, has name $yName;" +
+                "{$name value 'Frank';$yName value 'Nocturnes';} or" +
+                "{$name value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
+                "{$name value 'Gary';$yName value 'The Wall';};select $p, $pr, $y, $name;";
         Reasoner reasoner = new Reasoner(lgraph);
         Query query = new Query(queryString, lgraph);
-        assertEquals(reasoner.resolve(query), new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(explicitQuery))));
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(explicitQuery)));
+        assertEquals(answers, answers2);
     }
 
-    //TODO Ignored due to bug in graql leading to no results for $y value > $x
-    @Ignore
     @Test
     public void testResourceComparison2(){
         GraknGraph lgraph = SNBGraph.getGraph();
-        String queryString = "match $p1 has age $x;$p2 has age $y;$x value > $y;" +
-                "$pr isa product;($p, $pr) isa recommendation;";
+        String queryString = "match $p has name $name, has age $x;$p2 has name 'Denis', has age $y;$x value < $y;" +
+                "$t isa tag;($p, $t) isa recommendation; select $p, $name, $x, $t;";
+        String explicitQuery = "match " +
+                "$p isa person, has age $x, has name $name;$t isa tag, has name $yName;" +
+                "{$name value 'Charlie';" +
+                "{$yName value 'Yngwie Malmsteen';} or {$yName value 'Cacophony';} or" +
+                "{$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};};select $p, $name, $x, $t;";
         Query query = new Query(queryString, lgraph);
         Reasoner reasoner = new Reasoner(lgraph);
-        printAnswers(reasoner.resolve(query));
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(explicitQuery)));
+        assertEquals(answers, answers2);
     }
 }
 

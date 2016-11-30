@@ -126,7 +126,6 @@ public abstract class Binary extends Atom {
     public String getValueVariable() {
         return valueVariable;
     }
-
     protected void setValueVariable(String var) {
         valueVariable = var;
     }
@@ -139,10 +138,9 @@ public abstract class Binary extends Atom {
     @Override
     public Set<Predicate> getIdPredicates() {
         //direct predicates
-        Set<Predicate> idPredicates = getParentQuery().getIdPredicates().stream()
+        return getParentQuery().getIdPredicates().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
-        return idPredicates;
     }
 
     @Override

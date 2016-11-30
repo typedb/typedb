@@ -95,11 +95,7 @@ public class Query implements MatchQueryInternal {
         int hashCode = 1;
         SortedSet<Integer> hashes = new TreeSet<>();
         atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
-        Iterator<Integer> it = hashes.iterator();
-        while(it.hasNext()){
-            Integer hash = it.next();
-            hashCode = hashCode * 37 + hash;
-        }
+        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
     }
 

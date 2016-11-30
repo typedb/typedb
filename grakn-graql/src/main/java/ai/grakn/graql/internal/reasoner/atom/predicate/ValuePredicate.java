@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
@@ -98,5 +99,21 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         if (properties.hasNext())
             throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
         return property.getPredicate();
+    }
+
+    @Override
+    public Set<String> getVarNames(){
+        Set<String> vars = super.getVarNames();
+        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
+        if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
+        return vars;
+    }
+
+    @Override
+    public Set<String> getSelectedNames(){
+        Set<String> vars = super.getSelectedNames();
+        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
+        if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
+        return vars;
     }
 }
