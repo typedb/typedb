@@ -28,6 +28,7 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,8 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.Objects.requireNonNull;
-
 public class HALConceptRepresentationBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);
@@ -45,31 +44,31 @@ public class HALConceptRepresentationBuilder {
     private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y); select $r;";
     private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
-    public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<String, Concept>> graqlResultsList) {
+    public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<String, Concept>> graqlResultsList, String rootConceptId) {
         //Compute connections between variables in Graql result
         Map<String, Collection<String>> linkedNodes = new HashMap<>();
         Map<String, String> roleTypes = new HashMap<>();
         computeLinkedNodesFromQuery(matchQuery, linkedNodes, roleTypes);
         //Collect all the types explicitly asked in the match query
-        Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet());
+        Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x->x.asType().getName()).collect(Collectors.toSet());
         //Check if among the types asked in the query there is a relation-type (we only support one relation-type per query)
         String relationType = matchQuery.admin().getTypes().stream()
                 .filter(Concept::isRelationType)
                 .findFirst().map(Concept::getId)
                 .orElse("");
 
-        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, relationType, roleTypes);
+        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, relationType, roleTypes, rootConceptId);
     }
 
     public static String renderHALConceptData(Concept concept, int separationDegree) {
-        return new HALConceptData(requireNonNull(concept), separationDegree, false, new HashSet<>()).render();
+        return new HALConceptData(concept, separationDegree, false, new HashSet<>()).render();
     }
 
-    public static String renderHALConceptOntology(Concept concept) {
-        return new HALConceptOntology(concept).render();
+    public static String renderHALConceptOntology(Concept concept, String rootConceptId) {
+        return new HALConceptOntology(concept, rootConceptId).render();
     }
 
-    private static Json buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery, String relationType, Map<String, String> roleTypes) {
+    private static Json buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery, String relationType, Map<String, String> roleTypes, String rootConceptId) {
         final Json lines = Json.array();
         graqlResultsList.parallelStream()
                 .forEach(resultLine -> resultLine.entrySet().forEach(current -> {
@@ -123,12 +122,13 @@ public class HALConceptRepresentationBuilder {
             //if in the current var is expressed some kind of relation (e.g. ($x,$y))
             if (var.getProperty(RelationProperty.class).isPresent()) {
                 //collect all the role players in the current var's relations (e.g. 'x' and 'y')
-                final List<String> rolePlayersInVar = var.getProperty(RelationProperty.class).get()
+                final List<String> rolePlayersInVar = new ArrayList<>();
+                        var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().map(x -> {
-                            roleTypes.put(x.getRolePlayer().getName(),
-                                    (x.getRoleType().isPresent()) ? x.getRoleType().get().getId().get() : HAS_ROLE_EDGE);
-                            return x.getRolePlayer().getName();
-                        }).collect(Collectors.toList());
+                            roleTypes.put(x.getRolePlayer().getVarName(),
+                                    (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE);
+                            return x.getRolePlayer().getVarName();
+                        }).forEach(result -> {rolePlayersInVar.add(result);});
                 //if it is a binary or ternary relation
                 if (rolePlayersInVar.size() > 1) {
                     rolePlayersInVar.forEach(rolePlayer -> {

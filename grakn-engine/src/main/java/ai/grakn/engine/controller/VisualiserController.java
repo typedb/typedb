@@ -104,7 +104,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
 
-            return renderHALConceptData(concept, separationDegree,graph.getType(ROOT_CONCEPT).getId());
+            return renderHALConceptData(concept, separationDegree);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
@@ -200,7 +200,7 @@ public class VisualiserController {
                 response.put(COMPUTE_RESPONSE_TYPE, "HAL");
                 JSONArray array = new JSONArray();
                 ((List<Concept>)computeQuery.execute()).iterator().forEachRemaining(concept ->
-                        array.put(renderHALConceptData(concept, 0, rootConceptId)));
+                        array.put(renderHALConceptData(concept, 0)));
                 response.put(COMPUTE_RESPONSE_FIELD,array);
             } else {
                 response.put(COMPUTE_RESPONSE_TYPE, "string");
