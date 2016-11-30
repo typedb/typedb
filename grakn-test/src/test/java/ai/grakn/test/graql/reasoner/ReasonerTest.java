@@ -659,6 +659,15 @@ public class ReasonerTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
+
+    @Test
+    public void testScope(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
+        Reasoner reasoner = new Reasoner(lgraph);
+        Query query = new Query(queryString, lgraph);
+    }
+
     //TODO Ignored due to bug in graql leading to no results for $y value > $x
     @Ignore
     @Test

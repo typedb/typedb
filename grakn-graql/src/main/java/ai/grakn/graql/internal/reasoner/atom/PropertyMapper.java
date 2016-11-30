@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
+import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
@@ -77,6 +78,8 @@ public class PropertyMapper {
             return map((HasRoleProperty)prop, var, vars, parent, graph);
         else if (prop instanceof HasResourceTypeProperty)
             return map((HasResourceTypeProperty)prop, var, vars, parent, graph);
+        else if (prop instanceof HasScopeProperty)
+            return map((HasScopeProperty)prop, var, vars, parent, graph);
         else if (prop instanceof IsaProperty)
             return map((IsaProperty)prop, var, vars, parent, graph);
         else if (prop instanceof HasResourceProperty)
@@ -207,6 +210,21 @@ public class PropertyMapper {
         //isa part
         VarAdmin resVar = Graql.var(varName).hasResource(typeName).admin();
         atoms.add(new TypeAtom(resVar, parent));
+        return atoms;
+    }
+
+    private static Set<Atomic> map(HasScopeProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
+        Set<Atomic> atoms = new HashSet<>();
+        String varName = var.getVarName();
+        VarAdmin scopeVar = prop.getScope();
+        String scopeVariable = scopeVar.isUserDefinedName() ?
+                scopeVar.getVarName() : varName + "-scope-" + UUID.randomUUID().toString();
+        IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent, graph);
+
+        //isa part
+        VarAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
+        atoms.add(new TypeAtom(scVar, parent));
+        if (predicate != null) atoms.add(predicate);
         return atoms;
     }
 
