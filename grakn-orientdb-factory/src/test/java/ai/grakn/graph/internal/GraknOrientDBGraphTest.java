@@ -53,6 +53,7 @@ public class GraknOrientDBGraphTest {
         graknGraph.clear();
     }
 
+    @Ignore
     @Test
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
