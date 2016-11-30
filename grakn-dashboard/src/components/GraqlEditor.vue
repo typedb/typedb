@@ -159,9 +159,11 @@ export default {
                     }
                 });
         },
+        
         emitResponseAnalytics(resp, err) {
             this.$emit('response-analytics', resp, err);
         },
+
         emitCloseError() {
             this.$emit('close-error');
         },
