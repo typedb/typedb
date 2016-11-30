@@ -221,12 +221,12 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     @Override
     public String toString(){
-        String description = "ID [" + getId() +  "] Type [" + type().getId() + "] Roles and Role Players: \n";
+        String description = "ID [" + getId() +  "] Type [" + type().getName() + "] Roles and Role Players: \n";
         for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
             if(entry.getValue() == null){
-                description += "    Role [" + entry.getKey().getId() + "] not played by any instance \n";
+                description += "    Role [" + entry.getKey().getName() + "] not played by any instance \n";
             } else {
-                description += "    Role [" + entry.getKey().getId() + "] played by [" + entry.getValue().getId() + "] \n";
+                description += "    Role [" + entry.getKey().getName() + "] played by [" + entry.getValue().getId() + "] \n";
             }
         }
         return description;

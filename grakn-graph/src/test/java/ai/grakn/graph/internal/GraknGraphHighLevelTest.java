@@ -549,7 +549,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         RelationImpl relation = (RelationImpl) cast.addRelation().
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
         assertEquals(1, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
-        assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
+        assertEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
     }
 
     @Test

@@ -280,7 +280,7 @@ public class RelationTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()))
+                containsString(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation2.toString()))
         ));
 
         graknGraph.commit();
@@ -337,9 +337,9 @@ public class RelationTest extends GraphTestBase{
 
         Relation relation = relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
-        String mainDescription = "ID [" + relation.getId() +  "] Type [" + relation.type().getId() + "] Roles and Role Players:";
-        String rolerp1 = "    Role [" + roleType1.getId() + "] played by [" + instance1.getId() + "]";
-        String rolerp2 = "    Role [" + roleType2.getId() + "] played by [" + instance2.getId() + "]";
+        String mainDescription = "ID [" + relation.getId() +  "] Type [" + relation.type().getName() + "] Roles and Role Players:";
+        String rolerp1 = "    Role [" + roleType1.getName() + "] played by [" + instance1.getId() + "]";
+        String rolerp2 = "    Role [" + roleType2.getName() + "] played by [" + instance2.getId() + "]";
 
         assertTrue("Relation toString missing main description", relation.toString().contains(mainDescription));
         assertTrue("Relation toString missing role and role player definition", relation.toString().contains(rolerp1));
