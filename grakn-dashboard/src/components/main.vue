@@ -31,7 +31,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <!--</div>-->
     <!--</div>-->
     <!--<a class="navbar-brand" href="/">-->
-    <!--MindmapsDB-->
+    <!--Grakn-->
     <!--<span>{{version}}</span>-->
     <!--</a>-->
     <!--</div>-->
