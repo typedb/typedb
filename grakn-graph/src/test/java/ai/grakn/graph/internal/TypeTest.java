@@ -443,17 +443,17 @@ public class TypeTest extends GraphTestBase{
         assertEquals(entityType2.playsRoles().iterator().next().getName(), Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
 
         //Check Implicit Types Follow AKO Structure
-        ResourceType rtSuperRelation = graknGraph.getResourceType(Schema.Resource.HAS_RESOURCE.getName(rtSuper.getName()));
-        RoleType reSuperRoleOwner = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
-        RoleType reSuperRoleValue = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
+        RelationType rtSuperRelation = graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(rtSuper.getName()));
+        RoleType rtSuperRoleOwner = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
+        RoleType rtSuperRoleValue = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
 
-        ResourceType rtRelation = graknGraph.getResourceType(Schema.Resource.HAS_RESOURCE.getName(rt.getName()));
+        RelationType rtRelation = graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(rt.getName()));
         RoleType reRoleOwner = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rt.getName()));
         RoleType reRoleValue = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rt.getName()));
 
+        assertEquals(rtSuperRoleOwner, reRoleOwner.superType());
+        assertEquals(rtSuperRoleValue, reRoleValue.superType());
         assertEquals(rtSuperRelation, rtRelation.superType());
-        assertEquals(reSuperRoleOwner, reRoleOwner.superType());
-        assertEquals(reSuperRoleValue, reRoleValue.superType());
     }
 
     @Test
