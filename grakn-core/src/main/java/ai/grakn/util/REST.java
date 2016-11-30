@@ -101,6 +101,7 @@ public class REST {
         public static final String ACTION_ROLLBACK = "rollback";
         public static final String ACTION_PING = "ping";
         public static final String ACTION_TYPES = "types";
+        public static final String ACTION_DISPLAY = "display";
 
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
@@ -108,5 +109,6 @@ public class REST {
         public static final String QUERY_RESULT = "result";
         public static final String ERROR = "error";
         public static final String TYPES = "types";
+        public static final String DISPLAY = "display";
     }
 }

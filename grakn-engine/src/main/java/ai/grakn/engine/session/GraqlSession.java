@@ -20,6 +20,7 @@ package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Printer;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -45,6 +47,7 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
+import static ai.grakn.util.REST.RemoteShell.DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
@@ -58,7 +61,8 @@ class GraqlSession {
     private final Session session;
     private GraknGraph graph;
     private final Supplier<GraknGraph> getGraph;
-    private final Printer printer;
+    private final String outputFormat;
+    private Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
 
@@ -74,7 +78,8 @@ class GraqlSession {
         this.session = session;
         this.getGraph = getGraph;
         this.graph = getGraph.get();
-        this.printer = getPrinter(outputFormat);
+        this.outputFormat = outputFormat;
+        this.printer = getPrinter();
 
         queryExecutor.submit(this::sendTypes);
 
@@ -206,6 +211,17 @@ class GraqlSession {
         }
     }
 
+    void setDisplayOptions(Json json) {
+        queryExecutor.submit(() -> {
+            ResourceType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
+                    .map(Json::asString)
+                    .map(graph::getResourceType)
+                    .filter(Objects::nonNull)
+                    .toArray(ResourceType[]::new);
+            printer = getPrinter(displayOptions);
+        });
+    }
+
     private void attemptRollback() {
         try {
             graph.rollback();
@@ -297,11 +313,11 @@ class GraqlSession {
         return Stream.concat(types, metaTypes);
     }
 
-    private Printer getPrinter(String outputFormat) {
+    private Printer getPrinter(ResourceType... resources) {
         switch (outputFormat) {
             case "graql":
             default:
-                return Printers.graql();
+                return Printers.graql(resources);
             case "json":
                 return Printers.json();
             case "hal":

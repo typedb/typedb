@@ -93,6 +93,9 @@ public class RemoteSession {
                 case REST.RemoteShell.ACTION_ROLLBACK:
                     sessions.get(session).rollback();
                     break;
+                case REST.RemoteShell.ACTION_DISPLAY:
+                    sessions.get(session).setDisplayOptions(json);
+                    break;
             }
         } catch (Throwable e) {
             LOG.error("Exception",e);
