@@ -232,10 +232,13 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             });
         }
 
-        deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
-        deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-        putEdge(type, Schema.EdgeLabel.SUB);
-        type(); //Check if there is a circular sub loop
+        if(currentSuperType == null || !currentSuperType.equals(type)) {
+            deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
+            deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
+            putEdge(type, Schema.EdgeLabel.SUB);
+            type(); //Check if there is a circular sub loop
+        }
+        
         return getThis();
     }
 
