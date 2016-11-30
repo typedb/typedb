@@ -18,6 +18,7 @@ lhs
 (parent: $f, child: $y) isa parentship;
 $m has gender "female";
 $f has gender "male";
+$x != $y;
 }
 rhs
 {(sibling1: $x, sibling2: $y) isa siblings;};
@@ -30,6 +31,7 @@ lhs
 (parent: $p, child: $c1) isa parentship;
 ($p, $p2) isa siblings;
 (parent: $p2, child: $c2) isa parentship;
+$c1 != $c2;
 }
 rhs
 {(cousin1: $c1, cousin2: $c2) isa cousins;};
@@ -39,7 +41,6 @@ lhs
 {(spouse1: $x, spouse2: $y) isa marriage;
 (parent: $il, child: $y) isa parentship;}
 rhs
-
 {(parent-in-law: $il, child-in-law: $x) isa in-laws;};
 
 $parentsOfSpousesAreInLaws2 isa inference-rule

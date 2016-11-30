@@ -98,8 +98,8 @@ public class AtomicQueryTest extends AbstractEngineTest{
     }
 
     //TODO Bug #10655 if we group resources into atomic queries
-    @Test
     @Ignore
+    @Test
     public void testUnification(){
         GraknGraph localGraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", localGraph);

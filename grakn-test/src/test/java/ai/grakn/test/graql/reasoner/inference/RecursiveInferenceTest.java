@@ -224,8 +224,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
     /** SG(X, X) :- H(X) doesn't get applied*/
-    @Test
     @Ignore
+    @Test
     public void testSameGeneration(){
         GraknGraph graph = TestGraph.getGraph("name", "recursivity-sg-test.gql");
         QueryBuilder qb = graph.graql();
@@ -344,8 +344,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     }
 
     //TODO bug #10635
-    @Test
     @Ignore
+    @Test
     public void testNguyen2(){
         final int N = 9;
         GraknGraph graph = NguyenGraph.getGraph(N);
@@ -425,8 +425,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
-    @Test
     @Ignore
+    @Test
     public void testPathSymmetric(){
         final int N = 3;
         GraknGraph graph = PathGraphSymmetric.getGraph(N, 3);
