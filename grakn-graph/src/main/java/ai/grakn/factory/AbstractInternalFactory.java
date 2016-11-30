@@ -37,7 +37,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
     private Boolean lastGraphBuiltBatchLoading = null;
     
-    private SystemKeyspace<M, G> existingKeyspaces;
+    private SystemKeyspace<M, G> systemKeyspace;
     
     AbstractInternalFactory(String keyspace, String engineUrl, String config){
         if(keyspace == null){
@@ -47,7 +47,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.config = config;
-        this.existingKeyspaces = new SystemKeyspace<M, G>(this.engineUrl, this.config);
+        this.systemKeyspace = new SystemKeyspace<M, G>(this.engineUrl, this.config);
     }
 
     abstract boolean isClosed(G innerGraph);
@@ -92,7 +92,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace))
-            	existingKeyspaces.keyspaceOpened(this.keyspace);
+            	systemKeyspace.keyspaceOpened(this.keyspace);
         } else {
             if(graknGraph.isClosed()){
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);

@@ -52,6 +52,8 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	// If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";	
     public static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
+	public static final String KEYSPACE_ENTITY = "keyspace";
+	public static final String KEYSPACE_RESOURCE = "keyspace-name";
 	
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     
@@ -70,12 +72,12 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	public SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
 		openSpaces.computeIfAbsent(keyspace, name -> {
 			try (GraknGraph graph = Grakn.factory(engineUrl, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph()) {
-				ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
+				ResourceType<String> keyspaceName = graph.getResourceType(KEYSPACE_RESOURCE);
 				Resource<String> resource = graph.getResource(keyspace, keyspaceName);
 				if (resource == null)
 					resource = keyspaceName.putResource(keyspace);
 				if (resource.owner() == null) {
-					graph.getEntityType("keyspace").addEntity().hasResource(resource);
+					graph.getEntityType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
 				}
 				graph.commit();
 			} catch (GraknValidationException e) {
@@ -93,7 +95,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	 */
 	public void loadSystemOntology() {
 		try (GraknGraph graph = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, config).getGraph(false)) {
-			if (graph.getEntityType("keyspace") == null)
+			if (graph.getEntityType(KEYSPACE_ENTITY) == null)
 				return;
 			ClassLoader loader = this.getClass().getClassLoader();
 			String query = null;
