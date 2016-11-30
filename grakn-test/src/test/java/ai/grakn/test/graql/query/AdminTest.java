@@ -18,8 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.test.AbstractMovieGraphTest;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
@@ -28,6 +26,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.test.AbstractMovieGraphTest;
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.id;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
@@ -54,8 +53,8 @@ public class AdminTest extends AbstractMovieGraphTest {
     @Test
     public void testGetTypesInQuery() {
         MatchQuery query = qb.match(
-                var("x").isa(id("movie").sub("production")).has("tmdb-vote-count", 400),
-                var("y").isa("character").id("123"),
+                var("x").isa(name("movie").sub("production")).has("tmdb-vote-count", 400),
+                var("y").isa("character"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
         );
 

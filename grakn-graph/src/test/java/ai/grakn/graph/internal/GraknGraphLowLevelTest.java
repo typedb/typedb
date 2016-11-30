@@ -18,14 +18,13 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -38,7 +37,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -63,9 +61,9 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
     public void testTooManyNodesForId() {
         Graph graph = graknGraph.getTinkerPopGraph();
         Vertex v1 = graph.addVertex();
-        v1.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "value");
+        v1.property(Schema.ConceptProperty.NAME.name(), "value");
         Vertex v2 = graph.addVertex();
-        v2.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "value");
+        v2.property(Schema.ConceptProperty.NAME.name(), "value");
         graknGraph.putEntityType("value");
     }
 
@@ -74,14 +72,14 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         assertNull(graknGraph.getConceptByBaseIdentifier(1000L));
 
         ConceptImpl c1 = (ConceptImpl) graknGraph.putEntityType("c1");
-        ConceptImpl c2 = graknGraph.getConceptByBaseIdentifier(c1.getBaseIdentifier());
+        Concept c2 = graknGraph.getConceptByBaseIdentifier(c1.getBaseIdentifier());
         assertEquals(c1, c2);
     }
 
     @Test
     public void testGetConcept() throws Exception {
         Concept c1 = graknGraph.putEntityType("VALUE");
-        Concept c2 = graknGraph.getConcept("VALUE");
+        Concept c2 = graknGraph.getConcept(c1.getId());
         assertEquals(c1, c2);
     }
 
@@ -133,10 +131,9 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
     }
 
     public void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
-        String id = "FakeCasting " + UUID.randomUUID();
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
         vertex.property(Schema.ConceptProperty.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
+        String id = vertex.id().toString();
 
         CastingImpl casting = (CastingImpl) graknGraph.getConcept(id);
         EdgeImpl edge = casting.addEdge(role, Schema.EdgeLabel.ISA); // Casting to Role
@@ -214,22 +211,6 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
     }
 
     @Test
-    public void testGetConceptInstance(){
-        assertNull(graknGraph.getEntity("Bob"));
-        EntityType type = graknGraph.putEntityType("Parent");
-        Instance c2 = type.addEntity();
-        assertEquals(c2, graknGraph.getEntity(c2.getId()));
-    }
-
-    @Test
-    public void testGetRelation(){
-        RelationType relationType = graknGraph.putRelationType("Hello");
-        Relation c1 = relationType.addRelation();
-        assertEquals(c1, graknGraph.getRelation(c1.getId()));
-        assertNull(graknGraph.getResourceType("BOB"));
-    }
-
-    @Test
     public void testGetConceptType(){
         assertNull(graknGraph.getEntityType("Bob"));
         Type c2 = graknGraph.putEntityType("Bob");
@@ -266,7 +247,6 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testGetResource(){
-        assertNull(graknGraph.getResource("Bob"));
         ResourceType type = graknGraph.putResourceType("Type", ResourceType.DataType.STRING);
         ResourceType type2 = graknGraph.putResourceType("Type 2", ResourceType.DataType.STRING);
         Resource c2 = type.putResource("1");
@@ -278,32 +258,32 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void getSuperConceptType(){
-        assertEquals(graknGraph.getMetaType().getId(), Schema.MetaSchema.TYPE.getId());
+        assertEquals(graknGraph.getMetaType().getName(), Schema.MetaSchema.TYPE.getName());
     }
 
     @Test
     public void getSuperRelationType(){
-        assertEquals(graknGraph.getMetaRelationType().getId(), Schema.MetaSchema.RELATION_TYPE.getId());
+        assertEquals(graknGraph.getMetaRelationType().getName(), Schema.MetaSchema.RELATION_TYPE.getName());
     }
 
     @Test
     public void getSuperRoleType(){
-        assertEquals(graknGraph.getMetaRoleType().getId(), Schema.MetaSchema.ROLE_TYPE.getId());
+        assertEquals(graknGraph.getMetaRoleType().getName(), Schema.MetaSchema.ROLE_TYPE.getName());
     }
 
     @Test
     public void getSuperResourceType(){
-        assertEquals(graknGraph.getMetaResourceType().getId(), Schema.MetaSchema.RESOURCE_TYPE.getId());
+        assertEquals(graknGraph.getMetaResourceType().getName(), Schema.MetaSchema.RESOURCE_TYPE.getName());
     }
 
     @Test
     public void testGetMetaRuleInference() {
-        assertEquals(graknGraph.getMetaRuleInference().getId(), Schema.MetaSchema.INFERENCE_RULE.getId());
+        assertEquals(graknGraph.getMetaRuleInference().getName(), Schema.MetaSchema.INFERENCE_RULE.getName());
     }
 
     @Test
     public void testGetMetaRuleConstraint() {
-        assertEquals(graknGraph.getMetaRuleConstraint().getId(), Schema.MetaSchema.CONSTRAINT_RULE.getId());
+        assertEquals(graknGraph.getMetaRuleConstraint().getName(), Schema.MetaSchema.CONSTRAINT_RULE.getName());
     }
 
     @Test
@@ -330,10 +310,10 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RoleType testRoleType = graknGraph.putRoleType("Test Role Type");
         RelationType testRelationType = graknGraph.putRelationType("Test Relation Type");
 
-        assertEquals(Schema.MetaSchema.ENTITY_TYPE.getId(), testType.type().getId());
-        assertEquals(Schema.MetaSchema.RESOURCE_TYPE.getId(), testResourceType.type().getId());
-        assertEquals(Schema.MetaSchema.ROLE_TYPE.getId(), testRoleType.type().getId());
-        assertEquals(Schema.MetaSchema.RELATION_TYPE.getId(), testRelationType.type().getId());
+        assertEquals(Schema.MetaSchema.ENTITY_TYPE.getName(), testType.type().getName());
+        assertEquals(Schema.MetaSchema.RESOURCE_TYPE.getName(), testResourceType.type().getName());
+        assertEquals(Schema.MetaSchema.ROLE_TYPE.getName(), testRoleType.type().getName());
+        assertEquals(Schema.MetaSchema.RELATION_TYPE.getName(), testRelationType.type().getName());
 
     }
 
@@ -353,7 +333,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         Relation instanceB = b.addRelation();
         c.putResource("1");
 
-        assertEquals(instanceA, graknGraph.getInstance(instanceA.getId()));
+        assertEquals(instanceA, graknGraph.getConcept(instanceA.getId()));
     }
 
     @Test

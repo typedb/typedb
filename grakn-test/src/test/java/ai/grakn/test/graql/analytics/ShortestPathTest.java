@@ -7,16 +7,13 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
-import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -285,7 +282,7 @@ public class ShortestPathTest extends AbstractGraphTest {
 
         relationId1A12 = relationType2.addRelation()
                 .putRolePlayer(role3, entity1)
-                .putRolePlayer(role4, graph.getRelation(relationId12)).getId();
+                .putRolePlayer(role4, graph.getConcept(relationId12)).getId();
 
         graph.commit();
         graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();

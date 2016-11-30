@@ -92,7 +92,7 @@ public enum ErrorMessage {
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_RESOURCE_TYPE("type '%s' must be a resource-type"),
-    ID_NOT_FOUND("id '%s' not found"),
+    NAME_NOT_FOUND("name '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
     NOT_ROLE_IN_RELATION("'%s' is not a valid role type for relation type '%s'. valid role types are: '%s'"),
@@ -104,7 +104,7 @@ public enum ErrorMessage {
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
     SELECT_VAR_NOT_IN_MATCH("$%s does not appear in match query"),
-    NO_ID_SPECIFIED_FOR_HAS_RESOURCE("no id was specified for a resource type in a 'has-resource' property"),
+    NO_NAME_SPECIFIED_FOR_HAS_RESOURCE("no name was specified for a resource type in a 'has-resource' property"),
     MULTIPLE_GRAPH("a graph has been specified twice for this query"),
     MULTIPLE_ORDER("an ordering has been specified twice for this query"),
 
@@ -119,10 +119,10 @@ public enum ErrorMessage {
     INSERT_NO_RESOURCE_RELATION("type %s cannot have resource type %s"),
     INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
     INSERT_RECURSIVE("%s should not refer to itself"),
-    INSERT_TYPE_WITHOUT_ID("attempted to insert a type without an id"),
+    INSERT_TYPE_WITHOUT_NAME("attempted to insert a type without a name"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
     INSERT_RESOURCE_WITHOUT_VALUE("cannot insert a resource without specifying a value"),
-    INSERT_INSTANCE_WITH_ID("cannot insert an instance with a user-specified id: %s"),
+    INSERT_INSTANCE_WITH_NAME("cannot insert an instance with a name: %s"),
     INSERT_NON_RESOURCE_WITH_VALUE("cannot set value on an instance of %s because it is not a resource-type"),
 
     DELETE_VALUE("deleting values is not supported"),

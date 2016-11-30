@@ -112,7 +112,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            String otherVar = theVar.getName();
+            String otherVar = theVar.getVarName();
             String otherValue = UUID.randomUUID().toString();
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES).map(prop -> __.values(prop).as(otherValue).select(thisVar).values(prop).where(gremlinPredicate(otherValue))).toArray(Traversal[]::new);
             traversal.as(thisVar).select(otherVar).or(traversals).select(thisVar);

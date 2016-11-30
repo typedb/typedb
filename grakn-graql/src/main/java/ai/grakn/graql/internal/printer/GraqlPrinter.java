@@ -54,16 +54,19 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             if (concept.isResource()) {
                 sb.append(MatchQueryInternal.colorKeyword("value "));
                 sb.append(valueToString(concept.asResource().getValue()));
+            } else if (concept.isType()) {
+                sb.append(MatchQueryInternal.colorKeyword("type-name "));
+                sb.append("\"").append(escapeString(idToString(concept.asType().getName()))).append("\"");
             } else {
                 sb.append(MatchQueryInternal.colorKeyword("id "));
-                sb.append("\"").append(escapeString(concept.getId())).append("\"");
+                sb.append("\"").append(escapeString(idToString(concept.getId()))).append("\"");
             }
 
             if (concept.isRelation()) {
                 String relationString = concept.asRelation().rolePlayers().entrySet().stream().map(entry -> {
                     RoleType roleType = entry.getKey();
                     Instance rolePlayer = entry.getValue();
-                    return colorType(idToString(roleType.getId())) + ": " + idToString(rolePlayer.getId());
+                    return colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId());
                 }).collect(Collectors.joining(", "));
 
                 sb.append(" (").append(relationString).append(")");
@@ -72,7 +75,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display type of each concept
             Type type = concept.type();
             if (type != null) {
-                sb.append(MatchQueryInternal.colorKeyword(" isa ")).append(colorType(idToString(type.getId())));
+                sb.append(MatchQueryInternal.colorKeyword(" isa ")).append(colorType(idToString(type.getName())));
             }
 
             // Display lhs and rhs for rules

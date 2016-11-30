@@ -51,7 +51,7 @@ public class Query implements MatchQueryInternal {
     public Query(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
-        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
+        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this, graph));
     }
 
     public Query(String query, GraknGraph graph) {
@@ -119,6 +119,7 @@ public class Query implements MatchQueryInternal {
 
     @Override
     public Optional<GraknGraph> getGraph(){ return Optional.of(graph);}
+    public GraknGraph graph(){ return graph;}
 
     @Override
     public Conjunction<PatternAdmin> getPattern() {

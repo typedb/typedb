@@ -51,7 +51,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.id;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -173,14 +173,14 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         // TODO: Allow registering additional compute methods
-        String computeMethod = visitId(ctx.id(0));
+        String computeMethod = visitName(ctx.name(0));
 
         String from = null;
         String to = null;
 
-        if (ctx.id().size() > 1) {
-            from = visitId(ctx.id(1));
-            to = visitId(ctx.id(2));
+        if (ctx.name().size() > 1) {
+            from = visitName(ctx.name(1));
+            to = visitName(ctx.name(2));
         }
 
         Set<String> statisticsResourceTypeIds = new HashSet<>(), subTypeIds = new HashSet<>();
@@ -193,24 +193,24 @@ class QueryVisitor extends GraqlBaseVisitor {
             statisticsResourceTypeIds = visitStatTypes(ctx.statTypes());
         }
 
-        if (ctx.id().size() > 1) return queryBuilder.compute(computeMethod, from, to, subTypeIds);
+        if (ctx.name().size() > 1) return queryBuilder.compute(computeMethod, from, to, subTypeIds);
 
         return queryBuilder.compute(computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
 
     @Override
     public Set<String> visitStatTypes(GraqlParser.StatTypesContext ctx) {
-        return visitIdList(ctx.idList());
+        return visitNameList(ctx.nameList());
     }
 
     @Override
     public Set<String> visitSubgraph(GraqlParser.SubgraphContext ctx) {
-        return visitIdList(ctx.idList());
+        return visitNameList(ctx.nameList());
     }
 
     @Override
-    public Set<String> visitIdList(GraqlParser.IdListContext ctx) {
-        return ctx.id().stream().map(this::visitId).collect(toSet());
+    public Set<String> visitNameList(GraqlParser.NameListContext ctx) {
+        return ctx.name().stream().map(this::visitName).collect(toSet());
     }
 
     @Override
@@ -288,7 +288,12 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropId(GraqlParser.PropIdContext ctx) {
-        return var -> var.id(getString(ctx.STRING()));
+        return var -> var.id(visitId(ctx.id()));
+    }
+
+    @Override
+    public UnaryOperator<Var> visitPropName(GraqlParser.PropNameContext ctx) {
+        return var -> var.name(visitName(ctx.name()));
     }
 
     @Override
@@ -324,7 +329,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
-        String type = visitId(ctx.id());
+        String type = visitName(ctx.name());
 
         if (ctx.predicate() != null) {
             return var -> var.has(type, visitPredicate(ctx.predicate()));
@@ -370,10 +375,10 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitCasting(GraqlParser.CastingContext ctx) {
-        if (ctx.variable().size() == 1) {
-            return var -> var.rel(visitVariable(ctx.variable(0)));
+        if (ctx.VARIABLE() == null) {
+            return var -> var.rel(visitVariable(ctx.variable()));
         } else {
-            return var -> var.rel(visitVariable(ctx.variable(0)), visitVariable(ctx.variable(1)));
+            return var -> var.rel(visitVariable(ctx.variable()), var(getVariable(ctx.VARIABLE())));
         }
     }
 
@@ -399,7 +404,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitHasScope(GraqlParser.HasScopeContext ctx) {
-        return var -> var.hasScope(visitVariable(ctx.variable()));
+        return var -> var.hasScope(var(getVariable(ctx.VARIABLE())));
     }
 
     @Override
@@ -412,11 +417,20 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public String visitName(GraqlParser.NameContext ctx) {
+        if (ctx.ID() != null) {
+            return ctx.ID().getText();
+        } else {
+            return getString(ctx.STRING());
+        }
+    }
+
+    @Override
     public Var visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
             return var();
-        } else if (ctx.id() != null) {
-            return id(visitId(ctx.id()));
+        } else if (ctx.name() != null) {
+            return name(visitName(ctx.name()));
         } else {
             return var(getVariable(ctx.VARIABLE()));
         }

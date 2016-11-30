@@ -19,7 +19,6 @@
 package ai.grakn;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -27,7 +26,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
@@ -46,53 +44,53 @@ public interface GraknGraph extends AutoCloseable{
 
     /**
      *
-     * @param id A unique Id for the Entity Type
+     * @param name A unique Id for the Entity Type
      * @return A new or existing Entity Type with the provided Id.
      */
-    EntityType putEntityType(String id);
+    EntityType putEntityType(String name);
 
     /**
      *
-     * @param id A unique Id for the Resource Type
+     * @param name A unique Id for the Resource Type
      * @param dataType The data type of the resource type.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
      * @return A new or existing Resource Type with the provided Id.
      */
-    <V> ResourceType<V> putResourceType(String id, ResourceType.DataType<V> dataType);
+    <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType);
 
     /**
      *
-     * @param id A unique Id for the Resource Type
+     * @param name A unique Id for the Resource Type
      * @param dataType The data type of the resource type.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
      * @return A new or existing Resource Type with the provided Id which guarantees that it's instances can only be connected to one entity.
      */
-    <V> ResourceType <V> putResourceTypeUnique(String id, ResourceType.DataType<V> dataType);
+    <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType);
 
     /**
      *
-     * @param id A unique Id for the Rule Type
+     * @param name A unique Id for the Rule Type
      * @return new or existing Rule Type with the provided Id.
      */
-    RuleType putRuleType(String id);
+    RuleType putRuleType(String name);
 
     /**
      *
-     * @param id A unique Id for the Relation Type
+     * @param name A unique Id for the Relation Type
      * @return A new or existing Relation Type with the provided Id.
      */
-    RelationType putRelationType(String id);
+    RelationType putRelationType(String name);
 
     /**
      *
-     * @param id A unique Id for the Role Type
+     * @param name A unique Id for the Role Type
      * @return new or existing Role Type with the provided Id.
      */
-    RoleType putRoleType(String id);
+    RoleType putRoleType(String name);
 
     //------------------------------------- Concept Lookup ----------------------------------
     /**
@@ -100,36 +98,14 @@ public interface GraknGraph extends AutoCloseable{
      * @param id A unique Id which identifies the Concept in the graph.
      * @return The Concept with the provided Id or null if no such Concept exists.
      */
-    Concept getConcept(String id);
+    <T extends Concept> T getConcept(String id);
 
     /**
      *
-     * @param id A unique Id which identifies the Type in the graph.
+     * @param name A unique Id which identifies the Type in the graph.
      * @return The Type with the provided Id or null if no such Type exists.
      */
-    Type getType(String id);
-
-    /**
-     *
-     * @param id A unique Id which identifies the Instance in the graph.
-     * @return The Instance with the provided Id or null if no such Instance exists.
-     */
-    Instance getInstance(String id);
-
-    /**
-     *
-     * @param id A unique Id which identifies the Entity in the graph.
-     * @return The Entity with the provided Id or null if no such Entity exists.
-     */
-    Entity getEntity(String id);
-
-    /**
-     *
-     * @param id A unique Id which identifies the Resource in the graph.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource with the provided Id or null if no such Resource exists.
-     */
-    <V> Resource<V> getResource(String id);
+    Type getType(String name);
 
     /**
      *
@@ -139,7 +115,6 @@ public interface GraknGraph extends AutoCloseable{
      * @return The Resource with the provided value and type or null if no such Resource exists.
      */
     <V> Resource<V> getResource(V value, ResourceType<V> type);
-
 
     /**
      *
@@ -151,46 +126,39 @@ public interface GraknGraph extends AutoCloseable{
 
     /**
      *
-     * @param id A unique Id which identifies the Rule in the graph.
-     * @return The Rule with the provided Id or null if no such Rule exists.
-     */
-    Rule getRule(String id);
-
-    /**
-     *
-     * @param id A unique Id which identifies the Entity Type in the graph.
+     * @param name A unique Id which identifies the Entity Type in the graph.
      * @return The Entity Type  with the provided Id or null if no such Entity Type  exists.
      */
-    EntityType getEntityType(String id);
+    EntityType getEntityType(String name);
 
     /**
      *
-     * @param id A unique Id which identifies the Relation Type in the graph.
+     * @param name A unique Id which identifies the Relation Type in the graph.
      * @return The Relation Type with the provided Id or null if no such Relation Type exists.
      */
-    RelationType getRelationType(String id);
+    RelationType getRelationType(String name);
 
     /**
      *
-     * @param id A unique Id which identifies the Resource Type in the graph.
+     * @param name A unique Id which identifies the Resource Type in the graph.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The Resource Type with the provided Id or null if no such Resource Type exists.
      */
-    <V> ResourceType<V> getResourceType(String id);
+    <V> ResourceType<V> getResourceType(String name);
 
     /**
      *
-     * @param id A unique Id which identifies the Role Type in the graph.
+     * @param name A unique Id which identifies the Role Type in the graph.
      * @return The Role Type  with the provided Id or null if no such Role Type exists.
      */
-    RoleType getRoleType(String id);
+    RoleType getRoleType(String name);
 
     /**
      *
-     * @param id A unique Id which identifies the Rule Type in the graph.
+     * @param name A unique Id which identifies the Rule Type in the graph.
      * @return The Rule Type with the provided Id or null if no such Rule Type exists.
      */
-    RuleType getRuleType(String id);
+    RuleType getRuleType(String name);
 
     //------------------------------------- Relationship Handling ----------------------------------
     /**
@@ -249,12 +217,6 @@ public interface GraknGraph extends AutoCloseable{
      */
     Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
-    /**
-     *
-     * @param id The id of the relation object you are looking for
-     * @return The relation object.
-     */
-    Relation getRelation(String id);
     //------------------------------------- Utilities ----------------------------------
     /**
      * Closes and clears the current graph.

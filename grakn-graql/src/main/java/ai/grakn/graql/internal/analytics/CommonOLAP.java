@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -38,8 +37,8 @@ abstract class CommonOLAP {
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
     public static final Set<String> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
-            Analytics.degree, Schema.Resource.HAS_RESOURCE.getId(Analytics.degree),
-            Analytics.connectedComponent, Schema.Resource.HAS_RESOURCE.getId(Analytics.connectedComponent)));
+            Analytics.degree, Schema.Resource.HAS_RESOURCE.getName(Analytics.degree),
+            Analytics.connectedComponent, Schema.Resource.HAS_RESOURCE.getName(Analytics.connectedComponent)));
 
     /**
      * The concepts that can be "seen" by analytics by default.

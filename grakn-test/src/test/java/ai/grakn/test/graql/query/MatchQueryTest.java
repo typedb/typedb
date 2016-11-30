@@ -49,14 +49,13 @@ import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.gte;
-import static ai.grakn.graql.Graql.id;
 import static ai.grakn.graql.Graql.lt;
 import static ai.grakn.graql.Graql.lte;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
 import static ai.grakn.util.Schema.MetaSchema.RESOURCE_TYPE;
 import static ai.grakn.util.Schema.MetaSchema.RULE_TYPE;
@@ -108,7 +107,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         Map<String, Concept> result = results.get(0);
         Concept tgf = result.get("tgf");
 
-        assertEquals("title", tgf.type().getId());
+        assertEquals("title", tgf.type().getName());
         assertEquals("Godfather", tgf.asResource().getValue());
     }
 
@@ -175,7 +174,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("type").playsRole("character-being-played")
         );
 
-        QueryUtil.assertResultsMatch(query, "type", ENTITY_TYPE.getId(), graph.getResourceType("title"), "character", "person");
+        QueryUtil.assertResultsMatch(query, "type", ENTITY_TYPE.getName(), graph.getResourceType("title"), "character", "person");
     }
 
     @Test
@@ -196,10 +195,10 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testIdQuery() {
-        MatchQuery query = qb.match(or(var("x").id("character"), var("x").id("person")));
+    public void testTypeNameQuery() {
+        MatchQuery query = qb.match(or(var("x").name("character"), var("x").name("person")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getId(), graph.getResourceType("title"),  "character", "person");
+        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getName(), graph.getResourceType("title"),  "character", "person");
     }
 
     @Test
@@ -281,7 +280,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(1, results.size());
         Concept result = results.get(0);
         assertEquals(1000L, result.asResource().getValue());
-        assertEquals("tmdb-vote-count", result.type().getId());
+        assertEquals("tmdb-vote-count", result.type().getName());
     }
 
     @Test
@@ -310,13 +309,13 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testTypeAsVariable() {
-        MatchQuery query = qb.match(id("genre").playsRole(var("x")));
+        MatchQuery query = qb.match(name("genre").playsRole(var("x")));
         QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"), "genre-of-production", "has-name-owner");
     }
 
     @Test
     public void testVariableAsRoleType() {
-        MatchQuery query = qb.match(var().rel(var().id("genre-of-production"), "y"));
+        MatchQuery query = qb.match(var().rel(var().name("genre-of-production"), "y"));
         QueryUtil.assertResultsMatch(
                 query, "y", null, graph.getResourceType("name"),
                 "crime", "drama", "war", "action", "comedy", "family", "musical", "comedy", "fantasy"
@@ -336,7 +335,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testVariablesEverywhere() {
         MatchQuery query = qb.match(
                 var()
-                        .rel(id("production-with-genre"), var("x").isa(var().sub(id("production"))))
+                        .rel(name("production-with-genre"), var("x").isa(var().sub(name("production"))))
                         .rel(var().has("name", "crime"))
         );
 
@@ -345,9 +344,9 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testSubSelf() {
-        MatchQuery query = qb.match(id("movie").sub(var("x")));
+        MatchQuery query = qb.match(name("movie").sub(var("x")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getId(), graph.getResourceType("title"),  "movie", "production");
+        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getName(), graph.getResourceType("title"),  "movie", "production");
     }
 
     @Test
@@ -363,14 +362,14 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(4, query.stream().count());
         assertTrue(query.stream().map(results -> results.get("x")).allMatch(
                 x -> x.asEntity().resources().stream().anyMatch(
-                        resource -> resource.type().getId().equals("release-date")
+                        resource -> resource.type().getName().equals("release-date")
                 )
         ));
     }
 
     @Test
     public void testAllowedToReferToNonExistentRoleplayer() {
-        long count = qb.match(var().rel("actor", id("doesnt-exist"))).stream().count();
+        long count = qb.match(var().rel("actor", name("doesnt-exist"))).stream().count();
         assertEquals(0, count);
     }
 
@@ -399,22 +398,22 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testMatchDataType() {
         MatchQuery query = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), graph.getResourceType("title"), "tmdb-vote-average");
+        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getName(), graph.getResourceType("title"), "tmdb-vote-average");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.LONG));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), graph.getResourceType("title"), "tmdb-vote-count", "runtime", "release-date");
+        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getName(), graph.getResourceType("title"), "tmdb-vote-count", "runtime", "release-date");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.BOOLEAN));
         assertEquals(0, query.stream().count());
 
         query = qb.match(var("x").datatype(ResourceType.DataType.STRING));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), graph.getResourceType("title"), "title", "gender", "real-name", "name");
+        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getName(), graph.getResourceType("title"), "title", "gender", "real-name", "name");
     }
 
     @Test
     public void testSelectRuleTypes() {
-        MatchQuery query = qb.match(var("x").isa(RULE_TYPE.getId()));
-        QueryUtil.assertResultsMatch(query, "x", RULE_TYPE.getId(), graph.getResourceType("title"), "a-rule-type", "inference-rule", "constraint-rule");
+        MatchQuery query = qb.match(var("x").isa(RULE_TYPE.getName()));
+        QueryUtil.assertResultsMatch(query, "x", RULE_TYPE.getName(), graph.getResourceType("title"), "a-rule-type", "inference-rule", "constraint-rule");
     }
 
     @Test
@@ -442,16 +441,16 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         rollbackGraph();
 
         qb.insert(
-                id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),
-                id("organization-with-shares").sub("possession"),
-                id("possession").isa("role-type"),
+                name("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),
+                name("organization-with-shares").sub("possession"),
+                name("possession").isa("role-type"),
 
-                id("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
-                id("shareholder").sub("owner"),
-                id("owner").isa("role-type"),
+                name("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
+                name("shareholder").sub("owner"),
+                name("owner").isa("role-type"),
 
-                id("person").isa("entity-type").playsRole("shareholder"),
-                id("company").isa("entity-type").playsRole("organization-with-shares"),
+                name("person").isa("entity-type").playsRole("shareholder"),
+                name("company").isa("entity-type").playsRole("organization-with-shares"),
 
                 var("apple").isa("company"),
                 var("bob").isa("person"),
@@ -473,29 +472,29 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testRegexResourceType() {
         MatchQuery query = qb.match(var("x").regex("(fe)?male"));
         assertEquals(1, query.stream().count());
-        assertEquals("gender", query.get("x").findFirst().get().getId());
+        assertEquals("gender", query.get("x").findFirst().get().asType().getName());
     }
 
     @Test
     public void testPlaysRoleSub() {
         qb.insert(
-                id("c").sub(id("b").sub(id("a").isa("entity-type"))),
-                id("f").sub(id("e").sub(id("d").isa("role-type"))),
-                id("b").playsRole("e")
+                name("c").sub(name("b").sub(name("a").isa("entity-type"))),
+                name("f").sub(name("e").sub(name("d").isa("role-type"))),
+                name("b").playsRole("e")
         ).execute();
 
         // Make sure SUBs are followed correctly...
-        assertTrue(qb.match(id("b").playsRole("e")).ask().execute());
-        assertTrue(qb.match(id("b").playsRole("f")).ask().execute());
-        assertTrue(qb.match(id("c").playsRole("e")).ask().execute());
-        assertTrue(qb.match(id("c").playsRole("f")).ask().execute());
+        assertTrue(qb.match(name("b").playsRole("e")).ask().execute());
+        assertTrue(qb.match(name("b").playsRole("f")).ask().execute());
+        assertTrue(qb.match(name("c").playsRole("e")).ask().execute());
+        assertTrue(qb.match(name("c").playsRole("f")).ask().execute());
 
         // ...and not incorrectly
-        assertFalse(qb.match(id("a").playsRole("d")).ask().execute());
-        assertFalse(qb.match(id("a").playsRole("e")).ask().execute());
-        assertFalse(qb.match(id("a").playsRole("f")).ask().execute());
-        assertFalse(qb.match(id("b").playsRole("d")).ask().execute());
-        assertFalse(qb.match(id("c").playsRole("d")).ask().execute());
+        assertFalse(qb.match(name("a").playsRole("d")).ask().execute());
+        assertFalse(qb.match(name("a").playsRole("e")).ask().execute());
+        assertFalse(qb.match(name("a").playsRole("f")).ask().execute());
+        assertFalse(qb.match(name("b").playsRole("d")).ask().execute());
+        assertFalse(qb.match(name("c").playsRole("d")).ask().execute());
     }
 
     @Test
@@ -606,13 +605,13 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testNoInstancesOfRoleType() {
-        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").id("actor"));
+        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").name("actor"));
         assertEquals(0, query.stream().count());
     }
 
     @Test
     public void testNoInstancesOfRoleTypeUnselectedVariable() {
-        MatchQuery query = qb.match(var().isa(var("y")), var("y").id("actor"));
+        MatchQuery query = qb.match(var().isa(var("y")), var("y").name("actor"));
         assertEquals(0, query.stream().count());
     }
 
@@ -628,10 +627,19 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testCannotLookUpCastingById() {
         String castingId = graph.getTinkerTraversal()
-                .hasLabel(Schema.BaseType.CASTING.name()).<String>values(ITEM_IDENTIFIER.name()).next();
+                .hasLabel(Schema.BaseType.CASTING.name()).id().next().toString();
 
         MatchQuery query = qb.match(var("x").id(castingId));
         assertEquals(0, query.stream().count());
+    }
+
+    @Test
+    public void testLookupResourcesOnId() {
+        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
+        String id = godfather.getId();
+        MatchQuery query = qb.match(var().id(id).has("title", var("x")));
+
+        assertEquals("Godfather", query.get("x").findAny().get().asResource().getValue());
     }
 
     @Test

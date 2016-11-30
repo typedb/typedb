@@ -57,8 +57,8 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outPlaysRole(start, role.getName(), required),
-                Fragments.inPlaysRole(role.getName(), start, required)
+                Fragments.outPlaysRole(start, role.getVarName(), required),
+                Fragments.inPlaysRole(role.getVarName(), start, required)
         ));
     }
 
@@ -91,12 +91,15 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
         PlaysRoleProperty that = (PlaysRoleProperty) o;
 
+        if (required != that.required) return false;
         return role.equals(that.role);
 
     }
 
     @Override
     public int hashCode() {
-        return role.hashCode();
+        int result = role.hashCode();
+        result = 31 * result + (required ? 1 : 0);
+        return result;
     }
 }

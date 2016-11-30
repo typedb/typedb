@@ -19,11 +19,11 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -33,7 +33,6 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -81,7 +80,6 @@ public class PostprocessingTest extends GraphTestBase{
 
         //Create Fake Casting
         Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        castingVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
@@ -98,19 +96,19 @@ public class PostprocessingTest extends GraphTestBase{
         Edge tinkerEdge = fromInstance.getVertex().addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
         EdgeImpl edge = new EdgeImpl(tinkerEdge, graknGraph);
 
-        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, relationType.getId());
+        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName());
         edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId());
 
         if (fromInstance.getId() != null)
             edge.setProperty(Schema.EdgeProperty.FROM_ID, fromInstance.getId());
-        edge.setProperty(Schema.EdgeProperty.FROM_ROLE, fromRole.getId());
+        edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName());
 
         if (toInstance.getId() != null)
             edge.setProperty(Schema.EdgeProperty.TO_ID, toInstance.getId());
-        edge.setProperty(Schema.EdgeProperty.TO_ROLE, toRole.getId());
+        edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
 
-        edge.setProperty(Schema.EdgeProperty.FROM_TYPE, fromInstance.getParentIsa().getId());
-        edge.setProperty(Schema.EdgeProperty.TO_TYPE, toInstance.getParentIsa().getId());
+        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.getParentIsa().getName());
+        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.getParentIsa().getName());
     }
 
     @Test
@@ -226,12 +224,11 @@ public class PostprocessingTest extends GraphTestBase{
 
 
     private ResourceImpl createFakeResource(ResourceType type, String value){
-        String index = ResourceImpl.generateResourceIndex(type.getId(), value);
+        String index = ResourceImpl.generateResourceIndex(type, value);
         Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type).getVertex());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(), index);
-        resourceVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
 
         return new ResourceImpl(resourceVertex, type, graknGraph);

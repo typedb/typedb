@@ -90,11 +90,11 @@ class Validator {
             String rolePlayers = "";
             for(Map.Entry<RoleType, Instance> entry: relation.rolePlayers().entrySet()){
                 if(entry.getKey() != null)
-                    roles = roles + entry.getKey().getId() + ",";
+                    roles = roles + entry.getKey().getName() + ",";
                 if(entry.getValue() != null)
                     rolePlayers = rolePlayers + entry.getValue().getId() + ",";
             }
-            errorsFound.add(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), relation.type().getId(),
+            errorsFound.add(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), relation.type().getName(),
                     roles.split(",").length, roles,
                     rolePlayers.split(",").length, roles));
         }
@@ -107,7 +107,7 @@ class Validator {
     private void validateCasting(CastingImpl casting){
         if(!ValidateGlobalRules.validatePlaysRoleStructure(casting)) {
             Instance rolePlayer = casting.getRolePlayer();
-            errorsFound.add(ErrorMessage.VALIDATION_CASTING.getMessage(rolePlayer.type().getId(), rolePlayer.getId(), casting.getRole().getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
         }
     }
 
@@ -117,7 +117,7 @@ class Validator {
      */
     private void validateType(TypeImpl conceptType){
         if(conceptType.isAbstract() && !ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType))
-            errorsFound.add(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(conceptType.getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(conceptType.getName()));
     }
 
     /**
@@ -126,13 +126,13 @@ class Validator {
      */
     private void validateRoleType(RoleTypeImpl roleType){
         if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
-            errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getName()));
 
         Collection<Type> invalidTypes = ValidateGlobalRules.validateRolesPlayedSchema(roleType);
 
         if(!invalidTypes.isEmpty()){
             invalidTypes.forEach(invalidType -> {
-                errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(invalidType.getId(), roleType.superType().getId()));
+                errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(invalidType.getName(), roleType.superType().getName()));
             });
         }
     }
@@ -143,7 +143,7 @@ class Validator {
      */
     private void validateRelationType(RelationTypeImpl relationType){
         if(!ValidateGlobalRules.validateHasMinimumRoles(relationType))
-            errorsFound.add(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getName()));
     }
 
     /**

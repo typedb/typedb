@@ -55,6 +55,11 @@ public interface Type extends Concept {
     RelationType hasResource(ResourceType resourceType);
 
     //------------------------------------- Accessors ----------------------------------
+    /**
+     *
+     * @return The name of this type
+     */
+    String getName();
 
     /**
      * @return A list of Role Types which instances of this Type can play.

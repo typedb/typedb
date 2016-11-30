@@ -55,8 +55,8 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outHasScope(start, scope.getName()),
-                Fragments.inHasScope(scope.getName(), start)
+                Fragments.outHasScope(start, scope.getVarName()),
+                Fragments.inHasScope(scope.getVarName(), start)
         ));
     }
 
@@ -74,7 +74,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
-        concept.asRelation().deleteScope(graph.getInstance(scopeId));
+        concept.asRelation().deleteScope(graph.getConcept(scopeId));
     }
 
     @Override

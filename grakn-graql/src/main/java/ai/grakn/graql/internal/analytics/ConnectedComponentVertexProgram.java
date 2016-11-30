@@ -116,7 +116,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                     // casting is active if both its assertion and role-player is in the subgraph
                     vertex.property(IS_ACTIVE_CASTING, hasBothMessages);
                 } else if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
+                    String id = vertex.id().toString();
                     vertex.property(CLUSTER_LABEL, id);
                     messenger.sendMessage(messageScopeIn, id);
                     messenger.sendMessage(messageScopeOut, id);

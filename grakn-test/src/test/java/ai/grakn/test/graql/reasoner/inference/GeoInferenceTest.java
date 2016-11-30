@@ -21,6 +21,8 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import com.google.common.collect.Sets;
@@ -28,6 +30,7 @@ import ai.grakn.graql.QueryBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -44,14 +47,16 @@ public class GeoInferenceTest extends AbstractEngineTest {
         Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql();
         String queryString = "match $x isa city;$x has name $name;"+
-                        "(geo-entity: $x, entity-location: $y) isa is-located-in;\n"+
+                        "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
+        MatchQuery query = new Query(queryString, graph);
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers explicitAnswers = new QueryAnswers(qb.<MatchQuery>parse(explicitQuery).execute());
+        assertEquals(answers, explicitAnswers);
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
