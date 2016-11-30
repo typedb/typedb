@@ -19,8 +19,14 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Set;
+
+import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
+import static java.util.stream.Collectors.toSet;
 
 class ValueFragment extends AbstractFragment {
 
@@ -48,6 +54,11 @@ class ValueFragment extends AbstractFragment {
         } else {
             return previousCost;
         }
+    }
+
+    @Override
+    public Set<String> getDependencies() {
+        return optionalToStream(predicate.getInnerVar()).map(VarAdmin::getVarName).collect(toSet());
     }
 
     @Override
