@@ -91,12 +91,15 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
         PlaysRoleProperty that = (PlaysRoleProperty) o;
 
+        if (required != that.required) return false;
         return role.equals(that.role);
 
     }
 
     @Override
     public int hashCode() {
-        return role.hashCode();
+        int result = role.hashCode();
+        result = 31 * result + (required ? 1 : 0);
+        return result;
     }
 }
