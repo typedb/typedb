@@ -24,6 +24,7 @@ import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<M, G> {
+	
     protected final String keyspace;
     protected final String engineUrl;
     protected final String config;
@@ -35,7 +36,9 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     private G batchLoadingGraph = null;
 
     private Boolean lastGraphBuiltBatchLoading = null;
-
+    
+    private SystemKeyspace<M, G> systemKeyspace;
+    
     AbstractInternalFactory(String keyspace, String engineUrl, String config){
         if(keyspace == null){
             throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
@@ -44,6 +47,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.config = config;
+        this.systemKeyspace = new SystemKeyspace<M, G>(this.engineUrl, this.config);
     }
 
     abstract boolean isClosed(G innerGraph);
@@ -87,6 +91,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+            if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace))
+            	systemKeyspace.keyspaceOpened(this.keyspace);
         } else {
             if(graknGraph.isClosed()){
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);

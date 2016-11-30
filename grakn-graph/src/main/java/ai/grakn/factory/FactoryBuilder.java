@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
 
 import java.io.FileInputStream;
@@ -39,11 +40,16 @@ class FactoryBuilder {
 
     static InternalFactory getFactory(String keyspace, String engineUrl, String config){
         try{
-            FileInputStream fis = new FileInputStream(config);
-            ResourceBundle bundle = new PropertyResourceBundle(fis);
-            fis.close();
-
-            return getGraknGraphFactory(bundle.getString(FACTORY), keyspace, engineUrl, config);
+        	String factoryType = null;
+        	if (!Grakn.IN_MEMORY.equals(engineUrl)) 
+        		try (FileInputStream fis = new FileInputStream(config)) {
+		            ResourceBundle bundle = new PropertyResourceBundle(fis);
+		            factoryType = bundle.getString(FACTORY);
+		            fis.close();
+        		}
+        	else
+        		factoryType = TinkerInternalFactory.class.getName();
+            return getGraknGraphFactory(factoryType, keyspace, engineUrl, config);
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(config), e);
         } catch(MissingResourceException e){
@@ -57,8 +63,8 @@ class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    private static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
-        String key = factoryType + keyspace;
+    static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
+        String key = factoryType + keyspace.toLowerCase();
         if(!openFactories.containsKey(key)) {
             InternalFactory internalFactory;
             try {
@@ -70,6 +76,8 @@ class FactoryBuilder {
                 throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
             }
             openFactories.put(key, internalFactory);
+            if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME))
+            	new SystemKeyspace(engineUrl, config).loadSystemOntology();
         }
         return openFactories.get(key);
     }

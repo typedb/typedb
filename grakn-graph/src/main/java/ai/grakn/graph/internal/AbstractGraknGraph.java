@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
@@ -642,7 +643,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
     }
 
-    private void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
+    protected void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
             Schema.BaseType type = entry.getKey();
@@ -663,7 +664,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         LOG.debug("Response from engine [" + result + "]");
     }
     String getCommitLogEndPoint(){
-        if(engine == null)
+        if(engine == null || Grakn.IN_MEMORY.equals(engine))
             return null;
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }

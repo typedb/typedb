@@ -152,7 +152,7 @@ public class PostProcessingTest extends GraknEngineTestBase {
         String keyspace = "testbatchgraph";
         String value = "1";
         String sample = "Sample";
-        ExecutorService pool = Executors.newFixedThreadPool(10);
+        //ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
