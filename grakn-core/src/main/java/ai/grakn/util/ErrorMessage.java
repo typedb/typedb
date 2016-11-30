@@ -174,6 +174,8 @@ public enum ErrorMessage {
     GRAQL_PROPERTY_NOT_MAPPED("Graql property [%s] could not be mapped"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
+    NO_SOURCE("No valid source id provided"),
+    NO_DESTINATION("No valid destination id provided"),
     RESOURCE_TYPE_NOT_SPECIFIED("no resource type provided for compute query."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist."),
     NO_PATH_EXIST("There is no path between the two instances."),

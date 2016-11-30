@@ -31,9 +31,14 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
@@ -62,6 +67,12 @@ public class AnalyticsTest extends AbstractGraphTest {
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
+
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
+        logger.setLevel(Level.DEBUG);
+
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
+        logger.setLevel(Level.DEBUG);
     }
 
     @Test
@@ -93,42 +104,38 @@ public class AnalyticsTest extends AbstractGraphTest {
     @Test
     public void testCount() throws Exception {
         // assert the graph is empty
-        System.out.println();
-        System.out.println("Counting");
-        Analytics computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
         long startTime = System.currentTimeMillis();
-        Assert.assertEquals(0, computer.count());
-        System.out.println();
+        Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
+        Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
 
         // create 3 instances
-        System.out.println();
         System.out.println("Creating 3 instances");
         graph = factory.getGraph();
-        EntityType thing = graph.putEntityType("thing");
-        EntityType anotherThing = graph.putEntityType("another");
+        String nameThing = "thing";
+        String nameAnotherThing = "another";
+        EntityType thing = graph.putEntityType(nameThing);
+        EntityType anotherThing = graph.putEntityType(nameAnotherThing);
         thing.addEntity().getId();
         thing.addEntity().getId();
         anotherThing.addEntity().getId();
         graph.commit();
-        graph.close();
 
         // assert computer returns the correct count of instances
-        System.out.println();
-        System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
-        Assert.assertEquals(3, computer.count());
-        System.out.println();
+        Assert.assertEquals(2L,
+                graph.graql().compute().count().in(Collections.singleton(nameThing)).execute().longValue());
+        System.out.println(System.currentTimeMillis() - startTime + " ms");
+        startTime = System.currentTimeMillis();
+        Assert.assertEquals(2L,
+                Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
 
-        System.out.println();
-        System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        graph = factory.getGraph();
-        computer = new Analytics(graph.getKeyspace(), Collections.singleton("thing"), new HashSet<>());
-        Assert.assertEquals(2, computer.count());
-        System.out.println();
+        Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
+        System.out.println(System.currentTimeMillis() - startTime + " ms");
+        startTime = System.currentTimeMillis();
+        Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
     }
 

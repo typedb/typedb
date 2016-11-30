@@ -40,6 +40,11 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
+    public CountQuery count() {
+        return new CountQueryImpl(graph);
+    }
+
+    @Override
     public MinQuery min() {
         return new MinQueryImpl(graph);
     }
@@ -67,5 +72,10 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     @Override
     public MedianQuery median() {
         return new MedianQueryImpl(graph);
+    }
+
+    @Override
+    public PathQuery path() {
+        return new PathQueryImpl(graph);
     }
 }

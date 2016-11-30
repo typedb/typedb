@@ -7,6 +7,8 @@ public interface ComputeQueryBuilder {
 
     ComputeQueryBuilder withGraph(GraknGraph graph);
 
+    CountQuery count();
+
     MinQuery min();
 
     MaxQuery max();
@@ -18,4 +20,6 @@ public interface ComputeQueryBuilder {
     StdQuery std();
 
     MedianQuery median();
+
+    PathQuery path();
 }

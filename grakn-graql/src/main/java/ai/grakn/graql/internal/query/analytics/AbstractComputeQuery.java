@@ -21,10 +21,11 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.CommonOLAP;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
@@ -35,6 +36,9 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.var;
 
 public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
@@ -102,15 +106,14 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             theGraph.rollback();
         } catch (UnsupportedOperationException ignored) {
         }
-
         getAllSubTypes(theGraph);
     }
 
     private void getAllSubTypes(GraknGraph graph) {
         // fetch all the types in the subGraph
-        Set<Type> subGraph = subTypeNames.stream().map((id) -> {
-            Type type = graph.getType(id);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(id));
+        Set<Type> subGraph = subTypeNames.stream().map((name) -> {
+            Type type = graph.getType(name);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(name));
             return type;
         }).collect(Collectors.toSet());
 
@@ -129,5 +132,25 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     GraknComputer getGraphComputer() {
         return Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
+    }
+
+    boolean selectedTypesHaveInstance() {
+        if (subTypeNames.isEmpty()) return false;
+
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
+
+        List<Pattern> checkSubtypes = subTypeNames.stream()
+                .map(type -> var("x").isa(type)).collect(Collectors.toList());
+
+        return graph.graql().match(or(checkSubtypes)).ask().execute();
+    }
+
+    boolean verticesExistInSubgraph(String... ids) {
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
+        for (String id : ids) {
+            Concept concept = graph.getConcept(id);
+            if (concept == null || !subTypeNames.contains(concept.type().getName())) return false;
+        }
+        return true;
     }
 }
