@@ -193,6 +193,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         roleMap.put(migrator.namer().objectRole(superRelation.getName()), migrator.namer().objectRole(subRelation.getName()));
         Utility.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.graph());
 
+        migrator.subjectRole(subRelation).superType(migrator.subjectRole(superRelation));
+        migrator.objectRole(subRelation).superType(migrator.objectRole(superRelation));
         subRelation.superType(superRelation);
         return null;
     }
