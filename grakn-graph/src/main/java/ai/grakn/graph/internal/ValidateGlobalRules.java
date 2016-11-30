@@ -173,8 +173,8 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param relationType
-     * @return
+     * @param relationType the relation type to be validated
+     * @return true if the sub hierarchy of the relation type matches the sub hierarchy of the role type
      */
     static Collection<RoleType> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.superType();
