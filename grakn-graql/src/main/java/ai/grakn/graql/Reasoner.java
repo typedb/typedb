@@ -163,7 +163,7 @@ public class Reasoner {
                 }
 
                 QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
-                        .filterNonEquals(atomicQuery)
+                        .filterNonEquals(ruleBody)
                         .filterVars(ruleHead.getSelectedNames())
                         .filterKnown(atomicQuery.getAnswers());
                 QueryAnswers newAnswers = new QueryAnswers();

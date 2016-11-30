@@ -92,9 +92,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
                 .collect(Collectors.toSet());
         if(filters.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers(this);
-        Iterator<NotEquals> it = filters.iterator();
-        while(it.hasNext())
-            results = it.next().filter(results);
+        for (NotEquals filter : filters) results = filter.filter(results);
         return results;
     }
 

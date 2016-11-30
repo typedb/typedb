@@ -36,7 +36,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -80,7 +79,6 @@ public class GenealogyTest extends AbstractEngineTest{
                 "$s1 != $s2;select $s1, $s2;";
         Query query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        printAnswers(answers);
         assertTrue(!hasDuplicates(answers));
     }
 
@@ -492,7 +490,8 @@ public class GenealogyTest extends AbstractEngineTest{
             hasDuplicates = answer.entrySet()
                     .stream()
                     .filter(entry -> existing.add(entry.getValue()))
-                    .count() == answer.size();
+                    .count() != answer.size();
+            if(hasDuplicates) System.out.println(answer.toString());
         }
         return hasDuplicates;
     }

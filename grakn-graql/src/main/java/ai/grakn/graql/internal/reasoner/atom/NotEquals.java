@@ -62,13 +62,32 @@ public class NotEquals extends AtomBase {
     @Override
     public Atomic clone() { return new NotEquals(this);}
 
+    private void setRefVarName(String var){
+        refVarName = var;
+        atomPattern = Graql.var(varName).neq(Graql.var(var)).admin();
+    }
+
     @Override
-    public Map<String, String> getUnifiers(Atomic parentAtom) {
-        Map<String, String> map = super.getUnifiers(parentAtom);
-        NotEquals atom = (NotEquals) parentAtom;
-        if (!this.getReferenceVarName().equals(atom.getReferenceVarName()))
-            map.put(this.getReferenceVarName(), atom.getReferenceVarName());
-        return map;
+    public void unify(String from, String to) {
+        super.unify(from, to);
+        String var = getReferenceVarName();
+        if (var.equals(from)) {
+            setRefVarName(to);
+        } else if (var.equals(to)) {
+            setRefVarName("captured->" + var);
+        }
+    }
+
+    @Override
+    public void unify(Map<String, String> unifiers){
+        super.unify(unifiers);
+        String var = getReferenceVarName();
+        if (unifiers.containsKey(var)) {
+            setRefVarName(unifiers.get(var));
+        }
+        else if (unifiers.containsValue(var)) {
+            setRefVarName("captured->" + var);
+        }
     }
 
     public String getReferenceVarName(){ return refVarName;}

@@ -125,7 +125,7 @@ public class PropertyMapper {
         return atoms;
     }
 
-    private static Set<Atomic> map(NeqProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent) {
+    private static Set<Atomic> map(NeqProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         return Sets.newHashSet(new NotEquals(var.getVarName(), prop, parent));
     }
 
