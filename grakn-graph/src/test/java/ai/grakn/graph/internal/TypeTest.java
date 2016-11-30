@@ -422,6 +422,41 @@ public class TypeTest extends GraphTestBase{
     }
 
     @Test
+    public void testHasResourceFollowsSubStructure(){
+        EntityType entityType1 = graknGraph.putEntityType("Entity Type 1");
+        EntityType entityType2 = graknGraph.putEntityType("Entity Type 2");
+
+        String superName = "Super Resource Type";
+        String name = "Resource Type";
+
+        ResourceType rtSuper = graknGraph.putResourceType(superName, ResourceType.DataType.STRING);
+        ResourceType rt = graknGraph.putResourceType(name, ResourceType.DataType.STRING).superType(rtSuper);
+
+        entityType1.hasResource(rtSuper);
+        entityType2.hasResource(rt);
+
+        //Check role types are only built explicitly
+        assertEquals(1, entityType1.playsRoles().size());
+        assertEquals(entityType1.playsRoles().iterator().next().getName(), Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
+
+        assertEquals(1, entityType2.playsRoles().size());
+        assertEquals(entityType2.playsRoles().iterator().next().getName(), Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
+
+        //Check Implicit Types Follow AKO Structure
+        RelationType rtSuperRelation = graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(rtSuper.getName()));
+        RoleType rtSuperRoleOwner = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
+        RoleType rtSuperRoleValue = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
+
+        RelationType rtRelation = graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(rt.getName()));
+        RoleType reRoleOwner = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rt.getName()));
+        RoleType reRoleValue = graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rt.getName()));
+
+        assertEquals(rtSuperRoleOwner, reRoleOwner.superType());
+        assertEquals(rtSuperRoleValue, reRoleValue.superType());
+        assertEquals(rtSuperRelation, rtRelation.superType());
+    }
+
+    @Test
     public void testKey(){
         String resourceTypeId = "Resource Type";
         EntityType entityType = graknGraph.putEntityType("Entity1");
