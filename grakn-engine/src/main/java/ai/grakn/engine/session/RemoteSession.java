@@ -20,10 +20,7 @@ package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
-import com.google.common.collect.ImmutableMap;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -45,13 +42,6 @@ public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
     private final Function<String, GraknGraph> getGraph;
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
-
-    private static final ImmutableMap<String, Printer> printers = ImmutableMap.of(
-            "graql", Printers.graql(),
-            "json", Printers.json(),
-            "hal", Printers.hal()
-    );
-
 
     // This constructor is magically invoked by spark's websocket stuff
     @SuppressWarnings("unused")
@@ -103,6 +93,9 @@ public class RemoteSession {
                 case REST.RemoteShell.ACTION_ROLLBACK:
                     sessions.get(session).rollback();
                     break;
+                case REST.RemoteShell.ACTION_DISPLAY:
+                    sessions.get(session).setDisplayOptions(json);
+                    break;
             }
         } catch (Throwable e) {
             LOG.error("Exception",e);
@@ -116,8 +109,7 @@ public class RemoteSession {
     private void startSession(Session session, Json json) {
         String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
         String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
-        Printer printer = printers.getOrDefault(outputFormat, Printers.graql());
-        GraqlSession graqlSession = new GraqlSession(session, () -> getGraph.apply(keyspace), printer);
+        GraqlSession graqlSession = new GraqlSession(session, () -> getGraph.apply(keyspace), outputFormat);
         sessions.put(session, graqlSession);
     }
 }

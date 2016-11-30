@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.printer;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Printer;
 import mjson.Json;
 
@@ -27,8 +28,8 @@ public class Printers {
 
     private Printers() {}
 
-    public static Printer<Function<StringBuilder, StringBuilder>> graql() {
-        return new GraqlPrinter();
+    public static Printer<Function<StringBuilder, StringBuilder>> graql(ResourceType... resourceTypes) {
+        return new GraqlPrinter(resourceTypes);
     }
 
     public static Printer<Json> json() {
