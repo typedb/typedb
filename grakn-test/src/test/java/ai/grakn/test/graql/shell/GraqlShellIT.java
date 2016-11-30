@@ -304,6 +304,29 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
         assertFalse(out, err.toString().isEmpty());
     }
 
+    @Test
+    public void testDefaultDontDisplayResources() throws Exception {
+        String result = testShell(
+                "insert X isa entity-type; R isa resource-type datatype string; X has-resource R; isa X has R 'foo';\n" +
+                "match $x isa X;\n"
+        );
+
+        // Confirm there is a result, but no resource value
+        assertThat(result, allOf(containsString("id"), not(containsString("\"foo\""))));
+    }
+
+    @Test
+    public void testDisplayResourcesCommand() throws Exception {
+        String result = testShell(
+                "insert X isa entity-type; R isa resource-type datatype string; X has-resource R; isa X has R 'foo';\n" +
+                "display R;\n" +
+                "match $x isa X;\n"
+        );
+
+        // Confirm there is a result, plus a resource value
+        assertThat(result, allOf(containsString("id"), containsString("\"foo\"")));
+    }
+
     private static String randomString(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();

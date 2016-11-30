@@ -47,9 +47,7 @@ public class AtomicMatchQuery extends AtomicQuery{
     public QueryAnswers getAnswers(){ return answers;}
 
     @Override
-    public void DBlookup() {
-        answers.addAll(execute());
-    }
+    public void DBlookup() { answers.addAll(execute());}
 
     @Override
     public void memoryLookup(Map<AtomicQuery, AtomicQuery> matAnswers) {
