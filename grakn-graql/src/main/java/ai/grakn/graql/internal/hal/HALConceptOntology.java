@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.visualiser;
+package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
@@ -32,7 +32,7 @@ import java.util.Collection;
  * Class used to build the HAL representation of a given concept.
  */
 
-public class HALConceptOntology {
+class HALConceptOntology {
 
     private RepresentationFactory factory;
 
@@ -61,7 +61,7 @@ public class HALConceptOntology {
     private final static String VALUE_PROPERTY = "value";
 
 
-    public HALConceptOntology(Concept concept,String rootConceptId) {
+    HALConceptOntology(Concept concept,String rootConceptId) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;

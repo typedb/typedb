@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder;
 import com.google.common.collect.Maps;
 import mjson.Json;
 
@@ -29,7 +30,7 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 
-class JsonPrinter implements Printer<Json> {
+class HALPrinter implements Printer<Json> {
     @Override
     public String build(Json builder) {
         return builder.toString();
@@ -37,26 +38,8 @@ class JsonPrinter implements Printer<Json> {
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
-        Json json = Json.object("id", concept.getId());
-
-        if (concept.isType()) {
-            json.set("name", concept.asType().getName());
-        }
-
-        if (concept.type() != null) {
-            json.set("isa", concept.type().getName());
-        }
-
-        if (concept.isResource()) {
-            json.set("value", concept.asResource().getValue());
-        }
-
-        if (concept.isRule()) {
-            json.set("lhs", concept.asRule().getLHS().toString());
-            json.set("rhs", concept.asRule().getRHS().toString());
-        }
-
-        return json;
+        String json = HALConceptRepresentationBuilder.renderHALConceptData(concept, 1);
+        return Json.read(json);
     }
 
     @Override

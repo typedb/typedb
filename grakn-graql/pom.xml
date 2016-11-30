@@ -56,6 +56,11 @@
             <version>${java-tuples.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.theoryinpractise</groupId>
+            <artifactId>halbuilder-standard</artifactId>
+            <version>${halbuilder-standard.version}</version>
+        </dependency>
 
     </dependencies>
 

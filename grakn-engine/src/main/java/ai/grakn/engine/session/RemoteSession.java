@@ -46,8 +46,11 @@ public class RemoteSession {
     private final Function<String, GraknGraph> getGraph;
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
 
-    private static final ImmutableMap<String, Printer> printers =
-            ImmutableMap.of("graql", Printers.graql(), "json", Printers.json());
+    private static final ImmutableMap<String, Printer> printers = ImmutableMap.of(
+            "graql", Printers.graql(),
+            "json", Printers.json(),
+            "hal", Printers.hal()
+    );
 
 
     // This constructor is magically invoked by spark's websocket stuff
