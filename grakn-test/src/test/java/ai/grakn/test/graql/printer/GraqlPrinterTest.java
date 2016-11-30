@@ -54,7 +54,7 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
     public void testResourceOutputNoResources() {
         Printer printer = Printers.graql();
 
-        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
@@ -70,7 +70,7 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
                 graph.getResourceType("title"), graph.getResourceType("tmdb-vote-count"), graph.getResourceType("name")
         );
 
-        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
