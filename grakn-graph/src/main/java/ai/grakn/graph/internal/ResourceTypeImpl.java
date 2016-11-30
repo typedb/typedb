@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Type;
@@ -82,6 +83,16 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         }
         return resource;
 
+    }
+
+    @Override
+    public <V> Resource<V> getResource(V value) {
+        String index = ResourceImpl.generateResourceIndex(this, value.toString());
+        Concept concept = getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
+        if(concept != null){
+            return concept.asResource();
+        }
+        return null;
     }
 
     /**
