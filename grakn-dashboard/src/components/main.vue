@@ -21,28 +21,28 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
     <!-- Header-->
     <!--<nav class="navbar navbar-default navbar-fixed-top">-->
-        <!--<div class="container-fluid">-->
-            <!--<div class="navbar-header">-->
-                <!--<div id="mobile-menu">-->
-                    <!--<div class="left-nav-toggle">-->
-                        <!--<a href="#">-->
-                            <!--<i class="stroke-hamburgermenu"></i>-->
-                        <!--</a>-->
-                    <!--</div>-->
-                <!--</div>-->
-                <!--<a class="navbar-brand" href="/">-->
-                    <!--Grakn-->
-                    <!--<span>{{version}}</span>-->
-                <!--</a>-->
-            <!--</div>-->
-            <!--<div id="navbar" class="navbar-collapse collapse">-->
-                <!--<div class="left-nav-toggle">-->
-                    <!--<a href="">-->
-                        <!--<i class="stroke-hamburgermenu"></i>-->
-                    <!--</a>-->
-                <!--</div>-->
-            <!--</div>-->
-        <!--</div>-->
+    <!--<div class="container-fluid">-->
+    <!--<div class="navbar-header">-->
+    <!--<div id="mobile-menu">-->
+    <!--<div class="left-nav-toggle">-->
+    <!--<a href="#">-->
+    <!--<i class="stroke-hamburgermenu"></i>-->
+    <!--</a>-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--<a class="navbar-brand" href="/">-->
+    <!--MindmapsDB-->
+    <!--<span>{{version}}</span>-->
+    <!--</a>-->
+    <!--</div>-->
+    <!--<div id="navbar" class="navbar-collapse collapse">-->
+    <!--<div class="left-nav-toggle">-->
+    <!--<a href="">-->
+    <!--<i class="stroke-hamburgermenu"></i>-->
+    <!--</a>-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--</div>-->
     <!--</nav>-->
     <!-- End header-->
 
@@ -54,19 +54,16 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         </div>
         <nav>
             <ul class="nav luna-nav">
-                <li v-link-active>
-                    <a v-link="{ path: '/graph' }">Graph</a>
-                </li>
-
-                <li v-link-active>
-                    <a v-link="{ path: '/console' }">Console</a>
-                </li>
-
-                <li v-link-active>
-                    <a v-link="{ path: '/config' }">Config</a>
-                </li>
-
-                <li v-link-active>
+                <router-link tag="li" to="/graph">
+                    <a>Graph</a>
+                </router-link>
+                <router-link tag="li" to="/console">
+                    <a>Console</a>
+                </router-link>
+                <router-link tag="li" to="/config">
+                    <a>Config</a>
+                </router-link>
+                <li>
                     <a target="_blank" href="https://grakn.ai/pages/index.html">Documentation</a>
                 </li>
 
@@ -100,26 +97,29 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </template>
 
 <style>
+
 </style>
 
 <script>
 import EngineClient from '../js/EngineClient.js';
 
 export default {
-    data() {
+    data: function() {
         return {
             version: undefined,
             engineClient: {}
         }
     },
-
-    created() {
-        engineClient = new EngineClient();
+    created: function() {
+        this.engineClient = new EngineClient();
         window.useReasoner=false;
     },
-
-    attached() {
-        engineClient.getConfig((r, e) => { this.version=(r == null ? 'error' : r['project.version']) });
+    mounted: function() {
+        this.$nextTick(function() {
+            this.engineClient.getConfig((r, e) => {
+                this.version = (r == null ? 'error' : r['project.version'])
+            });
+        })
     }
 }
 </script>

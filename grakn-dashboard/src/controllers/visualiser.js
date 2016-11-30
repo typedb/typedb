@@ -1,21 +1,25 @@
-import _ from 'underscore';
-import Prism from 'prismjs';
-import CodeMirror from 'codemirror';
-import placeholder from 'codemirror/addon/display/placeholder.js';
-import simpleMode from 'codemirror/addon/mode/simple.js';
-
-import Visualiser from '../js/visualiser/Visualiser.js';
-import * as HALParser from '../js/HAL/HALParser.js';
+//Modules
+import HALParser from '../js/HAL/HALParser.js';
+import {
+    URL_REGEX
+} from '../js/HAL/HALParser.js';
 import * as API from '../js/HAL/APITerms';
 
+// External objects
 import EngineClient from '../js/EngineClient.js';
-import * as PLang from '../js/prismGraql.js';
-import simpleGraql from '../js/codemirrorGraql.js';
+import Visualiser from '../js/visualiser/Visualiser.js';
+
+// Components
+var GraqlEditor = require('./graqlEditor.vue')
 
 export default {
-    props: ['useReasoner'],
-    data() {
+    name: "VisualiserView",
+    components: {
+        GraqlEditor
+    },
+    data: function() {
         return {
+            engineQueryType: API.HAL_REQUEST,
             errorMessage: undefined,
             errorPanelClass: undefined,
             visualiser: {},
@@ -24,7 +28,7 @@ export default {
             analyticsStringResponse: undefined,
             typeInstances: false,
             typeKeys: [],
-            doubleClickTime:0,
+            doubleClickTime: 0,
 
             // resources keys used to change label of a node type
             allNodeProps: [],
@@ -42,106 +46,59 @@ export default {
         }
     },
 
-    created() {
-        visualiser = new Visualiser();
+    created: function() {
+        window.visualiser = new Visualiser();
         visualiser.setOnDoubleClick(this.doubleClick)
             .setOnRightClick(this.rightClick)
             .setOnClick(this.singleClick)
             .setOnDragEnd(this.dragEnd)
             .setOnHoldOnNode(this.holdOnNode);
 
-        engineClient = new EngineClient();
-        halParser = new HALParser.default();
+        this.engineClient = new EngineClient();
+        this.halParser = new HALParser();
 
-        halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
-        halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
-        halParser.setNodeAlreadyInGraph(id => visualiser.nodeExists(id));
+        this.halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
+        this.halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
+        this.halParser.setNodeAlreadyInGraph(id => visualiser.nodeExists(id));
     },
 
-    attached() {
-        var graph = this.$els.graph;
+    mounted: function() {
+        this.$nextTick(function() {
 
-        function resizeElements() {
-            // set graph div height
-            var divHeight = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top - 20;
-            $('.graph-div').height(divHeight);
-            //set the height of right panel of same size of graph-div
-            $('.properties-tab').height(divHeight + 7);
-            //fix the height of panel-body so that it is possible to make it overflow:scroll
-            $('.properties-tab .panel-body').height(divHeight - 120);
-        };
+            var graph = this.$refs.graph;
+            visualiser.render(graph);
 
-        visualiser.render(graph);
+            function resizeElements() {
+                // set graph div height
+                var divHeight = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top - 20;
+                $('.graph-div').height(divHeight);
+                //set the height of right panel of same size of graph-div
+                $('.properties-tab').height(divHeight + 7);
+                //fix the height of panel-body so that it is possible to make it overflow:scroll
+                $('.properties-tab .panel-body').height(divHeight - 85);
+            };
+            resizeElements();
+            window.onresize = resizeElements;
 
-        codeMirror = CodeMirror.fromTextArea(this.$els.graqlEditor, {
-            lineNumbers: true,
-            theme: "dracula",
-            mode: "graql",
-            viewportMargin: Infinity,
-            extraKeys: {
-                Enter: this.runQuery,
-                "Shift-Delete": this.clearGraph,
-                "Shift-Backspace": this.clearGraph
-            }
+            $('.properties-tab').hide();
+            var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top + 20;
+            // make the list of resources tab resizable with mouse - jQueryUI
+            $('#list-resources-tab').resizable({
+                //make it fixed height and only resizable towards west
+                minHeight: height,
+                maxHeight: height,
+                handles: "w"
+            });
         });
-
-        resizeElements();
-        window.onresize = resizeElements;
-
-        $('.properties-tab').hide();
-        var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top + 20;
-        // make the list of resources tab resizable with mouse - jQueryUI
-        $('#list-resources-tab').resizable({
-            //make it fixed height and only resizable towards west
-            minHeight: height,
-            maxHeight: height,
-            handles: "w"
-        });
-
     },
 
     methods: {
-        /*
-         * User interaction: queries.
-         */
-        runQuery() {
-            const query = codeMirror.getValue();
 
-            // Empty query.
-            if (query == undefined || query.length === 0)
-                return;
-
-            if (query.trim().startsWith("compute"))
-                engineClient.graqlAnalytics(query, this.analyticsResponse);
-            else
-                engineClient.graqlHAL(query, window.useReasoner, this.graphResponse);
-
-            this.resetMsg();
-        },
-
-        typeQuery(t, ti) {
-            codeMirror.setValue("match $x " + (t === 'roles' ? 'plays-role' : 'isa') + " " + ti + ";");
-            this.typeInstances = false;
-            this.runQuery();
-        },
-
-        loadOntology() {
+        onLoadOntology() {
             let query_isa = "match $x isa " + API.TYPE_TYPE + ";";
             let query_sub = "match $x sub " + API.TYPE_TYPE + ";";
-            engineClient.graqlHAL(query_sub, window.useReasoner, this.graphResponse);
-            engineClient.graqlHAL(query_isa, window.useReasoner, this.graphResponse);
-        },
-
-        getMetaTypes() {
-            if (this.typeInstances)
-                this.typeInstances = false;
-            else
-                engineClient.getMetaTypes(x => {
-                    if (x != null) {
-                        this.typeInstances = x;
-                        this.typeKeys = _.keys(x)
-                    }
-                });
+            this.engineClient.graqlHAL(query_sub, this.onGraphResponse, window.useReasoner);
+            this.engineClient.graqlHAL(query_isa, this.onGraphResponse, window.useReasoner);
         },
 
         singleClick(param) {
@@ -149,17 +106,26 @@ export default {
             let threshold = 200;
             //all this fun to be able to distinguish a single click from a double click
             if (t0 - this.doubleClickTime > threshold) {
-                setTimeout(()=> {
+                setTimeout(() => {
                     if (t0 - this.doubleClickTime > threshold) {
                         this.leftClick(param);
                     }
                 }, threshold);
             }
         },
+
+        onClickSubmit(query) {
+            this.errorMessage=undefined;
+            if (query.trim().startsWith("compute"))
+                this.engineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
+            else
+                this.engineClient.graqlHAL(query, this.onGraphResponse, window.useReasoner);
+        },
         /*
          * User interaction: visualiser
          */
         leftClick(param) {
+
             // As multiselect is disabled, there will only ever be one node.
             const node = param.nodes[0];
             const eventKeys = param.event.srcEvent;
@@ -170,9 +136,9 @@ export default {
 
             //When we will enable clustering, also need to check && !visualiser.expandCluster(node)
             if (eventKeys.altKey)
-                engineClient.request({
+                this.engineClient.request({
                     url: visualiser.nodes._data[node].ontology,
-                    callback: this.graphResponse
+                    callback: this.onGraphResponse
                 });
             else {
                 var props = visualiser.getNode(node);
@@ -181,7 +147,9 @@ export default {
                     type: props.type,
                     baseType: props.baseType
                 }
+
                 this.allNodeResources = this.prepareResources(props.properties);
+                // this.allNodeLinks = this.sortObject(props.links);
 
                 this.numOfResources = Object.keys(this.allNodeResources).length;
                 this.numOfLinks = Object.keys(this.allNodeLinks).length;
@@ -209,7 +177,7 @@ export default {
             resourceObject.href = this.validURL(resourceObject.label);
         },
         validURL(str) {
-            var pattern = new RegExp(HALParser.URL_REGEX, "i");
+            var pattern = new RegExp(URL_REGEX, "i");
             return pattern.test(str);
         },
         dragEnd(param) {
@@ -232,15 +200,15 @@ export default {
             if (eventKeys.shiftKey)
                 visualiser.clearGraph();
 
-            engineClient.request({
+            this.engineClient.request({
                 url: node,
-                callback: this.graphResponse
+                callback: this.onGraphResponse
             });
         },
         addResourceNodeWithOwners(id) {
-            engineClient.request({
+            this.engineClient.request({
                 url: id,
-                callback: this.graphResponse
+                callback: this.onGraphResponse
             });
         },
         rightClick(param) {
@@ -277,7 +245,7 @@ export default {
         closeConfigPanel() {
             if ($('.properties-tab.active').hasClass('slideInRight')) {
                 $('.properties-tab.active').removeClass('animated slideInRight');
-                $('.properties-tab.active').fadeOut(300, function() {
+                $('.properties-tab.active').fadeOut(300, () => {
                     this.nodeType = undefined;
                     this.allNodeProps = [];
                     this.selectedProps = [];
@@ -293,35 +261,38 @@ export default {
             this.nodeType = visualiser.getNodeType(node);
             $('#myModal2').modal('show');
         },
-        /*
-         * EngineClient callbacks
-         */
-        graphResponse(resp, err) {
-            if (resp != null) {
-                if (!halParser.parseResponse(resp))
-                    this.showWarning("Sorry, no results found for your query.");
-                else
-                    visualiser.cluster();
-            } else {
-                this.showError(err);
-            }
-        },
-        analyticsResponse(resp, err) {
+
+        onGraphResponseAnalytics(resp, err) {
             if (resp != null) {
                 if (resp.type === "string") {
                     this.analyticsStringResponse = resp.response;
                 } else {
-                    halParser.parseResponse(resp.response);
+                    this.halParser.parseResponse(resp.response);
+                    visualiser.fitGraphToWindow();
                 }
             } else {
                 this.showError(err);
             }
         },
+
+        onCloseError(){
+          this.errorMessage = undefined;
+        },
+
         /*
-         * UX
+         * EngineClient callbacks
          */
-        suppressEventDefault(e) {
-            e.preventDefault();
+        onGraphResponse(resp, err) {
+            if (resp != undefined) {
+                if (!this.halParser.parseResponse(resp))
+                    this.showWarning("Sorry, no results found for your query.");
+                else
+                    visualiser.cluster();
+                visualiser.fitGraphToWindow();
+            } else {
+                this.showError(err);
+            }
+
         },
 
         showError(msg) {
@@ -345,11 +316,11 @@ export default {
                 .addClass('btn-default');
         },
 
-        clearGraph() {
+        onClear() {
             // Reset all interface elements to default.
-            codeMirror.setValue("");
-            this.resetMsg();
             this.closeConfigPanel();
+            this.resetMsg();
+
             // And clear the graph
             visualiser.clearGraph();
         }
