@@ -111,7 +111,7 @@ public class MovieGraphFactoryTest {
     public void testGodfatherHasResource() {
         ResourceType tmdbVoteCount = graknGraph.getResourceType("tmdb-vote-count");
         ResourceType title = graknGraph.getResourceType("title");
-        Entity godfather = graknGraph.getResource("Godfather", title).owner().asEntity();
+        Entity godfather = title.getResource("Godfather").owner().asEntity();
         Stream<Resource<?>> resources = godfather.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(tmdbVoteCount) && r.getValue().equals(1000L)));
     }

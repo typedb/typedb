@@ -595,7 +595,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testMatchAllResources() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has(var("x")));
 
-        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
         Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
 
         Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
@@ -635,7 +635,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testLookupResourcesOnId() {
-        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
         String id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", var("x")));
 

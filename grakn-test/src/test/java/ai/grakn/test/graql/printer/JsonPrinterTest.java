@@ -90,7 +90,7 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
     @Test
     public void testJsonResource() {
         ResourceType<String> resourceType = graph.getResourceType("title");
-        Resource<String> resource = graph.getResource("The Muppets", resourceType);
+        Resource<String> resource = resourceType.getResource("The Muppets");
 
         assertJsonEquals(
                 Json.object("id", resource.getId(), "isa", "title", "value", "The Muppets"),
@@ -100,7 +100,7 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
 
     @Test
     public void testJsonRule() {
-        Rule rule = graph.getResource("expectation-rule", graph.getResourceType("name")).owner().asRule();
+        Rule rule = graph.getResourceType("name").getResource("expectation-rule").owner().asRule();
         assertJsonEquals(
                 Json.object("id", rule.getId(), "isa", "a-rule-type", "lhs", rule.getLHS().toString(), "rhs", rule.getRHS().toString()),
                 rule

@@ -330,17 +330,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return getConcept(Schema.ConceptProperty.NAME, name);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> Resource<V> getResource(V value, ResourceType<V> type){
-        String index = ResourceImpl.generateResourceIndex(type, value.toString());
-        ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, index);
-        if(concept != null){
-            return concept.asResource();
-        }
-        return null;
-    }
-
     @Override
     public <V> Collection<Resource<V>> getResourcesByValue(V value) {
         HashSet<Resource<V>> resources = new HashSet<>();

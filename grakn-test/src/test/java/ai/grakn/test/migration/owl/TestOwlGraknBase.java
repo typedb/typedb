@@ -17,15 +17,12 @@
  */
 package ai.grakn.test.migration.owl;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Optional;
-
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.migration.owl.OWLMigrator;
 import ai.grakn.migration.owl.OwlModel;
 import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import org.junit.Before;
@@ -33,8 +30,10 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.migration.owl.OWLMigrator;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Base class for OWL migrator unit tests: create and holds OWL manager and
@@ -74,7 +73,7 @@ public class TestOwlGraknBase extends AbstractGraknMigratorTest {
     ResourceType<String> owlIriResource(){ return graph.getResourceType(OwlModel.IRI.owlname());}
 
     <T> Entity getEntity(T id, ResourceType<T> rtype){
-        Resource<T> iri = graph.getResource(id, rtype);
+        Resource<T> iri = rtype.getResource(id);
         Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
