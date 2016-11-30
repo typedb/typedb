@@ -111,22 +111,22 @@ public class TypeTest extends GraphTestBase{
         TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3'");
         TypeImpl c4 = (TypeImpl) graknGraph.putEntityType("c4");
 
-        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c2));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c3));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSuperSet().contains(c1));
+        assertFalse(c1.getSuperSet().contains(c2));
+        assertFalse(c1.getSuperSet().contains(c3));
+        assertFalse(c1.getSuperSet().contains(c4));
 
         c1.superType(c2);
-        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
-        assertTrue(c1.getSubHierarchySuperSet().contains(c2));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c3));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSuperSet().contains(c1));
+        assertTrue(c1.getSuperSet().contains(c2));
+        assertFalse(c1.getSuperSet().contains(c3));
+        assertFalse(c1.getSuperSet().contains(c4));
 
         c2.superType(c3);
-        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
-        assertTrue(c1.getSubHierarchySuperSet().contains(c2));
-        assertTrue(c1.getSubHierarchySuperSet().contains(c3));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSuperSet().contains(c1));
+        assertTrue(c1.getSuperSet().contains(c2));
+        assertTrue(c1.getSuperSet().contains(c3));
+        assertFalse(c1.getSuperSet().contains(c4));
 
         graknGraph.getTinkerPopGraph().traversal().V().
                 hasId(c3.getId()).
@@ -135,7 +135,7 @@ public class TypeTest extends GraphTestBase{
         boolean correctExceptionThrown = false;
         try{
             c4.superType(c2);
-            c1.getSubHierarchySuperSet();
+            c1.getSuperSet();
         } catch(RuntimeException e){
             correctExceptionThrown = e.getMessage().contains("loop");
         }

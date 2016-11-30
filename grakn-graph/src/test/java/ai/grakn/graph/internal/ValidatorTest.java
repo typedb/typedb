@@ -538,12 +538,11 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putEntityType("context").playsRole(inContext);
 
         RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
-        graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild).hasRole(inContext);
+        RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild).hasRole(inContext);
 
         expectedException.expect(GraknValidationException.class);
-        //TODO: Figure out error
-        //expectedException.expectMessage(allOf(containsString(
-        //        ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), parenthood.getName()))));
 
         graknGraph.commit();
     }
@@ -559,12 +558,11 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putEntityType("context").playsRole(inContext);
 
         RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild).hasRole(inContext);
-        graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
+        RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
 
         expectedException.expect(GraknValidationException.class);
-        //TODO: Figure out error
-        //expectedException.expectMessage(allOf(containsString(
-        //        ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), parenthood.getName()))));
 
         graknGraph.commit();
     }

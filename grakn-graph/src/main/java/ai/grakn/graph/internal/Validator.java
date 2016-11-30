@@ -133,7 +133,6 @@ class Validator {
             errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getName()));
 
         Collection<Type> invalidTypes = ValidateGlobalRules.validateRolesPlayedSchema(roleType);
-
         if(!invalidTypes.isEmpty()){
             invalidTypes.forEach(invalidType -> {
                 errorsFound.add(ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(invalidType.getName(), roleType.superType().getName()));
@@ -148,6 +147,14 @@ class Validator {
     private void validateRelationType(RelationTypeImpl relationType){
         if(!ValidateGlobalRules.validateHasMinimumRoles(relationType))
             errorsFound.add(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getName()));
+
+        Collection<RoleType> invalidTypes = ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType);
+        if(!invalidTypes.isEmpty()){
+            invalidTypes.forEach(invalidType -> {
+                errorsFound.add(
+                        ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(invalidType.getName(), relationType.getName(), relationType.superType().getName()));
+            });
+        }
     }
 
     /**

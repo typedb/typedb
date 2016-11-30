@@ -64,10 +64,11 @@ public enum ErrorMessage {
             "The provided role players('%s'): ['%s'] \n"),
     VALIDATION_CASTING("The type ['%s'] of role player ['%s'] is not allowed to play RoleType ['%s'] \n"),
     VALIDATION_IS_ABSTRACT("The abstract Type ['%s'] should not have any instances \n"),
-    VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any RelationType. \n"),
+    VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
     VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type ['%s'] is playing role ['%s'] which it is not allowed \n"),
     VALIDATION_INSTANCE("Instance ['%s'] does not play all required roles \n"),
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type ['%s'] does not have a sub or super Role Type in either Relation Type ['%s'] or Relation Type ['%s'] \n"),
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player ['%s'] \n"),
 
     //--------------------------------------------- Factory Errors
