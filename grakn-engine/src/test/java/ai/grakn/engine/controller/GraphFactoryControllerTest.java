@@ -47,8 +47,8 @@ public class GraphFactoryControllerTest extends GraknEngineTestBase {
         String endPoint = KEYSPACE_LIST;
         Response response = get(endPoint).then().statusCode(200).extract().response();
         Json result = Json.read(response.body().asString());
-        Assert.assertTrue(result.asJsonList().contains("grakntest"));
-        Assert.assertTrue(result.asJsonList().contains("grakntest2"));
+        Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest")));
+        Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest2")));
 	}
 	
     @Test
