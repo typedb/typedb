@@ -455,4 +455,149 @@ public class ValidatorTest extends GraphTestBase{
 
         graknGraph.commit();
     }
+
+    /*------------------------------- Relation Type to Role Type Validation (Schema) ---------------------------------*/
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationValid1(){
+        /*
+        animal isa entity-type
+	        plays-role relative
+	        plays-role parent
+	        plays-role father
+	        plays-role mother
+	        plays-role p-child
+	        plays-role f-child
+	        plays-role m-child;
+
+        relative isa role-type;
+        parent sub relative;
+        father sub parent;
+        mother sub parent;
+        p-child sub relative;
+        f-child sub p-child;
+        m-child sub p-child;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role p-child;
+
+        fatherhood sub parenthood
+	        has-role father
+	        has-role f-child;
+
+        motherhood sub parenthood
+	        has-role mother
+	        has-role m-child;
+         */
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationValid2(){
+        /*
+        animal isa entity-type
+	        plays-role relative
+	        plays-role parent
+	        plays-role father
+	        plays-role mother
+	        plays-role p-child
+	        plays-role fm-child;
+
+        relative isa role-type;
+        parent sub relative;
+        father sub parent;
+        mother sub parent;
+        p-child sub relative;
+        fm-child sub p-child;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role p-child;
+
+        fathermotherhood sub parenthood
+	        has-role father
+	        has-role mother
+	        has-role fm-child;
+         */
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationValid3(){
+        /*
+        animal isa entity-type
+        	plays-role relative
+        	plays-role parent
+        	plays-role father
+	        plays-role p-child
+	        plays-role f-child;
+
+        relative isa role-type;
+        parent sub relative;
+        father sub parent;
+        p-child sub relative;
+        f-child sub p-child;
+
+        parentrelativehood isa relation-type
+	        has-role relative
+	        has-role parent
+	        has-role p-child;
+
+        fatherhood sub parentrelativehood
+	        has-role father
+	        has-role f-child;
+         */
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationInvalid1(){
+        /*
+        animal isa entity-type
+	        plays-role parent
+	        plays-role father
+	        plays-role p-child
+	        plays-role f-child;
+
+        context isa entity-type
+	        plays-role in-context;
+
+        parent isa role-type;
+        father sub parent;
+        p-child sub relative;
+        f-child sub p-child;
+        in-context isa role-type;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role p-child;
+
+        fatherhood sub parenthood
+	        has-role father
+	        has-role f-child
+	        has-role in-context;
+         */
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationInvalid2(){
+        /*
+        animal isa entity-type
+	        plays-role parent
+	        plays-role father
+	        plays-role p-child
+	        plays-role f-child
+
+        context isa entity-type
+	        plays-role in-context;
+
+        parent isa role-type;
+        father sub parent;
+        p-child sub relative;
+        f-child sub p-child;
+        in-context isa role-type;
+
+        parenthood isa relation-type
+	        has-role parent
+	        has-role p-child
+	        has-role in-context;
+
+        fatherhood sub parenthood
+	        has-role father
+	        has-role f-child;
+         */
+    }
 }
