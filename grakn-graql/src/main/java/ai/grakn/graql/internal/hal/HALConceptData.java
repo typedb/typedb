@@ -174,18 +174,6 @@ class HALConceptData {
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
         }
-//        } else {
-//            if (!concept.getId().equals(rootConceptId)) {
-//                HALType = factory.newRepresentation(resourceLinkPrefix + rootConceptId)
-//                        .withProperty(ID_PROPERTY, ROOT_CONCEPT)
-//                        .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
-//                        .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
-//                        .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
-//                        .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
-//                halResource.withRepresentation(SUB_EDGE, HALType);
-//            }
-//        }
-
     }
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
