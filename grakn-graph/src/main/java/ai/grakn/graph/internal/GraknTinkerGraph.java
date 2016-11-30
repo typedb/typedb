@@ -19,11 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
-
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -48,15 +43,4 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     public void rollback(){
         throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
     }
-    
-    @Override
-    protected void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts) {
-    	
-    }
-    
-    @Override
-    public void clear() {
-	    clearGraph();
-	    finaliseClose(this::closePermanent, ErrorMessage.CLOSED_CLEAR.getMessage());
-    }    
 }

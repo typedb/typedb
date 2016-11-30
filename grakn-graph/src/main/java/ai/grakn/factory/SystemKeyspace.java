@@ -73,7 +73,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 		openSpaces.computeIfAbsent(keyspace, name -> {
 			try (GraknGraph graph = Grakn.factory(engineUrl, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph()) {
 				ResourceType<String> keyspaceName = graph.getResourceType(KEYSPACE_RESOURCE);
-				Resource<String> resource = graph.getResource(keyspace, keyspaceName);
+				Resource<String> resource = keyspaceName.getResource(keyspace);
 				if (resource == null)
 					resource = keyspaceName.putResource(keyspace);
 				if (resource.owner() == null) {
