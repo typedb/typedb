@@ -179,10 +179,10 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         ResourceType<String> name = graph.getResourceType("name");
         ResourceType<String> death = graph.getResourceType("death");
 
-        Entity puffball = graph.getResource("Puffball", name).ownerInstances().iterator().next().asEntity();
+        Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
         assertEquals(0, puffball.resources(death).size());
 
-        Entity bowser = graph.getResource("Bowser", name).ownerInstances().iterator().next().asEntity();
+        Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
         assertEquals(1, bowser.resources(death).size());
     }
 
@@ -194,9 +194,9 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         ResourceType<String> typeid = graph.getResourceType("type-id");
         ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
 
-        Entity grass = graph.getResource("12", typeid).ownerInstances().iterator().next().asEntity();
-        Entity poison = graph.getResource("4", typeid).ownerInstances().iterator().next().asEntity();
-        Entity bulbasaur = graph.getResource("1", pokedexno).ownerInstances().iterator().next().asEntity();
+        Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
+        Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
+        Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
         RelationType relation = graph.getRelationType("has-type");
 
         assertNotNull(grass);

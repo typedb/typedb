@@ -252,8 +252,8 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         Resource c2 = type.putResource("1");
         assertEquals(c2, graknGraph.getResourcesByValue("1").iterator().next());
         assertEquals(1, graknGraph.getResourcesByValue("1").size());
-        assertEquals(c2, graknGraph.getResource("1", type));
-        assertNull(graknGraph.getResource("1", type2));
+        assertEquals(c2, type.getResource("1"));
+        assertNull(type2.getResource("1"));
     }
 
     @Test

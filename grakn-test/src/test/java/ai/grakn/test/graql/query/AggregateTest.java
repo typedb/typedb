@@ -18,9 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.concept.Instance;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.graql.AggregateQuery;
@@ -43,7 +40,6 @@ import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.test.graql.query.QueryUtil.movies;
 import static org.junit.Assert.assertEquals;
 
 public class AggregateTest extends AbstractMovieGraphTest {
@@ -88,7 +84,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Instance godfather = graph.getResource("Godfather", graph.getResourceType("title")).owner();
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }

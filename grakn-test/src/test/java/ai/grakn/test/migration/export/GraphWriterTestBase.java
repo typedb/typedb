@@ -112,7 +112,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
     }
 
     public <V> Resource<V> getResourceFromGraph(GraknGraph graph, Resource<V> resource){
-        return graph.getResource(resource.getValue(), resource.type());
+        return graph.getResourceType(resource.type().getName()).getResource(resource.getValue());
     }
 
     public void assertRelationCopied(Relation relation1, GraknGraph two){
