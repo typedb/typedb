@@ -110,19 +110,19 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         // fetch all the types in the subGraph
         Set<Type> subGraph = subTypeNames.stream().map((id) -> {
             Type type = graph.getType(id);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(id));
             return type;
         }).collect(Collectors.toSet());
 
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subGraph.isEmpty()) {
-            graph.getMetaEntityType().instances().forEach(type -> this.subTypeNames.add(type.asType().getId()));
-            graph.getMetaResourceType().instances().forEach(type -> this.subTypeNames.add(type.asType().getId()));
-            graph.getMetaRelationType().instances().forEach(type -> this.subTypeNames.add(type.asType().getId()));
+            graph.getMetaEntityType().instances().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            graph.getMetaResourceType().instances().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            graph.getMetaRelationType().instances().forEach(type -> this.subTypeNames.add(type.asType().getName()));
             this.subTypeNames.removeAll(CommonOLAP.analyticsElements);
         } else {
             for (Type type : subGraph) {
-                type.subTypes().forEach(subType -> this.subTypeNames.add(subType.getId()));
+                type.subTypes().forEach(subType -> this.subTypeNames.add(subType.getName()));
             }
         }
     }

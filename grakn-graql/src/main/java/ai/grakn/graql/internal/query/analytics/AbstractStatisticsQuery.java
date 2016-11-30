@@ -65,15 +65,15 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
         Set<Type> statisticsResourceTypes = statisticsResourceTypeNames.stream().map((name) -> {
             Type type = graph.getType(name);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(name));
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(name));
             return type;
         }).collect(Collectors.toSet());
         for (Type type : statisticsResourceTypes) {
-            type.subTypes().forEach(subtype -> this.statisticsResourceTypeNames.add(subtype.getId()));
+            type.subTypes().forEach(subtype -> this.statisticsResourceTypeNames.add(subtype.getName()));
         }
 
         graph.getMetaResourceType().instances().forEach(type ->
-                resourceTypesDataTypeMap.put(type.getId(), type.asResourceType().getDataType().getName()));
+                resourceTypesDataTypeMap.put(type.asType().getName(), type.asResourceType().getDataType().getName()));
     }
 
     String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
@@ -121,7 +121,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<String> getCombinedSubTypes() {
         Set<String> allSubTypes = statisticsResourceTypeNames.stream()
-                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubTypes.addAll(subTypeNames);
         allSubTypes.addAll(statisticsResourceTypeNames);
         return allSubTypes;
