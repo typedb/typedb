@@ -458,146 +458,114 @@ public class ValidatorTest extends GraphTestBase{
 
     /*------------------------------- Relation Type to Role Type Validation (Schema) ---------------------------------*/
     @Test
-    public void testRelationTypeToRoleTypeSchemaValidationValid1(){
-        /*
-        animal isa entity-type
-	        plays-role relative
-	        plays-role parent
-	        plays-role father
-	        plays-role mother
-	        plays-role p-child
-	        plays-role f-child
-	        plays-role m-child;
+    public void testRelationTypeToRoleTypeSchemaValidationValid1() throws GraknValidationException {
+        RoleType relative = graknGraph.putRoleType("relative").setAbstract(true);
+        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType mother = graknGraph.putRoleType("mother").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
+        RoleType mChild = graknGraph.putRoleType("mChild").superType(pChild);
 
-        relative isa role-type;
-        parent sub relative;
-        father sub parent;
-        mother sub parent;
-        p-child sub relative;
-        f-child sub p-child;
-        m-child sub p-child;
+        graknGraph.putEntityType("animal").
+                playsRole(relative).
+                playsRole(parent).
+                playsRole(father).
+                playsRole(mother).
+                playsRole(pChild).
+                playsRole(fChild).
+                playsRole(mChild);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role p-child;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
+        graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
+        graknGraph.putRelationType("motherhood").superType(parenthood).hasRole(mother).hasRole(mChild);
 
-        fatherhood sub parenthood
-	        has-role father
-	        has-role f-child;
-
-        motherhood sub parenthood
-	        has-role mother
-	        has-role m-child;
-         */
+        graknGraph.commit();
     }
     @Test
-    public void testRelationTypeToRoleTypeSchemaValidationValid2(){
-        /*
-        animal isa entity-type
-	        plays-role relative
-	        plays-role parent
-	        plays-role father
-	        plays-role mother
-	        plays-role p-child
-	        plays-role fm-child;
+    public void testRelationTypeToRoleTypeSchemaValidationValid2() throws GraknValidationException {
+        RoleType relative = graknGraph.putRoleType("relative").setAbstract(true);
+        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType mother = graknGraph.putRoleType("mother").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
+        RoleType fmChild = graknGraph.putRoleType("fChild").superType(pChild);
 
-        relative isa role-type;
-        parent sub relative;
-        father sub parent;
-        mother sub parent;
-        p-child sub relative;
-        fm-child sub p-child;
+        graknGraph.putEntityType("animal").
+                playsRole(relative).
+                playsRole(parent).
+                playsRole(father).
+                playsRole(mother).
+                playsRole(pChild).
+                playsRole(fmChild);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role p-child;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
+        graknGraph.putRelationType("fathermotherhood").superType(parenthood).hasRole(father).hasRole(mother).hasRole(fmChild);
 
-        fathermotherhood sub parenthood
-	        has-role father
-	        has-role mother
-	        has-role fm-child;
-         */
+        graknGraph.commit();
     }
     @Test
-    public void testRelationTypeToRoleTypeSchemaValidationValid3(){
-        /*
-        animal isa entity-type
-        	plays-role relative
-        	plays-role parent
-        	plays-role father
-	        plays-role p-child
-	        plays-role f-child;
+    public void testRelationTypeToRoleTypeSchemaValidationValid3() throws GraknValidationException {
+        RoleType relative = graknGraph.putRoleType("relative");
+        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
 
-        relative isa role-type;
-        parent sub relative;
-        father sub parent;
-        p-child sub relative;
-        f-child sub p-child;
+        graknGraph.putEntityType("animal").
+                playsRole(relative).
+                playsRole(parent).
+                playsRole(father).
+                playsRole(pChild).
+                playsRole(fChild);
 
-        parentrelativehood isa relation-type
-	        has-role relative
-	        has-role parent
-	        has-role p-child;
+        RelationType parentrelativehood = graknGraph.putRelationType("parentrelativehood").
+                hasRole(relative).hasRole(parent).hasRole(pChild);
+        graknGraph.putRelationType("fatherhood").superType(parentrelativehood).
+                hasRole(father).hasRole(fChild);
 
-        fatherhood sub parentrelativehood
-	        has-role father
-	        has-role f-child;
-         */
+        graknGraph.commit();
     }
     @Test
-    public void testRelationTypeToRoleTypeSchemaValidationInvalid1(){
-        /*
-        animal isa entity-type
-	        plays-role parent
-	        plays-role father
-	        plays-role p-child
-	        plays-role f-child;
+    public void testRelationTypeToRoleTypeSchemaValidationInvalid1() throws GraknValidationException {
+        RoleType pChild = graknGraph.putRoleType("pChild");
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType inContext = graknGraph.putRoleType("in-context");
 
-        context isa entity-type
-	        plays-role in-context;
+        graknGraph.putEntityType("animal").playsRole(parent).playsRole(father).playsRole(pChild).playsRole(fChild);
+        graknGraph.putEntityType("context").playsRole(inContext);
 
-        parent isa role-type;
-        father sub parent;
-        p-child sub relative;
-        f-child sub p-child;
-        in-context isa role-type;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
+        graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild).hasRole(inContext);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role p-child;
+        expectedException.expect(GraknValidationException.class);
+        //TODO: Figure out error
+        //expectedException.expectMessage(allOf(containsString(
+        //        ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
 
-        fatherhood sub parenthood
-	        has-role father
-	        has-role f-child
-	        has-role in-context;
-         */
+        graknGraph.commit();
     }
     @Test
-    public void testRelationTypeToRoleTypeSchemaValidationInvalid2(){
-        /*
-        animal isa entity-type
-	        plays-role parent
-	        plays-role father
-	        plays-role p-child
-	        plays-role f-child
+    public void testRelationTypeToRoleTypeSchemaValidationInvalid2() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild");
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
+        RoleType inContext = graknGraph.putRoleType("in-context");
 
-        context isa entity-type
-	        plays-role in-context;
+        graknGraph.putEntityType("animal").playsRole(parent).playsRole(father).playsRole(pChild).playsRole(fChild);
+        graknGraph.putEntityType("context").playsRole(inContext);
 
-        parent isa role-type;
-        father sub parent;
-        p-child sub relative;
-        f-child sub p-child;
-        in-context isa role-type;
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild).hasRole(inContext);
+        graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
 
-        parenthood isa relation-type
-	        has-role parent
-	        has-role p-child
-	        has-role in-context;
+        expectedException.expect(GraknValidationException.class);
+        //TODO: Figure out error
+        //expectedException.expectMessage(allOf(containsString(
+        //        ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
 
-        fatherhood sub parenthood
-	        has-role father
-	        has-role f-child;
-         */
+        graknGraph.commit();
     }
 }
