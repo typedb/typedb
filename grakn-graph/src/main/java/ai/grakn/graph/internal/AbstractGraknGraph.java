@@ -678,7 +678,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
     }
 
-    private void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
+    protected void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
             Schema.BaseType type = entry.getKey();

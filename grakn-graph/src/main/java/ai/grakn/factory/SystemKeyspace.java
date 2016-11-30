@@ -95,7 +95,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	 */
 	public void loadSystemOntology() {
 		try (GraknGraph graph = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, config).getGraph(false)) {
-			if (graph.getEntityType(KEYSPACE_ENTITY) == null)
+			if (graph.getEntityType(KEYSPACE_ENTITY) != null)
 				return;
 			ClassLoader loader = this.getClass().getClassLoader();
 			String query = null;
