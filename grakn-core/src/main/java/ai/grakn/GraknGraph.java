@@ -213,13 +213,13 @@ public interface GraknGraph extends AutoCloseable{
      *
      * @param flag Specifies if implicit and system generated types should be returned.
      */
-    void showImplicitStructures(boolean flag);
+    void showImplicitConcepts(boolean flag);
 
     /**
      *
      * @return true if implicit structures are exposed.
      */
-    boolean implicitStructuresRevealed();
+    boolean implicitConceptsVisible();
 
     /**
      * Closes and clears the current graph.

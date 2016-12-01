@@ -671,11 +671,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
-    public void showImplicitStructures(boolean flag){
+    public void showImplicitConcepts(boolean flag){
         localShowImplicitStructures.set(flag);
     }
 
-    public boolean implicitStructuresRevealed(){
+    public boolean implicitConceptsVisible(){
         return localShowImplicitStructures.get();
     }
 

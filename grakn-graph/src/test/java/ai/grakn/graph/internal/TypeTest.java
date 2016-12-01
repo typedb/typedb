@@ -407,6 +407,8 @@ public class TypeTest extends GraphTestBase{
         assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
         assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId)));
 
+        graknGraph.showImplicitConcepts(true);
+
         assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), entityType.playsRoles().iterator().next().getName());
         assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), resourceType.playsRoles().iterator().next().getName());
 
@@ -434,6 +436,8 @@ public class TypeTest extends GraphTestBase{
 
         entityType1.hasResource(rtSuper);
         entityType2.hasResource(rt);
+
+        graknGraph.showImplicitConcepts(true);
 
         //Check role types are only built explicitly
         assertEquals(1, entityType1.playsRoles().size());
@@ -470,6 +474,8 @@ public class TypeTest extends GraphTestBase{
 
         assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
         assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId)));
+
+        graknGraph.showImplicitConcepts(true);
 
         assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), entityType.playsRoles().iterator().next().getName());
         assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), resourceType.playsRoles().iterator().next().getName());

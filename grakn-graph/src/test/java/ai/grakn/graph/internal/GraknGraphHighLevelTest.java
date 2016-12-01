@@ -627,13 +627,13 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
         type.hasResource(resourceType);
 
-        assertFalse(graknGraph.implicitStructuresRevealed());
+        assertFalse(graknGraph.implicitConceptsVisible());
 
         //Check nothing is revealed when returning result sets
         assertEquals(0, type.playsRoles().size());
         assertEquals(0, resourceType.playsRoles().size());
-        assertEquals(0, graknGraph.getMetaRelationType().instances().size());
-        assertEquals(0, graknGraph.getMetaRoleType().instances().size());
+        assertEquals(1, graknGraph.getMetaRelationType().instances().size());
+        assertEquals(3, graknGraph.getMetaRoleType().instances().size());
 
         //Check things are still returned when explicitly asking for them
         assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
@@ -641,14 +641,14 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertNotNull(graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName())));
 
         //Switch on flag
-        graknGraph.showImplicitStructures(true);
-        assertTrue(graknGraph.implicitStructuresRevealed());
+        graknGraph.showImplicitConcepts(true);
+        assertTrue(graknGraph.implicitConceptsVisible());
 
         //Now check the result sets again
         assertEquals(1, type.playsRoles().size());
         assertEquals(1, resourceType.playsRoles().size());
-        assertEquals(1, graknGraph.getMetaRelationType().instances().size());
-        assertEquals(2, graknGraph.getMetaRoleType().instances().size());
+        assertEquals(2, graknGraph.getMetaRelationType().instances().size());
+        assertEquals(5, graknGraph.getMetaRoleType().instances().size());
     }
 
 }

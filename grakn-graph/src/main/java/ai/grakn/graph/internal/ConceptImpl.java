@@ -172,7 +172,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                     throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
                 }
                 visitedConcepts.add(currentConcept);
-
             }
         }
         return (V) type;
@@ -480,7 +479,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
         getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
             X found = edge.getTarget();
-            if(found != null){
+            if(found != null) {
                 outgoingNeighbours.add(found);
             }
         });
@@ -555,7 +554,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return vertex;
     }
 
-    //------------ Setters ------------
     /**
      *
      * @param type The type of this concept
@@ -565,7 +563,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return setProperty(Schema.ConceptProperty.TYPE, type);
     }
 
-    //------------ Getters ------------
     /**
      *
      * @return The unique base identifier of this concept.
