@@ -105,11 +105,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     @Override
     public boolean isClosed(){
-        Boolean value = localIsClosed.get();
+        return getBooleanFromLocalThread(localIsClosed);
+    }
+
+    @Override
+    public boolean implicitConceptsVisible(){
+        return getBooleanFromLocalThread(localShowImplicitStructures);
+    }
+
+    private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
+        Boolean value = local.get();
         if(value == null)
             return false;
         else
             return value;
+    }
+
+    @Override
+    public void showImplicitConcepts(boolean flag){
+        localShowImplicitStructures.set(flag);
     }
 
     public boolean hasCommitted(){
@@ -670,15 +684,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             return null;
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
-
-    public void showImplicitConcepts(boolean flag){
-        localShowImplicitStructures.set(flag);
-    }
-
-    public boolean implicitConceptsVisible(){
-        return localShowImplicitStructures.get();
-    }
-
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
     /**
