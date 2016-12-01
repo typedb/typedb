@@ -608,10 +608,15 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testLimit(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x; limit 5;";
-        MatchQuery query = lgraph.graql().<MatchQuery>parse(queryString);
-        Reasoner reasoner = new Reasoner(lgraph);
-        printAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        String limitQueryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;limit 5;";
+        String queryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;";
+        MatchQuery limitQuery = lgraph.graql().parse(limitQueryString);
+        MatchQuery query = lgraph.graql().parse(queryString);
+
+        QueryAnswers limitedAnswers = new QueryAnswers(limitQuery.execute());
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        assertTrue(answers.size() > limitedAnswers.size());
+        assertTrue(answers.containsAll(limitedAnswers));
     }
 
     @Test
@@ -666,7 +671,7 @@ public class ReasonerTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(lgraph);
         Query query = new Query(queryString, lgraph);
     }
-    
+
     @Test
     public void testResourceComparison(){
         GraknGraph lgraph = SNBGraph.getGraph();

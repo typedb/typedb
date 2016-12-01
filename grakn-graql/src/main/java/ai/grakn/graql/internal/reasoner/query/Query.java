@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.query.match.MatchOrder;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -344,9 +345,9 @@ public class Query implements MatchQueryInternal {
 
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
-            return Graql.match(getPattern()).withGraph(graph);
+            return Queries.matchNoInfer(getPattern()).withGraph(graph);
         else
-            return Graql.match(getPattern()).select(selectVars).withGraph(graph);
+            return Queries.matchNoInfer(getPattern()).select(selectVars).withGraph(graph);
     }
 
     public Map<String, Type> getVarTypeMap() {
