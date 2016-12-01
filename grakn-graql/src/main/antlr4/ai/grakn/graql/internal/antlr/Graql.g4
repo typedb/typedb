@@ -26,14 +26,16 @@ computeQuery   : 'compute' computeMethod ;
 
 computeMethod  : min | max | median | mean | std | sum ;
 
-min            : MIN    ('of' ofList)?    ('in' inList)? ;
-max            : MAX    ('of' ofList)?    ('in' inList)? ;
-median         : MEDIAN ('of' ofList)?    ('in' inList)? ;
-mean           : MEAN   ('of' ofList)?    ('in' inList)? ;
-std            : STD    ('of' ofList)?    ('in' inList)? ;
-sum            : SUM    ('of' ofList)?    ('in' inList)? ;
-count          : COUNT                    ('in' inList)? ;
-path           : PATH   'from' id 'to' id ('in' inList)? ;
+min            : MIN     ('of' ofList)?    ('in' inList)? ;
+max            : MAX     ('of' ofList)?    ('in' inList)? ;
+median         : MEDIAN  ('of' ofList)?    ('in' inList)? ;
+mean           : MEAN    ('of' ofList)?    ('in' inList)? ;
+std            : STD     ('of' ofList)?    ('in' inList)? ;
+sum            : SUM     ('of' ofList)?    ('in' inList)? ;
+count          : COUNT                     ('in' inList)? ;
+path           : PATH    'from' id 'to' id ('in' inList)? ;
+cluster        : CLUSTER MEMBERS? PERSIST? ('in' inList)? ;
+degree         : DEGREE           PERSIST? ('in' inList)? ;
 
 ofList         : nameList ;
 inList         : nameList ;
@@ -108,7 +110,9 @@ id             : identifier ;
 
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
-               | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH ;
+               | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
+               | DEGREE | MEMBERS | PERSIST
+               ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
 ORDER          : 'asc' | 'desc' ;
@@ -129,6 +133,10 @@ STD            : 'std' ;
 SUM            : 'sum' ;
 COUNT          : 'count' ;
 PATH           : 'path' ;
+CLUSTER        : 'cluster' ;
+DEGREE         : 'degree' ;
+MEMBERS        : 'members' ;
+PERSIST        : 'persist' ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 

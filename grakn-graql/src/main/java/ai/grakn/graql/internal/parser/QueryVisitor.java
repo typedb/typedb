@@ -34,7 +34,9 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
+import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -292,6 +294,34 @@ class QueryVisitor extends GraqlBaseVisitor {
         }
 
         return path;
+    }
+
+    @Override
+    public ClusterQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
+        ClusterQuery<?> cluster = queryBuilder.compute().cluster();
+
+        if (ctx.MEMBERS() != null) cluster = cluster.members();
+
+        if (ctx.PERSIST() != null) cluster = cluster.persist();
+
+        if (ctx.inList() != null) {
+            cluster = cluster.in(visitInList(ctx.inList()));
+        }
+
+        return cluster;
+    }
+
+    @Override
+    public DegreeQuery<?> visitDegree(GraqlParser.DegreeContext ctx) {
+        DegreeQuery<?> degree = queryBuilder.compute().degree();
+
+        if (ctx.PERSIST() != null) degree = degree.persist();
+
+        if (ctx.inList() != null) {
+            degree = degree.in(visitInList(ctx.inList()));
+        }
+
+        return degree;
     }
 
     @Override
