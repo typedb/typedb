@@ -70,11 +70,9 @@ public class GraqlTest extends AbstractGraphTest {
     private String entityId3;
     private String entityId4;
     private String relationId12;
-    private String relationId23;
     private String relationId24;
-    private List<String> instanceIds;
 
-    String keyspace;
+    private String keyspace;
 
     @Before
     public void setUp() {
@@ -93,7 +91,7 @@ public class GraqlTest extends AbstractGraphTest {
     @Test
     public void testGraqlCount() throws GraknValidationException, InterruptedException, ExecutionException {
         addOntologyAndEntities();
-        assertEquals(instanceIds.size(), ((Long) qb.parse("compute count;").execute()).longValue());
+        assertEquals(6L, ((Long) qb.parse("compute count;").execute()).longValue());
         assertEquals(3L, ((Long) qb.parse("compute count in thing, thing;").execute()).longValue());
     }
 
@@ -106,13 +104,12 @@ public class GraqlTest extends AbstractGraphTest {
         Map<Long, Set<String>> degrees = ((Map<Long, Set<String>>) qb.parse("compute degrees;").execute());
 
         Map<String, Long> correctDegrees = new HashMap<>();
-        correctDegrees.put(entityId1, 1l);
-        correctDegrees.put(entityId2, 3l);
-        correctDegrees.put(entityId3, 1l);
-        correctDegrees.put(entityId4, 1l);
-        correctDegrees.put(relationId12, 2l);
-        correctDegrees.put(relationId23, 2l);
-        correctDegrees.put(relationId24, 2l);
+        correctDegrees.put(entityId1, 1L);
+        correctDegrees.put(entityId2, 2L);
+        correctDegrees.put(entityId3, 0L);
+        correctDegrees.put(entityId4, 1L);
+        correctDegrees.put(relationId12, 2L);
+        correctDegrees.put(relationId24, 2L);
 
         assertTrue(!degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -132,13 +129,12 @@ public class GraqlTest extends AbstractGraphTest {
         qb.parse("compute degrees; persist;").execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
-        correctDegrees.put(entityId1, 1l);
-        correctDegrees.put(entityId2, 3l);
-        correctDegrees.put(entityId3, 1l);
-        correctDegrees.put(entityId4, 1l);
-        correctDegrees.put(relationId12, 2l);
-        correctDegrees.put(relationId23, 2l);
-        correctDegrees.put(relationId24, 2l);
+        correctDegrees.put(entityId1, 1L);
+        correctDegrees.put(entityId2, 2L);
+        correctDegrees.put(entityId3, 0L);
+        correctDegrees.put(entityId4, 1L);
+        correctDegrees.put(relationId12, 2L);
+        correctDegrees.put(relationId24, 2L);
 
         graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
