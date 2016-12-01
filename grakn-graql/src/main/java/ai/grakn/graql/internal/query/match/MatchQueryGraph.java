@@ -41,14 +41,12 @@ class MatchQueryGraph extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(
-            Optional<GraknGraph> graph, Optional<MatchOrder> order
-    ) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
         if (graph.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_GRAPH.getMessage());
         }
 
-        return inner.stream(Optional.of(this.graph), order);
+        return inner.stream(Optional.of(this.graph));
     }
 
     @Override

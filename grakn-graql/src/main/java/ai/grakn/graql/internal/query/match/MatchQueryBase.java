@@ -21,13 +21,11 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.GremlinQuery;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -62,7 +60,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalGraph.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
@@ -70,13 +68,13 @@ public class MatchQueryBase implements MatchQueryInternal {
         for (VarAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversal();
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph).getTraversal();
         return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
     }
 
     @Override
     public Set<Type> getTypes(GraknGraph graph) {
-        GremlinQuery gremlinQuery = getQuery(graph, Optional.empty());
+        GremlinQuery gremlinQuery = getQuery(graph);
         return gremlinQuery.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
     }
 
@@ -136,11 +134,10 @@ public class MatchQueryBase implements MatchQueryInternal {
 
     /**
      * @param graph the graph to execute the query on
-     * @param order an optional ordering of the query
      * @return the query that will match the specified patterns
      */
-    private GremlinQuery getQuery(GraknGraph graph, Optional<MatchOrder> order) {
-        return new GremlinQuery(graph, this.pattern, getSelectedNames(), order);
+    private GremlinQuery getQuery(GraknGraph graph) {
+        return new GremlinQuery(graph, this.pattern, getSelectedNames());
     }
 
     /**

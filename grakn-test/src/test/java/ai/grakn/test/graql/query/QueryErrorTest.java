@@ -160,11 +160,4 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
         ));
         qb.match(Graql.var("x").isa("actor")).stream();
     }
-
-    @Test
-    public void testExceptionOrderTwice() {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage("order");
-        qb.match(Graql.var("x").isa("movie")).orderBy("x").orderBy("x").stream();
-    }
 }

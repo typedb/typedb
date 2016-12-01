@@ -80,14 +80,13 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
     /**
      * Execute the query using the given graph.
      * @param graph the graph to use to execute the query
-     * @param order how to order the resulting stream
      * @return a stream of results
      */
-    Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order);
+    Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph);
 
     @Override
     default Stream<Map<String, Concept>> stream() {
-        return stream(Optional.empty(), Optional.empty());
+        return stream(Optional.empty());
     }
 
     @Override

@@ -23,7 +23,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.query.match.MatchOrder;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -58,15 +56,13 @@ public class GremlinQuery {
     private final GraknGraph graph;
     private final Collection<ConjunctionQuery> innerQueries;
     private final ImmutableSet<String> names;
-    private final Optional<MatchOrder> order;
 
     /**
      * @param graph the graph to execute the query on
      * @param pattern a pattern to find in the graph
      * @param names the variable names to select
-     * @param order an optional ordering
      */
-    public GremlinQuery(GraknGraph graph, PatternAdmin pattern, ImmutableSet<String> names, Optional<MatchOrder> order) {
+    public GremlinQuery(GraknGraph graph, PatternAdmin pattern, ImmutableSet<String> names) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (graph == null) {
@@ -75,7 +71,6 @@ public class GremlinQuery {
 
         this.graph = graph;
         this.names = names;
-        this.order = order;
 
         innerQueries = patterns.stream().map(ConjunctionQuery::new).collect(toList());
     }
@@ -100,15 +95,11 @@ public class GremlinQuery {
         //noinspection unchecked
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal();
 
-        order.ifPresent(o -> o.orderTraversal(traversal));
-
         String[] namesArray = names.toArray(new String[names.size()]);
 
         // Must provide three arguments in order to pass an array to .select
         // If ordering, select the variable to order by as well
-        if (order.isPresent()) {
-            traversal.select(order.get().getVar(), order.get().getVar(), namesArray);
-        } else if (namesArray.length != 0) {
+        if (namesArray.length != 0) {
             traversal.select(namesArray[0], namesArray[0], namesArray);
         }
 

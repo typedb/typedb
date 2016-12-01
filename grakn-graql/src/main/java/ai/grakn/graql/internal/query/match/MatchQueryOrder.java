@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;
 import java.util.Optional;
@@ -39,14 +38,8 @@ class MatchQueryOrder extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(
-            Optional<GraknGraph> graph, Optional<MatchOrder> order
-    ) {
-        if (order.isPresent()) {
-            throw new IllegalStateException(ErrorMessage.MULTIPLE_ORDER.getMessage());
-        }
-
-        return inner.stream(graph, Optional.of(this.order));
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
+        return order.orderStream(inner.stream(graph));
     }
 
     @Override
