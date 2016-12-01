@@ -18,25 +18,25 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.Order;
 
+import java.util.Comparator;
 import java.util.Map;
-
-import static ai.grakn.util.Schema.ConceptProperty.VALUE_BOOLEAN;
-import static ai.grakn.util.Schema.ConceptProperty.VALUE_DOUBLE;
-import static ai.grakn.util.Schema.ConceptProperty.VALUE_LONG;
-import static ai.grakn.util.Schema.ConceptProperty.VALUE_STRING;
+import java.util.stream.Stream;
 
 class MatchOrderImpl implements MatchOrder {
 
     private final String var;
-    private final ai.grakn.graql.Order order;
 
-    MatchOrderImpl(String var, ai.grakn.graql.Order order) {
+    private final Comparator<Map<String, Concept>> comparator;
+
+    MatchOrderImpl(String var, Order order) {
         this.var = var;
-        this.order = order;
+
+        Comparator<Map<String, Concept>> comparator = Comparator.comparing(this::getOrderValue);
+
+        this.comparator = (order == Order.desc) ? comparator.reversed() : comparator;
     }
 
     @Override
@@ -45,19 +45,13 @@ class MatchOrderImpl implements MatchOrder {
     }
 
     @Override
-    public void orderTraversal(GraphTraversal<Vertex, Map<String, Vertex>> traversal) {
-        // Order by VALUE properties
-        traversal.select(var)
-                .values(VALUE_BOOLEAN.name(), VALUE_LONG.name(), VALUE_DOUBLE.name(), VALUE_STRING.name())
-                .order().by(toTinkerOrder(order));
+    public Stream<Map<String, Concept>> orderStream(Stream<Map<String, Concept>> stream) {
+        return stream.sorted(comparator);
     }
 
-    private Order toTinkerOrder(ai.grakn.graql.Order order) {
-        if (order == ai.grakn.graql.Order.asc) {
-            return Order.incr;
-        } else {
-            return Order.decr;
-        }
+    private Comparable<? super Comparable> getOrderValue(Map<String, Concept> result) {
+        //noinspection unchecked
+        return (Comparable<? super Comparable>) result.get(var).asResource().getValue();
     }
 
     @Override

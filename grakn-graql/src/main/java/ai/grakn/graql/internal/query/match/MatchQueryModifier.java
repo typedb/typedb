@@ -45,8 +45,8 @@ abstract class MatchQueryModifier implements MatchQueryInternal {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order) {
-        return transformStream(inner.stream(graph, order));
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
+        return transformStream(inner.stream(graph));
     }
 
     @Override

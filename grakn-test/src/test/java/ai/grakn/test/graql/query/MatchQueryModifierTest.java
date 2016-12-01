@@ -126,7 +126,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
                         var("y").isa("genre").has("name", "crime"),
                         var("y").isa("person").has("name", "Marlon Brando")
                 )
-        ).select("x").orderBy("t", desc).distinct();
+        ).orderBy("t", desc).select("x").distinct();
 
         assertOrderedResultsMatch(query, "x", "movie", "Heat", "Godfather", "Apocalypse Now");
     }

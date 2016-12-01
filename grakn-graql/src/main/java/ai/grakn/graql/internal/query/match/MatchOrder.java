@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import ai.grakn.concept.Concept;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * An interface for handling ordering match queries.
@@ -30,8 +30,8 @@ public interface MatchOrder {
     String getVar();
 
     /**
-     * Order the traversal
-     * @param traversal the traversal to order
+     * Order the stream
+     * @param stream the stream to order
      */
-    void orderTraversal(GraphTraversal<Vertex, Map<String, Vertex>> traversal);
+    Stream<Map<String, Concept>> orderStream(Stream<Map<String, Concept>> stream);
 }
