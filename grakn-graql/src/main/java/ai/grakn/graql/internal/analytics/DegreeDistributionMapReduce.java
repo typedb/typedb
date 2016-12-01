@@ -18,14 +18,18 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
-class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
+public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
     public DegreeDistributionMapReduce() {
     }

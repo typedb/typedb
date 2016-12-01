@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
-class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
+public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
 
     private static final String KEYSPACE_KEY = "keyspace";
 

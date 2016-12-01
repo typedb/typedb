@@ -4,6 +4,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.analytics.*;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface ComputeQueryBuilder {
 
@@ -26,4 +27,6 @@ public interface ComputeQueryBuilder {
     PathQuery path();
 
     ClusterQuery<Map<String, Long>> cluster();
+
+    DegreeQuery<Map<Long, Set<String>>> degree();
 }

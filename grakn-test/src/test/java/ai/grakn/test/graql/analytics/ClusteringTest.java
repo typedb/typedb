@@ -146,6 +146,15 @@ public class ClusteringTest extends AbstractGraphTest {
             instanceIds.forEach(id -> checkConnectedComponent(id, finalClusterLabel));
             assertEquals(count, graph.graql().compute().count().execute().longValue());
         }
+        for (int i = 0; i < 3; i++) {
+            memberMapPersist = graph.graql().compute().cluster().members().persist().execute();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+            assertEquals(1, memberMapPersist.size());
+            assertEquals(7, memberMapPersist.values().iterator().next().size());
+            final String finalClusterLabel = clusterLabel;
+            instanceIds.forEach(id -> checkConnectedComponent(id, finalClusterLabel));
+            assertEquals(count, graph.graql().compute().count().execute().longValue());
+        }
 
         // add different resources. This may change existing cluster labels.
         addResourceRelations();

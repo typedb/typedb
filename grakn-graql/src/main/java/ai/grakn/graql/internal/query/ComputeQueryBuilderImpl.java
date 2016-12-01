@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.query.analytics.*;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
@@ -82,6 +83,11 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
     @Override
     public ClusterQuery<Map<String, Long>> cluster() {
-        return new ClusterQueryImpl(graph);
+        return new ClusterQueryImpl<>(graph);
+    }
+
+    @Override
+    public DegreeQuery<Map<Long, Set<String>>> degree() {
+        return new DegreeQueryImpl<>(graph);
     }
 }
