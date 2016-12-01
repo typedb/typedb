@@ -54,7 +54,8 @@ public enum ErrorMessage {
     RESOURCE_TYPE_UNIQUE("The resource [%s] is unique and is already attached to [%s]."),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_RESOURCE_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
-
+    INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
+	
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
     VALIDATION_RELATION("The relation ['%s'] has an invalid structure. " +
