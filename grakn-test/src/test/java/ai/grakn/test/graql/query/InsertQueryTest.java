@@ -33,6 +33,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,6 +71,11 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         MovieGraphFactory.loadGraph(graph);
 
         qb = graph.graql();
+    }
+
+    @After
+    public void tearDown() {
+        if (graph != null) graph.showImplicitConcepts(false);
     }
 
     @Test
@@ -397,6 +403,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 name("an-unconnected-resource-type").isa("resource-type").datatype(ResourceType.DataType.LONG)
         ).execute();
+
+        graph.showImplicitConcepts(true);
 
         // Make sure a-new-type can have the given resource type, but not other resource types
         assertTrue(qb.match(name("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());

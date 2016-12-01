@@ -115,11 +115,6 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Stream<VarAdmin> getTypes() {
-        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream);
-    }
-
-    @Override
     public Stream<VarAdmin> getInnerVars() {
         return relationPlayers.stream().flatMap(relationPlayer -> {
             Stream.Builder<VarAdmin> builder = Stream.builder();

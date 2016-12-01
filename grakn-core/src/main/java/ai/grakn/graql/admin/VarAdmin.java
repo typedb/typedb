@@ -102,11 +102,6 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<VarAdmin> getImplicitInnerVars();
 
     /**
-     * @return all type names that this variable refers to
-     */
-    Set<String> getTypeNames();
-
-    /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
      */
     String getPrintableName();
