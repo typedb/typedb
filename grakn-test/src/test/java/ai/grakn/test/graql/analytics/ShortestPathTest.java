@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.*;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
@@ -95,74 +96,69 @@ public class ShortestPathTest extends AbstractGraphTest {
     public void testShortestPath() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
         List<String> correctPath;
         List<String> result;
         addOntologyAndEntities();
 
         // directly connected vertices
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        result = computer.shortestPath(entityId1, relationId12)
-                .stream().map(Concept::getId).collect(Collectors.toList());
         correctPath = Lists.newArrayList(entityId1, relationId12);
+        result = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
+                .stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
-        result = computer.shortestPath(relationId12, entityId1)
+        Collections.reverse(correctPath);
+        result = Graql.compute().withGraph(graph).path().to(entityId1).from(relationId12).execute()
                 .stream().map(Concept::getId).collect(Collectors.toList());
-        Collections.reverse(result);
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
         // entities connected by a relation
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        result = computer.shortestPath(entityId1, entityId2)
-                .stream().map(Concept::getId).collect(Collectors.toList());
         correctPath = Lists.newArrayList(entityId1, relationId12, entityId2);
+        result = graph.graql().compute().path().from(entityId1).to(entityId2).execute()
+                .stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
-        result = computer.shortestPath(entityId2, entityId1)
+        Collections.reverse(correctPath);
+        result = graph.graql().compute().path().to(entityId1).from(entityId2).execute()
                 .stream().map(Concept::getId).collect(Collectors.toList());
-        Collections.reverse(result);
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
         // only one path exists with given subtypes
-        computer = new Analytics(keyspace, Sets.newHashSet(thing, related), new HashSet<>());
-        result = computer.shortestPath(entityId2, entityId3)
-                .stream().map(Concept::getId).collect(Collectors.toList());
         correctPath = Lists.newArrayList(entityId2, relationId12, entityId1, relationId13, entityId3);
+        result = Graql.compute().withGraph(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
+                .stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
-        result = computer.shortestPath(entityId3, entityId2)
+        Collections.reverse(correctPath);
+        result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId3).execute()
                 .stream().map(Concept::getId).collect(Collectors.toList());
-        Collections.reverse(result);
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
-        computer = new Analytics(keyspace, Sets.newHashSet(thing, related), new HashSet<>());
-        result = computer.shortestPath(entityId1, entityId2)
-                .stream().map(Concept::getId).collect(Collectors.toList());
         correctPath = Lists.newArrayList(entityId1, relationId12, entityId2);
+        result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId1).execute()
+                .stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
-        result = computer.shortestPath(entityId2, entityId1)
+        Collections.reverse(correctPath);
+        result = graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1).execute()
                 .stream().map(Concept::getId).collect(Collectors.toList());
-        Collections.reverse(result);
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -178,34 +174,31 @@ public class ShortestPathTest extends AbstractGraphTest {
         List<String> result;
         addOntologyAndEntities2();
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        result = computer.shortestPath(entityId2, entityId3)
-                .stream().map(Concept::getId).collect(Collectors.toList());
         correctPath = Lists.newArrayList(entityId2, relationId12, entityId1, relationId13, entityId3);
+        result = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
+                .stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
-        result = computer.shortestPath(entityId3, entityId2)
+        Collections.reverse(correctPath);
+        result = graph.graql().compute().path().to(entityId2).from(entityId3).execute()
                 .stream().map(Concept::getId).collect(Collectors.toList());
-        Collections.reverse(result);
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        result = computer.shortestPath(relationId1A12, entityId3)
-                .stream().map(Concept::getId).collect(Collectors.toList());
         correctPath = Lists.newArrayList(relationId1A12, entityId1, relationId13, entityId3);
-        System.out.println("result = " + result);
+        result = graph.graql().compute().path().from(relationId1A12).to(entityId3).execute()
+                .stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
-        result = computer.shortestPath(entityId3, relationId1A12)
+        Collections.reverse(correctPath);
+        result = graph.graql().compute().path().to(relationId1A12).from(entityId3).execute()
                 .stream().map(Concept::getId).collect(Collectors.toList());
-        Collections.reverse(result);
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
