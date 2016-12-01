@@ -31,7 +31,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
@@ -61,7 +60,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-public class AnalyticsTest extends AbstractGraphTest {
+public class DegreeTest extends AbstractGraphTest {
 
     @Before
     public void setUp() {
@@ -138,7 +137,6 @@ public class AnalyticsTest extends AbstractGraphTest {
                 .getId();
 
         graph.commit();
-        graph.close();
 
         Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);

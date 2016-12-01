@@ -26,9 +26,11 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -83,52 +85,66 @@ public class ClusteringTest extends AbstractGraphTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
+        logger.setLevel(Level.DEBUG);
+
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
     }
 
-    @Ignore //TODO: Stabalise this test. It fails way too often.
     @Test
-    public void testConnectedComponent() throws Exception {
+    public void testConnectedComponentOnEmptyGraph() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
         // test on an empty graph
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
-        Map<String, Long> sizeMap = computer.connectedComponentsSize();
+        Map<String, Long> sizeMap = Graql.compute().withGraph(graph).cluster().execute();
         assertTrue(sizeMap.isEmpty());
-        Map<String, Set<String>> memberMap = computer.connectedComponents();
+        Map<String, Set<String>> memberMap = graph.graql().compute().cluster().members().execute();
         assertTrue(memberMap.isEmpty());
-        Map<String, Long> sizeMapPersist = computer.connectedComponentsAndPersist();
+        Map<String, Long> sizeMapPersist = graph.graql().compute().cluster().persist().execute();
+        ;
         assertTrue(sizeMapPersist.isEmpty());
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        assertEquals(0L, computer.count());
+        memberMap = Graql.compute().withGraph(graph).cluster().members().persist().execute();
+        assertTrue(memberMap.isEmpty());
+
+        assertEquals(0L, graph.graql().compute().count().execute().longValue());
+    }
+
+    //    @Ignore //TODO: Stabalise this test. It fails way too often.
+    @Test
+    public void testConnectedComponent() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        Map<String, Long> sizeMap;
+        Map<String, Set<String>> memberMap;
+        Map<String, Long> sizeMapPersist;
+        Map<String, Set<String>> memberMapPersist;
 
         // add something, test again
         addOntologyAndEntities();
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        sizeMap = computer.connectedComponentsSize();
+        sizeMap = Graql.compute().withGraph(graph).cluster().execute();
         assertEquals(1, sizeMap.size());
         assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        memberMap = computer.connectedComponents();
+        memberMap = Graql.compute().withGraph(graph).cluster().in().members().execute();
         assertEquals(1, memberMap.size());
         assertEquals(7, memberMap.values().iterator().next().size());
         String clusterLabel = memberMap.keySet().iterator().next();
 
-        long count = computer.count();
+        long count = graph.graql().compute().count().execute();
         for (int i = 0; i < 3; i++) {
-            computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-            sizeMapPersist = computer.connectedComponentsAndPersist();
+            sizeMapPersist = Graql.compute().withGraph(graph).cluster().persist().execute();
             graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
             assertEquals(1, sizeMapPersist.size());
             assertEquals(7L, sizeMapPersist.values().iterator().next().longValue());
             final String finalClusterLabel = clusterLabel;
             instanceIds.forEach(id -> checkConnectedComponent(id, finalClusterLabel));
-            assertEquals(count, computer.count());
+            assertEquals(count, graph.graql().compute().count().execute().longValue());
         }
 
         // add different resources. This may change existing cluster labels.

@@ -7,6 +7,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -59,6 +60,9 @@ public class ShortestPathTest extends AbstractGraphTest {
         keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
+        logger.setLevel(Level.DEBUG);
+
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
         logger.setLevel(Level.DEBUG);
     }
 

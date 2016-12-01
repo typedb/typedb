@@ -23,6 +23,7 @@ import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.*;
 import ai.grakn.graql.internal.query.analytics.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
@@ -77,5 +78,10 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     @Override
     public PathQuery path() {
         return new PathQueryImpl(graph);
+    }
+
+    @Override
+    public ClusterQuery<Map<String, Long>> cluster() {
+        return new ClusterQueryImpl(graph);
     }
 }

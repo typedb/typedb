@@ -3,6 +3,8 @@ package ai.grakn.graql;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.analytics.*;
 
+import java.util.Map;
+
 public interface ComputeQueryBuilder {
 
     ComputeQueryBuilder withGraph(GraknGraph graph);
@@ -22,4 +24,6 @@ public interface ComputeQueryBuilder {
     MedianQuery median();
 
     PathQuery path();
+
+    ClusterQuery<Map<String, Long>> cluster();
 }

@@ -28,7 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-class ClusterSizeMapReduce extends GraknMapReduce<Long> {
+public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
 

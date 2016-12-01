@@ -22,18 +22,28 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.analytics.CommonOLAP;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -152,5 +162,56 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             if (concept == null || !subTypeNames.contains(concept.type().getName())) return false;
         }
         return true;
+    }
+
+    void mutateResourceOntology(String resourceTypeName, ResourceType.DataType resourceDataType) {
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
+
+        ResourceType resource = graph.putResourceType(resourceTypeName, resourceDataType);
+
+        for (String type : subTypeNames) {
+            graph.getType(type).hasResource(resource);
+        }
+
+        try {
+            graph.commit();
+        } catch (GraknValidationException e) {
+            throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()), e);
+        }
+    }
+
+    void waitOnMutateResourceOntology(String resourceTypeId) {
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
+
+        for (int i = 0; i < numberOfOntologyChecks; i++) {
+            boolean isOntologyComplete = true;
+            // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
+            try {
+                graph.rollback();
+            } catch (UnsupportedOperationException ignored) {
+            }
+
+            ResourceType resource = graph.getResourceType(resourceTypeId);
+            if (resource == null) continue;
+            RoleType degreeOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+            if (degreeOwner == null) continue;
+            RoleType degreeValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+            if (degreeValue == null) continue;
+            RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId));
+            if (relationType == null) continue;
+
+            for (String type : subTypeNames) {
+                Collection<RoleType> roles = graph.getType(type).playsRoles();
+                if (!roles.contains(degreeOwner)) {
+                    isOntologyComplete = false;
+                    break;
+                }
+            }
+
+            if (isOntologyComplete) return;
+        }
+        throw new RuntimeException(
+                ErrorMessage.ONTOLOGY_MUTATION
+                        .getMessage("Failed to confirm ontology is present after mutation."));
     }
 }

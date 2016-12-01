@@ -36,7 +36,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     private static final String MIN_STRING = "0";
     // element key
     private static final String IS_ACTIVE_CASTING = "connectedComponentVertexProgram.isActiveCasting";
-    protected static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
+    public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
 
     // memory key
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
