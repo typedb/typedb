@@ -209,6 +209,8 @@ public interface GraknGraph extends AutoCloseable{
     Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
     //------------------------------------- Utilities ----------------------------------
+    void showImplicitStructures(boolean flag);
+
     /**
      * Closes and clears the current graph.
      */
