@@ -46,7 +46,7 @@ public abstract class Binary extends Atom {
 
     public Binary(Binary a) {
         super(a);
-        this.valueVariable = extractValueVariableName(a.getPattern().asVar());
+        this.valueVariable = a.getValueVariable();
         this.predicate = a.getPredicate() != null ? (Predicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
         this.typeId = extractTypeId(atomPattern.asVar());
     }

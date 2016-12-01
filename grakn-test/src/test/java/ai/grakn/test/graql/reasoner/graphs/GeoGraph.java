@@ -58,13 +58,20 @@ public class GeoGraph extends TestGraph{
                 .playsRole(entityLocation);
 
         continent = graknGraph.putEntityType("continent")
-                .superType(geographicalObject);
+                .superType(geographicalObject)
+                .playsRole(entityLocation);
         country = graknGraph.putEntityType("country")
-                .superType(geographicalObject);
+                .superType(geographicalObject)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
         region = graknGraph.putEntityType("region")
-                .superType(geographicalObject);
+                .superType(geographicalObject)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
         city = graknGraph.putEntityType("city")
-                .superType(geographicalObject);
+                .superType(geographicalObject)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
         university = graknGraph.putEntityType("university")
                         .playsRole(geoEntity)
                         .playsRole(hasKeyTarget);

@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -68,6 +69,22 @@ public class GenealogyTest extends AbstractEngineTest{
     match (child: $x, parent: $y) isa parentship;
     match (spouse1: $x, spouse2: $y) isa marriage;
     */
+
+    @Test
+    public void testMatchAll(){
+        String queryString = "match $x isa document; ($x, $y);";
+        Query query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(answers.isEmpty());
+    }
+
+    @Test
+    public void testMatchAll2(){
+        String queryString = "match $x isa document; ($x, $y); $y isa $z; $z isa entity-type;";
+        Query query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(answers.isEmpty());
+    }
 
     @Test
     public void testNonEquals(){
