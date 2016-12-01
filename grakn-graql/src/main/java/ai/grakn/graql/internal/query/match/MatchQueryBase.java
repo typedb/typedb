@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.GremlinQuery;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -38,6 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -47,6 +49,7 @@ import static java.util.stream.Collectors.toSet;
 public class MatchQueryBase implements MatchQueryInternal {
 
     private final Conjunction<PatternAdmin> pattern;
+    private final ImmutableSet<String> typeNames;
 
     /**
      * @param pattern a pattern to match in the graph
@@ -57,6 +60,8 @@ public class MatchQueryBase implements MatchQueryInternal {
         }
 
         this.pattern = pattern;
+
+        this.typeNames = getAllTypeNames();
     }
 
     @Override
@@ -70,13 +75,15 @@ public class MatchQueryBase implements MatchQueryInternal {
         }
 
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversal();
-        return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
+        return traversal.toStream()
+                .map(vertices -> makeResults(graph, vertices))
+                .filter(result -> shouldShowResult(graph, result))
+                .sequential();
     }
 
     @Override
     public Set<Type> getTypes(GraknGraph graph) {
-        GremlinQuery gremlinQuery = getQuery(graph, Optional.empty());
-        return gremlinQuery.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
+        return typeNames.stream().map(graph::getType).filter(t -> t != null).collect(toSet());
     }
 
     @Override
@@ -133,6 +140,14 @@ public class MatchQueryBase implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
 
+    private ImmutableSet<String> getAllTypeNames() {
+        return pattern.getVars().stream()
+                .flatMap(var -> var.getInnerVars().stream())
+                .map(VarAdmin::getTypeName)
+                .flatMap(CommonUtil::optionalToStream)
+                .collect(toImmutableSet());
+    }
+
     /**
      * @param graph the graph to execute the query on
      * @param order an optional ordering of the query
@@ -152,6 +167,24 @@ public class MatchQueryBase implements MatchQueryInternal {
                 name -> name,
                 name -> graph.getConcept(vertices.get(name).id().toString())
         ));
+    }
+
+    /**
+     * Only show results if all concepts in them should be shown
+     */
+    private boolean shouldShowResult(GraknGraph graph, Map<String, Concept> result) {
+        return result.values().stream().allMatch(concept -> shouldShowConcept(graph, concept));
+    }
+
+    /**
+     * Only show a concept if it not an implicit type and not explicitly mentioned
+     */
+    private boolean shouldShowConcept(GraknGraph graph, Concept concept) {
+        if (graph.implicitConceptsVisible() || !concept.isType()) return true;
+
+        Type type = concept.asType();
+
+        return !type.isImplicit() || typeNames.contains(type.getName());
     }
 }
 

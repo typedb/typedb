@@ -115,13 +115,6 @@ public class GremlinQuery {
         return traversal;
     }
 
-    /**
-     * @return a stream of concept names mentioned in the query
-     */
-    public Stream<String> getConcepts() {
-        return innerQueries.stream().flatMap(ConjunctionQuery::getConcepts);
-    }
-
     public Stream<GraqlTraversal> allGraqlTraversals() {
         List<Set<List<Fragment>>> collect = innerQueries.stream().map(ConjunctionQuery::allFragmentOrders).collect(toList());
         Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);

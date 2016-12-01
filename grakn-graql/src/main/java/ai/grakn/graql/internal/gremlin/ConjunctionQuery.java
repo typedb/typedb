@@ -114,15 +114,6 @@ class ConjunctionQuery {
         return Sets.cartesianProduct(fragments).stream();
     }
 
-    /**
-     * @return a stream of concept names mentioned in the query
-     */
-    Stream<String> getConcepts() {
-        return vars.stream()
-                .flatMap(v -> v.getInnerVars().stream())
-                .flatMap(v -> v.getTypeNames().stream());
-    }
-
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {
         return var.getImplicitInnerVars().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
     }

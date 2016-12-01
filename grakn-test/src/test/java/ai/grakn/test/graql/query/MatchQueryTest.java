@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
@@ -30,6 +31,8 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,9 +66,11 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -81,6 +86,11 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Before
     public void setUp() {
         qb = graph.graql();
+    }
+
+    @After
+    public void tearDown() {
+        if (graph != null) graph.showImplicitConcepts(false);
     }
 
     @Test
@@ -309,6 +319,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testTypeAsVariable() {
+        graph.showImplicitConcepts(true);
+
         MatchQuery query = qb.match(name("genre").playsRole(var("x")));
         QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"), "genre-of-production", "has-name-owner");
     }
@@ -369,7 +381,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testAllowedToReferToNonExistentRoleplayer() {
-        long count = qb.match(var().rel("actor", name("doesnt-exist"))).stream().count();
+        long count = qb.match(var().rel("actor", var().id("999999999999999999"))).stream().count();
         assertEquals(0, count);
     }
 
@@ -681,6 +693,35 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         MatchQuery query = qb.match(var("x").key("name"));
 
         QueryUtil.assertResultsMatch(query, "x", null, Lists.newArrayList(), "genre");
+    }
+
+    @Test
+    public void testHideImplicitTypes() {
+        MatchQuery query = qb.match(var("x").isa("type"));
+
+        Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
+
+        assertThat(types, allOf(hasItem("movie"), Matchers.not(hasItem("has-title"))));
+    }
+
+    @Test
+    public void testDontHideImplicitTypesIfExplicitlyMentioned() {
+        MatchQuery query = qb.match(var("x").isa("type").name("has-title"));
+
+        Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
+
+        assertEquals(types, Sets.newHashSet("has-title"));
+    }
+
+    @Test
+    public void testDontHideImplicitTypesIfImplicitTypesOn() {
+        graph.showImplicitConcepts(true);
+
+        MatchQuery query = qb.match(var("x").isa("type"));
+
+        Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
+
+        assertThat(types, allOf(hasItem("movie"), hasItem("has-title")));
     }
 
     @Test(expected = IllegalArgumentException.class)

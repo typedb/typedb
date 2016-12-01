@@ -28,6 +28,7 @@ import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableCollection;
 
@@ -136,7 +137,8 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
         Set<Type> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .flatMap(v -> v.getTypeNames().stream())
+                .map(VarAdmin::getTypeName)
+                .flatMap(CommonUtil::optionalToStream)
                 .map(theGraph::getType)
                 .collect(Collectors.toSet());
 

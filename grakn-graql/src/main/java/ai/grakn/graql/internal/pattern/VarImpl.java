@@ -379,14 +379,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<String> getTypeNames() {
-        return getProperties()
-                .flatMap(VarProperty::getTypes)
-                .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
-    }
-
-    @Override
     public String toString() {
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
