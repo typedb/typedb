@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The global structural rules to validate.
@@ -59,7 +60,7 @@ class ValidateGlobalRules {
             Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
 
             for (EdgeImpl edge : edges) {
-                if (edge.getTarget().equals(roleType)) {
+                if (edge.getTarget().asType().getName().equals(roleType.getName())) {
                     satisfiesPlaysRole = true;
 
                     // Assert unique relation for this role type
@@ -118,7 +119,7 @@ class ValidateGlobalRules {
             return false;
 
         for(CastingImpl casting: castings){
-            if(!casting.getRole().relationType().equals(relationType))
+            if(!casting.getRole().relationType().getName().equals(relationType.getName()))
                 return false;
         }
 
@@ -156,7 +157,11 @@ class ValidateGlobalRules {
             boolean superRoleTypeFound = false;
 
             for (Type superTypeAllowedToPlay : superTypesAllowedToPlay) {
-                if(superTypeAllowedToPlay.playsRoles().contains(superRoleType)){
+
+                Set<String> playsRoles = superTypeAllowedToPlay.playsRoles().
+                        stream().map(Type::getName).collect(Collectors.toSet());
+
+                if(playsRoles.contains(superRoleType.getName())){
                     superRoleTypeFound = true;
                     break;
                 }
@@ -186,14 +191,16 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superHasRoles = superRelationType.hasRoles();
         Collection<RoleType> hasRoles = relationType.hasRoles();
+        Set<String> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationType is the sub of a role which is in the hasRoles of it's supers
-        Set<RoleType> allSuperRolesPlayed = new HashSet<>();
-        superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(allSuperRolesPlayed::add));
+        Set<String> allSuperRolesPlayed = new HashSet<>();
+        superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
         for (RoleType hasRole : hasRoles) {
-            if(!allSuperRolesPlayed.contains(hasRole.superType())){
+            RoleType superRoleType = hasRole.superType();
+            if(superRoleType == null || !allSuperRolesPlayed.contains(superRoleType.getName())){
                 invalidTypes.add(hasRole);
             }
         }
@@ -204,7 +211,7 @@ class ValidateGlobalRules {
             boolean subRoleNotFoundInHasRoles = true;
 
             for (RoleType subRoleType : superHasRole.subTypes()) {
-                if(hasRoles.contains(subRoleType)){
+                if(hasRolesNames.contains(subRoleType.getName())){
                     subRoleNotFoundInHasRoles = false;
                     break;
                 }
