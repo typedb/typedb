@@ -81,6 +81,10 @@ public class GraphFactoryController {
         	try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
         		ResourceType<String> keyspaceName = graph.getResourceType(SystemKeyspace.KEYSPACE_RESOURCE); 
             	Json result = Json.array();
+            	if (graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY) == null) {
+            		LOG.warn("No system ontology in system keyspace, possibly a bug!");
+            		return result.toString();
+            	}            		
             	for (Entity keyspace : graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
             		Collection<Resource<?>> names = keyspace.resources(keyspaceName);
             		if (names.size() != 1)
@@ -90,6 +94,10 @@ public class GraphFactoryController {
             	}            	
             	return result.toString();
             }
+        	catch (Exception e) {
+        		LOG.error("While retrieving keyspace list:", e);
+        		throw e;
+        	}        	
         });
         
     }

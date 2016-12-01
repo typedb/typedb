@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -46,7 +47,7 @@ public class GraknTinkerGraphFactoryTest {
 
     @Before
     public void setTinkerGraphFactory(){
-        tinkerGraphFactory = new TinkerInternalFactory("test", null, null);
+        tinkerGraphFactory = new TinkerInternalFactory("test", Grakn.IN_MEMORY, null);
     }
 
     @Test

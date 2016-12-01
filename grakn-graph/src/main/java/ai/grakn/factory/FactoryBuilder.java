@@ -29,10 +29,13 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.tinkerpop.shaded.minlog.Log;
 
 class FactoryBuilder {
     private static final String FACTORY = "factory.internal";
-    private static final Map<String, InternalFactory> openFactories = new HashMap<>();
+    private static final Map<String, InternalFactory> openFactories = new ConcurrentHashMap<>();
 
     private FactoryBuilder(){
         throw new UnsupportedOperationException();
@@ -65,7 +68,11 @@ class FactoryBuilder {
     */
     static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
         String key = factoryType + keyspace.toLowerCase();
-        if(!openFactories.containsKey(key)) {
+        Log.debug("Get factory for " + key);
+        InternalFactory factory = openFactories.get(key);
+        if (factory != null)
+        	return factory;
+    	synchronized (openFactories) {    		
             InternalFactory internalFactory;
             try {
                 //internalFactory = (InternalFactory) Class.forName(factoryType).newInstance();
@@ -76,9 +83,14 @@ class FactoryBuilder {
                 throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
             }
             openFactories.put(key, internalFactory);
-            if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME))
+            Log.debug("New factory created " + internalFactory);
+            if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            	Log.info("This is a system factory, loading system ontology.");
             	new SystemKeyspace(engineUrl, config).loadSystemOntology();
-        }
-        return openFactories.get(key);
+            }
+            else
+            	Log.debug("This is not a system factory, not loading system ontology.");
+            return internalFactory;
+    	}
     }
 }
