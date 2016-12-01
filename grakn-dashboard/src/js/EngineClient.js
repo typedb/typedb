@@ -17,6 +17,7 @@
  */
 
 "use strict";
+import * as API from './HAL/APITerms';
 
 /*
  * REST API client for Grakn Engine.
@@ -57,13 +58,25 @@ export default class EngineClient {
                 url: requestData.url
             }).done(function(r) {
                 //sometimes we might not have a callback function
-                if(typeof requestData.callback == 'function')
+                if (typeof requestData.callback == 'function')
                     requestData.callback(r, null)
             })
             .fail(function(errObj) {
-                if(typeof requestData.callback == 'function')
+                if (typeof requestData.callback == 'function')
                     requestData.callback(null, errObj.responseText);
             });
+    }
+
+    /**
+     * Pre materialise
+     */
+    preMaterialiseAll(fn) {
+        this.request({
+            url: "/graph/preMaterialiseAll",
+            callback: fn,
+            dataType: "text",
+            contentType: "application/text"
+        });
     }
 
     /**
@@ -72,6 +85,13 @@ export default class EngineClient {
     conceptsByType(type, fn) {
         this.request({
             url: "/graph/concept/" + type,
+            callback: fn
+        });
+    }
+
+    graqlAnalytics(query, fn) {
+        this.request({
+            url: "/graph/analytics?query=" + query,
             callback: fn
         });
     }
@@ -104,7 +124,7 @@ export default class EngineClient {
     /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
-    graqlHAL(query, useReasoner, fn) {
+    graqlHAL(query, fn, useReasoner) {
         this.request({
             url: "/graph/match?query=" + query + "&reasoner=" + useReasoner,
             callback: fn,

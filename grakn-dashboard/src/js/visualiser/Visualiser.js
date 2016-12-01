@@ -40,7 +40,7 @@ export default class Visualiser {
             rightClick: x => {},
             hover: x => {},
             dragEnd: x => {},
-            hold: x=>{}
+            hold: x => {}
         };
         this.style = new Style();
 
@@ -84,7 +84,7 @@ export default class Visualiser {
 
         // Additional properties to show in node label by type.
         this.displayProperties = {};
-
+        this.alreadyFittedToWindow = false;
         this.clusters = [];
     }
 
@@ -128,9 +128,9 @@ export default class Visualiser {
         return this;
     }
 
-    setOnHoldOnNode(fn){
-      this.callbacks.hold = fn;
-      return this;
+    setOnHoldOnNode(fn) {
+        this.callbacks.hold = fn;
+        return this;
     }
 
     /**
@@ -159,9 +159,16 @@ export default class Visualiser {
         return this;
     }
 
-    /**
-     * Add a node to the graph. This can be called at any time *after* render().
-     */
+    fitGraphToWindow() {
+            //we fit the graph to the window size only on the first ajax call, and then leave zoom control to the user
+            if (!this.alreadyFittedToWindow) {
+                this.network.fit();
+                this.alreadyFittedToWindow = true;
+            }
+        }
+        /**
+         * Add a node to the graph. This can be called at any time *after* render().
+         */
     addNode(id, bp, ap, ls) {
         if (!this.nodeExists(id)) {
             this.nodes.add({
@@ -179,8 +186,6 @@ export default class Visualiser {
                 properties: ap,
                 links: ls
             });
-            // if(bp.baseType != "type")
-            //     this.addCluster(bp.type);
         }
 
         return this;
@@ -252,8 +257,8 @@ export default class Visualiser {
         return undefined;
     }
 
-    getNode(id){
-      return this.nodes._data[id];
+    getNode(id) {
+        return this.nodes._data[id];
     }
 
     getAllNodeProperties(id) {
@@ -262,7 +267,7 @@ export default class Visualiser {
         return [];
     }
 
-    getNodeLabel(id){
+    getNodeLabel(id) {
         return this.nodes._data[id].label;
     }
 
@@ -353,7 +358,7 @@ export default class Visualiser {
     generateLabel(type, properties, label) {
         if (type in this.displayProperties)
             return this.displayProperties[type].reduce((l, x) => {
-                let value = (properties[x]===undefined) ? "" : properties[x].label;
+                let value = (properties[x] === undefined) ? "" : properties[x].label;
                 return (l.length ? l + "\n" : l) + x + ": " + value
             }, "");
         else

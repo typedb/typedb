@@ -18,44 +18,103 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <template>
 <div class="container-fluid">
-
     <div class="row">
         <div class="col-xs-12">
             <div class="panel panel-filled" v-if="response">
                 <div class="panel-body">
-                  <div class="table-responsive">
-                      <table class="table table-hover table-stripped">
-                          <thead>
-                              <tr><th>Inference settings</th><th>Value</th><tr>
-                          <thead>
-                          <tbody>
-                              <tr><td>Activate Inference</td><td><input type="checkbox" value="" @click="checkedReasoner(useReasoner)" v-model="useReasoner"></td></tr>
-                              <tr><td>Materialisation</td><td><button @click="materialiseAll" class="btn btn-default">Materialise All</button></td></tr>
-                          </tbody>
-                      </table>
-                  </div>
                     <div class="table-responsive">
                         <table class="table table-hover table-stripped">
                             <thead>
-                                <tr><th>Config Item</th><th>Value</th><tr>
-                            <thead>
+                                <tr>
+                                    <th>Inference settings</th>
+                                    <th>Value</th>
+                                    <tr>
+                            </thead>
                             <tbody>
-                                <tr><td>Hostname</td><td>{{response['server.host']}}</td></tr>
-                                <tr><td>Server Port</td><td>{{response['server.port']}}</td></tr>
-                                <tr><td>Threads</td><td>{{response['loader.threads']}}</td></tr>
-                                <tr><td>Database config</td><td>{{response['graphdatabase.config']}}</td></tr>
-                                <tr><td>Batch config</td><td>{{response['graphdatabase.batch-config']}}</td></tr>
-                                <tr><td>Graph Computer config</td><td>{{response['graphdatabase.computer']}}</td></tr>
-                                <tr><td>Engine assets directory</td><td>{{response['server.static-file-dir']}}</td></tr>
-                                <tr><td>Log File</td><td>{{response['logging.file']}}</td></tr>
-                                <tr><td>Logging Level</td><td>{{response['logging.level']}}</td></tr>
-                                <tr><td>Background Tasks time lapse</td><td>{{response['backgroundTasks.time-lapse']}}</td></tr>
-                                <tr><td>Background Tasks post processing delay</td><td>{{response['backgroundTasks.post-processing-delay']}}</td></tr>
-                                <tr><td>Batch size</td><td>{{response['blockingLoader.batch-size']}}</td></tr>
-                                <tr><td>Default Graph Name</td><td>{{response['graphdatabase.default-graph-name']}}</td></tr>
-                                <tr><td>Repeat Commits</td><td>{{response['loader.repeat-commits']}}</td></tr>
-                                <tr><td>HAL builder degree</td><td>{{response['halBuilder.degree']}}</td></tr>
-                                <tr><td>Version</td><td>{{response['project.version']}}</td></tr>
+                                <tr>
+                                    <td>Activate Inference</td>
+                                    <td><input type="checkbox" value="" @click="checkedReasoner(useReasoner)" v-model="useReasoner"></td>
+                                </tr>
+                                <tr>
+                                    <td>Materialisation</td>
+                                    <td><button @click="materialiseAll" class="btn btn-default">Materialise All</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-stripped">
+                            <thead>
+                                <tr>
+                                    <th>Config Item</th>
+                                    <th>Value</th>
+                                    <tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Hostname</td>
+                                    <td>{{response['server.host']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Server Port</td>
+                                    <td>{{response['server.port']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Threads</td>
+                                    <td>{{response['loader.threads']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Database config</td>
+                                    <td>{{response['graphdatabase.config']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Batch config</td>
+                                    <td>{{response['graphdatabase.batch-config']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Graph Computer config</td>
+                                    <td>{{response['graphdatabase.computer']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Engine assets directory</td>
+                                    <td>{{response['server.static-file-dir']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Log File</td>
+                                    <td>{{response['logging.file']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Logging Level</td>
+                                    <td>{{response['logging.level']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Background Tasks time lapse</td>
+                                    <td>{{response['backgroundTasks.time-lapse']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Background Tasks post processing delay</td>
+                                    <td>{{response['backgroundTasks.post-processing-delay']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Batch size</td>
+                                    <td>{{response['blockingLoader.batch-size']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Default Graph Name</td>
+                                    <td>{{response['graphdatabase.default-graph-name']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Repeat Commits</td>
+                                    <td>{{response['loader.repeat-commits']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>HAL builder degree</td>
+                                    <td>{{response['halBuilder.degree']}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Version</td>
+                                    <td>{{response['project.version']}}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -85,6 +144,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     padding-left: 5px;
     padding-right: 0px;
 }
+
 .error-pre {
     margin-top: 10px;
     margin-bottom: 0px;
@@ -95,21 +155,23 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 import EngineClient from '../js/EngineClient.js';
 
 export default {
-    data() {
+    name: "ConfigurationView",
+    data: () => {
         return {
             response: undefined,
             errorMessage: undefined,
-            useReasoner:window.useReasoner,
+            useReasoner: window.useReasoner,
             engineClient: {}
         };
     },
 
     created() {
-        engineClient = new EngineClient();
+        this.engineClient = new EngineClient();
     },
-
-    attached() {
-        engineClient.getConfig(this.engineStatus);
+    mounted() {
+        this.$nextTick(function() {
+            this.engineClient.getConfig(this.engineStatus);
+        });
     },
 
     methods: {
@@ -118,23 +180,23 @@ export default {
             this.errorMessage = msg;
         },
 
-        checkedReasoner(status){
-          window.useReasoner=!status;
+        checkedReasoner(status) {
+            window.useReasoner = !status;
         },
 
         engineStatus(resp, err) {
-            if(resp != null)
+            if (resp != null)
                 this.response = resp
             else
                 this.showError(err);
         },
 
-        materialiseAll(){
-          engineClient.preMaterialiseAll();
+        materialiseAll() {
+            this.engineClient.preMaterialiseAll();
         },
 
         retry() {
-            engineClient.getConfig(this.engineStatus);
+            this.engineClient.getConfig(this.engineStatus);
         }
     }
 

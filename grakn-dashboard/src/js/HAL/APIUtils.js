@@ -64,6 +64,7 @@ export function extractResources(resource) {
     }
 }
 
+//add exception handlers (e.g. when there is no _links, we have a problem!)
 export function nodeLinks(resource) {
     var linksObject = resource[API.KEY_LINKS];
     return Object.keys(linksObject)
