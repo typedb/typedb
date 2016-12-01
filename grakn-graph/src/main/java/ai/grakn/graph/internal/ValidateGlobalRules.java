@@ -195,18 +195,19 @@ class ValidateGlobalRules {
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationType is the sub of a role which is in the hasRoles of it's supers
-        Set<String> allSuperRolesPlayed = new HashSet<>();
-        superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
+        if(!superRelationType.isAbstract()) {
+            Set<String> allSuperRolesPlayed = new HashSet<>();
+            superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
-        for (RoleType hasRole : hasRoles) {
-            RoleType superRoleType = hasRole.superType();
-            if(superRoleType == null || !allSuperRolesPlayed.contains(superRoleType.getName())){
-                invalidTypes.add(hasRole);
+            for (RoleType hasRole : hasRoles) {
+                RoleType superRoleType = hasRole.superType();
+                if (superRoleType == null || !allSuperRolesPlayed.contains(superRoleType.getName())) {
+                    invalidTypes.add(hasRole);
+                }
             }
         }
 
         //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationType
-
         for (RoleType superHasRole : superHasRoles) {
             boolean subRoleNotFoundInHasRoles = true;
 
