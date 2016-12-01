@@ -26,26 +26,26 @@ computeQuery   : 'compute' computeMethod ;
 
 computeMethod  : min | max | median | mean | std | sum ;
 
-min            : 'min'    ('of' ofList)? ('in' inList)? ;
-max            : 'max'    ('of' ofList)? ('in' inList)? ;
-median         : 'median' ('of' ofList)? ('in' inList)? ;
-mean           : 'mean'   ('of' ofList)? ('in' inList)? ;
-std            : 'std'    ('of' ofList)? ('in' inList)? ;
-sum            : 'sum'    ('of' ofList)? ('in' inList)? ;
-count          : 'count'  ('in' inList)? ;
-path           : 'path'   'from' name 'to' name ('in' inList)? ;
+min            : MIN    ('of' ofList)?    ('in' inList)? ;
+max            : MAX    ('of' ofList)?    ('in' inList)? ;
+median         : MEDIAN ('of' ofList)?    ('in' inList)? ;
+mean           : MEAN   ('of' ofList)?    ('in' inList)? ;
+std            : STD    ('of' ofList)?    ('in' inList)? ;
+sum            : SUM    ('of' ofList)?    ('in' inList)? ;
+count          : COUNT                    ('in' inList)? ;
+path           : PATH   'from' id 'to' id ('in' inList)? ;
 
 ofList         : nameList ;
 inList         : nameList ;
 nameList       : name (',' name)* ;
 
-aggregate      : id argument*                     # customAgg
+aggregate      : identifier argument*             # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
                ;
 argument       : VARIABLE  # variableArgument
                | aggregate # aggregateArgument
                ;
-namedAgg       : aggregate 'as' id ;
+namedAgg       : aggregate 'as' identifier ;
 
 patterns       : (pattern ';')+ ;
 pattern        : varPattern                    # varPatternCase
@@ -56,25 +56,25 @@ pattern        : varPattern                    # varPatternCase
 varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
-property       : 'isa' variable                   # isa
-               | 'sub' variable                   # sub
-               | 'has-role' variable              # hasRole
-               | 'plays-role' variable            # playsRole
-               | 'has-scope' VARIABLE             # hasScope
-               | 'id' id                          # propId
-               | 'type-name' name                 # propName
-               | 'value' predicate?               # propValue
-               | 'lhs' '{' patterns '}'           # propLhs
-               | 'rhs' '{' varPatterns '}'        # propRhs
-               | 'has' id? VARIABLE               # propHasVariable
+property       : 'isa' variable                     # isa
+               | 'sub' variable                     # sub
+               | 'has-role' variable                # hasRole
+               | 'plays-role' variable              # playsRole
+               | 'has-scope' VARIABLE               # hasScope
+               | 'id' id                            # propId
+               | 'type-name' name                   # propName
+               | 'value' predicate?                 # propValue
+               | 'lhs' '{' patterns '}'             # propLhs
+               | 'rhs' '{' varPatterns '}'          # propRhs
+               | 'has' name? VARIABLE               # propHasVariable
                | 'has' name (predicate | VARIABLE)? # propHas
-               | 'has-resource' variable          # propResource
-               | 'key' variable                  # propKey
-               | '(' casting (',' casting)* ')'   # propRel
-               | 'is-abstract'                    # isAbstract
-               | 'datatype' DATATYPE              # propDatatype
-               | 'regex' REGEX                    # propRegex
-               | '!=' variable                    # propNeq
+               | 'has-resource' variable            # propResource
+               | 'key' variable                     # propKey
+               | '(' casting (',' casting)* ')'     # propRel
+               | 'is-abstract'                      # isAbstract
+               | 'datatype' DATATYPE                # propDatatype
+               | 'regex' REGEX                      # propRegex
+               | '!=' variable                      # propNeq
                ;
 
 casting        : variable (':' VARIABLE)?
@@ -103,8 +103,12 @@ insert         : 'insert' ;
 patternSep     : pattern ';' ;
 batchPattern   : 'match' | 'insert' | patternSep ;
 
-name           : ID | STRING ;
-id             : ID | STRING ;
+name           : identifier ;
+id             : identifier ;
+
+// Some keywords can also be used as identifiers
+identifier     : ID | STRING
+               | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
 ORDER          : 'asc' | 'desc' ;
@@ -115,6 +119,16 @@ STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\
 REGEX          : '/' (~'/' | '\\/')* '/' ;
 INTEGER        : ('+' | '-')? [0-9]+ ;
 REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
+
+// keywords
+MIN            : 'min' ;
+MAX            : 'max' ;
+MEDIAN         : 'median' ;
+MEAN           : 'mean' ;
+STD            : 'std' ;
+SUM            : 'sum' ;
+COUNT          : 'count' ;
+PATH           : 'path' ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 

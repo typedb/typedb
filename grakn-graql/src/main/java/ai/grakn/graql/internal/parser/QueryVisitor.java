@@ -285,7 +285,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public PathQuery visitPath(GraqlParser.PathContext ctx) {
-        PathQuery path = queryBuilder.compute().path().from(visitName(ctx.name(0))).to(visitName(ctx.name(1)));
+        PathQuery path = queryBuilder.compute().path().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
 
         if (ctx.inList() != null) {
             path = path.in(visitInList(ctx.inList()));
@@ -322,7 +322,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Aggregate<?, ?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
-        String name = visitId(ctx.id());
+        String name = visitIdentifier(ctx.identifier());
         Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
 
         List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
@@ -350,7 +350,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public NamedAggregate<?, ?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
-        String name = visitId(ctx.id());
+        String name = visitIdentifier(ctx.identifier());
         return visitAggregate(ctx.aggregate()).as(name);
     }
 
@@ -420,8 +420,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<Var> visitPropHasVariable(GraqlParser.PropHasVariableContext ctx) {
         Var resource = var(getVariable(ctx.VARIABLE()));
 
-        if (ctx.id() != null) {
-            String type =visitId(ctx.id());
+        if (ctx.name() != null) {
+            String type = visitName(ctx.name());
             return var -> var.has(type, resource);
         } else {
             return var -> var.has(resource);
@@ -509,20 +509,21 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public String visitId(GraqlParser.IdContext ctx) {
-        if (ctx.ID() != null) {
-            return ctx.ID().getText();
-        } else {
-            return getString(ctx.STRING());
-        }
+    public String visitName(GraqlParser.NameContext ctx) {
+        return visitIdentifier(ctx.identifier());
     }
 
     @Override
-    public String visitName(GraqlParser.NameContext ctx) {
-        if (ctx.ID() != null) {
-            return ctx.ID().getText();
-        } else {
+    public String visitId(GraqlParser.IdContext ctx) {
+        return visitIdentifier(ctx.identifier());
+    }
+
+    @Override
+    public String visitIdentifier(GraqlParser.IdentifierContext ctx) {
+        if (ctx.STRING() != null) {
             return getString(ctx.STRING());
+        } else {
+            return ctx.getText();
         }
     }
 
