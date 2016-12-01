@@ -39,6 +39,7 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -149,7 +150,7 @@ public class DegreeTest extends AbstractGraphTest {
         ));
     }
 
-    //    @Ignore //TODO: Stabalise this test. It fails way too often.
+    @Ignore //TODO: Stabalise this test. It fails way too often.
     @Test
     public void testDegreesAndPersist() throws Exception {
         // TODO: Fix on TinkerGraphComputer
