@@ -24,8 +24,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
@@ -34,11 +34,14 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import ai.grakn.exception.GraknValidationException;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
@@ -59,14 +62,14 @@ public class StatisticsTest extends AbstractGraphTest {
     private static final String resourceType6 = "resourceType6";
     private static final String resourceType7 = "resourceType7";
 
+    private static final double delta = 0.000001;
+
     private String entityId1;
     private String entityId2;
     private String entityId3;
     private String entityId4;
 
-    String keyspace;
-    Analytics computer;
-    double delta = 0.000001;
+    private String keyspace;
 
     @Before
     public void setUp() {
@@ -88,70 +91,54 @@ public class StatisticsTest extends AbstractGraphTest {
         addResourceRelations();
 
         //TODO: add more detailed error messages
-        // resources-types set is null
-        computer = new Analytics(keyspace, Collections.singleton("thing"), new HashSet<>());
-        assertIllegalStateExceptionThrown(computer::max);
-        assertIllegalStateExceptionThrown(computer::min);
-        assertIllegalStateExceptionThrown(computer::mean);
-        assertIllegalStateExceptionThrown(computer::sum);
-        assertIllegalStateExceptionThrown(computer::std);
-        assertIllegalStateExceptionThrown(computer::median);
-
-        // resources-types set is empty
-        computer = new Analytics(keyspace, Collections.singleton("thing"), new HashSet<>());
-        assertIllegalStateExceptionThrown(computer::max);
-        assertIllegalStateExceptionThrown(computer::min);
-        assertIllegalStateExceptionThrown(computer::mean);
-        assertIllegalStateExceptionThrown(computer::sum);
-        assertIllegalStateExceptionThrown(computer::std);
-        assertIllegalStateExceptionThrown(computer::median);
+        // resources-type is not set
+        assertIllegalStateExceptionThrown(graph.graql().compute().max().in(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().min().in(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().mean().in(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().sum().in(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().std().in(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().median().in(thing)::execute);
 
         // if it's not a resource-type
-        computer = new Analytics(keyspace, Collections.singleton("thing"),
-                Collections.singleton("thing"));
-        assertIllegalStateExceptionThrown(computer::max);
-        assertIllegalStateExceptionThrown(computer::min);
-        assertIllegalStateExceptionThrown(computer::mean);
-        assertIllegalStateExceptionThrown(computer::sum);
-        assertIllegalStateExceptionThrown(computer::std);
-        assertIllegalStateExceptionThrown(computer::median);
+        assertIllegalStateExceptionThrown(graph.graql().compute().max().of(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().min().of(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().std().of(thing)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().median().of(thing)::execute);
 
         // resource-type has no instance
-        computer = new Analytics(keyspace, new HashSet<>(), Collections.singleton(resourceType7));
-        assertFalse(computer.mean().isPresent());
-        assertFalse(computer.max().isPresent());
-        assertFalse(computer.min().isPresent());
-        assertFalse(computer.sum().isPresent());
-        assertFalse(computer.std().isPresent());
-        assertFalse(computer.median().isPresent());
+        assertFalse(graph.graql().compute().max().of(resourceType7).execute().isPresent());
+        assertFalse(graph.graql().compute().min().of(resourceType7).execute().isPresent());
+        assertFalse(graph.graql().compute().sum().of(resourceType7).execute().isPresent());
+        assertFalse(graph.graql().compute().std().of(resourceType7).execute().isPresent());
+        assertFalse(graph.graql().compute().median().of(resourceType7).execute().isPresent());
+        assertFalse(graph.graql().compute().mean().of(resourceType7).execute().isPresent());
 
         // resources are not connected to any entities
-        computer = new Analytics(keyspace, new HashSet<>(), Collections.singleton(resourceType3));
-        assertFalse(computer.mean().isPresent());
-        assertFalse(computer.max().isPresent());
-        assertFalse(computer.min().isPresent());
-        assertFalse(computer.sum().isPresent());
-        assertFalse(computer.std().isPresent());
-        assertFalse(computer.median().isPresent());
+        assertFalse(graph.graql().compute().max().of(resourceType3).execute().isPresent());
+        assertFalse(graph.graql().compute().min().of(resourceType3).execute().isPresent());
+        assertFalse(graph.graql().compute().sum().of(resourceType3).execute().isPresent());
+        assertFalse(graph.graql().compute().std().of(resourceType3).execute().isPresent());
+        assertFalse(graph.graql().compute().median().of(resourceType3).execute().isPresent());
+        assertFalse(graph.graql().compute().mean().of(resourceType3).execute().isPresent());
 
         // resource-type has incorrect data type
-        computer = new Analytics(keyspace, new HashSet<>(), Collections.singleton(resourceType4));
-        assertIllegalStateExceptionThrown(computer::max);
-        assertIllegalStateExceptionThrown(computer::min);
-        assertIllegalStateExceptionThrown(computer::mean);
-        assertIllegalStateExceptionThrown(computer::sum);
-        assertIllegalStateExceptionThrown(computer::std);
-        assertIllegalStateExceptionThrown(computer::median);
+        assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceType4)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceType4)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceType4)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceType4)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceType4)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceType4)::execute);
 
         // resource-types have different data types
-        computer = new Analytics(keyspace, new HashSet<>(),
-                Sets.newHashSet(resourceType1, resourceType2));
-        assertIllegalStateExceptionThrown(computer::max);
-        assertIllegalStateExceptionThrown(computer::min);
-        assertIllegalStateExceptionThrown(computer::mean);
-        assertIllegalStateExceptionThrown(computer::sum);
-        assertIllegalStateExceptionThrown(computer::std);
-        assertIllegalStateExceptionThrown(computer::median);
+        Set<String> resourceTypes = Sets.newHashSet(resourceType1, resourceType2);
+        assertIllegalStateExceptionThrown(graph.graql().compute().max().of(resourceTypes)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().min().of(resourceTypes)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().mean().of(resourceTypes)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().sum().of(resourceTypes)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().std().of(resourceTypes)::execute);
+        assertIllegalStateExceptionThrown(graph.graql().compute().median().of(resourceTypes)::execute);
     }
 
     private void assertIllegalStateExceptionThrown(Supplier<Optional> method) {

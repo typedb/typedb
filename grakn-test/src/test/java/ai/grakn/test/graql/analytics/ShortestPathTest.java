@@ -1,23 +1,23 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.*;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,14 +30,6 @@ public class ShortestPathTest extends AbstractGraphTest {
     private static final String related = "related";
     private static final String veryRelated = "veryRelated";
 
-    private static final String resourceType1 = "resourceType1";
-    private static final String resourceType2 = "resourceType2";
-    private static final String resourceType3 = "resourceType3";
-    private static final String resourceType4 = "resourceType4";
-    private static final String resourceType5 = "resourceType5";
-    private static final String resourceType6 = "resourceType6";
-    private static final String resourceType7 = "resourceType7";
-
     private String entityId1;
     private String entityId2;
     private String entityId3;
@@ -49,8 +41,7 @@ public class ShortestPathTest extends AbstractGraphTest {
     private String relationId34;
     private String relationId1A12;
 
-    String keyspace;
-    Analytics computer;
+    private String keyspace;
 
     @Before
     public void setUp() {
@@ -72,8 +63,7 @@ public class ShortestPathTest extends AbstractGraphTest {
         assumeFalse(usingTinker());
 
         // test on an empty graph
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        computer.shortestPath(entityId1, entityId2);
+        graph.graql().compute().path().from(entityId1).to(entityId2).execute();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -82,8 +72,7 @@ public class ShortestPathTest extends AbstractGraphTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        computer = new Analytics(keyspace, Sets.newHashSet(thing, related), new HashSet<>());
-        computer.shortestPath(entityId1, entityId4);
+        graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
     }
 
     @Test(expected = RuntimeException.class)
@@ -92,8 +81,7 @@ public class ShortestPathTest extends AbstractGraphTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        computer.shortestPath(entityId1, entityId5);
+        graph.graql().compute().path().from(entityId1).to(entityId5).execute();
     }
 
     @Test

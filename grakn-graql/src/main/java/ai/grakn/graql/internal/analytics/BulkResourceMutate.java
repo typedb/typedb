@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  */
 
 public class BulkResourceMutate<T> {
-    static final Logger LOGGER = LoggerFactory.getLogger(BulkResourceMutate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BulkResourceMutate.class);
 
     private static final int numberOfRetries = 10;
 
@@ -67,13 +67,13 @@ public class BulkResourceMutate<T> {
     private RoleType resourceValue;
     private RelationType relationType;
 
-    public BulkResourceMutate(String keyspace, String resourceTypeName) {
+    BulkResourceMutate(String keyspace, String resourceTypeName) {
         LOGGER.debug("Starting BulkResourceMutate");
         this.keyspace = keyspace;
         this.resourceTypeName = resourceTypeName;
     }
 
-    public BulkResourceMutate(String keyspace, String resourceTypeName, int batchSize) {
+    BulkResourceMutate(String keyspace, String resourceTypeName, int batchSize) {
         this(keyspace, resourceTypeName);
         this.batchSize = batchSize;
     }
@@ -155,7 +155,7 @@ public class BulkResourceMutate<T> {
             // check the exact resource type and value doesn't exist already
             relations = relations.stream().filter(relation -> {
                 Instance roleplayer = relation.rolePlayers().get(resourceValue);
-                return roleplayer == null || roleplayer.asResource().getValue() != value;
+                return roleplayer == null || !roleplayer.asResource().getValue().equals(value);
             }).collect(Collectors.toList());
 
             // if it doesn't exist already delete the old one(s) and add the new one
@@ -172,6 +172,7 @@ public class BulkResourceMutate<T> {
         });
 
         graph.commit();
+        graph.close();
     }
 
     private void refreshOntologyElements() {
@@ -182,7 +183,7 @@ public class BulkResourceMutate<T> {
     }
 
     private void initialiseGraph() {
-        if (graph == null) {
+        if (graph == null || graph.isClosed()) {
             graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
             graph.rollback();
             refreshOntologyElements();
