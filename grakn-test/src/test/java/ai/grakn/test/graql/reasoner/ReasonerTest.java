@@ -618,6 +618,19 @@ public class ReasonerTest extends AbstractEngineTest{
         assertTrue(answers.containsAll(limitedAnswers));
     }
 
+    /*
+    @Test
+    public void testOrder(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a;";
+        Reasoner reasoner = new Reasoner(lgraph);
+        Query query = new Query(queryString, lgraph);
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(explicitQuery)));
+        assertEquals(answers, answers2);
+    }
+    */
+
     @Test
     public void testIsAbstract(){
         GraknGraph lgraph = SNBGraph.getGraph();
