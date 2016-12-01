@@ -32,9 +32,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,19 +56,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTitanGraphFactoryTest {
-    private static final String TEST_CONFIG = "conf/grakn-titan-test.properties";
-    private final static String TEST_URI = null;
+public class GraknTitanGraphFactoryTest extends TitanTestBase{
     private final static String TEST_SHARED = "shared";
-    private static final boolean TEST_BATCH_LOADING = false;
 
     private static TitanGraph sharedGraph;
     private static TitanGraph noIndexGraph;
     private static TitanGraph indexGraph;
 
     private static InternalFactory titanGraphFactory ;
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
@@ -247,7 +241,7 @@ public class GraknTitanGraphFactoryTest {
 
 
     private static TitanGraph getGraph() {
-        String name = UUID.randomUUID().toString();
+        String name = UUID.randomUUID().toString().replaceAll("-", "");
         titanGraphFactory = new TitanInternalFactory(name, TEST_URI, TEST_CONFIG);
         Graph graph = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
