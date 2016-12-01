@@ -442,6 +442,7 @@ public class Analytics {
      */
     private void waitOnMutateResourceOntology(String resourceTypeId) {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
+        graph.showImplicitConcepts(true);
 
         for (int i = 0; i < numberOfOntologyChecks; i++) {
             boolean isOntologyComplete = true;
