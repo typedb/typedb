@@ -40,10 +40,14 @@ public class GraphFactory {
     }
 
     public synchronized GraknGraph getGraph(String keyspace) {
-        return FactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
+        GraknGraph graph = FactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
+        graph.showImplicitConcepts(true);
+        return graph;
     }
     public synchronized GraknGraph getGraphBatchLoading(String keyspace) {
-        return FactoryBuilder.getFactory(keyspace, null, graphBatchConfig).getGraph(true);
+        GraknGraph graph = FactoryBuilder.getFactory(keyspace, null, graphBatchConfig).getGraph(true);
+        graph.showImplicitConcepts(true);
+        return graph;
     }
 }
 

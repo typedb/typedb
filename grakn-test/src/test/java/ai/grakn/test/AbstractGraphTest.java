@@ -35,6 +35,7 @@ public abstract class AbstractGraphTest extends AbstractEngineTest {
     public void createGraph() {
         factory = factoryWithNewKeyspace();
         graph = factory.getGraph();
+        graph.showImplicitConcepts(true);
     }
 
     @After

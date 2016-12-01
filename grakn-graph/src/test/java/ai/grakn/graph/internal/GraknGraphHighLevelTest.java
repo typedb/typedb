@@ -24,6 +24,7 @@ import ai.grakn.Grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
@@ -617,6 +618,37 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
         found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type2)));
         assertTrue(found);
+    }
+
+    @Test
+    public void testImplicitFiltering(){
+        //Build Implicit structures
+        EntityType type = graknGraph.putEntityType("Concept Type ");
+        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        type.hasResource(resourceType);
+
+        assertFalse(graknGraph.implicitConceptsVisible());
+
+        //Check nothing is revealed when returning result sets
+        assertEquals(0, type.playsRoles().size());
+        assertEquals(0, resourceType.playsRoles().size());
+        assertEquals(1, graknGraph.getMetaRelationType().instances().size());
+        assertEquals(3, graknGraph.getMetaRoleType().instances().size());
+
+        //Check things are still returned when explicitly asking for them
+        assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName())));
+
+        //Switch on flag
+        graknGraph.showImplicitConcepts(true);
+        assertTrue(graknGraph.implicitConceptsVisible());
+
+        //Now check the result sets again
+        assertEquals(1, type.playsRoles().size());
+        assertEquals(1, resourceType.playsRoles().size());
+        assertEquals(2, graknGraph.getMetaRelationType().instances().size());
+        assertEquals(5, graknGraph.getMetaRoleType().instances().size());
     }
 
 }

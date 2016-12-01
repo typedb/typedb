@@ -20,16 +20,15 @@ package ai.grakn.test.graql.reasoner.graphs;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractEngineTest;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -51,19 +50,23 @@ public class TestGraph {
 
     public TestGraph(){
         graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.showImplicitConcepts(true);
         buildGraph();
         commit();
     }
 
     public TestGraph(String primaryKeyId, String... files) {
         graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.showImplicitConcepts(true);
         if (primaryKeyId != null) addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);
         commit();
     }
 
     public GraknGraph graph(){
-        return Grakn.factory(Grakn.DEFAULT_URI, graknGraph.getKeyspace()).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, graknGraph.getKeyspace()).getGraph();
+        graph.showImplicitConcepts(true);
+        return graph;
     }
 
     public static GraknGraph getGraph() {

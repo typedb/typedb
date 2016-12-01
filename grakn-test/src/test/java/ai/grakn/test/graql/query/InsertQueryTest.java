@@ -66,6 +66,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeFalse(usingTitan());
 
         graph = factoryWithNewKeyspace().getGraph();
+        graph.showImplicitConcepts(true);
         MovieGraphFactory.loadGraph(graph);
 
         qb = graph.graql();
