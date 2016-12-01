@@ -56,7 +56,7 @@ import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
  * OLAP computations that can be applied to a Grakn Graph. The current implementation uses the SparkGraphComputer
  * with a Hadoop graph that connects directly to cassandra and de-serialises vertices.
  */
-
+@Deprecated
 public class Analytics {
 
     // TODO: allow user specified resources
@@ -82,6 +82,7 @@ public class Analytics {
      * @param subTypeNames                the set of type names the computer will use to filter instances
      * @param statisticsResourceTypeNames the set of resource type ids statistics will be working on
      */
+
     public Analytics(String keySpace, Set<String> subTypeNames, Set<String> statisticsResourceTypeNames) {
         this.keySpace = keySpace;
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();

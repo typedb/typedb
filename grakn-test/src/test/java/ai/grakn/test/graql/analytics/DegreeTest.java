@@ -23,7 +23,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
-import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
@@ -137,10 +137,89 @@ public class DegreeTest extends AbstractGraphTest {
         ));
     }
 
+    //    @Ignore //TODO: Stabalise this test. It fails way too often.
+    @Test
+    public void testDegreesAndPersist() throws Exception {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        // create instances
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+
+        String entity1 = thing.addEntity().getId();
+        String entity2 = thing.addEntity().getId();
+        String entity3 = thing.addEntity().getId();
+        String entity4 = anotherThing.addEntity().getId();
+
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
+        thing.playsRole(role1).playsRole(role2);
+        anotherThing.playsRole(role1).playsRole(role2);
+        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
+
+        // relate them
+        String id1 = related.addRelation()
+                .putRolePlayer(role1, graph.getConcept(entity1))
+                .putRolePlayer(role2, graph.getConcept(entity2))
+                .getId();
+        String id2 = related.addRelation()
+                .putRolePlayer(role1, graph.getConcept(entity2))
+                .putRolePlayer(role2, graph.getConcept(entity3))
+                .getId();
+        String id3 = related.addRelation()
+                .putRolePlayer(role1, graph.getConcept(entity2))
+                .putRolePlayer(role2, graph.getConcept(entity4))
+                .getId();
+        graph.commit();
+
+        // compute degrees on subgraph
+        Graql.compute().degree().in("thing", "related").persist().withGraph(graph).execute();
+
+        Map<String, Long> correctDegrees = new HashMap<>();
+        correctDegrees.clear();
+        correctDegrees.put(entity1, 1L);
+        correctDegrees.put(entity2, 3L);
+        correctDegrees.put(entity3, 1L);
+        correctDegrees.put(id1, 2L);
+        correctDegrees.put(id2, 2L);
+        correctDegrees.put(id3, 1L);
+
+        // assert persisted degrees are correct
+        checkDegrees(correctDegrees);
+
+        // compute again and again ...
+        long numVertices = 0;
+        for (int i = 0; i < 2; i++) {
+            graph.graql().compute().degree().in("thing", "related").persist().execute();
+            graph = factory.getGraph();
+            checkDegrees(correctDegrees);
+
+            // assert the number of vertices remain the same
+            if (i == 0) {
+                numVertices = graph.graql().compute().count().execute();
+            } else {
+                assertEquals(numVertices, graph.graql().compute().count().execute().longValue());
+            }
+        }
+
+        // compute degrees on all types, again and again ...
+        correctDegrees.put(entity4, 1L);
+        correctDegrees.put(id3, 2L);
+        for (int i = 0; i < 2; i++) {
+            graph.graql().compute().degree().persist().execute();
+            graph = factory.getGraph();
+            checkDegrees(correctDegrees);
+
+            // assert the number of vertices remain the same
+            assertEquals(numVertices, graph.graql().compute().count().execute().longValue());
+        }
+    }
+
     private void checkDegrees(Map<String, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(entry.getKey()).resources(graph.getResourceType(Analytics.degree));
+                    graph.<Instance>getConcept(entry.getKey()).resources(graph.getResourceType(AbstractComputeQuery.degree));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(), resources.iterator().next().getValue());
         });
