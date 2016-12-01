@@ -627,6 +627,8 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
         type.hasResource(resourceType);
 
+        assertFalse(graknGraph.implicitStructuresRevealed());
+
         //Check nothing is revealed when returning result sets
         assertEquals(0, type.playsRoles().size());
         assertEquals(0, resourceType.playsRoles().size());
@@ -640,6 +642,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
         //Switch on flag
         graknGraph.showImplicitStructures(true);
+        assertTrue(graknGraph.implicitStructuresRevealed());
 
         //Now check the result sets again
         assertEquals(1, type.playsRoles().size());

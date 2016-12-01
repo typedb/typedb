@@ -209,7 +209,17 @@ public interface GraknGraph extends AutoCloseable{
     Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
     //------------------------------------- Utilities ----------------------------------
+    /**
+     *
+     * @param flag Specifies if implicit and system generated types should be returned.
+     */
     void showImplicitStructures(boolean flag);
+
+    /**
+     *
+     * @return true if implicit structures are exposed.
+     */
+    boolean implicitStructuresRevealed();
 
     /**
      * Closes and clears the current graph.

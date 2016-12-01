@@ -74,6 +74,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsClosed = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
@@ -94,6 +95,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
         localIsClosed.set(false);
+        localShowImplicitStructures.set(false);
     }
 
     @Override
@@ -643,7 +645,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
     }
 
-    protected void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
+    private void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
             Schema.BaseType type = entry.getKey();
@@ -668,6 +670,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
             return null;
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
+
+    public void showImplicitStructures(boolean flag){
+        localShowImplicitStructures.set(flag);
+    }
+
+    public boolean implicitStructuresRevealed(){
+        return localShowImplicitStructures.get();
+    }
+
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
     /**
