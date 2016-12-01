@@ -176,14 +176,15 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testResourceAsVar2(){
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
-        Query query = new Query(queryString, graph);
+        QueryBuilder qb = graph.graql();
+        MatchQuery query = qb.parse(queryString);
         Pattern body = and(graph.graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(graph.graql().parsePatterns("$x has firstname 'Bob';"));
         graph.getMetaRuleInference().addRule(body, head);
 
-        Reasoner reasoner = new Reasoner(graph);
-        QueryBuilder qb = graph.graql();
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        //Reasoner reasoner = new Reasoner(graph);
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        assertTrue(!answers.isEmpty());
     }
 
     @Test
@@ -226,15 +227,13 @@ public class ReasonerTest extends AbstractEngineTest{
 
     @Test
     public void testNoRelationType(){
-        GraknGraph lgraph = GeoGraph.getGraph();
+        GraknGraph graph = GeoGraph.getGraph();
         String queryString = "match $x isa city;$y isa country;($x, $y);$y has name 'Poland';$x has name $name;";
         String queryString2 = "match $x isa city;$y isa country;$y has name 'Poland';$x has name $name;" +
                     "($x, $y) isa is-located-in;";
-        MatchQuery query = new Query(queryString, lgraph);
-        MatchQuery query2 = new Query(queryString2, lgraph);
-
-        Reasoner reasoner = new Reasoner(lgraph);
-        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+        MatchQuery query = graph.graql().parse(queryString);
+        MatchQuery query2 = graph.graql().parse(queryString2);
+        assertEquals(query.execute(), query2.execute());
     }
 
     @Test
@@ -626,8 +625,6 @@ public class ReasonerTest extends AbstractEngineTest{
         Query query = new Query(queryString, lgraph);
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
-        printAnswers(answers);
-        printAnswers(expAnswers);
         assertEquals(answers, expAnswers);
     }
 

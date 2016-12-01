@@ -47,7 +47,7 @@ public class GenealogyGraph extends TestGraph{
     final static String ruleFile3 = "genealogy/inferred-kinships.gql";
 
     public GenealogyGraph(){
-        super(null, ontologyFile, ruleFile, ruleFile2, ruleFile3);
+        super(null, ontologyFile);
         try {
             String peopleTemplate = getResourceAsString(peopleTemplatePath);
             String parentTemplate = getResourceAsString(parentTemplatePath);
@@ -65,9 +65,11 @@ public class GenealogyGraph extends TestGraph{
 
             Migrator marriageMigrator = new CSVMigrator(marriageTemplate, marriageFile);
             MigrationLoader.load(graph(), marriageMigrator);
+            commit();
         } catch (IOException e){
             throw new RuntimeException(e);
         }
+        loadFiles(ruleFile, ruleFile2, ruleFile3);
     }
 
     public static Path getResource(String resourceName){

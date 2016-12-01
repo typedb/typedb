@@ -6,12 +6,12 @@ insert
 #                                                                           # 
 #############################################################################
 
-$makeHighDegreeEventsHighConfidence isa inference-rule
-lhs
-{$e isa event has degree > 2; 
-}
-rhs
-{$f has confidence "high";};
+#$makeHighDegreeEventsHighConfidence isa inference-rule
+#lhs
+#{$e isa event has degree > 2;
+#}
+#rhs
+#{$f has confidence "high";};
 
 
 #############################################################################
