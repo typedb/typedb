@@ -285,7 +285,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
 
-    /*----------------------------------- Entity Type to Role Type Validation ----------------------------------------*/
+    /*------------------------------- Entity Type to Role Type Validation (Schema) -----------------------------------*/
     @Test
     public void testRoleToRolePlayersSchemaValidationValid1() throws GraknValidationException {
         RoleType relative = graknGraph.putRoleType("relative");
@@ -353,6 +353,216 @@ public class ValidatorTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(containsString(
                 ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(company.getName(), parent.superType().getName()))));
+
+        graknGraph.commit();
+    }
+
+    /*-------------------------------- Entity Type to Role Type Validation (Data) ------------------------------------*/
+
+    @Test
+    public void testRoleToRolePlayersDataValidationValid1() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
+
+        EntityType person = graknGraph.putEntityType("person").playsRole(parent).playsRole(child);
+        EntityType man = graknGraph.putEntityType("man").superType(person);
+        EntityType oneEyedMan = graknGraph.putEntityType("oneEyedMan").superType(man);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
+
+        Entity x = oneEyedMan.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationValid2() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
+
+        EntityType person = graknGraph.putEntityType("person").playsRole(parent).playsRole(child);
+        EntityType company = graknGraph.putEntityType("company").playsRole(parent);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
+
+        Entity x = company.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationInvalid1() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
+
+        EntityType person = graknGraph.putEntityType("person").playsRole(parent).playsRole(child);
+        EntityType man = graknGraph.putEntityType("man");
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
+
+        Entity x = man.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_CASTING.getMessage(man.getName(), x.getId(), parent.getName()))));
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationInvalid2() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
+
+        EntityType person = graknGraph.putEntityType("person").playsRole(child);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
+
+        Entity x = person.addEntity();
+        Entity y = person.addEntity();
+
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRoleToRolePlayersDataValidationInvalid3() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType child = graknGraph.putRoleType("child");
+
+        EntityType person = graknGraph.putEntityType("person").playsRole(child);
+        EntityType man = graknGraph.putEntityType("man").playsRole(child);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(child);
+
+        Entity x = person.addEntity();
+        Entity y = person.addEntity();
+        parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+
+        graknGraph.commit();
+    }
+
+    /*------------------------------- Relation Type to Role Type Validation (Schema) ---------------------------------*/
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationValid1() throws GraknValidationException {
+        RoleType relative = graknGraph.putRoleType("relative").setAbstract(true);
+        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType mother = graknGraph.putRoleType("mother").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
+        RoleType mChild = graknGraph.putRoleType("mChild").superType(pChild);
+
+        graknGraph.putEntityType("animal").
+                playsRole(relative).
+                playsRole(parent).
+                playsRole(father).
+                playsRole(mother).
+                playsRole(pChild).
+                playsRole(fChild).
+                playsRole(mChild);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
+        graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
+        graknGraph.putRelationType("motherhood").superType(parenthood).hasRole(mother).hasRole(mChild);
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationValid2() throws GraknValidationException {
+        RoleType relative = graknGraph.putRoleType("relative").setAbstract(true);
+        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType mother = graknGraph.putRoleType("mother").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
+        RoleType fmChild = graknGraph.putRoleType("fChild").superType(pChild);
+
+        graknGraph.putEntityType("animal").
+                playsRole(relative).
+                playsRole(parent).
+                playsRole(father).
+                playsRole(mother).
+                playsRole(pChild).
+                playsRole(fmChild);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
+        graknGraph.putRelationType("fathermotherhood").superType(parenthood).hasRole(father).hasRole(mother).hasRole(fmChild);
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationValid3() throws GraknValidationException {
+        RoleType relative = graknGraph.putRoleType("relative");
+        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild").superType(relative);
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
+
+        graknGraph.putEntityType("animal").
+                playsRole(relative).
+                playsRole(parent).
+                playsRole(father).
+                playsRole(pChild).
+                playsRole(fChild);
+
+        RelationType parentrelativehood = graknGraph.putRelationType("parentrelativehood").
+                hasRole(relative).hasRole(parent).hasRole(pChild);
+        graknGraph.putRelationType("fatherhood").superType(parentrelativehood).
+                hasRole(father).hasRole(fChild);
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationInvalid1() throws GraknValidationException {
+        RoleType pChild = graknGraph.putRoleType("pChild");
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType inContext = graknGraph.putRoleType("in-context");
+
+        graknGraph.putEntityType("animal").playsRole(parent).playsRole(father).playsRole(pChild).playsRole(fChild);
+        graknGraph.putEntityType("context").playsRole(inContext);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
+        RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild).hasRole(inContext);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), parenthood.getName()))));
+
+        graknGraph.commit();
+    }
+    @Test
+    public void testRelationTypeToRoleTypeSchemaValidationInvalid2() throws GraknValidationException {
+        RoleType parent = graknGraph.putRoleType("parent");
+        RoleType father = graknGraph.putRoleType("father").superType(parent);
+        RoleType pChild = graknGraph.putRoleType("pChild");
+        RoleType fChild = graknGraph.putRoleType("fChild").superType(pChild);
+        RoleType inContext = graknGraph.putRoleType("in-context");
+
+        graknGraph.putEntityType("animal").playsRole(parent).playsRole(father).playsRole(pChild).playsRole(fChild);
+        graknGraph.putEntityType("context").playsRole(inContext);
+
+        RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild).hasRole(inContext);
+        RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(allOf(containsString(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), parenthood.getName()))));
 
         graknGraph.commit();
     }

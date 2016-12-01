@@ -103,7 +103,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      *
      * @return All outgoing sub parents including itself
      */
-    Set<T> getSubHierarchySuperSet() {
+    Set<T> getSuperSet() {
         Set<T> superSet= new HashSet<>();
         superSet.add(getThis());
         T subParent = superType();

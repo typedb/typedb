@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The global structural rules to validate.
@@ -59,7 +60,7 @@ class ValidateGlobalRules {
             Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
 
             for (EdgeImpl edge : edges) {
-                if (edge.getTarget().equals(roleType)) {
+                if (edge.getTarget().asType().getName().equals(roleType.getName())) {
                     satisfiesPlaysRole = true;
 
                     // Assert unique relation for this role type
@@ -118,7 +119,7 @@ class ValidateGlobalRules {
             return false;
 
         for(CastingImpl casting: castings){
-            if(!casting.getRole().relationType().equals(relationType))
+            if(!casting.getRole().relationType().getName().equals(relationType.getName()))
                 return false;
         }
 
@@ -138,6 +139,7 @@ class ValidateGlobalRules {
      * Schema validation which makes sure that the roles the entity type plays are correct. They are correct if
      * For every T1 such that T1 plays-role R1 there must exist some T2, such that T1 sub* T2 and T2 plays-role R2
      * @param roleType The entity type to validate
+     * @return All the types missing plays role edges
      */
     @SuppressWarnings("unchecked")
     static Collection<Type> validateRolesPlayedSchema(RoleTypeImpl roleType){
@@ -151,11 +153,15 @@ class ValidateGlobalRules {
         for (Type typeAllowedToPlay : typesAllowedToPlay) {
 
             //Getting T1 sub* T2
-            Set<Type> superTypesAllowedToPlay = ((TypeImpl) typeAllowedToPlay).getSubHierarchySuperSet();
+            Set<Type> superTypesAllowedToPlay = ((TypeImpl) typeAllowedToPlay).getSuperSet();
             boolean superRoleTypeFound = false;
 
             for (Type superTypeAllowedToPlay : superTypesAllowedToPlay) {
-                if(superTypeAllowedToPlay.playsRoles().contains(superRoleType)){
+
+                Set<String> playsRoles = superTypeAllowedToPlay.playsRoles().
+                        stream().map(Type::getName).collect(Collectors.toSet());
+
+                if(playsRoles.contains(superRoleType.getName())){
                     superRoleTypeFound = true;
                     break;
                 }
@@ -169,10 +175,61 @@ class ValidateGlobalRules {
         return invalidTypes;
     }
 
+
     /**
      *
-     * @param instance The instance to check
-     * @return true if the required roles are played
+     * @param relationType the relation type to be validated
+     * @return true if the sub hierarchy of the relation type matches the sub hierarchy of the role type
+     */
+    static Collection<RoleType> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
+        RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.superType();
+        if(superRelationType == null){ //No super type, no validation rule
+            return Collections.emptyList();
+        }
+
+        Set<RoleType> invalidTypes = new HashSet<>();
+
+        Collection<RoleType> superHasRoles = superRelationType.hasRoles();
+        Collection<RoleType> hasRoles = relationType.hasRoles();
+        Set<String> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
+
+        //TODO: Determine if this check is redundant
+        //Check 1) Every role of relationType is the sub of a role which is in the hasRoles of it's supers
+        if(!superRelationType.isAbstract()) {
+            Set<String> allSuperRolesPlayed = new HashSet<>();
+            superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
+
+            for (RoleType hasRole : hasRoles) {
+                RoleType superRoleType = hasRole.superType();
+                if (superRoleType == null || !allSuperRolesPlayed.contains(superRoleType.getName())) {
+                    invalidTypes.add(hasRole);
+                }
+            }
+        }
+
+        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationType
+        for (RoleType superHasRole : superHasRoles) {
+            boolean subRoleNotFoundInHasRoles = true;
+
+            for (RoleType subRoleType : superHasRole.subTypes()) {
+                if(hasRolesNames.contains(subRoleType.getName())){
+                    subRoleNotFoundInHasRoles = false;
+                    break;
+                }
+            }
+
+            if(subRoleNotFoundInHasRoles){
+                invalidTypes.add(superHasRole);
+            }
+        }
+
+        return invalidTypes;
+    }
+
+    /**
+     *
+     * @param instance The instance to be validated
+     * @return true if the instance has all the required resources
      */
     static boolean validateInstancePlaysAllRequiredRoles(Instance instance) {
         TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
