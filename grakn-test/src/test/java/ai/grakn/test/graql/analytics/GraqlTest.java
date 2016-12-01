@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -27,6 +28,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -47,6 +50,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -125,7 +129,7 @@ public class GraqlTest extends AbstractGraphTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        qb.parse("compute degreesAndPersist;").execute();
+        qb.parse("compute degrees; persist;").execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entityId1, 1l);
@@ -200,17 +204,33 @@ public class GraqlTest extends AbstractGraphTest {
         assumeFalse(usingTinker());
 
         Map<String, Long> sizeMap =
-                (Map<String, Long>) qb.parse("compute connectedComponentsSize;").execute();
+                qb.<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
         assertTrue(sizeMap.isEmpty());
         Map<String, Set<String>> memberMap =
-                (Map<String, Set<String>>) qb.parse("compute connectedComponents;").execute();
+                qb.<ClusterQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
         assertTrue(memberMap.isEmpty());
         Map<String, Long> sizeMapPersist =
-                (Map<String, Long>) qb.parse("compute connectedComponentsAndPersist;").execute();
+                qb.<ClusterQuery<Map<String, Long>>>parse("compute cluster; persist;").execute();
         assertTrue(sizeMapPersist.isEmpty());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
+    public void testPath() throws GraknValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        addOntologyAndEntities();
+
+        PathQuery query = qb.parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
+
+        List<String> result = query.execute().stream().map(Concept::getId).collect(Collectors.toList());
+
+        List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
+
+        assertEquals(expected, result);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws GraknValidationException {
         graph.putEntityType(thing);
         graph.commit();
@@ -218,7 +238,7 @@ public class GraqlTest extends AbstractGraphTest {
         qb.parse("compute sum in thing;").execute();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws GraknValidationException {
         qb.parse("compute sum;").execute();
         qb.parse("compute min;").execute();
@@ -259,6 +279,7 @@ public class GraqlTest extends AbstractGraphTest {
         Entity entity2 = entityType1.addEntity();
         Entity entity3 = entityType1.addEntity();
         Entity entity4 = entityType2.addEntity();
+
         entityId1 = entity1.getId();
         entityId2 = entity2.getId();
         entityId3 = entity3.getId();
@@ -273,14 +294,9 @@ public class GraqlTest extends AbstractGraphTest {
         relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity2).getId();
-        relationId23 = relationType.addRelation()
-                .putRolePlayer(role1, entity2)
-                .putRolePlayer(role2, entity3).getId();
         relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity4).getId();
-        instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
-                relationId12, relationId23, relationId24);
 
         graph.commit();
         graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();

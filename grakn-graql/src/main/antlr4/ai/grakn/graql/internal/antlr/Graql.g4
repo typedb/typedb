@@ -24,18 +24,18 @@ deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
 
-computeMethod  : min | max | median | mean | std | sum ;
+computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
 
-min            : MIN     ('of' ofList)?    ('in' inList)? ;
-max            : MAX     ('of' ofList)?    ('in' inList)? ;
-median         : MEDIAN  ('of' ofList)?    ('in' inList)? ;
-mean           : MEAN    ('of' ofList)?    ('in' inList)? ;
-std            : STD     ('of' ofList)?    ('in' inList)? ;
-sum            : SUM     ('of' ofList)?    ('in' inList)? ;
-count          : COUNT                     ('in' inList)? ;
-path           : PATH    'from' id 'to' id ('in' inList)? ;
-cluster        : CLUSTER MEMBERS? PERSIST? ('in' inList)? ;
-degree         : DEGREE           PERSIST? ('in' inList)? ;
+min            : MIN     'of' ofList       ('in' inList)? ';' ;
+max            : MAX     'of' ofList       ('in' inList)? ';' ;
+median         : MEDIAN  'of' ofList       ('in' inList)? ';' ;
+mean           : MEAN    'of' ofList       ('in' inList)? ';' ;
+std            : STD     'of' ofList       ('in' inList)? ';' ;
+sum            : SUM     'of' ofList       ('in' inList)? ';' ;
+path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
+count          : COUNT                     ('in' inList)? ';' ;
+cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (PERSIST ';')? ;
+degrees        : DEGREES                   ('in' inList)? ';'                (PERSIST ';')? ;
 
 ofList         : nameList ;
 inList         : nameList ;
@@ -114,16 +114,6 @@ identifier     : ID | STRING
                | DEGREE | MEMBERS | PERSIST
                ;
 
-DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
-ORDER          : 'asc' | 'desc' ;
-BOOLEAN        : 'true' | 'false' ;
-VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
-ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
-STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
-REGEX          : '/' (~'/' | '\\/')* '/' ;
-INTEGER        : ('+' | '-')? [0-9]+ ;
-REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
-
 // keywords
 MIN            : 'min' ;
 MAX            : 'max' ;
@@ -134,9 +124,19 @@ SUM            : 'sum' ;
 COUNT          : 'count' ;
 PATH           : 'path' ;
 CLUSTER        : 'cluster' ;
-DEGREE         : 'degree' ;
+DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
 PERSIST        : 'persist' ;
+
+DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
+ORDER          : 'asc' | 'desc' ;
+BOOLEAN        : 'true' | 'false' ;
+VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
+ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
+STRING         : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
+REGEX          : '/' (~'/' | '\\/')* '/' ;
+INTEGER        : ('+' | '-')? [0-9]+ ;
+REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 

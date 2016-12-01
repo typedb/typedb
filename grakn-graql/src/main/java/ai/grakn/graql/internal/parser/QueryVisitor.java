@@ -186,11 +186,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MinQuery visitMin(GraqlParser.MinContext ctx) {
-        MinQuery min = queryBuilder.compute().min();
-
-        if (ctx.ofList() != null) {
-            min = min.of(visitOfList(ctx.ofList()));
-        }
+        MinQuery min = queryBuilder.compute().min().of(visitOfList(ctx.ofList()));
 
         if (ctx.inList() != null) {
             min = min.in(visitInList(ctx.inList()));
@@ -201,11 +197,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MaxQuery visitMax(GraqlParser.MaxContext ctx) {
-        MaxQuery max = queryBuilder.compute().max();
-
-        if (ctx.ofList() != null) {
-            max = max.of(visitOfList(ctx.ofList()));
-        }
+        MaxQuery max = queryBuilder.compute().max().of(visitOfList(ctx.ofList()));
 
         if (ctx.inList() != null) {
             max = max.in(visitInList(ctx.inList()));
@@ -216,11 +208,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MedianQuery visitMedian(GraqlParser.MedianContext ctx) {
-        MedianQuery median = queryBuilder.compute().median();
-
-        if (ctx.ofList() != null) {
-            median = median.of(visitOfList(ctx.ofList()));
-        }
+        MedianQuery median = queryBuilder.compute().median().of(visitOfList(ctx.ofList()));
 
         if (ctx.inList() != null) {
             median = median.in(visitInList(ctx.inList()));
@@ -246,11 +234,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public StdQuery visitStd(GraqlParser.StdContext ctx) {
-        StdQuery std = queryBuilder.compute().std();
-
-        if (ctx.ofList() != null) {
-            std = std.of(visitOfList(ctx.ofList()));
-        }
+        StdQuery std = queryBuilder.compute().std().of(visitOfList(ctx.ofList()));
 
         if (ctx.inList() != null) {
             std = std.in(visitInList(ctx.inList()));
@@ -261,11 +245,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public SumQuery visitSum(GraqlParser.SumContext ctx) {
-        SumQuery sum = queryBuilder.compute().sum();
-
-        if (ctx.ofList() != null) {
-            sum = sum.of(visitOfList(ctx.ofList()));
-        }
+        SumQuery sum = queryBuilder.compute().sum().of(visitOfList(ctx.ofList()));
 
         if (ctx.inList() != null) {
             sum = sum.in(visitInList(ctx.inList()));
@@ -312,7 +292,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public DegreeQuery<?> visitDegree(GraqlParser.DegreeContext ctx) {
+    public DegreeQuery<?> visitDegrees(GraqlParser.DegreesContext ctx) {
         DegreeQuery<?> degree = queryBuilder.compute().degree();
 
         if (ctx.PERSIST() != null) degree = degree.persist();
