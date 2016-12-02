@@ -34,10 +34,12 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -111,17 +113,17 @@ public class Relation extends TypeAtom{
      */
     public static VarAdmin constructRelationVar(String varName, String typeVariable, Map<String, String> roleMap) {
         Var var;
-        if (varName != null && !varName.isEmpty())
+        if (!varName.isEmpty())
             var = Graql.var(varName);
         else
             var = Graql.var();
-        var.isa(Graql.var(typeVariable));
         roleMap.forEach( (player, role) -> {
             if (role == null)
                 var.rel(player);
             else
                 var.rel(role, player);
         });
+        var.isa(Graql.var(typeVariable));
         return var.admin().asVar();
     }
 
@@ -166,22 +168,31 @@ public class Relation extends TypeAtom{
     @Override
     public boolean isSelectable(){ return true;}
 
-    @Override
-    protected boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getRuleConclusionAtom();
-        if(!(ruleAtom instanceof Relation)) return false;
+    private boolean isRuleApplicableViaType(RelationType relType){
+        boolean ruleRelevant = true;
+        Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        Iterator<Map.Entry<String, Type>> it = varTypeMap.entrySet().stream()
+                .filter(entry -> containsVar(entry.getKey())).iterator();
+        while (it.hasNext() && ruleRelevant){
+            Map.Entry<String, Type> entry = it.next();
+            Type type = entry.getValue();
+            if (type != null){
+                Collection<RoleType> roleIntersection = relType.hasRoles();
+                roleIntersection.retainAll(type.playsRoles());
+                ruleRelevant = !roleIntersection.isEmpty();
+            }
+        }
+        return ruleRelevant;
+    }
 
-        Relation childAtom = (Relation) ruleAtom;
-        //discard if child has less rolePlayers
-        if (childAtom.getRelationPlayers().size() < this.getRelationPlayers().size()) return false;
-
+    private boolean isRuleApplicableViaAtom(Atom childAtom, InferenceRule child){
         boolean ruleRelevant = true;
         Query parent = getParentQuery();
         Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
         Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
 
         Iterator<Map.Entry<RoleType, Pair<String, Type>>> it = parentRoleVarTypeMap.entrySet().iterator();
-        while(it.hasNext() && ruleRelevant){
+        while (it.hasNext() && ruleRelevant) {
             Map.Entry<RoleType, Pair<String, Type>> entry = it.next();
             RoleType parentRole = entry.getKey();
 
@@ -189,9 +200,8 @@ public class Relation extends TypeAtom{
             Iterator<RoleType> childRolesIt = childRoleVarTypeMap.keySet().iterator();
             //if child roles are unspecified then compatible
             boolean roleCompatible = !childRolesIt.hasNext();
-            while(childRolesIt.hasNext() && !roleCompatible){
+            while (childRolesIt.hasNext() && !roleCompatible)
                 roleCompatible = checkTypesCompatible(parentRole, childRolesIt.next());
-            }
             ruleRelevant = roleCompatible;
 
             //check type compatibility
@@ -216,6 +226,23 @@ public class Relation extends TypeAtom{
             }
         }
         return ruleRelevant;
+    }
+
+    @Override
+    protected boolean isRuleApplicable(InferenceRule child) {
+        Atom ruleAtom = child.getRuleConclusionAtom();
+        if(!(ruleAtom instanceof Relation)) return false;
+
+        Relation childAtom = (Relation) ruleAtom;
+        //discard if child has less rolePlayers
+        if (childAtom.getRelationPlayers().size() < this.getRelationPlayers().size()) return false;
+
+        Type type = getType();
+        //Case: relation without type - match all
+        if (type == null)
+            return isRuleApplicableViaType((RelationType) childAtom.getType());
+        else
+            return isRuleApplicableViaAtom(childAtom, child);
     }
 
     @Override
@@ -261,13 +288,18 @@ public class Relation extends TypeAtom{
         getParentQuery().addAtom(pred);
     }
 
+    private void addType(Type type){
+        typeId = type.getId();
+        String typeVariable = "rel-" + UUID.randomUUID().toString();
+        addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin()));
+        atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
+        setValueVariable(typeVariable);
+    }
+
     private void inferTypeFromRoles() {
         if (getParentQuery() != null && getTypeId().isEmpty() && hasExplicitRoleTypes()){
             type = getExplicitRoleTypes().iterator().next().relationType();
-            typeId = type.getId();
-            String typeVariable = "rel-" + UUID.randomUUID().toString();
-            addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin()));
-            atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
+            addType(type);
         }
     }
 
@@ -366,7 +398,6 @@ public class Relation extends TypeAtom{
             else {
                 if (type != null && relType != null) {
                     Set<RoleType> cRoles = Utility.getCompatibleRoleTypes(type, relType);
-
                     //if roleType is unambigous
                     if (cRoles.size() == 1)
                         roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));

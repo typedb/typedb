@@ -16,35 +16,49 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-var Vue = require('vue')
+// change this to alias Vue instead of import vue/dist - check out Aliasify
+import Vue from 'vue/dist/vue.js'
 var VueRouter = require('vue-router')
 
-// Components
-var graknapp = require('./components/main.vue');
-var visualiser = require('./components/visualiser.vue')
-var console = require('./components/console.vue')
-var config =  require('./components/config.vue')
-
+// Vue.config.devtools = false;
+Vue.config.errorHandler = function(err, vm) {
+    console.log("Something is wrong here!!!! " + JSON.stringify(err));
+}
 Vue.use(VueRouter)
 
+
+var bus = new Vue();
+
+
+// Components
+const graknapp = require('./components/main.vue');
+const visualiser = require('./components/visualiser.vue')
+const console = require('./components/console.vue')
+const config = require('./components/config.vue')
+
+const routes = [{
+    path: '/',
+    redirect: '/graph'
+}, {
+    path: '/config',
+    component: config
+}, {
+    path: '/graph',
+    component: visualiser
+}
+, {
+    path: '/console',
+    component: console
+}
+]
+
 var router = new VueRouter({
-    hashbang: false,
-    linkActiveClass: 'active'
-})
-router.map({
-    '/config': {
-        component: config
-    },
-    '/graph': {
-        component: visualiser
-    },
-    '/console': {
-        component: console
-    }
-})
-router.redirect({
-    // home page
-    '*': '/graph'
+    linkActiveClass: 'active',
+    routes
 })
 
-router.start(graknapp, '#grakn-app')
+new Vue({
+    el: '#grakn-app',
+    router: router,
+    render: h => h(graknapp)
+})

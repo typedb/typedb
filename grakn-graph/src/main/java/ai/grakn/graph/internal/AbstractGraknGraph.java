@@ -74,6 +74,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsClosed = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
@@ -94,6 +95,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
         localIsClosed.set(false);
+        localShowImplicitStructures.set(false);
     }
 
     @Override
@@ -103,11 +105,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
 
     @Override
     public boolean isClosed(){
-        Boolean value = localIsClosed.get();
+        return getBooleanFromLocalThread(localIsClosed);
+    }
+
+    @Override
+    public boolean implicitConceptsVisible(){
+        return getBooleanFromLocalThread(localShowImplicitStructures);
+    }
+
+    private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
+        Boolean value = local.get();
         if(value == null)
             return false;
         else
             return value;
+    }
+
+    @Override
+    public void showImplicitConcepts(boolean flag){
+        localShowImplicitStructures.set(flag);
     }
 
     public boolean hasCommitted(){
@@ -643,7 +659,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
     }
 
-    protected void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
+    private void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
             Schema.BaseType type = entry.getKey();

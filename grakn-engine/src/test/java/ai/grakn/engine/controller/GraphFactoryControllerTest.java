@@ -24,19 +24,33 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.util.REST.GraphConfig;
+import mjson.Json;
+
 import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.get;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
+import static ai.grakn.util.REST.WebPath.KEYSPACE_LIST;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
+import org.junit.Assert;
 
 public class GraphFactoryControllerTest extends GraknEngineTestBase {
 
+	@Test
+	public void testKeyspaceList() {
+		Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph().close();
+        Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").getGraph().close();
+        String endPoint = KEYSPACE_LIST;
+        Response response = get(endPoint).then().statusCode(200).extract().response();
+        Json result = Json.read(response.body().asString());
+        Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest")));
+        Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest2")));
+	}
+	
     @Test
     public void testConfigWorking() {
         Response response = get(GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();

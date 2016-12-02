@@ -18,62 +18,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <template>
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-xs-12">
-          <div class="panel panel-filled" id="panel-console-container">
-              <div class="panel-body row" id="panel-console">
-                  <div class="form-group col-xs-8" style="margin-bottom:0px;">
-                      <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
-                  </div>
-                  <div class="form-buttons col-xs-4">
-                    <button @click="getMetaTypes" class="btn btn-info console-button">Types<i class="types-button"
-                                                                                    v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
-                    </button>
-                    <button @click="clearGraph" class="btn btn-default console-button">Clear<i class="pe-7s-refresh"></i>
-                    </button>
-                      <button @click="runQuery" class="btn btn-default search-button console-button">Submit<i
-                              class="pe-7s-angle-right-circle"></i></button>
-                    </div>
-              </div>
-          </div>
-        </div>
-    </div>
-
-    <div class="row" v-show="typeInstances">
-        <div class="col-xs-12">
-            <div class="panel panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
-                <div class="tabs-col">
-                    <div class="tabs-container">
-                        <ul class="nav nav-tabs">
-                            <li v-for="k in typeKeys"><a data-toggle="tab" href="#{{k}}-tab" aria-expanded="false">{{k | capitalize}}</a></li>
-                        </ul>
-                    </div>
-                    <div class="tab-content">
-                        <div v-for="k in typeKeys" id="{{k}}-tab" class="tab-pane">
-                            <div class="panel-body types-panel" style="margin: 0px;">
-                                <div class="{{k}}-group row m-t-md" style="margin-top: 0px;">
-                                    <div class="col-lg-2 col-md-3 col-sm-6 col-xs-6 type-instance" v-for="i in typeInstances[k]">
-                                        <button  @click="typeQuery(k, i)" class="btn btn-link">{{i}}</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row" v-show="errorMessage">
-        <div class="col-xs-12">
-            <div class="panel panel-filled" v-bind:class="errorPanelClass">
-                <div class="panel-body">
-                    {{errorMessage}}
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <graql-editor v-on:click-submit="onClickSubmit" v-on:clear="onClear" v-on:close-error="onCloseError" :errorMessage="errorMessage" :errorPanelClass="errorPanelClass"></graql-editor>
     <div class="row tab-row">
         <div class="tabs-col col-md-12">
             <div class="tabs-container">
@@ -84,9 +29,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 <div class="tab-content">
                     <div id="tab-1" class="tab-pane active">
                         <div class="panel-body">
-                            <pre class="language-graql">{{{graqlResponse}}}</pre>
+                            <pre class="language-graql" v-html="graqlResponse"></pre>
                         </div>
-
                     </div>
                     <div id="tab-3" class="tab-pane">
                         <div class="panel-body">
@@ -95,13 +39,28 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped">
                                     <thead>
-                                        <tr><th>Key</th><th>What it does</th></tr>
+                                        <tr>
+                                            <th>Key</th>
+                                            <th>What it does</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td>ENTER</td><td>Submit Graql query.</td></tr>
-                                        <tr><td>Shift + Enter</td><td>New line.</td></tr>
-                                        <tr><td>Shift + Backspace</td><td>Clear graph & current query.</td></tr>
-                                        <tr><td>Shift + Delete</td><td>Clear graph & current query.</td></tr>
+                                        <tr>
+                                            <td>ENTER</td>
+                                            <td>Submit Graql query.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Shift + Enter</td>
+                                            <td>New line.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Shift + Backspace</td>
+                                            <td>Clear graph & current query.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Shift + Delete</td>
+                                            <td>Clear graph & current query.</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -131,7 +90,14 @@ import EngineClient from '../js/EngineClient.js';
 import * as PLang from '../js/prismGraql.js';
 import simpleGraql from '../js/codemirrorGraql.js';
 
+// Components
+var GraqlEditor = require('./graqlEditor.vue')
+
 export default {
+    name: "ConsoleView",
+    components: {
+        GraqlEditor
+    },
     data() {
         return {
             errorMessage: undefined,
@@ -148,73 +114,39 @@ export default {
     },
 
     created() {
-        engineClient = new EngineClient();
-
-        halParser = new HALParser();
-        halParser.setNewResource((id, p, a) => { visualiser.addNode(id, p, a) });
-        halParser.setNewRelationship((f, t, l) => { visualiser.addEdge(f, t, l) });
+        this.engineClient = new EngineClient();
     },
 
-    attached() {
-        codeMirror = CodeMirror.fromTextArea(this.$els.graqlEditor, {
-                lineNumbers: true,
-                theme: "dracula",
-                mode: "graql",
-                extraKeys: {
-                    Enter: this.runQuery,
-                    "Shift-Delete": this.clearGraph,
-                    "Shift-Backspace": this.clearGraph
-                }
-            });
+    mounted: function() {
+        this.$nextTick(function() {
+            // code for previous attach() method.
+        });
     },
 
     methods: {
         /*
-         * User interaction: queries.
+         * Listener methods on emit from GraqlEditor
          */
-        runQuery(ev) {
-            const query = codeMirror.getValue();
-
-            // Empty query.
-            if(query == undefined || query.length === 0)
-                return;
-
-            engineClient.graqlShell(query, this.shellResponse);
-            this.resetMsg();
+        onClickSubmit(query) {
+            this.errorMessage = undefined;
+            this.engineClient.graqlShell(query, this.shellResponse);
         },
-
-        typeQuery(t, ti) {
-            codeMirror.setValue("match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";");
-            this.typeInstances = false;
-            this.runQuery();
+        onClear() {
+            this.graqlResponse = undefined;
+            this.errorMessage = undefined;
         },
-
-        getMetaTypes() {
-            if(this.typeInstances)
-                this.typeInstances = false;
-            else
-                engineClient.getMetaTypes(x => { if(x != null){ this.typeInstances = x; this.typeKeys = _.keys(x) } });
+        onCloseError(){
+          this.errorMessage = undefined;
         },
-
         /*
          * EngineClient callbacks
          */
         shellResponse(resp, err) {
-            if(resp != null)
+            if (resp != null)
                 this.graqlResponse = Prism.highlight(resp, PLang.graql);
             else
                 this.showError(err);
         },
-
-        typeQueryResponse(resp, err) {
-            if(resp != undefined) {
-                halParser.parseHalObject(resp);
-                visualiser.cluster();
-            } else {
-                this.showError(err);
-            }
-        },
-
         /*
          * UX
          */
@@ -228,23 +160,8 @@ export default {
             this.errorPanelClass = 'panel-c-warning';
             this.errorMessage = msg;
             $('.search-button').removeClass('btn-default').addClass('btn-warning');
-        },
-
-        resetMsg() {
-            this.errorMessage = undefined;
-            $('.search-button')
-                .removeClass('btn-danger')
-                .removeClass('btn-warning')
-                .addClass('btn-default');
-        },
-
-        clearGraph(ev) {
-            codeMirror.setValue("");
-
-            // Reset all interface elements to default.
-            this.graqlResponse = undefined;
-            this.resetMsg();
         }
+
     }
 }
 </script>

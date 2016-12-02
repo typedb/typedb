@@ -111,22 +111,22 @@ public class TypeTest extends GraphTestBase{
         TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3'");
         TypeImpl c4 = (TypeImpl) graknGraph.putEntityType("c4");
 
-        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c2));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c3));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSuperSet().contains(c1));
+        assertFalse(c1.getSuperSet().contains(c2));
+        assertFalse(c1.getSuperSet().contains(c3));
+        assertFalse(c1.getSuperSet().contains(c4));
 
         c1.superType(c2);
-        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
-        assertTrue(c1.getSubHierarchySuperSet().contains(c2));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c3));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSuperSet().contains(c1));
+        assertTrue(c1.getSuperSet().contains(c2));
+        assertFalse(c1.getSuperSet().contains(c3));
+        assertFalse(c1.getSuperSet().contains(c4));
 
         c2.superType(c3);
-        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
-        assertTrue(c1.getSubHierarchySuperSet().contains(c2));
-        assertTrue(c1.getSubHierarchySuperSet().contains(c3));
-        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSuperSet().contains(c1));
+        assertTrue(c1.getSuperSet().contains(c2));
+        assertTrue(c1.getSuperSet().contains(c3));
+        assertFalse(c1.getSuperSet().contains(c4));
 
         graknGraph.getTinkerPopGraph().traversal().V().
                 hasId(c3.getId()).
@@ -135,7 +135,7 @@ public class TypeTest extends GraphTestBase{
         boolean correctExceptionThrown = false;
         try{
             c4.superType(c2);
-            c1.getSubHierarchySuperSet();
+            c1.getSuperSet();
         } catch(RuntimeException e){
             correctExceptionThrown = e.getMessage().contains("loop");
         }
@@ -407,6 +407,8 @@ public class TypeTest extends GraphTestBase{
         assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
         assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId)));
 
+        graknGraph.showImplicitConcepts(true);
+
         assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), entityType.playsRoles().iterator().next().getName());
         assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), resourceType.playsRoles().iterator().next().getName());
 
@@ -434,6 +436,8 @@ public class TypeTest extends GraphTestBase{
 
         entityType1.hasResource(rtSuper);
         entityType2.hasResource(rt);
+
+        graknGraph.showImplicitConcepts(true);
 
         //Check role types are only built explicitly
         assertEquals(1, entityType1.playsRoles().size());
@@ -470,6 +474,8 @@ public class TypeTest extends GraphTestBase{
 
         assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
         assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId)));
+
+        graknGraph.showImplicitConcepts(true);
 
         assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), entityType.playsRoles().iterator().next().getName());
         assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), resourceType.playsRoles().iterator().next().getName());

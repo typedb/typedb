@@ -70,23 +70,12 @@ public abstract class Atom extends AtomBase {
     public Set<Rule> getApplicableRules() {
         Set<Rule> children = new HashSet<>();
         GraknGraph graph = getParentQuery().getGraph().orElse(null);
-        Type type = getType();
-        //TODO change if we allow for Types having null type
-        //Case: relation without type - match all
-        if (type == null) {
-            Collection<Rule> applicableRules = Reasoner.getRules(graph).stream()
-                    .filter(rule -> rule.getConclusionTypes().stream().filter(Type::isRelationType).count() != 0)
-                    .collect(Collectors.toSet());
-            children.addAll(applicableRules);
-        }
-        else{
-            Collection<Rule> rulesFromType = type.getRulesOfConclusion();
-            rulesFromType.forEach(rule -> {
-                InferenceRule child = new InferenceRule(rule, graph);
-                boolean ruleRelevant = isRuleApplicable(child);
-                if (ruleRelevant) children.add(rule);
-            });
-        }
+        Collection<Rule> rulesFromType = getType() != null? getType().getRulesOfConclusion() : Reasoner.getRules(graph);
+        rulesFromType.forEach(rule -> {
+            InferenceRule child = new InferenceRule(rule, graph);
+            boolean ruleRelevant = isRuleApplicable(child);
+            if (ruleRelevant) children.add(rule);
+        });
         return children;
     }
 

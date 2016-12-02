@@ -60,10 +60,15 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	private String engineUrl;
 	private String config;
 	private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<String, Boolean>();
-
+	private InternalFactory<M, T> factory;
+	
 	public SystemKeyspace(String engineUrl, String config) {
-		this.engineUrl = engineUrl == null ? Grakn.IN_MEMORY : engineUrl;
+		this.engineUrl = engineUrl;
 		this.config = config;
+		if (config != null)
+			this.factory = FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, config);
+		else
+			this.factory = 	FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, Grakn.IN_MEMORY, config); //Grakn.factory(engineUrl, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph()) {
 	}
 
 	/**
@@ -71,7 +76,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	 */
 	public SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
 		openSpaces.computeIfAbsent(keyspace, name -> {
-			try (GraknGraph graph = Grakn.factory(engineUrl, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph()) {
+			try (GraknGraph graph = factory.getGraph(false)) { 
 				ResourceType<String> keyspaceName = graph.getResourceType(KEYSPACE_RESOURCE);
 				Resource<String> resource = keyspaceName.getResource(keyspace);
 				if (resource == null)
@@ -102,8 +107,10 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE)))) {
 				query = buffer.lines().collect(Collectors.joining("\n"));
 			}
+			LOG.info("System ontology is " + query);
 			graph.graql().parse(query).execute();
 			graph.commit();
+			LOG.info("Loaded system ontology to system keyspace.");
 		}
 		catch(IOException|GraknValidationException|NullPointerException e) {
 			e.printStackTrace(System.err);

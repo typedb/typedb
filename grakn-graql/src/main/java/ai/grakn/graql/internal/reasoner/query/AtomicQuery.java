@@ -33,14 +33,10 @@ import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.RoleType;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;

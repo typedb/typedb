@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -36,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import java.util.LinkedHashMap;
+import java.util.List;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -618,18 +620,27 @@ public class ReasonerTest extends AbstractEngineTest{
         assertTrue(answers.containsAll(limitedAnswers));
     }
 
-    /*
     @Test
     public void testOrder(){
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a;";
-        Reasoner reasoner = new Reasoner(lgraph);
-        Query query = new Query(queryString, lgraph);
-        QueryAnswers answers = reasoner.resolve(query);
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(explicitQuery)));
-        assertEquals(answers, answers2);
+        MatchQuery query = lgraph.graql().parse(queryString);
+
+        List<Map<String, Concept>> answers = query.execute();
+        printAnswers(Sets.newLinkedHashSet(answers));
+        assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("19"));
     }
-    */
+
+    @Test
+    public void testOrderAndOffset(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; offset 3;";
+        MatchQuery query = lgraph.graql().parse(queryString);
+
+        List<Map<String, Concept>> answers = query.execute();
+        printAnswers(Sets.newLinkedHashSet(answers));
+        assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("23"));
+    }
 
     @Test
     public void testIsAbstract(){

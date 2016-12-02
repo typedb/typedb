@@ -54,7 +54,8 @@ public enum ErrorMessage {
     RESOURCE_TYPE_UNIQUE("The resource [%s] is unique and is already attached to [%s]."),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_RESOURCE_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
-
+    INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
+	
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
     VALIDATION_RELATION("The relation ['%s'] has an invalid structure. " +
@@ -64,10 +65,11 @@ public enum ErrorMessage {
             "The provided role players('%s'): ['%s'] \n"),
     VALIDATION_CASTING("The type ['%s'] of role player ['%s'] is not allowed to play RoleType ['%s'] \n"),
     VALIDATION_IS_ABSTRACT("The abstract Type ['%s'] should not have any instances \n"),
-    VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any RelationType. \n"),
+    VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any Relation Type. \n"),
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
     VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type ['%s'] is playing role ['%s'] which it is not allowed \n"),
     VALIDATION_INSTANCE("Instance ['%s'] does not play all required roles \n"),
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type ['%s'] does not have a sub or super Role Type in either Relation Type ['%s'] or Relation Type ['%s'] \n"),
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player ['%s'] \n"),
 
     //--------------------------------------------- Factory Errors

@@ -25,9 +25,7 @@ import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -43,19 +41,13 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class GraknTitanGraphTest {
-    private static final String TEST_CONFIG = "conf/grakn-titan-test.properties";
+public class GraknTitanGraphTest extends TitanTestBase{
     private static final String TEST_NAME = "grakntest";
-    private static final String TEST_URI = null;
-    private static final boolean TEST_BATCH_LOADING = false;
     private GraknGraph graknGraph;
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setup(){
-        graknGraph = new TitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
+        graknGraph = FactoryBuilder.getFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);// new TitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
@@ -127,8 +119,8 @@ public class GraknTitanGraphTest {
 
     @Test
     public void testCaseSensitiveKeyspaces(){
-        TitanInternalFactory factory1 = new TitanInternalFactory("case", TEST_URI, TEST_CONFIG);
-        TitanInternalFactory factory2 = new TitanInternalFactory("Case", TEST_URI, TEST_CONFIG);
+        TitanInternalFactory factory1 = (TitanInternalFactory)FactoryBuilder.getFactory("case", TEST_URI, TEST_CONFIG);
+        TitanInternalFactory factory2 = (TitanInternalFactory)FactoryBuilder.getFactory("Case", TEST_URI, TEST_CONFIG);
         GraknTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
         GraknTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
 
@@ -137,7 +129,7 @@ public class GraknTitanGraphTest {
 
     @Test
     public void testClearTitanGraph(){
-        GraknTitanGraph graph = new TitanInternalFactory("case", TEST_URI, TEST_CONFIG).getGraph(false);
+        GraknTitanGraph graph = (GraknTitanGraph)FactoryBuilder.getFactory("case", TEST_URI, TEST_CONFIG).getGraph(false);
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(allOf(
