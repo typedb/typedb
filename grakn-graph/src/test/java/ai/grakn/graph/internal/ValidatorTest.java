@@ -319,44 +319,6 @@ public class ValidatorTest extends GraphTestBase{
 
         graknGraph.commit();
     }
-
-    @Test
-    public void tesRoleToRolePlayersSchemaValidationInvalid1() throws GraknValidationException {
-        RoleType relative = graknGraph.putRoleType("relative");
-        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
-
-        EntityType person = graknGraph.putEntityType("person").playsRole(parent);
-        EntityType man = graknGraph.putEntityType("man").superType(person).playsRole(relative);
-
-        //Padding to get rid of irrelevant errors
-        graknGraph.putRelationType("filler").hasRole(parent).hasRole(relative);
-
-        expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(containsString(
-                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(person.getName(), parent.superType().getName())));
-
-        graknGraph.commit();
-    }
-
-
-    @Test
-    public void tesRoleToRolePlayersSchemaValidationInvalid2() throws GraknValidationException {
-        RoleType relative = graknGraph.putRoleType("relative");
-        RoleType parent = graknGraph.putRoleType("parent").superType(relative);
-
-        EntityType company = graknGraph.putEntityType("company").playsRole(parent);
-        EntityType person = graknGraph.putEntityType("person").playsRole(relative);
-
-        //Padding to get rid of irrelevant errors
-        graknGraph.putRelationType("filler").hasRole(parent).hasRole(relative);
-
-        expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_RULE_PLAYS_ROLES_SCHEMA.getMessage(company.getName(), parent.superType().getName()))));
-
-        graknGraph.commit();
-    }
-
     /*-------------------------------- Entity Type to Role Type Validation (Data) ------------------------------------*/
 
     @Test
