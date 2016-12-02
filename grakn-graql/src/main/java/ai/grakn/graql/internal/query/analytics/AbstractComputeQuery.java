@@ -147,61 +147,57 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     boolean selectedTypesHaveInstance() {
         if (subTypeNames.isEmpty()) return false;
 
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
-
         List<Pattern> checkSubtypes = subTypeNames.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
-
-        return graph.graql().match(or(checkSubtypes)).ask().execute();
+        return this.graph.get().graql().match(or(checkSubtypes)).ask().execute();
     }
 
     boolean verticesExistInSubgraph(String... ids) {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
         for (String id : ids) {
-            Concept concept = graph.getConcept(id);
+            Concept concept = this.graph.get().getConcept(id);
             if (concept == null || !subTypeNames.contains(concept.type().getName())) return false;
         }
         return true;
     }
 
     void mutateResourceOntology(String resourceTypeName, ResourceType.DataType resourceDataType) {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
+        GraknGraph theGraph = this.graph.get();
 
-        ResourceType resource = graph.putResourceType(resourceTypeName, resourceDataType);
-
+        ResourceType resource = theGraph.putResourceType(resourceTypeName, resourceDataType);
         for (String type : subTypeNames) {
-            graph.getType(type).hasResource(resource);
+            theGraph.getType(type).hasResource(resource);
         }
 
         try {
-            graph.commit();
+            theGraph.commit();
         } catch (GraknValidationException e) {
             throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()), e);
         }
     }
 
     void waitOnMutateResourceOntology(String resourceTypeId) {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraph();
+        GraknGraph theGraph = this.graph.get();
+        theGraph.showImplicitConcepts(true);
 
         for (int i = 0; i < numberOfOntologyChecks; i++) {
             boolean isOntologyComplete = true;
             // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             try {
-                graph.rollback();
+                theGraph.rollback();
             } catch (UnsupportedOperationException ignored) {
             }
 
-            ResourceType resource = graph.getResourceType(resourceTypeId);
+            ResourceType resource = theGraph.getResourceType(resourceTypeId);
             if (resource == null) continue;
-            RoleType degreeOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+            RoleType degreeOwner = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
             if (degreeOwner == null) continue;
-            RoleType degreeValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+            RoleType degreeValue = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
             if (degreeValue == null) continue;
-            RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId));
+            RelationType relationType = theGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId));
             if (relationType == null) continue;
 
             for (String type : subTypeNames) {
-                Collection<RoleType> roles = graph.getType(type).playsRoles();
+                Collection<RoleType> roles = theGraph.getType(type).playsRoles();
                 if (!roles.contains(degreeOwner)) {
                     isOntologyComplete = false;
                     break;
