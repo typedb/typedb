@@ -20,18 +20,16 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
+import org.apache.tinkerpop.shaded.minlog.Log;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.tinkerpop.shaded.minlog.Log;
 
 class FactoryBuilder {
     private static final String FACTORY = "factory.internal";
@@ -85,7 +83,7 @@ class FactoryBuilder {
             openFactories.put(key, internalFactory);
             Log.debug("New factory created " + internalFactory);
             if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            	Log.info("This is a system factory, loading system ontology.");
+            	Log.debug("This is a system factory, loading system ontology.");
             	new SystemKeyspace(engineUrl, config).loadSystemOntology();
             }
             else
