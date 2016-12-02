@@ -54,8 +54,9 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
+        boolean originalValue = graknGraph.implicitConceptsVisible();
+        graknGraph.showImplicitConcepts(true);
         Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getConceptLog().getModifiedConcepts());
-
         for(ConceptImpl nextToValidate: validationList){
             if(nextToValidate.isAlive()) {
                 if (nextToValidate.isInstance()) {
@@ -76,6 +77,7 @@ class Validator {
                 }
             }
         }
+        graknGraph.showImplicitConcepts(originalValue);
         return errorsFound.size() == 0;
     }
 
