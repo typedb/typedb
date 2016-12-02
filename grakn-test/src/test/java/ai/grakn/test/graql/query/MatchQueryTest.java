@@ -18,6 +18,8 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
@@ -722,6 +724,20 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
         assertThat(types, allOf(hasItem("movie"), hasItem("has-title")));
+    }
+
+    @Test
+    public void testHideImplicitTypesTwice() {
+        MatchQuery query = qb.match(var("x").isa("type"));
+
+        Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
+
+        assertThat(types, allOf(hasItem("movie"), Matchers.not(hasItem("has-title"))));
+
+        GraknGraph graph2 = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+        Set<String> typesAgain = graph2.graql().match(var("x").isa("type")).get("x").map(Concept::asType).map(Type::getName).collect(toSet());
+
+        assertEquals(types, typesAgain);
     }
 
     @Test(expected = IllegalArgumentException.class)
