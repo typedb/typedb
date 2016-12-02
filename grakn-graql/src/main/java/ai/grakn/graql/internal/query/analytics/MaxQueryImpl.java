@@ -63,12 +63,12 @@ public class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> impl
 
     @Override
     public MaxQuery in(String... subTypeNames) {
-        return (MaxQuery) super.in();
+        return (MaxQuery) super.in(subTypeNames);
     }
 
     @Override
     public MaxQuery in(Collection<String> subTypeNames) {
-        return (MaxQuery) super.in();
+        return (MaxQuery) super.in(subTypeNames);
     }
 
     @Override
@@ -76,4 +76,8 @@ public class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> impl
         return (MaxQuery) super.withGraph(graph);
     }
 
+    @Override
+    String getName() {
+        return "max";
+    }
 }

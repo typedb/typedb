@@ -19,16 +19,11 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MeanMapReduce;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -64,12 +59,12 @@ public class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> i
 
     @Override
     public MedianQuery in(String... subTypeNames) {
-        return (MedianQuery) super.in();
+        return (MedianQuery) super.in(subTypeNames);
     }
 
     @Override
     public MedianQuery in(Collection<String> subTypeNames) {
-        return (MedianQuery) super.in();
+        return (MedianQuery) super.in(subTypeNames);
     }
 
     @Override
@@ -77,4 +72,8 @@ public class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> i
         return (MedianQuery) super.withGraph(graph);
     }
 
+    @Override
+    String getName() {
+        return "median";
+    }
 }

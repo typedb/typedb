@@ -482,16 +482,58 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testParseCompute() {
-        assertEquals("compute count;", Graql.parse("compute count;").toString());
+    public void testParseComputeCount() {
+        assertParseEquivalence("compute count;");
     }
 
     @Test
-    public void testParseComputeWithSubgraph() {
-        assertEquals(
-                "compute count in movie, person;",
-                Graql.parse("compute count in movie, person;").toString()
-        );
+    public void testParseComputeCountWithSubgraph() {
+        assertParseEquivalence("compute count in movie, person;");
+    }
+
+    @Test
+    public void testParseComputeCluster() {
+        assertParseEquivalence("compute cluster in movie, person; members; persist;");
+    }
+
+    @Test
+    public void testParseComputeDegree() {
+        assertParseEquivalence("compute degrees in movie; persist;");
+    }
+
+    @Test
+    public void testParseComputeMax() {
+        assertParseEquivalence("compute max of person in movie;");
+    }
+
+    @Test
+    public void testParseComputeMean() {
+        assertParseEquivalence("compute mean of person in movie;");
+    }
+
+    @Test
+    public void testParseComputeMedian() {
+        assertParseEquivalence("compute median of person in movie;");
+    }
+
+    @Test
+    public void testParseComputeMin() {
+        assertParseEquivalence("compute min of movie in person;");
+    }
+
+    @Test
+    public void testParseComputePath() {
+        assertParseEquivalence("compute path from \"1\" to \"2\" in person;");
+    }
+
+    @Test
+    public void testParseComputeStd() {
+        assertParseEquivalence("compute std of movie;");
+    }
+
+    @Test
+    public void testParseComputeSum() {
+        assertParseEquivalence("compute sum of movie in person;");
     }
 
     @Test
@@ -603,5 +645,9 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     public static void assertQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
         assertEquals(Sets.newHashSet(query), Sets.newHashSet(parsedQuery));
+    }
+
+    private static void assertParseEquivalence(String query) {
+        assertEquals(query, Graql.parse(query).toString());
     }
 }

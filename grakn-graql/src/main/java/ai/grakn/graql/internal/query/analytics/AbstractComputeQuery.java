@@ -31,6 +31,7 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.analytics.CommonOLAP;
+import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -49,6 +50,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.joining;
 
 public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
@@ -209,5 +211,20 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         throw new RuntimeException(
                 ErrorMessage.ONTOLOGY_MUTATION
                         .getMessage("Failed to confirm ontology is present after mutation."));
+    }
+
+    abstract String graqlString();
+
+    final String subtypeString() {
+        if (subTypeNames.isEmpty()) {
+            return ";";
+        } else {
+            return " in " + subTypeNames.stream().map(StringConverter::idToString).collect(joining(", ")) + ";";
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "compute " + graqlString();
     }
 }

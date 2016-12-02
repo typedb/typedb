@@ -20,17 +20,13 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.analytics.CountQuery;
-import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MaxMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 public class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
@@ -63,6 +59,11 @@ public class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQ
     @Override
     public CountQuery in(Collection<String> subTypeNames) {
         return (CountQuery) super.in(subTypeNames);
+    }
+
+    @Override
+    String graqlString() {
+        return "count" + subtypeString();
     }
 
     @Override

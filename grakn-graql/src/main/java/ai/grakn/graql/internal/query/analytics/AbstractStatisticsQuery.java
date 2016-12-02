@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.joining;
 
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
@@ -57,6 +59,17 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     void initSubGraph() {
         super.initSubGraph();
         getResourceTypes(graph.get());
+    }
+
+    @Override
+    final String graqlString() {
+        return getName() + resourcesString() + subtypeString();
+    }
+
+    abstract String getName();
+
+    final String resourcesString() {
+        return " of " + statisticsResourceTypeNames.stream().map(StringConverter::idToString).collect(joining(", "));
     }
 
     private void getResourceTypes(GraknGraph graph) {

@@ -38,6 +38,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.util.StringConverter.idToString;
+
 public class PathQueryImpl extends AbstractComputeQuery<List<Concept>> implements PathQuery {
 
     private String sourceId = null;
@@ -97,6 +99,11 @@ public class PathQueryImpl extends AbstractComputeQuery<List<Concept>> implement
     @Override
     public PathQuery in(Collection<String> subTypeNames) {
         return (PathQuery) super.in(subTypeNames);
+    }
+
+    @Override
+    String graqlString() {
+        return "path from " + idToString(sourceId) + " to " + idToString(destinationId) + subtypeString();
     }
 
     @Override

@@ -63,12 +63,12 @@ public class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> impl
 
     @Override
     public SumQuery in(String... subTypeNames) {
-        return (SumQuery) super.in();
+        return (SumQuery) super.in(subTypeNames);
     }
 
     @Override
     public SumQuery in(Collection<String> subTypeNames) {
-        return (SumQuery) super.in();
+        return (SumQuery) super.in(subTypeNames);
     }
 
     @Override
@@ -76,4 +76,8 @@ public class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> impl
         return (SumQuery) super.withGraph(graph);
     }
 
+    @Override
+    String getName() {
+        return "sum";
+    }
 }
