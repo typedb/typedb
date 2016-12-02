@@ -61,7 +61,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
                         var("y").isa("genre").value(neq("crime"))
                 ),
                 var("y").has("name", var("n"))
-        ).select("x", "y").orderBy("n").limit(8).offset(4);
+        ).orderBy("n").select("x", "y").limit(8).offset(4);
         assertValidToString(query);
     }
 
