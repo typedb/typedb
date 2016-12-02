@@ -106,6 +106,7 @@ public class REST {
 
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
+        public static final String IMPLICIT = "implicit";
         public static final String QUERY = "query";
         public static final String QUERY_RESULT = "result";
         public static final String ERROR = "error";

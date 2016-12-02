@@ -59,6 +59,7 @@ import static java.util.stream.Collectors.toList;
  */
 class GraqlSession {
     private final Session session;
+    private final boolean showImplicitTypes;
     private GraknGraph graph;
     private final Supplier<GraknGraph> getGraph;
     private final String outputFormat;
@@ -74,19 +75,27 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, Supplier<GraknGraph> getGraph, String outputFormat) {
+    GraqlSession(Session session, Supplier<GraknGraph> getGraph, String outputFormat, boolean showImplicitTypes) {
+        this.showImplicitTypes = showImplicitTypes;
         this.session = session;
         this.getGraph = getGraph;
-        this.graph = getGraph.get();
         this.outputFormat = outputFormat;
         this.printer = getPrinter();
 
-        queryExecutor.submit(this::sendTypes);
+        queryExecutor.submit(() -> {
+            refreshGraph();
+            sendTypes();
+        });
 
         // Begin sending pings
         Thread thread = new Thread(this::ping);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void refreshGraph() {
+        graph = getGraph.get();
+        graph.showImplicitConcepts(showImplicitTypes);
     }
 
     private void ping() {
@@ -205,7 +214,7 @@ class GraqlSession {
 
     private void attemptRefresh() {
         try {
-            graph = getGraph.get();
+            refreshGraph();
         } catch (Throwable e) {
             LOG.error("Error during refresh", e);
         }
