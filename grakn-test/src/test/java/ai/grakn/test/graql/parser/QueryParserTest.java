@@ -210,12 +210,11 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     @Test
     public void testModifierQuery() {
         MatchQuery expected = qb.match(
-                var().rel("x").rel("y"),
-                var("y").isa("movie")
-        ).limit(4).offset(2).distinct().orderBy("y");
+                var("y").isa("movie").has("title", var("n"))
+        ).orderBy("n").limit(4).offset(2).distinct();
 
         MatchQuery parsed =
-                qb.parse("match ($x, $y); $y isa movie; limit 4; offset 2; distinct; order by $y;");
+                qb.parse("match $y isa movie, has title $n; order by $n; limit 4; offset 2; distinct;");
 
         assertOrderedQueriesEqual(expected, parsed);
     }

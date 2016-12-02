@@ -39,15 +39,13 @@ class MatchQueryInfer extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(
-            Optional<GraknGraph> optionalGraph, Optional<MatchOrder> order
-    ) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
         // TODO: Handle ordering
-        return new Reasoner(graph).resolveToQuery(inner).stream();
+        return new Reasoner(graph).resolveToQuery(inner.withGraph(graph)).stream();
     }
 
     @Override

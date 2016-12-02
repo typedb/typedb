@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -36,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import java.util.LinkedHashMap;
+import java.util.List;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -176,14 +178,15 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testResourceAsVar2(){
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
-        Query query = new Query(queryString, graph);
+        QueryBuilder qb = graph.graql();
+        MatchQuery query = qb.parse(queryString);
         Pattern body = and(graph.graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(graph.graql().parsePatterns("$x has firstname 'Bob';"));
         graph.getMetaRuleInference().addRule(body, head);
 
-        Reasoner reasoner = new Reasoner(graph);
-        QueryBuilder qb = graph.graql();
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        //Reasoner reasoner = new Reasoner(graph);
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        assertTrue(!answers.isEmpty());
     }
 
     @Test
@@ -226,14 +229,13 @@ public class ReasonerTest extends AbstractEngineTest{
 
     @Test
     public void testNoRelationType(){
-        GraknGraph lgraph = GeoGraph.getGraph();
+        GraknGraph graph = GeoGraph.getGraph();
         String queryString = "match $x isa city;$y isa country;($x, $y);$y has name 'Poland';$x has name $name;";
         String queryString2 = "match $x isa city;$y isa country;$y has name 'Poland';$x has name $name;" +
-                    "($x, $y) isa is-located-in;";
-        MatchQuery query = new Query(queryString, lgraph);
-        MatchQuery query2 = new Query(queryString2, lgraph);
-
-        Reasoner reasoner = new Reasoner(lgraph);
+                "($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+        Reasoner reasoner = new Reasoner(graph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
@@ -608,10 +610,37 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testLimit(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x; limit 5;";
-        MatchQuery query = lgraph.graql().<MatchQuery>parse(queryString);
-        Reasoner reasoner = new Reasoner(lgraph);
-        printAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        String limitQueryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;limit 5;";
+        String queryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;";
+        MatchQuery limitQuery = lgraph.graql().parse(limitQueryString);
+        MatchQuery query = lgraph.graql().parse(queryString);
+
+        QueryAnswers limitedAnswers = new QueryAnswers(limitQuery.execute());
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        assertTrue(answers.size() > limitedAnswers.size());
+        assertTrue(answers.containsAll(limitedAnswers));
+    }
+
+    @Test
+    public void testOrder(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a;";
+        MatchQuery query = lgraph.graql().parse(queryString);
+
+        List<Map<String, Concept>> answers = query.execute();
+        printAnswers(Sets.newLinkedHashSet(answers));
+        assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("19"));
+    }
+
+    @Test
+    public void testOrderAndOffset(){
+        GraknGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; offset 3;";
+        MatchQuery query = lgraph.graql().parse(queryString);
+
+        List<Map<String, Concept>> answers = query.execute();
+        printAnswers(Sets.newLinkedHashSet(answers));
+        assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("23"));
     }
 
     @Test
@@ -621,8 +650,6 @@ public class ReasonerTest extends AbstractEngineTest{
         Query query = new Query(queryString, lgraph);
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
-        printAnswers(answers);
-        printAnswers(expAnswers);
         assertEquals(answers, expAnswers);
     }
 
@@ -666,7 +693,7 @@ public class ReasonerTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(lgraph);
         Query query = new Query(queryString, lgraph);
     }
-    
+
     @Test
     public void testResourceComparison(){
         GraknGraph lgraph = SNBGraph.getGraph();

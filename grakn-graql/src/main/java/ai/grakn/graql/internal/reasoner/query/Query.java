@@ -19,10 +19,14 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.match.MatchOrder;
+import ai.grakn.graql.internal.query.Queries;
+import ai.grakn.graql.internal.query.match.MatchQueryInternal;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -32,16 +36,20 @@ import ai.grakn.graql.internal.reasoner.atom.binary.HasRole;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.internal.query.match.MatchQueryInternal;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -145,7 +153,7 @@ public class Query implements MatchQueryInternal {
     public MatchQuery select(Set<String> vars){ return this;}
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
         return getMatchQuery().stream();
     }
 
@@ -344,9 +352,9 @@ public class Query implements MatchQueryInternal {
 
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
-            return Graql.match(getPattern()).withGraph(graph);
+            return Queries.matchNoInfer(getPattern()).withGraph(graph);
         else
-            return Graql.match(getPattern()).select(selectVars).withGraph(graph);
+            return Queries.matchNoInfer(getPattern()).select(selectVars).withGraph(graph);
     }
 
     public Map<String, Type> getVarTypeMap() {

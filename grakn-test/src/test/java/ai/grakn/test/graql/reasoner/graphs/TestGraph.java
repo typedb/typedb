@@ -63,6 +63,11 @@ public class TestGraph {
         commit();
     }
 
+    public void loadFiles(String... files){
+        for( String graqlFile : files) loadGraqlFile(graqlFile);
+        commit();
+    }
+
     public GraknGraph graph(){
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, graknGraph.getKeyspace()).getGraph();
         graph.showImplicitConcepts(true);

@@ -61,6 +61,11 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(superType);
+    }
+
+    @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(superType);
     }

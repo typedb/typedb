@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
@@ -149,13 +150,20 @@ public class GenealogyTest extends AbstractEngineTest{
 
     @Test
     public void testParentship() {
-        String queryString = "match (child: $x, parent: $y) isa parentship;";
-        MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        String queryString = "match (child: $c, parent: $p) isa parentship;";
+        String queryString2 = "match $b isa birth has confidence 'high';" +
+        "$rel1 (happening: $b, protagonist: $p) isa event-protagonist;" +
+        "$rel1 has role 'parent';" +
+        "$rel2 (happening: $b, protagonist: $c) isa event-protagonist;" +
+        "$rel2 has role 'newborn';select $c, $p;";
+        MatchQuery query = graph.graql().parse(queryString);
+        MatchQuery query2 = graph.graql().parse(queryString2);
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        QueryAnswers answers2 = new QueryAnswers(query2.execute());
+        assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertTrue(answers.size() == 66);
-        assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, answers2);
     }
 
     //It is expected that results are different due to how rules are defined

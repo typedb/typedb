@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.joining;
@@ -124,6 +125,15 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         concept.asInstance().resources(resourceTypes).stream()
                 .filter(r -> predicate.flatMap(ValuePredicateAdmin::getPredicate).map(p -> p.test(r.getValue())).orElse(true))
                 .forEach(Concept::delete);
+    }
+
+    @Override
+    public Stream<VarAdmin> getTypes() {
+        if (resourceType.isPresent()) {
+            return Stream.of(name(resourceType.get()).admin());
+        } else {
+            return Stream.empty();
+        }
     }
 
     @Override

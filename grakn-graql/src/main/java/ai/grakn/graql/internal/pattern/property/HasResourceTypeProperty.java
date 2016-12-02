@@ -91,6 +91,11 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(resourceType);
+    }
+
+    @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(resourceType);
     }

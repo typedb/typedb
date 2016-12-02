@@ -63,6 +63,11 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     }
 
     @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(role);
+    }
+
+    @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(role);
     }

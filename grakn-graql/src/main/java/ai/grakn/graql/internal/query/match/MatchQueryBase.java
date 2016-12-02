@@ -65,16 +65,15 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalGraph.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
         for (VarAdmin var : pattern.getVars()) {
-            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));
-        }
+            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversal();
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph).getTraversal();
         return traversal.toStream()
                 .map(vertices -> makeResults(graph, vertices))
                 .filter(result -> shouldShowResult(graph, result))
@@ -83,7 +82,8 @@ public class MatchQueryBase implements MatchQueryInternal {
 
     @Override
     public Set<Type> getTypes(GraknGraph graph) {
-        return typeNames.stream().map(graph::getType).filter(t -> t != null).collect(toSet());
+        GremlinQuery gremlinQuery = getQuery(graph);
+        return gremlinQuery.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
     }
 
     @Override
@@ -150,11 +150,10 @@ public class MatchQueryBase implements MatchQueryInternal {
 
     /**
      * @param graph the graph to execute the query on
-     * @param order an optional ordering of the query
      * @return the query that will match the specified patterns
      */
-    private GremlinQuery getQuery(GraknGraph graph, Optional<MatchOrder> order) {
-        return new GremlinQuery(graph, this.pattern, getSelectedNames(), order);
+    private GremlinQuery getQuery(GraknGraph graph) {
+        return new GremlinQuery(graph, this.pattern, getSelectedNames());
     }
 
     /**

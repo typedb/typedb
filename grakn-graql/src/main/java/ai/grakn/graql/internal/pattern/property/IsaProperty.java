@@ -73,6 +73,11 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(type);
+    }
+
+    @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(type);
     }

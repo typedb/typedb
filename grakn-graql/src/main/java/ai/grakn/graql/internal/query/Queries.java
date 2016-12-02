@@ -49,6 +49,10 @@ public class Queries {
      * @param pattern a pattern to match in the graph
      */
     public static MatchQueryAdmin match(Conjunction<PatternAdmin> pattern) {
+        return new MatchQueryBase(pattern).infer().admin();
+    }
+
+    public static MatchQueryAdmin matchNoInfer(Conjunction<PatternAdmin> pattern) {
         return new MatchQueryBase(pattern);
     }
 
