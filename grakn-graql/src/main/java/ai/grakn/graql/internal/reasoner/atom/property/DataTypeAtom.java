@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -35,14 +34,17 @@ public class DataTypeAtom extends AtomBase {
         this.datatype = prop.getDatatype();
     }
 
-    public DataTypeAtom(DataTypeAtom a) {
+    private DataTypeAtom(DataTypeAtom a) {
         super(a);
         this.datatype = a.getDataType();
     }
 
     @Override
     public boolean equals(Object obj){
-        return this.isEquivalent(obj) &&
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        DataTypeAtom a2 = (DataTypeAtom) obj;
+        return this.getDataType().equals(a2.getDataType()) &&
                 this.getDataType().equals(((DataTypeAtom)obj).getDataType());
     }
 

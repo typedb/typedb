@@ -34,13 +34,13 @@ public abstract class AtomBase implements Atomic{
     protected PatternAdmin atomPattern = null;
     private Query parent = null;
 
-    public AtomBase(VarAdmin pattern, Query par) {
+    protected AtomBase(VarAdmin pattern, Query par) {
         this.atomPattern = pattern;
         this.varName = pattern.getVarName();
         this.parent = par;
     }
 
-    public AtomBase(AtomBase a) {
+    protected AtomBase(AtomBase a) {
         this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
         this.varName = atomPattern.asVar().getVarName();
     }
