@@ -63,12 +63,12 @@ public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> impl
 
     @Override
     public MinQuery in(String... subTypeNames) {
-        return (MinQuery) super.in();
+        return (MinQuery) super.in(subTypeNames);
     }
 
     @Override
     public MinQuery in(Collection<String> subTypeNames) {
-        return (MinQuery) super.in();
+        return (MinQuery) super.in(subTypeNames);
     }
 
     @Override
@@ -76,4 +76,8 @@ public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> impl
         return (MinQuery) super.withGraph(graph);
     }
 
+    @Override
+    String getName() {
+        return "min";
+    }
 }

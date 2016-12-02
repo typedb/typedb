@@ -64,12 +64,12 @@ public class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> imp
 
     @Override
     public MeanQuery in(String... subTypeNames) {
-        return (MeanQuery) super.in();
+        return (MeanQuery) super.in(subTypeNames);
     }
 
     @Override
     public MeanQuery in(Collection<String> subTypeNames) {
-        return (MeanQuery) super.in();
+        return (MeanQuery) super.in(subTypeNames);
     }
 
     @Override
@@ -77,4 +77,8 @@ public class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> imp
         return (MeanQuery) super.withGraph(graph);
     }
 
+    @Override
+    String getName() {
+        return "mean";
+    }
 }

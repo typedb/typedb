@@ -19,11 +19,9 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.MeanMapReduce;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
@@ -69,12 +67,12 @@ public class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> impl
 
     @Override
     public StdQuery in(String... subTypeNames) {
-        return (StdQuery) super.in();
+        return (StdQuery) super.in(subTypeNames);
     }
 
     @Override
     public StdQuery in(Collection<String> subTypeNames) {
-        return (StdQuery) super.in();
+        return (StdQuery) super.in(subTypeNames);
     }
 
     @Override
@@ -82,4 +80,8 @@ public class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> impl
         return (StdQuery) super.withGraph(graph);
     }
 
+    @Override
+    String getName() {
+        return "std";
+    }
 }

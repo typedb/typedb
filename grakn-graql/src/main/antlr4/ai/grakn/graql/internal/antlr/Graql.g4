@@ -111,7 +111,7 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREE | MEMBERS | PERSIST
+               | DEGREES | MEMBERS | PERSIST
                ;
 
 // keywords

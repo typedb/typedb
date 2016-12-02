@@ -117,6 +117,21 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
     }
 
     @Override
+    String graqlString() {
+        String string = "cluster" + subtypeString();
+
+        if (members) {
+            string += " members;";
+        }
+
+        if (persist) {
+            string += " persist;";
+        }
+
+        return string;
+    }
+
+    @Override
     public ClusterQuery<T> withGraph(GraknGraph graph) {
         return (ClusterQuery<T>) super.withGraph(graph);
     }

@@ -21,11 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
-import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeAndPersistVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -36,9 +32,7 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
 
@@ -97,6 +91,15 @@ public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements Degre
     @Override
     public DegreeQuery<T> in(Collection<String> subTypeNames) {
         return (DegreeQuery<T>) super.in(subTypeNames);
+    }
+
+    @Override
+    String graqlString() {
+        String string =  "degrees" + subtypeString();
+
+        if (persist) string += " persist;";
+
+        return string;
     }
 
     @Override
