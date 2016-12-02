@@ -18,7 +18,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <template>
 <section class="wrapper">
-    <router-view name="a"></router-view>
     <!-- Main content-->
     <section class="content">
         <router-view></router-view>

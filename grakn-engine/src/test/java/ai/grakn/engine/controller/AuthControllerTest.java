@@ -1,21 +1,45 @@
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.user.UsersHandler;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
 
+import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
+import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AuthControllerTest extends GraknEngineTestBase {
+public class AuthControllerTest {
+
+    @BeforeClass
+    public static void setupControllers() throws InterruptedException {
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
+        ConfigProperties.getInstance().setConfigProperty(ConfigProperties.PASSWORD_PROTECTED_PROPERTY,"true");
+
+        Properties prop = ConfigProperties.getInstance().getProperties();
+        RestAssured.baseURI = "http://" + prop.getProperty("server.host") + ":" + prop.getProperty("server.port");
+        GraknEngineServer.start();
+        Thread.sleep(5000);
+    }
+
+    @AfterClass
+    public static void takeDownControllers() throws InterruptedException {
+        GraknEngineServer.stop();
+        Thread.sleep(10000);
+    }
+
 
     @Test
     public void newSessionWithNonExistingUser() {
@@ -30,34 +54,26 @@ public class AuthControllerTest extends GraknEngineTestBase {
     }
 
     @Test
-    public void newSessionWithWrongPassword() {
+    public void newSessionWithWrongPasswordAndUser() {
         UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco", 
         											   UsersHandler.USER_PASSWORD, "ciao", 
         											   UsersHandler.USER_IS_ADMIN, true));
 
         Json body = Json.object("username", "marco", "password", "hello");
 
-        Response dataResponse = given().
+        Response dataResponseWrongPass = given().
                 contentType("application/json").
                 body(body.toString()).when().
                 post("/auth/session/");
-        dataResponse.then().assertThat().statusCode(401);
-    }
+        dataResponseWrongPass.then().assertThat().statusCode(401);
 
-    @Test
-    public void newSessionWithWrongUsername() {
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco", 
-				   UsersHandler.USER_PASSWORD, "ciao", 
-				   UsersHandler.USER_IS_ADMIN, true));
-
-        Json body = Json.object("username", "genoveffo", "password", "ciao");
-
-        Response dataResponse = given().
+        Response dataResponseWrongUser = given().
                 contentType("application/json").
                 body(body.toString()).when().
                 post("/auth/session/");
-        dataResponse.then().assertThat().statusCode(401);
+        dataResponseWrongUser.then().assertThat().statusCode(401);
     }
+
 
     @Test
     public void newSessionWithExistingUser() {

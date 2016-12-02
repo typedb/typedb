@@ -115,6 +115,10 @@ public class ConfigProperties {
     // Setters
 
 
+    public void setConfigProperty(String key, String value){
+        prop.setProperty(key,value);
+    }
+
     /**
      * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
      * If it is not set, it sets it to the default one.

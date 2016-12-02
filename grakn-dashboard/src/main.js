@@ -29,9 +29,6 @@ var VueRouter = require('vue-router')
 Vue.use(VueRouter)
 
 
-var bus = new Vue();
-
-
 // Components
 const graknapp = require('./components/main.vue');
 const visualiser = require('./components/visualiser.vue')
