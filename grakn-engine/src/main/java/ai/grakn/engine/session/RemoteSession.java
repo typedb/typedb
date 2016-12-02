@@ -109,7 +109,10 @@ public class RemoteSession {
     private void startSession(Session session, Json json) {
         String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
         String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
-        GraqlSession graqlSession = new GraqlSession(session, () -> getGraph.apply(keyspace), outputFormat);
+        boolean showImplicitTypes = json.at(REST.RemoteShell.IMPLICIT).asBoolean();
+        GraqlSession graqlSession = new GraqlSession(
+                session, () -> getGraph.apply(keyspace), outputFormat, showImplicitTypes
+        );
         sessions.put(session, graqlSession);
     }
 }

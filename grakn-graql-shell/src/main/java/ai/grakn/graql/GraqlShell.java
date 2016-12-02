@@ -80,6 +80,7 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
+import static ai.grakn.util.REST.RemoteShell.IMPLICIT;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
@@ -159,6 +160,7 @@ public class GraqlShell {
         options.addOption("u", "uri", true, "uri to factory to engine");
         options.addOption("b", "batch", true, "graql file path to batch load");
         options.addOption("o", "output", true, "output format for results");
+        options.addOption("i", "implicit", false, "show implicit types");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -196,6 +198,8 @@ public class GraqlShell {
         String uriString = cmd.getOptionValue("u", DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
 
+        boolean showImplicitTypes = cmd.hasOption("i");
+
         if (cmd.hasOption("b")) {
             try {
                 sendBatchRequest(uriString, cmd.getOptionValue("b"), keyspace);
@@ -213,7 +217,7 @@ public class GraqlShell {
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(historyFilename, keyspace, client, uri, queries, outputFormat);
+            new GraqlShell(historyFilename, keyspace, client, uri, queries, outputFormat, showImplicitTypes);
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
@@ -272,7 +276,7 @@ public class GraqlShell {
      */
     GraqlShell(
             String historyFilename, String keyspace, GraqlClient client, URI uri, Optional<List<String>> queryStrings,
-            String outputFormat
+            String outputFormat, boolean showImplicitTypes
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -295,7 +299,9 @@ public class GraqlShell {
             sendJson(Json.object(
                     ACTION, ACTION_INIT,
                     KEYSPACE, keyspace,
-                    OUTPUT_FORMAT, outputFormat
+                    OUTPUT_FORMAT, outputFormat,
+                    IMPLICIT, showImplicitTypes
+
             ));
 
             // Start shell
