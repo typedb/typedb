@@ -232,10 +232,11 @@ public class ReasonerTest extends AbstractEngineTest{
         GraknGraph graph = GeoGraph.getGraph();
         String queryString = "match $x isa city;$y isa country;($x, $y);$y has name 'Poland';$x has name $name;";
         String queryString2 = "match $x isa city;$y isa country;$y has name 'Poland';$x has name $name;" +
-                    "($x, $y) isa is-located-in;";
-        MatchQuery query = graph.graql().parse(queryString);
-        MatchQuery query2 = graph.graql().parse(queryString2);
-        assertEquals(query.execute(), query2.execute());
+                "($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+        Reasoner reasoner = new Reasoner(graph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
     }
 
     @Test
