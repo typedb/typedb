@@ -16,24 +16,27 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
-/**
- * A query that triggers an OLAP computation on a graph.
- */
-public interface ComputeQuery<T> extends Query<T> {
+public interface ClusterQuery<T> extends ComputeQuery<T> {
+
+    ClusterQuery<Map<String, Set<String>>> members();
+
+    ClusterQuery<T> persist();
 
     @Override
-    ComputeQuery<T> withGraph(GraknGraph graph);
+    ClusterQuery<T> in(String... subTypeNames);
 
     @Override
-    ComputeQuery<T> infer();
+    ClusterQuery<T> in(Collection<String> subTypeNames);
 
-    ComputeQuery<T> in(String... subTypeNames);
-
-    ComputeQuery<T> in(Collection<String> subTypeNames);
+    @Override
+    ClusterQuery<T> withGraph(GraknGraph graph);
 }

@@ -18,14 +18,13 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Serializable;
 import java.util.*;
 
-class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
+public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
 

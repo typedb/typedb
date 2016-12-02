@@ -16,24 +16,30 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
+import java.util.List;
 
-/**
- * A query that triggers an OLAP computation on a graph.
- */
-public interface ComputeQuery<T> extends Query<T> {
+public interface PathQuery extends ComputeQuery<List<Concept>> {
+
+    PathQuery from(String sourceId);
+
+    PathQuery to(String destinationId);
 
     @Override
-    ComputeQuery<T> withGraph(GraknGraph graph);
+    PathQuery in(String... subTypeNames);
 
     @Override
-    ComputeQuery<T> infer();
+    PathQuery in(Collection<String> subTypeNames);
 
-    ComputeQuery<T> in(String... subTypeNames);
+    @Override
+    List<Concept> execute();
 
-    ComputeQuery<T> in(Collection<String> subTypeNames);
+    @Override
+    PathQuery withGraph(GraknGraph graph);
 }

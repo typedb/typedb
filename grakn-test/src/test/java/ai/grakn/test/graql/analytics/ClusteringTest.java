@@ -26,9 +26,10 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -42,7 +43,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,8 +70,7 @@ public class ClusteringTest extends AbstractGraphTest {
     private String entityId4;
     private List<String> instanceIds;
 
-    String keyspace;
-    Analytics computer;
+    private String keyspace;
 
     @Before
     public void setUp() {
@@ -83,8 +82,30 @@ public class ClusteringTest extends AbstractGraphTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
+        logger.setLevel(Level.DEBUG);
+
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
+    }
+
+    @Test
+    public void testConnectedComponentOnEmptyGraph() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        // test on an empty graph
+        Map<String, Long> sizeMap = Graql.compute().withGraph(graph).cluster().execute();
+        assertTrue(sizeMap.isEmpty());
+        Map<String, Set<String>> memberMap = graph.graql().compute().cluster().members().execute();
+        assertTrue(memberMap.isEmpty());
+        Map<String, Long> sizeMapPersist = graph.graql().compute().cluster().persist().execute();
+
+        assertTrue(sizeMapPersist.isEmpty());
+        memberMap = Graql.compute().withGraph(graph).cluster().members().persist().execute();
+        assertTrue(memberMap.isEmpty());
+
+        assertEquals(0L, graph.graql().compute().count().execute().longValue());
     }
 
     @Ignore //TODO: Stabalise this test. It fails way too often.
@@ -93,57 +114,54 @@ public class ClusteringTest extends AbstractGraphTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // test on an empty graph
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-
-        Map<String, Long> sizeMap = computer.connectedComponentsSize();
-        assertTrue(sizeMap.isEmpty());
-        Map<String, Set<String>> memberMap = computer.connectedComponents();
-        assertTrue(memberMap.isEmpty());
-        Map<String, Long> sizeMapPersist = computer.connectedComponentsAndPersist();
-        assertTrue(sizeMapPersist.isEmpty());
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        assertEquals(0L, computer.count());
+        Map<String, Long> sizeMap;
+        Map<String, Set<String>> memberMap;
+        Map<String, Long> sizeMapPersist;
+        Map<String, Set<String>> memberMapPersist;
 
         // add something, test again
         addOntologyAndEntities();
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        sizeMap = computer.connectedComponentsSize();
+        sizeMap = Graql.compute().withGraph(graph).cluster().execute();
         assertEquals(1, sizeMap.size());
         assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        memberMap = computer.connectedComponents();
+        memberMap = Graql.compute().withGraph(graph).cluster().in().members().execute();
         assertEquals(1, memberMap.size());
         assertEquals(7, memberMap.values().iterator().next().size());
         String clusterLabel = memberMap.keySet().iterator().next();
 
-        long count = computer.count();
+        long count = graph.graql().compute().count().execute();
         for (int i = 0; i < 3; i++) {
-            computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-            sizeMapPersist = computer.connectedComponentsAndPersist();
+            sizeMapPersist = Graql.compute().withGraph(graph).cluster().persist().execute();
             graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
             assertEquals(1, sizeMapPersist.size());
             assertEquals(7L, sizeMapPersist.values().iterator().next().longValue());
             final String finalClusterLabel = clusterLabel;
             instanceIds.forEach(id -> checkConnectedComponent(id, finalClusterLabel));
-            assertEquals(count, computer.count());
+            assertEquals(count, graph.graql().compute().count().execute().longValue());
+        }
+        for (int i = 0; i < 3; i++) {
+            memberMapPersist = graph.graql().compute().cluster().members().persist().execute();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+            assertEquals(1, memberMapPersist.size());
+            assertEquals(7, memberMapPersist.values().iterator().next().size());
+            final String finalClusterLabel = clusterLabel;
+            instanceIds.forEach(id -> checkConnectedComponent(id, finalClusterLabel));
+            assertEquals(count, graph.graql().compute().count().execute().longValue());
         }
 
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        sizeMap = computer.connectedComponentsSize();
+        sizeMap = graph.graql().compute().cluster().execute();
         Map<Long, Integer> populationCount00 = new HashMap<>();
         sizeMap.values().forEach(value -> populationCount00.put(value,
                 populationCount00.containsKey(value) ? populationCount00.get(value) + 1 : 1));
         assertEquals(5, populationCount00.get(1L).intValue()); // 5 resources are not connected to anything
         assertEquals(1, populationCount00.get(27L).intValue());
 
-        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        memberMap = computer.connectedComponents();
+        memberMap = graph.graql().compute().cluster().members().execute();
         assertEquals(6, memberMap.size());
         Map<Integer, Integer> populationCount1 = new HashMap<>();
         memberMap.values().forEach(value -> populationCount1.put(value.size(),
@@ -154,10 +172,9 @@ public class ClusteringTest extends AbstractGraphTest {
                 .filter(entry -> entry.getValue().size() != 1)
                 .findFirst().get().getKey();
 
-        count = computer.count();
+        count = graph.graql().compute().count().execute();
         for (int i = 0; i < 2; i++) {
-            computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-            sizeMapPersist = computer.connectedComponentsAndPersist();
+            sizeMapPersist = graph.graql().compute().cluster().persist().execute();
             graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
             Map<Long, Integer> populationCount01 = new HashMap<>();
@@ -171,24 +188,22 @@ public class ClusteringTest extends AbstractGraphTest {
                     .filter(set -> set.size() != 1)
                     .flatMap(Collection::stream)
                     .forEach(id -> checkConnectedComponent(id, finalClusterLabel));
-            assertEquals(count, computer.count());
+            assertEquals(count, graph.graql().compute().count().execute().longValue());
         }
 
-
         // test on subtypes. This will change existing cluster labels.
-        computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
-                resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
-        sizeMap = computer.connectedComponentsSize();
+        Set<String> subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
+                resourceType3, resourceType4, resourceType5, resourceType6);
+        sizeMap = graph.graql().compute().cluster().in(subTypes).execute();
         assertEquals(17, sizeMap.size());
         sizeMap.values().forEach(value -> assertEquals(1L, value.longValue()));
-        memberMap = computer.connectedComponents();
+        memberMap = graph.graql().compute().cluster().members().in(subTypes).execute();
         assertEquals(17, memberMap.size());
+        subTypes = Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
+                resourceType3, resourceType4, resourceType5, resourceType6);
         for (int i = 0; i < 2; i++) {
-            computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing, resourceType1, resourceType2,
-                    resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
-            sizeMapPersist = computer.connectedComponentsAndPersist();
+            sizeMapPersist = graph.graql().compute().cluster().in(subTypes).persist().execute();
             graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
             assertEquals(17, sizeMapPersist.size());
             memberMap.values().stream()
                     .flatMap(Collection::stream)
@@ -197,8 +212,8 @@ public class ClusteringTest extends AbstractGraphTest {
     }
 
     private void checkConnectedComponent(String id, String expectedClusterLabel) {
-        Collection<Resource<?>> resources =
-                graph.getConcept(id).asInstance().resources(graph.getResourceType(Analytics.connectedComponent));
+        Collection<Resource<?>> resources = graph.getConcept(id).asInstance()
+                .resources(graph.getResourceType(AbstractComputeQuery.connectedComponent));
         assertEquals(1, resources.size());
         assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
     }

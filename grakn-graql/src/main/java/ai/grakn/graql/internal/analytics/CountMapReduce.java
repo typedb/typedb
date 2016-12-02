@@ -28,7 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-class CountMapReduce extends GraknMapReduce<Long> {
+public class CountMapReduce extends GraknMapReduce<Long> {
 
     public static final String MEMORY_KEY = "count";
 

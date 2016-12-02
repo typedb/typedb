@@ -85,6 +85,13 @@ public class Graql {
     }
 
     /**
+     * @return a compute query that will compute analytics query
+     */
+    public static ComputeQueryBuilder compute() {
+        return withoutGraph().compute();
+    }
+
+    /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
      */

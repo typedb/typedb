@@ -36,7 +36,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknMapReduce.class);
 
-    static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
+    public static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
 
     /**
      * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".

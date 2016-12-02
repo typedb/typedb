@@ -104,6 +104,11 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     @Override
+    public ComputeQueryBuilder compute(){
+        return Queries.compute(graph);
+    }
+
+    @Override
     public ComputeQuery compute(String computeMethod) {
         return Queries.compute(graph, computeMethod);
     }
