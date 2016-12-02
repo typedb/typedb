@@ -25,6 +25,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.util.REST;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.Schema;
 import com.google.common.base.Splitter;
@@ -85,6 +86,7 @@ class GraqlSession {
         queryExecutor.submit(() -> {
             refreshGraph();
             sendTypes();
+            sendEnd();
         });
 
         // Begin sending pings
@@ -96,6 +98,29 @@ class GraqlSession {
     private void refreshGraph() {
         graph = getGraph.get();
         graph.showImplicitConcepts(showImplicitTypes);
+    }
+
+    void handleMessage(Json json) {
+        switch (json.at(REST.RemoteShell.ACTION).asString()) {
+            case REST.RemoteShell.ACTION_QUERY:
+                receiveQuery(json);
+                break;
+            case REST.RemoteShell.ACTION_END:
+                executeQuery();
+                break;
+            case REST.RemoteShell.ACTION_QUERY_ABORT:
+                abortQuery();
+                break;
+            case REST.RemoteShell.ACTION_COMMIT:
+                commit();
+                break;
+            case REST.RemoteShell.ACTION_ROLLBACK:
+                rollback();
+                break;
+            case REST.RemoteShell.ACTION_DISPLAY:
+                setDisplayOptions(json);
+                break;
+        }
     }
 
     private void ping() {

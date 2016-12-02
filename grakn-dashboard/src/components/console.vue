@@ -17,61 +17,66 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 -->
 
 <template>
-<div class="container-fluid">
-    <graql-editor v-on:click-submit="onClickSubmit" v-on:clear="onClear" v-on:close-error="onCloseError" :errorMessage="errorMessage" :errorPanelClass="errorPanelClass"></graql-editor>
-    <div class="row tab-row">
-        <div class="tabs-col col-md-12">
-            <div class="tabs-container">
-                <ul class="nav nav-tabs">
-                    <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Console</a></li>
-                    <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
-                </ul>
-                <div class="tab-content">
-                    <div id="tab-1" class="tab-pane active">
-                        <div class="panel-body">
-                            <pre class="language-graql" v-html="graqlResponse"></pre>
-                        </div>
-                    </div>
-                    <div id="tab-3" class="tab-pane">
-                        <div class="panel-body">
-                            <h4>Graql Entry</h4>
-                            <br />
-                            <div class="table-responsive">
-                                <table class="table table-hover table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Key</th>
-                                            <th>What it does</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>ENTER</td>
-                                            <td>Submit Graql query.</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Shift + Enter</td>
-                                            <td>New line.</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Shift + Backspace</td>
-                                            <td>Clear graph & current query.</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Shift + Delete</td>
-                                            <td>Clear graph & current query.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+<section class="wrapper">
+    <side-bar></side-bar>
+    <section class="content">
+        <div class="container-fluid">
+            <graql-editor v-on:click-submit="onClickSubmit" v-on:clear="onClear" v-on:close-error="onCloseError" :errorMessage="errorMessage" :errorPanelClass="errorPanelClass"></graql-editor>
+            <div class="row tab-row">
+                <div class="tabs-col col-md-12">
+                    <div class="tabs-container">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Console</a></li>
+                            <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div id="tab-1" class="tab-pane active">
+                                <div class="panel-body">
+                                    <pre class="language-graql" v-html="graqlResponse"></pre>
+                                </div>
+                            </div>
+                            <div id="tab-3" class="tab-pane">
+                                <div class="panel-body">
+                                    <h4>Graql Entry</h4>
+                                    <br />
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Key</th>
+                                                    <th>What it does</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>ENTER</td>
+                                                    <td>Submit Graql query.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Shift + Enter</td>
+                                                    <td>New line.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Shift + Backspace</td>
+                                                    <td>Clear graph & current query.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Shift + Delete</td>
+                                                    <td>Clear graph & current query.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-</div>
+        </div>
+    </section>
+</section>
 </template>
 
 <style>
@@ -135,8 +140,8 @@ export default {
             this.graqlResponse = undefined;
             this.errorMessage = undefined;
         },
-        onCloseError(){
-          this.errorMessage = undefined;
+        onCloseError() {
+            this.errorMessage = undefined;
         },
         /*
          * EngineClient callbacks

@@ -104,7 +104,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
 
-            return renderHALConceptData(concept, separationDegree);
+            return renderHALConceptData(concept, separationDegree,keyspace);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
@@ -171,10 +171,10 @@ public class VisualiserController {
 
             switch (getAcceptType(req)){
                 case HAL_CONTENTTYPE:
-                    return formatAsHAL(matchQuery,graph.getType(ROOT_CONCEPT).getId());
+                    return formatAsHAL(matchQuery,keyspace);
                 case GRAQL_CONTENTTYPE:
                     return formatAsGraql(matchQuery);
-                default: return formatAsHAL(matchQuery,graph.getType(ROOT_CONCEPT).getId());
+                default: return formatAsHAL(matchQuery,keyspace);
             }
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -194,13 +194,11 @@ public class VisualiserController {
 
             ComputeQuery computeQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
             JSONObject response = new JSONObject();
-            String rootConceptId = graph.getType(ROOT_CONCEPT).getId();
-
             if (req.queryParams(QUERY_FIELD).contains(SHORTEST_PATH_QUERY)) {
                 response.put(COMPUTE_RESPONSE_TYPE, "HAL");
                 JSONArray array = new JSONArray();
                 ((List<Concept>)computeQuery.execute()).iterator().forEachRemaining(concept ->
-                        array.put(renderHALConceptData(concept, 0)));
+                        array.put(renderHALConceptData(concept, 0,getKeyspace(req))));
                 response.put(COMPUTE_RESPONSE_FIELD,array);
             } else {
                 response.put(COMPUTE_RESPONSE_TYPE, "string");
@@ -230,9 +228,9 @@ public class VisualiserController {
      * @param query query to format
      * @return HAL representation
      */
-    private String formatAsHAL(MatchQuery query, String rootConceptId){
+    private String formatAsHAL(MatchQuery query, String keyspace){
         Collection<Map<String, Concept>> results = query.stream().collect(toList());
-        return renderHALArrayData(query, results, rootConceptId).toString();
+        return renderHALArrayData(query, results, keyspace).toString();
     }
 
     /**

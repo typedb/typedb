@@ -36,4 +36,21 @@ scheduled-task has-resource status,
 # Keep track of all keyspaces in system.
 keyspace isa entity-type;
 keyspace-name isa resource-type, datatype string;
+keyspace has-resource keyspace-name;
 keyspace key keyspace-name;
+
+# Users
+user isa entity-type;
+user-name isa resource-type, datatype string;
+user-password isa resource-type, datatype string;
+user-first-name isa resource-type, datatype string;
+user-last-name isa resource-type, datatype string;
+user-email isa resource-type, datatype string;
+user-is-admin isa resource-type, datatype boolean;
+user key user-name;
+
+user has-resource user-password,
+	 has-resource user-first-name,
+	 has-resource user-last-name,
+	 has-resource user-email,
+	 has-resource user-is-admin;

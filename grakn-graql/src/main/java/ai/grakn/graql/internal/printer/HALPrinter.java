@@ -38,7 +38,8 @@ class HALPrinter implements Printer<Json> {
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
-        String json = HALConceptRepresentationBuilder.renderHALConceptData(concept, 1);
+        //Todo: remove hardcoded keyspace and think about proper solution (maybe expose the getKeyspace on the concept itself)
+        String json = HALConceptRepresentationBuilder.renderHALConceptData(concept, 1,"grakn");
         return Json.read(json);
     }
 
