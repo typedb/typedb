@@ -136,47 +136,6 @@ class ValidateGlobalRules {
     }
 
     /**
-     * Schema validation which makes sure that the roles the entity type plays are correct. They are correct if
-     * For every T1 such that T1 plays-role R1 there must exist some T2, such that T1 sub* T2 and T2 plays-role R2
-     * @param roleType The entity type to validate
-     * @return All the types missing plays role edges
-     */
-    @SuppressWarnings("unchecked")
-    static Collection<Type> validateRolesPlayedSchema(RoleTypeImpl roleType){
-        RoleType superRoleType = roleType.superType();
-        if(superRoleType == null){ //No super role type no validation. I.e R1 sub R2 does not exist
-            return Collections.emptyList();
-        }
-
-        Set<Type> invalidTypes = new HashSet<>();
-        Collection<Type> typesAllowedToPlay = roleType.playedByTypes();
-        for (Type typeAllowedToPlay : typesAllowedToPlay) {
-
-            //Getting T1 sub* T2
-            Set<Type> superTypesAllowedToPlay = ((TypeImpl) typeAllowedToPlay).getSuperSet();
-            boolean superRoleTypeFound = false;
-
-            for (Type superTypeAllowedToPlay : superTypesAllowedToPlay) {
-
-                Set<String> playsRoles = superTypeAllowedToPlay.playsRoles().
-                        stream().map(Type::getName).collect(Collectors.toSet());
-
-                if(playsRoles.contains(superRoleType.getName())){
-                    superRoleTypeFound = true;
-                    break;
-                }
-            }
-
-            if(!superRoleTypeFound){ //We found a type whose parent cannot play R2
-                invalidTypes.add(typeAllowedToPlay);
-            }
-        }
-
-        return invalidTypes;
-    }
-
-
-    /**
      *
      * @param relationType the relation type to be validated
      * @return true if the sub hierarchy of the relation type matches the sub hierarchy of the role type
