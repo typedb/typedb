@@ -68,15 +68,9 @@ rhs
 
 isa inference-rule
 lhs
-{($x) isa marriage; $x has gender "female";}
+{($x, $y) isa marriage; $x has gender "female"; $y has gender "male";}
 rhs
-{(wife: $x) isa marriage;};
-
-isa inference-rule
-lhs
-{($x) isa marriage; $x has gender "male";}
-rhs
-{(husband: $x) isa marriage;};
+{(wife: $x, husband: $y) isa marriage;};
 
 # TODO: Genderize in-laws
 isa inference-rule

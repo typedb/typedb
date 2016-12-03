@@ -42,6 +42,7 @@ public class GenealogyGraph extends TestGraph{
     final static String marriageTemplatePath = filePath + "genealogy/marriage-migrator.gql";
     final static String marriageFilePath = filePath + "genealogy/marriages.csv";
 
+    final static String rules = "genealogy/rules.gql";
     final static String ruleFile = "genealogy/events-to-genealogy-rules.gql";
     final static String ruleFile2 = "genealogy/role-genderization-rules.gql";
     final static String ruleFile3 = "genealogy/inferred-kinships.gql";
