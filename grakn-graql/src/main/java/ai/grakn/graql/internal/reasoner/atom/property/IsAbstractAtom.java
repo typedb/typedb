@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -31,11 +30,11 @@ public class IsAbstractAtom extends AtomBase {
         super(Graql.var(varName).isAbstract().admin(), parent);
     }
 
-    public IsAbstractAtom(IsAbstractAtom a){ super(a);}
+    private IsAbstractAtom(IsAbstractAtom a){ super(a);}
 
     @Override
     public boolean equals(Object obj){
-        return this.isEquivalent(obj);
+        return !(obj == null || this.getClass() != obj.getClass());
     }
 
     @Override

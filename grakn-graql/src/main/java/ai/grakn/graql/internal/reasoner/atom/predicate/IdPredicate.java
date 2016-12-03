@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
@@ -28,8 +27,6 @@ import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class IdPredicate extends Predicate<String>{
-
-    private String typeName = "";
 
     public IdPredicate(VarAdmin pattern) {
         super(pattern);
@@ -43,11 +40,8 @@ public class IdPredicate extends Predicate<String>{
 
     public IdPredicate(String varName, NameProperty prop, Query par){
         this(createIdVar(varName, par.graph().getType(prop.getNameValue()).getId()), par);
-        typeName = prop.getNameValue();
     }
-    public IdPredicate(IdPredicate a) {
-        super(a);
-    }
+    private IdPredicate(IdPredicate a) { super(a);}
 
     public IdPredicate(String varName, Concept con) {
         super(createIdVar(varName, con.getId()));
@@ -56,10 +50,6 @@ public class IdPredicate extends Predicate<String>{
 
     public static VarAdmin createIdVar(String varName, String typeId){
         return Graql.var(varName).id(typeId).admin();
-    }
-
-    public static VarAdmin createIdVarFromTypeName(String varName, String typeName, GraknGraph graph){
-        return Graql.var(varName).id(graph.getType(typeName).getId()).admin();
     }
 
     @Override

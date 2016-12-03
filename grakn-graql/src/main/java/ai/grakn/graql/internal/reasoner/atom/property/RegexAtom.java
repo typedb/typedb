@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -34,14 +33,17 @@ public class RegexAtom extends AtomBase {
         this.regex = prop.getRegex();
     }
 
-    public RegexAtom(RegexAtom a) {
+    private RegexAtom(RegexAtom a) {
         super(a);
         this.regex = a.getRegex();
     }
 
     @Override
     public boolean equals(Object obj){
-        return this.isEquivalent(obj) &&
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        RegexAtom a2 = (RegexAtom) obj;
+        return this.getRegex().equals(a2.getRegex()) &&
                 this.getRegex().equals(((RegexAtom)obj).getRegex());
     }
 

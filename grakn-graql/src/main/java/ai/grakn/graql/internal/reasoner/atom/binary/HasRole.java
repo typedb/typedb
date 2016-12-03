@@ -33,7 +33,7 @@ public class HasRole extends TypeAtom {
         this.relationPredicate = relPredicate;
     }
 
-    public HasRole(HasRole a){
+    private HasRole(HasRole a){
         super(a);
         this.relationPredicate = a.getRelationPredicate() != null ?
                 (Predicate) AtomicFactory.create(a.getRelationPredicate(), getParentQuery()) : null;

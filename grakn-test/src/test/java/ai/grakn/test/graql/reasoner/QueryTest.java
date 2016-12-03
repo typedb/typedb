@@ -52,18 +52,6 @@ public class QueryTest extends AbstractEngineTest {
     }
 
     @Test
-    public void testValuePredicate(){
-        String queryString = "match $x isa person;$x value 'Bob';";
-
-        Query query = new Query(queryString, graph);
-        Atomic vpAtom = AtomicFactory
-                .create(qb.<MatchQuery>parse("match $x value 'Bob';").admin().getPattern().getPatterns().iterator().next());
-        assertTrue(query.containsAtom(vpAtom));
-        assertEquals(query.getValuePredicate("x"), "Bob");
-        assertEquals(query.getIdPredicate("x").getPredicateValue(), graph.getType("person").getId());
-    }
-
-    @Test
     public void testCopyConstructor(){
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
         Query query = new Query(queryString, graph);

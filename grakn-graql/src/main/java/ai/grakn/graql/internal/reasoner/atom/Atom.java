@@ -34,16 +34,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public abstract class Atom extends AtomBase {
 
     protected Type type = null;
     protected String typeId = null;
 
-    public Atom(VarAdmin pattern) { this(pattern, null);}
-    public Atom(VarAdmin pattern, Query par) { super(pattern, par);}
-    public Atom(Atom a) { super(a);}
+    protected Atom(VarAdmin pattern) { this(pattern, null);}
+    protected Atom(VarAdmin pattern, Query par) { super(pattern, par);}
+    protected Atom(Atom a) { super(a);}
 
     @Override
     public boolean isAtom(){ return true;}
@@ -145,4 +144,5 @@ public abstract class Atom extends AtomBase {
     }
 
     public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
+    public void inferTypes(){}
 }

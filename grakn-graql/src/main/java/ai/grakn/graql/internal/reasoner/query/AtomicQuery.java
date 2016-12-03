@@ -130,7 +130,7 @@ public class AtomicQuery extends Query{
         Atom atom = selectAtoms().iterator().next();
         QueryAnswers insertAnswers = new QueryAnswers();
         if (!getMatchQuery().ask().execute()) {
-            InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
+            InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
             Set<Concept> insertedConcepts = insert.stream().collect(Collectors.toSet());
             if (atom.isUserDefinedName()) {
                 insertedConcepts.stream()
@@ -138,7 +138,7 @@ public class AtomicQuery extends Query{
                         .forEach(c -> {
                             Map<String, Concept> answer = new HashMap<>();
                             if (c.isResource()) {
-                                answer.put(atom.getVarName(), graph.getConcept(getIdPredicate(atom.getVarName()).getPredicateValue()));
+                                answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicateValue()));
                                 answer.put(atom.getValueVariable(), c);
                             } else if (c.isRelation()) {
                                 answer.put(atom.getVarName(), c);
