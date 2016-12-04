@@ -116,7 +116,7 @@ public class VisualiserControllerTest extends GraknEngineTestBase {
         assertEquals(message.getString("_type"), "Man");
         assertEquals(message.getString("_id"),entityId);
         assertEquals(message.getString("_baseType"),"entity-type");
-        assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/" + entityId);
+        assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/" + entityId+"?keyspace="+keyspace);
 
         JSONObject embeddedType = message.getJSONObject("_embedded").getJSONArray("isa").getJSONObject(0);
         assertEquals(embeddedType.getString("_baseType"),"type");
