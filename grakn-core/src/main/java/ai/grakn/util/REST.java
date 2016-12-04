@@ -40,6 +40,12 @@ public class REST {
         public static final String ALL_TASKS_URI = "/tasks/all";
         public static final String TASKS_URI = "/tasks";
         public static final String TASKS_SCHEDULE_URI ="/tasks/schedule";
+
+        public static final String NEW_SESSION_URI="/auth/session/";
+        public static final String IS_PASSWORD_PROTECTED_URI="/auth/enabled/";
+
+        public static final String ALL_USERS = "/user/all";
+        public static final String ONE_USER = "/user/one";
     }
 
     public static class Request {
@@ -104,6 +110,8 @@ public class REST {
         public static final String ACTION_TYPES = "types";
         public static final String ACTION_DISPLAY = "display";
 
+        public static final String USERNAME = "username";
+        public static final String PASSWORD = "password";
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
         public static final String IMPLICIT = "implicit";

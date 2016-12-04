@@ -51,6 +51,8 @@ public class ConfigProperties {
 
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
     public static final String POLLING_FREQUENCY_PROPERTY = "loader.polling-frequency";
+    public static final String JWT_SECRET_PROPERTY = "JWT.secret";
+    public static final String PASSWORD_PROTECTED_PROPERTY="password.protected";
 
 
     public static final String SERVER_HOST_NAME = "server.host";
@@ -112,6 +114,10 @@ public class ConfigProperties {
 
     // Setters
 
+
+    public void setConfigProperty(String key, String value){
+        prop.setProperty(key,value);
+    }
 
     /**
      * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
@@ -239,6 +245,11 @@ public class ConfigProperties {
     public long getPropertyAsLong(String property) {
         return Long.parseLong(prop.getProperty(property));
     }
+
+    public boolean getPropertyAsBool(String property) {
+        return Boolean.parseBoolean(prop.getProperty(property));
+    }
+
 
     public static final String GRAKN_ASCII =
                       "     ___  ___  ___  _  __ _  _     ___  ___     \n" +

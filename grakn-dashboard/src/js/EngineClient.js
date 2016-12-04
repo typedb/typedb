@@ -18,6 +18,8 @@
 
 "use strict";
 import * as API from './HAL/APITerms';
+import User from './User.js';
+
 
 /*
  * REST API client for Grakn Engine.
@@ -55,7 +57,8 @@ export default class EngineClient {
                 cache: requestData.cache || this.cache,
                 accepts: requestData.accepts || this.accepts,
                 data: requestData.data,
-                url: requestData.url
+                url: requestData.url,
+                beforeSend: this.setHeaders
             }).done(function(r) {
                 //sometimes we might not have a callback function
                 if (typeof requestData.callback == 'function')
@@ -67,6 +70,31 @@ export default class EngineClient {
             });
     }
 
+    setHeaders(xhr){
+      let token = localStorage.getItem('id_token');
+      if(token!=null)
+        xhr.setRequestHeader("Authorization", "Bearer "+token);
+
+      return true;
+    }
+
+    fetchKeyspaces(fn){
+      this.request({
+          url: "/keyspaces",
+          callback: fn,
+          dataType: "text"
+      });
+    }
+
+    newSession(creds,fn){
+      this.request({
+          url: "/auth/session/",
+          callback: fn,
+          data: JSON.stringify({'username':creds.username,'password':creds.password}),
+          dataType: "text",
+          requestType:'POST'
+      });
+    }
     /**
      * Pre materialise
      */
@@ -84,14 +112,14 @@ export default class EngineClient {
      */
     conceptsByType(type, fn) {
         this.request({
-            url: "/graph/concept/" + type,
+            url: "/graph/concept/" + type+"?keyspace="+User.getCurrentKeySpace(),
             callback: fn
         });
     }
 
     graqlAnalytics(query, fn) {
         this.request({
-            url: "/graph/analytics?query=" + query,
+            url: "/graph/analytics?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
             callback: fn
         });
     }
@@ -101,7 +129,7 @@ export default class EngineClient {
      */
     graqlShell(query, fn) {
         this.request({
-            url: "/graph/match?query=" + query,
+            url: "/graph/match?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
             callback: fn,
             dataType: "text",
             contentType: "application/text",
@@ -126,7 +154,7 @@ export default class EngineClient {
      */
     graqlHAL(query, fn, useReasoner) {
         this.request({
-            url: "/graph/match?query=" + query + "&reasoner=" + useReasoner,
+            url: "/graph/match?keyspace="+User.getCurrentKeySpace()+"&query=" + query + "&reasoner=" + useReasoner,
             callback: fn,
             accepts: { json: "application/hal+json"}
         });
@@ -137,7 +165,7 @@ export default class EngineClient {
      */
     graqlAnalytics(query, fn) {
         this.request({
-            url: "/graph/analytics?query=" + query,
+            url: "/graph/analytics?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
             callback: fn
         });
     }
@@ -157,7 +185,7 @@ export default class EngineClient {
      */
     getMetaTypes(fn) {
         this.request({
-            url: "/graph/ontology",
+            url: "/graph/ontology?keyspace="+User.getCurrentKeySpace(),
             callback: fn
         });
     }

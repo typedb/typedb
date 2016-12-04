@@ -83,9 +83,11 @@ import static ai.grakn.util.REST.RemoteShell.ERROR;
 import static ai.grakn.util.REST.RemoteShell.IMPLICIT;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
+import static ai.grakn.util.REST.RemoteShell.PASSWORD;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
+import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.IMPORT_DATA_URI;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static java.util.stream.Collectors.toSet;
@@ -157,9 +159,11 @@ public class GraqlShell {
         options.addOption("k", "keyspace", true, "keyspace of the graph");
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
-        options.addOption("u", "uri", true, "uri to factory to engine");
+        options.addOption("r", "uri", true, "uri to factory to engine");
         options.addOption("b", "batch", true, "graql file path to batch load");
         options.addOption("o", "output", true, "output format for results");
+        options.addOption("u", "user", true, "username to sign in");
+        options.addOption("p", "pass", true, "password to sign in");
         options.addOption("i", "implicit", false, "show implicit types");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
@@ -195,8 +199,10 @@ public class GraqlShell {
         }
 
         String keyspace = cmd.getOptionValue("k", DEFAULT_KEYSPACE);
-        String uriString = cmd.getOptionValue("u", DEFAULT_URI);
+        String uriString = cmd.getOptionValue("r", DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
+        Optional<String> username = Optional.ofNullable(cmd.getOptionValue("u"));
+        Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
 
         boolean showImplicitTypes = cmd.hasOption("i");
 
@@ -217,7 +223,7 @@ public class GraqlShell {
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(historyFilename, keyspace, client, uri, queries, outputFormat, showImplicitTypes);
+            new GraqlShell(historyFilename, keyspace, username, password, client, uri, queries, outputFormat, showImplicitTypes);
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
@@ -275,8 +281,8 @@ public class GraqlShell {
      * Create a new Graql shell
      */
     GraqlShell(
-            String historyFilename, String keyspace, GraqlClient client, URI uri, Optional<List<String>> queryStrings,
-            String outputFormat, boolean showImplicitTypes
+            String historyFilename, String keyspace, Optional<String> username, Optional<String> password,
+            GraqlClient client, URI uri, Optional<List<String>> queryStrings, String outputFormat, boolean showImplicitTypes
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -296,13 +302,23 @@ public class GraqlShell {
             }
 
             // Send the requested keyspace and output format to the server once connected
-            sendJson(Json.object(
+            Json initJson = Json.object(
                     ACTION, ACTION_INIT,
                     KEYSPACE, keyspace,
                     OUTPUT_FORMAT, outputFormat,
                     IMPLICIT, showImplicitTypes
+            );
+            username.ifPresent(u -> initJson.set(USERNAME, u));
+            password.ifPresent(p -> initJson.set(PASSWORD, p));
+            sendJson(initJson);
 
-            ));
+            // Wait to receive confirmation
+            waitForEnd();
+
+            // If session has closed, then we couldn't authorise
+            if (!session.isOpen()) {
+                return;
+            }
 
             // Start shell
             start(queryStrings);
@@ -444,6 +460,11 @@ public class GraqlShell {
         // 1000 = Normal close, 1001 = Going away
         if (statusCode != 1000 && statusCode != 1001) {
             System.err.println("Websocket closed, code: " + statusCode + ", reason: " + reason);
+        }
+
+        // Alert anyone waiting for a response that the connection has closed
+        synchronized (this) {
+            notifyAll();
         }
     }
 

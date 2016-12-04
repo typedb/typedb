@@ -18,75 +18,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <template>
 <section class="wrapper">
-
-    <!-- Header-->
-    <!--<nav class="navbar navbar-default navbar-fixed-top">-->
-    <!--<div class="container-fluid">-->
-    <!--<div class="navbar-header">-->
-    <!--<div id="mobile-menu">-->
-    <!--<div class="left-nav-toggle">-->
-    <!--<a href="#">-->
-    <!--<i class="stroke-hamburgermenu"></i>-->
-    <!--</a>-->
-    <!--</div>-->
-    <!--</div>-->
-    <!--<a class="navbar-brand" href="/">-->
-    <!--Grakn-->
-    <!--<span>{{version}}</span>-->
-    <!--</a>-->
-    <!--</div>-->
-    <!--<div id="navbar" class="navbar-collapse collapse">-->
-    <!--<div class="left-nav-toggle">-->
-    <!--<a href="">-->
-    <!--<i class="stroke-hamburgermenu"></i>-->
-    <!--</a>-->
-    <!--</div>-->
-    <!--</div>-->
-    <!--</div>-->
-    <!--</nav>-->
-    <!-- End header-->
-
-    <!-- Navigation-->
-    <aside class="navigation">
-        <div class="brand" href="/">
-            GRAKN.AI
-            <span>{{version}}</span>
-        </div>
-        <nav>
-            <ul class="nav luna-nav">
-                <router-link tag="li" to="/graph">
-                    <a>Graph</a>
-                </router-link>
-                <router-link tag="li" to="/console">
-                    <a>Console</a>
-                </router-link>
-                <router-link tag="li" to="/config">
-                    <a>Config</a>
-                </router-link>
-                <li>
-                    <a target="_blank" href="https://grakn.ai/pages/index.html">Documentation</a>
-                </li>
-
-                <li class="nav-info">
-                    <div class="m-t-xs">
-                        <!-- <span class="c-white">Example</span> text. -->
-                        <br/>
-                        <!-- HOW TO REMOVE THIS SECTION -->
-                        <!--<span>
-                            If you don't want to have this section, just remove it from html and in your css replace:
-                            .navigation:before { background-color: #24262d; } with
-                            .navigation:before { background-color: #2a2d35; }
-                            and
-                            .navigation { background-color: #24262d; }</code> with <code>.navigation { background-color: #2a2d35; }
-                        </span>-->
-                    </div>
-                </li>
-            </ul>
-        </nav>
-    </aside>
-    <!-- End navigation-->
-
-
     <!-- Main content-->
     <section class="content">
         <router-view></router-view>
@@ -112,7 +43,7 @@ export default {
     },
     created: function() {
         this.engineClient = new EngineClient();
-        window.useReasoner=false;
+        window.useReasoner = false;
     },
     mounted: function() {
         this.$nextTick(function() {

@@ -40,7 +40,11 @@ h4 {
 }
 
 .li-active {
-    background-color: #337ab7;
+    background-color: #3d404c;
+}
+
+.li-active .dd-handle {
+    color: white;
 }
 
 
@@ -48,11 +52,12 @@ h4 {
 
 body {
     -moz-user-select: none;
-    -ms-overflow-style: none;  // IE 10+
-    overflow: -moz-scrollbars-none;  // Firefox
+    -ms-overflow-style: none; // IE 10+
+    overflow: -moz-scrollbars-none; // Firefox
 }
+
 body::-webkit-scrollbar {
-   display: none;  // Safari and Chrome
+    display: none; // Safari and Chrome
 }
 
 div {
@@ -82,7 +87,7 @@ div {
 }
 
 .properties-tab .panel-body::-webkit-scrollbar {
-   display: none;
+    display: none;
 }
 
 .graph-div {
@@ -99,17 +104,17 @@ div {
     margin-right: 10px;
 }
 
-.grakn-icon{
-  margin-left:10px;
-  font-size:150%;
-  margin-top:15px;
-  color:#949ba2;
+.grakn-icon {
+    margin-left: 10px;
+    font-size: 150%;
+    margin-top: 15px;
+    color: #949ba2;
 }
 
-#ontology-button{
-  margin-top:2.5px;
-  margin-right:10px;
-  color:white;
+#ontology-button {
+    margin-top: 2.5px;
+    margin-right: 10px;
+    color: white;
 }
 
 #panel-console-container {
@@ -1386,6 +1391,7 @@ sup {
     padding: 5px 15px 15px 15px;
 }
 
+
 /*.panel.panel-filled .panel-body {
     padding-top: 10px;
 }*/
@@ -1874,7 +1880,7 @@ h1 small, h2 small, h3 small, h4 small, h5 small, h6 small, .h1 small, .h2 small
     line-height: 20px;
 }
 
-.dd-handle, .node-properties{
+.dd-handle, .node-properties {
     display: block;
     margin: 5px 0;
     padding: 10px 10px;

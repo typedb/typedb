@@ -19,6 +19,8 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.util.REST;
 import mjson.Json;
@@ -33,6 +35,11 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
+import static ai.grakn.util.REST.RemoteShell.PASSWORD;
+import static ai.grakn.util.REST.RemoteShell.USERNAME;
 
 /**
  * Web socket for running a Graql shell
@@ -74,28 +81,10 @@ public class RemoteSession {
         try {
             Json json = Json.read(message);
 
-            switch (json.at(REST.RemoteShell.ACTION).asString()) {
-                case REST.RemoteShell.ACTION_INIT:
-                    startSession(session, json);
-                    break;
-                case REST.RemoteShell.ACTION_QUERY:
-                    sessions.get(session).receiveQuery(json);
-                    break;
-                case REST.RemoteShell.ACTION_END:
-                    sessions.get(session).executeQuery();
-                    break;
-                case REST.RemoteShell.ACTION_QUERY_ABORT:
-                    sessions.get(session).abortQuery();
-                    break;
-                case REST.RemoteShell.ACTION_COMMIT:
-                    sessions.get(session).commit();
-                    break;
-                case REST.RemoteShell.ACTION_ROLLBACK:
-                    sessions.get(session).rollback();
-                    break;
-                case REST.RemoteShell.ACTION_DISPLAY:
-                    sessions.get(session).setDisplayOptions(json);
-                    break;
+            if (json.is(ACTION, ACTION_INIT)) {
+                startSession(session, json);
+            } else {
+                sessions.get(session).handleMessage(json);
             }
         } catch (Throwable e) {
             LOG.error("Exception",e);
@@ -107,13 +96,27 @@ public class RemoteSession {
      * Start a new Graql shell session
      */
     private void startSession(Session session, Json json) {
-        String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
-        String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
-        boolean showImplicitTypes = json.at(REST.RemoteShell.IMPLICIT).asBoolean();
-        GraqlSession graqlSession = new GraqlSession(
-                session, () -> getGraph.apply(keyspace), outputFormat, showImplicitTypes
-        );
-        sessions.put(session, graqlSession);
+        if (sessionAuthorised(json)) {
+            String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
+            String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
+            boolean showImplicitTypes = json.at(REST.RemoteShell.IMPLICIT).asBoolean();
+            GraqlSession graqlSession = new GraqlSession(session, () -> getGraph.apply(keyspace), outputFormat, showImplicitTypes);
+            sessions.put(session, graqlSession);
+        } else {
+            session.close(1008, "Unauthorised: incorrect username or password");
+        }
+    }
+
+    private boolean sessionAuthorised(Json json) {
+        if (!GraknEngineServer.isPasswordProtected) return true;
+
+        Json username = json.at(USERNAME);
+        Json password = json.at(PASSWORD);
+
+        boolean credentialsProvided = username != null && password != null;
+
+        return credentialsProvided && UsersHandler.getInstance().validateUser(username.asString(), password.asString());
+
     }
 }
 
