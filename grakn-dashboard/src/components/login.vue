@@ -58,7 +58,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
             <div class="panel panel-filled">
                 <div class="panel-body">
-                    <form id="loginForm">
                         <div class="form-group">
                             <label class="control-label" for="username">Username</label>
                             <input type="text" v-model="credentials.username" title="Please enter you username" required value="" class="form-control">
@@ -70,7 +69,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <div>
                             <button class="btn btn-accent" @click="submit()">Log In</button>
                         </div>
-                    </form>
                 </div>
             </div>
 
@@ -122,6 +120,7 @@ export default {
                 // window.location.href = "/l";
 
             } else {
+
                 //implement promise so that we can send back the failure to the login.vue controller?
             }
         },
