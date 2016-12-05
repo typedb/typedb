@@ -66,6 +66,11 @@ public class InMemoryTaskManager implements TaskManager {
         return instance;
     }
 
+    public void shutdown(){
+        executorService.shutdown();
+        schedulingService.shutdown();
+    }
+
     public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
         Boolean recurring = (period != 0);
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
