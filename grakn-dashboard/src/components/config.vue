@@ -138,6 +138,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </div>
                 </div>
             </div>
+            <keyspaces-modal></keyspaces-modal>
         </div>
     </section>
 </section>
@@ -164,17 +165,15 @@ export default {
         return {
             response: undefined,
             errorMessage: undefined,
-            useReasoner: window.useReasoner,
-            engineClient: {}
+            useReasoner: window.useReasoner
         };
     },
 
     created() {
-        this.engineClient = new EngineClient();
     },
     mounted() {
         this.$nextTick(function() {
-            this.engineClient.getConfig(this.engineStatus);
+            EngineClient.getConfig(this.engineStatus);
         });
     },
 
@@ -196,11 +195,11 @@ export default {
         },
 
         materialiseAll() {
-            this.engineClient.preMaterialiseAll();
+            EngineClient.preMaterialiseAll();
         },
 
         retry() {
-            this.engineClient.getConfig(this.engineStatus);
+            EngineClient.getConfig(this.engineStatus);
         }
     }
 

@@ -37,17 +37,15 @@ import EngineClient from '../js/EngineClient.js';
 export default {
     data: function() {
         return {
-            version: undefined,
-            engineClient: {}
+            version: undefined
         }
     },
     created: function() {
-        this.engineClient = new EngineClient();
         window.useReasoner = false;
     },
     mounted: function() {
         this.$nextTick(function() {
-            this.engineClient.getConfig((r, e) => {
+            EngineClient.getConfig((r, e) => {
                 this.version = (r == null ? 'error' : r['project.version'])
             });
         })

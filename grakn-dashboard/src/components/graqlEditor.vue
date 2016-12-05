@@ -109,7 +109,6 @@ export default {
         }
     },
     created: function() {
-        this.engineClient = new EngineClient();
     },
     mounted: function() {
         this.$nextTick(function() {
@@ -152,7 +151,7 @@ export default {
             if (this.typeInstances)
                 this.typeInstances = false;
             else
-                this.engineClient.getMetaTypes(x => {
+                EngineClient.getMetaTypes(x => {
                     if (x != null) {
                         this.typeInstances = x;
                         this.typeKeys = _.keys(x)

@@ -26,6 +26,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.util.REST;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
