@@ -29,6 +29,4 @@ public interface AskQueryAdmin extends AskQuery {
      * @return the match query used to create this ask query
      */
     MatchQuery getMatchQuery();
-
-    AskQuery infer();
 }

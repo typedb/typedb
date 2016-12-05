@@ -19,15 +19,17 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.Queries;
+import ai.grakn.graql.internal.template.TemplateParser;
+import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import ai.grakn.graql.internal.parser.QueryParser;
-import ai.grakn.graql.internal.template.TemplateParser;
-import ai.grakn.graql.macro.Macro;
-import ai.grakn.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -52,17 +54,26 @@ public class QueryBuilderImpl implements QueryBuilder {
     private final Optional<GraknGraph> graph;
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
+    private boolean infer;
 
     QueryBuilderImpl() {
+        infer = true;
         this.graph = Optional.empty();
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
     }
 
     public QueryBuilderImpl(GraknGraph graph) {
+        infer = true;
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
+    }
+
+    @Override
+    public QueryBuilder setInference(boolean infer) {
+        this.infer = infer;
+        return this;
     }
 
     /**
@@ -80,7 +91,8 @@ public class QueryBuilderImpl implements QueryBuilder {
      */
     @Override
     public MatchQuery match(Collection<? extends Pattern> patterns) {
-        MatchQuery query = Queries.match(Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns))));
+        Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
+        MatchQuery query = infer ? Queries.match(conjunction) : Queries.matchNoInfer(conjunction);
         return graph.map(query::withGraph).orElse(query);
     }
 

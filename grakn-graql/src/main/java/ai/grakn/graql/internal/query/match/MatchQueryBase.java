@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -126,6 +127,10 @@ public class MatchQueryBase implements MatchQueryInternal {
     @Override
     public String toString() {
         return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
+    }
+
+    public final MatchQuery infer() {
+        return new MatchQueryInfer(this);
     }
 
     /**

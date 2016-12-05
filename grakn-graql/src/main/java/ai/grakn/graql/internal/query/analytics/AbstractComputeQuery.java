@@ -71,11 +71,6 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     @Override
-    public ComputeQuery<T> infer() {
-        return this;
-    }
-
-    @Override
     public ComputeQuery<T> in(String... subTypeNames) {
         this.subTypeNames = Sets.newHashSet(subTypeNames);
         return this;

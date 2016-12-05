@@ -61,11 +61,6 @@ class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public AskQuery infer() {
-        return new AskQueryImpl(matchQuery.infer());
-    }
-
-    @Override
     public AskQueryAdmin admin() {
         return this;
     }

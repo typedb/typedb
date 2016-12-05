@@ -25,6 +25,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.ANSI;
+import ai.grakn.graql.internal.util.CommonUtil;
 
 import java.util.Collection;
 import java.util.Map;
@@ -69,8 +70,14 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 String relationString = concept.asRelation().rolePlayers().entrySet().stream().map(entry -> {
                     RoleType roleType = entry.getKey();
                     Instance rolePlayer = entry.getValue();
-                    return colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId());
-                }).collect(Collectors.joining(", "));
+
+                    if (rolePlayer != null) {
+                        String s = colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId());
+                        return Optional.of(s);
+                    } else {
+                        return Optional.<String>empty();
+                    }
+                }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));
 
                 sb.append(" (").append(relationString).append(")");
             }

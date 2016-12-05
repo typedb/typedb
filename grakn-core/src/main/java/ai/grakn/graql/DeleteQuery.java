@@ -39,8 +39,6 @@ public interface DeleteQuery extends Query<Void> {
      */
     DeleteQuery withGraph(GraknGraph graph);
 
-    DeleteQuery infer();
-
     /**
      * @return admin instance for inspecting and manipulating this query
      */
