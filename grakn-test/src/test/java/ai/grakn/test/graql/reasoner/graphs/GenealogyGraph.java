@@ -66,7 +66,6 @@ public class GenealogyGraph extends TestGraph{
 
             Migrator marriageMigrator = new CSVMigrator(marriageTemplate, marriageFile);
             MigrationLoader.load(graph(), marriageMigrator);
-            commit();
         } catch (IOException e){
             throw new RuntimeException(e);
         }
