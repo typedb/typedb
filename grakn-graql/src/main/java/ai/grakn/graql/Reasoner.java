@@ -52,7 +52,7 @@ public class Reasoner {
         try {
             graph.commit();
         } catch (GraknValidationException e) {
-            LOG.debug(e.getMessage());
+            LOG.error(e.getMessage());
         }
     }
 
