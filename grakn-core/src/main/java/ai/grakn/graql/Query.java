@@ -30,11 +30,6 @@ public interface Query<T> {
      */
     Query<T> withGraph(GraknGraph graph);
 
-    /**
-     * Use rules in the graph in order to infer additional results
-     */
-    Query<T> infer();
-
     T execute();
 
     /**

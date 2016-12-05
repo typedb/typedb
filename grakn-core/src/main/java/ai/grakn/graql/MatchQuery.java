@@ -144,11 +144,6 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
     MatchQuery distinct();
 
     /**
-     * Use rules in the graph in order to infer additional results
-     */
-    MatchQuery infer();
-
-    /**
      * Aggregate results of a query.
      * @param aggregate the aggregate operation to apply
      * @param <S> the type of the aggregate result

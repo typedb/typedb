@@ -84,11 +84,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public InsertQuery infer() {
-        return matchQuery.map(m -> m.infer().insert(vars)).orElse(this);
-    }
-
-    @Override
     public Void execute() {
         // Do nothing, just execute whole stream
         stream().forEach(c -> {});

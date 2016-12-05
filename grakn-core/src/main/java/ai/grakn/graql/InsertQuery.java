@@ -40,8 +40,6 @@ public interface InsertQuery extends Query<Void>, Streamable<Concept> {
      */
     InsertQuery withGraph(GraknGraph graph);
 
-    InsertQuery infer();
-
     /**
      * @return admin instance for inspecting and manipulating this query
      */
