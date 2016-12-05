@@ -100,6 +100,8 @@ public class LoaderTask implements BackgroundTask {
     private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<InsertQuery> inserts) {
 
         try {
+            graph.showImplicitConcepts(true);
+
             // execute each of the insert queries
             inserts.forEach(q -> q.withGraph(graph).execute());
 

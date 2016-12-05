@@ -162,6 +162,7 @@ public class LoaderImpl implements Loader {
             printLoaderState();
 
             if(currentTasks.stream().allMatch(this::isCompleted)){
+                printLoaderState();
                 return;
             }
 
