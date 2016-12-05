@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Optional;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -550,15 +551,8 @@ public class Relation extends TypeAtom {
         return roleVarTypeMap;
     }
 
-    @Override
-    public Map<String, String> getUnifiers(Atomic pat) {
-        if (pat.getClass() != this.getClass()) {
-            System.out.println("this: " + this.toString());
-            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        }
-
-        Map<String, String> unifiers = super.getUnifiers(pat);
-        Relation parentAtom = (Relation) pat;
+    public Map<String, String> getRelationUnifiers(Relation parentAtom){
+        Map<String, String> unifiers = new HashMap<>();
         Set<String> varsToAllocate = parentAtom.getRolePlayers();
         Set<String> childBVs = getRolePlayers();
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
@@ -576,6 +570,16 @@ public class Relation extends TypeAtom {
                 varsToAllocate.remove(pVar);
             }
         });
+        return unifiers;
+    }
+
+    @Override
+    public Map<String, String> getUnifiers(Atomic pAtom) {
+        if (!(pAtom instanceof TypeAtom))
+            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+
+        Map<String, String> unifiers = super.getUnifiers(pAtom);
+        if (((Atom) pAtom).isRelation()) unifiers.putAll(getRelationUnifiers((Relation) pAtom));
 
         return unifiers;
     }
@@ -601,5 +605,26 @@ public class Relation extends TypeAtom {
             roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
         });
         return roleConceptMap;
+    }
+
+    public Atom rewrite(Atom parentAtom, Query parent){
+        if(parentAtom.isUserDefinedName()){
+            VarAdmin var = getPattern().asVar();
+            Var relVar = Graql.var(parentAtom.getVarName());
+            var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+            // This is guaranteed to be a relation
+            //noinspection OptionalGetWithoutIsPresent
+            var.getProperty(RelationProperty.class).get().getRelationPlayers()
+                    .forEach(c -> {
+                        VarAdmin rolePlayer = c.getRolePlayer();
+                        Optional<VarAdmin> roleType = c.getRoleType();
+                        if (roleType.isPresent())
+                            relVar.rel(roleType.get(), rolePlayer);
+                        else
+                            relVar.rel(rolePlayer);
+                    });
+            return new Relation(relVar.admin(), getPredicate(), parent);
+        }
+        else return this;
     }
 }

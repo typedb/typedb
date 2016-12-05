@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
@@ -311,7 +312,8 @@ public class ReasonerTest extends AbstractEngineTest{
         MatchQuery query2 = lgraph.graql().parse(queryString2);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(query2));
+        QueryAnswers answers = reasoner.resolve(query);
+        assertEquals(answers, Sets.newHashSet(query2));
     }
 
     @Test
@@ -587,8 +589,6 @@ public class ReasonerTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(lgraph);
         QueryAnswers answers = reasoner.resolve(query);
         QueryAnswers answers2 = reasoner.resolve(query2);
-        printAnswers(answers);
-        printAnswers(answers2);
         assertEquals(answers, answers2);
     }
 
@@ -602,8 +602,6 @@ public class ReasonerTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(lgraph);
         QueryAnswers answers = reasoner.resolve(query);
         QueryAnswers answers2 = reasoner.resolve(query2);
-        printAnswers(answers);
-        printAnswers(answers2);
         assertEquals(answers.filterVars(Sets.newHashSet("x")), answers2);
     }
 
@@ -628,7 +626,6 @@ public class ReasonerTest extends AbstractEngineTest{
         MatchQuery query = lgraph.graql().parse(queryString);
 
         List<Map<String, Concept>> answers = query.execute();
-        printAnswers(Sets.newLinkedHashSet(answers));
         assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("19"));
     }
 
@@ -639,7 +636,6 @@ public class ReasonerTest extends AbstractEngineTest{
         MatchQuery query = lgraph.graql().parse(queryString);
 
         List<Map<String, Concept>> answers = query.execute();
-        printAnswers(Sets.newLinkedHashSet(answers));
         assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("23"));
     }
 
@@ -726,6 +722,62 @@ public class ReasonerTest extends AbstractEngineTest{
         QueryAnswers answers = reasoner.resolve(query);
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(explicitQuery)));
         assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTypeRelationUnification(){
+        GraknGraph graph = GeoGraph.getGraph();
+        String queryString = "match $r isa is-located-in;";
+        String queryString2 = "match $r(geo-entity: $x, entity-location: $y) isa is-located-in; select $r;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        Reasoner reasoner = new Reasoner(graph);
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers2 = reasoner.resolve(query2);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTypeRelationUnification2(){
+        GraknGraph graph = GeoGraph.getGraph();
+        GraknGraph graph2 = GeoGraph.getGraph();
+        String queryString = "match $r isa is-located-in;";
+        String queryString2 = "match $r($x, $y) isa is-located-in; select $r;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph2);
+        Reasoner reasoner = new Reasoner(graph);
+        Reasoner reasoner2 = new Reasoner(graph2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner2.resolveToQuery(query2)));
+        assertTrue(answers.size() == answers2.size());
+    }
+
+    @Test
+    public void testTypeRelationUnification3(){
+        GraknGraph graph = SNBGraph.getGraph();
+        String queryString = "match $r isa recommendation;";
+        String queryString2 = "match $r($x, $y) isa recommendation;select $r;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        Reasoner reasoner = new Reasoner(graph);
+        QueryAnswers answers = reasoner.resolve(query);
+        QueryAnswers answers2 = reasoner.resolve(query2);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTypeRelationUnification4(){
+        GraknGraph graph = SNBGraph.getGraph();
+        GraknGraph graph2 = SNBGraph.getGraph();
+        String queryString = "match $r isa recommendation;";
+        String queryString2 = "match $r($x, $y) isa recommendation;select $r;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph2);
+        Reasoner reasoner = new Reasoner(graph);
+        Reasoner reasoner2 = new Reasoner(graph2);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner2.resolveToQuery(query2)));
+        assertTrue(answers.size() == answers2.size());
     }
 }
 
