@@ -67,6 +67,7 @@ export default class HALParser {
      */
     parseResponse(data) {
         if (Array.isArray(data)) {
+            console.log("DEBUG:::: RESPONSE SIZE "+data.length);
             _.map(data, x => {
                 this.parseHalObject(x)
             });

@@ -3,8 +3,7 @@ import EngineClient from '../js/EngineClient.js';
 export default {
 
     newSession(creds,fn) {
-        let engineClient = new EngineClient();
-        engineClient.newSession(creds, fn);
+        EngineClient.newSession(creds, fn);
     },
 
     setAuthToken(token){
