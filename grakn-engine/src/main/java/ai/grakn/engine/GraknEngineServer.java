@@ -91,6 +91,7 @@ public class GraknEngineServer {
         //Register filter to check authentication token in each request
         before(GraknEngineServer::checkAuthorization);
 
+
         //Register Exception Handler
         exception(GraknEngineServerException.class, (e, request, response) -> {
             response.status(((GraknEngineServerException) e).getStatus());

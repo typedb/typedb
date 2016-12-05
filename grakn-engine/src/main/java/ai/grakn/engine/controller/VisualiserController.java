@@ -30,6 +30,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import spark.Request;
@@ -230,7 +231,8 @@ public class VisualiserController {
      */
     private String formatAsHAL(MatchQuery query, String keyspace) {
         Collection<Map<String, Concept>> results = query.stream().collect(toList());
-        return renderHALArrayData(query, results, keyspace).toString();
+        Json resultobj = renderHALArrayData(query, results, keyspace);
+        return resultobj.toString();
     }
 
     /**
