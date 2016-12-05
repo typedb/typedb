@@ -177,11 +177,6 @@ class ComputeQueryImpl implements ComputeQuery {
     }
 
     @Override
-    public ComputeQuery infer() {
-        return this;
-    }
-
-    @Override
     public ComputeQuery in(String... subTypeNames) {
         return this;
     }

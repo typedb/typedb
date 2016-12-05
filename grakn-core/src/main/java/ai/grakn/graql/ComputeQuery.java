@@ -30,9 +30,6 @@ public interface ComputeQuery<T> extends Query<T> {
     @Override
     ComputeQuery<T> withGraph(GraknGraph graph);
 
-    @Override
-    ComputeQuery<T> infer();
-
     ComputeQuery<T> in(String... subTypeNames);
 
     ComputeQuery<T> in(Collection<String> subTypeNames);
