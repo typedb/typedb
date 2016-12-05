@@ -65,8 +65,7 @@ var authNeeded = undefined;
 
 router.beforeEach((to, from, next) => {
     if (authNeeded === undefined && !User.isAuthenticated()) {
-        let engineClient = new EngineClient();
-        engineClient.request({
+        EngineClient.request({
             url: "/auth/enabled/",
             callback: (resp, error) => {
                 authNeeded =resp;

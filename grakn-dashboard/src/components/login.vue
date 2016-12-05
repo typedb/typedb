@@ -58,6 +58,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
             <div class="panel panel-filled">
                 <div class="panel-body">
+                    <form id="loginForm">
                         <div class="form-group">
                             <label class="control-label" for="username">Username</label>
                             <input type="text" v-model="credentials.username" title="Please enter you username" required value="" class="form-control">
@@ -69,6 +70,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <div>
                             <button class="btn btn-accent" @click="submit()">Log In</button>
                         </div>
+                    </form>
                 </div>
             </div>
 
@@ -80,7 +82,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </template>
 
 <style>
-.content.login{margin-left: 0px;}
+.content.login {
+    margin-left: 0px;
+}
 </style>
 
 <script>
@@ -90,10 +94,10 @@ export default {
     name: "LoginView",
     data() {
         return {
-          credentials: {
-            username:undefined,
-            password:undefined
-          }
+            credentials: {
+                username: undefined,
+                password: undefined
+            }
         }
     },
 
@@ -110,17 +114,13 @@ export default {
          * Listener methods on emit from GraqlEditor
          */
         submit() {
-          User.newSession(this.credentials, this.onLoginResponse);
+            User.newSession(this.credentials, this.onLoginResponse);
         },
         onLoginResponse(res, err) {
             if (res != null) {
                 User.setAuthToken(res);
-                // this following line does not change to.path parameter, so after login the to.path is still equal to "/login"-> investigate
-                 this.$router.push("/");
-                // window.location.href = "/l";
-
+                this.$router.push("/");
             } else {
-
                 //implement promise so that we can send back the failure to the login.vue controller?
             }
         },
