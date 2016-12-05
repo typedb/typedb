@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javafx.util.Pair;
 
 public class InferenceRule {
 
@@ -89,11 +90,19 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Atom newAtom = childAtom.rewrite(parentAtom, head);
+        Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, head);
+        Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
             head.removeAtom(childAtom);
             head.addAtom(newAtom);
+            unify(rewrite.getValue());
         }
+    }
+
+    private void unify(Map<String, String> unifiers){
+        //do alpha-conversion
+        head.unify(unifiers);
+        body.unify(unifiers);
     }
 
     /**
@@ -101,30 +110,9 @@ public class InferenceRule {
      * @param parentAtom   parent atom (atom) being resolved (subgoal)
      */
     private void unifyViaAtom(Atom parentAtom) {
-        rewriteHead(parentAtom);
-        
         Atomic childAtom = getRuleConclusionAtom();
-        Query parent = parentAtom.getParentQuery();
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
-
-        //do alpha-conversion
-        head.unify(unifiers);
-        body.unify(unifiers);
-
-        //check free variables for possible captures
-        Set<String> childFVs = body.getVarSet();
-        Set<String> parentBVs = parentAtom.getVarNames();
-        Set<String> parentVars = parent.getVarSet();
-        parentBVs.forEach(childFVs::remove);
-
-        childFVs.forEach(chVar -> {
-            // if (x e P) v (x e G)
-            // x -> fresh
-            if (parentVars.contains(chVar)) {
-                String freshVar = Utility.createFreshVariable(body.getVarSet(), chVar);
-                body.unify(chVar, freshVar);
-            }
-        });
+        unify(unifiers);
     }
 
     /**
@@ -132,6 +120,7 @@ public class InferenceRule {
      * @param parentAtom   parent atom (atom) being resolved (subgoal)
      */
    public void unify(Atom parentAtom) {
+        rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
         propagateConstraints(parentAtom);
     }

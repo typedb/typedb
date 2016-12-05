@@ -145,5 +145,5 @@ public abstract class Atom extends AtomBase {
 
     public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
     public void inferTypes(){}
-    public Atom rewrite(Atom parent, Query q){ return this;}
+    public Pair<Atom, Map<String, String>> rewrite(Atom parent, Query q){ return new Pair<>(this, new HashMap<>());}
 }

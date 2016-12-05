@@ -20,6 +20,7 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
@@ -207,13 +208,16 @@ public class GenealogyTest extends AbstractEngineTest{
         assertTrue(answers.size() == 4);
     }
 
-    @Ignore
     @Test
     public void testMarriageType() {
         String queryString = "match $x isa marriage;";
+        String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
         MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         assertTrue(!answers.isEmpty());
+        assertEquals(answers, answers2);
     }
 
     //TODO need to do all combinations for roles missing

@@ -727,8 +727,8 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testTypeRelationUnification(){
         GraknGraph graph = GeoGraph.getGraph();
-        String queryString = "match $r isa is-located-in;";
-        String queryString2 = "match $r(geo-entity: $x, entity-location: $y) isa is-located-in; select $r;";
+        String queryString = "match $x isa is-located-in;";
+        String queryString2 = "match $x(geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);
         Reasoner reasoner = new Reasoner(graph);
@@ -741,8 +741,8 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testTypeRelationUnification2(){
         GraknGraph graph = GeoGraph.getGraph();
         GraknGraph graph2 = GeoGraph.getGraph();
-        String queryString = "match $r isa is-located-in;";
-        String queryString2 = "match $r($x, $y) isa is-located-in; select $r;";
+        String queryString = "match $x isa is-located-in;";
+        String queryString2 = "match $x($x1, $x2) isa is-located-in; select $x;";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph2);
         Reasoner reasoner = new Reasoner(graph);
@@ -755,8 +755,8 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testTypeRelationUnification3(){
         GraknGraph graph = SNBGraph.getGraph();
-        String queryString = "match $r isa recommendation;";
-        String queryString2 = "match $r($x, $y) isa recommendation;select $r;";
+        String queryString = "match $x isa recommendation;";
+        String queryString2 = "match $x($x1, $x2) isa recommendation;select $x;";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);
         Reasoner reasoner = new Reasoner(graph);
@@ -769,8 +769,8 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testTypeRelationUnification4(){
         GraknGraph graph = SNBGraph.getGraph();
         GraknGraph graph2 = SNBGraph.getGraph();
-        String queryString = "match $r isa recommendation;";
-        String queryString2 = "match $r($x, $y) isa recommendation;select $r;";
+        String queryString = "match $x isa recommendation;";
+        String queryString2 = "match $x($x1, $x2) isa recommendation;select $x;";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph2);
         Reasoner reasoner = new Reasoner(graph);

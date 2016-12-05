@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.Utility.createFreshVariable;
 
 public class Relation extends TypeAtom {
 
@@ -607,24 +608,29 @@ public class Relation extends TypeAtom {
         return roleConceptMap;
     }
 
-    public Atom rewrite(Atom parentAtom, Query parent){
+    public Pair<Atom, Map<String, String>> rewrite(Atom parentAtom, Query parent){
         if(parentAtom.isUserDefinedName()){
+            Map<String, String> unifiers = new HashMap<>();
             VarAdmin var = getPattern().asVar();
-            Var relVar = Graql.var(parentAtom.getVarName());
+            String varName = UUID.randomUUID().toString();
+            Var relVar = Graql.var(varName);
             var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+
             // This is guaranteed to be a relation
             //noinspection OptionalGetWithoutIsPresent
             var.getProperty(RelationProperty.class).get().getRelationPlayers()
                     .forEach(c -> {
                         VarAdmin rolePlayer = c.getRolePlayer();
+                        String rolePlayerVarName = UUID.randomUUID().toString();
+                        unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
                         Optional<VarAdmin> roleType = c.getRoleType();
                         if (roleType.isPresent())
-                            relVar.rel(roleType.get(), rolePlayer);
+                            relVar.rel(roleType.get(), rolePlayerVarName);
                         else
-                            relVar.rel(rolePlayer);
+                            relVar.rel(rolePlayerVarName);
                     });
-            return new Relation(relVar.admin(), getPredicate(), parent);
+            return new Pair<>(new Relation(relVar.admin(), getPredicate(), parent), unifiers);
         }
-        else return this;
+        else return new Pair<>(this, new HashMap<>());
     }
 }
