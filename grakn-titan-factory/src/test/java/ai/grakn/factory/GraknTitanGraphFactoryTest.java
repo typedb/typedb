@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -195,7 +194,6 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     }
 
-    @Ignore //TODO: Race condition
     @Test
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
