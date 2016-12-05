@@ -48,23 +48,21 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
-import static java.util.stream.Collectors.toList;
-import static spark.Spark.get;
-import static java.lang.Boolean.parseBoolean;
+import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
 import static ai.grakn.factory.GraphFactory.getInstance;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
-
+import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.QUERY_FIELD;
-import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
-import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
 import static ai.grakn.util.REST.Response.ENTITIES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.RELATIONS_JSON_FIELD;
 import static ai.grakn.util.REST.Response.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.ROLES_JSON_FIELD;
-import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
+import static java.util.stream.Collectors.toList;
+import static spark.Spark.get;
 
 @Path("/graph")
 @Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
@@ -163,11 +161,11 @@ public class VisualiserController {
 })
     private String match(Request req, Response res) {
         String keyspace = getKeyspace(req);
-        boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
+
+        // TODO: Remove "reasoner" parameter properly
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             MatchQuery matchQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
-            matchQuery = useReasoner ? new Reasoner(graph).resolveToQuery(matchQuery, true) : matchQuery;
 
             switch (getAcceptType(req)){
                 case HAL_CONTENTTYPE:
