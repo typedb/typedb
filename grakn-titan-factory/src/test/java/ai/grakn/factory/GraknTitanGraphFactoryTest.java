@@ -206,7 +206,7 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
     @Test
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = ConcurrentHashMap.newKeySet();
-        ExecutorService pool = Executors.newFixedThreadPool(10);
+        ExecutorService pool = Executors.newCachedThreadPool();
         TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", TEST_URI, TEST_CONFIG);
 
         for(int j = 0; j < 300; j ++) {
