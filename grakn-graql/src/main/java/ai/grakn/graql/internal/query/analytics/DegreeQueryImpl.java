@@ -74,7 +74,7 @@ public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements Degre
 
     @Override
     public boolean isReadOnly() {
-        return false;
+        return !persist;
     }
 
     @Override

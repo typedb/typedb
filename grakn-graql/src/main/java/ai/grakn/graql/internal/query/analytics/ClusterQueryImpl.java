@@ -91,7 +91,7 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
 
     @Override
     public boolean isReadOnly() {
-        return false;
+        return persist;
     }
 
     @Override
