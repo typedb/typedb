@@ -165,6 +165,7 @@ public class MigrationCLI {
 
     public void initiateShutdown(){
         System.out.println("Initiating shutdown...");
+        GraknEngineServer.stop();
     }
 
     public String getEngineURI(){

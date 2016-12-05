@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.loader;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.postprocessing.Cache;
@@ -45,6 +46,7 @@ import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
+import static ai.grakn.util.REST.Request.URI_PARAM;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -53,13 +55,12 @@ import static java.util.stream.Collectors.toList;
 public class LoaderTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
-    private static final Cache cache = Cache.getInstance();
-
     private static int repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
 
     @Override
     public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
         attemptInsertions(
+                getURI(configuration),
                 getKeyspace(configuration),
                 getInserts(configuration));
     }
@@ -79,8 +80,8 @@ public class LoaderTask implements BackgroundTask {
         throw new UnsupportedOperationException("Loader task cannot be resumed");
     }
 
-    private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts) {
-        try(GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(keyspace)) {
+    private void attemptInsertions(String uri, String keyspace, Collection<InsertQuery> inserts) {
+        try(GraknGraph graph = Grakn.factory(uri, keyspace).getGraphBatchLoading()) {
             for (int i = 0; i < repeatCommits; i++) {
                 if(insertQueriesInOneTransaction(graph, inserts)){
                     return;
@@ -107,9 +108,6 @@ public class LoaderTask implements BackgroundTask {
 
             // commit the transaction
             graph.commit();
-
-            cache.addJobCasting(graph.getKeyspace(), ((AbstractGraknGraph) graph).getConceptLog().getModifiedCastingIds());
-            cache.addJobResource(graph.getKeyspace(), ((AbstractGraknGraph) graph).getConceptLog().getModifiedCastingIds());
         } catch (GraknValidationException e) {
             //If it's a validation exception there is no point in re-trying
             throwException(FAILED_VALIDATION.getMessage(e.getMessage()), inserts);
@@ -185,5 +183,18 @@ public class LoaderTask implements BackgroundTask {
 
         //TODO default graph name
         throw new IllegalArgumentException(ILLEGAL_ARGUMENT_EXCEPTION.getMessage("No keyspace", configuration));
+    }
+
+    /**
+     * Extract the URI from a configuration object
+     * @param configuration JSONObject containing configuration
+     * @return uri from the configuration or default
+     */
+    private String getURI(JSONObject configuration){
+        if(configuration.has(URI_PARAM)){
+            return configuration.getString(URI_PARAM);
+        }
+
+        return Grakn.DEFAULT_URI;
     }
 }
