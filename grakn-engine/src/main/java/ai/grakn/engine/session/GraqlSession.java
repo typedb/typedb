@@ -21,12 +21,14 @@ package ai.grakn.engine.session;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.base.Splitter;
 import mjson.Json;
@@ -180,7 +182,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                query = graph.graql().parse(queryString).infer();
+                query = graph.graql().parse(queryString);
 
                 // Return results unless query is cancelled
                 query.resultsString(printer).forEach(result -> {
@@ -340,7 +342,7 @@ class GraqlSession {
      * @return all type IDs in the ontology
      */
     private static Stream<String> getTypes(GraknGraph graph) {
-        Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
+        Stream<String> types = graph.getMetaType().instances().stream().map(Concept::asType).map(Type::getName);
 
         Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getName);
 

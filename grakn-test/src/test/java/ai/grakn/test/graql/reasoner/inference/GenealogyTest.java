@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
@@ -38,7 +37,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -162,7 +160,7 @@ public class GenealogyTest extends AbstractEngineTest{
         QueryAnswers answers2 = new QueryAnswers(query2.execute());
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
-        assertTrue(answers.size() == 66);
+        assertTrue(answers.size() == 76);
         assertEquals(answers, answers2);
     }
 
@@ -187,6 +185,25 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(answers.isEmpty());
+    }
+
+    @Test
+    public void testComplexQuery(){
+        String queryString = "match $a has firstname 'Ann' has surname 'Niesz';" +
+                    "(wife: $a, husband: $w); (husband: $w, wife: $b) isa marriage;$a != $b;";
+        MatchQuery query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(!hasDuplicates(answers));
+        assertTrue(answers.size() == 1);
+    }
+
+    @Test
+    public void testMarriageNotEquals(){
+        String queryString = "match ($x, $y) isa marriage; ($y, $z) isa marriage;$x != $z;";
+        MatchQuery query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        assertTrue(!hasDuplicates(answers));
+        assertTrue(answers.size() == 4);
     }
 
     @Ignore

@@ -92,6 +92,8 @@ export default class HALParser {
                     this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key)
                 });
             }
+        }else{
+          console.log("NULL OBJECT IN RESPONSE!");
         }
     }
 

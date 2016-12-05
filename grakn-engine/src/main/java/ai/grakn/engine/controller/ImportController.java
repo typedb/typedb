@@ -156,6 +156,7 @@ public class ImportController {
                 while (var.equals(MATCH_KEYWORD)) {
                     var = consumeInsertRelation(batchIterator, loaderParam);
                 }
+                loaderParam.waitToFinish();
             }
 
             PostProcessing.getInstance().run();

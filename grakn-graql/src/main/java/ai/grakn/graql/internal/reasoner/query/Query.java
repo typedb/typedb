@@ -32,10 +32,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
-import ai.grakn.graql.internal.reasoner.atom.binary.HasRole;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
@@ -55,7 +52,7 @@ import java.util.stream.Stream;
 
 public class Query implements MatchQueryInternal {
 
-    protected final GraknGraph graph;
+    private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
     private final Set<String> selectVars;
 
@@ -111,33 +108,9 @@ public class Query implements MatchQueryInternal {
     public String toString() { return getMatchQuery().toString();}
 
     private void inferTypes(){
-        //TODO NB: only relations at the moment
         getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(Atom::isRelation).map(at -> (Relation) at)
-                .filter(at -> at.getPredicate() == null)
-                .forEach( relation -> {
-                    String valueVariable = relation.getValueVariable();
-                    HasRole hrAtom = getAtoms().stream()
-                            .filter(at -> at.getVarName().equals(valueVariable))
-                            .filter(at -> at instanceof HasRole).map(at -> (HasRole) at)
-                            .findFirst().orElse(null);
-                    if (hrAtom != null) {
-                        AtomicQuery hrQuery = new AtomicMatchQuery(hrAtom, Sets.newHashSet(hrAtom.getVarName()));
-                        hrQuery.DBlookup();
-                        if (hrQuery.getAnswers().size() != 1)
-                            throw new IllegalStateException("ambigious answer to has-role query");
-                        IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
-                                hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), this);
-
-                        Relation newRelation = new Relation(relation.getPattern().asVar(), newPredicate, this);
-                        removeAtom(hrAtom.getPredicate());
-                        removeAtom(hrAtom);
-                        removeAtom(relation);
-                        addAtom(newRelation);
-                        addAtom(newPredicate);
-                    }
-                });
+                .forEach(Atom::inferTypes);
     }
 
     @Override
@@ -373,14 +346,6 @@ public class Query implements MatchQueryInternal {
                 .filter(type -> type.getVarName().equals(var))
                 .forEach(type -> type.getPredicates().stream().findFirst().ifPresent(relevantSubs::add));
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
-    }
-
-    //TODO should return predicate
-    public String getValuePredicate(String var){
-        Set<Predicate> relevantVPs = getValuePredicates().stream()
-                .filter(vp -> vp.getVarName().equals(var))
-                .collect(Collectors.toSet());
-        return relevantVPs.isEmpty()? "" : relevantVPs.iterator().next().getPredicateValue();
     }
 
     public boolean addAtom(Atomic atom) {

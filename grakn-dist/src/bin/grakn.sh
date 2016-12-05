@@ -81,6 +81,7 @@ clean_db() {
 
     if cd "`dirname $path`/../db"; then
         rm -rf cassandra es
+        mkdir -p cassandra/data cassandra/commitlog cassandra/saved_caches es
         echo "Deleted data in `pwd`" >&2
         cd - >/dev/null
     else

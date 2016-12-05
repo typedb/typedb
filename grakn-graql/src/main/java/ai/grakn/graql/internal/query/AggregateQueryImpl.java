@@ -48,11 +48,6 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public AggregateQuery<T> infer() {
-        return new AggregateQueryImpl<T>(matchQuery.infer().admin(), aggregate);
-    }
-
-    @Override
     public T execute() {
         return aggregate.apply(matchQuery.stream());
     }
