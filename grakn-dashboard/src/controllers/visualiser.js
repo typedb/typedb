@@ -8,6 +8,8 @@ import * as API from '../js/HAL/APITerms';
 // External objects
 import EngineClient from '../js/EngineClient.js';
 import Visualiser from '../js/visualiser/Visualiser.js';
+import User from '../js/User.js'
+
 
 // Components
 var GraqlEditor = require('./graqlEditor.vue')
@@ -28,6 +30,7 @@ export default {
             typeInstances: false,
             typeKeys: [],
             doubleClickTime: 0,
+            useReasoner: User.getReasonerStatus(),
 
             // resources keys used to change label of a node type
             allNodeProps: [],
@@ -95,8 +98,8 @@ export default {
         onLoadOntology() {
             let query_isa = "match $x isa " + API.TYPE_TYPE + ";";
             let query_sub = "match $x sub " + API.TYPE_TYPE + ";";
-            EngineClient.graqlHAL(query_sub, this.onGraphResponse, window.useReasoner);
-            EngineClient.graqlHAL(query_isa, this.onGraphResponse, window.useReasoner);
+            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner);
+            EngineClient.graqlHAL(query_isa, this.onGraphResponse, this.useReasoner);
         },
 
         singleClick(param) {
@@ -117,7 +120,7 @@ export default {
             if (query.trim().startsWith("compute"))
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             else
-                EngineClient.graqlHAL(query, this.onGraphResponse, window.useReasoner);
+                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner);
         },
         /*
          * User interaction: visualiser

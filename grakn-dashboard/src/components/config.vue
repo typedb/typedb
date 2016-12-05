@@ -36,7 +36,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                     <tbody>
                                         <tr>
                                             <td>Activate Inference</td>
-                                            <td><input type="checkbox" value="" @click="checkedReasoner(useReasoner)" v-model="useReasoner"></td>
+                                            <td><input type="checkbox" v-model="useReasoner" @click="checkedReasoner()"></td>
                                         </tr>
                                         <tr>
                                             <td>Materialisation</td>
@@ -158,6 +158,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <script>
 import EngineClient from '../js/EngineClient.js';
+import User from '../js/User.js'
+
 
 export default {
     name: "ConfigurationView",
@@ -165,12 +167,11 @@ export default {
         return {
             response: undefined,
             errorMessage: undefined,
-            useReasoner: window.useReasoner
+            useReasoner: (User.getReasonerStatus()==='true')
         };
     },
 
-    created() {
-    },
+    created() {},
     mounted() {
         this.$nextTick(function() {
             EngineClient.getConfig(this.engineStatus);
@@ -183,8 +184,8 @@ export default {
             this.errorMessage = msg;
         },
 
-        checkedReasoner(status) {
-            window.useReasoner = !status;
+        checkedReasoner() {
+            User.setReasonerStatus(!this.useReasoner);
         },
 
         engineStatus(resp, err) {
