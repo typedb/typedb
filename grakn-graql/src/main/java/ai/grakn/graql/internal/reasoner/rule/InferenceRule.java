@@ -84,27 +84,13 @@ public class InferenceRule {
             head.addAtomConstraints(types);
             body.addAtomConstraints(types);
         }
+        head.selectAppend(parentAtom.getParentQuery().getSelectedNames());
     }
 
     private void rewriteHead(Atom parentAtom){
-        if(parentAtom.isUserDefinedName() && parentAtom.isRelation() ){
-            Relation childAtom = (Relation) head.getAtom();
-            VarAdmin var = childAtom.getPattern().asVar();
-            Var relVar = Graql.var(parentAtom.getVarName());
-            var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
-            // This is guaranteed to be a relation
-            //noinspection OptionalGetWithoutIsPresent
-            var.getProperty(RelationProperty.class).get().getRelationPlayers()
-                    .forEach(c -> {
-                VarAdmin rolePlayer = c.getRolePlayer();
-                Optional<VarAdmin> roleType = c.getRoleType();
-                if (roleType.isPresent())
-                    relVar.rel(roleType.get(), rolePlayer);
-                else
-                    relVar.rel(rolePlayer);
-            });
-
-            Relation newAtom = new Relation(relVar.admin(), childAtom.getPredicate(), head);
+        Atom childAtom = head.getAtom();
+        Atom newAtom = childAtom.rewrite(parentAtom, head);
+        if (newAtom != childAtom){
             head.removeAtom(childAtom);
             head.addAtom(newAtom);
         }

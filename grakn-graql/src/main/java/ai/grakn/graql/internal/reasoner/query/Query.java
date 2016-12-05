@@ -123,7 +123,16 @@ public class Query implements MatchQueryInternal {
     public Set<String> getSelectedNames() { return Sets.newHashSet(selectVars);}
 
     @Override
-    public MatchQuery select(Set<String> vars){ return this;}
+    public MatchQuery select(Set<String> vars){
+        selectVars.clear();
+        selectVars.addAll(vars);
+        return this;
+    }
+
+    public MatchQuery selectAppend(Set<String> vars){
+        selectVars.addAll(vars);
+        return this;
+    }
 
     @Override
     public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
