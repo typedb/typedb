@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class InMemoryTaskManager implements TaskManager {
     private static String RUN_ONCE_NAME = "One off task scheduler.";
@@ -86,6 +87,7 @@ public class InMemoryTaskManager implements TaskManager {
 
         }
         catch (Throwable t) {
+            LOG.error(getFullStackTrace(t));
             stateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
             instantiatedTasks.remove(id);
 
@@ -109,6 +111,7 @@ public class InMemoryTaskManager implements TaskManager {
                 }
             });
         } catch (Throwable t){
+            LOG.error(getFullStackTrace(t));
             throw new RuntimeException(t);
         }
     }
@@ -163,6 +166,7 @@ public class InMemoryTaskManager implements TaskManager {
                 stateUpdateLock.unlock();
             }
             catch (Throwable t) {
+                LOG.error(getFullStackTrace(t));
                 stateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null, null);
             }
         };
