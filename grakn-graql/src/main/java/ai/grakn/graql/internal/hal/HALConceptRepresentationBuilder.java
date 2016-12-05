@@ -70,8 +70,7 @@ public class HALConceptRepresentationBuilder {
 
     private static Json buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery, String relationType, Map<String, String> roleTypes, String keyspace) {
         final Json lines = Json.array();
-        graqlResultsList.parallelStream()
-                .forEach(resultLine -> resultLine.entrySet().forEach(current -> {
+        graqlResultsList.forEach(resultLine -> resultLine.entrySet().forEach(current -> {
 
                     if (current.getValue().isType() && current.getValue().asType().isImplicit()) return;
 
