@@ -10,6 +10,15 @@ export default {
       localStorage.setItem('id_token', token);
     },
 
+    setReasonerStatus(status){
+      localStorage.setItem('use_reasoner', status);
+
+    },
+
+    getReasonerStatus(){
+      return localStorage.getItem('use_reasoner');
+    },
+
     signup(context, creds, redirect) {
         context.$http.post(SIGNUP_URL, creds, (data) => {
             localStorage.setItem('id_token', data.id_token)
