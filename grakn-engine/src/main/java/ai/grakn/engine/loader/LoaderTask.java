@@ -80,7 +80,7 @@ public class LoaderTask implements BackgroundTask {
     }
 
     private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts) {
-        try(GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(keyspace)) {
             for (int i = 0; i < repeatCommits; i++) {
                 if(insertQueriesInOneTransaction(graph, inserts)){
                     return;
