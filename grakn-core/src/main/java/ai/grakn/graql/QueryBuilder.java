@@ -100,4 +100,9 @@ public interface QueryBuilder {
     void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod);
 
     void registerMacro(Macro macro);
+
+    /**
+     * Enable or disable inference
+     */
+    QueryBuilder setInference(boolean infer);
 }
