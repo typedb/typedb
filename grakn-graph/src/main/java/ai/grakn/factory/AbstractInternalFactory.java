@@ -66,10 +66,12 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, batchLoading);
             lastGraphBuiltBatchLoading = true;
+            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + batchLoadingGraknGraph.getTinkerPopGraph().hashCode() +"]");
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, batchLoading);
             lastGraphBuiltBatchLoading = false;
+            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] walking away with graph [" + graknGraph.getTinkerPopGraph().hashCode() +"]");
             return graknGraph;
         }
     }
@@ -99,19 +101,24 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace))
             	systemSpace().keyspaceOpened(this.keyspace);
         } else {
-            if(graknGraph.isClosed()){
-                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-            } else {
-                //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
-                G innerGraph = graknGraph.getTinkerPopGraph();
-                synchronized (innerGraph){
-                    if(isClosed(innerGraph)){
-                        graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-                    } else {
-                        getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
+            //synchronized (graknGraph) {
+                if (graknGraph.isClosed()) {
+                    System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] building new graph");
+                    graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                } else {
+                    //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
+                    G innerGraph = graknGraph.getTinkerPopGraph();
+                    synchronized (innerGraph) {
+                        if (isClosed(innerGraph)) {
+                            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] refreshing new graph on open grakn graph");
+                            graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                        } else {
+                            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] refreshing fully open graph");
+                            getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
+                        }
                     }
                 }
-            }
+            //}
         }
 
         return graknGraph;
@@ -134,8 +141,10 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
         synchronized (graph){ //Block here because list of open transactions is not thread safe
             if(isClosed(graph)){
+                System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] getting new graph because [" + graph.hashCode() + "] is closed");
                 return getGraphWithNewTransaction(buildTinkerPopGraph());
             } else {
+                System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] refreshing on existing graph [" + graph.hashCode() + "]");
                 return getGraphWithNewTransaction(graph);
             }
         }

@@ -26,9 +26,11 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
@@ -57,11 +59,22 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     }
 
     @Override
-    public TitanGraph getGraphWithNewTransaction(TitanGraph graph){
-        if(!graph.tx().isOpen()){
-            graph.tx().open();
+    public synchronized TitanGraph getGraphWithNewTransaction(TitanGraph graph){
+        synchronized (graph) {
+            String thing = "Open transactions: [";
+            for (TitanTransaction titanTransaction : ((StandardTitanGraph) graph).getOpenTransactions()) {
+                thing += titanTransaction.hashCode() + ", ";
+            }
+            thing += "]";
+
+            if (!graph.tx().isOpen()) {
+                graph.tx().open();
+                thing += " new transaction created [" + graph.tx() + "]";
+                System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
+                        "transaction on graph [" + graph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) graph).getOpenTransactions().size() + "] " + thing);
+            }
+            return graph;
         }
-        return graph;
     }
 
     @Override
@@ -78,6 +91,20 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         TitanGraph titanGraph = configureGraph(name, address, pathToConfig);
         buildTitanIndexes(titanGraph);
         titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+
+        String thing = "Open transactions: [";
+        for (TitanTransaction titanTransaction : ((StandardTitanGraph) titanGraph).getOpenTransactions()) {
+            thing += titanTransaction.hashCode() + ", ";
+        }
+        thing += "]";
+
+        if (!titanGraph.tx().isOpen()) {
+            titanGraph.tx().open();
+            thing += " new transaction created [" + titanGraph.tx() + "]";
+            System.out.println("[" + System.currentTimeMillis() + "] HERE---------> Thread [" + Thread.currentThread().getId() + "] is refreshing " +
+                    "transaction on NEW graph [" + titanGraph.hashCode() + "] open transactions: [" + ((StandardTitanGraph) titanGraph).getOpenTransactions().size() + "] " + thing);
+        }
+
         return titanGraph;
     }
 
