@@ -50,8 +50,8 @@ import static spark.Spark.*;
 
 public class GraknEngineServer {
 
-    private static InMemoryTaskManager manager = InMemoryTaskManager.getInstance();
     private static ConfigProperties prop = ConfigProperties.getInstance();
+    private static InMemoryTaskManager manager = InMemoryTaskManager.getInstance();
     private static Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
