@@ -84,9 +84,8 @@ public class TestGraph {
         System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
-        GraknGraph graph = graph();
-        QueryBuilder qb = graph.graql();
-        try {
+        try (GraknGraph graph = graph()) {
+            QueryBuilder qb = graph.graql();
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
             qb.parse(query).execute();
