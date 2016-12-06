@@ -109,7 +109,7 @@ public class BulkResourceMutate<T> {
                 LOGGER.info("Number of failures: " + numberOfFailures);
                 LOGGER.info("Backing Off");
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
