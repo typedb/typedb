@@ -1,14 +1,20 @@
 package ai.grakn.test.graph;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 public class GraphTest extends AbstractRollbackGraphTest {
@@ -62,5 +68,33 @@ public class GraphTest extends AbstractRollbackGraphTest {
 
         graph = factory.getGraph();
         assertNull(graph.getConcept(r1));
+    }
+
+    @Test
+    public void isClosedTest() throws Exception {
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, "isitclosed").getGraph();
+        graph.putEntityType("thing");
+        graph.commit();
+
+        assertFalse(graph.isClosed());
+
+        HashSet<Future> futures = new HashSet<>();
+        futures.add(Executors.newCachedThreadPool().submit(this::addThingToBatch));
+
+        for (Future future : futures) {
+            future.get();
+        }
+
+        assertFalse(graph.isClosed());
+        assertFalse(graph.getEntityType("thing").instances().isEmpty());
+    }
+
+    private void addThingToBatch(){
+        try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, "isitclosed").getGraph()) {
+            graphBatchLoading.getEntityType("thing").addEntity();
+            graphBatchLoading.commit();
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 }
