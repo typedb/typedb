@@ -148,13 +148,13 @@ class HALConceptData {
     }
 
     private void generateOwnerInstances(Representation halResource, Resource conceptResource, int separationDegree) {
-        final RoleType roleType = conceptResource.type().playsRoles().iterator().next();
+        final String roleType = conceptResource.type().getName();
         conceptResource.ownerInstances().forEach(object -> {
             Instance currentInstance = (Instance) object;
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + currentInstance.getId()+this.keyspace)
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(instanceResource, currentInstance, separationDegree - 1);
-            halResource.withRepresentation(roleType.getName(), instanceResource);
+            halResource.withRepresentation(roleType, instanceResource);
         });
     }
 

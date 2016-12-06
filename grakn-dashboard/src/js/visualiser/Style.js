@@ -38,7 +38,8 @@ export default class Style {
                     border: "#bfc681"
                 }
             },
-            shape: "box"
+            shape: "box",
+            shadow:true
         };
 
         this.edge = {
@@ -48,7 +49,7 @@ export default class Style {
             },
             font: {
                 color: "#ffad33",
-                background: "none",
+                background: "#3b3d44",
                 strokeWidth: 0
             }
         };
