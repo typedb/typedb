@@ -45,11 +45,6 @@
             <artifactId>grakn-graph</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>ai.grakn</groupId>-->
-            <!--<artifactId>grakn-titan-factory</artifactId>-->
-            <!--<version>${project.version}</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
