@@ -73,7 +73,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </div>
                 </div>
             </div>
-            <keyspaces-modal></keyspaces-modal>
+
         </div>
     </section>
 </section>
@@ -108,6 +108,7 @@ export default {
             errorMessage: undefined,
             errorPanelClass: undefined,
             graqlResponse: undefined,
+            engineClient: {},
             halParser: {},
 
             typeInstances: false,
@@ -118,6 +119,7 @@ export default {
     },
 
     created() {
+        this.engineClient = new EngineClient();
     },
 
     mounted: function() {
@@ -132,7 +134,7 @@ export default {
          */
         onClickSubmit(query) {
             this.errorMessage = undefined;
-            EngineClient.graqlShell(query, this.shellResponse);
+            this.engineClient.graqlShell(query, this.shellResponse);
         },
         onClear() {
             this.graqlResponse = undefined;

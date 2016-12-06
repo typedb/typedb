@@ -21,11 +21,15 @@
             <li>
                 <a target="_blank" href="https://grakn.ai/pages/index.html">Documentation</a>
             </li>
-            <li class="nav-category">
-               Actions
+            <li>
+                <a href="#uielements" data-toggle="collapse" aria-expanded="false" class="collapsed nav-category">
+                                          Actions<span class="sub-nav-icon"> <i class="stroke-arrow"></i> </span>
+                                      </a>
+                <ul id="uielements" class="nav nav-second collapse" aria-expanded="false" style="height: 0px;">
+                    <li><a href="#" @click="openKeySpaces()">Keyspaces</a></li>
+                    <li v-show="isUserAuth" @click="logout()"><a href="#">Log Out</a></li>
+                </ul>
             </li>
-            <li><a @click="openKeySpaces()">Keyspaces</a></li>
-            <li v-show="isUserAuth" @click="logout()"><a href="#">Log Out</a></li>
             <li class="nav-info">
                 <div class="m-t-xs">
                     <!-- <span class="c-white">Example</span> text. -->
@@ -60,15 +64,17 @@ export default {
     data: function() {
         return {
             version: undefined,
+            engineClient: {},
             isUserAuth: User.isAuthenticated()
         }
     },
     created: function() {
+        this.engineClient = new EngineClient();
         window.useReasoner = false;
     },
     mounted: function() {
         this.$nextTick(function() {
-            EngineClient.getConfig((r, e) => {
+            this.engineClient.getConfig((r, e) => {
                 this.version = (r == null ? 'error' : r['project.version'])
             });
 

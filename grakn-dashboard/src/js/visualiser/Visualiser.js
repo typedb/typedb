@@ -55,8 +55,7 @@ export default class Visualiser {
                 font: {
                     size: 15,
                     face: 'DIN'
-                },
-                shadow: true
+                }
             },
             edges: {
                 arrows: {
@@ -66,14 +65,14 @@ export default class Visualiser {
                     forceDirection: 'none'
                 }
             },
-          //   physics: {
-          //      "repulsion": {
-          //          "centralGravity": 0.01,
-          //          "damping": 0.5
-          //      },
-          //      "minVelocity": 0.8,
-          //      "solver": "repulsion"
-          //  },
+            physics: {
+                "repulsion": {
+                    "centralGravity": 0.01,
+                    "damping": 0.5
+                },
+                "minVelocity": 0.8,
+                "solver": "repulsion"
+            },
             interaction: {
                 hover: true,
                 multiselect: false

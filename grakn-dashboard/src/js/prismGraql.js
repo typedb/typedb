@@ -29,7 +29,7 @@ export const graql = {
         alias: 'string'
     },
     keyword: {
-        pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(match|ask|insert|delete|select|isa|sub|plays-role|has-role|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|aggregate)(?![-a-zA-Z_0-9])/,
+        pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(match|ask|insert|delete|select|isa|sub|plays-role|has-role|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute)(?![-a-zA-Z_0-9])/,
         alias: 'keyword',
         lookbehind: true
     },
