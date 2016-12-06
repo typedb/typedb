@@ -69,6 +69,9 @@ import static spark.Spark.get;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
+import static java.lang.Boolean.parseBoolean;
+import static java.util.stream.Collectors.toList;
+import static spark.Spark.get;
 
 @Path("/graph")
 @Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
@@ -172,7 +175,8 @@ public class VisualiserController {
         // TODO: Remove "reasoner" parameter properly
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-            Query parsedQuery = graph.graql().setInference(useReasoner).parse(req.queryParams(QUERY_FIELD));
+            QueryBuilder qb = graph.graql().setInference(useReasoner);
+            Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery) {
                 switch (getAcceptType(req)) {
                     case HAL_CONTENTTYPE:
@@ -182,7 +186,7 @@ public class VisualiserController {
                     default:
                         return formatAsHAL((MatchQuery)parsedQuery, keyspace);
                 }
-            }else{
+            } else {
                 throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
             }
         } catch (Exception e) {

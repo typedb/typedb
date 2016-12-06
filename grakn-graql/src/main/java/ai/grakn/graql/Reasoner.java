@@ -18,25 +18,32 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import static ai.grakn.graql.Graql.var;
 
 public class Reasoner {
 
@@ -73,6 +80,11 @@ public class Reasoner {
 
     public static Set<Rule> getRules(GraknGraph graph) {
         return new HashSet<>(graph.getMetaRuleInference().instances());
+    }
+
+    public static boolean hasRules(GraknGraph graph) {
+        String inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
+        return graph.graql().setInference(false).match(var("x").isa(inferenceRule)).ask().execute();
     }
 
     /**
@@ -337,7 +349,7 @@ public class Reasoner {
      * @return MatchQuery with answers
      */
     public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
-        if (Reasoner.getRules(graph).isEmpty())
+        if (!Reasoner.hasRules(graph))
             return inputQuery;
         else {
             MatchQuery outputQuery = new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
