@@ -18,14 +18,15 @@
 package ai.grakn.engine;
 
 
+import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.controller.*;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.session.RemoteSession;
-import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
-import mjson.Json;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -37,6 +38,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -49,6 +51,7 @@ import static spark.Spark.*;
 public class GraknEngineServer {
 
     private static ConfigProperties prop = ConfigProperties.getInstance();
+    private static InMemoryTaskManager manager = InMemoryTaskManager.getInstance();
     private static Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -101,10 +104,14 @@ public class GraknEngineServer {
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
+        // Submit a recurring post processing task
+        manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), 60000, new JSONObject());
+
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
     public static void stop() {
+        manager.shutdown();
         Spark.stop();
     }
 
