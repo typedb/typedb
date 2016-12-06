@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.graql.*;
+import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
@@ -64,11 +64,6 @@ import static ai.grakn.util.REST.Response.ENTITIES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.RELATIONS_JSON_FIELD;
 import static ai.grakn.util.REST.Response.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.ROLES_JSON_FIELD;
-import static java.util.stream.Collectors.toList;
-import static spark.Spark.get;
-import static java.lang.Boolean.parseBoolean;
-import static java.util.stream.Collectors.toList;
-import static spark.Spark.get;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
@@ -171,8 +166,6 @@ public class VisualiserController {
     private String match(Request req, Response res) {
         String keyspace = getKeyspace(req);
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
-
-        // TODO: Remove "reasoner" parameter properly
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             QueryBuilder qb = graph.graql().setInference(useReasoner);
