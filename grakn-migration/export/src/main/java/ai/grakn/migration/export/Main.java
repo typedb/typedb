@@ -53,7 +53,7 @@ public class Main {
         }
 
         if(cli.hasOption("data")){
-            cli.writeToSout(graphWriter.dumpOntology());
+            cli.writeToSout(graphWriter.dumpData());
         }
 
         cli.initiateShutdown();

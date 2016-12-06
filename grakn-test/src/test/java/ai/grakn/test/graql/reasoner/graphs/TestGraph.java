@@ -65,7 +65,6 @@ public class TestGraph {
 
     public void loadFiles(String... files){
         for( String graqlFile : files) loadGraqlFile(graqlFile);
-        commit();
     }
 
     public GraknGraph graph(){
@@ -85,13 +84,15 @@ public class TestGraph {
         System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
-        QueryBuilder qb = graknGraph.graql();
+        GraknGraph graph = graph();
+        QueryBuilder qb = graph.graql();
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
             qb.parse(query).execute();
+            graph.commit();
         }
-        catch (IOException e){
+        catch (IOException|GraknValidationException e){
             e.printStackTrace();
         }
     }
