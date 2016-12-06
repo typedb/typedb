@@ -18,13 +18,11 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.factory.GraphFactory;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -50,7 +48,7 @@ public class PostProcessing {
     private Cache cache;
 
     private PostProcessing() {
-        postpool = Executors.newFixedThreadPool(1);
+        postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getAvailableThreads());
         statDump = Executors.newSingleThreadExecutor();
         cache = Cache.getInstance();
         futures = ConcurrentHashMap.newKeySet();
@@ -110,12 +108,9 @@ public class PostProcessing {
     private void performCastingFix() {
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                Set<String> castingIds = new HashSet<>();
-                castingIds.addAll(cache.getCastingJobs(keyspace));
-
-                for (String castingId : castingIds) {
+                for (String castingId : cache.getCastingJobs(keyspace)) {
                     futures.add(postpool.submit(() ->
-                            ConceptFixer.checkCasting(cache, GraphFactory.getInstance().getGraphBatchLoading(keyspace), castingId)));
+                            ConceptFixer.checkCasting(cache, keyspace, castingId)));
                 }
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
@@ -129,7 +124,7 @@ public class PostProcessing {
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
                 futures.add(postpool.submit(() ->
-                        ConceptFixer.checkResources(cache, GraphFactory.getInstance().getGraphBatchLoading(keyspace), cache.getResourceJobs(keyspace))));
+                        ConceptFixer.checkResources(cache, keyspace, cache.getResourceJobs(keyspace))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
