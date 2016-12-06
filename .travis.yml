@@ -5,8 +5,9 @@ jdk:
   - oraclejdk8
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
+install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -Dmaven.wagon.http.ssl.allowall=true
 script:
-    - mvn test jacoco:report coveralls:report
+    - mvn test jacoco:report coveralls:report -Dmaven.wagon.http.ssl.allowall=true
 before_install:
   - sudo apt-get -y install npm
   - npm install -g npm
