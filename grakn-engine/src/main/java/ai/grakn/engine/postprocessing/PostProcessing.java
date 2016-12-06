@@ -50,7 +50,7 @@ public class PostProcessing {
     private Cache cache;
 
     private PostProcessing() {
-        postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getAvailableThreads());
+        postpool = Executors.newFixedThreadPool(1);
         statDump = Executors.newSingleThreadExecutor();
         cache = Cache.getInstance();
         futures = ConcurrentHashMap.newKeySet();
@@ -125,6 +125,7 @@ public class PostProcessing {
     }
 
     private void performResourceFix(){
+        LOG.error(cache.getKeyspaces().toString());
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
                 futures.add(postpool.submit(() ->
