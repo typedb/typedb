@@ -120,7 +120,6 @@ public class PostProcessing {
     }
 
     private void performResourceFix(){
-        LOG.error(cache.getKeyspaces().toString());
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
                 futures.add(postpool.submit(() ->
