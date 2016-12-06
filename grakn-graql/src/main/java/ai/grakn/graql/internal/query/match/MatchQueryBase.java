@@ -130,6 +130,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     public final MatchQuery infer() {
+        System.out.println("WOAH INFERENCE IS GOING ON");
         return new MatchQueryInfer(this);
     }
 

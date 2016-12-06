@@ -64,7 +64,7 @@ public class Query implements MatchQueryInternal {
     }
 
     public Query(String query, GraknGraph graph) {
-        this(graph.graql().<MatchQuery>parse(query), graph);
+        this(graph.graql().setInference(false).<MatchQuery>parse(query), graph);
     }
 
     public Query(Query q) {

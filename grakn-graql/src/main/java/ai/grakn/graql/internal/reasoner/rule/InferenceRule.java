@@ -20,27 +20,19 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import javafx.util.Pair;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 public class InferenceRule {
 
@@ -49,8 +41,8 @@ public class InferenceRule {
 
     public InferenceRule(Rule rule, GraknGraph graph){
         QueryBuilder qb = graph.graql();
-        body = new Query(qb.match(rule.getLHS()), graph);
-        head = new AtomicQuery(qb.match(rule.getRHS()), graph);
+        body = new Query(qb.setInference(false).match(rule.getLHS()), graph);
+        head = new AtomicQuery(qb.setInference(false).match(rule.getRHS()), graph);
     }
 
     public Query getBody(){return body;}
