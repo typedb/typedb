@@ -67,14 +67,13 @@ export default class HALParser {
      */
     parseResponse(data) {
         if (Array.isArray(data)) {
-            console.log("DEBUG:::: RESPONSE SIZE "+data.length);
-            var hashSet={};
-            var objLength=data.length;
-            for(let i=0; i<objLength;i++){
-              hashSet[data[i]["_id"]]=true;
+            var hashSet = {};
+            var objLength = data.length;
+            for (let i = 0; i < objLength; i++) {
+                hashSet[data[i]["_id"]] = true;
             }
             _.map(data, x => {
-                this.parseHalObject(x,hashSet)
+                this.parseHalObject(x, hashSet)
             });
             return data.length;
         } else {
@@ -83,7 +82,8 @@ export default class HALParser {
         }
     }
 
-    parseHalObject(obj,hashSet) {
+
+    parseHalObject(obj, hashSet) {
         if (obj !== null) {
             let objResponse;
             //The response from Analytics will be a string instead of object. That's why we need this check.
@@ -95,11 +95,9 @@ export default class HALParser {
             // Add assertions from _embedded
             if (API.KEY_EMBEDDED in objResponse) {
                 _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), key => {
-                    this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key,hashSet)
+                    this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet)
                 });
             }
-        }else{
-          console.log("NULL OBJECT IN RESPONSE!");
         }
     }
 
@@ -109,9 +107,9 @@ export default class HALParser {
     /**
      * Parse resources from _embedded field of parent
      */
-    parseEmbedded(objs, parent, roleName,hashSet) {
+    parseEmbedded(objs, parent, roleName, hashSet) {
         _.map(objs, child => {
-            if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE) || this.nodeAlreadyInGraph(this.getHref(child)) || (hashSet!=undefined&&hashSet[child["_id"]])) {
+            if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE) || (hashSet != undefined && hashSet[child["_id"]]) || this.nodeAlreadyInGraph(this.getHref(child))) {
                 var links = Utils.nodeLinks(child);
                 // Add resource and iterate its _embedded field
                 var hrefP = this.getHref(child);
