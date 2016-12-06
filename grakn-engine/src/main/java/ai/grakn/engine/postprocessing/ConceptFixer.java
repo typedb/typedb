@@ -19,6 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.factory.GraphFactory;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
@@ -30,20 +31,19 @@ class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
     private static final int MAX_RETRY = 10;
 
-    public static void checkCasting(Cache cache, GraknGraph graph, String castingId){
+    public static void checkCasting(Cache cache, String keyspace, String castingId){
         boolean notDone = true;
         int retry = 0;
-
-        while(notDone) {
-            try {
-                if (((AbstractGraknGraph)graph).fixDuplicateCasting(castingId)) {
+        while (notDone) {
+            try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
+                if (((AbstractGraknGraph) graph).fixDuplicateCasting(castingId)) {
                     graph.commit();
                 }
                 cache.deleteJobCasting(graph.getKeyspace(), castingId);
                 notDone = false;
             } catch (Exception e) {
-                LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage("casting", e.getMessage()), e);
-                if(retry ++ > MAX_RETRY){
+                LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage("casting", e.getMessage()), e);
+                if (retry++ > MAX_RETRY) {
                     LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(castingId, e.getMessage()), e);
                     notDone = false;
                 } else {
@@ -53,20 +53,20 @@ class ConceptFixer {
         }
     }
 
-    public static void checkResources(Cache cache, GraknGraph graph, Set<String> resourceIds){
+    public static void checkResources(Cache cache, String keyspace, Set<String> resourceIds){
         boolean notDone = true;
         int retry = 0;
 
-        while(notDone) {
-            try {
-                if (((AbstractGraknGraph)graph).fixDuplicateResources(resourceIds)) {
+        while (notDone) {
+            try(GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace))  {
+                if (((AbstractGraknGraph) graph).fixDuplicateResources(resourceIds)) {
                     graph.commit();
                 }
                 resourceIds.forEach(resourceId -> cache.deleteJobResource(graph.getKeyspace(), resourceId));
                 notDone = false;
             } catch (Exception e) {
-                LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage("resource", e.getMessage()), e);
-                if(retry ++ > MAX_RETRY){
+                LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage("resource", e.getMessage()), e);
+                if (retry++ > MAX_RETRY) {
                     String message = "";
                     for (String resourceId : resourceIds) {
                         message += resourceId;
@@ -84,7 +84,6 @@ class ConceptFixer {
         retry ++;
         double seed = 1.0 + (Math.random() * 5.0);
         double waitTime = (retry * 2.0)  + seed;
-        LOG.error(ErrorMessage.BACK_OFF_RETRY.getMessage(waitTime));
 
         try {
             Thread.sleep((long) Math.ceil(waitTime * 1000));
