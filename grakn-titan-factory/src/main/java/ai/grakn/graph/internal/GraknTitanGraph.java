@@ -43,7 +43,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
         synchronized (graph) { //Have to block here because the list of open transactions in Titan is not thread safe.
             graph.tx().close();
-            if (graph.getOpenTransactions().isEmpty()) {
+            if (graph.getOpenTxs() == 0) {
                 closePermanent();
             }
         }

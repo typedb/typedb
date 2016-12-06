@@ -596,7 +596,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         finaliseClose(this::closePermanent, closedReason);
     }
 
-    void finaliseClose(Runnable closer, String closedReason){
+    public void finaliseClose(Runnable closer, String closedReason){
         if(!isClosed()) {
             closer.run();
             localClosedReason.set(closedReason);
@@ -604,7 +604,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
         }
     }
 
-    void closePermanent(){
+    public void closePermanent(){
         try {
             getTinkerPopGraph().close();
         } catch (Exception e) {
