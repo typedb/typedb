@@ -37,19 +37,22 @@ import static org.junit.Assume.assumeTrue;
 
 public class CWInferenceTest extends AbstractEngineTest{
 
+    private static GraknGraph graph;
+    private static Reasoner reasoner;
+    private static QueryBuilder qb;
+
     @BeforeClass
     public static void onStartup(){
         assumeTrue(usingTinker());
+        graph = CWGraph.getGraph();
+        reasoner = new Reasoner(graph);
+        qb = graph.graql().setInference(false);
     }
 
     @Test
     public void testWeapon() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa weapon;";
         MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                 "{$x isa weapon;} or {" +
                 "{{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};} or {$x isa rocket;$x has propulsion 'gsp';};" +
@@ -61,12 +64,8 @@ public class CWInferenceTest extends AbstractEngineTest{
 
     @Test
     public void testAlignment() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $z isa country;$z has alignment 'hostile';";
         MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match $z isa country, has name 'Nono';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
@@ -76,7 +75,7 @@ public class CWInferenceTest extends AbstractEngineTest{
     @Test
     public void testTransactionQuery() {
         GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parse(queryString);
@@ -100,12 +99,8 @@ public class CWInferenceTest extends AbstractEngineTest{
 
     @Test
     public void testTransactionQuery2() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                 "$x isa person;" +
                 "$z isa country;" +
@@ -128,12 +123,8 @@ public class CWInferenceTest extends AbstractEngineTest{
 
     @Test
     public void testQuery() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa criminal;";
         MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                 "{$x isa criminal;} or {" +
                 "$x has nationality 'American';" +
@@ -158,12 +149,8 @@ public class CWInferenceTest extends AbstractEngineTest{
 
     @Test
     public void testQueryWithOr() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match {$x isa criminal;} or {$x has nationality 'American';$x isa person;};";
         MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
             "{{$x isa criminal;} or {$x has nationality 'American';" +
             "{$z has alignment 'hostile';} or {" +
@@ -188,14 +175,10 @@ public class CWInferenceTest extends AbstractEngineTest{
 
     @Test
     public void testVarSub() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match" +
                 "$y isa person;$yy isa country;$yyy isa weapon;" +
                 "($y, $yy, $yyy) isa transaction;";
         MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                 "$y isa person;" +
                 "$yy isa country;" +
@@ -218,14 +201,10 @@ public class CWInferenceTest extends AbstractEngineTest{
 
     @Test
     public void testVarSub2() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match" +
                 "$y isa person;$z isa country;$x isa weapon;" +
                 "($y, $z, $x) isa transaction;";
         MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                 "$y isa person;" +
                 "$z isa country;" +
@@ -250,7 +229,7 @@ public class CWInferenceTest extends AbstractEngineTest{
     public void testGraphCase() {
         GraknGraph localGraph = CWGraph.getGraph();
         Reasoner localReasoner = new Reasoner(localGraph);
-        QueryBuilder lqb = localGraph.graql();
+        QueryBuilder lqb = localGraph.graql().setInference(false);
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");
 
         localGraph.putEntityType("region");

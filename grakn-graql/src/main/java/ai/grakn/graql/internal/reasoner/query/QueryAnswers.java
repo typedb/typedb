@@ -72,8 +72,10 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         this.forEach(answer ->{
             boolean isKnown = false;
             Iterator<Map<String, Concept>> it = known.iterator();
-            while(it.hasNext() && !isKnown)
-                isKnown = answer.entrySet().containsAll(it.next().entrySet());
+            while(it.hasNext() && !isKnown) {
+                Map<String, Concept> knownAnswer = it.next();
+                isKnown = knownAnswer.entrySet().containsAll(answer.entrySet());
+            }
             if (!isKnown) results.add(answer);
         });
         return results;

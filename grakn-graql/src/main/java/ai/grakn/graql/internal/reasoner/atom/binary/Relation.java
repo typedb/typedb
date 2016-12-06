@@ -40,6 +40,7 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.util.Optional;
 import javafx.util.Pair;
@@ -69,17 +70,19 @@ public class Relation extends TypeAtom {
     }
     public Relation(VarAdmin pattern, Predicate predicate, Query par) {
         super(pattern, predicate, par);
-        relationPlayers = getRelationPlayers(pattern);
+        this.relationPlayers = getRelationPlayers(pattern);
     }
 
     public Relation(String name, String typeVariable, Map<String, String> roleMap, Predicate pred, Query par) {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
-        relationPlayers = getRelationPlayers(getPattern().asVar());
+        this.relationPlayers = getRelationPlayers(getPattern().asVar());
     }
 
     private Relation(Relation a) {
         super(a);
-        relationPlayers = getRelationPlayers(a.getPattern().asVar());
+        this.relationPlayers = getRelationPlayers(a.getPattern().asVar());
+        this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
+        this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
     }
 
     private Set<RelationPlayer> getRelationPlayers() {
