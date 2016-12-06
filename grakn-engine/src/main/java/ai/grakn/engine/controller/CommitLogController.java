@@ -97,6 +97,7 @@ public class CommitLogController {
                         break;
                     case RESOURCE:
                         cache.addJobResource(graphName, Collections.singleton(conceptId));
+                        break;
                     default:
                         LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptId, type.name()));
                 }
