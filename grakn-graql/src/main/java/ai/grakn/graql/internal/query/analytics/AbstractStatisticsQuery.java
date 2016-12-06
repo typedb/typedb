@@ -129,7 +129,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         List<Pattern> checkSubtypes = subTypeNames.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
-        return graph.graql().match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+        return graph.graql().setInference(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 
     Set<String> getCombinedSubTypes() {
