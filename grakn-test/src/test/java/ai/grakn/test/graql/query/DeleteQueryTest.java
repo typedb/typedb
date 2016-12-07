@@ -34,7 +34,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 public class DeleteQueryTest extends AbstractMovieGraphTest {
 
@@ -44,9 +43,6 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        // TODO: Fix delete queries in titan
-        assumeFalse(usingTitan());
-
         qb = graph.graql();
     }
 
