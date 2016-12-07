@@ -108,6 +108,7 @@ public class BulkResourceMutate<T> {
                 numberOfFailures++;
                 LOGGER.info("Number of failures: " + numberOfFailures);
                 LOGGER.info("Backing Off");
+                // TODO: Perform exponential backoff
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e1) {
