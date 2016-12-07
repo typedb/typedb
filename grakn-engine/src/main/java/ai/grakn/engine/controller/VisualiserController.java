@@ -23,13 +23,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.*;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -53,17 +49,9 @@ import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
 import static ai.grakn.factory.GraphFactory.getInstance;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
-import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
-import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static ai.grakn.util.REST.Request.QUERY_FIELD;
-import static ai.grakn.util.REST.Response.ENTITIES_JSON_FIELD;
-import static ai.grakn.util.REST.Response.RELATIONS_JSON_FIELD;
-import static ai.grakn.util.REST.Response.RESOURCES_JSON_FIELD;
-import static ai.grakn.util.REST.Response.ROLES_JSON_FIELD;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.*;
+import static ai.grakn.util.REST.Request.*;
+import static ai.grakn.util.REST.Response.*;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
@@ -79,7 +67,6 @@ public class VisualiserController {
     private final static String SHORTEST_PATH_QUERY = "path";
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
-    private final static String ROOT_CONCEPT = "type";
 
 
     //TODO: implement a pagination system.
@@ -106,6 +93,10 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
 
+            if(concept==null)
+                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER),keyspace));
+
+
             return renderHALConceptData(concept, separationDegree, keyspace);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -125,7 +116,7 @@ public class VisualiserController {
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
-            return renderHALConceptOntology(concept, graph.getType(ROOT_CONCEPT).getId());
+            return renderHALConceptOntology(concept, keyspace);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }

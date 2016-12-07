@@ -3,12 +3,20 @@ import EngineClient from '../js/EngineClient.js';
 export default {
 
     newSession(creds,fn) {
-        let engineClient = new EngineClient();
-        engineClient.newSession(creds, fn);
+        EngineClient.newSession(creds, fn);
     },
 
     setAuthToken(token){
       localStorage.setItem('id_token', token);
+    },
+
+    setReasonerStatus(status){
+      localStorage.setItem('use_reasoner', status);
+
+    },
+
+    getReasonerStatus(){
+      return localStorage.getItem('use_reasoner');
     },
 
     signup(context, creds, redirect) {

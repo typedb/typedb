@@ -44,6 +44,7 @@ public class PostProcessingTask implements BackgroundTask {
     public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
         long lastJob = cache.getLastTimeJobAdded();
         long currentTime = System.currentTimeMillis();
+        LOG.info("Checking post processing should run: " + ((currentTime - lastJob) >= timeLapse));
         if((currentTime - lastJob) >= timeLapse)
             postProcessing.run();
     }

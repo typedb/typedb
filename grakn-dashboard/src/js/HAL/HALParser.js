@@ -67,8 +67,14 @@ export default class HALParser {
      */
     parseResponse(data) {
         if (Array.isArray(data)) {
+          console.log("response length "+data.length);
+            var hashSet = {};
+            var objLength = data.length;
+            for (let i = 0; i < objLength; i++) {
+                hashSet[data[i]["_id"]] = true;
+            }
             _.map(data, x => {
-                this.parseHalObject(x)
+                this.parseHalObject(x, hashSet)
             });
             return data.length;
         } else {
@@ -77,7 +83,8 @@ export default class HALParser {
         }
     }
 
-    parseHalObject(obj) {
+
+    parseHalObject(obj, hashSet) {
         if (obj !== null) {
             let objResponse;
             //The response from Analytics will be a string instead of object. That's why we need this check.
@@ -89,7 +96,7 @@ export default class HALParser {
             // Add assertions from _embedded
             if (API.KEY_EMBEDDED in objResponse) {
                 _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), key => {
-                    this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key)
+                    this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet)
                 });
             }
         }
@@ -101,9 +108,9 @@ export default class HALParser {
     /**
      * Parse resources from _embedded field of parent
      */
-    parseEmbedded(objs, parent, roleName) {
+    parseEmbedded(objs, parent, roleName, hashSet) {
         _.map(objs, child => {
-            if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE) || this.nodeAlreadyInGraph(this.getHref(child))) {
+            if ((child[API.KEY_BASE_TYPE] != API.RESOURCE_TYPE) || (hashSet != undefined && hashSet[child["_id"]]) || this.nodeAlreadyInGraph(this.getHref(child))) {
                 var links = Utils.nodeLinks(child);
                 // Add resource and iterate its _embedded field
                 var hrefP = this.getHref(child);

@@ -36,7 +36,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                     <tbody>
                                         <tr>
                                             <td>Activate Inference</td>
-                                            <td><input type="checkbox" value="" @click="checkedReasoner(useReasoner)" v-model="useReasoner"></td>
+                                            <td><input type="checkbox" v-model="useReasoner"></td>
                                         </tr>
                                         <tr>
                                             <td>Materialisation</td>
@@ -138,6 +138,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </div>
                 </div>
             </div>
+            <keyspaces-modal></keyspaces-modal>
         </div>
     </section>
 </section>
@@ -157,6 +158,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <script>
 import EngineClient from '../js/EngineClient.js';
+import User from '../js/User.js'
+
 
 export default {
     name: "ConfigurationView",
@@ -164,18 +167,20 @@ export default {
         return {
             response: undefined,
             errorMessage: undefined,
-            useReasoner: window.useReasoner,
-            engineClient: {}
+            useReasoner: (User.getReasonerStatus()==='true')
         };
     },
 
-    created() {
-        this.engineClient = new EngineClient();
-    },
+    created() {},
     mounted() {
         this.$nextTick(function() {
-            this.engineClient.getConfig(this.engineStatus);
+            EngineClient.getConfig(this.engineStatus);
         });
+    },
+    watch:{
+      useReasoner:function(newVal,oldVal){
+        User.setReasonerStatus(newVal);
+      }
     },
 
     methods: {
@@ -183,11 +188,6 @@ export default {
             this.response = undefined;
             this.errorMessage = msg;
         },
-
-        checkedReasoner(status) {
-            window.useReasoner = !status;
-        },
-
         engineStatus(resp, err) {
             if (resp != null)
                 this.response = resp
@@ -196,11 +196,11 @@ export default {
         },
 
         materialiseAll() {
-            this.engineClient.preMaterialiseAll();
+            EngineClient.preMaterialiseAll();
         },
 
         retry() {
-            this.engineClient.getConfig(this.engineStatus);
+            EngineClient.getConfig(this.engineStatus);
         }
     }
 

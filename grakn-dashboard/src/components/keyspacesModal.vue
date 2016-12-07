@@ -27,7 +27,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
             <div class="modal-body">
                 <div class="properties-list">
-                  <p>Available keyspaces</p>
+                  <p>Available keyspaces:</p>
                     <ul class="dd-list">
                         <li class="dd-item" v-for="name in keyspaces" v-bind:class="{'li-active':(currentKeyspace===name)}">
                             <div class="dd-handle" @click="setKeySpace(name)">{{name}}</div>
@@ -62,12 +62,11 @@ export default {
     },
 
     created() {
-      this.engineClient = new EngineClient();
     },
 
     mounted: function() {
         this.$nextTick(function() {
-            this.engineClient.fetchKeyspaces((res,err) => {
+            EngineClient.fetchKeyspaces((res,err) => {
                 let list = JSON.parse(res);
                 let currentKeyspace = User.getCurrentKeySpace();
                 for (let i = 0; i < list.length; i++) {

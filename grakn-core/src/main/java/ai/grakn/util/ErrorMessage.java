@@ -144,6 +144,7 @@ public enum ErrorMessage {
     FAILED_TRANSACTION("Could not commit to graph after %s retries"),
     FAILED_VALIDATION("Caught exception during validation: %s"),
     NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
+    NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),

@@ -24,14 +24,7 @@ import User from './User.js';
 /*
  * REST API client for Grakn Engine.
  */
-export default class EngineClient {
-    constructor() {
-        this.requestType = 'GET';
-        this.contentType = 'application/json; charset=utf-8';
-        this.dataType = 'json';
-        this.cache = false;
-        this.accepts = { json: "application/hal+json" };
-    }
+export default {
 
     // can use queue of pending requests here..
 
@@ -51,11 +44,11 @@ export default class EngineClient {
      */
     request(requestData) {
         $.ajax({
-                type: requestData.requestType || this.requestType,
-                contentType: requestData.contentType || this.contentType,
-                dataType: requestData.dataType || this.dataType,
-                cache: requestData.cache || this.cache,
-                accepts: requestData.accepts || this.accepts,
+                type: requestData.requestType || 'GET',
+                contentType: requestData.contentType || 'application/json; charset=utf-8',
+                dataType: requestData.dataType || 'json',
+                cache: requestData.cache || false,
+                accepts: requestData.accepts || { json: "application/hal+json" },
                 data: requestData.data,
                 url: requestData.url,
                 beforeSend: this.setHeaders
@@ -68,7 +61,7 @@ export default class EngineClient {
                 if (typeof requestData.callback == 'function')
                     requestData.callback(null, errObj.responseText);
             });
-    }
+    },
 
     setHeaders(xhr){
       let token = localStorage.getItem('id_token');
@@ -76,7 +69,7 @@ export default class EngineClient {
         xhr.setRequestHeader("Authorization", "Bearer "+token);
 
       return true;
-    }
+    },
 
     fetchKeyspaces(fn){
       this.request({
@@ -84,7 +77,7 @@ export default class EngineClient {
           callback: fn,
           dataType: "text"
       });
-    }
+    },
 
     newSession(creds,fn){
       this.request({
@@ -94,7 +87,7 @@ export default class EngineClient {
           dataType: "text",
           requestType:'POST'
       });
-    }
+    },
     /**
      * Pre materialise
      */
@@ -105,7 +98,7 @@ export default class EngineClient {
             dataType: "text",
             contentType: "application/text"
         });
-    }
+    },
 
     /**
      * Query Engine for concepts by type.
@@ -115,14 +108,14 @@ export default class EngineClient {
             url: "/graph/concept/" + type+"?keyspace="+User.getCurrentKeySpace(),
             callback: fn
         });
-    }
+    },
 
     graqlAnalytics(query, fn) {
         this.request({
             url: "/graph/analytics?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
             callback: fn
         });
-    }
+    },
 
     /**
      * Send graql shell command to engine. Returns a string representing shell output.
@@ -135,7 +128,7 @@ export default class EngineClient {
             contentType: "application/text",
             accepts: { text: "application/graql"}
         });
-    }
+    },
 
     /**
      * Pre materialise
@@ -147,7 +140,7 @@ export default class EngineClient {
             dataType: "text",
             contentType: "application/text"
         });
-    }
+    },
 
     /**
      * Send graql query to Engine, returns an array of HAL objects.
@@ -158,7 +151,7 @@ export default class EngineClient {
             callback: fn,
             accepts: { json: "application/hal+json"}
         });
-    }
+    },
 
     /**
      * Send graql query to Engine, returns an array of HAL objects.
@@ -168,7 +161,7 @@ export default class EngineClient {
             url: "/graph/analytics?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
             callback: fn
         });
-    }
+    },
 
     /**
      * Get current engine configuration.
@@ -178,7 +171,7 @@ export default class EngineClient {
             url: "/status/config",
             callback: fn
         });
-    }
+    },
 
     /**
      * Get meta ontology type instances.

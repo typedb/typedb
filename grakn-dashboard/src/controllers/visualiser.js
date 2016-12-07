@@ -8,6 +8,8 @@ import * as API from '../js/HAL/APITerms';
 // External objects
 import EngineClient from '../js/EngineClient.js';
 import Visualiser from '../js/visualiser/Visualiser.js';
+import User from '../js/User.js'
+
 
 // Components
 var GraqlEditor = require('./graqlEditor.vue')
@@ -23,12 +25,12 @@ export default {
             errorMessage: undefined,
             errorPanelClass: undefined,
             visualiser: {},
-            engineClient: {},
             halParser: {},
             analyticsStringResponse: undefined,
             typeInstances: false,
             typeKeys: [],
             doubleClickTime: 0,
+            useReasoner: User.getReasonerStatus(),
 
             // resources keys used to change label of a node type
             allNodeProps: [],
@@ -54,7 +56,6 @@ export default {
             .setOnDragEnd(this.dragEnd)
             .setOnHoldOnNode(this.holdOnNode);
 
-        this.engineClient = new EngineClient();
         this.halParser = new HALParser();
 
         this.halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
@@ -97,8 +98,8 @@ export default {
         onLoadOntology() {
             let query_isa = "match $x isa " + API.TYPE_TYPE + ";";
             let query_sub = "match $x sub " + API.TYPE_TYPE + ";";
-            this.engineClient.graqlHAL(query_sub, this.onGraphResponse, window.useReasoner);
-            this.engineClient.graqlHAL(query_isa, this.onGraphResponse, window.useReasoner);
+            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner);
+            EngineClient.graqlHAL(query_isa, this.onGraphResponse, this.useReasoner);
         },
 
         singleClick(param) {
@@ -115,11 +116,11 @@ export default {
         },
 
         onClickSubmit(query) {
-            this.errorMessage=undefined;
+            this.errorMessage = undefined;
             if (query.trim().startsWith("compute"))
-                this.engineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
+                EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             else
-                this.engineClient.graqlHAL(query, this.onGraphResponse, window.useReasoner);
+                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner);
         },
         /*
          * User interaction: visualiser
@@ -136,10 +137,14 @@ export default {
 
             //When we will enable clustering, also need to check && !visualiser.expandCluster(node)
             if (eventKeys.altKey)
-                this.engineClient.request({
-                    url: visualiser.nodes._data[node].ontology,
-                    callback: this.onGraphResponse
-                });
+                if (visualiser.nodes._data[node].ontology) {
+                    EngineClient.request({
+                        url: visualiser.nodes._data[node].ontology,
+                        callback: this.onGraphResponse
+                    });
+                } else {
+                    return;
+                }
             else {
                 var props = visualiser.getNode(node);
                 this.allNodeOntologyProps = {
@@ -200,13 +205,13 @@ export default {
             if (eventKeys.shiftKey)
                 visualiser.clearGraph();
 
-            this.engineClient.request({
+            EngineClient.request({
                 url: node,
                 callback: this.onGraphResponse
             });
         },
         addResourceNodeWithOwners(id) {
-            this.engineClient.request({
+            EngineClient.request({
                 url: id,
                 callback: this.onGraphResponse
             });
@@ -275,8 +280,8 @@ export default {
             }
         },
 
-        onCloseError(){
-          this.errorMessage = undefined;
+        onCloseError() {
+            this.errorMessage = undefined;
         },
 
         /*
