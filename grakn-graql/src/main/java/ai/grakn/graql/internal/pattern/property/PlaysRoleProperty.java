@@ -80,8 +80,8 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        String roleId = role.getId().orElseThrow(() -> failDelete(this));
-        concept.asType().deletePlaysRole(graph.getRoleType(roleId));
+        String roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
+        concept.asType().deletePlaysRole(graph.getRoleType(roleName));
     }
 
     @Override
