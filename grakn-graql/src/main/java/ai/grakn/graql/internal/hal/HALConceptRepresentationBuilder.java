@@ -48,19 +48,17 @@ public class HALConceptRepresentationBuilder {
 
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<String, Concept>> graqlResultsList, String keyspace) {
 
-        //Compute connections between variables in Graql result
-        Map<String, Collection<VarAdmin>> linkedNodes = new HashMap<>();
-        Map<String,Map<String, String>> roleTypes = new HashMap<>();
-        computeLinkedNodesFromQuery(matchQuery, linkedNodes, roleTypes);
+        //Stores connections between variables in Graql result [varName:List<VarAdmin> (only VarAdmins that contain a relation)]
+        Map<String, Collection<VarAdmin>> linkedNodes =  computeLinkedNodesFromQuery(matchQuery);
+        //For each VarAdmin(hashCode) containing a relation we store a map containing varnames associated to roletypes
+        Map<String,Map<String, String>> roleTypes = computeRoleTypesFromQuery(matchQuery);
+
+
         //Collect all the types explicitly asked in the match query
         Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
 
-        Collection<String> relationTypes = matchQuery.admin().getTypes().stream()
-                .filter(Concept::isRelationType)
-                .map(x -> x.getName()).collect(Collectors.toSet());
 
-
-        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, relationTypes, roleTypes, keyspace);
+        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, roleTypes, keyspace);
     }
 
     public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace) {
@@ -71,7 +69,7 @@ public class HALConceptRepresentationBuilder {
         return new HALConceptOntology(concept, keyspace).render();
     }
 
-    private static Json buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<VarAdmin>> linkedNodes, Set<String> typesAskedInQuery, Collection<String> relationTypes, Map<String,Map<String, String>> roleTypes, String keyspace) {
+    private static Json buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<VarAdmin>> linkedNodes, Set<String> typesAskedInQuery, Map<String,Map<String, String>> roleTypes, String keyspace) {
         final Json lines = Json.array();
         graqlResultsList.forEach(resultLine -> resultLine.entrySet().forEach(current -> {
 
@@ -103,7 +101,7 @@ public class HALConceptRepresentationBuilder {
                                     .map(y -> y.getRolePlayer()).forEach(otherVar -> {
 
                                 if(resultLine.get(otherVar.getVarName())!=null) {
-                                    attachSingleFakeRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(String.valueOf(currentRelation.hashCode())), currentVarName, otherVar.getVarName(), relationType);
+                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(String.valueOf(currentRelation.hashCode())), currentVarName, otherVar.getVarName(), relationType);
                                 }
                             });
 
@@ -112,7 +110,7 @@ public class HALConceptRepresentationBuilder {
         }
     }
 
-    private static void attachSingleFakeRelation(Representation currentHal, Concept currentVar, Concept otherVar,Map<String, String> roleTypes, String currentVarName, String otherVarName,String relationType) {
+    private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<String, String> roleTypes, String currentVarName, String otherVarName, String relationType) {
         Concept otherRolePlayer = otherVar;
         String currentID = currentVar.getId();
 
@@ -139,22 +137,15 @@ public class HALConceptRepresentationBuilder {
         currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(assertionID, relationType));
     }
 
-    private static Map<String, Collection<VarAdmin>> computeLinkedNodesFromQuery(MatchQuery matchQuery, Map<String, Collection<VarAdmin>> linkedNodes, Map<String,Map<String, String>> roleTypes) {
+    private static Map<String, Collection<VarAdmin>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
+        final Map<String, Collection<VarAdmin>> linkedNodes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             //if in the current var is expressed some kind of relation (e.g. ($x,$y))
             if (var.getProperty(RelationProperty.class).isPresent()) {
                 //collect all the role players in the current var's relations (e.g. 'x' and 'y')
                 final List<String> rolePlayersInVar = new ArrayList<>();
-                final String varHashCode =String.valueOf(var.hashCode());
-                roleTypes.put(varHashCode,new HashMap<>());
                 var.getProperty(RelationProperty.class).get()
-                        .getRelationPlayers().map(x -> {
-                    roleTypes.get(varHashCode).put(x.getRolePlayer().getVarName(),
-                            (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE);
-                    return x.getRolePlayer().getVarName();
-                }).forEach(result -> {
-                    rolePlayersInVar.add(result);
-                });
+                        .getRelationPlayers().map(x -> x.getRolePlayer().getVarName()).forEach(rolePlayersInVar::add);
                 //if it is a binary or ternary relation
                 if (rolePlayersInVar.size() > 1) {
                     rolePlayersInVar.forEach(rolePlayer -> {
@@ -168,5 +159,22 @@ public class HALConceptRepresentationBuilder {
             }
         });
         return linkedNodes;
+    }
+
+    private static Map<String,Map<String,String>> computeRoleTypesFromQuery(MatchQuery matchQuery) {
+        final Map<String,Map<String,String>> roleTypes = new HashMap<>();
+        matchQuery.admin().getPattern().getVars().forEach(var -> {
+            if (var.getProperty(RelationProperty.class).isPresent()) {
+                final String varHashCode =String.valueOf(var.hashCode());
+                roleTypes.put(varHashCode,new HashMap<>());
+                var.getProperty(RelationProperty.class).get()
+                        .getRelationPlayers().map(x -> {
+                    roleTypes.get(varHashCode).put(x.getRolePlayer().getVarName(),
+                            (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE);
+                    return x.getRolePlayer().getVarName();
+                });
+            }
+        });
+        return roleTypes;
     }
 }

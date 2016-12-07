@@ -36,7 +36,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                     <tbody>
                                         <tr>
                                             <td>Activate Inference</td>
-                                            <td><input type="checkbox" v-model="useReasoner" @click="checkedReasoner()"></td>
+                                            <td><input type="checkbox" v-model="useReasoner"></td>
                                         </tr>
                                         <tr>
                                             <td>Materialisation</td>
@@ -177,17 +177,17 @@ export default {
             EngineClient.getConfig(this.engineStatus);
         });
     },
+    watch:{
+      useReasoner:function(newVal,oldVal){
+        User.setReasonerStatus(newVal);
+      }
+    },
 
     methods: {
         showError(msg) {
             this.response = undefined;
             this.errorMessage = msg;
         },
-
-        checkedReasoner() {
-            User.setReasonerStatus(!this.useReasoner);
-        },
-
         engineStatus(resp, err) {
             if (resp != null)
                 this.response = resp

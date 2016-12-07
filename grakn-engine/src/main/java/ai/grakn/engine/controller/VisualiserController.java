@@ -67,7 +67,6 @@ public class VisualiserController {
     private final static String SHORTEST_PATH_QUERY = "path";
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
-    private final static String ROOT_CONCEPT = "type";
 
 
     //TODO: implement a pagination system.
@@ -117,7 +116,7 @@ public class VisualiserController {
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
-            return renderHALConceptOntology(concept, graph.getType(ROOT_CONCEPT).getId());
+            return renderHALConceptOntology(concept, keyspace);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
