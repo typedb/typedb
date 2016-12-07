@@ -84,6 +84,7 @@ class ConceptFixer {
         retry ++;
         double seed = 1.0 + (Math.random() * 5.0);
         double waitTime = (retry * 2.0)  + seed;
+        LOG.debug(ErrorMessage.BACK_OFF_RETRY.getMessage(waitTime));
 
         try {
             Thread.sleep((long) Math.ceil(waitTime * 1000));
