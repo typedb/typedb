@@ -18,17 +18,22 @@
 
 package ai.grakn.test.graql.printer;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.AbstractMovieGraphTest;
+import com.google.common.collect.Maps;
 import org.junit.Test;
+
+import java.util.Map;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class GraqlPrinterTest extends AbstractMovieGraphTest {
@@ -79,5 +84,14 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
                 containsString("movie"), containsString("has"), containsString("title"), containsString("\"Godfather\""),
                 containsString("tmdb-vote-count"), containsString("1000"), not(containsString("name"))
         ));
+    }
+
+    @Test
+    public void testEmptyResult() {
+        Printer printer = Printers.graql();
+
+        Map<String, Concept> emptyResult = Maps.newHashMap();
+
+        assertEquals("{}", printer.graqlString(emptyResult));
     }
 }
