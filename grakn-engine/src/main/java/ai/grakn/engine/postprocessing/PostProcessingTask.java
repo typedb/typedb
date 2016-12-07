@@ -21,12 +21,15 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.util.ConfigProperties;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.util.ConfigProperties.TIME_LAPSE;
 
 public class PostProcessingTask implements BackgroundTask {
+    private final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final ConfigProperties properties = ConfigProperties.getInstance();
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
     private static final Cache cache = Cache.getInstance();

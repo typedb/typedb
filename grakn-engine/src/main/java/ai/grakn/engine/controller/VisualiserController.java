@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
@@ -34,6 +35,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import spark.Request;
@@ -104,7 +106,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(req.params(ID_PARAMETER));
 
-            return renderHALConceptData(concept, separationDegree,keyspace);
+            return renderHALConceptData(concept, separationDegree, keyspace);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
@@ -139,7 +141,7 @@ public class VisualiserController {
     private String ontology(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try(GraknGraph graph = getInstance().getGraph(keyspace)){
+        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             JSONObject responseObj = new JSONObject();
             responseObj.put(ROLES_JSON_FIELD, instances(graph.getMetaRoleType()));
             responseObj.put(ENTITIES_JSON_FIELD, instances(graph.getMetaEntityType()));
@@ -160,21 +162,25 @@ public class VisualiserController {
             @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "reasoner", value = "Boolean used to decide whether run reasoner together with the current query.", required = true, dataType = "sting/boolean", paramType = "query")
-})
+    })
     private String match(Request req, Response res) {
         String keyspace = getKeyspace(req);
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             QueryBuilder qb = graph.graql().setInference(useReasoner);
-            MatchQuery matchQuery = qb.parse(req.queryParams(QUERY_FIELD));
-
-            switch (getAcceptType(req)){
-                case HAL_CONTENTTYPE:
-                    return formatAsHAL(matchQuery,keyspace);
-                case GRAQL_CONTENTTYPE:
-                    return formatAsGraql(matchQuery);
-                default: return formatAsHAL(matchQuery,keyspace);
+            Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
+            if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery) {
+                switch (getAcceptType(req)) {
+                    case HAL_CONTENTTYPE:
+                        return formatAsHAL((MatchQuery) parsedQuery, keyspace);
+                    case GRAQL_CONTENTTYPE:
+                        return formatAsGraql(parsedQuery);
+                    default:
+                        return formatAsHAL((MatchQuery)parsedQuery, keyspace);
+                }
+            } else {
+                throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
             }
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -197,9 +203,9 @@ public class VisualiserController {
             if (req.queryParams(QUERY_FIELD).contains(SHORTEST_PATH_QUERY)) {
                 response.put(COMPUTE_RESPONSE_TYPE, "HAL");
                 JSONArray array = new JSONArray();
-                ((List<Concept>)computeQuery.execute()).iterator().forEachRemaining(concept ->
-                        array.put(renderHALConceptData(concept, 0,getKeyspace(req))));
-                response.put(COMPUTE_RESPONSE_FIELD,array);
+                ((List<Concept>) computeQuery.execute()).iterator().forEachRemaining(concept ->
+                        array.put(renderHALConceptData(concept, 0, getKeyspace(req))));
+                response.put(COMPUTE_RESPONSE_FIELD, array);
             } else {
                 response.put(COMPUTE_RESPONSE_TYPE, "string");
                 response.put(COMPUTE_RESPONSE_FIELD, formatAsGraql(computeQuery));
@@ -225,20 +231,23 @@ public class VisualiserController {
 
     /**
      * Format a match query as HAL
+     *
      * @param query query to format
      * @return HAL representation
      */
-    private String formatAsHAL(MatchQuery query, String keyspace){
+    private String formatAsHAL(MatchQuery query, String keyspace) {
         Collection<Map<String, Concept>> results = query.stream().collect(toList());
-        return renderHALArrayData(query, results, keyspace).toString();
+        Json resultobj = renderHALArrayData(query, results, keyspace);
+        return resultobj.toString();
     }
 
     /**
      * Format a match query results as Graql
+     *
      * @param query query to format
      * @return Graql representation
      */
-    private String formatAsGraql(Query query){
+    private String formatAsGraql(Query query) {
         return ((Query<String>) query).resultsString(Printers.graql())
                 .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                 .collect(Collectors.joining("\n"));
@@ -246,10 +255,11 @@ public class VisualiserController {
 
     /**
      * Return all of the instances of the given type
+     *
      * @param type type to find instances of
      * @return JSONArray with IDs of instances
      */
-    private JSONArray instances(Type type){
-        return new JSONArray(type.instances().stream().map(x->x.asType().getName()).toArray());
+    private JSONArray instances(Type type) {
+        return new JSONArray(type.instances().stream().map(x -> x.asType().getName()).toArray());
     }
 }

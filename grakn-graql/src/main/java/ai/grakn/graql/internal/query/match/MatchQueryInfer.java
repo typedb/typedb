@@ -44,7 +44,6 @@ class MatchQueryInfer extends MatchQueryModifier {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        // TODO: Handle ordering
         return new Reasoner(graph).resolveToQuery(inner.withGraph(graph)).stream();
     }
 

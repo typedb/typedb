@@ -55,11 +55,11 @@ import static java.util.stream.Collectors.toSet;
 public class LoaderImpl implements Loader {
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
-    private static final TaskManager manager = InMemoryTaskManager.getInstance();
-    private static final StateStorage storage = manager.storage();
     private static final ConfigProperties properties = ConfigProperties.getInstance();
 
     private Semaphore blocker = new Semaphore(25);
+    private TaskManager manager;
+    private StateStorage storage;
 
     private int batchSize;
     private Collection<InsertQuery> queries;
@@ -68,6 +68,9 @@ public class LoaderImpl implements Loader {
     public LoaderImpl(String keyspace){
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
+
+        this.manager = InMemoryTaskManager.getInstance();
+        this.storage = manager.storage();
 
         setBatchSize(properties.getPropertyAsInt(BATCH_SIZE_PROPERTY));
     }
@@ -162,6 +165,7 @@ public class LoaderImpl implements Loader {
             printLoaderState();
 
             if(currentTasks.stream().allMatch(this::isCompleted)){
+                printLoaderState();
                 return;
             }
 

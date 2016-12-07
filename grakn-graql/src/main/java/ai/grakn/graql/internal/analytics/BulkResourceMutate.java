@@ -107,6 +107,13 @@ public class BulkResourceMutate<T> {
                 hasFailed = true;
                 numberOfFailures++;
                 LOGGER.info("Number of failures: " + numberOfFailures);
+                LOGGER.info("Backing Off");
+                // TODO: Perform exponential backoff
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
                 if (!(numberOfFailures < numberOfRetries)) {
                     LOGGER.debug("REACHED MAX NUMBER OF RETRIES !!!!!!!!");
                     throw new RuntimeException(

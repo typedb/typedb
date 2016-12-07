@@ -19,12 +19,6 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.Queries;
-import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -37,6 +31,8 @@ import org.semanticweb.owlapi.model.OWLOntology;
 
 import java.util.Map;
 import java.util.Set;
+
+import static ai.grakn.graql.Graql.var;
 
 public class TestSubProperties extends TestOwlGraknBase {
 	private IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
@@ -58,8 +54,7 @@ public class TestSubProperties extends TestOwlGraknBase {
     	Map<OWLNamedIndividual, Set<OWLNamedIndividual>> createdInstances = 
     			reasoner.getObjectPropertyInstances(manager.getOWLDataFactory().getOWLObjectProperty(createdProp));
     	int owlCount = createdInstances.values().stream().mapToInt(S -> S.size()).sum();
-        int mmCount = Queries.matchNoInfer(Patterns.conjunction(Sets.newHashSet(Graql.var("r").isa(migrator.namer().objectPropertyName(createdProp)).admin())))
-				.withGraph(migrator.graph())
+        int mmCount = migrator.graph().graql().setInference(false).match(var("r").isa(migrator.namer().objectPropertyName(createdProp)))
     		.stream().mapToInt(M -> 1).sum();
     	Assert.assertEquals(owlCount, mmCount);
     }

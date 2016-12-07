@@ -22,10 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 
@@ -43,10 +41,7 @@ public class TestGraph {
     protected final static String filePath = "src/test/graql/";
     private final static String defaultKey = "name";
 
-    protected static RoleType hasKeyTarget;
-    private static RelationType hasKeyRelation;
-    private static ResourceType<String> key;
-    private static RoleType hasKeyValue;
+    protected static ResourceType<String> key;
 
     public TestGraph(){
         graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
@@ -60,12 +55,12 @@ public class TestGraph {
         graknGraph.showImplicitConcepts(true);
         if (primaryKeyId != null) addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);
+        graknGraph = graph();
         commit();
     }
 
     public void loadFiles(String... files){
         for( String graqlFile : files) loadGraqlFile(graqlFile);
-        commit();
     }
 
     public GraknGraph graph(){
@@ -85,20 +80,21 @@ public class TestGraph {
         System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
-        QueryBuilder qb = graknGraph.graql();
-        try {
+        try (GraknGraph graph = graph()) {
+            QueryBuilder qb = graph.graql();
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
             qb.parse(query).execute();
+            graph.commit();
         }
-        catch (IOException e){
+        catch (IOException|GraknValidationException e){
             e.printStackTrace();
         }
     }
 
     protected void commit(){
         try {
-            graknGraph.commit();
+            graph().commit();
         } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
@@ -113,11 +109,7 @@ public class TestGraph {
     }
 
     private void addPrimaryKey(String keyName){
-        hasKeyTarget = graknGraph.putRoleType("has-" + keyName + "-owner");
-        hasKeyValue = graknGraph.putRoleType("has-" + keyName + "-value");
-        hasKeyRelation = graknGraph.putRelationType("has-" + keyName)
-                .hasRole(hasKeyTarget).hasRole(hasKeyValue);
-        key = graknGraph.putResourceType(keyName, ResourceType.DataType.STRING).playsRole(hasKeyValue);
+        key = graknGraph.putResourceType(keyName, ResourceType.DataType.STRING);
     }
 
     protected void buildOntology(){}
@@ -135,15 +127,12 @@ public class TestGraph {
 
     protected Instance putEntity(String id, EntityType type) {
         Instance inst = type.addEntity();
-        putResource(inst, key, id, hasKeyRelation, hasKeyTarget, hasKeyValue);
+        putResource(inst, graknGraph.getResourceType(key.getName()), id);
         return inst;
     }
 
-    protected <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
-                                        RoleType targetRole, RoleType valueRole) {
+    protected <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
         Resource resourceInstance = resourceType.putResource(resource);
-        relationType.addRelation()
-                .putRolePlayer(targetRole, instance)
-                .putRolePlayer(valueRole, resourceInstance);
+        instance.hasResource(resourceInstance);
     }
 }

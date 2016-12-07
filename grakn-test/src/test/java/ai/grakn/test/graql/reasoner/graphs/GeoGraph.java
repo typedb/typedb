@@ -53,9 +53,9 @@ public class GeoGraph extends TestGraph{
                 .hasRole(geoEntity).hasRole(entityLocation);
 
         geographicalObject = graknGraph.putEntityType("geoObject")
-                .playsRole(hasKeyTarget)
                 .playsRole(geoEntity)
                 .playsRole(entityLocation);
+        geographicalObject.hasResource(key);
 
         continent = graknGraph.putEntityType("continent")
                 .superType(geographicalObject)
@@ -73,8 +73,8 @@ public class GeoGraph extends TestGraph{
                 .playsRole(geoEntity)
                 .playsRole(entityLocation);
         university = graknGraph.putEntityType("university")
-                        .playsRole(geoEntity)
-                        .playsRole(hasKeyTarget);
+                        .playsRole(geoEntity);
+        university.hasResource(key);
     }
 
     @Override

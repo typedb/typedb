@@ -51,13 +51,16 @@ public class AbstractGraph extends TestGraph{
         REL = graknGraph.putRelationType("REL").hasRole(RELRoleA).hasRole(RELRoleB);
 
         P = graknGraph.putEntityType("P").playsRole(RELRoleA).playsRole(RELRoleB);
+        P.hasResource(key);
         Q = graknGraph.putEntityType("Q").playsRole(RELRoleB).playsRole(RELRoleA);
         p = graknGraph.putEntityType("p").playsRole(relRoleA).playsRole(RELRoleA);
         q = graknGraph.putEntityType("q").playsRole(relRoleB).playsRole(RELRoleB);
         r = graknGraph.putEntityType("r").playsRole(relRoleA).playsRole(RELRoleA);
         s = graknGraph.putEntityType("s").playsRole(relRoleB).playsRole(RELRoleB);
         u = graknGraph.putEntityType("u").playsRole(relRoleA).playsRole(RELRoleA);
+        u.hasResource(key);
         t = graknGraph.putEntityType("t").playsRole(relRoleB).playsRole(RELRoleB);
+        t.hasResource(key);
     }
 
     @Override

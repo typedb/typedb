@@ -180,8 +180,8 @@ public class AdmissionsGraph extends TestGraph{
                 .playsRole(languageRequirementTarget)
                 .playsRole(degreeOriginTarget)
                 .playsRole(decisionTypeTarget)
-                .playsRole(admissionStatusTarget)
-                .playsRole(hasKeyTarget);
+                .playsRole(admissionStatusTarget);
+        applicant.hasResource(key);
     }
 
     @Override
@@ -193,42 +193,42 @@ public class AdmissionsGraph extends TestGraph{
         Instance Eva = putEntity("Eva", applicant);
         Instance Frank = putEntity("Frank", applicant);
 
-        putResource(Alice, TOEFL, 470L, TOEFLrelation,TOEFLtarget, TOEFLvalue);
-        putResource(Alice, degreeOrigin, "nonUS", degreeOriginRelation, degreeOriginTarget, degreeOriginValue);
+        putResource(Alice, TOEFL, 470L);
+        putResource(Alice, degreeOrigin, "nonUS");
 
-        putResource(Bob, priorGraduateWork, "none", priorGraduateWorkRelation, priorGraduateWorkTarget, priorGraduateWorkValue);
-        putResource(Bob, TOEFL, 520L, TOEFLrelation,TOEFLtarget, TOEFLvalue);
-        putResource(Bob, degreeOrigin, "US", degreeOriginRelation, degreeOriginTarget, degreeOriginValue);
-        putResource(Bob, transcript, "unavailable", transcriptRelation, transcriptTarget, transcriptValue);
-        putResource(Bob, specialHonours, "none", specialHonoursRelation, specialHonoursTarget, specialHonoursValue);
-        putResource(Bob, GRE, 1100L, GRErelation, GREtarget, GREvalue);
+        putResource(Bob, priorGraduateWork, "none");
+        putResource(Bob, TOEFL, 520L);
+        putResource(Bob, degreeOrigin, "US");
+        putResource(Bob, transcript, "unavailable");
+        putResource(Bob, specialHonours, "none");
+        putResource(Bob, GRE, 1100L);
 
-        putResource(Charlie, priorGraduateWork, "none", priorGraduateWorkRelation, priorGraduateWorkTarget, priorGraduateWorkValue);
-        putResource(Charlie, TOEFL, 600L, TOEFLrelation,TOEFLtarget, TOEFLvalue);
-        putResource(Charlie, degreeOrigin, "US", degreeOriginRelation, degreeOriginTarget, degreeOriginValue);
-        putResource(Charlie, transcript, "available", transcriptRelation, transcriptTarget, transcriptValue);
-        putResource(Charlie, specialHonours, "none", specialHonoursRelation, specialHonoursTarget, specialHonoursValue);
-        putResource(Charlie, GRE, 1100L, GRErelation, GREtarget, GREvalue);
-        putResource(Charlie, vGRE, 400L, vGRErelation, vGREtarget, vGREvalue);
-        putResource(Charlie, GPR, 2.99, GPRrelation, GPRtarget, GPRvalue);
+        putResource(Charlie, priorGraduateWork, "none");
+        putResource(Charlie, TOEFL, 600L);
+        putResource(Charlie, degreeOrigin, "US");
+        putResource(Charlie, transcript, "available");
+        putResource(Charlie, specialHonours, "none");
+        putResource(Charlie, GRE, 1100L);
+        putResource(Charlie, vGRE, 400L);
+        putResource(Charlie, GPR, 2.99);
 
-        putResource(Denis, priorGraduateWork, "none", priorGraduateWorkRelation, priorGraduateWorkTarget, priorGraduateWorkValue);
-        putResource(Denis, degreeOrigin, "US", degreeOriginRelation, degreeOriginTarget, degreeOriginValue);
-        putResource(Denis, transcript, "available", transcriptRelation, transcriptTarget, transcriptValue);
-        putResource(Denis, specialHonours, "none", specialHonoursRelation, specialHonoursTarget, specialHonoursValue);
-        putResource(Denis, GRE, 900L, GRErelation, GREtarget, GREvalue);
-        putResource(Denis, vGRE, 350L, vGRErelation, vGREtarget, vGREvalue);
-        putResource(Denis, GPR, 2.5, GPRrelation, GPRtarget, GPRvalue);
+        putResource(Denis, priorGraduateWork, "none");
+        putResource(Denis, degreeOrigin, "US");
+        putResource(Denis, transcript, "available");
+        putResource(Denis, specialHonours, "none");
+        putResource(Denis, GRE, 900L);
+        putResource(Denis, vGRE, 350L);
+        putResource(Denis, GPR, 2.5);
 
-        putResource(Eva, priorGraduateWork, "completed", priorGraduateWorkRelation, priorGraduateWorkTarget, priorGraduateWorkValue);
-        putResource(Eva, specialHonours, "valedictorian", specialHonoursRelation, specialHonoursTarget, specialHonoursValue);
-        putResource(Eva, GPR, 3.0, GPRrelation, GPRtarget, GPRvalue);
+        putResource(Eva, priorGraduateWork, "completed");
+        putResource(Eva, specialHonours, "valedictorian");
+        putResource(Eva, GPR, 3.0);
 
-        putResource(Frank, TOEFL, 550L, TOEFLrelation,TOEFLtarget, TOEFLvalue);
-        putResource(Frank, degreeOrigin, "US", degreeOriginRelation, degreeOriginTarget, degreeOriginValue);
-        putResource(Frank, transcript, "unavailable", transcriptRelation, transcriptTarget, transcriptValue);
-        putResource(Frank, specialHonours, "none", specialHonoursRelation, specialHonoursTarget, specialHonoursValue);
-        putResource(Frank, GRE, 100L, GRErelation, GREtarget, GREvalue);
+        putResource(Frank, TOEFL, 550L);
+        putResource(Frank, degreeOrigin, "US");
+        putResource(Frank, transcript, "unavailable");
+        putResource(Frank, specialHonours, "none");
+        putResource(Frank, GRE, 100L);
     }
 
     @Override

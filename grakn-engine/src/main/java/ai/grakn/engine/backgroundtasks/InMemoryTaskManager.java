@@ -24,13 +24,25 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class InMemoryTaskManager implements TaskManager {
     private static String RUN_ONCE_NAME = "One off task scheduler.";
@@ -65,6 +77,12 @@ public class InMemoryTaskManager implements TaskManager {
         return instance;
     }
 
+    public void shutdown(){
+        executorService.shutdown();
+        schedulingService.shutdown();
+        instance = null;
+    }
+
     public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
         Boolean recurring = (period != 0);
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
@@ -86,6 +104,7 @@ public class InMemoryTaskManager implements TaskManager {
 
         }
         catch (Throwable t) {
+            LOG.error(getFullStackTrace(t));
             stateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
             instantiatedTasks.remove(id);
 
@@ -109,6 +128,7 @@ public class InMemoryTaskManager implements TaskManager {
                 }
             });
         } catch (Throwable t){
+            LOG.error(getFullStackTrace(t));
             throw new RuntimeException(t);
         }
     }
@@ -163,6 +183,7 @@ public class InMemoryTaskManager implements TaskManager {
                 stateUpdateLock.unlock();
             }
             catch (Throwable t) {
+                LOG.error(getFullStackTrace(t));
                 stateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null, null);
             }
         };
