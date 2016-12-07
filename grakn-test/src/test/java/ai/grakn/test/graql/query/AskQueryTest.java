@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Before;
@@ -26,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -58,5 +58,10 @@ public class AskQueryTest extends AbstractMovieGraphTest {
                 var("x").value("Apocalypse Now"),
                 var("y").value("Martin Sheen")
         ).ask().execute());
+    }
+
+    @Test
+    public void testAskNoVariables() {
+        assertTrue(qb.match(name("person").playsRole("actor")).ask().execute());
     }
 }
