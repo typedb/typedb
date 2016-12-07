@@ -55,7 +55,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testTransitivity() {
         GraknGraph graph = TestGraph.getGraph("index", "transitivity-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa R;$x has index 'i'; select $y;";
@@ -80,7 +80,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestor() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
@@ -98,7 +98,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestorPrime() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor;$X has name 'aa'; select $Y;";
@@ -114,7 +114,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestor2() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;";
@@ -134,7 +134,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestor2Prime() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor;";
@@ -161,7 +161,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestorFriend() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; select $Y, $name;";
@@ -177,7 +177,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestorFriendPrime() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; select $Y;";
@@ -192,7 +192,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestorFriend2() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; select $X;";
@@ -209,7 +209,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testAncestorFriend2Prime() {
         GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; select $X;";
@@ -228,7 +228,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testSameGeneration(){
         GraknGraph graph = TestGraph.getGraph("name", "recursivity-sg-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; select $y;";
@@ -244,7 +244,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testTC() {
         GraknGraph graph = TestGraph.getGraph("index", "recursivity-tc-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; select $x;";
@@ -259,7 +259,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testReachability(){
         GraknGraph graph = TestGraph.getGraph("index", "reachability-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (reach-from: $x, reach-to: $y) isa reachable;";
@@ -281,7 +281,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testReachabilitySymmetric(){
         GraknGraph graph = TestGraph.getGraph("index", "reachability-test-symmetric.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa reachable;$x has index 'a';select $y;";
@@ -299,7 +299,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testMatrix(){
         final int N = 5;
         GraknGraph graph = MatrixGraph.getGraph(N, N);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; select $y;";
@@ -316,7 +316,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         final int N = 10;
         final int M = 5;
         GraknGraph graph = TailRecursionGraph.getGraph(N, M);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; select $y;";
@@ -332,7 +332,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testNguyen(){
         final int N = 9;
         GraknGraph graph = NguyenGraph.getGraph(N);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; select $y;";
@@ -349,7 +349,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testNguyen2(){
         final int N = 9;
         GraknGraph graph = NguyenGraph.getGraph(N);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $y isa S;";
@@ -364,7 +364,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testSameGenerationCao(){
         GraknGraph graph = TestGraph.getGraph("name", "same-generation-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa SameGen;$x has name 'ann';select $y;";
@@ -383,7 +383,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         final int N = 5;
         final int M = 5;
         GraknGraph graph = MatrixGraphII.getGraph(N, M);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; select $y;";
@@ -399,7 +399,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testPath(){
         final int N = 3;
         GraknGraph graph = PathGraph.getGraph(N, 3);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
@@ -414,7 +414,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testPathPrime(){
         final int N = 3;
         GraknGraph graph = PathGraph.getGraph(N, 3);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
@@ -430,7 +430,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testPathSymmetric(){
         final int N = 3;
         GraknGraph graph = PathGraphSymmetric.getGraph(N, 3);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
@@ -446,7 +446,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testPathII(){
         final int N = 3;
         GraknGraph graph = PathGraphII.getGraph(N, N);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
@@ -462,7 +462,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     public void testPathIIPrime(){
         final int N = 3;
         GraknGraph graph = PathGraphII.getGraph(N, N);
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
@@ -477,7 +477,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testReverseSameGeneration(){
         GraknGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; select $y;";
@@ -491,7 +491,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
     @Test
     public void testReverseSameGeneration2() {
         GraknGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;";

@@ -127,9 +127,11 @@ public class AtomicQuery extends Query{
      * materialise the query provided all variables are mapped
      */
     private QueryAnswers materialiseComplete() {
-        Atom atom = selectAtoms().iterator().next();
+        Atom atom = getAtom();
         QueryAnswers insertAnswers = new QueryAnswers();
-        if (!getMatchQuery().ask().execute()) {
+        boolean dataPresent = (atom.isResource() || atom.isUserDefinedName() && atom.getType().isRelationType())?
+                getMatchQuery().ask().execute() : false;
+        if(!dataPresent){
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
             Set<Concept> insertedConcepts = insert.stream().collect(Collectors.toSet());
             if (atom.isUserDefinedName()) {
@@ -155,8 +157,8 @@ public class AtomicQuery extends Query{
                             insertAnswers.add(answer);
                         });
             }
-        }
-        return insertAnswers;
+       }
+       return insertAnswers;
     }
 
     public QueryAnswers materialise(){ return materialiseComplete();}

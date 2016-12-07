@@ -20,7 +20,6 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
@@ -38,7 +37,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -53,7 +51,7 @@ public class GenealogyTest extends AbstractEngineTest{
         GenealogyGraph genealogyGraph = new GenealogyGraph();
         reasoner = new Reasoner(genealogyGraph.graph());
         graph = genealogyGraph.graph();
-        qb = graph.graql();
+        qb = graph.graql().setInference(false);
 
         /*
         //prerunning analytics
