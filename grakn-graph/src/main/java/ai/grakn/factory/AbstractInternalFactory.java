@@ -87,7 +87,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             //Closes the graph to force a full refresh if the other graph has committed
             if(hasCommitted){
                 try {
-                    graknGraph.closeGraph(ErrorMessage.CLOSED_FACTORY.getMessage());
+                    graknGraph.finaliseClose(graknGraph::closePermanent, ErrorMessage.CLOSED_FACTORY.getMessage());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

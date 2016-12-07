@@ -49,7 +49,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testTransitivity() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "$x isa university;$y isa country;(located-subject: $x, subject-location: $y) isa resides;";
@@ -65,7 +65,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testTransitivityPrime() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "$x isa university;$y isa country;($x, $y) isa resides;";
@@ -84,7 +84,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testTransitivity2() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa company;$y isa country;" +
                 "(located-subject: $x, subject-location: $y) isa resides;";
@@ -101,7 +101,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testTransitivity2Prime() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa company;$y isa country;" +
                 "($x, $y) isa resides;";
@@ -121,7 +121,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testTag() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "$x isa person;$y isa tag;($x, $y) isa recommendation;";
@@ -141,7 +141,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testTagVarSub() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "$y isa person;$t isa tag;($y, $t) isa recommendation;";
@@ -163,7 +163,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testProduct() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "$x isa person;$y isa product;($x, $y) isa recommendation;";
@@ -185,7 +185,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testProductVarSub() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "$y isa person;$yy isa product;($y, $yy) isa recommendation;";
@@ -207,7 +207,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testCombinedProductTag() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "$x isa person;{$y isa product;} or {$y isa tag;};($x, $y) isa recommendation;";
@@ -232,7 +232,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testCombinedProductTag2() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match " +
                 "{$p isa person;$r isa product;($p, $r) isa recommendation;} or" +
@@ -258,7 +258,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testBook() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
@@ -278,7 +278,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testBand() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
@@ -300,7 +300,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testVarConsistency(){
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$y isa product;" +
                     "($x, $y) isa recommendation;" +
@@ -321,7 +321,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testVarConsistency2(){
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         //select people that have Chopin as a recommendation
         String queryString = "match $x isa person; $y isa tag; ($x, $y) isa tagging;" +
@@ -342,7 +342,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testVarConsistency3(){
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$pr isa product, has name 'Nocturnes';($x, $pr) isa recommendation; select $x;";
         Query query = new Query(queryString, graph);
@@ -359,7 +359,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testQueryConsistency() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;" +
                         "$z isa person;$z has name 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y;";
@@ -384,7 +384,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testOrdering() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         //select recommendationS of Karl Fischer and their types
         String queryString = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
@@ -405,7 +405,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testOrdering2() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         //select recommendationS of Karl Fischer and their types
         String queryString2 = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
@@ -429,7 +429,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
     @Test
     public void testInverseVars() {
         GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
         //select recommendation of Karl Fischer and their types
         String queryString = "match $p isa product;" +

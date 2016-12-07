@@ -154,10 +154,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     );
                     return sb;
                 };
+            } else {
+                return graqlString(inner, map.entrySet());
             }
+        } else {
+            return sb -> sb.append("{}");
         }
-
-        return graqlString(inner, map.entrySet());
     }
 
     @Override

@@ -42,7 +42,11 @@ public abstract class Atom extends AtomBase {
 
     protected Atom(VarAdmin pattern) { this(pattern, null);}
     protected Atom(VarAdmin pattern, Query par) { super(pattern, par);}
-    protected Atom(Atom a) { super(a);}
+    protected Atom(Atom a) {
+        super(a);
+        this.type = a.type;
+        this.typeId = a.typeId;
+    }
 
     @Override
     public boolean isAtom(){ return true;}

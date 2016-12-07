@@ -33,7 +33,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.hamcrest.Matchers;
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -68,7 +68,12 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -703,7 +708,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
         Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
-        assertThat(types, allOf(hasItem("movie"), Matchers.not(hasItem("has-title"))));
+        assertThat(types, allOf(hasItem("movie"), not(hasItem("has-title"))));
     }
 
     @Test
@@ -732,12 +737,23 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
         Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
-        assertThat(types, allOf(hasItem("movie"), Matchers.not(hasItem("has-title"))));
+        assertThat(types, allOf(hasItem("movie"), not(hasItem("has-title"))));
 
         GraknGraph graph2 = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
         Set<String> typesAgain = graph2.graql().match(var("x").isa("type")).get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
         assertEquals(types, typesAgain);
+    }
+
+    @Test
+    public void testQueryNoVariables() {
+        MatchQuery query = qb.match(var().isa("movie"));
+        List<Map<String, Concept>> results = query.execute();
+        //noinspection unchecked
+        assertThat(results, allOf(
+                (Matcher) everyItem(not(hasKey(anything()))),
+                hasSize(QueryUtil.movies.length)
+        ));
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -43,7 +43,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
     @Test
     public void testConditionalAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
@@ -56,7 +56,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
     @Test
     public void testDeniedAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied';";
@@ -70,7 +70,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
     @Test
     public void testProvisionalAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional';";
@@ -84,7 +84,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
     @Test
     public void testWaitForTranscriptAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript';";
@@ -98,7 +98,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
     @Test
     public void testFullStatusAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has name $name;$x has admissionStatus 'full';";
@@ -113,7 +113,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
     @Test
     public void testAdmissions() {
         GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql();
+        QueryBuilder qb = graph.graql().setInference(false);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
