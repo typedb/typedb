@@ -98,7 +98,7 @@ public class TestGraph {
 
     protected void commit(){
         try {
-            graknGraph.commit();
+            graph().commit();
         } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
