@@ -19,11 +19,12 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
+import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -31,7 +32,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 
-public class AbstractInferenceTest {
+public class AbstractInferenceTest extends AbstractEngineTest {
 
     private static Reasoner reasoner;
     private static QueryBuilder qb;

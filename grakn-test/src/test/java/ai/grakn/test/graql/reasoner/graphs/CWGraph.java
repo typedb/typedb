@@ -105,35 +105,37 @@ public class CWGraph extends TestGraph {
                 .hasRole(payee).hasRole(payer);
 
         person = graknGraph.putEntityType("person")
-                .playsRole(hasKeyTarget)
                 .playsRole(seller)
                 .playsRole(payee)
                 .playsRole(nationalityTarget);
+        person.hasResource(key);
 
         criminal = graknGraph.putEntityType("criminal")
                 .superType(person);
 
         weapon = graknGraph.putEntityType("weapon")
-                .playsRole(hasKeyTarget)
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
+        weapon.hasResource(key);
+
         rocket = graknGraph.putEntityType("rocket")
-                .playsRole(hasKeyTarget)
                 .playsRole(transactionItem)
                 .playsRole(ownedItem)
                 .playsRole(propulsionTarget);
+        rocket.hasResource(key);
+
         missile = graknGraph.putEntityType("missile")
                 .superType(weapon)
-                .playsRole(hasKeyTarget)
                 .playsRole(transactionItem);
+        missile.hasResource(key);
 
         country = graknGraph.putEntityType("country")
-                .playsRole(hasKeyTarget)
                 .playsRole(buyer)
                 .playsRole(owner)
                 .playsRole(enemyTarget)
                 .playsRole(payer)
                 .playsRole(enemySource);
+        country.hasResource(key);
     }
 
     @Override
@@ -143,8 +145,8 @@ public class CWGraph extends TestGraph {
         America =  putEntity("America", country);
         Tomahawk =  putEntity("Tomahawk", rocket);
 
-        putResource(colonelWest, nationality, "American", nationalityRelation, nationalityTarget, nationalityValue);
-        putResource(Tomahawk, propulsion, "gsp", propulsionRelation, propulsionTarget, propulsionValue);
+        putResource(colonelWest, nationality, "American");
+        putResource(Tomahawk, propulsion, "gsp");
     }
 
     @Override
