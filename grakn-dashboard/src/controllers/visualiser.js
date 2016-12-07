@@ -116,7 +116,7 @@ export default {
         },
 
         onClickSubmit(query) {
-            this.errorMessage=undefined;
+            this.errorMessage = undefined;
             if (query.trim().startsWith("compute"))
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             else
@@ -137,10 +137,14 @@ export default {
 
             //When we will enable clustering, also need to check && !visualiser.expandCluster(node)
             if (eventKeys.altKey)
-                EngineClient.request({
-                    url: visualiser.nodes._data[node].ontology,
-                    callback: this.onGraphResponse
-                });
+                if (visualiser.nodes._data[node].ontology) {
+                    EngineClient.request({
+                        url: visualiser.nodes._data[node].ontology,
+                        callback: this.onGraphResponse
+                    });
+                } else {
+                    return;
+                }
             else {
                 var props = visualiser.getNode(node);
                 this.allNodeOntologyProps = {
@@ -276,8 +280,8 @@ export default {
             }
         },
 
-        onCloseError(){
-          this.errorMessage = undefined;
+        onCloseError() {
+            this.errorMessage = undefined;
         },
 
         /*
