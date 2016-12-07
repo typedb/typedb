@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
@@ -33,7 +32,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
+
+import static ai.grakn.graql.Graql.match;
 
 public class InferenceRule {
 
@@ -41,9 +41,8 @@ public class InferenceRule {
     private final AtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
-        QueryBuilder qb = graph.graql();
-        body = new Query(qb.setInference(false).match(rule.getLHS()), graph);
-        head = new AtomicQuery(qb.setInference(false).match(rule.getRHS()), graph);
+        body = new Query(match(rule.getLHS()), graph);
+        head = new AtomicQuery(match(rule.getRHS()), graph);
     }
 
     public Query getBody(){return body;}
