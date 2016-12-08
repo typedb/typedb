@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import java.util.UUID;
 import javafx.util.Pair;
 
 import java.util.HashSet;
@@ -83,11 +84,18 @@ public class InferenceRule {
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
         Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, head);
+        Map<String, String> rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
             head.removeAtom(childAtom);
             head.addAtom(newAtom);
-            unify(rewrite.getValue());
+            unify(rewriteUnifiers);
+
+            //resolve captures
+            Set<String> varIntersection = body.getVarSet();
+            varIntersection.retainAll(parentAtom.getVarNames());
+            varIntersection.removeAll(rewriteUnifiers.keySet());
+            varIntersection.forEach(var -> body.unify(var, UUID.randomUUID().toString()));
         }
     }
 
