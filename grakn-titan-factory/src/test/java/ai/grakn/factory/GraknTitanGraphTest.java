@@ -72,7 +72,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
             }
         });
 
-        assertEquals(108, graknGraph.getTinkerTraversal().toList().size());
+        assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
         graknGraph.putEntityType(UUID.randomUUID().toString());
@@ -88,7 +88,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
         graknGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, graknGraph.getTinkerTraversal().toList().size());
+        assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
@@ -105,7 +105,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
             }
         });
 
-        assertEquals(9, graknGraph.getTinkerTraversal().toList().size());
+        assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
     }
 
     @Test

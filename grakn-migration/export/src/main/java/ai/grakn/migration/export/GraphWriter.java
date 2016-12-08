@@ -80,7 +80,7 @@ public class GraphWriter {
      * @return a stream of all types with non-reserved IDs
      */
     private Stream<Type> types(){
-        return graph.getMetaType().instances().stream()
+        return graph.admin().getMetaType().instances().stream()
                 .map(Concept::asType)
                 .filter(t -> !reserved.contains(t.getName()));
     }
