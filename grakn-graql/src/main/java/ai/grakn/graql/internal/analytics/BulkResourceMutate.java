@@ -60,7 +60,7 @@ public class BulkResourceMutate<T> {
     private int currentNumberOfVertices = 0;
     private String resourceTypeName;
     private final String keyspace;
-    private Map<Vertex, T> resourcesToPersist = new HashMap<>();
+    private Map<String, T> resourcesToPersist = new HashMap<>();
 
     private ResourceType<T> resourceType;
     private RoleType resourceOwner;
@@ -84,7 +84,7 @@ public class BulkResourceMutate<T> {
         LOGGER.debug("Considering vertex: " + vertex);
         vertex.properties().forEachRemaining(p -> LOGGER.debug("Vertex property: " + p.toString()));
 
-        resourcesToPersist.put(vertex, value);
+        resourcesToPersist.put(vertex.id().toString(), value);
 
         if (currentNumberOfVertices >= batchSize) flush();
     }
@@ -132,8 +132,8 @@ public class BulkResourceMutate<T> {
         }
 
         initialiseGraph();
-        resourcesToPersist.forEach((vertex, value) -> {
-            Instance instance = graph.admin().buildConcept(vertex);
+        resourcesToPersist.forEach((id, value) -> {
+            Instance instance = graph.getConcept(id);
 
             // fetch all current resource assertions on the instance
             List<Relation> relations = instance.relations(resourceOwner).stream()
