@@ -167,12 +167,11 @@ public class HALConceptRepresentationBuilder {
             if (var.getProperty(RelationProperty.class).isPresent()) {
                 final String varHashCode =String.valueOf(var.hashCode());
                 roleTypes.put(varHashCode,new HashMap<>());
-                var.getProperty(RelationProperty.class).get()
-                        .getRelationPlayers().map(x -> {
-                    roleTypes.get(varHashCode).put(x.getRolePlayer().getVarName(),
-                            (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE);
-                    return x.getRolePlayer().getVarName();
-                });
+                var.getProperty(RelationProperty.class)
+                        .get()
+                        .getRelationPlayers()
+                        .forEach(x -> roleTypes.get(varHashCode).put(x.getRolePlayer().getVarName(),
+                                (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE));
             }
         });
         return roleTypes;
