@@ -169,7 +169,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     private Map<String, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
         return getSelectedNames().stream().collect(Collectors.toMap(
                 name -> name,
-                name -> graph.getConcept(vertices.get(name).id().toString())
+                name -> graph.admin().buildConcept(vertices.get(name))
         ));
     }
 

@@ -18,11 +18,8 @@
 
 package ai.grakn.graql.internal.query;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -31,6 +28,8 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -94,23 +93,11 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
         if (!deleter.getProperties().findAny().isPresent()) {
             // Delete whole concept if nothing specified to delete
-            deleteConcept(id);
+            result.delete();
         } else {
             deleter.getProperties().forEach(property ->
                     ((VarPropertyInternal) property).delete(getGraph(), result)
             );
-        }
-    }
-
-    /**
-     * Delete a concept by ID, rethrowing errors as RuntimeExceptions
-     * @param id an ID to delete in the graph
-     */
-    private void deleteConcept(String id) {
-        try {
-            getGraph().getConcept(id).delete();
-        } catch (ConceptException e) {
-            throw new RuntimeException(e);
         }
     }
 

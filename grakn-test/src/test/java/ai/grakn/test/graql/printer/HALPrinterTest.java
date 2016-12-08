@@ -62,7 +62,7 @@ public class HALPrinterTest extends AbstractMovieGraphTest {
 
     @Test
     public void testJsonMetaType() {
-        Type entityType = graph.getMetaEntityType();
+        Type entityType = graph.admin().getMetaEntityType();
         Json json = read(printer.graqlString(entityType));
         assertEquals("type", json.at("_baseType").asString());
     }

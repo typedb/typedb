@@ -192,14 +192,14 @@ public class GraqlTraversal {
 
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
-        return graph.getTinkerTraversal().limit(1).union(traversals);
+        return graph.admin().getTinkerTraversal().limit(1).union(traversals);
     }
 
     /**
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(ImmutableList<Fragment> fragmentList) {
-        GraphTraversal<Vertex, Vertex> traversal = graph.getTinkerTraversal();
+        GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal();
 
         Set<String> foundNames = new HashSet<>();
 

@@ -169,7 +169,7 @@ public class CWGraph extends TestGraph {
     }
     @Override
     protected void buildRules() {
-        RuleType inferenceRule = graknGraph.getMetaRuleInference();
+        RuleType inferenceRule = graknGraph.admin().getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
         Pattern R1_LHS = Graql.and(

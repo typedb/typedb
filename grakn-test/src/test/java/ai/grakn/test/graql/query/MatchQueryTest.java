@@ -664,7 +664,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testCannotLookUpCastingById() {
-        String castingId = graph.getTinkerTraversal()
+        String castingId = graph.admin().getTinkerTraversal()
                 .hasLabel(Schema.BaseType.CASTING.name()).id().next().toString();
 
         MatchQuery query = qb.match(var("x").id(castingId));

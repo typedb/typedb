@@ -146,11 +146,11 @@ public class MigrationCLI {
 
             StringBuilder builder = new StringBuilder();
             builder.append("Graph ontology contains:\n");
-            builder.append("\t ").append(graph.getMetaEntityType().instances().size()).append(" entity types\n");
-            builder.append("\t ").append(graph.getMetaRelationType().instances().size()).append(" relation types\n");
-            builder.append("\t ").append(graph.getMetaRoleType().instances().size()).append(" role types\n");
-            builder.append("\t ").append(graph.getMetaResourceType().instances().size()).append(" resource types\n");
-            builder.append("\t ").append(graph.getMetaRuleType().instances().size()).append(" rule types\n\n");
+            builder.append("\t ").append(graph.admin().getMetaEntityType().instances().size()).append(" entity types\n");
+            builder.append("\t ").append(graph.admin().getMetaRelationType().instances().size()).append(" relation types\n");
+            builder.append("\t ").append(graph.admin().getMetaRoleType().instances().size()).append(" role types\n");
+            builder.append("\t ").append(graph.admin().getMetaResourceType().instances().size()).append(" resource types\n");
+            builder.append("\t ").append(graph.admin().getMetaRuleType().instances().size()).append(" rule types\n\n");
 
             builder.append("Graph data contains:\n");
             builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).select("x").distinct().aggregate(count()).execute()).append(" entities\n");

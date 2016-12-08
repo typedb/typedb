@@ -183,7 +183,7 @@ public class GeoGraph extends TestGraph{
 
     @Override
     protected void buildRules() {
-        RuleType inferenceRule = graknGraph.getMetaRuleInference();
+        RuleType inferenceRule = graknGraph.admin().getMetaRuleInference();
         Pattern transitivity_LHS = and(graknGraph.graql().parsePatterns(
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;"));

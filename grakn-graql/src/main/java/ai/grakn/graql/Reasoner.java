@@ -79,7 +79,7 @@ public class Reasoner {
     }
 
     public static Set<Rule> getRules(GraknGraph graph) {
-        return new HashSet<>(graph.getMetaRuleInference().instances());
+        return new HashSet<>(graph.admin().getMetaRuleInference().instances());
     }
 
     public static boolean hasRules(GraknGraph graph) {

@@ -134,10 +134,10 @@ public class VisualiserController {
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             JSONObject responseObj = new JSONObject();
-            responseObj.put(ROLES_JSON_FIELD, instances(graph.getMetaRoleType()));
-            responseObj.put(ENTITIES_JSON_FIELD, instances(graph.getMetaEntityType()));
-            responseObj.put(RELATIONS_JSON_FIELD, instances(graph.getMetaRelationType()));
-            responseObj.put(RESOURCES_JSON_FIELD, instances(graph.getMetaResourceType()));
+            responseObj.put(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
+            responseObj.put(ENTITIES_JSON_FIELD, instances(graph.admin().getMetaEntityType()));
+            responseObj.put(RELATIONS_JSON_FIELD, instances(graph.admin().getMetaRelationType()));
+            responseObj.put(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
             return responseObj.toString();
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);

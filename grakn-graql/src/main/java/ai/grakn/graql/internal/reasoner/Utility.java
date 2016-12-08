@@ -115,7 +115,7 @@ public class Utility {
         VarAdmin endVar = Graql.var().isa(relType.getName()).rel(fromRoleName, "z").rel(toRoleName, "y").admin();
         VarAdmin headVar = Graql.var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
-        return graph.getMetaRuleInference().addRule(body, headVar);
+        return graph.admin().getMetaRuleInference().addRule(body, headVar);
     }
 
     /**
@@ -131,7 +131,7 @@ public class Utility {
 
         Var body = Graql.var().isa(relType.getName()).rel("x").rel("y");
         Var head = Graql.var().isa(relType.getName()).rel("x").rel("x");
-        return graph.getMetaRuleInference().addRule(body, head);
+        return graph.admin().getMetaRuleInference().addRule(body, head);
     }
 
     /**
@@ -158,7 +158,7 @@ public class Utility {
             childVar.rel(childRoleName, varName);
             vars.add(varName);
         });
-        return graph.getMetaRuleInference().addRule(childVar, parentVar);
+        return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
     }
 
 
@@ -177,7 +177,7 @@ public class Utility {
         });
 
         Var headVar = Graql.var().isa(relation.getName()).rel(fromRoleName, "x").rel(toRoleName, varNames.peek());
-        return graph.getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
+        return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
 
     //check whether child is compatible with parent, i.e. whether if child is true parent is also true

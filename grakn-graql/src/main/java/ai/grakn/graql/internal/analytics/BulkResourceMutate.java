@@ -84,8 +84,7 @@ public class BulkResourceMutate<T> {
         LOGGER.debug("Considering vertex: " + vertex);
         vertex.properties().forEachRemaining(p -> LOGGER.debug("Vertex property: " + p.toString()));
 
-        String id = vertex.id().toString();
-        resourcesToPersist.put(id, value);
+        resourcesToPersist.put(vertex.id().toString(), value);
 
         if (currentNumberOfVertices >= batchSize) flush();
     }

@@ -107,14 +107,14 @@ public class Analytics {
         }).collect(Collectors.toSet());
 
         // collect resource-types for statistics
-        graph.getMetaResourceType().instances().stream()
+        graph.admin().getMetaResourceType().instances().stream()
                 .map(Concept::asResourceType)
                 .forEach(type -> resourceTypeNames.put(type.getName(), type.getDataType().getName()));
 
         if (subtypes.isEmpty()) {
-            graph.getMetaEntityType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
-            graph.getMetaResourceType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
-            graph.getMetaRelationType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.admin().getMetaEntityType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.admin().getMetaResourceType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.admin().getMetaRelationType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
             this.subtypeNames.removeAll(analyticsElements);
         } else {
             for (Type t : subtypes) {
@@ -297,7 +297,8 @@ public class Analytics {
         if (!verticesExistInSubgraph(sourceId, destinationId))
             throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
-        if (sourceId.equals(destinationId)) return Collections.singletonList(graph.getConcept(sourceId));
+        if (sourceId.equals(destinationId))
+            return Collections.singletonList(graph.getConcept(sourceId));
         GraknComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ShortestPathVertexProgram(subtypeNames, sourceId, destinationId),
                 new ClusterMemberMapReduce(subtypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
