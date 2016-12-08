@@ -18,25 +18,24 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
-import com.jayway.restassured.response.Response;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineTestBase;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.REST.GraphConfig;
+import com.jayway.restassured.response.Response;
 import mjson.Json;
-
+import org.junit.Assert;
 import org.junit.Test;
 
-import static com.jayway.restassured.RestAssured.get;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
 import static ai.grakn.util.REST.WebPath.KEYSPACE_LIST;
+import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import org.junit.Assert;
 
 public class GraphFactoryControllerTest extends GraknEngineTestBase {
 
@@ -65,14 +64,10 @@ public class GraphFactoryControllerTest extends GraknEngineTestBase {
         Response responseDefault = get(endPoint + GraphConfig.DEFAULT).
                 then().statusCode(200).extract().response().andReturn();
 
-        Response responseBatch = get(endPoint + GraphConfig.BATCH).
-                then().statusCode(200).extract().response().andReturn();
-
         Response responseComputer = get(endPoint + GraphConfig.COMPUTER).
                 then().statusCode(200).extract().response().andReturn();
 
-        assertNotEquals(responseDefault, responseBatch);
-        assertNotEquals(responseComputer, responseBatch);
+        assertNotEquals(responseDefault, responseComputer);
     }
 
     @Test

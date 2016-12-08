@@ -73,7 +73,6 @@ public class REST {
 
     public static class GraphConfig{
         public static final String DEFAULT = "default";
-        public static final String BATCH = "batch";
         public static final String COMPUTER = "computer";
     }
 
