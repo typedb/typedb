@@ -37,7 +37,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -279,11 +278,9 @@ public class GenealogyTest extends AbstractEngineTest{
 
     @Test
     public void testCousins() {
-        long startTime = System.currentTimeMillis();
         String queryString = "match ($x, $y) isa cousins;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        System.out.println("computed in: " + (System.currentTimeMillis() - startTime));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
