@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknAdmin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
@@ -63,7 +64,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
-public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph {
+public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private final ElementFactory elementFactory;
     private final String keyspace;
@@ -124,6 +125,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph 
     @Override
     public void showImplicitConcepts(boolean flag){
         localShowImplicitStructures.set(flag);
+    }
+
+    @Override
+    public GraknAdmin admin(){
+        return this;
+    }
+
+    @Override
+    public <T extends Concept> T buildConcept(Vertex vertex) {
+        return elementFactory.buildUnknownConcept(vertex);
     }
 
     public boolean hasCommitted(){

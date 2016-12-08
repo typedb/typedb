@@ -107,14 +107,14 @@ public class Analytics {
         }).collect(Collectors.toSet());
 
         // collect resource-types for statistics
-        graph.getMetaResourceType().instances().stream()
+        graph.admin().getMetaResourceType().instances().stream()
                 .map(Concept::asResourceType)
                 .forEach(type -> resourceTypeNames.put(type.getName(), type.getDataType().getName()));
 
         if (subtypes.isEmpty()) {
-            graph.getMetaEntityType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
-            graph.getMetaResourceType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
-            graph.getMetaRelationType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.admin().getMetaEntityType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.admin().getMetaResourceType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.admin().getMetaRelationType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
             this.subtypeNames.removeAll(analyticsElements);
         } else {
             for (Type t : subtypes) {

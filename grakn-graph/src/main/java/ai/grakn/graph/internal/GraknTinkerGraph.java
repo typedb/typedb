@@ -18,7 +18,9 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -43,4 +45,5 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     public void rollback(){
         throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
     }
+
 }

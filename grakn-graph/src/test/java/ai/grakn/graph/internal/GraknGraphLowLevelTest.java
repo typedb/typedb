@@ -368,6 +368,12 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         assertNull(graknGraph.getConcept("1"));
     }
 
+    @Test
+    public void testBuildConceptFromVertex(){
+        EntityTypeImpl sampleEntityType = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
+        EntityType sampleEntityType2 = graknGraph.admin().buildConcept(sampleEntityType.getVertex());
+        assertEquals(sampleEntityType, sampleEntityType2);
+    }
 
     @Test
     public void testGetInstancesFromMeta(){

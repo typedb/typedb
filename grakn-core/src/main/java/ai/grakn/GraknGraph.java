@@ -161,7 +161,7 @@ public interface GraknGraph extends AutoCloseable{
 
     /**
      *
-     * @return The admin interface which allows you to access more low level details of the graph. 
+     * @return The admin interface which allows you to access more low level details of the graph.
      */
     GraknAdmin admin();
 
