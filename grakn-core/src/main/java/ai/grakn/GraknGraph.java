@@ -30,8 +30,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Map;
@@ -151,55 +149,6 @@ public interface GraknGraph extends AutoCloseable{
      */
     RuleType getRuleType(String name);
 
-    //------------------------------------- Relationship Handling ----------------------------------
-    /**
-     *
-     * @return The meta type -> type. The root of all Types.
-     */
-    Type getMetaType();
-
-    /**
-     *
-     * @return The meta relation type -> relation-type. The root of all Relation Types.
-     */
-    Type getMetaRelationType();
-
-    /**
-     *
-     * @return The meta role type -> role-type. The root of all the Role Types.
-     */
-    Type getMetaRoleType();
-
-    /**
-     *
-     * @return The meta resource type -> resource-type. The root of all the Resource Types.
-     */
-    Type getMetaResourceType();
-
-    /**
-     *
-     * @return The meta entity type -> entity-type. The root of all the Entity Types.
-     */
-    Type getMetaEntityType();
-
-    /**
-     *
-     * @return The meta rule type -> rule-type. The root of all the Rule Types.
-     */
-    Type getMetaRuleType();
-
-    /**
-     *
-     * @return The meta rule -> inference-rule.
-     */
-    RuleType getMetaRuleInference();
-
-    /**
-     *
-     * @return The meta rule -> constraint-rule.
-     */
-    RuleType getMetaRuleConstraint();
-
     /**
      *
      * @param relationType The Relation Type which we wish to find a Relation instance of.
@@ -209,6 +158,13 @@ public interface GraknGraph extends AutoCloseable{
     Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
     //------------------------------------- Utilities ----------------------------------
+
+    /**
+     *
+     * @return The admin interface which allows you to access more low level details of the graph. 
+     */
+    GraknAdmin admin();
+
     /**
      *
      * @param flag Specifies if implicit and system generated types should be returned.
@@ -237,12 +193,6 @@ public interface GraknGraph extends AutoCloseable{
      * @return True if the graph has been closed
      */
     boolean isClosed();
-
-    /**
-     *
-     * @return A read only tinkerpop traversal for manually traversing the graph
-     */
-    GraphTraversal<Vertex, Vertex> getTinkerTraversal();
 
     /**
      *
