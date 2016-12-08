@@ -219,7 +219,7 @@ public class GraqlTest extends AbstractGraphTest {
 
         PathQuery query = qb.parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
-        List<String> result = query.execute().stream().map(Concept::getId).collect(Collectors.toList());
+        List<String> result = query.execute().get().stream().map(Concept::getId).collect(Collectors.toList());
 
         List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 

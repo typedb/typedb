@@ -24,8 +24,9 @@ import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-public interface PathQuery extends ComputeQuery<List<Concept>> {
+public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
 
     PathQuery from(String sourceId);
 
@@ -38,7 +39,7 @@ public interface PathQuery extends ComputeQuery<List<Concept>> {
     PathQuery in(Collection<String> subTypeNames);
 
     @Override
-    List<Concept> execute();
+    Optional<List<Concept>> execute();
 
     @Override
     PathQuery withGraph(GraknGraph graph);
