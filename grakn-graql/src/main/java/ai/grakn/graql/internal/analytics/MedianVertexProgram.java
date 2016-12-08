@@ -200,7 +200,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.info("Finished Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Iteration " + memory.getIteration());
 
         if (memory.getIteration() == 2) {
             memory.set(INDEX_START, 0L);

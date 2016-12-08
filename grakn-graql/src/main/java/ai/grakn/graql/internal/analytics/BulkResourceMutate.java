@@ -104,10 +104,10 @@ public class BulkResourceMutate<T> {
             try {
                 persistResources();
             } catch (Exception e) {
-                LOGGER.info("Exception: " + e.getMessage());
+                LOGGER.debug("Exception: " + e.getMessage());
                 hasFailed = true;
                 numberOfFailures++;
-                LOGGER.info("Number of failures: " + numberOfFailures);
+                LOGGER.debug("Number of failures: " + numberOfFailures);
                 if (numberOfFailures >= numberOfRetries) {
                     LOGGER.debug("REACHED MAX NUMBER OF RETRIES !!!!!!!!");
                     throw new RuntimeException(
