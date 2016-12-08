@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
+@Deprecated
 class ComputeQueryImpl implements ComputeQuery {
 
     private final Optional<GraknGraph> graph;

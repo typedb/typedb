@@ -54,6 +54,8 @@ public class BulkResourceMutate<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BulkResourceMutate.class);
 
     private static final int numberOfRetries = 10;
+    private static final int initialSleepTime = 100;
+    private static final double exponentialSleepPower = 1.55; // The longest sleep time is about 5 seconds
 
     private int batchSize = 100;
     private GraknGraph graph;
@@ -93,12 +95,12 @@ public class BulkResourceMutate<T> {
      * Force all pending operations in the batch to be committed.
      */
     void flush() {
+        LOGGER.debug("Flush called, about to persist");
         boolean hasFailed;
         int numberOfFailures = 0;
 
         do {
             hasFailed = false;
-            LOGGER.debug("Flush called, about to persist");
             try {
                 persistResources();
             } catch (Exception e) {
@@ -106,17 +108,17 @@ public class BulkResourceMutate<T> {
                 hasFailed = true;
                 numberOfFailures++;
                 LOGGER.info("Number of failures: " + numberOfFailures);
-                LOGGER.info("Backing Off");
-                // TODO: Perform exponential backoff
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-                if (!(numberOfFailures < numberOfRetries)) {
+                if (numberOfFailures >= numberOfRetries) {
                     LOGGER.debug("REACHED MAX NUMBER OF RETRIES !!!!!!!!");
                     throw new RuntimeException(
                             ErrorMessage.BULK_PERSIST.getMessage(resourceTypeName, e.getMessage()), e);
+                }
+                try {
+                    long sleepTime = (long) (initialSleepTime * Math.pow(exponentialSleepPower, numberOfFailures));
+                    LOGGER.debug("Start sleeping for " + sleepTime + " ms");
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
                 }
             }
         } while (hasFailed);

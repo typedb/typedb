@@ -150,7 +150,7 @@ public class DegreeTest extends AbstractGraphTest {
         ));
     }
 
-    @Ignore //TODO: Stabalise this test. It fails way too often.
+//    @Ignore //TODO: Stabalise this test. It fails way too often.
     @Test
     public void testDegreesAndPersist() throws Exception {
         // TODO: Fix on TinkerGraphComputer

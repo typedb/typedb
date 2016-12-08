@@ -23,7 +23,14 @@ import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static ai.grakn.graql.internal.query.analytics.AbstractComputeQuery.connectedComponent;
+import static ai.grakn.graql.internal.query.analytics.AbstractComputeQuery.degree;
 
 /**
  * Core Grakn implementation of the common methods on the MapReduce and VertexProgram interfaces.
@@ -33,15 +40,12 @@ public abstract class CommonOLAP {
     private static final String PREFIX_SELECTED_TYPE_KEY = "SELECTED_TYPE";
     private static final String PREFIX_PERSISTENT_PROPERTIES = "PERSISTENT";
 
-    public static final String degree = "degree";
-    public static final String connectedComponent = "connectedComponent";
-
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
     public static final Set<String> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
-            Analytics.degree, Schema.Resource.HAS_RESOURCE.getName(Analytics.degree),
-            Analytics.connectedComponent, Schema.Resource.HAS_RESOURCE.getName(Analytics.connectedComponent)));
+            degree, Schema.Resource.HAS_RESOURCE.getName(degree),
+            connectedComponent, Schema.Resource.HAS_RESOURCE.getName(connectedComponent)));
 
     /**
      * The concepts that can be "seen" by analytics by default.

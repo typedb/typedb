@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -61,8 +62,8 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public void workerIterationStart(Memory memory) {
-        bulkResourceMutate =
-                new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY), Analytics.degree);
+        bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY),
+                AbstractComputeQuery.degree);
     }
 
     @Override
