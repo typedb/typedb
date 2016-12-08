@@ -230,6 +230,7 @@ public class PostprocessingTest extends GraphTestBase{
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type).getVertex());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(), index);
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
+        resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
         return new ResourceImpl(resourceVertex, type, graknGraph);
     }

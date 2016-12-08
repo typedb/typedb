@@ -87,6 +87,7 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
         TitanManagement management = sharedGraph.openManagement();
 
         //Test Composite Indices
+        assertEquals("byId", management.getGraphIndex("byId").toString());
         assertEquals("byIndex", management.getGraphIndex("byIndex").toString());
         assertEquals("byValueString", management.getGraphIndex("byValueString").toString());
         assertEquals("byValueLong", management.getGraphIndex("byValueLong").toString());
