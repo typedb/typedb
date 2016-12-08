@@ -5,7 +5,7 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_HOME=$(cd "${GRAKN_BIN}"/.. && pwd -P)
 fi
 
-CONCATCLASSPATH=$CLASSPATH":"${GRAKN_HOME}/lib/*"
+CONCATCLASSPATH=$CLASSPATH":"${GRAKN_HOME}/lib/*
 
 if [ $1 == "csv" ]
 then
