@@ -281,9 +281,7 @@ public class InsertQueryExecutor {
      * @param <S> the class of the instance, e.g. Entity
      * @return an instance of the specified type, with the given ID if one was specified
      */
-    private <T extends Type, S extends Instance> S addOrGetInstance(
-            Optional<String> id, Supplier<S> addInstance
-    ) {
+    private <T extends Type, S extends Instance> S addOrGetInstance(Optional<String> id, Supplier<S> addInstance) {
         return id.map(graph::<S>getConcept).orElseGet(addInstance);
     }
 
