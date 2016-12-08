@@ -585,7 +585,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public String getId(){
-        return getBaseIdentifier().toString();
+        return getProperty(Schema.ConceptProperty.ID);
     }
 
     /**
