@@ -85,7 +85,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public void setup(final Memory memory) {
-        LOGGER.info("ShortestPathVertexProgram Started !!!!!!!!");
+        LOGGER.debug("ShortestPathVertexProgram Started !!!!!!!!");
         memory.set(VOTE_TO_HALT_SOURCE, true);
         memory.set(VOTE_TO_HALT_DESTINATION, true);
         memory.set(FOUND_PATH, false);
@@ -298,7 +298,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.info("Finished Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() == 0) return false;
 
         if ((Boolean)memory.get(FOUND_PATH)) {

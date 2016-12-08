@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import com.google.common.collect.Sets;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -169,7 +170,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.info("Finished Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() < 3) return false;
         if ((Boolean)memory.get(IS_LAST_ITERATION)) return true;
 
@@ -196,7 +197,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
             LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
             bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE),
-                    Analytics.connectedComponent);
+                    AbstractComputeQuery.connectedComponent);
         }
     }
 

@@ -1,11 +1,11 @@
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
 public class ShortestPathTest extends AbstractGraphTest {
@@ -75,13 +76,13 @@ public class ShortestPathTest extends AbstractGraphTest {
         graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test//(expected = RuntimeException.class)
     public void testShortestPathExceptionPathNotFound() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        graph.graql().compute().path().from(entityId1).to(entityId5).execute();
+        assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
     }
 
     @Test
@@ -96,14 +97,14 @@ public class ShortestPathTest extends AbstractGraphTest {
         // directly connected vertices
         correctPath = Lists.newArrayList(entityId1, relationId12);
         result = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = Graql.compute().withGraph(graph).path().to(entityId1).from(relationId12).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -112,14 +113,14 @@ public class ShortestPathTest extends AbstractGraphTest {
         // entities connected by a relation
         correctPath = Lists.newArrayList(entityId1, relationId12, entityId2);
         result = graph.graql().compute().path().from(entityId1).to(entityId2).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().to(entityId1).from(entityId2).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -128,14 +129,14 @@ public class ShortestPathTest extends AbstractGraphTest {
         // only one path exists with given subtypes
         correctPath = Lists.newArrayList(entityId2, relationId12, entityId1, relationId13, entityId3);
         result = Graql.compute().withGraph(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId3).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -143,14 +144,14 @@ public class ShortestPathTest extends AbstractGraphTest {
 
         correctPath = Lists.newArrayList(entityId1, relationId12, entityId2);
         result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId1).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -168,14 +169,14 @@ public class ShortestPathTest extends AbstractGraphTest {
 
         correctPath = Lists.newArrayList(entityId2, relationId12, entityId1, relationId13, entityId3);
         result = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().to(entityId2).from(entityId3).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -183,14 +184,14 @@ public class ShortestPathTest extends AbstractGraphTest {
 
         correctPath = Lists.newArrayList(relationId1A12, entityId1, relationId13, entityId3);
         result = graph.graql().compute().path().from(relationId1A12).to(entityId3).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().to(relationId1A12).from(entityId3).execute()
-                .stream().map(Concept::getId).collect(Collectors.toList());
+                .get().stream().map(Concept::getId).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -233,7 +234,6 @@ public class ShortestPathTest extends AbstractGraphTest {
                 .putRolePlayer(role2, entity4).getId();
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
     private void addOntologyAndEntities2() throws GraknValidationException {
@@ -270,6 +270,5 @@ public class ShortestPathTest extends AbstractGraphTest {
                 .putRolePlayer(role4, graph.getConcept(relationId12)).getId();
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 }

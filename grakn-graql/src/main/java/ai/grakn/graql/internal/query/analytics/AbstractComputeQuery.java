@@ -55,7 +55,7 @@ import static java.util.stream.Collectors.joining;
 public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     public static final String degree = "degree";
-    public static final String connectedComponent = "connectedComponent";
+    public static final String connectedComponent = "cluster";
     private static final int numberOfOntologyChecks = 10;
 
     static final Logger LOGGER = LoggerFactory.getLogger(AbstractComputeQuery.class);

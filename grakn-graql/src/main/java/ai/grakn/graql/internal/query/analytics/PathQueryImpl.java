@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
-public class PathQueryImpl extends AbstractComputeQuery<List<Concept>> implements PathQuery {
+public class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
 
     private String sourceId = null;
     private String destinationId = null;
@@ -50,17 +50,26 @@ public class PathQueryImpl extends AbstractComputeQuery<List<Concept>> implement
     }
 
     @Override
-    public List<Concept> execute() {
+    public Optional<List<Concept>> execute() {
         LOGGER.info("ShortestPathVertexProgram is called");
         if (sourceId == null) throw new IllegalStateException(ErrorMessage.NO_SOURCE.getMessage());
         if (destinationId == null) throw new IllegalStateException(ErrorMessage.NO_DESTINATION.getMessage());
         initSubGraph();
         if (!verticesExistInSubgraph(sourceId, destinationId))
             throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
-        if (sourceId.equals(destinationId)) return Collections.singletonList(graph.get().getConcept(sourceId));
-        ComputerResult result = getGraphComputer().compute(
-                new ShortestPathVertexProgram(subTypeNames, sourceId, destinationId),
-                new ClusterMemberMapReduce(subTypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
+        if (sourceId.equals(destinationId))
+            return Optional.of(Collections.singletonList(graph.get().getConcept(sourceId)));
+        ComputerResult result;
+        try {
+            result = getGraphComputer().compute(
+                    new ShortestPathVertexProgram(subTypeNames, sourceId, destinationId),
+                    new ClusterMemberMapReduce(subTypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
+        } catch (IllegalStateException e) {
+            if (e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) {
+                return Optional.empty();
+            }
+            throw e;
+        }
         Map<Integer, Set<String>> map = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
 
         List<String> path = new ArrayList<>();
@@ -71,7 +80,7 @@ public class PathQueryImpl extends AbstractComputeQuery<List<Concept>> implement
                 .collect(Collectors.toList()));
         path.add(destinationId);
         LOGGER.info("ShortestPathVertexProgram is done");
-        return path.stream().map(graph.get()::<Instance>getConcept).collect(Collectors.toList());
+        return Optional.of(path.stream().map(graph.get()::<Instance>getConcept).collect(Collectors.toList()));
     }
 
     @Override
