@@ -19,11 +19,9 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
-import static ai.grakn.util.Schema.BaseType.CASTING;
 import static ai.grakn.util.Schema.ConceptProperty.NAME;
 
 class NameFragment extends AbstractFragment {
@@ -37,8 +35,7 @@ class NameFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        // Whenever looking up by name, we have to confirm this is not a casting
-        traversal.has(NAME.name(), name).not(__.hasLabel(CASTING.name()));
+        traversal.has(NAME.name(), name);
     }
 
     @Override
