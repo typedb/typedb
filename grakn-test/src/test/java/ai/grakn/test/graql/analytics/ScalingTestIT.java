@@ -26,11 +26,14 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.engine.loader.client.LoaderClient;
 import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.AbstractScalingTest;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
@@ -73,14 +76,15 @@ import static org.junit.Assert.assertFalse;
 public class ScalingTestIT extends AbstractScalingTest {
 
     private static final String[] HOST_NAME =
-            {"localhost"};
+            {Grakn.DEFAULT_URI};
 
     String keyspace;
     private GraknGraphFactory factory;
+    Logger LOGGER;
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 100000; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 100; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
@@ -111,6 +115,10 @@ public class ScalingTestIT extends AbstractScalingTest {
         headers = new ArrayList<>();
         headers.add("Size");
         headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
+
+        // fetch the logger
+        LOGGER = (Logger) org.slf4j.LoggerFactory.getLogger(ScalingTestIT.class);
+        LOGGER.setLevel(Level.INFO);
     }
 
     @After
@@ -123,13 +131,6 @@ public class ScalingTestIT extends AbstractScalingTest {
     public void countIT() throws InterruptedException, ExecutionException, GraknValidationException, IOException {
         CSVPrinter printer = createCSVPrinter("countIT.txt");
 
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter("countITProgress.txt", "UTF-8");
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
         // Insert super nodes into graph
         simpleOntology(keyspace);
 
@@ -137,19 +138,17 @@ public class ScalingTestIT extends AbstractScalingTest {
 
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
-            writer.println("current scale - super " + NUM_SUPER_NODES + " - nodes " + graphSize);
+            LOGGER.info("current scale - super " + NUM_SUPER_NODES + " - nodes " + graphSize);
             Long conceptCount = Long.valueOf(NUM_SUPER_NODES * (graphSize + 1) + graphSize);
-            printer.print(String.valueOf(graphSize));
+            printer.print(String.valueOf(conceptCount));
 
-            writer.println("start generate graph " + System.currentTimeMillis() / 1000L + "s");
-            writer.flush();
-            addNodes(keyspace, previousGraphSize, graphSize);
-            addEdgesToSuperNodes(keyspace, superNodes, previousGraphSize, graphSize);
+            LOGGER.info("start generate graph " + System.currentTimeMillis() / 1000L + "s");
+            addNodesToSuperNodes(keyspace, superNodes, previousGraphSize, graphSize);
             previousGraphSize = graphSize;
-            writer.println("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
-            writer.flush();
+            LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
 
             for (int workerNumber : workerNumbers) {
+                LOGGER.info("Setting number of workers to: "+workerNumber);
                 Analytics computer = new AnalyticsMock(keyspace, new HashSet<>(), new HashSet<>(), workerNumber);
 
                 Long countTime = 0L;
@@ -157,29 +156,24 @@ public class ScalingTestIT extends AbstractScalingTest {
                 GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
                 for (int i = 0; i < REPEAT; i++) {
-                    writer.println("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
-                    writer.println("repeat number: " + i);
-                    writer.flush();
+                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
+                    LOGGER.info("repeat number: " + i);
                     Long startTime = System.currentTimeMillis();
                     Long count = computer.count();
                     assertEquals(conceptCount, count);
-                    writer.println("count: " + count);
-                    writer.flush();
+                    LOGGER.info("count: " + count);
                     Long stopTime = System.currentTimeMillis();
                     countTime += stopTime - startTime;
-                    writer.println("count time: " + countTime / ((i + 1) * 1000));
+                    LOGGER.info("count time: " + countTime / ((i + 1) * 1000));
                 }
 
                 countTime /= REPEAT * 1000;
-                writer.println("time to count: " + countTime);
+                LOGGER.info("time to count: " + countTime);
                 printer.print(String.valueOf(countTime));
             }
             printer.println();
             printer.flush();
         }
-
-        writer.flush();
-        writer.close();
 
         printer.flush();
         printer.close();
@@ -577,7 +571,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
         thing.playsRole(relation1).playsRole(relation2);
-        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
         graph.commit();
     }
 
@@ -585,9 +579,6 @@ public class ScalingTestIT extends AbstractScalingTest {
         // make the supernodes
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.getEntityType("thing");
-        RoleType relation1 = graph.getRoleType("relation1");
-        RoleType relation2 = graph.getRoleType("relation2");
-        RelationType related = graph.getRelationType("related");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
             superNodes.add(thing.addEntity().getId());
@@ -620,6 +611,30 @@ public class ScalingTestIT extends AbstractScalingTest {
 
             startNode++;
         }
+        loaderClient.waitToFinish();
+    }
+
+    private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
+        // batch in the nodes
+        LoaderClient loaderClient = new LoaderClient(keyspace,
+                Arrays.asList(HOST_NAME));
+//        loaderClient.setThreadsNumber(30);
+//        loaderClient.setPollingFrequency(1000);
+//        loaderClient.setBatchSize(100);
+
+        for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
+            List<Var> insertQuery = new ArrayList<>();
+            insertQuery.add(var(String.valueOf(nodeIndex)).isa("thing"));
+            for (String supernodeId : superNodes) {
+                insertQuery.add(var(supernodeId).id(supernodeId));
+                String nodeId = "node-" + nodeIndex;
+                insertQuery.add(var().isa("related")
+                        .rel("relation1", String.valueOf(nodeIndex))
+                        .rel("relation2", supernodeId));
+            }
+            loaderClient.add(insert(insertQuery));
+        }
+
         loaderClient.waitToFinish();
     }
 }
