@@ -82,7 +82,7 @@ public class AbstractGraph extends TestGraph{
     }
     @Override
     protected void buildRules() {
-        RuleType inferenceRule = graknGraph.getMetaRuleInference();
+        RuleType inferenceRule = graknGraph.admin().getMetaRuleInference();
 
         Pattern R1_LHS = and(graknGraph.graql().parsePatterns("$x isa p;$y isa q;($x, $y) isa rel;"));
         Pattern R1_RHS = and(graknGraph.graql().parsePatterns("$x isa Q;"));

@@ -20,31 +20,29 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.reasoner.Utility;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.AbstractEngineTest;
-import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
-import java.util.LinkedHashMap;
-import java.util.List;
+import com.google.common.collect.Sets;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.and;
@@ -73,7 +71,7 @@ public class ReasonerTest extends AbstractEngineTest{
         Pattern body = and(graph.graql().parsePatterns("(subject-location: $x, located-subject: $x1) isa resides;"));
         Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
 
-        InferenceRule R2 = new InferenceRule(graph.getMetaRuleInference().addRule(body, head), graph);
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
         Rule rule = Utility.createSubPropertyRule(parent, child, roleMap, graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
@@ -94,7 +92,7 @@ public class ReasonerTest extends AbstractEngineTest{
                       "(member-location: $z, container-location: $y) isa sublocate;"));
         Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $y) isa sublocate;"));
 
-        InferenceRule R2 = new InferenceRule(graph.getMetaRuleInference().addRule(body, head), graph);
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -108,7 +106,7 @@ public class ReasonerTest extends AbstractEngineTest{
         Pattern body = and(graph.graql().parsePatterns("($x, $y) isa knows;"));
         Pattern head = and(graph.graql().parsePatterns("($x, $x) isa knows;"));
 
-        InferenceRule R2 = new InferenceRule(graph.getMetaRuleInference().addRule(body, head), graph);
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -132,7 +130,7 @@ public class ReasonerTest extends AbstractEngineTest{
                 "(member-location: $z, container-location: $y) isa sublocate;"));
         Pattern head = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $z) isa resides;"));
 
-        InferenceRule R2 = new InferenceRule(graph.getMetaRuleInference().addRule(body, head), graph);
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -183,7 +181,7 @@ public class ReasonerTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         Pattern body = and(graph.graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(graph.graql().parsePatterns("$x has firstname 'Bob';"));
-        graph.getMetaRuleInference().addRule(body, head);
+        graph.admin().getMetaRuleInference().addRule(body, head);
 
         //Reasoner reasoner = new Reasoner(graph);
         QueryAnswers answers = new QueryAnswers(query.execute());
@@ -483,7 +481,7 @@ public class ReasonerTest extends AbstractEngineTest{
         GraknGraph graph = SNBGraph.getGraph();
         Pattern body = graph.graql().parsePattern("$x isa person");
         Pattern head = graph.graql().parsePattern("($x, $x) isa knows");
-        graph.getMetaRuleInference().addRule(body, head);
+        graph.admin().getMetaRuleInference().addRule(body, head);
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
