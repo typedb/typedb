@@ -70,18 +70,18 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     }
 
     @Override
-    TitanGraph buildTinkerPopGraph() {
-        return newTitanGraph(super.keyspace, super.engineUrl, super.config);
+    TitanGraph buildTinkerPopGraph(boolean batchLoading) {
+        return newTitanGraph(super.keyspace, super.engineUrl, super.config, batchLoading);
     }
 
-    private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig){
-        TitanGraph titanGraph = configureGraph(name, address, pathToConfig);
+    private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig, boolean batchLoading){
+        TitanGraph titanGraph = configureGraph(name, address, pathToConfig, batchLoading);
         buildTitanIndexes(titanGraph);
         titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         return titanGraph;
     }
 
-    private TitanGraph configureGraph(String name, String address, String pathToConfig){
+    private TitanGraph configureGraph(String name, String address, String pathToConfig, boolean batchLoading){
         ResourceBundle defaultConfig;
         if(pathToConfig == null) {
             defaultConfig = ResourceBundle.getBundle(DEFAULT_CONFIG);
@@ -97,7 +97,8 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
 
         TitanFactory.Builder builder = TitanFactory.build().
                 set("storage.hostname", address).
-                set("storage.cassandra.keyspace", name);
+                set("storage.cassandra.keyspace", name).
+                set("storage.batch-loading", batchLoading);
 
         defaultConfig.keySet().forEach(key -> builder.set(key, defaultConfig.getString(key)));
         return builder.open();

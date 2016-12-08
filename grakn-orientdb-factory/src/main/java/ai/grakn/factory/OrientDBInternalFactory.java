@@ -62,7 +62,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     }
 
     @Override
-    OrientGraph buildTinkerPopGraph() {
+    OrientGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn(ErrorMessage.CONFIG_IGNORED.getMessage("pathToConfig", super.config));
         return configureGraph(super.keyspace, super.engineUrl);
     }

@@ -50,7 +50,7 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    HadoopGraph buildTinkerPopGraph() {
+    HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
         return (HadoopGraph) GraphFactory.open(buildConfig(super.keyspace, super.config));
     }
