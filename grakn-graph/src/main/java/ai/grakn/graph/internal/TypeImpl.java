@@ -70,7 +70,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Collection<RoleType> playsRoles() {
-        return filterImplicitStructures(getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+        Set<RoleType> allRoleTypes = new HashSet<>();
+        getSuperSet().forEach(type -> allRoleTypes.addAll(((TypeImpl <?, ?>) type).getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)));
+        return filterImplicitStructures(allRoleTypes);
     }
 
     private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){

@@ -180,6 +180,21 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
         assertValidToString(qb.match(var("x").has(var("y"))));
     }
 
+    @Test
+    public void testZeroToString() {
+        assertEquals("match $x value 0.0;", qb.match(var("x").value(0.0)).toString());
+    }
+
+    @Test
+    public void testExponentsToString() {
+        assertEquals("match $x value 1000000000.0;", qb.match(var("x").value(1_000_000_000.0)).toString());
+    }
+
+    @Test
+    public void testDecimalToString() {
+        assertEquals("match $x value 0.0001;", qb.match(var("x").value(0.0001)).toString());
+    }
+
     @Test(expected=UnsupportedOperationException.class)
     public void testToStringUnsupported() {
         //noinspection ResultOfMethodCallIgnored

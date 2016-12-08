@@ -22,6 +22,7 @@ import ai.grakn.graql.internal.antlr.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringEscapeUtils;
 
+import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
@@ -71,6 +72,12 @@ public class StringConverter {
     public static String valueToString(Object value) {
         if (value instanceof String) {
             return quoteString((String) value);
+        } else if (value instanceof Double) {
+            DecimalFormat df = new DecimalFormat("#");
+            df.setMinimumFractionDigits(1);
+            df.setMaximumFractionDigits(12);
+            df.setMinimumIntegerDigits(1);
+            return df.format(value);
         } else {
             return value.toString();
         }
