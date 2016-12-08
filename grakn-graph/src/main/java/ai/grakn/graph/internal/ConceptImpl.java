@@ -717,7 +717,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         String message = "[" +  this.hashCode() + "] "+
                 "- Base Type [" + getBaseType() + "] ";
         if(getId() != null)
-            message = message + "- Item Identifier [" + getId() + "] ";
+            message = message + "- Id [" + getId() + "] ";
 
         return message;
     }
