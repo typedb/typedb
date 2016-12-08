@@ -59,16 +59,16 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
     abstract M buildGraknGraphFromTinker(G graph, boolean batchLoading);
 
-    abstract G buildTinkerPopGraph();
+    abstract G buildTinkerPopGraph(boolean batchLoading);
 
     @Override
     public synchronized M getGraph(boolean batchLoading){
         if(batchLoading){
-            batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, batchLoading);
+            batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
             lastGraphBuiltBatchLoading = true;
             return batchLoadingGraknGraph;
         } else {
-            graknGraph = getGraph(graknGraph, batchLoading);
+            graknGraph = getGraph(graknGraph, false);
             lastGraphBuiltBatchLoading = false;
             return graknGraph;
         }
@@ -120,21 +120,21 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     @Override
     public synchronized G getTinkerPopGraph(boolean batchLoading){
         if(batchLoading){
-            batchLoadingGraph = getTinkerPopGraph(batchLoadingGraph);
+            batchLoadingGraph = getTinkerPopGraph(batchLoadingGraph, true);
             return batchLoadingGraph;
         } else {
-            graph = getTinkerPopGraph(graph);
+            graph = getTinkerPopGraph(graph, false);
             return graph;
         }
     }
-    protected G getTinkerPopGraph(G graph){
+    protected G getTinkerPopGraph(G graph, boolean batchLoading){
         if(graph == null){
-            return getGraphWithNewTransaction(buildTinkerPopGraph());
+            return getGraphWithNewTransaction(buildTinkerPopGraph(batchLoading));
         }
 
         synchronized (graph){ //Block here because list of open transactions is not thread safe
             if(isClosed(graph)){
-                return getGraphWithNewTransaction(buildTinkerPopGraph());
+                return getGraphWithNewTransaction(buildTinkerPopGraph(batchLoading));
             } else {
                 return getGraphWithNewTransaction(graph);
             }

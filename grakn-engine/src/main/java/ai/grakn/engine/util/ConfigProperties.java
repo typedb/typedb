@@ -42,7 +42,6 @@ public class ConfigProperties {
     public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
-    public static final String GRAPH_BATCH_CONFIG_PROPERTY = "graphdatabase.batch-config";
     public static final String GRAPH_COMPUTER_CONFIG_PROPERTY = "graphdatabase.computer";
 
     public static final String DEFAULT_KEYSPACE_PROPERTY = "graphdatabase.default-keyspace";
@@ -62,7 +61,6 @@ public class ConfigProperties {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
-    public static final String POSTPROCESSING_DELAY = "backgroundTasks.post-processing-delay";
     public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";

@@ -19,7 +19,6 @@
 package ai.grakn.engine.controller;
 
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Resource;
@@ -30,6 +29,7 @@ import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
 
-import mjson.Json;
 import static spark.Spark.get;
 
 
@@ -62,9 +61,6 @@ public class GraphFactoryController {
                     switch (graphConfig) {
                         case REST.GraphConfig.DEFAULT:
                             graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
-                            break;
-                        case REST.GraphConfig.BATCH:
-                            graphConfig = ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY;
                             break;
                         case REST.GraphConfig.COMPUTER:
                             graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
