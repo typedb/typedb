@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -26,6 +25,7 @@ import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -83,31 +83,54 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
     }
 
     @Test
-    public void productionIndexConstructionTest() throws InterruptedException {
+    public void testGraphConfig() throws InterruptedException {
         TitanManagement management = sharedGraph.openManagement();
 
+        //Test Composite Indices
         assertEquals("byId", management.getGraphIndex("byId").toString());
         assertEquals("byIndex", management.getGraphIndex("byIndex").toString());
         assertEquals("byValueString", management.getGraphIndex("byValueString").toString());
         assertEquals("byValueLong", management.getGraphIndex("byValueLong").toString());
         assertEquals("byValueDouble", management.getGraphIndex("byValueDouble").toString());
         assertEquals("byValueBoolean", management.getGraphIndex("byValueBoolean").toString());
-        assertEquals("NAME", management.getPropertyKey("NAME").toString());
-        assertEquals("VALUE_STRING", management.getPropertyKey("VALUE_STRING").toString());
-        assertEquals("VALUE_LONG", management.getPropertyKey("VALUE_LONG").toString());
-        assertEquals("VALUE_BOOLEAN", management.getPropertyKey("VALUE_BOOLEAN").toString());
-        assertEquals("VALUE_DOUBLE", management.getPropertyKey("VALUE_DOUBLE").toString());
+
+        //Text Edge Indices
+        ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
+        Set<String> keyString = keys.keySet();
+        for(String label : keyString){
+            assertNotNull(management.getEdgeLabel(label));
+        }
+
+        //Test Properties
+        Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
+                assertNotNull(management.getPropertyKey(property.name())));
+        Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
+                assertNotNull(management.getPropertyKey(property.name())));
+
+        //Test Labels
+        Arrays.stream(Schema.BaseType.values()).forEach(label -> assertNotNull(management.getVertexLabel(label.name())));
     }
 
     @Test
-    public void testSimpleBuild(){
+    public void testSingleton(){
         GraknTitanGraph mg1 = (GraknTitanGraph) titanGraphFactory.getGraph(true);
         GraknTitanGraph mg2 = (GraknTitanGraph) titanGraphFactory.getGraph(false);
+        GraknTitanGraph mg3 = (GraknTitanGraph) titanGraphFactory.getGraph(true);
+
+        assertEquals(mg1, mg3);
+        assertEquals(mg1.getTinkerPopGraph(), mg3.getTinkerPopGraph());
 
         assertTrue(mg1.isBatchLoadingEnabled());
         assertFalse(mg2.isBatchLoadingEnabled());
+
         assertNotEquals(mg1, mg2);
         assertNotEquals(mg1.getTinkerPopGraph(), mg2.getTinkerPopGraph());
+
+        StandardTitanGraph standardTitanGraph1 = (StandardTitanGraph) mg1.getTinkerPopGraph();
+        StandardTitanGraph standardTitanGraph2 = (StandardTitanGraph) mg2.getTinkerPopGraph();
+
+        assertTrue(standardTitanGraph1.getConfiguration().isBatchLoading());
+        assertFalse(standardTitanGraph2.getConfiguration().isBatchLoading());
     }
 
     @Test
@@ -123,42 +146,6 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
         Graph graph = getGraph();
         addConcepts(graph);
         assertIndexCorrect(graph);
-    }
-
-    @Test
-    public void testVertexLabels(){
-        TitanManagement management = sharedGraph.openManagement();
-        for (Schema.BaseType baseType : Schema.BaseType.values()) {
-            assertNotNull(management.getVertexLabel(baseType.name()));
-        }
-    }
-
-    @Test
-    public void testBatchLoading(){
-        TitanManagement management = sharedGraph.openManagement();
-
-        Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
-                assertNotNull(management.getPropertyKey(property.name())));
-        Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
-                assertNotNull(management.getPropertyKey(property.name())));
-
-        ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
-        Set<String> keyString = keys.keySet();
-        for(String label : keyString){
-            assertNotNull(management.getEdgeLabel(label));
-        }
-    }
-
-    @Test
-    public void testSingleton(){
-        GraknGraph mg1 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
-        GraknGraph mg2 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
-
-        Graph graph1 = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
-        Graph graph2 = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
-
-        assertEquals(mg1, mg2);
-        assertEquals(graph1, graph2);
     }
 
     @Test

@@ -57,8 +57,7 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
      * @return A new or existing grakn graph with the defined name
      */
     public GraknGraph getGraph(){
-        ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.DEFAULT);
-        return configuredFactory.factory.getGraph(false);
+        return getConfiguredFactory().factory.getGraph(false);
     }
 
     /**
@@ -66,15 +65,18 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
      * @return A new or existing grakn graph with the defined name connecting to the specified remote uri with batch loading enabled
      */
     public GraknGraph getGraphBatchLoading(){
-        ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.BATCH);
-        return configuredFactory.factory.getGraph(true);
+        return getConfiguredFactory().factory.getGraph(true);
+    }
+
+    private ConfiguredFactory getConfiguredFactory(){
+        return configureGraphFactory(keyspace, uri, REST.GraphConfig.DEFAULT);
     }
 
     /**
      * @return A new or existing grakn graph compute with the defined name
      */
     public GraknComputer getGraphComputer() {
-        ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
+        ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph, configuredFactory.graphComputer);
     }
@@ -85,7 +87,7 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
      * @param graphType The type of graph to produce, default, batch, or compute
      * @return A new or existing grakn graph with the defined name connecting to the specified remote uri
      */
-    protected static ConfigureFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
+    protected static ConfiguredFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
         try {
             String restFactoryUri = engineUrl + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
             String config = EngineCommunicator.contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD);
@@ -108,18 +110,18 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
                 computer = bundle.getString(COMPUTER);
             }
 
-            return new ConfigureFactory(path, computer, FactoryBuilder.getFactory(keyspace, engineUrl, path));
+            return new ConfiguredFactory(path, computer, FactoryBuilder.getFactory(keyspace, engineUrl, path));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
     }
 
-    static class ConfigureFactory {
+    static class ConfiguredFactory {
         String path;
         String graphComputer;
         InternalFactory factory;
 
-        ConfigureFactory(String path, String graphComputer, InternalFactory factory){
+        ConfiguredFactory(String path, String graphComputer, InternalFactory factory){
             this.path = path;
             this.graphComputer = graphComputer;
             this.factory = factory;

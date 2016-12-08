@@ -35,7 +35,7 @@ public class GraknGraphFactoryMock extends GraknGraphFactoryPersistent {
     }
 
     public GraknComputer getGraphComputer(int numberOfWorkers) {
-        ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
+        ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
         return new GraknComputerMock(graph, configuredFactory.graphComputer, numberOfWorkers);
     }

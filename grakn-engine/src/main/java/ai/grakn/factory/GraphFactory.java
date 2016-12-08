@@ -23,7 +23,6 @@ import ai.grakn.engine.util.ConfigProperties;
 
 public class GraphFactory {
     private String graphConfig;
-    private String graphBatchConfig;
     private static GraphFactory instance = null;
 
 
@@ -36,14 +35,10 @@ public class GraphFactory {
 
     private GraphFactory() {
         graphConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
-        graphBatchConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
     }
 
     public synchronized GraknGraph getGraph(String keyspace) {
         return FactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
-    }
-    public synchronized GraknGraph getGraphBatchLoading(String keyspace) {
-        return FactoryBuilder.getFactory(keyspace, null, graphBatchConfig).getGraph(true);
     }
 }
 
