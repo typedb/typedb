@@ -38,7 +38,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
         </div>
     </div>
-    <transition name="fade">
+    <transition name="slide-fade">
         <div v-if="typeInstances" style="margin-bottom: 0px; margin-top: 20px;">
             <div class="panel panel-filled">
                 <div class="tabs-col">
@@ -82,7 +82,16 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </template>
 
 <style>
-
+.slide-fade-enter-active {
+  transition: all .3s ease;
+}
+.slide-fade-leave-active {
+  transition: all .3s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+.slide-fade-enter, .slide-fade-leave-active {
+  transform: translateX(10px);
+  opacity: 0;
+}
 </style>
 
 <script>

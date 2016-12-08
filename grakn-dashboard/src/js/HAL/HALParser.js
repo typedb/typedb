@@ -67,7 +67,6 @@ export default class HALParser {
      */
     parseResponse(data) {
         if (Array.isArray(data)) {
-          console.log("response length "+data.length);
             var hashSet = {};
             var objLength = data.length;
             for (let i = 0; i < objLength; i++) {
