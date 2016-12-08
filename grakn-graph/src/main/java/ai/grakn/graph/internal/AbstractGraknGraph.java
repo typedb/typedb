@@ -354,7 +354,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T getConcept(String id) {
-        return getConceptByBaseIdentifier(id);
+        return getConcept(Schema.ConceptProperty.ID, id);
     }
     private <T extends Type> T getTypeByName(String name){
         return getConcept(Schema.ConceptProperty.NAME, name);

@@ -78,6 +78,7 @@ public class CastingTest extends GraphTestBase{
 
         String id = UUID.randomUUID().toString();
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        vertex.property(Schema.ConceptProperty.ID.name(), vertex.id().toString());
 
         CastingImpl casting2 = (CastingImpl) graknGraph.getConcept(vertex.id().toString());
         boolean exceptionThrown = false;

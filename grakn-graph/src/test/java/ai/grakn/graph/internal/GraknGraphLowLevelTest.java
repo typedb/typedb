@@ -132,8 +132,10 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     public void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        vertex.property(Schema.ConceptProperty.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
         String id = vertex.id().toString();
+
+        vertex.property(Schema.ConceptProperty.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
+        vertex.property(Schema.ConceptProperty.ID.name(), id);
 
         CastingImpl casting = (CastingImpl) graknGraph.getConcept(id);
         EdgeImpl edge = casting.addEdge(role, Schema.EdgeLabel.ISA); // Casting to Role
