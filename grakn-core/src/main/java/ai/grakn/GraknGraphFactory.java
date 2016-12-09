@@ -19,24 +19,30 @@
 package ai.grakn;
 
 /**
- * A factory instance which produces graphs bound to the same persistence layer and keyspace.
+ * GraknGraphFactory is a factory instance that produces graphs bound to the same persistence layer and keyspace.
  */
 public interface GraknGraphFactory {
     /**
+     * Get a new or existing graph.
      *
-     * @return A new or existing grakn graph
+     * @return A new or existing Grakn graph
+     * @see GraknGraph
      */
     GraknGraph getGraph();
 
     /**
+     * Get a new or existing graph with batch loading enabled.
      *
-     * @return A new or existing grakn graph with batch loading enabled
+     * @return A new or existing Grakn graph with batch loading enabled
+     * @see GraknGraph
      */
     GraknGraph getGraphBatchLoading();
 
     /**
+     * Get a new or existing GraknComputer.
      *
-     * @return A new or existing grakn graph computer
+     * @return A new or existing Grakn graph computer
+     * @see GraknComputer
      */
     GraknComputer getGraphComputer();
 }

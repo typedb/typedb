@@ -21,40 +21,49 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * An ontological element which represents the categories instances can fall within.
+ * EntityType is a schema element which represents the categories instances of this type can fall within.
+ * <p>
+ * This class allows you to set and retrieve information about the EntityType, such as its sub- and supertypes.
+ * </p>
  */
 public interface EntityType extends Type{
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Sets the EntityType to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
-     *                    If the concept type is abstract it is not allowed to have any instances.
-     * @return The Entity Type itself
+     * @param isAbstract  Specifies if the EntityType is to be abstract (true) or not (false).
+     *
+     * @return The EntityType itself
      */
     EntityType setAbstract(Boolean isAbstract);
 
     /**
+     * Sets the supertype of the EntityType to be the EntityType specified.
      *
-     * @param type The super of this Entity Type
-     * @return The Entity Type itself
+     * @param type The supertype of this EntityType
+     * @return The EntityType itself
      */
     EntityType superType(EntityType type);
 
     /**
+     * Sets the RoleType which instances of this EntityType may play.
      *
-     * @param roleType The Role Type which the instances of this Entity Type are allowed to play.
-     * @return The Entity Type itself
+     * @param roleType The Role Type which the instances of this EntityType are allowed to play.
+     * @return The EntityType itself
      */
     EntityType playsRole(RoleType roleType);
 
     /**
+     * Removes the RoleType to prevent instances of this EntityType from playing it.
      *
-     * @param roleType The Role Type which the instances of this Entity Type should no longer be allowed to play.
-     * @return The Entity Type itself
+     * @param roleType The Role Type which the instances of this EntityType should no longer be allowed to play.
+     * @return The EntityType itself
      */
     EntityType deletePlaysRole(RoleType roleType);
 
     /**
+     * Creates and returns a new Entity instance.
+     * @see Entity
      *
      * @return a new empty entity.
      */
@@ -62,20 +71,25 @@ public interface EntityType extends Type{
 
     //------------------------------------- Accessors ----------------------------------
     /**
+     * Returns the supertype of this EntityType.
      *
-     * @return The super of this Entity Type
+     * @return The supertype of this EntityType
      */
     EntityType superType();
 
     /**
+     * Returns a collection of subtypes of this EntityType.
      *
-     * @return All the sub classes of this Entity Type
+     * @return All the sub classes of this EntityType
      */
     Collection<EntityType> subTypes();
 
     /**
+     * Returns a collection of all Entity instances for this EntityType.
      *
-     * @return All the instances of this Entity Type.
+     * @see Entity
+     *
+     * @return All the instances of this EntityType.
      */
     Collection<Entity> instances();
 }

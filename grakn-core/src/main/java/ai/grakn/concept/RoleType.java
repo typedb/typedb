@@ -21,61 +21,72 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * An ontological element which defines a role which can be played in a relation type.
+ * A RoleType is a schema element that defines a role that can be played in a Relation Type.
+ * @see RelationType
  */
 public interface RoleType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Sets the RoleType to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the Role Type is abstract (true) or not (false).
-     *                    If the Role Type is abstract it is not allowed to have any instances.
-     * @return The Role Type itself
+     * @param isAbstract  Specifies if the RoleType is to be abstract (true) or not (false).
+     *
+     * @return The RoleType itself
      */
     RoleType setAbstract(Boolean isAbstract);
 
     /**
+     * Sets the supertype of this RoleType.
      *
-     * @param type The super type of this Role Type
-     * @return The Role Type itself
+     * @param type The supertype of this RoleType
+     * @return The RoleType itself
      */
     RoleType superType(RoleType type);
 
     /**
+     * Sets the RoleType which instances of this Type may play.
      *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
-     * @return The Role Type itself
+     * @param roleType The RoleType which the instances of this Type are allowed to play.
+     * @return The RoleType itself
      */
     RoleType playsRole(RoleType roleType);
 
     /**
+     * Removes the RoleType to prevent instances from playing it
      *
-     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Role Type itself
+     * @param roleType The RoleType which the instances of this Type should no longer be allowed to play.
+     * @return The RoleType itself
      */
     RoleType deletePlaysRole(RoleType roleType);
 
     //------------------------------------- Accessors ----------------------------------
     /**
+     * Returns the supertype of this RoleType.
      *
-     * @return The super type of this Role Type
+     * @return The supertype of this RoleType
      */
     RoleType superType();
 
     /**
+     * Returns the subtypes of this RoleType.
      *
-     * @return The sub types of this Role Type
+     * @return The sub types of this RoleType
      */
     Collection<RoleType> subTypes();
 
     /**
+     * Returns the RelationType that this RoleType takes part in.
+     * @see RelationType
      *
-     * @return The Relation Type which this role takes part in.
+     * @return The RelationType which this role takes part in.
      */
     RelationType relationType();
 
     /**
+     * Returns a collection of the Types that can play this RoleType.
+     * @see Type
      *
-     * @return A list of all the Concept Types which can play this role.
+     * @return A list of all the Types which can play this role.
      */
     Collection<Type> playedByTypes();
 }

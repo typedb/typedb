@@ -25,13 +25,19 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A relation represents and instance of a relation type which concept how different entities relate to one another.
+ * A Relation represents an instance of a Relation Type, which is a concept
+ * that represents how different entities relate to one another.
+ * Relations are used to model n-ary relationships between instances.
+
  */
 public interface Relation extends Instance {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Sets the Instance that can scope this Relation to a specific domain.
+     * For example, if a relation is only valid for a particular language you can scope
+     * the relation to an Instance representing that language.
      *
-     * @param instance A new instance which can scope this Relation
+     * @param instance A new instance which scopes this Relation
      * @return The Relation itself
      */
     Relation scope(Instance instance);
@@ -39,35 +45,43 @@ public interface Relation extends Instance {
     //------------------------------------- Accessors ----------------------------------
 
     /**
+     * Retrieve the associated Relation Type for this Relation.
+     * @see RelationType
      *
-     * @return The Relation type of this Relation.
+     * @return The associated Relation Type for this Relation.
      */
     RelationType type();
 
     /**
+     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * @see RoleType
      *
-     * @return A list of all the Instances involved in the relationships and the Role Types which they play.
+     * @return A list of all the Instances and their Role Types.
      */
     Map<RoleType, Instance> rolePlayers();
 
     /**
+     * Retrieve a list of the Instances that scope this Relation.
      *
-     * @return A list of the Instances which scope this Relation
+     * @return A list of the Instances that scope this Relation.
      */
     Collection<Instance> scopes();
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
-     * @param roleType The role of the new role player.
+     *
+     * @param roleType The Role Type of the new role player.
      * @param instance The new role player.
-     * @return The Relation itself
+     * @return The Relation itself.
      */
     Relation putRolePlayer(RoleType roleType, Instance instance);
 
     //------------------------------------- Other ----------------------------------
 
     /**
-     * @param scope A concept which is currently scoping this concept.
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Relation.
      * @return The Relation itself
      */
     Relation deleteScope(Instance scope) throws ConceptException;

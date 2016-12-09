@@ -19,14 +19,15 @@
 package ai.grakn.concept;
 
 /**
- * An instance of Entity Type which represents some data in the graph.
+ * Entity represents an instance of an Entity Type, which represents some data in the graph.
  */
 public interface Entity extends Instance{
     //------------------------------------- Accessors ----------------------------------
 
     /**
      *
-     * @return The Entity Type of this Entity
+     * @return The EntityType of this Entity
+     * @see EntityType
      */
     EntityType type();
 }
