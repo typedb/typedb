@@ -100,7 +100,10 @@ public class RemoteSession {
             String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
             String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
             boolean showImplicitTypes = json.at(REST.RemoteShell.IMPLICIT).asBoolean();
-            GraqlSession graqlSession = new GraqlSession(session, () -> getGraph.apply(keyspace), outputFormat, showImplicitTypes);
+            boolean infer = json.at(REST.RemoteShell.INFER).asBoolean();
+            GraqlSession graqlSession = new GraqlSession(
+                    session, () -> getGraph.apply(keyspace), outputFormat, showImplicitTypes, infer
+            );
             sessions.put(session, graqlSession);
         } else {
             session.close(1008, "Unauthorised: incorrect username or password");

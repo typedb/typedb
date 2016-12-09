@@ -81,6 +81,7 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
 import static ai.grakn.util.REST.RemoteShell.IMPLICIT;
+import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static ai.grakn.util.REST.RemoteShell.PASSWORD;
@@ -165,6 +166,7 @@ public class GraqlShell {
         options.addOption("u", "user", true, "username to sign in");
         options.addOption("p", "pass", true, "password to sign in");
         options.addOption("i", "implicit", false, "show implicit types");
+        options.addOption("n", "infer", false, "perform inference on results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -205,6 +207,7 @@ public class GraqlShell {
         Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
 
         boolean showImplicitTypes = cmd.hasOption("i");
+        boolean infer = cmd.hasOption("n");
 
         if (cmd.hasOption("b")) {
             try {
@@ -223,7 +226,10 @@ public class GraqlShell {
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(historyFilename, keyspace, username, password, client, uri, queries, outputFormat, showImplicitTypes);
+            new GraqlShell(
+                    historyFilename, keyspace, username, password, client, uri, queries, outputFormat,
+                    showImplicitTypes, infer
+            );
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
@@ -282,7 +288,8 @@ public class GraqlShell {
      */
     GraqlShell(
             String historyFilename, String keyspace, Optional<String> username, Optional<String> password,
-            GraqlClient client, URI uri, Optional<List<String>> queryStrings, String outputFormat, boolean showImplicitTypes
+            GraqlClient client, URI uri, Optional<List<String>> queryStrings, String outputFormat,
+            boolean showImplicitTypes, boolean infer
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -306,7 +313,8 @@ public class GraqlShell {
                     ACTION, ACTION_INIT,
                     KEYSPACE, keyspace,
                     OUTPUT_FORMAT, outputFormat,
-                    IMPLICIT, showImplicitTypes
+                    IMPLICIT, showImplicitTypes,
+                    INFER, infer
             );
             username.ifPresent(u -> initJson.set(USERNAME, u));
             password.ifPresent(p -> initJson.set(PASSWORD, p));

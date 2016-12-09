@@ -54,17 +54,15 @@ public class QueryBuilderImpl implements QueryBuilder {
     private final Optional<GraknGraph> graph;
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
-    private boolean infer;
+    private boolean infer = false;
 
     QueryBuilderImpl() {
-        infer = true;
         this.graph = Optional.empty();
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
     }
 
     public QueryBuilderImpl(GraknGraph graph) {
-        infer = true;
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
