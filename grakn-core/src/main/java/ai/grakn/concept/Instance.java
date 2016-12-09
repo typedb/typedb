@@ -21,11 +21,18 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * This represents an instance of a Type. It represents data in the graph.
+ * Instance represents an Instance of a particular ontological Type.
+ * <p>
+ * It represents data in the graph, and allows retrieval of the Relations, RoleTypes and Resources associated
+ * with the Instance.</p>
  */
 public interface Instance extends Concept{
     //------------------------------------- Accessors ----------------------------------
     /**
+     * Retrieves a Relations which the Instance takes part in, which may optionally be narrowed to a particular set
+     * according to the RoleType you are interested in.
+     * @see RoleType
+     * @see Relation
      *
      * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
@@ -33,6 +40,8 @@ public interface Instance extends Concept{
     Collection<Relation> relations(RoleType... roleTypes);
 
     /**
+     * Determine the Role Types that this Instance may play.
+     * @see RoleType
      *
      * @return A set of all the Role Types which this instance plays.
      */
@@ -40,12 +49,15 @@ public interface Instance extends Concept{
 
     /**
      * Creates a relation from this instance to the provided resource.
-     * @param resource The resource to creating a relationship to
+     *
+     * @param resource The resource to which a relationship is created
      * @return A relation which contains both the entity and the resource
      */
     Relation hasResource(Resource resource);
 
     /**
+     * Retrieves a collection of Resources attached to this Instances
+     * @see Resource
      *
      * @param resourceTypes Resource Types of the resources attached to this entity
      * @return A collection of resources attached to this Instance.

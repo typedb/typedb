@@ -22,24 +22,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Grakn is the main entry point to connect to a Grakn Knowledge Graph.
  * <p>
- * Main entry point to connect to a Grakn knowledge graph. To connect to a knowledge graph, first
- * make sure you have a Grakn Engine server running. You can also instantiate an in-memory knowledge graph
- * for testing or experimentation purposes. 
+ * To connect to a knowledge graph, first make sure you have a Grakn Engine server running. You can also instantiate
+ * an in-memory knowledge graph for testing or experimentation purposes.
  * </p>
  * <p>
  * To establish a connection, you first need to obtain a {@link GraknGraphFactory} by calling
  * the {@link #factory(String, String)} method. A {@link GraknGraphFactory} to a given physical
  * location and specific database instance within that location. Once you've instantiated a factory, 
- * you can obtain as many concurrent graph connection, represented by the {@link GraknGraph}
- * interface as you would like.
+ * you can obtain multiple concurrent graph connections, represented by the {@link GraknGraph}
+ * interface.
  * </p>
  */
 public class Grakn {
+    /**
+     * Constant to be passed to {@link #factory(String, String)} to specify the default localhost Grakn Engine location.
+     */
     public static final String DEFAULT_URI = "localhost:4567";
+
     private static final String ENGINE_CONTROLLED_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryPersistent";
-    
+
+    /**
+     * Constant to be passed to {@link #factory(String, String)} to specify an in-memory graph.
+     */
     public static final String IN_MEMORY = "in-memory";
+
     private static final String IN_MEMORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryInMemory";
     
     private static final Map<String, GraknGraphFactory> clients = new HashMap<>();
@@ -58,14 +66,15 @@ public class Grakn {
     }
     
     /**
+     * Returns a factory instances to produce concurrent connections to the Grakn knowledge graph.
      * <p>
-     * Obtain the {@link GraknGraphFactory} for a given location and keyspace.
+     * This method obtains the {@link GraknGraphFactory} for the specified location and keyspace.
      * </p>
      * 
-     * @param location The location from which to create the graph. For an in memory graph, 
+     * @param location The location from which to create the graph. For an in-memory graph,
      * use the {@link #IN_MEMORY} constant defined in this class. For the default, localhost
      * Grakn Engine location, use the {@link #DEFAULT_URI} constant provided in this class.
-     * @param keyspace THe keyspace, or database name, where the knowledge graph is stored. A given
+     * @param keyspace The keyspace, or database name, where the knowledge graph is stored. A given
      * database server will support multiple database instances. You need to explicitly name
      * the instance to be used. In general, if one doesn't exist, it will be created for you. 
      * @return A factory instance that can produce concurrent connection to the knowledge graph.
