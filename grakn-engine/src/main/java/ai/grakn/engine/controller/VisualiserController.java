@@ -175,7 +175,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             QueryBuilder qb = graph.graql().setInference(useReasoner);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
-            if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery) {
+            if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
                 switch (getAcceptType(req)) {
                     case HAL_CONTENTTYPE:
                         return formatAsHAL((MatchQuery) parsedQuery, keyspace);
@@ -262,8 +262,8 @@ public class VisualiserController {
      * @param query query to format
      * @return Graql representation
      */
-    private String formatAsGraql(Query query) {
-        return ((Query<String>) query).resultsString(Printers.graql())
+    private String formatAsGraql(Query<?> query) {
+        return query.resultsString(Printers.graql())
                 .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                 .collect(Collectors.joining("\n"));
     }

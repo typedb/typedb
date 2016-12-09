@@ -117,10 +117,17 @@ export default {
 
         onClickSubmit(query) {
             this.errorMessage = undefined;
-            if (query.trim().startsWith("compute"))
+
+            if (query.includes("aggregate")) {
+                this.showWarning("Invalid query: 'aggregate' queries are not allowed from the Graph page. Please use the Console page.");
+                return;
+            }
+
+            if (query.trim().startsWith("compute")) {
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
-            else
+            } else {
                 EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner);
+            }
         },
         /*
          * User interaction: visualiser
