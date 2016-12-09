@@ -21,8 +21,9 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -38,7 +39,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
@@ -119,12 +119,23 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        ResourceType[] resourceTypes =
-                optionalToStream(resourceType.map(graph::getResourceType)).toArray(ResourceType[]::new);
+        String type = resourceType.orElseThrow(() -> failDelete(this));
 
-        concept.asInstance().resources(resourceTypes).stream()
-                .filter(r -> predicate.flatMap(ValuePredicateAdmin::getPredicate).map(p -> p.test(r.getValue())).orElse(true))
+        RoleType owner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(type));
+        RoleType value = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(type));
+
+        concept.asInstance().relations(owner).stream()
+                .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
+    }
+
+    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, RoleType resourceRole) {
+        Object value = relation.rolePlayers().get(resourceRole).asResource().getValue();
+
+        return optPredicate
+                .flatMap(ValuePredicateAdmin::getPredicate)
+                .map(predicate -> predicate.test(value))
+                .orElse(true);
     }
 
     @Override
