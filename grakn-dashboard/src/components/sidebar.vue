@@ -89,8 +89,7 @@ export default {
             $('#keySpacesModal').modal('show');
         },
         openSignUp() {
-          console.log("oh dio porco");
-            $('#signupModal').modal('show');
+          $('#signupModal').modal('show');
         },
         logout() {
             User.logout();
