@@ -79,6 +79,10 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
         qb.match(var("x").has("gender", "male")).delete("x").execute();
         assertFalse(qb.match(var().has("gender", "male")).ask().execute());
+
+        assertTrue(qb.match(var().isa("real-name").value("Bob")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").value("Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("gender").value("male")).ask().execute());
     }
 
     @Test
@@ -119,6 +123,10 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
         qb.match(var("x").has("real-name", "Bob")).delete("x").execute();
         assertFalse(qb.match(var().has("real-name", "Bob").isa("person")).ask().execute());
+
+        assertTrue(qb.match(var().isa("real-name").value("Bob")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").value("Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("gender").value("male")).ask().execute());
     }
 
     @Test
@@ -126,5 +134,12 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("value")));
         qb.match(var("x").isa("movie")).delete(var("x").value()).execute();
+    }
+
+    @Test
+    public void testErrorWhenDeleteVariableResource() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("delet"), containsString("has"), containsString("$y")));
+        qb.match(var("x").isa("movie")).delete(var("x").has(var("y"))).execute();
     }
 }
