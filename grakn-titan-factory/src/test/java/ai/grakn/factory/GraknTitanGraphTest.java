@@ -142,22 +142,22 @@ public class GraknTitanGraphTest extends TitanTestBase{
     @Test
     public void testStableTransactions() throws GraknValidationException {
         GraknTitanGraph graph = (GraknTitanGraph)FactoryBuilder.getFactory("stabletransactions", TEST_URI, TEST_CONFIG).getGraph(false);
-        assertEquals(0, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
+        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
 
         graph.putEntityType("name 1");
         graph.commit();
-        assertEquals(0, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
+        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
 
         graph.putEntityType("name 2");
         graph.commit();
-        assertEquals(0, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
+        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
 
         graph.putEntityType("name 3");
         graph.commit();
-        assertEquals(0, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
+        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
 
         graph.putEntityType("name 4");
         graph.commit();
-        assertEquals(0, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
+        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
     }
 }

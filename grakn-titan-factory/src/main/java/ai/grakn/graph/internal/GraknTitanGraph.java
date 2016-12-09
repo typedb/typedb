@@ -39,6 +39,14 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         finaliseClose(this::closeTitan, reason);
     }
 
+    @Override
+    public void commitTx(){
+        super.commitTx();
+        if(!getTinkerPopGraph().tx().isOpen()){
+            getTinkerPopGraph().tx().open(); //Until we sort out the transaction handling properly commits have to result in transactions being auto opened
+        }
+    }
+
     private void closeTitan(){
         StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
         synchronized (graph) { //Have to block here because the list of open transactions in Titan is not thread safe.
