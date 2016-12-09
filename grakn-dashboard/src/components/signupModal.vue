@@ -106,7 +106,6 @@ export default {
          signUp(){
           this.credentials.community="SlackChannel";
           EngineClient.sendInvite(this.credentials,this.sendMailChimp);
-
         },
         sendMailChimp(){
           this.credentials.community="MailChimp";

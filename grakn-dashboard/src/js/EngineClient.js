@@ -65,22 +65,27 @@ export default {
             });
     },
 
-    sendInvite(credentials, callback) {
+    sendInvite(credentials, callbackFn) {
         $.ajax({
             type: 'POST',
             contentType: 'application/json; charset=utf-8',
             dataType: 'json',
             cache: false,
             crossDomain: true,
+            headers: {
+                "Grakn-Origin": "grakn.ai",
+                "Access-Control-Allow-Origin": "http://grak.ai"
+            },
             data: JSON.stringify({
                 'name': credentials.name,
                 'surname': credentials.surname,
                 'email': credentials.email,
-                'community': 'SlackChannel'
+                'community': credentials.community
             }),
             url: 'https://grakn-community-inviter.herokuapp.com/invite'
         }).done(function(r) {
-            callback();
+            consol.log("calling fnn");
+            callbackFn(r);
         })
     },
 
