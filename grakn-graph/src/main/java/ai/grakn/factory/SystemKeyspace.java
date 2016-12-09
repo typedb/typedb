@@ -1,20 +1,19 @@
 package ai.grakn.factory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -62,14 +61,21 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<String, Boolean>();
 	private InternalFactory<M, T> factory;
 	
-	public SystemKeyspace(String engineUrl, String config) {
+	public SystemKeyspace(String engineUrl, String config, InternalFactory<M, T> factory) {
 		this.engineUrl = engineUrl;
 		this.config = config;
+		this.factory = factory;
+	}
+
+    public SystemKeyspace(String engineUrl, String config) {
+        this.engineUrl = engineUrl;
+        this.config = config;
 		if (config != null)
 			this.factory = FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, config);
 		else
 			this.factory = 	FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, Grakn.IN_MEMORY, config); //Grakn.factory(engineUrl, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph()) {
-	}
+
+    }
 
 	/**
 	 * Notify that we just opened a keyspace with the same engineUrl & config.

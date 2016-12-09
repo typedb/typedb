@@ -19,14 +19,13 @@
 package ai.grakn.migration.base.io;
 
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.GraknGraph;
 
 public class MigrationLoader {
 
     public static void load(GraknGraph graph, Migrator migrator){
-        load(new LoaderImpl(graph.getKeyspace()), migrator);
+        load(new Loader(graph.getKeyspace()), migrator);
     }
 
     public static void load(Loader loader, int batchSize, Migrator migrator){

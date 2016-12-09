@@ -26,9 +26,9 @@ import java.util.Set;
 
 public interface StateStorage {
     /**
-     * Create a new task state and store it, returning an ID to later access this task state.
+     * Create a new task taskstorage and store it, returning an ID to later access this task taskstorage.
      * @param taskName String class name of object implementing the BackgroundTask interface. This must not be null.
-     * @param createdBy String of who is creating this new state. This must not be null.
+     * @param createdBy String of who is creating this new taskstorage. This must not be null.
      * @param runAt Date when should this task be executed. This must not be null.
      * @param recurring Boolean marking if this task should be run again after it has finished executing successfully.
      *                  This must not be null.
@@ -37,7 +37,7 @@ public interface StateStorage {
      * @param configuration A JSONObject instance containing configuration and optionally data for the task. This is an
      *                      optional parameter and may be set to null to not pass any configuration (task.start() will
      *                      get an initialised but empty JSONObject).
-     * @return String form of the task id, which can be use later to update or retrieve the task state. Null if task could
+     * @return String form of the task id, which can be use later to update or retrieve the task taskstorage. Null if task could
      * not be created of mandatory fields were omitted.
      */
     String newState(String taskName,
@@ -48,27 +48,27 @@ public interface StateStorage {
                     JSONObject configuration);
 
     /**
-     * Used to update task state. With the exception of @id any other fields may individually be null, however all parameters
+     * Used to update task taskstorage. With the exception of @id any other fields may individually be null, however all parameters
      * cannot be null at the same time. Setting any of the parameters to null indicates that their values should not be
      * changed.
      * @param id ID of task to update, this must not be null.
      * @param status New status of task, may be null.
      * @param statusChangeBy String identifying caller, may be null.
-     * @param executingHostname String hostname of engine instance scheduling/executing this task. May be null.
+     * @param engineID String ID of engine instance scheduling/executing this task. May be null.
      * @param failure Throwable to store any exceptions that occurred during executing. May be null.
      * @param checkpoint String to store task checkpoint, may be null.
      */
-    void updateState(String id,
-                     TaskStatus status,
-                     String statusChangeBy,
-                     String executingHostname,
-                     Throwable failure,
-                     String checkpoint,
-                     JSONObject configuration);
+    Boolean updateState(String id,
+                        TaskStatus status,
+                        String statusChangeBy,
+                        String engineID,
+                        Throwable failure,
+                        String checkpoint,
+                        JSONObject configuration);
 
     /**
      * This is a copy of the internal TaskState object. It is guaranteed to be correct at the time of call, however the actual
-     * internal state may change at any time after.
+     * internal taskstorage may change at any time after.
      * @param id String id of task.
      * @return TaskState object or null if no TaskState with this id could be found.
      */

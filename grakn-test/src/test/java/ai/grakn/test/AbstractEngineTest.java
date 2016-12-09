@@ -19,14 +19,31 @@
 package ai.grakn.test;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
+import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
+import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.GraphFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.jayway.restassured.RestAssured;
+import info.batey.kafka.unit.KafkaUnit;
+import org.apache.commons.io.IOUtils;
 import org.junit.BeforeClass;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 import static java.lang.Thread.sleep;
 
@@ -35,24 +52,39 @@ import static java.lang.Thread.sleep;
  */
 public abstract class AbstractEngineTest {
     private static final String CONFIG = System.getProperty("grakn.test-profile");
+    private static final Properties properties = ConfigProperties.getInstance().getProperties();
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
+    private static KafkaUnit kafkaUnit;
 
     private static void hideLogs() {
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
+        Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.DEBUG);
+
+        ((Logger) org.slf4j.LoggerFactory.getLogger(SynchronizedStateStorage.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
+
+        // Hide kafka logs
+        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
     }
 
     @BeforeClass
     public static void startTestEngine() throws Exception {
+        hideLogs();
         if (ENGINE_ON.compareAndSet(false, true)) {
             if (usingTitan()) {
                 startEmbeddedCassandra();
             }
 
-            GraknEngineServer.start();
+            kafkaUnit = new KafkaUnit(2181, 9092);
+            kafkaUnit.startup();
 
+            GraknEngineServer.start();
             sleep(5000);
         }
+
+        RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
     }
 
     protected static GraknGraphFactory factoryWithNewKeyspace() {
@@ -90,5 +122,44 @@ public abstract class AbstractEngineTest {
 
     protected static boolean usingOrientDB() {
         return "orientdb".equals(CONFIG);
+    }
+
+    protected String getPath(String file) {
+        return AbstractEngineTest.class.getResource("/"+file).getPath();
+    }
+
+    protected String readFileAsString(String file) {
+        InputStream stream = AbstractEngineTest.class.getResourceAsStream("/"+file);
+
+        try {
+            return IOUtils.toString(stream);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void loadOntology(String file, String graphName) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(graphName)) {
+
+            String ontology = readFileAsString(file);
+
+            graph.graql().parse(ontology).execute();
+            graph.commit();
+
+        } catch (GraknValidationException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void waitForScheduler(ClusterManager clusterManager, Predicate<Scheduler> fn) throws Exception {
+        int runs = 0;
+
+        while (!fn.test(clusterManager.getScheduler()) && runs < 50 ) {
+            Thread.sleep(100);
+            runs++;
+        }
+
+        System.out.println("wait done, runs " + Integer.toString(runs) + " scheduler " + clusterManager.getScheduler());
     }
 }

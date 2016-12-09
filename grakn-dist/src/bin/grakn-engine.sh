@@ -28,6 +28,13 @@ SLEEP_INTERVAL_S=2
 
 ENGINE_PS=/tmp/grakn-engine.pid
 
+# Define CLASSPATH, exclude slf4j as we use logback
+for jar in "${GRAKN_HOME}"/lib/*.jar; do
+    if [[ $jar != *slf4j-log4j12* ]] ; then
+        CLASSPATH="$CLASSPATH:$jar"
+    fi
+done
+
 wait_for_engine() {
     local now_s=`date '+%s'`
     local stop_s=$(( $now_s + $ENGINE_STARTUP_TIMEOUT_S ))
@@ -58,7 +65,7 @@ start)
     else
         # engine has not already started
         echo -n "Starting engine"
-        java -cp "${GRAKN_HOME}/lib/*" -Dgrakn.dir="${GRAKN_HOME}/bin" ai.grakn.engine.GraknEngineServer &
+        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" ai.grakn.engine.GraknEngineServer &
         echo $!>$ENGINE_PS
         wait_for_engine
     fi
