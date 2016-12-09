@@ -26,15 +26,32 @@ import java.util.Optional;
 
 public interface CountQuery extends ComputeQuery<Long> {
 
+    /**
+     * @param subTypeNames an array of types to include in the subgraph
+     * @return a CountQuery with the subTypeNames set
+     */
     @Override
     CountQuery in(String... subTypeNames);
 
+    /**
+     * @param subTypeNames a collection of types to include in the subgraph
+     * @return a CountQuery with the subTypeNames set
+     */
     @Override
     CountQuery in(Collection<String> subTypeNames);
 
+    /**
+     * Execute the query.
+     *
+     * @return the number of instances in the graph
+     */
     @Override
     Long execute();
 
+    /**
+     * @param graph the graph to execute the query on
+     * @return a CountQuery with the graph set
+     */
     @Override
     CountQuery withGraph(GraknGraph graph);
 }

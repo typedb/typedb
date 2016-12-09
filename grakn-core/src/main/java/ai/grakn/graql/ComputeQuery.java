@@ -23,14 +23,26 @@ import ai.grakn.GraknGraph;
 import java.util.Collection;
 
 /**
- * A query that triggers an OLAP computation on a graph.
+ * A query that triggers an analytics OLAP computation on a graph.
  */
 public interface ComputeQuery<T> extends Query<T> {
 
+    /**
+     * @param graph the graph to execute the compute query on
+     * @return a ComputeQuery with the graph set
+     */
     @Override
     ComputeQuery<T> withGraph(GraknGraph graph);
 
+    /**
+     * @param subTypeNames an array of types to include in the subgraph
+     * @return a ComputeQuery with the subTypeNames set
+     */
     ComputeQuery<T> in(String... subTypeNames);
 
+    /**
+     * @param subTypeNames a collection of types to include in the subgraph
+     * @return a ComputeQuery with the subTypeNames set
+     */
     ComputeQuery<T> in(Collection<String> subTypeNames);
 }
