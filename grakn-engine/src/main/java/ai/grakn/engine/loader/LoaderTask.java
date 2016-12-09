@@ -21,17 +21,14 @@ package ai.grakn.engine.loader;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.factory.GraphFactory;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.QueryBuilder;
 import org.json.JSONObject;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory
-;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +53,7 @@ public class LoaderTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
     private static int repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
+    private final QueryBuilder builder = Graql.withoutGraph().setInference(false);
 
     @Override
     public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
@@ -163,8 +161,7 @@ public class LoaderTask implements BackgroundTask {
             configuration.getJSONArray(TASK_LOADER_INSERTS).forEach(i -> inserts.add((String) i));
 
             return inserts.stream()
-                    .map(Graql::parse)
-                    .map(p -> (InsertQuery) p)
+                    .map(builder::<InsertQuery>parse)
                     .collect(toList());
         }
 

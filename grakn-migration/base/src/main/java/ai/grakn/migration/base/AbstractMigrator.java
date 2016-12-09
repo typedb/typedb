@@ -33,7 +33,7 @@ import java.util.stream.StreamSupport;
 public abstract class AbstractMigrator implements Migrator {
 
     public static final int BATCH_SIZE = 25;
-    public final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph();
+    public final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().setInference(false);
 
     /**
      * Register a macro to use in templating
