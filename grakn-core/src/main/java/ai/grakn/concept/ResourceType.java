@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A ResourceType represents a resource in the ontology.
+ * A ResourceType is a schema element which represents the category of resources in the graph.
  * <p>
  * For the methods below, @param <D> is the data type of this resource represented by the Resource Type.
  * Supported Types include: String, Long, Double, and Boolean

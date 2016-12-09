@@ -21,7 +21,7 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * A RelationType is an ontological element, and is the Concept that represents how EntityTypes relate to one another.
+ * A RelationType is a schema element, and is the Concept that represents how Entities relate to one another.
  */
 public interface RelationType extends Type {
     //------------------------------------- Modifiers ----------------------------------

@@ -21,7 +21,7 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * EntityType is an ontological element which represents the categories instances can fall within.
+ * EntityType is a schema element which represents the categories instances of this type can fall within.
  * <p>
  * This class allows you to set and retrieve information about the EntityType, such as its sub- and supertypes.
  * </p>
