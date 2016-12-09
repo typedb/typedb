@@ -51,8 +51,8 @@ CLASSPATH="$CASSANDRA_CONF:$cassandra_bin"
 
 CLASSPATH="$CLASSPATH":"$CASSANDRA_HOME"/lib/slf4j-log4j12-1.7.5.jar
 
-for jar in "$CASSANDRA_HOME"/lib/*.jar; do
-    if [ $jar != slf4j-log4j12* ] ; then
+for jar in "${CASSANDRA_HOME}"/lib/*.jar; do
+    if [[ $jar != *slf4j-log4j12* ]] ; then
         CLASSPATH="$CLASSPATH:$jar"
     fi
 done

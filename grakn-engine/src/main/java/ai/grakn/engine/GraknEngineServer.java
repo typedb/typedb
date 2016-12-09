@@ -18,9 +18,17 @@
 package ai.grakn.engine;
 
 
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
-import ai.grakn.engine.controller.*;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.controller.AuthController;
+import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.controller.UserController;
+import ai.grakn.engine.controller.CommitLogController;
+import ai.grakn.engine.controller.GraphFactoryController;
+import ai.grakn.engine.controller.ImportController;
+import ai.grakn.engine.controller.StatusController;
+import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
@@ -51,7 +59,6 @@ import static spark.Spark.*;
 public class GraknEngineServer {
 
     private static ConfigProperties prop = ConfigProperties.getInstance();
-    private static InMemoryTaskManager manager = InMemoryTaskManager.getInstance();
     private static Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -94,27 +101,30 @@ public class GraknEngineServer {
         //Register filter to check authentication token in each request
         before(GraknEngineServer::checkAuthorization);
 
-
         //Register Exception Handler
         exception(GraknEngineServerException.class, (e, request, response) -> {
             response.status(((GraknEngineServerException) e).getStatus());
             response.body("New exception: " + e.getMessage() + " - Please refer to grakn.log file for full stack trace.");
         });
 
+        // Start background task cluster.
+        ClusterManager.getInstance().start();
+
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
         // Submit a recurring post processing task
+        DistributedTaskManager manager = new DistributedTaskManager();
         manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE), new JSONObject());
+        manager.close();
 
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
     public static void stop() {
-        manager.shutdown();
         Spark.stop();
+        ClusterManager.getInstance().stop();
     }
-
 
     /**
      * Check if Grakn Engine has been started

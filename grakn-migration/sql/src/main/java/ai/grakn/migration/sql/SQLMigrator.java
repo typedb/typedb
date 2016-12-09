@@ -48,10 +48,12 @@ public class SQLMigrator extends AbstractMigrator {
      * @param connection JDBC connection to the SQL database
      */
     public SQLMigrator(String query, String template, Connection connection){
+        System.out.println("created");
         this.template = template;
 
         DSLContext create = DSL.using(connection);
         records = create.fetchStream(query);
+        System.out.println("sql query fetched");
     }
 
     /**
@@ -60,6 +62,7 @@ public class SQLMigrator extends AbstractMigrator {
      */
     @Override
     public Stream<InsertQuery> migrate() {
+        System.out.println("migrating");
         return records.map(Record::intoMap)
                 .map(this::convertToValidValues)
                 .map(r -> template(template, r));

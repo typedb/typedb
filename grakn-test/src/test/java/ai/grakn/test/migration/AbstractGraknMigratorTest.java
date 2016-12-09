@@ -27,8 +27,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.ResourceType.DataType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
@@ -78,7 +78,7 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     }
 
     protected void migrate(Migrator migrator){
-        MigrationLoader.load(new LoaderImpl(graph.getKeyspace()), migrator);
+        MigrationLoader.load(new Loader(graph.getKeyspace()), migrator);
     }
 
     protected void load(File ontology) {

@@ -40,6 +40,7 @@ public abstract class AbstractGraphTest extends AbstractEngineTest {
 
     @After
     public void closeGraph() throws Exception {
+        graph.clear();
         graph.close();
     }
 }
