@@ -27,16 +27,39 @@ import java.util.Set;
 
 public interface ClusterQuery<T> extends ComputeQuery<T> {
 
+    /**
+     * Return the instances in each cluster after executing the query. By default, the size of each cluster is
+     * returned after executing the query.
+     *
+     * @return a ClusterQuery with members flag set
+     */
     ClusterQuery<Map<String, Set<String>>> members();
 
+    /**
+     * Persist the result in the graph after executing the query.
+     *
+     * @return a ClusterQuery with persist flag set
+     */
     ClusterQuery<T> persist();
 
+    /**
+     * @param subTypeNames an array of types to include in the subgraph
+     * @return a ClusterQuery with the subTypeNames set
+     */
     @Override
     ClusterQuery<T> in(String... subTypeNames);
 
+    /**
+     * @param subTypeNames a collection of types to include in the subgraph
+     * @return a ClusterQuery with the subTypeNames set
+     */
     @Override
     ClusterQuery<T> in(Collection<String> subTypeNames);
 
+    /**
+     * @param graph the graph to execute the query on
+     * @return a ClusterQuery with the graph set
+     */
     @Override
     ClusterQuery<T> withGraph(GraknGraph graph);
 }
