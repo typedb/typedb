@@ -43,7 +43,9 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
             emitter.emit(vertex.value(DegreeVertexProgram.DEGREE),
                     Collections.singleton(vertex.id().toString()));
+            return;
         }
+        emitter.emit(NullObject.instance(), Collections.emptySet());
     }
 
     @Override
