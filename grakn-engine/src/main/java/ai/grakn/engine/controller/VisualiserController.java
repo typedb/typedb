@@ -23,7 +23,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.graql.*;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -43,15 +49,24 @@ import javax.ws.rs.Produces;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
 import static ai.grakn.factory.GraphFactory.getInstance;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.*;
-import static ai.grakn.util.REST.Request.*;
-import static ai.grakn.util.REST.Response.*;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
+import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.Request.QUERY_FIELD;
+import static ai.grakn.util.REST.Response.ENTITIES_JSON_FIELD;
+import static ai.grakn.util.REST.Response.RELATIONS_JSON_FIELD;
+import static ai.grakn.util.REST.Response.RESOURCES_JSON_FIELD;
+import static ai.grakn.util.REST.Response.ROLES_JSON_FIELD;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
@@ -64,7 +79,6 @@ public class VisualiserController {
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static int separationDegree = properties.getPropertyAsInt(HAL_DEGREE_PROPERTY);
-    private final static String SHORTEST_PATH_QUERY = "path";
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
 
@@ -191,12 +205,22 @@ public class VisualiserController {
 
             ComputeQuery computeQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
             JSONObject response = new JSONObject();
-            if (req.queryParams(QUERY_FIELD).contains(SHORTEST_PATH_QUERY)) {
-                response.put(COMPUTE_RESPONSE_TYPE, "HAL");
-                JSONArray array = new JSONArray();
-                ((List<Concept>) computeQuery.execute()).iterator().forEachRemaining(concept ->
-                        array.put(renderHALConceptData(concept, 0, getKeyspace(req))));
-                response.put(COMPUTE_RESPONSE_FIELD, array);
+            if (computeQuery instanceof PathQuery) {
+                PathQuery pathQuery = (PathQuery) computeQuery;
+
+                Optional<List<Concept>> result = pathQuery.execute();
+
+                if (result.isPresent()) {
+                    response.put(COMPUTE_RESPONSE_TYPE, "HAL");
+                    JSONArray array = new JSONArray();
+                    result.get().forEach(concept ->
+                            array.put(renderHALConceptData(concept, 0, getKeyspace(req)))
+                    );
+                    response.put(COMPUTE_RESPONSE_FIELD, array);
+                } else {
+                    response.put(COMPUTE_RESPONSE_TYPE, "string");
+                    response.put(COMPUTE_RESPONSE_FIELD, "No path found");
+                }
             } else {
                 response.put(COMPUTE_RESPONSE_TYPE, "string");
                 response.put(COMPUTE_RESPONSE_FIELD, formatAsGraql(computeQuery));
