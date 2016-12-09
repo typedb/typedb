@@ -33,6 +33,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <script>
 import EngineClient from '../js/EngineClient.js';
+import User from '../js/User.js'
 
 export default {
     data: function() {
@@ -41,7 +42,7 @@ export default {
         }
     },
     created: function() {
-        window.useReasoner = false;
+      if(User.getReasonerStatus()==undefined) User.setReasonerStatus(false);
     },
     mounted: function() {
         this.$nextTick(function() {

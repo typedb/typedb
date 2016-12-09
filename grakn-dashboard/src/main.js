@@ -37,6 +37,7 @@ const config = require('./components/config.vue')
 const login = require('./components/login.vue')
 const sidebar = require('./components/sidebar.vue')
 const keyspacesmodal = require('./components/keyspacesModal.vue')
+const signupmodal = require('./components/signupModal.vue')
 
 
 const routes = [{
@@ -91,6 +92,10 @@ Vue.component('side-bar', {
 
 Vue.component('keyspaces-modal', {
     render: h => h(keyspacesmodal)
+})
+
+Vue.component('signup-modal', {
+    render: h => h(signupmodal)
 })
 
 const graknDashboard = new Vue({
