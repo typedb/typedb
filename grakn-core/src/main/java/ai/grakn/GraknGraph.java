@@ -182,6 +182,8 @@ public interface GraknGraph extends AutoCloseable{
     //------------------------------------- Utilities ----------------------------------
 
     /**
+     * Returns access to the low-level details of the graph via GraknAdmin
+     * @see GraknAdmin
      *
      * @return The admin interface which allows you to access more low level details of the graph.
      */
@@ -189,7 +191,6 @@ public interface GraknGraph extends AutoCloseable{
 
     /**
      * Utility function to specify whether implicit and system-generated types should be returned.
-     *
      * @param flag Specifies if implicit and system-generated types should be returned.
      */
     void showImplicitConcepts(boolean flag);
