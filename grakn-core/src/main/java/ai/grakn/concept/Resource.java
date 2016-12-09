@@ -23,37 +23,44 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * A concept which represents a resource.
- * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
+ * A Resource is the Concept that represents a resource associated with one or more Instances. 
  */
 public interface Resource<D> extends Instance{
     //------------------------------------- Accessors ----------------------------------
     /**
+     * Retrieves the value of the Resource.
      *
+     * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
      * @return The Resource itself
      */
     D getValue();
 
     /**
-     *
+     * Retrieves the type of the Resource.
+     * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
      * @return the type of this resource
      */
     ResourceType<D> type();
 
     /**
+     * Retrieves the data type of the Resource.
      *
+     * @param <D> The data type of Resource resource. Supported Types include: String, Long, Double, and Boolean
      * @return The data type of this Resource's type.
      */
     ResourceType.DataType<D> dataType();
 
     /**
-     * @return The list of all Instances which posses this resource
+     * Retrieves the set of all Instances that possess this Resource.
+     *
+     * @return The list of all Instances that possess this Resource.
      */
     Collection<Instance> ownerInstances();
 
     /**
+     * If the Resource is unique, this method retrieves the Instance that possesses it.
      *
-     * @return The instance which is connected to this unique resource, if the resource is unique
+     * @return The Instance which is connected to a unique Resource.
      */
     Instance owner();
 

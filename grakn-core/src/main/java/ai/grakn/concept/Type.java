@@ -21,14 +21,20 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * An ontological element which represents categories concepts can fall within.
+ * Type is an ontological element which represents the categories concepts can fall within.
+ *
+ * @see EntityType
+ * @see RoleType
+ * @see RelationType
+ * @see ResourceType
+ * @see RuleType
  */
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
-     *                    If the concept type is abstract it is not allowed to have any instances.
+     * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
      */
     Type setAbstract(Boolean isAbstract);
@@ -41,14 +47,16 @@ public interface Type extends Concept {
     Type playsRole(RoleType roleType);
 
     /**
-     * Creates a relation type which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
     RelationType key(ResourceType resourceType);
 
     /**
-     * Creates a relation type which allows this type and a resource type to be linked.
+     * Creates a RelationType which allows this type and a resource type to be linked.
+     *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
@@ -56,12 +64,14 @@ public interface Type extends Concept {
 
     //------------------------------------- Accessors ----------------------------------
     /**
+     * Returns the name of this Type.
      *
      * @return The name of this type
      */
     String getName();
 
     /**
+     *
      * @return A list of Role Types which instances of this Type can play.
      */
     Collection<RoleType> playsRoles();
@@ -91,18 +101,23 @@ public interface Type extends Concept {
     Boolean isAbstract();
 
     /**
+     * Return whether the Type was created implicitly.
      *
      * @return returns true if the type was created implicitly through {@link #hasResource}
      */
     Boolean isImplicit();
 
     /**
+     * Return the collection of Rules for which this Type serves as a hypothesis.
+     * @see Rule
      *
      * @return A collection of Rules for which this Type serves as a hypothesis
      */
     Collection<Rule> getRulesOfHypothesis();
 
     /**
+     * Return the collection of Rules for which this Type serves as a conclusion.
+     * @see Rule
      *
      * @return A collection of Rules for which this Type serves as a conclusion
      */
