@@ -21,7 +21,7 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * A RoleType is an ontological element that defines a role that can be played in a Relation Type.
+ * A RoleType is a schema element that defines a role that can be played in a Relation Type.
  * @see RelationType
  */
 public interface RoleType extends Type {

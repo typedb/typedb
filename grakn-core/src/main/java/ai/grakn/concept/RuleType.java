@@ -23,7 +23,7 @@ import ai.grakn.graql.Pattern;
 import java.util.Collection;
 
 /**
- * A RuleType is an ontological element used to define different types of reasoner rules.
+ * A RuleType is a schema element used to define different types of reasoner rules.
  * Currently supported rules include Constraint Rules and Inference Rules.
  */
 public interface RuleType extends Type {

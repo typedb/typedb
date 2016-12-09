@@ -25,15 +25,19 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A Relation represents an instance of a Relation Type, which is the Concept
+ * A Relation represents an instance of a Relation Type, which is a concept
  * that represents how different entities relate to one another.
+ * Relations are used to model n-ary relationships between instances.
+
  */
 public interface Relation extends Instance {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Sets the Instance that can scope this Relation.
+     * Sets the Instance that can scope this Relation to a specific domain.
+     * For example, if a relation is only valid for a particular language you can scope
+     * the relation to an Instance representing that language.
      *
-     * @param instance A new instance which can scope this Relation
+     * @param instance A new instance which scopes this Relation
      * @return The Relation itself
      */
     Relation scope(Instance instance);
