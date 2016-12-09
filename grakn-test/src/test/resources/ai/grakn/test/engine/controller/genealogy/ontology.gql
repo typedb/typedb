@@ -1,0 +1,189 @@
+insert
+
+document isa entity-type
+	plays-role evidence
+	has-resource identifier
+	has-resource document-location
+	has-resource document-type
+	has-resource notes;
+document-location isa resource-type datatype string;
+document-type isa resource-type datatype string;
+
+notes isa resource-type datatype string;
+
+conclusion-evidence isa relation-type
+	has-role evidence
+	has-role conclusion;
+evidence isa role-type;
+conclusion isa role-type;
+
+### Events are inferred and supported by documents
+
+event isa entity-type
+	is-abstract
+	plays-role conclusion
+	plays-role happening
+	has-resource degree
+	has-resource confidence
+	has-resource date
+	has-resource identifier
+	has-resource notes;
+
+# This is needed otherwise reasoner complains about the missing resource if it has not been persisted
+degree isa resource-type datatype long;
+# The following links events to people, specifying the role of the person in the event
+
+event-protagonist isa relation-type
+	has-role happening
+	has-role protagonist
+	has-resource function;
+happening isa role-type;
+protagonist isa role-type;
+function isa resource-type datatype string;
+
+wedding sub event;
+funeral sub event
+	has-resource birth-date;
+christening sub event
+	has-resource death-date;
+
+birth sub event
+	has-resource firstname
+	has-resource middlename
+	has-resource surname
+	has-resource gender
+	has-resource birth-date;
+child-identifier sub identifier;
+parent-identifier sub identifier;
+
+death sub event
+	has-resource death-date
+	has-resource age;
+
+age isa resource-type datatype long;
+
+date isa resource-type datatype string;
+
+#confidence level: low-mid-high
+confidence isa resource-type datatype string;
+
+### Genealogy tree: this is inferred from the events
+
+person isa entity-type
+	plays-role protagonist
+	plays-role spouse1
+	plays-role spouse2
+	plays-role wife
+	plays-role husband
+	plays-role granddaughter
+	plays-role grandson
+	plays-role father-in-law
+	plays-role mother-in-law
+	plays-role daughter-in-law
+	plays-role son-in-law
+	plays-role son
+	plays-role daughter
+	plays-role parent
+	plays-role child
+	plays-role sibling1
+	plays-role sibling2
+	plays-role grandparent
+	plays-role grandchild
+	plays-role cousin1
+	plays-role cousin2
+	plays-role child-in-law
+	plays-role parent-in-law
+	plays-role mother
+	plays-role father
+	plays-role grandmother
+	plays-role grandfather
+	has-resource age
+	has-resource gender
+	has-resource birth-date
+	has-resource death-date
+	has-resource identifier
+	has-resource firstname
+	has-resource middlename
+	has-resource surname;
+
+gender isa resource-type datatype string;
+birth-date sub date;
+death-date sub date;
+name isa resource-type datatype string;
+firstname sub name;
+middlename sub name;
+surname sub name;
+identifier isa resource-type datatype string;
+
+relatives isa relation-type
+	is-abstract;
+
+marriage sub relatives
+	has-role spouse1
+	has-role spouse2
+	has-role husband
+	has-role wife
+	has-resource date;
+spouse isa role-type is-abstract;
+generic-spouse sub spouse is-abstract;
+spouse1 sub generic-spouse;
+spouse2 sub generic-spouse;
+husband sub spouse;
+wife sub spouse;
+
+parentship sub relatives
+	has-role parent
+	has-role mother
+	has-role father
+	has-role child
+	has-role son
+	has-role daughter;
+parent isa role-type;
+mother sub parent;
+father sub parent;
+child isa role-type;
+son sub child;
+daughter sub child;
+
+### The following will be added by reasoner
+siblings sub relatives
+	has-role sibling1
+	has-role sibling2;
+sibling isa role-type is-abstract;
+sibling1 sub sibling;
+sibling2 sub sibling;
+
+grandparentship sub relatives
+	has-role grandparent
+	has-role grandfather
+	has-role grandmother
+	has-role grandchild
+	has-role granddaughter
+	has-role grandson;
+grandparent isa role-type;
+grandfather sub grandparent;
+grandmother sub grandparent;
+grandchild isa role-type;
+grandson sub grandchild;
+granddaughter sub grandchild;
+
+cousins sub relatives
+	has-role cousin1
+	has-role cousin2;
+cousin isa role-type is-abstract;
+cousin1 sub cousin;
+cousin2 sub cousin;
+
+in-laws sub relatives
+	has-role child-in-law
+	has-role son-in-law
+	has-role daughter-in-law
+	has-role parent-in-law
+	has-role mother-in-law
+	has-role father-in-law;
+child-in-law isa role-type;
+son-in-law sub child-in-law;
+daughter-in-law sub child-in-law;
+parent-in-law isa role-type;
+mother-in-law sub parent-in-law;
+father-in-law sub parent-in-law;
