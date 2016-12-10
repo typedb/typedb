@@ -71,11 +71,6 @@ export default {
             contentType: 'application/json; charset=utf-8',
             dataType: 'json',
             cache: false,
-            crossDomain: true,
-            headers: {
-                "Grakn-Origin": "grakn.ai",
-                "Access-Control-Allow-Origin": "http://grak.ai"
-            },
             data: JSON.stringify({
                 'name': credentials.name,
                 'surname': credentials.surname,
@@ -83,8 +78,7 @@ export default {
                 'community': credentials.community
             }),
             url: 'https://grakn-community-inviter.herokuapp.com/invite'
-        }).done(function(r) {
-            consol.log("calling fnn");
+        }).always(function(r) {
             callbackFn(r);
         })
     },

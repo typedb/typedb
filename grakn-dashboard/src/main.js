@@ -20,13 +20,16 @@
 import Vue from 'vue/dist/vue.js'
 import User from './js/User.js'
 import EngineClient from './js/EngineClient.js';
+import VeeValidate from 'vee-validate';
+
 
 
 var VueRouter = require('vue-router')
 
 // Vue.config.devtools = false;
 
-Vue.use(VueRouter)
+Vue.use(VueRouter);
+Vue.use(VeeValidate);
 
 
 // Components
