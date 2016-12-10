@@ -172,13 +172,31 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testReasonerOff() throws Exception {
+        String result = testShell(
+                "insert man isa entity-type has-resource name; person isa entity-type; name isa resource-type datatype string;\n" +
+                        "insert has name 'felix' isa man;\n" +
+                        "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
+                        "match isa person, has name $x;\n"
+        );
+
+        // Make sure first 'match' query has no results and second has exactly one result
+        String[] results = result.split("\n");
+        for (int i = 0; i < results.length; i ++) {
+            if (results[i].contains(">>> match isa person, has name $x;")) {
+                assertFalse(results[i + 1].contains("felix"));
+            }
+        }
+    }
+
+    @Test
     public void testReasoner() throws Exception {
         String result = testShell(
                 "insert man isa entity-type has-resource name; person isa entity-type; name isa resource-type datatype string;\n" +
                 "insert has name 'felix' isa man;\n" +
                 "match isa person, has name $x;\n" +
                 "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
-                "match isa person, has name $x;\n"
+                "match isa person, has name $x;\n", "--infer"
         );
 
         // Make sure first 'match' query has no results and second has exactly one result

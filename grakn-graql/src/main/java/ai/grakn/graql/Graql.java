@@ -85,7 +85,7 @@ public class Graql {
     }
 
     /**
-     * @return a compute query that will compute analytics query
+     * @return a compute query builder without a specified graph
      */
     public static ComputeQueryBuilder compute() {
         return withoutGraph().compute();

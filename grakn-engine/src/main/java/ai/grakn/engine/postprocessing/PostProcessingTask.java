@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.util.ConfigProperties.TIME_LAPSE;
+import static ai.grakn.engine.util.ConfigProperties.POST_PROCESSING_DELAY;
 
 public class PostProcessingTask implements BackgroundTask {
     private final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
@@ -34,7 +34,7 @@ public class PostProcessingTask implements BackgroundTask {
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
     private static final Cache cache = Cache.getInstance();
 
-    private static final long timeLapse = properties.getPropertyAsLong(TIME_LAPSE);
+    private static final long timeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
     /**
      * Run postprocessing only if enough time has passed since the last job was added

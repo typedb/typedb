@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.session;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.user.UsersHandler;
@@ -50,10 +51,11 @@ public class RemoteSession {
     private final Function<String, GraknGraph> getGraph;
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
 
+    //TODO dont use the default uri
     // This constructor is magically invoked by spark's websocket stuff
     @SuppressWarnings("unused")
     public RemoteSession() {
-        this(GraphFactory.getInstance()::getGraph);
+        this(keyspace -> Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph());
     }
 
     public RemoteSession(Function<String, GraknGraph> getGraph) {
@@ -100,7 +102,10 @@ public class RemoteSession {
             String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
             String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
             boolean showImplicitTypes = json.at(REST.RemoteShell.IMPLICIT).asBoolean();
-            GraqlSession graqlSession = new GraqlSession(session, () -> getGraph.apply(keyspace), outputFormat, showImplicitTypes);
+            boolean infer = json.at(REST.RemoteShell.INFER).asBoolean();
+            GraqlSession graqlSession = new GraqlSession(
+                    session, () -> getGraph.apply(keyspace), outputFormat, showImplicitTypes, infer
+            );
             sessions.put(session, graqlSession);
         } else {
             session.close(1008, "Unauthorised: incorrect username or password");

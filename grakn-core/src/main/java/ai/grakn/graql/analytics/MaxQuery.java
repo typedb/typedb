@@ -26,19 +26,44 @@ import java.util.Optional;
 
 public interface MaxQuery extends ComputeQuery<Optional<Number>> {
 
+    /**
+     * @param resourceTypeNames an array of types of resources to execute the query on
+     * @return a MaxQuery with the subTypeNames set
+     */
     MaxQuery of(String... resourceTypeNames);
 
+    /**
+     * @param resourceTypeNames a collection of types of resources to execute the query on
+     * @return a MaxQuery with the subTypeNames set
+     */
     MaxQuery of(Collection<String> resourceTypeNames);
 
+    /**
+     * @param subTypeNames an array of types to include in the subgraph
+     * @return a MaxQuery with the subTypeNames set
+     */
     @Override
     MaxQuery in(String... subTypeNames);
 
+    /**
+     * @param subTypeNames a collection of types to include in the subgraph
+     * @return a MaxQuery with the subTypeNames set
+     */
     @Override
     MaxQuery in(Collection<String> subTypeNames);
 
+    /**
+     * Execute the query.
+     *
+     * @return the max value if the given resource types have instances, otherwise an empty Optional instance
+     */
     @Override
     Optional<Number> execute();
 
+    /**
+     * @param graph the graph to execute the query on
+     * @return a MaxQuery with the graph set
+     */
     @Override
     MaxQuery withGraph(GraknGraph graph);
 }

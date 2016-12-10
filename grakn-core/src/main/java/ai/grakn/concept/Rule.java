@@ -23,82 +23,93 @@ import ai.grakn.graql.Pattern;
 import java.util.Collection;
 
 /**
- * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
+ * A Rule represents an instance of a Rule-Type, which is used to make inferences over the data.
  */
 public interface Rule extends Instance{
     //------------------------------------- Modifiers ----------------------------------
-    //TODO: Fill out details on this method
+
     /**
+     * Set the expectation of this Rule to be true or false.
      *
-     * @param expectation
+     * @param expectation A boolean parameter representing the expectation setting.
      * @return The Rule itself
      */
     Rule setExpectation(boolean expectation);
 
-    //TODO: Fill out details on this method
+
     /**
+     * Sets whether the Rule should be materialised.
      *
-     * @param materialise
+     * @param materialise A boolean representing whether the Rule should be materialised.
      * @return The Rule itself
      */
     Rule setMaterialise(boolean materialise);
     //------------------------------------- Accessors ----------------------------------
     /**
+     * Retrieves the Left Hand Side of a Graql query.
      *
-     * @return A string representing the left hand side GraQL query.
+     * @return A string representing the left hand side Graql query.
      */
     Pattern getLHS();
 
     /**
+     * Retrieves the Right Hand Side of a Graql query.
      *
-     * @return A string representing the right hand side GraQL query.
+     * @return A string representing the right hand side Graql query.
      */
     Pattern getRHS();
 
-    //TODO: Fill out details on this method
+
     /**
+     * Returns a boolean representing the expectation setting of this Rule.
      *
-     * @return
+     * @return a boolean representing the expectation setting.
      */
     Boolean getExpectation();
 
-    //TODO: Fill out details on this method
+
     /**
+     * Returns whether the Rule is materialised.
      *
-     * @return
+     * @return boolean value representing the materialisation setting.
      */
     Boolean isMaterialise();
 
     //------------------------------------- Edge Handling ----------------------------------
     /**
+     * Add a hypothesis of the specified Type to the Rule.
      *
-     * @param type The concept type which this rules applies to.
+     * @param type The Type which this Rule applies to.
      * @return The Rule itself
      */
     Rule addHypothesis(Type type);
     /**
      *
-     * @param type The concept type which is the conclusion of this Rule.
+     * Add a conclusion of the specified Type to the Rule.
+     *
+     * @param type The Type which is the conclusion of this Rule.
      * @return The Rule itself
      */
     Rule addConclusion(Type type);
 
     /**
+     * Retrieve a set of Types that constitute a part of the hypothesis of this Rule.
      *
-     * @return A collection of Concept Types that constitute a part of the hypothesis of the rule
+     * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule
      */
     Collection<Type> getHypothesisTypes();
 
     /**
+     * Retrieve a set of Types that constitue a part of the conclusion of the Rule.
      *
-     * @return A collection of Concept Types that constitute a part of the conclusion of the rule
+     * @return A collection of Concept Types that constitute a part of the conclusion of the Rule
      */
     Collection<Type> getConclusionTypes();
 
     //---- Inherited Methods
     /**
      *
-     * @return The type of this rule
+     * @return The type of this Graql
      */
     RuleType type();
 }

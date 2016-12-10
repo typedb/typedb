@@ -26,19 +26,44 @@ import java.util.Optional;
 
 public interface StdQuery extends ComputeQuery<Optional<Double>> {
 
+    /**
+     * @param resourceTypeNames an array of types of resources to execute the query on
+     * @return a StdQuery with the subTypeNames set
+     */
     StdQuery of(String... resourceTypeNames);
 
+    /**
+     * @param resourceTypeNames a collection of types of resources to execute the query on
+     * @return a StdQuery with the subTypeNames set
+     */
     StdQuery of(Collection<String> resourceTypeNames);
 
+    /**
+     * @param subTypeNames an array of types to include in the subgraph
+     * @return a StdQuery with the subTypeNames set
+     */
     @Override
     StdQuery in(String... subTypeNames);
 
+    /**
+     * @param subTypeNames a collection of types to include in the subgraph
+     * @return a StdQuery with the subTypeNames set
+     */
     @Override
     StdQuery in(Collection<String> subTypeNames);
 
+    /**
+     * Execute the query.
+     *
+     * @return the standard deviation if the given resource types have instances, otherwise an empty Optional instance
+     */
     @Override
     Optional<Double> execute();
 
+    /**
+     * @param graph the graph to execute the query on
+     * @return a StdQuery with the graph set
+     */
     @Override
     StdQuery withGraph(GraknGraph graph);
 }

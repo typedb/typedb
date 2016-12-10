@@ -62,6 +62,7 @@ import static java.util.stream.Collectors.toList;
 class GraqlSession {
     private final Session session;
     private final boolean showImplicitTypes;
+    private final boolean infer;
     private GraknGraph graph;
     private final Supplier<GraknGraph> getGraph;
     private final String outputFormat;
@@ -77,8 +78,12 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, Supplier<GraknGraph> getGraph, String outputFormat, boolean showImplicitTypes) {
+    GraqlSession(
+            Session session, Supplier<GraknGraph> getGraph, String outputFormat,
+            boolean showImplicitTypes, boolean infer
+    ) {
         this.showImplicitTypes = showImplicitTypes;
+        this.infer = infer;
         this.session = session;
         this.getGraph = getGraph;
         this.outputFormat = outputFormat;
@@ -181,7 +186,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                query = graph.graql().parse(queryString);
+                query = graph.graql().setInference(infer).parse(queryString);
 
                 // Return results unless query is cancelled
                 query.resultsString(printer).forEach(result -> {

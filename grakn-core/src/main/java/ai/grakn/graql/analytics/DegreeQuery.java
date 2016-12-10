@@ -27,14 +27,31 @@ import java.util.Set;
 
 public interface DegreeQuery<T> extends ComputeQuery<T> {
 
+    /**
+     * Persist the result in the graph after executing the query.
+     *
+     * @return a DegreeQuery with persist flag set
+     */
     DegreeQuery<String> persist();
 
+    /**
+     * @param subTypeNames an array of types to include in the subgraph
+     * @return a DegreeQuery with the subTypeNames set
+     */
     @Override
     DegreeQuery<T> in(String... subTypeNames);
 
+    /**
+     * @param subTypeNames a collection of types to include in the subgraph
+     * @return a DegreeQuery with the subTypeNames set
+     */
     @Override
     DegreeQuery<T> in(Collection<String> subTypeNames);
 
+    /**
+     * @param graph the graph to execute the query on
+     * @return a DegreeQuery with the graph set
+     */
     @Override
     DegreeQuery<T> withGraph(GraknGraph graph);
 }

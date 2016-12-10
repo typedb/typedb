@@ -26,19 +26,44 @@ import java.util.Optional;
 
 public interface SumQuery extends ComputeQuery<Optional<Number>> {
 
+    /**
+     * @param resourceTypeNames an array of types of resources to execute the query on
+     * @return a SumQuery with the subTypeNames set
+     */
     SumQuery of(String... resourceTypeNames);
 
+    /**
+     * @param resourceTypeNames a collection of types of resources to execute the query on
+     * @return a SumQuery with the subTypeNames set
+     */
     SumQuery of(Collection<String> resourceTypeNames);
 
+    /**
+     * @param subTypeNames an array of types to include in the subgraph
+     * @return a SumQuery with the subTypeNames set
+     */
     @Override
     SumQuery in(String... subTypeNames);
 
+    /**
+     * @param subTypeNames a collection of types to include in the subgraph
+     * @return a SumQuery with the subTypeNames set
+     */
     @Override
     SumQuery in(Collection<String> subTypeNames);
 
+    /**
+     * Execute the query.
+     *
+     * @return the sum if the given resource types have instances, otherwise an empty Optional instance
+     */
     @Override
     Optional<Number> execute();
 
+    /**
+     * @param graph the graph to execute the query on
+     * @return a SumQuery with the graph set
+     */
     @Override
     SumQuery withGraph(GraknGraph graph);
 }

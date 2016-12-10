@@ -26,60 +26,74 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A Resource Type which can hold different values.
- * @param <D> The data type of this resource type.
+ * A ResourceType is a schema element which represents the category of resources in the graph.
+ * <p>
+ * For the methods below, @param <D> is the data type of this resource represented by the Resource Type.
+ * Supported Types include: String, Long, Double, and Boolean
+ * </p>
  */
 public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Sets the ResourceType to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the Resource Type is abstract (true) or not (false).
-     *                    If the Resource Type is abstract it is not allowed to have any instances.
-     * @return The Resource Type itself.
+     * @param isAbstract  Specifies if the ResourceType is to be abstract (true) or not (false).
+     *
+     * @return The ResourceType itself.
      */
     ResourceType<D> setAbstract(Boolean isAbstract);
 
     /**
+     * Sets the supertype of the ResourceType to be the ResourceType specified.
      *
-     * @param type The super type of this Resource Type.
-     * @return The Resource Type itself.
+     * @param type The super type of this ResourceType.
+     * @return The ResourceType itself.
      */
     ResourceType<D> superType(ResourceType<D> type);
 
     /**
+     * Sets the RoleType which instances of this ResourceType may play.
      *
-     * @param roleType The Role Type which the instances of this Resource Type are allowed to play.
-     * @return The Resource Type itself.
+     * @param roleType The Role Type which the instances of this ResourceType are allowed to play.
+     * @return The ResourceType itself.
      */
     ResourceType<D> playsRole(RoleType roleType);
 
     /**
+     * Removes the RoleType to prevent instances of this ResourceType from playing it.
      *
-     * @param roleType The Role Type which the instances of this Resource Type should no longer be allowed to play.
-     * @return The Resource Type itself.
+     * @param roleType The Role Type which the instances of this ResourceType should no longer be allowed to play.
+     * @return The ResourceType itself.
      */
     ResourceType<D> deletePlaysRole(RoleType roleType);
 
     /**
-     * @param regex The regular expression which instances of this resource must conform to.
-     * @return The Resource Type itself.
+     * Set the regular expression that instances of the ResourceType must conform to.
+     *
+     * @param regex The regular expression that instances of this ResourceType must conform to.
+     * @return The ResourceType itself.
      */
     ResourceType<D> setRegex(String regex);
 
     /**
-     * @param value A value for the Resource which is unique to it's type
+     * Set the value for the Resource, unique to its type.
+     *
+     * @param value A value for the Resource which is unique to its type
      * @return new or existing Resource of this type with the provided value.
      */
     Resource<D> putResource(D value);
 
     //------------------------------------- Accessors ---------------------------------
     /**
+     * Returns the supertype of this ResourceType.
      *
-     * @return The super of this Resource Type
+     * @return The supertype of this ResourceType,
      */
     ResourceType<D> superType();
 
     /**
+     * Get the Resource with the value provided, and its type, or return NULL
+     * @see Resource
      *
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @param value A value which a Resource in the graph may be holding
@@ -88,30 +102,37 @@ public interface ResourceType<D> extends Type {
     <V> Resource<V> getResource(V value);
 
     /**
+     * Returns a collection of subtypes of this ResourceType.
      *
-     * @return The sub types of this Resource Type
+     * @return The subtypes of this ResourceType
      */
     Collection<ResourceType<D>> subTypes();
 
     /**
+     * Returns a collection of all Resource Instances of this ResourceType.
      *
-     * @return The resource instances of this Resource Type
+     * @return The resource instances of this ResourceType
      */
     Collection<Resource<D>> instances();
 
     /**
-     * @return The data type which instances of this resource must conform to.
+     * Get the data type to which instances of the ResourceType must conform.
+     *
+     * @return The data type to which instances of this resource must conform.
      */
     DataType<D> getDataType();
 
     /**
-     * @return The regular expression which instances of this resource must conform to.
+     * Retrieve the regular expression to which instances of this ResourceType must conform.
+     *
+     * @return The regular expression to which instances of this ResourceType must conform.
      */
     String getRegex();
 
     /**
+     * Returns whether the ResourceType is unique.
      *
-     * @return True if the resource type is unique and its instances are limited to one connection to an entity
+     * @return True if the ResourceType is unique and its instances are limited to one connection to an entity
      */
     Boolean isUnique();
 
