@@ -20,13 +20,16 @@
 import Vue from 'vue/dist/vue.js'
 import User from './js/User.js'
 import EngineClient from './js/EngineClient.js';
+import VeeValidate from 'vee-validate';
+
 
 
 var VueRouter = require('vue-router')
 
 // Vue.config.devtools = false;
 
-Vue.use(VueRouter)
+Vue.use(VueRouter);
+Vue.use(VeeValidate);
 
 
 // Components
@@ -37,6 +40,7 @@ const config = require('./components/config.vue')
 const login = require('./components/login.vue')
 const sidebar = require('./components/sidebar.vue')
 const keyspacesmodal = require('./components/keyspacesModal.vue')
+const signupmodal = require('./components/signupModal.vue')
 
 
 const routes = [{
@@ -91,6 +95,10 @@ Vue.component('side-bar', {
 
 Vue.component('keyspaces-modal', {
     render: h => h(keyspacesmodal)
+})
+
+Vue.component('signup-modal', {
+    render: h => h(signupmodal)
 })
 
 const graknDashboard = new Vue({

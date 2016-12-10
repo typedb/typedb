@@ -20,10 +20,11 @@
     "pace-progress": "^1.0.2",
     "prismjs": "^1.5.1",
     "underscore": "1.8",
+    "vee-validate": "^2.0.0-beta.17",
     "vis": "4.17",
-    "vue": "2.0.8",
-    "vue-template-compiler":"2.0.8",
-    "vue-router": "^2.0"
+    "vue": "^2.0",
+    "vue-router": "^2.0",
+    "vue-template-compiler": "^2.0"
   },
   "devDependencies": {
     "ava": "^0.16.0",

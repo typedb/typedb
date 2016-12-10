@@ -74,6 +74,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </div>
             </div>
             <keyspaces-modal></keyspaces-modal>
+            <signup-modal></signup-modal>
         </div>
     </section>
 </section>

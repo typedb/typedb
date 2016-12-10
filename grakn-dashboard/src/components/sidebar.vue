@@ -22,32 +22,43 @@
                 <a target="_blank" href="https://grakn.ai/pages/index.html">Documentation</a>
             </li>
             <li class="nav-category">
-               Actions
+                Actions
             </li>
             <li><a @click="openKeySpaces()">Keyspaces</a></li>
             <li v-show="isUserAuth" @click="logout()"><a href="#">Log Out</a></li>
-            <li class="nav-info">
-                <div class="m-t-xs">
-                    <!-- <span class="c-white">Example</span> text. -->
-                    <br/>
-                    <!-- HOW TO REMOVE THIS SECTION -->
-                    <!--<span>
-                        If you don't want to have this section, just remove it from html and in your css replace:
-                        .navigation:before { background-color: #24262d; } with
-                        .navigation:before { background-color: #2a2d35; }
-                        and
-                        .navigation { background-color: #24262d; }</code> with <code>.navigation { background-color: #2a2d35; }
-                    </span>-->
-                </div>
-            </li>
         </ul>
     </nav>
+    <a @click="openSignUp()">
+        <div class="join-community">
+            Support our Community!
+        </div>
+    </a>
 </aside>
 </template>
 
 <style>
 .nav-category {
     font-size: 120%;
+}
+
+.join-community {
+    width: 150px;
+    height: 180px;
+    padding-top: 4px;
+    text-align: center;
+    font-weight: 200;
+    margin-top: 20px;
+    font-size: 150%;
+    height: 50px;
+    line-height: 20px;
+    color: #FF8D7D;
+
+    cursor: pointer;
+}
+
+.join-community:hover {
+  text-decoration: underline;
+  text-decoration-color: #FF8D7D;
 }
 </style>
 
@@ -64,7 +75,6 @@ export default {
         }
     },
     created: function() {
-        window.useReasoner = false;
     },
     mounted: function() {
         this.$nextTick(function() {
@@ -77,6 +87,9 @@ export default {
     methods: {
         openKeySpaces() {
             $('#keySpacesModal').modal('show');
+        },
+        openSignUp() {
+          $('#signupModal').modal('show');
         },
         logout() {
             User.logout();

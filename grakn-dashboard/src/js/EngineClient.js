@@ -48,7 +48,9 @@ export default {
                 contentType: requestData.contentType || 'application/json; charset=utf-8',
                 dataType: requestData.dataType || 'json',
                 cache: requestData.cache || false,
-                accepts: requestData.accepts || { json: "application/hal+json" },
+                accepts: requestData.accepts || {
+                    json: "application/hal+json"
+                },
                 data: requestData.data,
                 url: requestData.url,
                 beforeSend: this.setHeaders
@@ -63,30 +65,51 @@ export default {
             });
     },
 
-    setHeaders(xhr){
-      let token = localStorage.getItem('id_token');
-      if(token!=null)
-        xhr.setRequestHeader("Authorization", "Bearer "+token);
-
-      return true;
+    sendInvite(credentials, callbackFn) {
+        $.ajax({
+            type: 'POST',
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            cache: false,
+            data: JSON.stringify({
+                'name': credentials.name,
+                'surname': credentials.surname,
+                'email': credentials.email,
+                'community': credentials.community
+            }),
+            url: 'https://grakn-community-inviter.herokuapp.com/invite'
+        }).always(function(r) {
+            callbackFn(r);
+        })
     },
 
-    fetchKeyspaces(fn){
-      this.request({
-          url: "/keyspaces",
-          callback: fn,
-          dataType: "text"
-      });
+    setHeaders(xhr) {
+        let token = localStorage.getItem('id_token');
+        if (token != null)
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+
+        return true;
     },
 
-    newSession(creds,fn){
-      this.request({
-          url: "/auth/session/",
-          callback: fn,
-          data: JSON.stringify({'username':creds.username,'password':creds.password}),
-          dataType: "text",
-          requestType:'POST'
-      });
+    fetchKeyspaces(fn) {
+        this.request({
+            url: "/keyspaces",
+            callback: fn,
+            dataType: "text"
+        });
+    },
+
+    newSession(creds, fn) {
+        this.request({
+            url: "/auth/session/",
+            callback: fn,
+            data: JSON.stringify({
+                'username': creds.username,
+                'password': creds.password
+            }),
+            dataType: "text",
+            requestType: 'POST'
+        });
     },
     /**
      * Pre materialise
@@ -105,14 +128,14 @@ export default {
      */
     conceptsByType(type, fn) {
         this.request({
-            url: "/graph/concept/" + type+"?keyspace="+User.getCurrentKeySpace(),
+            url: "/graph/concept/" + type + "?keyspace=" + User.getCurrentKeySpace(),
             callback: fn
         });
     },
 
     graqlAnalytics(query, fn) {
         this.request({
-            url: "/graph/analytics?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
+            url: "/graph/analytics?keyspace=" + User.getCurrentKeySpace() + "&query=" + query,
             callback: fn
         });
     },
@@ -122,11 +145,13 @@ export default {
      */
     graqlShell(query, fn) {
         this.request({
-            url: "/graph/match?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
+            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query,
             callback: fn,
             dataType: "text",
             contentType: "application/text",
-            accepts: { text: "application/graql"}
+            accepts: {
+                text: "application/graql"
+            }
         });
     },
 
@@ -147,9 +172,11 @@ export default {
      */
     graqlHAL(query, fn, useReasoner) {
         this.request({
-            url: "/graph/match?keyspace="+User.getCurrentKeySpace()+"&query=" + query + "&reasoner=" + useReasoner,
+            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query + "&reasoner=" + useReasoner,
             callback: fn,
-            accepts: { json: "application/hal+json"}
+            accepts: {
+                json: "application/hal+json"
+            }
         });
     },
 
@@ -158,7 +185,7 @@ export default {
      */
     graqlAnalytics(query, fn) {
         this.request({
-            url: "/graph/analytics?keyspace="+User.getCurrentKeySpace()+"&query=" + query,
+            url: "/graph/analytics?keyspace=" + User.getCurrentKeySpace() + "&query=" + query,
             callback: fn
         });
     },
@@ -178,7 +205,7 @@ export default {
      */
     getMetaTypes(fn) {
         this.request({
-            url: "/graph/ontology?keyspace="+User.getCurrentKeySpace(),
+            url: "/graph/ontology?keyspace=" + User.getCurrentKeySpace(),
             callback: fn
         });
     }
