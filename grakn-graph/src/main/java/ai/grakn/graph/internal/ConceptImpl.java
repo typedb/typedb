@@ -426,7 +426,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The concept itself casted to the correct interface
      */
     private T type(V type) {
-        if(type != null){
+        if(type != null && type() == null){
             TypeImpl currentIsa = getParentIsa();
             if(currentIsa == null){
                 setType(String.valueOf(type.getName()));

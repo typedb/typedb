@@ -37,8 +37,8 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -403,7 +403,7 @@ public class TypeTest extends GraphTestBase{
         RelationType relationType = entityType.hasResource(resourceType);
         assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relationType.getName());
 
-        Set<String> roleNames = relationType.hasRoles().stream().map(Type::getName).collect(Collectors.toSet());
+        Set<String> roleNames = relationType.hasRoles().stream().map(Type::getName).collect(toSet());
         assertEquals(2, roleNames.size());
 
         assertTrue(roleNames.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
@@ -471,7 +471,7 @@ public class TypeTest extends GraphTestBase{
         RelationType relationType = entityType.key(resourceType);
         assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relationType.getName());
 
-        Set<String> roleIds = relationType.hasRoles().stream().map(RoleType::getName).collect(Collectors.toSet());
+        Set<String> roleIds = relationType.hasRoles().stream().map(RoleType::getName).collect(toSet());
         assertEquals(2, roleIds.size());
 
         assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId)));
@@ -525,5 +525,24 @@ public class TypeTest extends GraphTestBase{
         assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
         EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
         assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+    }
+
+    @Test
+    public void testIsaAndSubEdge() {
+        EntityType product = graknGraph.putEntityType("product");
+        EntityTypeImpl video = (EntityTypeImpl) graknGraph.putEntityType("video");
+
+        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
+        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
+
+        video.superType(product);
+
+        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
+        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
+
+        video = (EntityTypeImpl) graknGraph.putEntityType("video");
+
+        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
+        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
     }
 }
