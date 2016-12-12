@@ -186,7 +186,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                query = graph.graql().setInference(infer).parse(queryString);
+                query = graph.graql().infer(infer).parse(queryString);
 
                 // Return results unless query is cancelled
                 query.resultsString(printer).forEach(result -> {

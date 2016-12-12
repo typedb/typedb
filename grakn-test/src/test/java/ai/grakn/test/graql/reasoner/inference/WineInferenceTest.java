@@ -42,7 +42,7 @@ public class WineInferenceTest extends AbstractEngineTest{
         assumeTrue(usingTinker());
         GraknGraph graph = TestGraph.getGraph("name", "wines-test.gql", "wines-rules.gql");
         reasoner = new Reasoner(graph);
-        qb = graph.graql().setInference(false);
+        qb = graph.graql().infer(false);
     }
 
     @Test

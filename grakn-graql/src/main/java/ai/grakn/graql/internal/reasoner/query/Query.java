@@ -63,7 +63,7 @@ public class Query implements MatchQueryInternal {
     }
 
     public Query(String query, GraknGraph graph) {
-        this(graph.graql().setInference(false).<MatchQuery>parse(query), graph);
+        this(graph.graql().infer(false).<MatchQuery>parse(query), graph);
     }
 
     public Query(Query q) {
@@ -333,9 +333,9 @@ public class Query implements MatchQueryInternal {
 
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
-            return graph.graql().setInference(false).match(getPattern());
+            return graph.graql().infer(false).match(getPattern());
         else
-            return graph.graql().setInference(false).match(getPattern()).select(selectVars);
+            return graph.graql().infer(false).match(getPattern()).select(selectVars);
     }
 
     public Map<String, Type> getVarTypeMap() {

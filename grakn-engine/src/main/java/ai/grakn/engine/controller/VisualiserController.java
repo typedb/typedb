@@ -173,7 +173,7 @@ public class VisualiserController {
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-            QueryBuilder qb = graph.graql().setInference(useReasoner);
+            QueryBuilder qb = graph.graql().infer(useReasoner);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
                 switch (getAcceptType(req)) {

@@ -107,5 +107,5 @@ public interface QueryBuilder {
     /**
      * Enable or disable inference
      */
-    QueryBuilder setInference(boolean infer);
+    QueryBuilder infer(boolean infer);
 }

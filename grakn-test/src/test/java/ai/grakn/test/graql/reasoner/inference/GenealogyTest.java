@@ -51,7 +51,7 @@ public class GenealogyTest extends AbstractEngineTest{
         GenealogyGraph genealogyGraph = new GenealogyGraph();
         reasoner = new Reasoner(genealogyGraph.graph());
         graph = genealogyGraph.graph();
-        qb = graph.graql().setInference(false);
+        qb = graph.graql().infer(false);
 
         /*
         //prerunning analytics

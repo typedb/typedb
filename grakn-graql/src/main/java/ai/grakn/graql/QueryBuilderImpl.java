@@ -69,7 +69,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     @Override
-    public QueryBuilder setInference(boolean infer) {
+    public QueryBuilder infer(boolean infer) {
         this.infer = infer;
         return this;
     }

@@ -30,7 +30,6 @@ import ai.grakn.graql.QueryBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static ai.grakn.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -45,7 +44,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
     public void testQuery() {
         GraknGraph graph = GeoGraph.getGraph();
         Reasoner reasoner = new Reasoner(graph);
-        QueryBuilder qb = graph.graql().setInference(false);
+        QueryBuilder qb = graph.graql().infer(false);
         String queryString = "match $x isa city;$x has name $name;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -64,7 +63,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
     public void testQueryPrime() {
         GraknGraph graph = GeoGraph.getGraph();
         Reasoner reasoner = new Reasoner(graph);
-        QueryBuilder qb = graph.graql().setInference(false);
+        QueryBuilder qb = graph.graql().infer(false);
         String queryString = "match $x isa city;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -81,7 +80,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
     public void testQuery2() {
         GraknGraph graph = GeoGraph.getGraph();
         Reasoner reasoner = new Reasoner(graph);
-        QueryBuilder qb = graph.graql().setInference(false);
+        QueryBuilder qb = graph.graql().infer(false);
         String queryString = "match $x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -98,7 +97,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
     public void testQuery2Prime() {
         GraknGraph graph = GeoGraph.getGraph();
         Reasoner reasoner = new Reasoner(graph);
-        QueryBuilder qb = graph.graql().setInference(false);
+        QueryBuilder qb = graph.graql().infer(false);
         String queryString = "match $x isa university;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
