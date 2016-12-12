@@ -177,7 +177,7 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testResourceAsVar2(){
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
-        QueryBuilder qb = graph.graql().setInference(true);
+        QueryBuilder qb = graph.graql().infer(true);
         MatchQuery query = qb.parse(queryString);
         Pattern body = and(graph.graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(graph.graql().parsePatterns("$x has firstname 'Bob';"));
@@ -621,7 +621,7 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testOrder(){
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a;";
-        MatchQuery query = lgraph.graql().setInference(true).parse(queryString);
+        MatchQuery query = lgraph.graql().infer(true).parse(queryString);
 
         List<Map<String, Concept>> answers = query.execute();
         assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("19"));
@@ -631,7 +631,7 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testOrderAndOffset(){
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; offset 3;";
-        MatchQuery query = lgraph.graql().setInference(true).parse(queryString);
+        MatchQuery query = lgraph.graql().infer(true).parse(queryString);
 
         List<Map<String, Concept>> answers = query.execute();
         assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("23"));

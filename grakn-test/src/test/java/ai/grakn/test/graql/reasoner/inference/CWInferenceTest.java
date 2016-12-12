@@ -46,7 +46,7 @@ public class CWInferenceTest extends AbstractEngineTest{
         assumeTrue(usingTinker());
         graph = CWGraph.getGraph();
         reasoner = new Reasoner(graph);
-        qb = graph.graql().setInference(false);
+        qb = graph.graql().infer(false);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class CWInferenceTest extends AbstractEngineTest{
     @Test
     public void testTransactionQuery() {
         GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql().setInference(false);
+        QueryBuilder qb = graph.graql().infer(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parse(queryString);
@@ -229,7 +229,7 @@ public class CWInferenceTest extends AbstractEngineTest{
     public void testGraphCase() {
         GraknGraph localGraph = CWGraph.getGraph();
         Reasoner localReasoner = new Reasoner(localGraph);
-        QueryBuilder lqb = localGraph.graql().setInference(false);
+        QueryBuilder lqb = localGraph.graql().infer(false);
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");
 
         localGraph.putEntityType("region");

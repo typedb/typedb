@@ -107,5 +107,10 @@ public interface QueryBuilder {
     /**
      * Enable or disable inference
      */
-    QueryBuilder setInference(boolean infer);
+    QueryBuilder infer(boolean infer);
+
+    /**
+     * Enable or disable materialisation
+     */
+    QueryBuilder materialise(boolean materialise);
 }
