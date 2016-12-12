@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
@@ -36,7 +35,7 @@ public class UpperMacro implements Macro<String> {
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
 
-        return StringConverter.valueToString(values.get(0).toString().toUpperCase());
+        return values.get(0).toString().toUpperCase();
     }
 
     @Override

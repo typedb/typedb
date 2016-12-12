@@ -21,6 +21,7 @@ package ai.grakn.test.graql.template;
 import ai.grakn.graql.Graql;
 import org.junit.Test;
 
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -241,6 +242,16 @@ public class MacroTest {
 
         Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
         assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void dateInLongMacroTest() throws ParseException {
+        java.text.DateFormat format = new java.text.SimpleDateFormat("mm/dd/yyyy");
+        String dateAsString = "10/09/1993";
+        long time = format.parse(dateAsString).getTime();
+        String template = "insert $x value @long(@date(date \"mm/dd/yyyy\"));";
+        String expected = "insert $x0 value " + time + ";";
+        assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){

@@ -22,16 +22,17 @@ import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
-public class NoescpMacro implements Macro<String> {
+public class NoescpMacro implements Macro<StringBuilder> {
 
     private static final int numberArguments = 1;
 
     @Override
-    public String apply(List<Object> values) {
+    public StringBuilder apply(List<Object> values) {
         if(values.size() != numberArguments){
             throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
-        return values.get(0).toString();
+
+        return new StringBuilder(values.get(0).toString());
     }
 
     @Override

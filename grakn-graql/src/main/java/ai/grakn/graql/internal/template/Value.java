@@ -40,7 +40,7 @@ public class Value {
 
         this.value = value;
 
-        if(!(isString() || isList()|| isBoolean() || isNumber())){
+        if(!(isString() || isList()|| isBoolean() || isNumber() || isStringBuilder())){
             throw new RuntimeException("unsupported type for " + value);
         }
     }
@@ -67,6 +67,10 @@ public class Value {
 
     public boolean isBoolean(){
         return value instanceof Boolean;
+    }
+
+    public boolean isStringBuilder(){
+        return value instanceof StringBuilder;
     }
 
     public boolean isNull(){
@@ -117,6 +121,9 @@ public class Value {
     // FORMATS
 
     public static String format(Value val){
+        if(val.value instanceof StringBuilder){
+            return val.value.toString();
+        }
         return StringConverter.valueToString(val.value);
     }
 
@@ -127,10 +134,6 @@ public class Value {
         }
 
         return variable;
-    }
-
-    public static String identity(Value val){
-        return val.toString();
     }
 
     @Override

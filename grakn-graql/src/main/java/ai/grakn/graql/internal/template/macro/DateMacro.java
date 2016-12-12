@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.graql.macro.Macro;
 
 import java.text.ParseException;
@@ -42,7 +41,7 @@ public class DateMacro implements Macro<String> {
         String originalFormat = values.get(1).toString();
         String newFormat = values.size() == 3 ? values.get(2).toString() : null;
 
-        return StringConverter.valueToString(convertDateFormat(originalDate, originalFormat, newFormat));
+        return convertDateFormat(originalDate, originalFormat, newFormat);
     }
 
     @Override
