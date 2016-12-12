@@ -53,6 +53,8 @@ public class AtomicTest extends AbstractEngineTest{
         assumeTrue(usingTinker());
         snbGraph = SNBGraph.getGraph();
         cwGraph = CWGraph.getGraph();
+        Reasoner.linkConceptTypes(snbGraph);
+        Reasoner.linkConceptTypes(cwGraph);
     }
 
     @org.junit.Rule

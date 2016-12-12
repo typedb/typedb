@@ -49,14 +49,14 @@ import static ai.grakn.graql.Graql.var;
 public class Reasoner {
 
     private final GraknGraph graph;
-    private final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
     public Reasoner(GraknGraph graph) {
         this.graph = graph;
-        linkConceptTypes();
+        linkConceptTypes(graph);
     }
 
-    private void commitGraph() {
+    private static void commitGraph(GraknGraph graph) {
         try {
             graph.commit();
         } catch (GraknValidationException e) {
@@ -64,7 +64,7 @@ public class Reasoner {
         }
     }
 
-    private void linkConceptTypes(Rule rule) {
+    private static void linkConceptTypes(GraknGraph graph, Rule rule) {
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(rule.getLHS());
         MatchQuery qRHS = qb.match(rule.getRHS());
@@ -91,17 +91,17 @@ public class Reasoner {
     /**
      * Link all unlinked rules in the rule base to their matching types
      */
-    public void linkConceptTypes() {
+    public static void linkConceptTypes(GraknGraph graph) {
         Set<Rule> rules = getRules(graph);
         LOG.debug(rules.size() + " rules initialized...");
         Set<Rule> linkedRules = new HashSet<>();
         rules.stream()
                 .filter(rule -> rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty())
                 .forEach(rule -> {
-                    linkConceptTypes(rule);
+                    linkConceptTypes(graph, rule);
                     linkedRules.add(rule);
                 });
-        if(!linkedRules.isEmpty()) commitGraph();
+        if(!linkedRules.isEmpty()) commitGraph(graph);
         LOG.debug(linkedRules.size() + " rules linked...");
     }
 
@@ -122,7 +122,7 @@ public class Reasoner {
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
-        commitGraph();
+        commitGraph(graph);
     }
 
     /**
@@ -140,7 +140,7 @@ public class Reasoner {
                     Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
                     answers.addAll(conjunctiveQuery.resolve(materialise));
                 });
-        if(materialise) commitGraph();
+        if(materialise) commitGraph(graph);
         return answers;
     }
 
@@ -156,7 +156,7 @@ public class Reasoner {
             return inputQuery;
         else {
             MatchQuery outputQuery = new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
-            if (materialise) commitGraph();
+            if (materialise) commitGraph(graph);
             return outputQuery;
         }
     }
