@@ -388,6 +388,14 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void equalityWithStringTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", "one");
+        assertParseEquals("if(first = \"one\") do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first != \"one\") do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+    }
+
+    @Test
     public void ifElseTest(){
         String template =
                 "if (firstName != null) do {\n" +

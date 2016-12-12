@@ -223,7 +223,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     // | STRING           #stringExpression
     @Override
     public Value visitStringExpression(GraqlTemplateParser.StringExpressionContext ctx){
-        return new Value(String.valueOf(ctx.getText()));
+        return new Value(String.valueOf(ctx.getText().replaceAll("\"", "")));
     }
 
     //  | expr EQ expr           #eqExpression
