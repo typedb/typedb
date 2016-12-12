@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.test.AbstractScalingTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -73,7 +74,7 @@ import static org.junit.Assert.assertFalse;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
-public class ScalingTestIT extends AbstractScalingTest {
+public class ScalingTestIT extends AbstractGraphTest {
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};
@@ -84,7 +85,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 100; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 10000; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
@@ -119,6 +120,8 @@ public class ScalingTestIT extends AbstractScalingTest {
         // fetch the logger
         LOGGER = (Logger) org.slf4j.LoggerFactory.getLogger(ScalingTestIT.class);
         LOGGER.setLevel(Level.INFO);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.LoaderTask.class)).setLevel(Level.INFO);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.LoaderImpl.class)).setLevel(Level.INFO);
     }
 
     @After
@@ -388,17 +391,17 @@ public class ScalingTestIT extends AbstractScalingTest {
         Map<String,Function<AnalyticsMock,Optional>> statisticsMethods = new HashMap<>();
         Map<String,Consumer<Number>> statisticsAssertions = new HashMap<>();
         methods.add("testStatisticsWithConstantDegreeSum.txt");
-        statisticsMethods.put(methods.get(0),analyticsMock -> analyticsMock.sum());
+        statisticsMethods.put(methods.get(0), analyticsMock -> analyticsMock.sum());
         methods.add("testStatisticsWithConstantDegreeMin.txt");
-        statisticsMethods.put(methods.get(1),analyticsMock -> analyticsMock.min());
+        statisticsMethods.put(methods.get(1), analyticsMock -> analyticsMock.min());
         methods.add("testStatisticsWithConstantDegreeMax.txt");
-        statisticsMethods.put(methods.get(2),analyticsMock -> analyticsMock.max());
+        statisticsMethods.put(methods.get(2), analyticsMock -> analyticsMock.max());
         methods.add("testStatisticsWithConstantDegreeMean.txt");
         statisticsMethods.put(methods.get(3),analyticsMock -> analyticsMock.mean());
         methods.add("testStatisticsWithConstantDegreeStd.txt");
         statisticsMethods.put(methods.get(4),analyticsMock -> analyticsMock.std());
         methods.add("testStatisticsWithConstantDegreeMedian.txt");
-        statisticsMethods.put(methods.get(5),analyticsMock -> analyticsMock.median());
+        statisticsMethods.put(methods.get(5), analyticsMock -> analyticsMock.median());
 
         // load up the result files
         Map<String,CSVPrinter> printers = new HashMap<>();
