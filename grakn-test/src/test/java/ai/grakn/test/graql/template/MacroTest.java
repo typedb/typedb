@@ -168,8 +168,8 @@ public class MacroTest {
 
     @Test
     public void stringMacroTest(){
-        String template = "insert $this isa @string(value);";
-        String expected = "insert $this0 isa \"1000\";";
+        String template = "insert $this value @string(value);";
+        String expected = "insert $this0 value \"1000\";";
 
         Map<String, Object> data = Collections.singletonMap("value", 1000);
 
@@ -209,6 +209,24 @@ public class MacroTest {
         String expected = "insert $x0 value \"726538200000\";";
 
         assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
+    }
+
+    @Test
+    public void stringToUpperCaseTest(){
+        String template = "insert $this has something @upper(value);";
+        String expected = "insert $this0 has something \"CAMELCASEVALUE\";";
+
+        Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void stringToLowerCaseTest(){
+        String template = "insert $this has something @lower(value);";
+        String expected = "insert $this0 has something \"camelcasevalue\";";
+
+        Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
+        assertParseEquals(template, data, expected);
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
