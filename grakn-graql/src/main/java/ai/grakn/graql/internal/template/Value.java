@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template;
 
+import ai.grakn.graql.internal.template.macro.UnescapedString;
 import ai.grakn.graql.internal.util.StringConverter;
 
 import java.util.List;
@@ -40,7 +41,7 @@ public class Value {
 
         this.value = value;
 
-        if(!(isString() || isList()|| isBoolean() || isNumber() || isStringBuilder())){
+        if(!(isString() || isList()|| isBoolean() || isNumber() || isUnescapedString())){
             throw new RuntimeException("unsupported type for " + value);
         }
     }
@@ -69,8 +70,8 @@ public class Value {
         return value instanceof Boolean;
     }
 
-    public boolean isStringBuilder(){
-        return value instanceof StringBuilder;
+    public boolean isUnescapedString(){
+        return value instanceof UnescapedString;
     }
 
     public boolean isNull(){
@@ -101,6 +102,10 @@ public class Value {
         return (Boolean) value;
     }
 
+    private String asUnescapedString(){
+        return ((UnescapedString) value).get();
+    }
+
     public Object getValue(){
         return value;
     }
@@ -121,8 +126,8 @@ public class Value {
     // FORMATS
 
     public static String format(Value val){
-        if(val.value instanceof StringBuilder){
-            return val.value.toString();
+        if(val.value instanceof UnescapedString){
+            return val.asUnescapedString();
         }
         return StringConverter.valueToString(val.value);
     }
