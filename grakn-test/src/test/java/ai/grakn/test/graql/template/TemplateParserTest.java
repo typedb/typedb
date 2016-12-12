@@ -594,6 +594,51 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void andGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+        data.put("third", 3);
+
+        assertParseEquals("if(and (le first second) (le second third)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(and (le first second) (le third second)) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+    }
+
+    @Test
+    public void orGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+        data.put("third", 3);
+
+        assertParseEquals("if(or (le first second) (le second third)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(or (le first second) (le third second)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(or (le second first) (le third second)) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+    }
+
+    @Test
+    public void complicatedGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("true", true);
+        data.put("false", false);
+
+        String template = "if (or (and (false) (false)) (not (and (true) (false))))" +
+                "do {insert isa y;} else {insert isa z;}";
+
+        assertParseEquals(template, new HashMap<>(), "insert isa y;");
+    }
+
+    @Test
+    public void macroGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+        data.put("third", 3);
+
+        assertParseEquals("if(and (not @equals(first second)) @equals(third third)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+    }
+
+    @Test
     public void testGraqlParsingException(){
         exception.expect(GraqlParsingException.class);
         String template = "<<<<<<<";

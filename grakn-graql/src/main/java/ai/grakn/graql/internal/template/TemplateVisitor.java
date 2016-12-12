@@ -158,6 +158,12 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(macros.get(macro).apply(values));
     }
 
+    // | LPAREN expr RPAREN     #groupExpression
+    @Override
+    public Value visitGroupExpression(GraqlTemplateParser.GroupExpressionContext ctx){
+       return this.visit(ctx.expr());
+    }
+
     // | expr OR expr      #orExpression
     @Override
     public Value visitOrExpression(GraqlTemplateParser.OrExpressionContext ctx) {
