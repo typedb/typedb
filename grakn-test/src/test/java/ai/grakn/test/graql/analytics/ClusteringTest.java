@@ -108,7 +108,6 @@ public class ClusteringTest extends AbstractGraphTest {
         assertEquals(0L, graph.graql().compute().count().execute().longValue());
     }
 
-    @Ignore //TODO: Stabalise this test. It fails way too often.
     @Test
     public void testConnectedComponent() throws Exception {
         // TODO: Fix in TinkerGraphComputer
