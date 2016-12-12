@@ -55,6 +55,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
     private boolean infer = false;
+    private boolean materialise = false;
 
     QueryBuilderImpl() {
         this.graph = Optional.empty();
@@ -74,6 +75,12 @@ public class QueryBuilderImpl implements QueryBuilder {
         return this;
     }
 
+    @Override
+    public QueryBuilder materialise(boolean materialise) {
+        this.materialise = materialise;
+        return this;
+    }
+
     /**
      * @param patterns an array of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
@@ -90,7 +97,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public MatchQuery match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
-        MatchQuery query = infer ? Queries.match(conjunction) : Queries.matchNoInfer(conjunction);
+        MatchQuery query = Queries.match(conjunction, infer, materialise);
         return graph.map(query::withGraph).orElse(query);
     }
 
