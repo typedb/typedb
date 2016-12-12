@@ -186,6 +186,20 @@ public class MacroTest {
     }
 
     @Test
+    public void booleanMacroTest(){
+        String template = "insert $x value @boolean(value);";
+        String expected = "insert $x0 value true;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "true"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", "True"), expected);
+
+        expected = "insert $x0 value false;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "false"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", "False"), expected);
+    }
+
+    @Test
     public void convertDateFormatMacroTest(){
         String template = "insert $x value @date(date \"mm/dd/yyyy\" \"dd/mm/yyyy\");";
         String expected = "insert $x0 value \"09\\/10\\/1993\";";
