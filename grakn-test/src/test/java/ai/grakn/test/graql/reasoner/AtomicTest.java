@@ -47,16 +47,12 @@ public class AtomicTest extends AbstractEngineTest{
 
     private static GraknGraph snbGraph;
     private static GraknGraph cwGraph;
-    private static Reasoner snbReasoner;
-    private static Reasoner cwReasoner;
 
     @BeforeClass
     public static void onStartup(){
         assumeTrue(usingTinker());
         snbGraph = SNBGraph.getGraph();
         cwGraph = CWGraph.getGraph();
-        snbReasoner = new Reasoner(snbGraph);
-        cwReasoner = new Reasoner(cwGraph);
     }
 
     @org.junit.Rule
@@ -173,22 +169,5 @@ public class AtomicTest extends AbstractEngineTest{
         Atomic atom = AtomicFactory.create(qb.parsePatterns("$x value '0';").iterator().next().admin());
         Atomic atom2 = AtomicFactory.create(qb.parsePatterns("$x value != '0';").iterator().next().admin());
         assertTrue(!atom.isEquivalent(atom2));
-    }
-
-    @Test
-    public void testBinaryComparison() {
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        Reasoner reasoner = new Reasoner(graph);
-
-        String recRelString = "match $x has name $y;";
-        String nrecRelString = "match $x has name $y;";
-
-        Atomic resAtom = AtomicFactory
-                .create(qb.<MatchQuery>parse(recRelString).admin().getPattern().getPatterns().iterator().next()
-                        , new Query(recRelString, graph));
-        Atomic resAtom2 = AtomicFactory
-                .create(qb.<MatchQuery>parse(nrecRelString).admin().getPattern().getPatterns().iterator().next()
-                        , new Query(recRelString, graph));
     }
 }

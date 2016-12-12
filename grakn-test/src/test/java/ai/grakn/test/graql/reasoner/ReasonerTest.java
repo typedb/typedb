@@ -777,6 +777,19 @@ public class ReasonerTest extends AbstractEngineTest{
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner2.resolveToQuery(query2)));
         assertTrue(answers.size() == answers2.size());
     }
+
+    @Test
+    public void testHas(){
+        GraknGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x isa person has name $y;";
+        String queryString2 = "match $x isa person has $y; $y isa name;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        Reasoner reasoner = new Reasoner(graph);
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        assertEquals(answers, answers2);
+    }
 }
 
 

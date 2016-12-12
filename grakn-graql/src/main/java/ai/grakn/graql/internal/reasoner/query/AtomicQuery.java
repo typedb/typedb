@@ -214,4 +214,20 @@ public class AtomicQuery extends Query{
             throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         return selectedAtoms;
     }
+
+    protected QueryAnswers answerWM(Set<AtomicQuery> subGoals, QueryCache cache){
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
+
+    protected QueryAnswers answer(Set<AtomicQuery> subGoals, QueryCache cache){
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
+
+    public void answer(Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
+
+    public QueryAnswers resolve(boolean materialise) {
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
 }

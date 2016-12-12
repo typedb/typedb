@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
@@ -104,206 +105,8 @@ public class Reasoner {
         LOG.debug(linkedRules.size() + " rules linked...");
     }
 
-    private void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
-        matAnswers.keySet().forEach(aq -> {
-            if (aq.getParent() == null) aq.propagateAnswers(matAnswers);
-        });
-    }
-
-    private void recordAnswers(AtomicQuery atomicQuery, Map<AtomicQuery, AtomicQuery> matAnswers) {
-        AtomicQuery equivalentQuery = matAnswers.get(atomicQuery);
-        if (equivalentQuery != null) {
-            QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, atomicQuery, atomicQuery.getAnswers());
-            matAnswers.get(atomicQuery).getAnswers().addAll(unifiedAnswers);
-        }
-        else
-            matAnswers.put(atomicQuery, atomicQuery);
-    }
-
-    private QueryAnswers propagateHeadIdPredicates(Query atomicQuery, Query ruleHead, QueryAnswers answers){
-        QueryAnswers newAnswers = new QueryAnswers();
-        if(answers.isEmpty()) return newAnswers;
-
-        Set<String> queryVars = atomicQuery.getSelectedNames();
-        Set<String> headVars = ruleHead.getSelectedNames();
-        Set<Predicate> extraSubs = new HashSet<>();
-        if(queryVars.size() > headVars.size()){
-            extraSubs.addAll(ruleHead.getIdPredicates()
-                    .stream().filter(sub -> queryVars.contains(sub.getVarName()))
-                    .collect(Collectors.toSet()));
-        }
-
-        answers.forEach( map -> {
-            Map<String, Concept> newAns = new HashMap<>(map);
-            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph.getConcept(sub.getPredicateValue())) );
-            newAnswers.add(newAns);
-        });
-
-        return newAnswers;
-    }
-
-    private QueryAnswers answerWM(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers){
-        boolean queryAdmissible = !subGoals.contains(atomicQuery);
-        boolean queryVisited = matAnswers.containsKey(atomicQuery);
-
-        if(queryAdmissible) {
-            if (!queryVisited){
-                atomicQuery.DBlookup();
-                recordAnswers(atomicQuery, matAnswers);
-            }
-            else
-                atomicQuery.memoryLookup(matAnswers);
-
-            Atom atom = atomicQuery.getAtom();
-            Set<Rule> rules = atom.getApplicableRules();
-            for (Rule rl : rules) {
-                InferenceRule rule = new InferenceRule(rl, graph);
-                rule.unify(atom);
-                Query ruleBody = rule.getBody();
-                AtomicQuery ruleHead = rule.getHead();
-
-                Set<Atom> atoms = ruleBody.selectAtoms();
-                Iterator<Atom> atIt = atoms.iterator();
-
-                subGoals.add(atomicQuery);
-                AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next(), atomicQuery.getSelectedNames());
-                QueryAnswers subs = answerWM(childAtomicQuery, subGoals, matAnswers);
-                while(atIt.hasNext()){
-                    childAtomicQuery = new AtomicMatchQuery(atIt.next(), atomicQuery.getSelectedNames());
-                    QueryAnswers localSubs = answerWM(childAtomicQuery, subGoals, matAnswers);
-                    subs = subs.join(localSubs);
-                }
-
-                QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
-                        .filterNonEquals(ruleBody)
-                        .filterVars(ruleHead.getSelectedNames())
-                        .filterKnown(atomicQuery.getAnswers());
-                QueryAnswers newAnswers = new QueryAnswers();
-                newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
-
-                if (!newAnswers.isEmpty()) answers = newAnswers;
-                //TODO do all combinations if roles missing
-                QueryAnswers filteredAnswers = answers
-                        .filterVars(atomicQuery.getSelectedNames())
-                        .filterIncomplete(atomicQuery.getSelectedNames());
-                atomicQuery.getAnswers().addAll(filteredAnswers);
-                recordAnswers(atomicQuery, matAnswers);
-            }
-        }
-        else
-            atomicQuery.memoryLookup(matAnswers);
-
-        return atomicQuery.getAnswers();
-    }
-
-    private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers){
-        boolean queryAdmissible = !subGoals.contains(atomicQuery);
-        boolean queryVisited = matAnswers.containsKey(atomicQuery);
-
-         if(queryAdmissible) {
-            if (!queryVisited){
-                atomicQuery.DBlookup();
-                recordAnswers(atomicQuery, matAnswers);
-            }
-            else
-                atomicQuery.memoryLookup(matAnswers);
-
-            Atom atom = atomicQuery.getAtom();
-            Set<Rule> rules = atom.getApplicableRules();
-            for (Rule rl : rules) {
-                InferenceRule rule = new InferenceRule(rl, graph);
-                rule.unify(atom);
-                Query ruleBody = rule.getBody();
-                AtomicQuery ruleHead = rule.getHead();
-
-                Set<Atom> atoms = ruleBody.selectAtoms();
-                Iterator<Atom> atIt = atoms.iterator();
-
-                subGoals.add(atomicQuery);
-                Atom at = atIt.next();
-                AtomicQuery childAtomicQuery = new AtomicMatchQuery(at, atomicQuery.getSelectedNames());
-                atomicQuery.establishRelation(childAtomicQuery);
-                QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers);
-                while (atIt.hasNext()) {
-                    at = atIt.next();
-                    childAtomicQuery = new AtomicMatchQuery(at, atomicQuery.getSelectedNames());
-                    atomicQuery.establishRelation(childAtomicQuery);
-                    QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers);
-                    subs = subs.join(localSubs);
-                }
-
-                QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
-                        .filterNonEquals(ruleBody)
-                        .filterVars(ruleHead.getSelectedNames())
-                        .filterKnown(atomicQuery.getAnswers());
-                QueryAnswers newAnswers = new QueryAnswers();
-                if (atom.isResource()
-                        || atom.isUserDefinedName() && atom.getType().isRelationType() )
-                    newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
-                if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
-
-                QueryAnswers filteredAnswers = answers
-                        .filterVars(atomicQuery.getSelectedNames())
-                        .filterIncomplete(atomicQuery.getSelectedNames());
-                atomicQuery.getAnswers().addAll(filteredAnswers);
-                recordAnswers(atomicQuery, matAnswers);
-            }
-        }
-        else
-            atomicQuery.memoryLookup(matAnswers);
-
-        return atomicQuery.getAnswers();
-    }
-
-    private void answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers,
-                        boolean materialise){
-        if(!materialise) {
-            answer(atomicQuery, subGoals, matAnswers);
-            propagateAnswers(matAnswers);
-        }
-        else
-            answerWM(atomicQuery, subGoals, matAnswers);
-    }
-
-    private QueryAnswers resolveAtomicQuery(AtomicQuery atomicQuery, boolean materialise) {
-        int dAns;
-        int iter = 0;
-
-        if (!atomicQuery.getAtom().isRuleResolvable()){
-            atomicQuery.DBlookup();
-            return atomicQuery.getAnswers();
-        }
-        else {
-            Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
-            do {
-                Set<AtomicQuery> subGoals = new HashSet<>();
-                dAns = atomicQuery.getAnswers().size();
-                answer(atomicQuery, subGoals, matAnswers, materialise);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
-                dAns = atomicQuery.getAnswers().size() - dAns;
-            } while (dAns != 0);
-            return atomicQuery.getAnswers();
-        }
-    }
-
-    private QueryAnswers resolveConjunctiveQuery(Query query, boolean materialise) {
-        if (!query.isRuleResolvable())
-            return new QueryAnswers(Sets.newHashSet(query.execute()));
-        Iterator<Atom> atIt = query.selectAtoms().iterator();
-        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), query.getSelectedNames());
-        QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
-        while(atIt.hasNext()){
-            atomicQuery = new AtomicMatchQuery(atIt.next(), query.getSelectedNames());
-            QueryAnswers subAnswers = resolveAtomicQuery(atomicQuery, materialise);
-            answers = answers.join(subAnswers);
-        }
-        return answers
-                .filterNonEquals(query)
-                .filterVars(query.getSelectedNames());
-    }
-
     public void precomputeInferences(){
-        Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
+        QueryCache cache = new QueryCache();
         Set<AtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
@@ -313,7 +116,7 @@ public class Reasoner {
             do {
                 SG = new HashSet<>(subGoals);
                 dAns = atomicQuery.getAnswers().size();
-                answer(atomicQuery, SG, matAnswers, true);
+                atomicQuery.answer(SG, cache, true);
                 LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
@@ -334,8 +137,8 @@ public class Reasoner {
                 .getDisjunctiveNormalForm()
                 .getPatterns()
                 .forEach( conj -> {
-                    Query cq = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
-                    answers.addAll(resolveConjunctiveQuery(cq, materialise));
+                    Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
+                    answers.addAll(conjunctiveQuery.resolve(materialise));
                 });
         if(materialise) commitGraph();
         return answers;
