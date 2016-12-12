@@ -162,7 +162,7 @@ public class ScalingTestIT extends AbstractGraphTest {
                     LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
                     LOGGER.info("repeat number: " + i);
                     Long startTime = System.currentTimeMillis();
-                    Long count = computer.count();
+                    Long count = graph.graql().compute().count().execute();
                     assertEquals(conceptCount, count);
                     LOGGER.info("count: " + count);
                     Long stopTime = System.currentTimeMillis();
@@ -285,9 +285,6 @@ public class ScalingTestIT extends AbstractGraphTest {
         // construct graph
         addNodes(keyspace, 0, MAX_SIZE);
 
-        //TODO: Get rid of this close. We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractGraknGraph) factory.getGraph()).getTinkerPopGraph().close();
-
         Analytics computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
         computer.degreesAndPersist();
@@ -306,9 +303,6 @@ public class ScalingTestIT extends AbstractGraphTest {
 
         // add edges to force mutation
         addEdges(keyspace, MAX_SIZE);
-
-        //TODO: Get rid of this close. We should be refreshing the graph in the factory when switching between normal and batch
-        ((AbstractGraknGraph) factory.getGraph()).getTinkerPopGraph().close();
 
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
@@ -576,6 +570,7 @@ public class ScalingTestIT extends AbstractGraphTest {
         thing.playsRole(relation1).playsRole(relation2);
         graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
         graph.commit();
+        graph.close();
     }
 
     private Set<String> makeSuperNodes(String keyspace) throws GraknValidationException {
@@ -587,6 +582,7 @@ public class ScalingTestIT extends AbstractGraphTest {
             superNodes.add(thing.addEntity().getId());
         }
         graph.commit();
+        graph.close();
         return superNodes;
     }
 
@@ -630,7 +626,6 @@ public class ScalingTestIT extends AbstractGraphTest {
             insertQuery.add(var(String.valueOf(nodeIndex)).isa("thing"));
             for (String supernodeId : superNodes) {
                 insertQuery.add(var(supernodeId).id(supernodeId));
-                String nodeId = "node-" + nodeIndex;
                 insertQuery.add(var().isa("related")
                         .rel("relation1", String.valueOf(nodeIndex))
                         .rel("relation2", supernodeId));
