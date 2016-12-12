@@ -226,7 +226,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(String.valueOf(ctx.getText()));
     }
 
-    //  | EQ expr expr           #eqExpression
+    //  | expr EQ expr           #eqExpression
     @Override
     public Value visitEqExpression(GraqlTemplateParser.EqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -235,7 +235,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lValue.equals(rValue));
     }
 
-    //  | NEQ expr expr          #notEqExpression
+    //  | expr NEQ expr          #notEqExpression
     @Override
     public Value visitNotEqExpression(GraqlTemplateParser.NotEqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -244,7 +244,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(!lValue.equals(rValue));
     }
 
-    //  | GREATER expr expr      #greaterExpression
+    //  | expr GREATER expr      #greaterExpression
     @Override
     public Value visitGreaterExpression(GraqlTemplateParser.GreaterExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -260,7 +260,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lNumber.doubleValue() > rNumber.doubleValue());
     }
 
-    //  | GREATEREQ expr expr    #greaterEqExpression
+    //  | expr GREATEREQ expr    #greaterEqExpression
     @Override
     public Value visitGreaterEqExpression(GraqlTemplateParser.GreaterEqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -276,7 +276,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lNumber.doubleValue() >= rNumber.doubleValue());
     }
 
-    //  | LESS expr expr         #lessExpression
+    //  | expr LESS expr         #lessExpression
     @Override
     public Value visitLessExpression(GraqlTemplateParser.LessExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -292,7 +292,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lNumber.doubleValue() < rNumber.doubleValue());
     }
 
-    //  | LESSEQ expr expr       #lessEqExpression
+    //  | expr LESSEQ expr       #lessEqExpression
     @Override
     public Value visitLessEqExpression(GraqlTemplateParser.LessEqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
