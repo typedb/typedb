@@ -165,10 +165,10 @@ public class Query implements MatchQueryInternal {
 
     public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
-    public void memoryLookup(Map<AtomicQuery, AtomicQuery> matAnswers){
+    public void memoryLookup(QueryCache cache){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
-    public void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
+    public void propagateAnswers(QueryCache cache){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
@@ -427,5 +427,9 @@ public class Query implements MatchQueryInternal {
             equivalent = q.containsEquivalentAtom(atom);
         }
         return equivalent;
+    }
+
+    public QueryAnswers resolve(boolean materialise) {
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 }

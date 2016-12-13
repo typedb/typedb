@@ -238,7 +238,7 @@ public class CWInferenceTest extends AbstractEngineTest{
         Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
         inferenceRule.addRule(R6_LHS, R6_RHS);
 
-        localReasoner.linkConceptTypes();
+        localReasoner.linkConceptTypes(localGraph);
         String queryString = "match $x isa criminal;";
         MatchQuery query = lqb.parse(queryString);
 
