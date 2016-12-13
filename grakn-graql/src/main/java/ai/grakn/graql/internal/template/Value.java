@@ -115,6 +115,10 @@ public class Value {
             return values[0];
         }
 
+        if(values.length == 2 && values[0].equals(VOID)){
+            return values[1];
+        }
+
         StringBuilder builder = new StringBuilder();
         for(Value value:values){
             builder.append(value.toString());

@@ -67,7 +67,7 @@ expr
  ;
 
 replaceStatement
- : DOLLAR? (REPLACE | macro)
+ : DOLLAR? (REPLACE | macro)+
  ;
 
 graqlVariable

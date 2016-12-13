@@ -24,8 +24,10 @@ import ai.grakn.graql.macro.Macro;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -319,13 +321,21 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     // ;
     @Override
     public Value visitReplaceStatement(GraqlTemplateParser.ReplaceStatementContext ctx) {
+        Value value = Value.VOID;
+        for(int i = 0; i < ctx.getChildCount(); i++){
+            if(ctx.macro(i) != null){
+                value = concat(value, this.visit(ctx.macro(i)));
+            }
+
+            if(ctx.REPLACE(i) != null){
+                value = concat(value, resolveReplace(ctx.REPLACE(i)));
+            }
+        }
 
         Function<Value, String> formatToApply = ctx.DOLLAR() != null ? Value::formatVar : Value::format;
-
-        Value replaced = ctx.macro() != null ? this.visit(ctx.macro()) : resolveReplace(ctx.REPLACE());
         String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";
 
-        return ws(prepend + formatToApply.apply(replaced), ctx);
+        return ws(prepend + formatToApply.apply(value), ctx);
     }
 
     // graqlVariable
