@@ -151,7 +151,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
             type.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.CONCEPT.getName());
 
-            TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
+            EntityTypeImpl entityType = elementFactory.buildEntityType(addVertex(Schema.BaseType.TYPE), null);
             entityType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ENTITY.getName());
 
             TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);

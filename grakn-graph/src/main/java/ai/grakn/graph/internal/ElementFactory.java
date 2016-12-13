@@ -79,7 +79,7 @@ final class ElementFactory {
         return  new RelationTypeImpl(v, type, graknGraph);
     }
 
-    private EntityTypeImpl buildEntityType(Vertex v, Type type){
+    public EntityTypeImpl buildEntityType(Vertex v, Type type){
         return  new EntityTypeImpl(v, type, graknGraph);
     }
 
