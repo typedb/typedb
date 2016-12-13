@@ -110,7 +110,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
                 "  has a-int <int>\n" +
                 "  }\n" +
                 "  has a-string <a-string>\n" +
-                "  if (ne a-null null) do {has a-null <a-null>};";
+                "  if (a-null != null) do {has a-null <a-null>};";
 
         migrate(new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
 
@@ -142,7 +142,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
-                "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
+                "        has a-string if (the-thing.a-string != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
         migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));
@@ -166,7 +166,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
-                "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
+                "        has a-string if (the-thing.a-string != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
         migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));

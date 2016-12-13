@@ -21,6 +21,7 @@ package ai.grakn.test.graql.template;
 import ai.grakn.graql.Graql;
 import org.junit.Test;
 
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -168,8 +169,8 @@ public class MacroTest {
 
     @Test
     public void stringMacroTest(){
-        String template = "insert $this isa @string(value);";
-        String expected = "insert $this0 isa \"1000\";";
+        String template = "insert $this value @string(value);";
+        String expected = "insert $this0 value \"1000\";";
 
         Map<String, Object> data = Collections.singletonMap("value", 1000);
 
@@ -183,6 +184,20 @@ public class MacroTest {
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
+    }
+
+    @Test
+    public void booleanMacroTest(){
+        String template = "insert $x value @boolean(value);";
+        String expected = "insert $x0 value true;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "true"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", "True"), expected);
+
+        expected = "insert $x0 value false;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "false"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", "False"), expected);
     }
 
     @Test
@@ -209,6 +224,34 @@ public class MacroTest {
         String expected = "insert $x0 value \"726538200000\";";
 
         assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
+    }
+
+    @Test
+    public void stringToUpperCaseTest(){
+        String template = "insert $this has something @upper(value);";
+        String expected = "insert $this0 has something \"CAMELCASEVALUE\";";
+
+        Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void stringToLowerCaseTest(){
+        String template = "insert $this has something @lower(value);";
+        String expected = "insert $this0 has something \"camelcasevalue\";";
+
+        Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void dateInLongMacroTest() throws ParseException {
+        java.text.DateFormat format = new java.text.SimpleDateFormat("mm/dd/yyyy");
+        String dateAsString = "10/09/1993";
+        long time = format.parse(dateAsString).getTime();
+        String template = "insert $x value @long(@date(date \"mm/dd/yyyy\"));";
+        String expected = "insert $x0 value " + time + ";";
+        assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){

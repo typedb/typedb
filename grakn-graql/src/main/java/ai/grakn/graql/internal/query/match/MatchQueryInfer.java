@@ -34,8 +34,11 @@ import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
  */
 class MatchQueryInfer extends MatchQueryModifier {
 
-    MatchQueryInfer(MatchQueryInternal inner) {
+    private final boolean materialise;
+
+    MatchQueryInfer(MatchQueryInternal inner, boolean materialise) {
         super(inner);
+        this.materialise = materialise;
     }
 
     @Override
@@ -44,7 +47,7 @@ class MatchQueryInfer extends MatchQueryModifier {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        return new Reasoner(graph).resolveToQuery(inner.withGraph(graph)).stream();
+        return new Reasoner(graph).resolveToQuery(inner.withGraph(graph), materialise).stream();
     }
 
     @Override

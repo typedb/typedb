@@ -48,12 +48,9 @@ public class Queries {
     /**
      * @param pattern a pattern to match in the graph
      */
-    public static MatchQueryAdmin match(Conjunction<PatternAdmin> pattern) {
-        return new MatchQueryBase(pattern).infer().admin();
-    }
-
-    public static MatchQueryAdmin matchNoInfer(Conjunction<PatternAdmin> pattern) {
-        return new MatchQueryBase(pattern);
+    public static MatchQueryAdmin match(Conjunction<PatternAdmin> pattern, boolean infer, boolean materialise) {
+        MatchQueryBase query = new MatchQueryBase(pattern);
+        return infer ? query.infer(materialise).admin() : query;
     }
 
     /**

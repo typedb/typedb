@@ -518,7 +518,7 @@ public class Analytics {
         List<Pattern> checkSubtypes = subtypeNames.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
-        return graph.graql().setInference(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+        return graph.graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 
     private boolean selectedTypesHaveInstance() {
@@ -529,7 +529,7 @@ public class Analytics {
         List<Pattern> checkSubtypes = subtypeNames.stream()
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
-        return graph.graql().setInference(false).match(or(checkSubtypes)).ask().execute();
+        return graph.graql().infer(false).match(or(checkSubtypes)).ask().execute();
     }
 
     protected GraknComputer getGraphComputer() {

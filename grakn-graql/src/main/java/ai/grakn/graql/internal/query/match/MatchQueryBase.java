@@ -129,8 +129,8 @@ public class MatchQueryBase implements MatchQueryInternal {
         return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
     }
 
-    public final MatchQuery infer() {
-        return new MatchQueryInfer(this);
+    public final MatchQuery infer(boolean materialise) {
+        return new MatchQueryInfer(this, materialise);
     }
 
     /**

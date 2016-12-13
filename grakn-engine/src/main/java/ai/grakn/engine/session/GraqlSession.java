@@ -63,6 +63,7 @@ class GraqlSession {
     private final Session session;
     private final boolean showImplicitTypes;
     private final boolean infer;
+    private final boolean materialise;
     private GraknGraph graph;
     private final Supplier<GraknGraph> getGraph;
     private final String outputFormat;
@@ -80,10 +81,11 @@ class GraqlSession {
 
     GraqlSession(
             Session session, Supplier<GraknGraph> getGraph, String outputFormat,
-            boolean showImplicitTypes, boolean infer
+            boolean showImplicitTypes, boolean infer, boolean materialise
     ) {
         this.showImplicitTypes = showImplicitTypes;
         this.infer = infer;
+        this.materialise = materialise;
         this.session = session;
         this.getGraph = getGraph;
         this.outputFormat = outputFormat;
@@ -186,7 +188,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                query = graph.graql().setInference(infer).parse(queryString);
+                query = graph.graql().infer(infer).materialise(materialise).parse(queryString);
 
                 // Return results unless query is cancelled
                 query.resultsString(printer).forEach(result -> {

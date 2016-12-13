@@ -52,14 +52,14 @@ expr
  : ID                     #idExpression
  | NOT expr               #notExpression
  | LPAREN expr RPAREN     #groupExpression
- | EQ expr expr           #eqExpression
- | NEQ expr expr          #notEqExpression
- | OR expr expr           #orExpression
- | AND expr expr          #andExpression
- | GREATER expr expr      #greaterExpression
- | GREATEREQ expr expr    #greaterEqExpression
- | LESS expr expr         #lessExpression
- | LESSEQ expr expr       #lessEqExpression
+ | expr EQ expr           #eqExpression
+ | expr NEQ expr          #notEqExpression
+ | expr OR expr           #orExpression
+ | expr AND expr          #andExpression
+ | expr GREATER expr      #greaterExpression
+ | expr GREATEREQ expr    #greaterEqExpression
+ | expr LESS expr         #lessExpression
+ | expr LESSEQ expr       #lessEqExpression
  | STRING                 #stringExpression
  | BOOLEAN                #booleanExpression
  | NULL                   #nullExpression
@@ -117,15 +117,15 @@ BOOLEAN     : TRUE | FALSE;
 TRUE        : 'true';
 FALSE       : 'false';
 
-EQ          : 'eq';
-NEQ         : 'ne';
+EQ          : '=';
+NEQ         : '!=';
 AND         : 'and';
 OR          : 'or';
 NOT         : 'not';
-GREATER     : 'gt';
-GREATEREQ   : 'ge';
-LESS        : 'lt';
-LESSEQ      : 'le';
+GREATER     : '>';
+GREATEREQ   : '>=';
+LESS        : '<';
+LESSEQ      : '<=';
 
 LPAREN      : '(';
 RPAREN      : ')';

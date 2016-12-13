@@ -53,7 +53,7 @@ public class LoaderTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
     private static int repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
-    private final QueryBuilder builder = Graql.withoutGraph().setInference(false);
+    private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
     public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {

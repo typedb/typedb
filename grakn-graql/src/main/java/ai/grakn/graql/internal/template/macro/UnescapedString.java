@@ -18,25 +18,18 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.macro.Macro;
+/**
+ * Unescaped string object to hold values from the NoEscape macro
+ */
+public class UnescapedString {
 
-import java.util.List;
+    private final String unescaped;
 
-public class NoescpMacro implements Macro<UnescapedString> {
-
-    private static final int numberArguments = 1;
-
-    @Override
-    public UnescapedString apply(List<Object> values) {
-        if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
-        }
-
-        return new UnescapedString(values.get(0).toString());
+    public UnescapedString(String string){
+        this.unescaped = string;
     }
 
-    @Override
-    public String name(){
-        return "noescp";
+    public String get(){
+        return unescaped;
     }
 }
