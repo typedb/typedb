@@ -238,23 +238,43 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public QueryAnswers resolve(boolean materialise) {
-        int dAns;
-        int iter = 0;
-
         if (!this.getAtom().isRuleResolvable()){
             this.DBlookup();
             return this.getAnswers();
         }
         else {
-            QueryCache cache = new QueryCache();
-            do {
-                Set<AtomicQuery> subGoals = new HashSet<>();
-                dAns = this.getAnswers().size();
-                this.answer(subGoals, cache, materialise);
-                LOG.debug("Atom: " + this.getAtom() + " iter: " + iter++ + " answers: " + this.getAnswers().size());
-                dAns = this.getAnswers().size() - dAns;
-            } while (dAns != 0);
+            QueryAnswersIterator it = new QueryAnswersIterator(materialise);
+            while(it.hasNext()) it.next();
             return this.getAnswers();
         }
+    }
+
+    private class QueryAnswersIterator implements Iterator<QueryAnswers> {
+
+        boolean materialise;
+        private int dAns = 0;
+        private int iter = 0;
+        private QueryCache cache = new QueryCache();
+        private Set<AtomicQuery> subGoals = new HashSet<>();
+
+        public QueryAnswersIterator(boolean materialise){
+            this.materialise = materialise;
+        }
+
+        public boolean hasNext() {
+            return dAns != 0 || iter == 0;
+        }
+
+        public QueryAnswers next() {
+            dAns = size();
+            outer().answer(subGoals, cache, materialise);
+            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter++ + " answers: " + outer().getAnswers().size());
+            dAns = size() - dAns;
+            subGoals.clear();
+            return outer().getAnswers();
+        }
+
+        private AtomicMatchQuery outer(){ return AtomicMatchQuery.this;}
+        private int size(){ return outer().getAnswers().size();}
     }
 }
