@@ -68,7 +68,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
             query = "SELECT * from pokemon";
             template = "" +
                     "match " +
-                    "   $type isa pokemon-type; $type has type-id <TYPE1> if(ne TYPE2 null) do {or $type has type-id <TYPE2>};" +
+                    "   $type isa pokemon-type; $type has type-id <TYPE1> if(TYPE2 != null) do {or $type has type-id <TYPE2>};" +
                     "   $pokemon isa pokemon has description <IDENTIFIER> ;" +
                     "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 

@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.template;
 
-import ai.grakn.exception.GraqlParsingException;
 import ai.grakn.graql.Graql;
 import org.junit.Rule;
 import org.junit.Test;
@@ -374,8 +373,8 @@ public class TemplateParserTest {
     @Test
     public void ifElseIfTest(){
         String template =
-                "if(eq firstName true) do { insert $person has hasName <firstName>; }\n" +
-                "elseif(eq firstName false) do { insert $person isa person; }\n" +
+                "if(firstName = true) do { insert $person has hasName <firstName>; }\n" +
+                "elseif(firstName = false) do { insert $person isa person; }\n" +
                 "else { insert $nothing isa nothing; }";
         String expected = "insert $person0 has hasName true;";
 
@@ -389,9 +388,17 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void equalityWithStringTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", "one");
+        assertParseEquals("if(first = \"one\") do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first != \"one\") do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+    }
+
+    @Test
     public void ifElseTest(){
         String template =
-                "if (ne firstName null ) do {\n" +
+                "if (firstName != null) do {\n" +
                 "    insert $person has name <firstName>;" +
                 "}\n" +
                 "else {\n" +
@@ -412,7 +419,7 @@ public class TemplateParserTest {
 
     @Test
     public void andExpressionTest(){
-        String template = "if(and this that) do { insert $x isa t; } else { insert $x isa f; }";
+        String template = "if(this and that) do { insert $x isa t; } else { insert $x isa f; }";
         String expected = "insert $x0 isa t;";
 
         Map<String, Object> data = new HashMap<>();
@@ -441,12 +448,12 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("this", true);
         data.put("that", 2);
-        assertParseEquals("if(and this that) do { something }", data, " something");
+        assertParseEquals("if(this and that) do { something }", data, " something");
     }
 
     @Test
     public void orExpressionTest(){
-        String template = "if(or this that) do { insert $x isa t; } else { insert $x isa f; }";
+        String template = "if(this or that) do { insert $x isa t; } else { insert $x isa f; }";
         String expected = "insert $x0 isa t;";
 
         Map<String, Object> data = new HashMap<>();
@@ -475,7 +482,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("this", true);
         data.put("that", 2);
-        assertParseEquals("if(or this that) do { something }", data, " something");
+        assertParseEquals("if(this or that) do { something }", data, " something");
     }
 
     @Test
@@ -500,8 +507,8 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(gt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
-        assertParseEquals("if(gt second first) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first > second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(second > first) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -509,7 +516,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(gt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(first > second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
@@ -518,14 +525,14 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
-        assertParseEquals("if(ge second first) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first >= second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(second >= first) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
 
         data.put("first", 2);
-        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first >= second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
 
         data.put("first", 2.0);
-        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first >= second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -533,7 +540,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(ge first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(first >= second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
@@ -542,11 +549,11 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(lt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
-        assertParseEquals("if(lt second first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(first < second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(second < first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
 
         data.put("second", 1);
-        assertParseEquals("if(lt second first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(second < first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -554,7 +561,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(lt first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(first < second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
@@ -563,14 +570,14 @@ public class TemplateParserTest {
         data.put("first", 1);
         data.put("second", 2);
 
-        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
-        assertParseEquals("if(le second first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(first <= second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(second <= first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
 
         data.put("second", 2);
-        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first <= second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
 
         data.put("second", 2.0);
-        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if(first <= second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
     @Test(expected = RuntimeException.class)
@@ -578,7 +585,7 @@ public class TemplateParserTest {
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
-        assertParseEquals("if(le first second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+        assertParseEquals("if(first <= second) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
@@ -594,8 +601,53 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void andGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+        data.put("third", 3);
+
+        assertParseEquals("if((first <= second) and (second <= third)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if((first <= second) and (third <= second)) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+    }
+
+    @Test
+    public void orGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+        data.put("third", 3);
+
+        assertParseEquals("if((first <= second) or (second <= third)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if((first <= second) or (third <= second)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+        assertParseEquals("if((second <= first) or (third <= second)) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
+    }
+
+    @Test
+    public void complicatedGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("true", true);
+        data.put("false", false);
+
+        String template = "if (((false) and (false)) or (not ((true) and (false))))" +
+                "do {insert isa y;} else {insert isa z;}";
+
+        assertParseEquals(template, new HashMap<>(), "insert isa y;");
+    }
+
+    @Test
+    public void macroGroupExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+        data.put("third", 3);
+
+        assertParseEquals("if((not @equals(first second)) and @equals(third third)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
+    }
+
+    @Test
     public void testGraqlParsingException(){
-        exception.expect(GraqlParsingException.class);
+        exception.expect(IllegalArgumentException.class);
         String template = "<<<<<<<";
         Graql.parseTemplate(template, new HashMap<>());
     }
@@ -630,7 +682,6 @@ public class TemplateParserTest {
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
         String result = Graql.parseTemplate(template, data).toString();
-        System.out.println(result);
         assertEquals(expected, result);
     }
 }

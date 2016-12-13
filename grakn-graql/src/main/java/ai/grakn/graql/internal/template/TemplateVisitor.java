@@ -158,6 +158,12 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(macros.get(macro).apply(values));
     }
 
+    // | LPAREN expr RPAREN     #groupExpression
+    @Override
+    public Value visitGroupExpression(GraqlTemplateParser.GroupExpressionContext ctx){
+       return this.visit(ctx.expr());
+    }
+
     // | expr OR expr      #orExpression
     @Override
     public Value visitOrExpression(GraqlTemplateParser.OrExpressionContext ctx) {
@@ -217,10 +223,10 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     // | STRING           #stringExpression
     @Override
     public Value visitStringExpression(GraqlTemplateParser.StringExpressionContext ctx){
-        return new Value(String.valueOf(ctx.getText()));
+        return new Value(String.valueOf(ctx.getText().replaceAll("\"", "")));
     }
 
-    //  | EQ expr expr           #eqExpression
+    //  | expr EQ expr           #eqExpression
     @Override
     public Value visitEqExpression(GraqlTemplateParser.EqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -229,7 +235,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lValue.equals(rValue));
     }
 
-    //  | NEQ expr expr          #notEqExpression
+    //  | expr NEQ expr          #notEqExpression
     @Override
     public Value visitNotEqExpression(GraqlTemplateParser.NotEqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -238,7 +244,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(!lValue.equals(rValue));
     }
 
-    //  | GREATER expr expr      #greaterExpression
+    //  | expr GREATER expr      #greaterExpression
     @Override
     public Value visitGreaterExpression(GraqlTemplateParser.GreaterExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -254,7 +260,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lNumber.doubleValue() > rNumber.doubleValue());
     }
 
-    //  | GREATEREQ expr expr    #greaterEqExpression
+    //  | expr GREATEREQ expr    #greaterEqExpression
     @Override
     public Value visitGreaterEqExpression(GraqlTemplateParser.GreaterEqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -270,7 +276,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lNumber.doubleValue() >= rNumber.doubleValue());
     }
 
-    //  | LESS expr expr         #lessExpression
+    //  | expr LESS expr         #lessExpression
     @Override
     public Value visitLessExpression(GraqlTemplateParser.LessExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -286,7 +292,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lNumber.doubleValue() < rNumber.doubleValue());
     }
 
-    //  | LESSEQ expr expr       #lessEqExpression
+    //  | expr LESSEQ expr       #lessEqExpression
     @Override
     public Value visitLessEqExpression(GraqlTemplateParser.LessEqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -314,8 +320,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     @Override
     public Value visitReplaceStatement(GraqlTemplateParser.ReplaceStatementContext ctx) {
 
-        Function<Value, String> formatToApply = ctx.DOLLAR() != null ? Value::formatVar :
-                                                ctx.macro() != null ? Value::identity : Value::format;
+        Function<Value, String> formatToApply = ctx.DOLLAR() != null ? Value::formatVar : Value::format;
 
         Value replaced = ctx.macro() != null ? this.visit(ctx.macro()) : resolveReplace(ctx.REPLACE());
         String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";
