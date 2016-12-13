@@ -65,7 +65,7 @@ final class ElementFactory {
         return new RoleTypeImpl(v, type, graknGraph);
     }
 
-    private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
+    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
         return new ResourceTypeImpl<>(v, type, graknGraph);
     }
     <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType, boolean isUnique){
