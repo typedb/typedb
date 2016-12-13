@@ -24,6 +24,8 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.Iterators;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,22 +33,28 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AtomicMatchQuery extends AtomicQuery{
 
+    //final private Stream<Map<String, Concept>> answers;
     final private QueryAnswers answers;
+    final private QueryAnswers newAnswers;
     private static final Logger LOG = LoggerFactory.getLogger(AtomicQuery.class);
 
     public AtomicMatchQuery(Atom atom, Set<String> vars){
         super(atom, vars);
         answers = new QueryAnswers();
+        newAnswers = new QueryAnswers();
     }
 
     public AtomicMatchQuery(AtomicQuery query, QueryAnswers ans){
         super(query);
         answers = new QueryAnswers(ans);
+        newAnswers = new QueryAnswers();
+
     }
 
     @Override
@@ -56,13 +64,27 @@ public class AtomicMatchQuery extends AtomicQuery{
     public QueryAnswers getAnswers(){ return answers;}
 
     @Override
-    public void DBlookup() { answers.addAll(execute());}
+    public void lookup(){
+
+    }
+
+    @Override
+    public void DBlookup() {
+        QueryAnswers lookup = new QueryAnswers(execute());
+        lookup.removeAll(answers);
+        answers.addAll(lookup);
+        newAnswers.addAll(lookup);
+    }
 
     @Override
     public void memoryLookup(QueryCache cache) {
         AtomicQuery equivalentQuery = cache.get(this);
-        if(equivalentQuery != null)
-            answers.addAll(QueryAnswers.getUnifiedAnswers(this, equivalentQuery, equivalentQuery.getAnswers()));
+        if(equivalentQuery != null) {
+            QueryAnswers lookup = QueryAnswers.getUnifiedAnswers(this, equivalentQuery, equivalentQuery.getAnswers());
+            lookup.removeAll(answers);
+            answers.addAll(lookup);
+            newAnswers.addAll(lookup);
+        }
     }
 
     @Override
@@ -171,6 +193,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         boolean queryAdmissible = !subGoals.contains(this);
         boolean queryVisited = cache.contains(this);
 
+
         if(queryAdmissible) {
             if (!queryVisited){
                 this.DBlookup();
@@ -217,6 +240,7 @@ public class AtomicMatchQuery extends AtomicQuery{
                         .filterVars(this.getSelectedNames())
                         .filterIncomplete(this.getSelectedNames());
                 this.getAnswers().addAll(filteredAnswers);
+                this.newAnswers.addAll(filteredAnswers);
                 cache.record(this);
             }
         }
@@ -237,43 +261,56 @@ public class AtomicMatchQuery extends AtomicQuery{
     }
 
     @Override
-    public QueryAnswers resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(boolean materialise) {
         if (!this.getAtom().isRuleResolvable()){
             this.DBlookup();
-            return this.getAnswers();
+            return this.stream();
         }
         else {
-            QueryAnswersIterator it = new QueryAnswersIterator(materialise);
-            while(it.hasNext()) it.next();
-            return this.getAnswers();
+            QueryAnswerIterator it = new QueryAnswerIterator(materialise);
+            return it.hasStream();
         }
     }
 
-    private class QueryAnswersIterator implements Iterator<QueryAnswers> {
+    private class QueryAnswerIterator implements Iterator<Map<String, Concept>> {
 
         boolean materialise;
         private int dAns = 0;
         private int iter = 0;
         private QueryCache cache = new QueryCache();
         private Set<AtomicQuery> subGoals = new HashSet<>();
+        Iterator<Map<String, Concept>> answers = Collections.emptyIterator();
 
-        public QueryAnswersIterator(boolean materialise){
+        public QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
         }
 
-        public boolean hasNext() {
-            return dAns != 0 || iter == 0;
+        public Stream<Map<String, Concept>> hasStream(){
+            Iterable<Map<String, Concept>> iterable = () -> this;
+            return StreamSupport.stream(iterable.spliterator(), false);
         }
 
-        public QueryAnswers next() {
+        private void computeNext(){
             dAns = size();
+            outer().newAnswers.clear();
+            subGoals.clear();
             outer().answer(subGoals, cache, materialise);
             LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter++ + " answers: " + outer().getAnswers().size());
             dAns = size() - dAns;
-            subGoals.clear();
-            return outer().getAnswers();
+            answers = outer().newAnswers.iterator();
         }
 
+        public boolean hasNext() {
+            if (answers.hasNext()) return true;
+            else if ( dAns != 0 || iter == 0){
+                computeNext();
+                return hasNext();
+            }
+            else
+                return false;
+        }
+
+        public Map<String, Concept> next() { return answers.next();}
         private AtomicMatchQuery outer(){ return AtomicMatchQuery.this;}
         private int size(){ return outer().getAnswers().size();}
     }

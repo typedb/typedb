@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 public class AtomicQuery extends Query{
@@ -227,7 +228,7 @@ public class AtomicQuery extends Query{
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
-    public QueryAnswers resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(boolean materialise) {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 }

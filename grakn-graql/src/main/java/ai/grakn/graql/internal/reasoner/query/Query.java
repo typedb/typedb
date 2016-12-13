@@ -164,6 +164,7 @@ public class Query implements MatchQueryInternal {
     }
 
     public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+    public void lookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void memoryLookup(QueryCache cache){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
@@ -429,7 +430,7 @@ public class Query implements MatchQueryInternal {
         return equivalent;
     }
 
-    public QueryAnswers resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(boolean materialise) {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 }

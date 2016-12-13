@@ -138,7 +138,7 @@ public class Reasoner {
                 .getPatterns()
                 .forEach( conj -> {
                     Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
-                    answers.addAll(conjunctiveQuery.resolve(materialise));
+                    answers.addAll(conjunctiveQuery.resolve(materialise).collect(Collectors.toSet()));
                 });
         if(materialise) commitGraph(graph);
         return answers;

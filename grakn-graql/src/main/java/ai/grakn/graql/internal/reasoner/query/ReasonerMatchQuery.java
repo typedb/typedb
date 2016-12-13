@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import com.google.common.collect.Sets;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReasonerMatchQuery extends Query{
@@ -48,20 +49,22 @@ public class ReasonerMatchQuery extends Query{
         return answers.stream();
     }
 
+    //TODO not lazy!
     @Override
-    public QueryAnswers resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())
-            return new QueryAnswers(Sets.newHashSet(this.execute()));
+            return this.getMatchQuery().stream();
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-        QueryAnswers answers = atomicQuery.resolve(materialise);
+        QueryAnswers answers = new QueryAnswers(atomicQuery.resolve(materialise).collect(Collectors.toSet()));
         while(atIt.hasNext()){
             atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-            QueryAnswers subAnswers = atomicQuery.resolve(materialise);
+            QueryAnswers subAnswers = new QueryAnswers(atomicQuery.resolve(materialise).collect(Collectors.toSet()));
             answers = answers.join(subAnswers);
         }
         return answers
                 .filterNonEquals(this)
-                .filterVars(this.getSelectedNames());
+                .filterVars(this.getSelectedNames())
+                .stream();
     }
 }
