@@ -133,6 +133,7 @@ public class MigrationCLI {
         System.out.println("Migrating data " + dataToMigrate +
                 " using Grakn Engine " + getEngineURI() +
                 " into graph " + getKeyspace());
+        System.out.println("See the Grakn engine logs for more detail about loading status and any resulting stacktraces: " + properties.getLogFilePath());
     }
 
     public void printWholeCompletionMessage(){
