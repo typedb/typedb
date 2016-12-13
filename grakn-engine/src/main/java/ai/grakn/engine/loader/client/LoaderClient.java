@@ -179,14 +179,18 @@ public class LoaderClient implements Loader {
 
     public void sendQueriesToLoader(Collection<InsertQuery> queries) {
 
+        LOG.info("Acquiring host");
         HttpURLConnection currentConn = acquireNextHost(getPostParams());
+        LOG.info("Executing post");
         String response = executePost(currentConn, getConfiguration(queries));
 
+        LOG.info("Checking response code");
         int responseCode = getResponseCode(currentConn);
         if (responseCode != REST.HttpConn.OK) {
             throw new HTTPException(responseCode);
         }
 
+        LOG.info("Adding submitted");
         String job = Json.read(response).at("id").asString();
         submitted.add(job);
 
@@ -487,7 +491,7 @@ public class LoaderClient implements Loader {
             states.put(status, states.get(status) + 1);
 
             String job = ((HashMap) map).get("id").toString();
-            if(submitted.contains(job)){
+            if(submitted.contains(job) && status.equals(COMPLETED.name()) || status.equals(FAILED.name())){
                 availability.get(host).release();
                 submitted.remove(job);
             }

@@ -85,6 +85,10 @@ public class InMemoryStateStorage implements StateStorage {
             if(configuration != null)
                 state.configuration(configuration);
         }
+
+        if (status == TaskStatus.COMPLETED || status == TaskStatus.FAILED) {
+            state.configuration(new JSONObject());
+        }
     }
 
     public TaskState getState(String id) {
