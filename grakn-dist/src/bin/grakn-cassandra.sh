@@ -51,31 +51,6 @@ wait_for_cassandra() {
     return 1
 }
 
-clean_db() {
-    echo -n "Are you sure you want to delete all stored data and logs? [y/N] " >&2
-    read response
-    if [ "$response" != "y" -a "$response" != "Y" ]; then
-        echo "Response \"$response\" did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
-        return 0
-    fi
-
-    if cd "${GRAKN_HOME}/db"; then
-        rm -rf cassandra es
-        mkdir -p cassandra/data cassandra/commitlog cassandra/saved_caches es
-        echo "Deleted data in `pwd`" >&2
-        cd - >/dev/null
-    else
-        echo 'Data directory does not exist.' >&2
-    fi
-
-    if cd "${GRAKN_HOME}/logs"; then
-        rm -f *.log
-        echo "Deleted logs in `pwd`" >&2
-        cd - >/dev/null
-    fi
-}
-
-
 case "$1" in
 
 start)
@@ -101,11 +76,6 @@ stop)
     fi
     ;;
 
-clean)
-
-    clean_db
-    ;;
-
 status)
 
     if [ -e $CASSANDRA_PS ] && ps -p `cat $CASSANDRA_PS` > /dev/null ; then
@@ -116,7 +86,7 @@ status)
     ;;
 
 *)
-    echo "Usage: $0 {start|stop|clean|status}"
+    echo "Usage: $0 {start|stop|status}"
     ;;
 
 esac

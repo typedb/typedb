@@ -19,11 +19,11 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -68,7 +68,7 @@ public class TasksController {
     private StateStorage stateStorage;
 
     public TasksController() {
-        taskManager = InMemoryTaskManager.getInstance();
+        taskManager = StandaloneTaskManager.getInstance();
         stateStorage = taskManager.storage();
 
         get(ALL_TASKS_URI, this::getTasks);
@@ -115,7 +115,7 @@ public class TasksController {
 
     @GET
     @Path("/:uuid")
-    @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
+    @ApiOperation(value = "Get the taskstorage of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
         try {
@@ -211,7 +211,7 @@ public class TasksController {
                        .put("interval", state.interval())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
-                       .put("executingHostname", state.executingHostname())
+                       .put("engineID", state.engineID())
                        .put("configuration", state.configuration());
     }
 }

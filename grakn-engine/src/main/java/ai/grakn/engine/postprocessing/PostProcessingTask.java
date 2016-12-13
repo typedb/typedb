@@ -38,7 +38,7 @@ public class PostProcessingTask implements BackgroundTask {
 
     /**
      * Run postprocessing only if enough time has passed since the last job was added
-     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
+     * @param saveCheckpoint Consumer<String> which can be called at any time to save a taskstorage checkpoint that would allow
      * @param configuration
      */
     public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
