@@ -95,7 +95,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getGraknGraph().getElementFactory().buildUnknownConcept(vertex);
+        ConceptImpl properType = getGraknGraph().getElementFactory().buildConcept(vertex);
         properType.innerDelete(); //This will execute the proper deletion method.
     }
 
@@ -139,8 +139,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         vertex.edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildUnknownConcept(e.outVertex()));}
+                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
+                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.outVertex()));}
                 );
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
@@ -671,9 +671,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                 forEachRemaining(
                         e -> {
                             graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
+                                    getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
                             graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildUnknownConcept(e.outVertex()));
+                                    getGraknGraph().getElementFactory().buildConcept(e.outVertex()));
                         }
                 );
 

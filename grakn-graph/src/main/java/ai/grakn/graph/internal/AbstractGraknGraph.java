@@ -134,7 +134,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T buildConcept(Vertex vertex) {
-        return elementFactory.buildUnknownConcept(vertex);
+        return elementFactory.buildConcept(vertex);
     }
 
     public boolean hasCommitted(){
@@ -148,29 +148,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
-            TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            type.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.CONCEPT.getName());
+            TypeImpl type = elementFactory.buildConcept(putVertexInternal(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE));
+            EntityTypeImpl entityType = elementFactory.buildConcept(putVertexInternal(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE));
+            RelationTypeImpl relationType = elementFactory.buildConcept(putVertexInternal(Schema.MetaSchema.RELATION.getName(), Schema.BaseType.RELATION_TYPE));
+            ResourceTypeImpl resourceType = elementFactory.buildConcept(putVertexInternal(Schema.MetaSchema.RESOURCE.getName(), Schema.BaseType.RESOURCE_TYPE));
+            RoleTypeImpl roleType = elementFactory.buildConcept(putVertexInternal(Schema.MetaSchema.ROLE.getName(), Schema.BaseType.ROLE_TYPE));
+            RuleTypeImpl ruleType = elementFactory.buildConcept(putVertexInternal(Schema.MetaSchema.RULE.getName(), Schema.BaseType.RULE_TYPE));
+            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(putVertexInternal(Schema.MetaSchema.INFERENCE_RULE.getName(), Schema.BaseType.RULE_TYPE), ruleType);
+            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(putVertexInternal(Schema.MetaSchema.CONSTRAINT_RULE.getName(), Schema.BaseType.RULE_TYPE), ruleType);
 
-            EntityTypeImpl entityType = elementFactory.buildEntityType(addVertex(Schema.BaseType.TYPE), null);
-            entityType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ENTITY.getName());
-
-            RelationTypeImpl relationType = elementFactory.buildRelationType(addVertex(Schema.BaseType.TYPE), null);
-            relationType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RELATION.getName());
-
-            ResourceTypeImpl resourceType = elementFactory.buildResourceType(addVertex(Schema.BaseType.TYPE), null);
-            resourceType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RESOURCE.getName());
-
-            TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            roleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ROLE.getName());
-
-            TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            ruleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RULE.getName());
-
-            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
-            inferenceRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.INFERENCE_RULE.getName());
-
-            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
-            constraintRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.CONSTRAINT_RULE.getName());
 
             type.setType(type.getName());
             relationType.setType(type.getName());
@@ -229,7 +215,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             Vertex vertex = vertices.next();
             if(!isBatchLoadingEnabled() && vertices.hasNext())
                 throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
-            return (T) elementFactory.buildUnknownConcept(vertex);
+            return (T) elementFactory.buildConcept(vertex);
         } else {
             return null;
         }
@@ -239,7 +225,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Set<ConceptImpl> concepts = new HashSet<>();
         getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> {
-                concepts.add(elementFactory.buildUnknownConcept(v));
+                concepts.add(elementFactory.buildConcept(v));
             });
         return concepts;
     }
@@ -271,7 +257,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(Schema.MetaSchema.isMetaName(name)){
             throw new ConceptException(ErrorMessage.ID_RESERVED.getMessage(name));
         }
-
+        return putVertexInternal(name, baseType);
+    }
+    private Vertex putVertexInternal(String name, Schema.BaseType baseType){
         Vertex vertex;
         ConceptImpl concept = getConcept(Schema.ConceptProperty.NAME, name);
         if(concept == null) {
@@ -346,7 +334,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
         if (traversal.hasNext()) {
-            return (T) elementFactory.buildUnknownConcept(traversal.next());
+            return (T) elementFactory.buildConcept(traversal.next());
         } else {
             return null;
         }

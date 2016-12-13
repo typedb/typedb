@@ -60,7 +60,7 @@ class EdgeImpl {
      * @return The source of the edge.
      */
     public <X extends Concept> X getSource(){
-        return graknGraph.getElementFactory().buildUnknownConcept(edge.outVertex());
+        return graknGraph.getElementFactory().buildConcept(edge.outVertex());
     }
 
     /**
@@ -68,7 +68,7 @@ class EdgeImpl {
      * @return The target of the edge
      */
     public <X extends Concept> X getTarget(){
-        return graknGraph.getElementFactory().buildUnknownConcept(edge.inVertex());
+        return graknGraph.getElementFactory().buildConcept(edge.inVertex());
     }
 
     /**

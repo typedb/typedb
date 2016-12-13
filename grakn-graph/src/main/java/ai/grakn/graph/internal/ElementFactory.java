@@ -109,7 +109,7 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    <X extends Concept> X buildUnknownConcept(Vertex v){
+    <X extends Concept> X buildConcept(Vertex v){
         Schema.BaseType type;
         try {
             type = Schema.BaseType.valueOf(v.label());

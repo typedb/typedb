@@ -176,7 +176,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl<Concept, Type> concept = getGraknGraph().getElementFactory().buildUnknownConcept(vertex);
+            ConceptImpl<Concept, Type> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
             if(!concept.isCasting()){
                 instances.add((V) concept);
             }

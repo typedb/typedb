@@ -140,7 +140,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
                         out(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
-                    ConceptImpl foundNeighbour = getGraknGraph().getElementFactory().buildUnknownConcept((Vertex) traversal.next());
+                    ConceptImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
                     throw new ConceptNotUniqueException(resource, foundNeighbour.asInstance());
                 }
             }
