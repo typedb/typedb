@@ -75,7 +75,7 @@ final class ElementFactory {
     RelationTypeImpl buildRelationTypeImplicit(Vertex v, Type type){
         return  new RelationTypeImpl(v, type, true, graknGraph);
     }
-    private RelationTypeImpl buildRelationType(Vertex v, Type type){
+    public RelationTypeImpl buildRelationType(Vertex v, Type type){
         return  new RelationTypeImpl(v, type, graknGraph);
     }
 
