@@ -454,7 +454,6 @@ public class LoaderClient implements Loader {
     private String getPostParams(){
         return TASK_CLASS_NAME_PARAMETER + "=" + LoaderTask.class.getName() + "&" +
                 TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
-                LIMIT_PARAM + "=" + 10000 + "&" +
                 TASK_CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
     }
 
