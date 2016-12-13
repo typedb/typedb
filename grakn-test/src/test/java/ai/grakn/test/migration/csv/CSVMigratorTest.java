@@ -71,7 +71,7 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
     @Test
     public void quotesWithoutContentTest() throws IOException {
         load(getFile("csv", "pets/schema.gql"));
-        String template = Files.readLines(getFile("csv", "pets/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
+        String template = Files.readLines(getFile("csv", "pets/quotes/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
         migrate(new CSVMigrator(template, getFile("csv", "pets/quotes/emptyquotes.csv")));
         assertPetGraphCorrect();
     }

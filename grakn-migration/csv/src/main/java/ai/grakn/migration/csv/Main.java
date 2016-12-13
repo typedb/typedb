@@ -37,6 +37,7 @@ public class Main {
         options.addOption("i", "input", true, "input csv file");
         options.addOption("t", "template", true, "graql template to apply over data");
         options.addOption("s", "separator", true, "separator of columns in input file");
+        options.addOption("q", "quote", true, "character used to encapsulate values containing special characters");
         options.addOption("b", "batch", true, "number of row to load at once");
         return options;
     }

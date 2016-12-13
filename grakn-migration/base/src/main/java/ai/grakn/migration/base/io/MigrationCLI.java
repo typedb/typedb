@@ -167,6 +167,7 @@ public class MigrationCLI {
     public void initiateShutdown(){
         System.out.println("Initiating shutdown...");
         InMemoryTaskManager.getInstance().shutdown();
+        System.out.println("Completed shutdown...");
     }
 
     public String getEngineURI(){
