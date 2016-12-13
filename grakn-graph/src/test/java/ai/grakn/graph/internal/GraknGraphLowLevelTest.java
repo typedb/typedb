@@ -149,7 +149,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
     public void testAddCastingLongManyCastingFound() {
         //Artificially Make First Casting
         RelationType relationType = graknGraph.putRelationType("RelationType");
-        RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("role");
+        RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("role-thing");
         EntityType thing = graknGraph.putEntityType("thing");
         InstanceImpl rolePlayer = (InstanceImpl) thing.addEntity();
         RelationImpl relation = (RelationImpl) relationType.addRelation();
@@ -260,22 +260,22 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void getSuperConceptType(){
-        assertEquals(graknGraph.getMetaType().getName(), Schema.MetaSchema.TYPE.getName());
+        assertEquals(graknGraph.getMetaType().getName(), Schema.MetaSchema.CONCEPT.getName());
     }
 
     @Test
     public void getSuperRelationType(){
-        assertEquals(graknGraph.getMetaRelationType().getName(), Schema.MetaSchema.RELATION_TYPE.getName());
+        assertEquals(graknGraph.getMetaRelationType().getName(), Schema.MetaSchema.RELATION.getName());
     }
 
     @Test
     public void getSuperRoleType(){
-        assertEquals(graknGraph.getMetaRoleType().getName(), Schema.MetaSchema.ROLE_TYPE.getName());
+        assertEquals(graknGraph.getMetaRoleType().getName(), Schema.MetaSchema.ROLE.getName());
     }
 
     @Test
     public void getSuperResourceType(){
-        assertEquals(graknGraph.getMetaResourceType().getName(), Schema.MetaSchema.RESOURCE_TYPE.getName());
+        assertEquals(graknGraph.getMetaResourceType().getName(), Schema.MetaSchema.RESOURCE.getName());
     }
 
     @Test
@@ -312,10 +312,10 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RoleType testRoleType = graknGraph.putRoleType("Test Role Type");
         RelationType testRelationType = graknGraph.putRelationType("Test Relation Type");
 
-        assertEquals(Schema.MetaSchema.ENTITY_TYPE.getName(), testType.type().getName());
-        assertEquals(Schema.MetaSchema.RESOURCE_TYPE.getName(), testResourceType.type().getName());
-        assertEquals(Schema.MetaSchema.ROLE_TYPE.getName(), testRoleType.type().getName());
-        assertEquals(Schema.MetaSchema.RELATION_TYPE.getName(), testRelationType.type().getName());
+        assertEquals(Schema.MetaSchema.ENTITY.getName(), testType.type().getName());
+        assertEquals(Schema.MetaSchema.RESOURCE.getName(), testResourceType.type().getName());
+        assertEquals(Schema.MetaSchema.ROLE.getName(), testRoleType.type().getName());
+        assertEquals(Schema.MetaSchema.RELATION.getName(), testRelationType.type().getName());
 
     }
 

@@ -335,9 +335,9 @@ public class ConceptTest extends GraphTestBase{
     public void reservedTest(){
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_RESERVED.getMessage("type"))
+                containsString(ErrorMessage.ID_RESERVED.getMessage("concept"))
         ));
-        graknGraph.putEntityType("type");
+        graknGraph.putEntityType("concept");
     }
 
     @Test

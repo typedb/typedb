@@ -61,10 +61,10 @@ import static ai.grakn.graql.Graql.parse;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Order.desc;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RELATION_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.ROLE_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RULE_TYPE;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
+import static ai.grakn.util.Schema.MetaSchema.RELATION;
+import static ai.grakn.util.Schema.MetaSchema.ROLE;
+import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
@@ -321,10 +321,10 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
                 "(evolves-from: $y, evolves-to: $z) isa evolution;").execute();
 
-        assertTrue(qb.match(name("pokemon").isa(ENTITY_TYPE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolution").isa(RELATION_TYPE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-from").isa(ROLE_TYPE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-to").isa(ROLE_TYPE.getName())).ask().execute());
+        assertTrue(qb.match(name("pokemon").isa(ENTITY.getName())).ask().execute());
+        assertTrue(qb.match(name("evolution").isa(RELATION.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").isa(ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").isa(ROLE.getName())).ask().execute());
         assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
@@ -413,7 +413,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         qb.parse("insert '" + ruleTypeId + "' isa rule-type; \n" +
                 "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
-        assertTrue(qb.match(name("my-rule-thing").isa(RULE_TYPE.getName())).ask().execute());
+        assertTrue(qb.match(name("my-rule-thing").isa(RULE.getName())).ask().execute());
 
         RuleType ruleType = graph.getRuleType(ruleTypeId);
         boolean found = false;

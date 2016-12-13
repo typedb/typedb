@@ -427,7 +427,6 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertEquals(movieGenre.getBaseType(), Schema.BaseType.ROLE_TYPE.name());
         assertEquals(crime.getBaseType(), Schema.BaseType.ENTITY.name());
         assertEquals(movieHasGenre.getBaseType(), Schema.BaseType.RELATION_TYPE.name());
-        assertEquals(Schema.BaseType.RELATION_TYPE.name(), "RELATION_TYPE");
     }
 
     @Test
@@ -607,7 +606,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void testGraqlQuery(){
-        String entityType = Schema.MetaSchema.ENTITY_TYPE.getName();
+        String entityType = Schema.MetaSchema.ENTITY.getName();
         EntityType type1 = graknGraph.putEntityType("Concept Type ");
         EntityType type2 = graknGraph.putEntityType("Concept Type 1");
 

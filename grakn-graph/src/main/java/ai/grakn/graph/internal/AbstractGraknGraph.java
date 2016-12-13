@@ -149,22 +149,22 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            type.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.TYPE.getName());
+            type.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.CONCEPT.getName());
 
             TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            entityType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ENTITY_TYPE.getName());
+            entityType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ENTITY.getName());
 
             TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            relationType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RELATION_TYPE.getName());
+            relationType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RELATION.getName());
 
             TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            resourceType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RESOURCE_TYPE.getName());
+            resourceType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RESOURCE.getName());
 
             TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            roleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ROLE_TYPE.getName());
+            roleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.ROLE.getName());
 
             TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            ruleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RULE_TYPE.getName());
+            ruleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.RULE.getName());
 
             RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
             inferenceRuleType.setProperty(Schema.ConceptProperty.NAME, Schema.MetaSchema.INFERENCE_RULE.getName());
@@ -407,32 +407,32 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public Type getMetaType() {
-        return getTypeByName(Schema.MetaSchema.TYPE.getName());
+        return getTypeByName(Schema.MetaSchema.CONCEPT.getName());
     }
 
     @Override
     public Type getMetaRelationType() {
-        return getTypeByName(Schema.MetaSchema.RELATION_TYPE.getName());
+        return getTypeByName(Schema.MetaSchema.RELATION.getName());
     }
 
     @Override
     public Type getMetaRoleType() {
-        return getTypeByName(Schema.MetaSchema.ROLE_TYPE.getName());
+        return getTypeByName(Schema.MetaSchema.ROLE.getName());
     }
 
     @Override
     public Type getMetaResourceType() {
-        return getTypeByName(Schema.MetaSchema.RESOURCE_TYPE.getName());
+        return getTypeByName(Schema.MetaSchema.RESOURCE.getName());
     }
 
     @Override
     public Type getMetaEntityType() {
-        return getTypeByName(Schema.MetaSchema.ENTITY_TYPE.getName());
+        return getTypeByName(Schema.MetaSchema.ENTITY.getName());
     }
 
     @Override
     public Type getMetaRuleType(){
-        return getTypeByName(Schema.MetaSchema.RULE_TYPE.getName());
+        return getTypeByName(Schema.MetaSchema.RULE.getName());
     }
 
     @Override

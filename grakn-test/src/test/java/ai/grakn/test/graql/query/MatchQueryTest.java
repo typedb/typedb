@@ -61,9 +61,9 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RESOURCE_TYPE;
-import static ai.grakn.util.Schema.MetaSchema.RULE_TYPE;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
+import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
+import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -191,7 +191,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("type").playsRole("character-being-played")
         );
 
-        QueryUtil.assertResultsMatch(query, "type", ENTITY_TYPE.getName(), graph.getResourceType("title"), "character", "person");
+        QueryUtil.assertResultsMatch(query, "type", ENTITY.getName(), graph.getResourceType("title"), "character", "person");
     }
 
     @Test
@@ -215,7 +215,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testTypeNameQuery() {
         MatchQuery query = qb.match(or(var("x").name("character"), var("x").name("person")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getName(), graph.getResourceType("title"),  "character", "person");
+        QueryUtil.assertResultsMatch(query, "x", ENTITY.getName(), graph.getResourceType("title"),  "character", "person");
     }
 
     @Test
@@ -365,7 +365,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testSubSelf() {
         MatchQuery query = qb.match(name("movie").sub(var("x")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getName(), graph.getResourceType("title"),  "movie", "production");
+        QueryUtil.assertResultsMatch(query, "x", ENTITY.getName(), graph.getResourceType("title"),  "movie", "production");
     }
 
     @Test
@@ -417,22 +417,22 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testMatchDataType() {
         MatchQuery query = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getName(), graph.getResourceType("title"), "tmdb-vote-average");
+        QueryUtil.assertResultsMatch(query, "x", RESOURCE.getName(), graph.getResourceType("title"), "tmdb-vote-average");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.LONG));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getName(), graph.getResourceType("title"), "tmdb-vote-count", "runtime", "release-date");
+        QueryUtil.assertResultsMatch(query, "x", RESOURCE.getName(), graph.getResourceType("title"), "tmdb-vote-count", "runtime", "release-date");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.BOOLEAN));
         assertEquals(0, query.stream().count());
 
         query = qb.match(var("x").datatype(ResourceType.DataType.STRING));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getName(), graph.getResourceType("title"), "title", "gender", "real-name", "name");
+        QueryUtil.assertResultsMatch(query, "x", RESOURCE.getName(), graph.getResourceType("title"), "title", "gender", "real-name", "name");
     }
 
     @Test
     public void testSelectRuleTypes() {
-        MatchQuery query = qb.match(var("x").isa(RULE_TYPE.getName()));
-        QueryUtil.assertResultsMatch(query, "x", RULE_TYPE.getName(), graph.getResourceType("title"), "a-rule-type", "inference-rule", "constraint-rule");
+        MatchQuery query = qb.match(var("x").isa(RULE.getName()));
+        QueryUtil.assertResultsMatch(query, "x", RULE.getName(), graph.getResourceType("title"), "a-rule-type", "inference-rule", "constraint-rule");
     }
 
     @Test

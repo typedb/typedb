@@ -48,7 +48,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     public HasResourceProperty(VarAdmin resource) {
         this.resourceType = Optional.empty();
-        this.resource = resource.isa(var().isa(Schema.MetaSchema.RESOURCE_TYPE.getName())).admin();
+        this.resource = resource.isa(var().isa(Schema.MetaSchema.RESOURCE.getName())).admin();
     }
 
     public HasResourceProperty(String resourceType, VarAdmin resource) {

@@ -105,7 +105,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
                     "FROM pokemon, type WHERE pokemon.type1=type.id OR pokemon.type2=type.id";
 
             template = "" +
-                    "match $type isa pokemon-type has description <TYPE>; \n" +
+                    "match $type isa pokemon-type has description <CONCEPT>; \n" +
                     "      $pokemon isa pokemon has description   <SPECIES>; \n" +
                     "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 

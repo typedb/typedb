@@ -1,23 +1,23 @@
 insert 
 
 # Primary Scheduled task entity.
-scheduled-task isa entity-type;
+scheduled-task isa entity;
 
 # scheduled-task resources
-status isa resource-type, datatype string;
-status-change-time isa resource-type, datatype long;
-status-change-by isa resource-type, datatype string;
-task-class-name isa resource-type, datatype string;
-created-by isa resource-type, datatype string;
-executing-hostname isa resource-type, datatype string;
-run-at isa resource-type, datatype long;
-recurring isa resource-type, datatype boolean;
-recur-interval isa resource-type, datatype long;
-task-failure isa resource-type, datatype string;
-stack-trace isa resource-type, datatype string;
-task-exception isa resource-type, datatype string;
-task-checkpoint isa resource-type, datatype string;
-task-configuration isa resource-type, datatype string;
+status isa resource, datatype string;
+status-change-time isa resource, datatype long;
+status-change-by isa resource, datatype string;
+task-class-name isa resource, datatype string;
+created-by isa resource, datatype string;
+executing-hostname isa resource, datatype string;
+run-at isa resource, datatype long;
+recurring isa resource, datatype boolean;
+recur-interval isa resource, datatype long;
+task-failure isa resource, datatype string;
+stack-trace isa resource, datatype string;
+task-exception isa resource, datatype string;
+task-checkpoint isa resource, datatype string;
+task-configuration isa resource, datatype string;
 
 scheduled-task has-resource status,
                has-resource status-change-time,
@@ -34,19 +34,19 @@ scheduled-task has-resource status,
                has-resource task-configuration;
 
 # Keep track of all keyspaces in system.
-keyspace isa entity-type;
-keyspace-name isa resource-type, datatype string;
+keyspace isa entity;
+keyspace-name isa resource, datatype string;
 keyspace has-resource keyspace-name;
 keyspace has-key keyspace-name;
 
 # Users
-user isa entity-type;
-user-name isa resource-type, datatype string;
-user-password isa resource-type, datatype string;
-user-first-name isa resource-type, datatype string;
-user-last-name isa resource-type, datatype string;
-user-email isa resource-type, datatype string;
-user-is-admin isa resource-type, datatype boolean;
+user isa entity;
+user-name isa resource, datatype string;
+user-password isa resource, datatype string;
+user-first-name isa resource, datatype string;
+user-last-name isa resource, datatype string;
+user-email isa resource, datatype string;
+user-is-admin isa resource, datatype boolean;
 user has-key user-name;
 
 user has-resource user-password,

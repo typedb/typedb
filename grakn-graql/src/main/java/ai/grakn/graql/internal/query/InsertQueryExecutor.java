@@ -237,15 +237,15 @@ public class InsertQueryExecutor {
             throw new IllegalStateException(INSERT_NON_RESOURCE_WITH_VALUE.getMessage(type.getId()));
         }
 
-        if (typeName.equals(Schema.MetaSchema.ENTITY_TYPE.getName())) {
+        if (typeName.equals(Schema.MetaSchema.ENTITY.getName())) {
             return graph.putEntityType(getTypeNameOrThrow(name));
-        } else if (typeName.equals(Schema.MetaSchema.RELATION_TYPE.getName())) {
+        } else if (typeName.equals(Schema.MetaSchema.RELATION.getName())) {
             return graph.putRelationType(getTypeNameOrThrow(name));
-        } else if (typeName.equals(Schema.MetaSchema.ROLE_TYPE.getName())) {
+        } else if (typeName.equals(Schema.MetaSchema.ROLE.getName())) {
             return graph.putRoleType(getTypeNameOrThrow(name));
-        } else if (typeName.equals(Schema.MetaSchema.RESOURCE_TYPE.getName())) {
+        } else if (typeName.equals(Schema.MetaSchema.RESOURCE.getName())) {
             return graph.putResourceType(getTypeNameOrThrow(name), getDataType(var));
-        } else if (typeName.equals(Schema.MetaSchema.RULE_TYPE.getName())) {
+        } else if (typeName.equals(Schema.MetaSchema.RULE.getName())) {
             return graph.putRuleType(getTypeNameOrThrow(name));
         }
 
