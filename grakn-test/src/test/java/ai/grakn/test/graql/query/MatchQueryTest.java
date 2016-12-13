@@ -697,7 +697,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMatchKey() {
-        MatchQuery query = qb.match(var("x").key("name"));
+        MatchQuery query = qb.match(var("x").hasKey("name"));
 
         QueryUtil.assertResultsMatch(query, "x", null, Lists.newArrayList(), "genre");
     }

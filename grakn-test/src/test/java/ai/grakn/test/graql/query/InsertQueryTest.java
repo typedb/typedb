@@ -425,15 +425,15 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testKey() {
         qb.insert(
-                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
         assertTrue(qb.match(name("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());
-        assertTrue(qb.match(name("a-new-type").isa("entity-type").key("a-new-resource-type")).ask().execute());
-        assertFalse(qb.match(name("a-new-type").isa("entity-type").key("title")).ask().execute());
-        assertFalse(qb.match(name("movie").isa("entity-type").key("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").isa("entity-type").hasKey("a-new-resource-type")).ask().execute());
+        assertFalse(qb.match(name("a-new-type").isa("entity-type").hasKey("title")).ask().execute());
+        assertFalse(qb.match(name("movie").isa("entity-type").hasKey("a-new-resource-type")).ask().execute());
 
         // Make sure the expected ontology elements are created
         assertTrue(qb.match(name("has-a-new-resource-type").isa("relation-type")).ask().execute());
@@ -451,7 +451,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
@@ -465,7 +465,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
@@ -480,7 +480,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello"),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
@@ -496,7 +496,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type")
         ).execute();
@@ -511,7 +511,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").key("a-new-resource-type"),
+                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-resource-type").value("hello")
         ).execute();

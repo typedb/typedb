@@ -456,7 +456,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropKey(GraqlParser.PropKeyContext ctx) {
-        return var -> var.key(visitVariable(ctx.variable()));
+        return var -> var.hasKey(visitVariable(ctx.variable()));
     }
 
     @Override
