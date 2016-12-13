@@ -254,8 +254,17 @@ public class MacroTest {
         assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
+    @Test
+    public void splitMacroTest() {
+        String template = "insert $x for (val in @split(list \",\") ) do { has description <val>};";
+        String expected = "insert $x0 has description \"orange\" has description \"cat\" has description \"dog\";";
+
+        assertParseEquals(template, Collections.singletonMap("list", "cat,dog,orange"), expected);
+    }
+
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
         String result = Graql.parseTemplate(template, data).toString();
+        System.out.println(result);
         assertEquals(expected, result);
     }
 }
