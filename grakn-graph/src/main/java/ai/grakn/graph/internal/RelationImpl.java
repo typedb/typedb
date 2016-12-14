@@ -37,8 +37,8 @@ import java.util.*;
  * A relation represents and instance of a relation type which concept how different entities relate to one another.
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
-    RelationImpl(Vertex v, RelationType type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    RelationImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RelationType> type) {
+        super(graknGraph, v, type);
     }
 
     /**

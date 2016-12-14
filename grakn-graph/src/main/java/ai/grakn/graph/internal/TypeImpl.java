@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -45,12 +46,10 @@ import java.util.stream.Collectors;
  * @param <V> The type of the instances of this concept type.
  */
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
-    TypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
-        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
-    }
-    TypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
+        super(graknGraph, v, Optional.empty());
+        superType.ifPresent(this::superType);
+        isImplicit.ifPresent(i -> setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, i, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity()));
     }
 
     /**
@@ -108,15 +107,15 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     Set<T> getSuperSet() {
         Set<T> superSet= new HashSet<>();
         superSet.add(getThis());
-        T subParent = superType();
+        T superParent = superType();
 
-        while(subParent != null){
-            if(superSet.contains(subParent))
+        while(superParent != null && !Schema.MetaSchema.CONCEPT.getName().equals(superParent.getName())){
+            if(superSet.contains(superParent))
                 throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
             else
-                superSet.add(subParent);
+                superSet.add(superParent);
             //noinspection unchecked
-            subParent = (T) subParent.superType();
+            superParent = (T) superParent.superType();
         }
 
         return superSet;
@@ -172,8 +171,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
                 .has(Schema.ConceptProperty.NAME.name(), getName())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
-                .in(Schema.EdgeLabel.ISA.getLabel())
-                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
+                .in(Schema.EdgeLabel.ISA.getLabel());
+                //.union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
 
         traversal.forEachRemaining(vertex -> {
             ConceptImpl<Concept, Type> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
@@ -227,11 +226,10 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
     /**
      *
-     * @param type This type's super type
+     * @param superType This type's super type
      * @return The Type itself
      */
-    public T superType(T type) {
-        ((TypeImpl) type).checkTypeMutation();
+    public T superType(T superType) {
         checkTypeMutation();
 
         //Track any existing data if there is some
@@ -245,10 +243,10 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             });
         }
 
-        if(currentSuperType == null || !currentSuperType.equals(type)) {
+        if(currentSuperType == null || !currentSuperType.equals(superType)) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-            putEdge(type, Schema.EdgeLabel.SUB);
+            putEdge(superType, Schema.EdgeLabel.SUB);
             type(); //Check if there is a circular sub loop
         }
         
@@ -348,18 +346,20 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         ResourceType resourceTypeSuper = resourceType.superType();
         if(resourceTypeSuper != null){
             String superName = resourceTypeSuper.getName();
-            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
-            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
-            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
-                    hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
+            if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
+                RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
+                RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
+                RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
+                        hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
 
-            //Create the super type edges from sub role/relations to super roles/relation
-            ownerRole.superType(ownerRoleSuper);
-            valueRole.superType(valueRoleSuper);
-            relationType.superType(relationTypeSuper);
+                //Create the super type edges from sub role/relations to super roles/relation
+                ownerRole.superType(ownerRoleSuper);
+                valueRole.superType(valueRoleSuper);
+                relationType.superType(relationTypeSuper);
 
-            //Make sure the supertype resource is linked with the role as well
-            ((ResourceTypeImpl) resourceTypeSuper).playsRole(valueRoleSuper);
+                //Make sure the supertype resource is linked with the role as well
+                ((ResourceTypeImpl) resourceTypeSuper).playsRole(valueRoleSuper);
+            }
         }
 
         this.playsRole(ownerRole, required);

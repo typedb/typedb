@@ -25,11 +25,15 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 /**
  * Internal factory to produce different types of concepts
@@ -42,66 +46,98 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    RelationImpl buildRelation(Vertex v, RelationType type){
-        return new RelationImpl(v, type, graknGraph);
+    // ------------------------------------------- Building Castings  --------------------------------------------------
+    public CastingImpl buildCasting(Vertex v, RoleType type){
+        return buildCasting(v, Optional.of(type));
+    }
+    private CastingImpl buildCasting(Vertex v, Optional<RoleType> type){
+        return new CastingImpl(graknGraph, v, type);
     }
 
-    CastingImpl buildCasting(Vertex v, RoleType type){
-        return new CastingImpl(v, type, graknGraph);
+    // -------------------------------------------- Building Types  ----------------------------------------------------
+    public TypeImpl buildType(Vertex v, Type type, Boolean isImplicit){
+        return buildType(v, Optional.of(type), Optional.of(isImplicit));
+    }
+    private TypeImpl buildType(Vertex v, Optional<Type> type, Optional<Boolean> isImplicit){
+        return new TypeImpl(graknGraph, v, type, isImplicit);
     }
 
-    TypeImpl buildConceptType(Vertex v, Type type){
-        return  new TypeImpl(v, type, graknGraph);
+    // ---------------------------------------- Building Resource Types  -----------------------------------------------
+    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType type, ResourceType.DataType<V> dataType, Boolean isUnique){
+        return buildResourceType(v, Optional.of(type), Optional.of(dataType), Optional.of(isUnique));
+    }
+    private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
+        return new ResourceTypeImpl(graknGraph, v, type, dataType, isUnique);
     }
 
-    RuleTypeImpl buildRuleType(Vertex v, Type type){
-        return  new RuleTypeImpl(v, type, graknGraph);
+    // ------------------------------------------ Building Resources
+    public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
+        return buildResource(v, Optional.of(type), Optional.of(value));
+    }
+    private <V> ResourceImpl <V> buildResource(Vertex v, Optional<ResourceType<V>> type, Optional<V> value){
+        return new ResourceImpl<>(graknGraph, v, type, value);
     }
 
-    RoleTypeImpl buildRoleTypeImplicit(Vertex v, Type type){
-        return new RoleTypeImpl(v, type, true, graknGraph);
+    // ---------------------------------------- Building Relation Types  -----------------------------------------------
+    public RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
+        return buildRelationType(v, Optional.of(type), Optional.of(isImplicit));
     }
-    RoleTypeImpl buildRoleType(Vertex v, Type type){
-        return new RoleTypeImpl(v, type, graknGraph);
-    }
-
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
-        return new ResourceTypeImpl<>(v, type, graknGraph);
-    }
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType, boolean isUnique){
-        return new ResourceTypeImpl<>(v, type, graknGraph, dataType, isUnique);
+    private RelationTypeImpl buildRelationType(Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit){
+        return new RelationTypeImpl(graknGraph, v, type, isImplicit);
     }
 
-    RelationTypeImpl buildRelationTypeImplicit(Vertex v, Type type){
-        return  new RelationTypeImpl(v, type, true, graknGraph);
+    // -------------------------------------------- Building Relations
+    public RelationImpl buildRelation(Vertex v, RelationType type){
+        return buildRelation(v, Optional.of(type));
     }
-    public RelationTypeImpl buildRelationType(Vertex v, Type type){
-        return  new RelationTypeImpl(v, type, graknGraph);
-    }
-
-    public EntityTypeImpl buildEntityType(Vertex v, Type type){
-        return  new EntityTypeImpl(v, type, graknGraph);
+    private RelationImpl buildRelation(Vertex v, Optional<RelationType> type){
+        return new RelationImpl(graknGraph, v, type);
     }
 
-    EntityImpl buildEntity(Vertex v, EntityType type){
-        return  new EntityImpl(v, type, graknGraph);
+    // ----------------------------------------- Building Entity Types  ------------------------------------------------
+    public EntityTypeImpl buildEntityType(Vertex v, EntityType type){
+        return buildEntityType(v, Optional.of(type));
+    }
+    private EntityTypeImpl buildEntityType(Vertex v, Optional<EntityType> type){
+        return new EntityTypeImpl(graknGraph, v, type);
     }
 
-    private <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type){
-        return new ResourceImpl<>(v, type, graknGraph);
+    // ------------------------------------------- Building Entities
+    public EntityImpl buildEntity(Vertex v, EntityType type){
+        return buildEntity(v, Optional.of(type));
+    }
+    private EntityImpl buildEntity(Vertex v, Optional<EntityType> type){
+        return  new EntityImpl(graknGraph, v, type);
     }
 
-    <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
-        return new ResourceImpl<>(v, type, graknGraph, value);
+    // ----------------------------------------- Building Rule Types  --------------------------------------------------
+    public RuleTypeImpl buildRuleType(Vertex v, RuleType type){
+        return buildRuleType(v, Optional.of(type));
+    }
+    private RuleTypeImpl buildRuleType(Vertex v, Optional<RuleType> type){
+        return new RuleTypeImpl(graknGraph, v, type);
     }
 
-    private RuleImpl buildRule(Vertex v, RuleType type){
-        Pattern lhs = graknGraph.graql().parsePattern(v.value(Schema.ConceptProperty.RULE_LHS.name()));
-        Pattern rhs = graknGraph.graql().parsePattern(v.value(Schema.ConceptProperty.RULE_RHS.name()));
-        return buildRule(v, type, lhs, rhs);
+    // -------------------------------------------- Building Rules
+    public RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
+        if(lhs == null)
+            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS.name()));
+
+        if(rhs == null)
+            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
+
+        return buildRule(v, Optional.of(type), Optional.of(lhs), Optional.of(rhs));
     }
-    RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
-        return  new RuleImpl(v, type, graknGraph, lhs, rhs);
+    private RuleImpl buildRule(Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs){
+        return new RuleImpl(graknGraph, v, type, lhs, rhs);
+    }
+
+    // ------------------------------------------ Building Roles  Types ------------------------------------------------
+    public RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
+        return buildRoleType(v, Optional.of(type), Optional.of(isImplicit));
+    }
+    private RoleTypeImpl buildRoleType(Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit){
+        return new RoleTypeImpl(graknGraph, v, type, isImplicit);
     }
 
     /**
@@ -109,7 +145,7 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    <X extends Concept> X buildConcept(Vertex v){
+    public <X extends Concept> X buildConcept(Vertex v){
         Schema.BaseType type;
         try {
             type = Schema.BaseType.valueOf(v.label());
@@ -119,72 +155,71 @@ final class ElementFactory {
         }
 
         ConceptImpl concept = null;
-        //All these types are null because at this stage the concept has been defined so we don't need to know the type.
         switch (type){
             case RELATION:
-                concept = buildRelation(v, null);
+                concept = buildRelation(v, Optional.empty());
                 break;
             case CASTING:
-                concept = buildCasting(v, null);
+                concept = buildCasting(v, Optional.empty());
                 break;
             case TYPE:
-                concept = buildConceptType(v, null);
+                concept = buildType(v, Optional.empty(), Optional.empty());
                 break;
             case ROLE_TYPE:
-                concept = buildRoleType(v, null);
+                concept = buildRoleType(v, Optional.empty(), Optional.empty());
                 break;
             case RELATION_TYPE:
-                concept = buildRelationType(v, null);
+                concept = buildRelationType(v, Optional.empty(), Optional.empty());
                 break;
             case ENTITY:
-                concept = buildEntity(v, null);
+                concept = buildEntity(v, Optional.empty());
                 break;
             case ENTITY_TYPE:
-                concept = buildEntityType(v, null);
+                concept = buildEntityType(v, Optional.empty());
                 break;
             case RESOURCE_TYPE:
-                concept = buildResourceType(v, null);
+                concept = buildResourceType(v, Optional.empty(), Optional.empty(), Optional.empty());
                 break;
             case RESOURCE:
-                concept = buildResource(v, null);
+                concept = buildResource(v, Optional.empty(), Optional.empty());
                 break;
             case RULE:
-                concept = buildRule(v, null);
+                concept = buildRule(v, Optional.empty(), Optional.empty(), Optional.empty());
                 break;
             case RULE_TYPE:
-                concept = buildRuleType(v, null);
+                concept = buildRuleType(v, Optional.empty());
                 break;
         }
         //noinspection unchecked
         return (X) concept;
     }
 
-    TypeImpl buildSpecificType(Vertex vertex, Type type){
+    public TypeImpl buildSpecificType(Vertex vertex, Type type){
         Schema.BaseType baseType = Schema.BaseType.valueOf(vertex.label());
         TypeImpl conceptType;
         switch (baseType){
             case ROLE_TYPE:
-                conceptType = buildRoleType(vertex, type);
+                conceptType = buildRoleType(vertex, Optional.of(type.asRoleType()), Optional.empty());
                 break;
             case RELATION_TYPE:
-                conceptType = buildRelationType(vertex, type);
+                conceptType = buildRelationType(vertex, Optional.of(type.asRelationType()), Optional.empty());
                 break;
             case RESOURCE_TYPE:
-                conceptType = buildResourceType(vertex, type);
+                conceptType = buildResourceType(vertex, Optional.of(type.asResourceType()), Optional.empty(), Optional.empty());
                 break;
             case RULE_TYPE:
-                conceptType = buildRuleType(vertex, type);
+                conceptType = buildRuleType(vertex, Optional.of(type.asRuleType()));
                 break;
             case ENTITY_TYPE:
-                conceptType = buildEntityType(vertex, type);
+                conceptType = buildEntityType(vertex, Optional.of(type.asEntityType()));
                 break;
             default:
-                conceptType = buildConceptType(vertex, type);
+                conceptType = buildType(vertex, Optional.of(type), Optional.empty());
         }
         return conceptType;
     }
 
-    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
+    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
         return new EdgeImpl(edge, graknGraph);
     }
 }

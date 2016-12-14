@@ -27,6 +27,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,10 +36,10 @@ import java.util.stream.Collectors;
  * An internal concept used to represent the link between a roleplayer and it's role.
  * For example Pacino as an actor would be represented by a single casting regardless of the number of movies he acts in.
  */
-class CastingImpl extends ConceptImpl {
+class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
 
-    CastingImpl(Vertex v, RoleType type,  AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    CastingImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type) {
+        super(graknGraph, v, type);
     }
 
     /**

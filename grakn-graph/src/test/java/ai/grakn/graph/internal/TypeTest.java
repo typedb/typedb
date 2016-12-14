@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -132,7 +133,7 @@ public class TypeTest extends GraphTestBase{
 
         graknGraph.getTinkerPopGraph().traversal().V().
                 hasId(c3.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
+                outE(Schema.EdgeLabel.SUB.getLabel()).next().remove();
         c3.superType(c4);
         boolean correctExceptionThrown = false;
         try{
@@ -143,19 +144,6 @@ public class TypeTest extends GraphTestBase{
         }
         assertTrue(correctExceptionThrown);
 
-    }
-
-    @Test
-    public void testCannotSubClassMetaTypes(){
-        RuleType metaType = graknGraph.getMetaRuleInference();
-        RuleType superType = graknGraph.putRuleType("An Entity Type");
-
-        expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaType.getName()))
-        ));
-
-        superType.superType(metaType);
     }
 
     @Test
@@ -258,8 +246,8 @@ public class TypeTest extends GraphTestBase{
     public void checkSuperConceptTypeOverride(){
         EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("A Thing");
         EntityTypeImpl conceptType2 = (EntityTypeImpl) graknGraph.putEntityType("A Super Thing");
-        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
-        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
+        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
+        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
         conceptType.superType(conceptType2);
         assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
         assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
@@ -332,7 +320,7 @@ public class TypeTest extends GraphTestBase{
     public void testGetInstances(){
         EntityType entityType = graknGraph.putEntityType("Entity");
         RoleType actor = graknGraph.putRoleType("Actor");
-        entityType.addEntity();
+        Entity thing = entityType.addEntity();
         EntityType production = graknGraph.putEntityType("Production");
         EntityType movie = graknGraph.putEntityType("Movie").superType(production);
         Instance musicVideo = production.addEntity();
@@ -341,12 +329,12 @@ public class TypeTest extends GraphTestBase{
         Collection<? extends Concept> types = graknGraph.getMetaType().instances();
         Collection<? extends Concept> data = production.instances();
 
-        assertEquals(11, types.size());
+        assertEquals(3, types.size());
         assertEquals(2, data.size());
 
-        assertTrue(types.contains(actor));
-        assertTrue(types.contains(movie));
-        assertTrue(types.contains(production));
+        assertTrue(types.contains(musicVideo));
+        assertTrue(types.contains(godfather));
+        assertTrue(types.contains(thing));
 
         assertTrue(data.contains(godfather));
         assertTrue(data.contains(musicVideo));

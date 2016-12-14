@@ -18,12 +18,12 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.Grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -302,33 +302,33 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertEquals(37, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
         assertEquals(52, graknGraph.getTinkerPopGraph().traversal().E().toList().size());
 
-        assertEdgeCountOfVertex(type, Schema.EdgeLabel.ISA, 0, 1);
-        assertEdgeCountOfVertex(relationType, Schema.EdgeLabel.ISA, 0, 1);
-        assertEdgeCountOfVertex(roleType, Schema.EdgeLabel.ISA, 0, 1);
-        assertEdgeCountOfVertex(cast, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(type, Schema.EdgeLabel.SUB, 0, 1);
+        assertEdgeCountOfVertex(relationType, Schema.EdgeLabel.SUB, 0, 1);
+        assertEdgeCountOfVertex(roleType, Schema.EdgeLabel.SUB, 0, 1);
+        assertEdgeCountOfVertex(cast, Schema.EdgeLabel.SUB, 0, 1);
         assertEdgeCountOfVertex(cast, Schema.EdgeLabel.HAS_ROLE, 0, 2);
 
-        assertEdgeCountOfVertex(feature, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(feature, Schema.EdgeLabel.SUB, 0, 1);
         assertEdgeCountOfVertex(feature, Schema.EdgeLabel.CASTING, 0, 0);
 
-        assertEdgeCountOfVertex(actor, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(actor, Schema.EdgeLabel.SUB, 0, 1);
         assertEdgeCountOfVertex(actor, Schema.EdgeLabel.CASTING, 0, 0);
 
-        assertEdgeCountOfVertex(person, Schema.EdgeLabel.ISA, 1, 1);
-        assertEdgeCountOfVertex(movie, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(person, Schema.EdgeLabel.SUB, 0, 1);
+        assertEdgeCountOfVertex(movie, Schema.EdgeLabel.SUB, 0, 1);
         assertEdgeCountOfVertex(crime, Schema.EdgeLabel.ISA, 0, 1);
-        assertEdgeCountOfVertex(genre, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(genre, Schema.EdgeLabel.SUB, 0, 1);
 
         assertEdgeCountOfVertex(pacino, Schema.EdgeLabel.ISA, 0, 1);
         assertEdgeCountOfVertex(pacino, Schema.EdgeLabel.ROLE_PLAYER, 1, 0);
 
-        assertEdgeCountOfVertex(movieOfGenre, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(movieOfGenre, Schema.EdgeLabel.SUB, 0, 1);
         assertEdgeCountOfVertex(movieOfGenre, Schema.EdgeLabel.ROLE_PLAYER, 0, 0);
 
-        assertEdgeCountOfVertex(movieGenre, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(movieGenre, Schema.EdgeLabel.SUB, 0, 1);
         assertEdgeCountOfVertex(movieGenre, Schema.EdgeLabel.ROLE_PLAYER, 0, 0);
 
-        assertEdgeCountOfVertex(movieHasGenre, Schema.EdgeLabel.ISA, 1, 1);
+        assertEdgeCountOfVertex(movieHasGenre, Schema.EdgeLabel.SUB, 0, 1);
         assertEdgeCountOfVertex(movieHasGenre, Schema.EdgeLabel.HAS_ROLE, 0, 2);
 
         assertEdgeCountOfVertex(godfather, Schema.EdgeLabel.ISA, 0, 1);
@@ -610,7 +610,7 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         EntityType type1 = graknGraph.putEntityType("Concept Type ");
         EntityType type2 = graknGraph.putEntityType("Concept Type 1");
 
-        List<Map<String, Concept>> results = graknGraph.graql().match(var("x").isa(entityType)).execute();
+        List<Map<String, Concept>> results = graknGraph.graql().match(var("x").sub(entityType)).execute();
 
         boolean found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type1)));
         assertTrue(found);
@@ -631,8 +631,8 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         //Check nothing is revealed when returning result sets
         assertEquals(0, type.playsRoles().size());
         assertEquals(0, resourceType.playsRoles().size());
-        assertEquals(1, graknGraph.getMetaRelationType().instances().size());
-        assertEquals(3, graknGraph.getMetaRoleType().instances().size());
+        assertEquals(2, graknGraph.getMetaRelationType().subTypes().size());
+        assertEquals(4, graknGraph.getMetaRoleType().subTypes().size());
 
         //Check things are still returned when explicitly asking for them
         assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
@@ -646,8 +646,8 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         //Now check the result sets again
         assertEquals(1, type.playsRoles().size());
         assertEquals(1, resourceType.playsRoles().size());
-        assertEquals(2, graknGraph.getMetaRelationType().instances().size());
-        assertEquals(5, graknGraph.getMetaRoleType().instances().size());
+        assertEquals(3, graknGraph.getMetaRelationType().subTypes().size());
+        assertEquals(6, graknGraph.getMetaRoleType().subTypes().size());
     }
 
 }

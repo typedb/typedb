@@ -1,6 +1,10 @@
 package ai.grakn;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -36,35 +40,35 @@ public interface GraknAdmin {
      *
      * @return The meta relation type -> relation-type.
      */
-    Type getMetaRelationType();
+    RelationType getMetaRelationType();
 
     /**
      * Get the root of all the Role Types.
      *
      * @return The meta role type -> role-type.
      */
-    Type getMetaRoleType();
+    RoleType getMetaRoleType();
 
     /**
      * Get the root of all the Resource Types.
      *
      * @return The meta resource type -> resource-type.
      */
-    Type getMetaResourceType();
+    ResourceType getMetaResourceType();
 
     /**
      * Get the root of all the Entity Types.
      *
      * @return The meta entity type -> entity-type.
      */
-    Type getMetaEntityType();
+    EntityType getMetaEntityType();
 
     /**
      * Get the root of all Rule Types;
      *
      * @return The meta rule type -> rule-type.
      */
-    Type getMetaRuleType();
+    RuleType getMetaRuleType();
 
     /**
      * Get the root of all inference rules.

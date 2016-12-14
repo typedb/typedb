@@ -85,7 +85,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
             type.subTypes().forEach(subtype -> this.statisticsResourceTypeNames.add(subtype.getName()));
         }
 
-        graph.admin().getMetaResourceType().instances().forEach(type ->
+        ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
+        metaResourceType.instances().forEach(type ->
                 resourceTypesDataTypeMap.put(type.asType().getName(), type.asResourceType().getDataType().getName()));
     }
 

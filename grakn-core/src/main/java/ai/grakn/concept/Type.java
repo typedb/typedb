@@ -62,7 +62,8 @@ public interface Type extends Concept {
      */
     RelationType hasResource(ResourceType resourceType);
 
-    //------------------------------------- Accessors ----------------------------------
+    //------------------------------------- Accessors ---------------------------------
+
     /**
      * Returns the name of this Type.
      *

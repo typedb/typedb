@@ -65,18 +65,18 @@ public class ConceptTest extends GraphTestBase{
     @Test(expected=MoreThanOneEdgeException.class)
     public void testGetEdgeOutgoingOfType(){
         ConceptImpl<?, ?> concept = (ConceptImpl<?, ?>) graknGraph.putEntityType("Thing");
-        assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
+        assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
 
         TypeImpl type1 = (TypeImpl) graknGraph.putEntityType("Type 1");
         TypeImpl type2 = (TypeImpl) graknGraph.putEntityType("Type 2");
         TypeImpl type3 = (TypeImpl) graknGraph.putEntityType("Type 3");
 
-        assertNotNull(type1.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
+        assertNotNull(type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
 
         Vertex vertexType1 = graknGraph.getTinkerPopGraph().traversal().V(type1.getBaseIdentifier()).next();
         Vertex vertexType3 = graknGraph.getTinkerPopGraph().traversal().V(type3.getBaseIdentifier()).next();
-        vertexType1.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexType3);
-        type1.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA);
+        vertexType1.addEdge(Schema.EdgeLabel.SUB.getLabel(), vertexType3);
+        type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB);
     }
 
     @Test

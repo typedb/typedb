@@ -19,14 +19,14 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,16 +36,10 @@ import java.util.regex.Pattern;
  * @param <D> The data tyoe of this resource type.
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
-
-    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
-    }
-
-    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph, DataType<D> dataType, boolean isUnique) {
-        super(v, type, graknGraph);
-
-        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
-        setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity());
+    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<ResourceType<D>> type, Optional<DataType<D>> dataType, Optional<Boolean> isUnique) {
+        super(graknGraph, v, type, Optional.empty());
+        dataType.ifPresent(d -> setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, d, getDataType(), DataType::getName));
+        isUnique.ifPresent(u -> setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, u, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity()));
     }
 
     /**
