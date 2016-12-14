@@ -17,45 +17,45 @@
  */
 package ai.grakn.migration.export;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.migration.base.io.MigrationCLI;
-import org.apache.commons.cli.Options;
+
+import static ai.grakn.migration.base.io.MigrationCLI.die;
+import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
+import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
 
 /**
- * Export data from Grakn. If no file is provided, it will dump graph content to standard out.
+ * Export data from a Grakn graph to Graql statements - prints to System.out
+ * @author alexandraorth
  */
 public class Main {
 
-    private static Options options = new Options();
-    static {
-        options.addOption("ontology", false, "export ontology");
-        options.addOption("data", false, "export data");
-    }
-
     public static void main(String[] args){
-        MigrationCLI.create(args, options).ifPresent(Main::runExport);
+        MigrationCLI.create(new GraphWriterOptions(args)).ifPresent(Main::runExport);
     }
 
-    public static void runExport(MigrationCLI cli){
-        if(!cli.hasOption("ontology") && !cli.hasOption("data")) {
-            cli.writeToSout("Missing arguments -ontology and/or -data");
-            cli.die("");
+    public static void runExport(GraphWriterOptions options) {
+        if(!options.exportOntology() && !options.exportData()) {
+            writeToSout("Missing arguments -ontology and/or -data");
+            die("");
         }
 
-        cli.writeToSout("Writing graph " + cli.getKeyspace() + " using Grakn Engine " +
-                cli.getEngineURI() + " to System.out");
+        writeToSout("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
+                options.getUri() + " to System.out");
 
-        GraknGraph graph = cli.getGraph();
-        GraphWriter graphWriter = new GraphWriter(graph);
+        try(GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph()) {
+            GraphWriter graphWriter = new GraphWriter(graph);
 
-        if(cli.hasOption("ontology")){
-            cli.writeToSout(graphWriter.dumpOntology());
+            if (options.exportOntology()) {
+                writeToSout(graphWriter.dumpOntology());
+            }
+
+            if (options.exportData()) {
+                writeToSout(graphWriter.dumpData());
+            }
         }
 
-        if(cli.hasOption("data")){
-            cli.writeToSout(graphWriter.dumpData());
-        }
-
-        cli.initiateShutdown();
+        initiateShutdown();
     }
 }

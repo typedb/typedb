@@ -22,19 +22,11 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
-import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
-import ai.grakn.engine.loader.client.LoaderClient;
 import com.google.common.io.Files;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.BufferedWriter;
@@ -43,7 +35,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -54,54 +45,33 @@ import static java.util.stream.Collectors.joining;
 public class MigrationCLI {
 
     private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn.sh start'?";
-
     private static final ConfigProperties properties = ConfigProperties.getInstance();
-    private Options defaultOptions = new Options();
-    {
-        defaultOptions.addOption("v", "verbose", false, "Print counts of migrated data.");
-        defaultOptions.addOption("h", "help", false, "Print usage message.");
-        defaultOptions.addOption("k", "keyspace", true, "Grakn graph.");
-        defaultOptions.addOption("u", "uri", true, "Location of Grakn Engine.");
-        defaultOptions.addOption("n", "no", false, "Write to standard out.");
-    }
 
-    private CommandLine cmd;
-
-    private MigrationCLI(String[] args, Options options){
-        addOptions(options);
-        CommandLineParser parser = new DefaultParser();
-
+    public static <T extends MigrationOptions> Optional<T> create(T options){
         try {
-            cmd = parser.parse(defaultOptions, args);
-        } catch (ParseException e) {
-            die(e.getMessage());
-        }
+            if (options.isHelp()) {
+                printHelpMessage(options);
+            }
 
-        if (cmd.hasOption("h")) {
-            printHelpMessage();
-        }
+            if(options.getNumberOptions() == 0){
+                printHelpMessage(options);
+                throw new IllegalArgumentException("Helping");
+            } else if(options.getNumberOptions() == 1 && options.isHelp()){
+                throw new IllegalArgumentException("Helping");
+            }
 
-        if(cmd.getOptions().length == 0){
-            printHelpMessage();
-            throw new IllegalArgumentException("Helping");
-        } else if(cmd.getOptions().length == 1 && cmd.hasOption("h")){
-            throw new IllegalArgumentException("Helping");
-        }
+            if(!GraknEngineServer.isRunning()){
+                System.out.println(COULD_NOT_CONNECT);
+            }
 
-        if(!GraknEngineServer.isRunning()){
-            System.out.println(COULD_NOT_CONNECT);
-        }
-    }
-
-    public static Optional<MigrationCLI> create(String[] args, Options options){
-        try {
-            return Optional.of(new MigrationCLI(args, options));
-        } catch (IllegalArgumentException e){
+            //noinspection unchecked
+            return Optional.of(options);
+        } catch (Throwable e){
             return Optional.empty();
         }
     }
 
-    public void writeToSout(Stream<InsertQuery> queries){
+    public static void writeToSout(Stream<InsertQuery> queries){
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
 
         queries.map(InsertQuery::toString).forEach((str) -> {
@@ -119,7 +89,7 @@ public class MigrationCLI {
         }
     }
 
-    public void writeToSout(String string){
+    public static void writeToSout(String string){
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
         try{
             writer.write(string);
@@ -129,20 +99,20 @@ public class MigrationCLI {
         }
     }
 
-    public void printInitMessage(String dataToMigrate){
+    public static void printInitMessage(MigrationOptions options, String dataToMigrate){
         System.out.println("Migrating data " + dataToMigrate +
-                " using Grakn Engine " + getEngineURI() +
-                " into graph " + getKeyspace());
+                " using Grakn Engine " + options.getUri() +
+                " into graph " + options.getKeyspace());
         System.out.println("See the Grakn engine logs for more detail about loading status and any resulting stacktraces: " + properties.getLogFilePath());
     }
 
-    public void printWholeCompletionMessage(){
+    public static void printWholeCompletionMessage(MigrationOptions options){
         System.out.println("Migration complete.");
 
-        if(hasOption("v")) {
+        if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknGraph graph = getGraph();
+            GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph();
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();
@@ -165,33 +135,13 @@ public class MigrationCLI {
         }
     }
 
-    public void initiateShutdown(){
+    public static void initiateShutdown(){
         System.out.println("Initiating shutdown...");
         InMemoryTaskManager.getInstance().shutdown();
         System.out.println("Completed shutdown...");
     }
 
-    public String getEngineURI(){
-        return cmd.getOptionValue("u", Grakn.DEFAULT_URI);
-    }
-
-    public String getKeyspace(){
-        return cmd.getOptionValue("k", properties.getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY));
-    }
-
-    public String getOption(String opt){
-        return cmd.getOptionValue(opt);
-    }
-
-    public String getRequiredOption(String opt, String errorMessage){
-        return hasOption(opt) ? getOption(opt) : die(errorMessage);
-    }
-
-    public boolean hasOption(String opt){
-        return cmd.hasOption(opt);
-    }
-
-    public String fileAsString(File file){
+    public static String fileAsString(File file){
         try {
             return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
         } catch (IOException e) {
@@ -200,36 +150,21 @@ public class MigrationCLI {
         }
     }
 
-    public Loader getLoader(){
-        return getEngineURI().equals(Grakn.DEFAULT_URI)
-                ? new LoaderImpl(getKeyspace())
-                : new LoaderClient(getKeyspace(), Collections.singleton(getEngineURI()));
-    }
-
-    public GraknGraph getGraph(){
-        return Grakn.factory(getEngineURI(), getKeyspace()).getGraph();
-    }
-
-    public void addOptions(Options options) {
-        options.getOptions().forEach(defaultOptions::addOption);
-    }
-
-    public String die(Throwable throwable){
+    public static String die(Throwable throwable){
         return die(ExceptionUtils.getFullStackTrace(throwable));
     }
 
-    public String die(String errorMsg) {
-        printHelpMessage();
+    public static String die(String errorMsg) {
         throw new RuntimeException(errorMsg);
     }
 
-    private void printHelpMessage(){
+    public static void printHelpMessage(MigrationOptions options){
         HelpFormatter helpFormatter = new HelpFormatter();
         PrintWriter printWriter = new PrintWriter(System.out);
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "migration.sh", null, defaultOptions, leftPadding, descPadding, null);
+        helpFormatter.printHelp(printWriter, width, "migration.sh", null, options.getOptions(), leftPadding, descPadding, null);
         printWriter.flush();
     }
 }

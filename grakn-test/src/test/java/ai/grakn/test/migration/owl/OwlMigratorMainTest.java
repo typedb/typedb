@@ -44,7 +44,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     @Test
     public void owlMainNoFileSpecifiedTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Please specify owl file with the -i option.");
+        exception.expectMessage("OWL file missing (-i)");
         run("owl", "-keyspace", graph.getKeyspace());
     }
 

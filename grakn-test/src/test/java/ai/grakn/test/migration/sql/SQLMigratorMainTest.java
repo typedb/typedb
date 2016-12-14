@@ -51,31 +51,24 @@ public class SQLMigratorMainTest extends SQLMigratorTestBase {
     }
 
     @Test
-    public void sqlMainNoDriverTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("No driver specified (-driver)");
-        run("sql", "-pass", PASS);
-    }
-
-    @Test
     public void sqlMainNoUserTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No username specified (-user)");
-        run("sql", "-driver", DRIVER, "-location", URL);
+        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
     }
 
     @Test
     public void sqlMainNoPassTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No password specified (-pass)");
-        run("sql", "-driver", DRIVER, "-location", URL, "-user", USER);
+        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query );
     }
 
     @Test
     public void sqlMainNoURLTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No db specified (-location)");
-        run("sql", "-driver", DRIVER);
+        run("sql", "-driver", DRIVER, "-q", query, "-t", templateFile);
     }
 
     @Test

@@ -72,6 +72,11 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
+//    @Test
+//    public void csvMainMigrateFromProperties(){
+//        runAndAssertDataCorrect("-config", configurationFile);
+//    }
+
     @Test
     public void csvMainNoArgsTest(){
         run();
@@ -92,7 +97,7 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void csvMainThrowableTest(){
-        exception.expect(NumberFormatException.class);
+        exception.expect(RuntimeException.class);
         run("-input", dataFile, "-template", templateFile, "-batch", "hello");
     }
 

@@ -18,68 +18,58 @@
 
 package ai.grakn.migration.sql;
 
-import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
-import org.apache.commons.cli.Options;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
+import static ai.grakn.migration.base.io.MigrationCLI.die;
+import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
+import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
+import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
+import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
+import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
+import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
+
 /**
  * Main program to migrate an SQL database to a Grakn graph.
  * Expected arguments include the JDBC driver information and template.
+ * @author alexandraorth
  */
 public class Main {
 
-    private static Options options = new Options();
-    static {
-        options.addOption("driver", true, "JDBC driver");
-        options.addOption("location", true, "JDBC url (location of DB)");
-        options.addOption("user", true, "JDBC username");
-        options.addOption("pass", true, "JDBC password");
-        options.addOption("q", "query", true, "SQL Query");
-        options.addOption("t", "template", true, "template for the given SQL query");
-    }
-
     public static void main(String[] args){
-        MigrationCLI.create(args, options).ifPresent(Main::runSQL);
+        MigrationCLI.create(new SQLMigrationOptions(args)).ifPresent(Main::runSQL);
     }
 
-    public static void runSQL(MigrationCLI cli){
-        String jdbcDriver = cli.getRequiredOption("driver", "No driver specified (-driver)");
-        String jdbcDBUrl = cli.getRequiredOption("location", "No db specified (-location)");
-        String jdbcUser = cli.getRequiredOption("user", "No username specified (-user)");
-        String jdbcPass = cli.getRequiredOption("pass", "No password specified (-pass)");
-        String sqlQuery = cli.getRequiredOption("query", "No SQL query specified (-query)");
-        String sqlTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
-        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : AbstractMigrator.BATCH_SIZE;
-
-        File sqlTemplate = new File(sqlTemplateName);
+    public static void runSQL(SQLMigrationOptions options) {
+        File sqlTemplate = new File(options.getTemplate());
 
         if(!sqlTemplate.exists()){
-            cli.die("Cannot find file: " + sqlTemplateName);
+            die("Cannot find file: " + options.getTemplate());
         }
 
-        cli.printInitMessage(jdbcDBUrl + " using " + sqlQuery);
+        printInitMessage(options, options.getLocation() + " using " + options.getQuery());
 
-        String template = cli.fileAsString(sqlTemplate);
-        try(Connection connection = DriverManager.getConnection(jdbcDBUrl, jdbcUser, jdbcPass)) {
+        String template = fileAsString(sqlTemplate);
+        try(Connection connection =
+                    DriverManager.getConnection(options.getLocation(), options.getUsername(), options.getPassword())) {
 
-            SQLMigrator sqlMigrator = new SQLMigrator(sqlQuery, template, connection);
+            SQLMigrator sqlMigrator = new SQLMigrator(options.getQuery(), template, connection);
 
-            if(cli.hasOption("n")){
-                cli.writeToSout(sqlMigrator.migrate());
+            if(options.isNo()){
+                writeToSout(sqlMigrator.migrate());
             } else {
-                MigrationLoader.load(cli.getLoader(), batchSize, sqlMigrator);
-                cli.printWholeCompletionMessage();
+                MigrationLoader.load(getLoader(options), options.getBatch(), sqlMigrator);
+                printWholeCompletionMessage(options);
             }
 
         } catch (Throwable throwable){
-            cli.die(throwable);
+            die(throwable);
         }
 
-        cli.initiateShutdown();
+        initiateShutdown();
     }
 }

@@ -17,12 +17,17 @@
  */
 package ai.grakn.migration.owl;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.migration.base.io.MigrationCLI;
-import ai.grakn.migration.base.io.MigrationCLI;
-import org.apache.commons.cli.Options;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;
+
+import static ai.grakn.migration.base.io.MigrationCLI.die;
+import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
+import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
+import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
 
 /**
  * <p>
@@ -34,46 +39,34 @@ import java.io.File;
  * inside it.
  * </p>
  * 
- * @author borislav
+ * @author alexandraorth
  *
  */
 public class Main {
 
-    private static Options options = new Options();
-    static {
-        options.addOption("i", "input", true, "input owl file");
-    }
-
     public static void main(String[] args) {
-        MigrationCLI.create(args, options).ifPresent(Main::runOwl);
+        MigrationCLI.create(new OwlMigrationOptions(args)).ifPresent(Main::runOwl);
     }
 
-    public static void runOwl(MigrationCLI cli){
-
-        String owlFilename = cli.getRequiredOption("input", "Please specify owl file with the -i option.");
-
-        File owlfile = new File(owlFilename);
+    public static void runOwl(OwlMigrationOptions options){
+        File owlfile = new File(options.getInput());
         if (!owlfile.exists())
-            cli.die("Cannot find file: " + owlFilename);
+            die("Cannot find file: " + options.getInput());
 
-        cli.printInitMessage(owlfile.getPath());
+        printInitMessage(options, owlfile.getPath());
 
         OWLMigrator migrator = new OWLMigrator();
-        try {
-            migrator.graph(cli.getGraph())
+        try(GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph()) {
+            migrator.graph(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
 
-            cli.printWholeCompletionMessage();
+            printWholeCompletionMessage(options);
         }
         catch (Throwable t) {
-            cli.die(t);
-        }
-        finally {
-            if (migrator.graph() != null)
-                migrator.graph().close();
+            die(t);
         }
 
-        cli.initiateShutdown();
+        initiateShutdown();
     }
 }

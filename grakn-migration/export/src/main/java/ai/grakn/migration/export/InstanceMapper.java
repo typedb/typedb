@@ -34,6 +34,7 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Map Grakn Core instance to Graql representation
+ * @author alexandraorth
  */
 public class InstanceMapper {
 

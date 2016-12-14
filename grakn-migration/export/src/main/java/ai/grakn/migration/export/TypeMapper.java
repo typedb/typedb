@@ -29,6 +29,7 @@ import static ai.grakn.graql.Graql.var;
 
 /**
  * Map Grakn Core type to equivalent Graql representation
+ * @author alexandraorth
  */
 public class TypeMapper {
 
