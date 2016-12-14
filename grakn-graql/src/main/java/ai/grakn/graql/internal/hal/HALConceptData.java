@@ -206,7 +206,7 @@ class HALConceptData {
         }
     }
 
-    // ================================ resources as HAL state properties ========================= //
+    // ================================ resources as HAL taskstorage properties ========================= //
 
     private void generateResources(Representation resource, Collection<Resource<?>> resourcesCollection) {
         resourcesCollection.forEach(currentResource -> {

@@ -21,6 +21,7 @@ package ai.grakn.test.migration.csv;
 import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import ai.grakn.migration.csv.Main;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class CSVMigratorMainTest extends AbstractGraknMigratorTest {

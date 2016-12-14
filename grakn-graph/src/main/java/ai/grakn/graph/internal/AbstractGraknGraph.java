@@ -630,7 +630,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
     @Override
-    public void commit() throws GraknValidationException {
+    public final void commit() throws GraknValidationException {
         validateGraph();
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
