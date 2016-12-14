@@ -37,7 +37,7 @@ scheduled-task has-resource status,
 keyspace isa entity-type;
 keyspace-name isa resource-type, datatype string;
 keyspace has-resource keyspace-name;
-keyspace key keyspace-name;
+keyspace has-key keyspace-name;
 
 # Users
 user isa entity-type;
@@ -47,7 +47,7 @@ user-first-name isa resource-type, datatype string;
 user-last-name isa resource-type, datatype string;
 user-email isa resource-type, datatype string;
 user-is-admin isa resource-type, datatype boolean;
-user key user-name;
+user has-key user-name;
 
 user has-resource user-password,
 	 has-resource user-first-name,

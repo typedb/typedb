@@ -70,7 +70,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public String getName() {
-        return required ? "key" : "has-resource";
+        return required ? "has-key" : "has-resource";
     }
 
     @Override
