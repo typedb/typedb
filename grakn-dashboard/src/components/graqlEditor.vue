@@ -26,15 +26,17 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <textarea ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
                     </div>
                     <div class="form-buttons col-xs-4">
-                        <button @click="loadFavQueries" class="btn btn-default console-button"><i class="pe-7s-search"></i>
-                  </button>
+                      <!-- To be released in 0.9 -->
+                        <!-- <button @click="loadFavQueries" class="btn btn-default console-button"><i class="pe-7s-search"></i>
+                  </button> -->
                         <button @click="getMetaTypes" class="btn btn-info console-button">Types<i class="types-button" v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
                     </button>
                         <button @click="clearGraph" class="btn btn-default console-button">Clear<i class="pe-7s-refresh"></i>
                     </button>
                         <button @click="runQuery" class="btn btn-default search-button console-button">Submit<i
                               class="pe-7s-angle-right-circle"></i></button>
-                        <add-current-query :code-mirror="codeMirror"></add-current-query>
+                              <!-- To be released in 0.9 -->
+                        <!-- <add-current-query :code-mirror="codeMirror"></add-current-query> -->
                     </div>
                 </div>
             </div>
