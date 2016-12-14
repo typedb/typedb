@@ -520,8 +520,8 @@ public class TypeTest extends GraphTestBase{
         EntityType product = graknGraph.putEntityType("product");
         EntityTypeImpl video = (EntityTypeImpl) graknGraph.putEntityType("video");
 
-        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
-        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
+        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
+        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
 
         video.superType(product);
 
