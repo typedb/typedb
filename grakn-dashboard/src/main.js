@@ -22,18 +22,12 @@ import User from './js/User.js'
 import EngineClient from './js/EngineClient.js';
 import VeeValidate from 'vee-validate';
 
-
-
 var VueRouter = require('vue-router')
-
-// Vue.config.devtools = false;
 
 Vue.use(VueRouter);
 Vue.use(VeeValidate);
 
-
 // Components
-const graknapp = require('./components/main.vue');
 const visualiser = require('./components/visualiser.vue')
 const console = require('./components/console.vue')
 const config = require('./components/config.vue')
@@ -42,6 +36,8 @@ const sidebar = require('./components/sidebar.vue')
 const keyspacesmodal = require('./components/keyspacesModal.vue')
 const signupmodal = require('./components/signupModal.vue')
 
+
+// ---------------------- Vue setup ---------------------//
 
 const routes = [{
     path: '/',
@@ -67,6 +63,8 @@ const router = new VueRouter({
 
 var authNeeded = undefined;
 
+
+//Before loading every page we need to check if Authentication is enabled, if yes the user must be logged in.
 router.beforeEach((to, from, next) => {
     if (authNeeded === undefined && !User.isAuthenticated()) {
         EngineClient.request({
