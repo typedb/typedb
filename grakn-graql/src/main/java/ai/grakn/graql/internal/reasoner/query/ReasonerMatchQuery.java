@@ -24,6 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.Sets;
 import java.util.Iterator;
 import java.util.Map;
@@ -56,15 +57,23 @@ public class ReasonerMatchQuery extends Query{
             return this.getMatchQuery().stream();
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-        QueryAnswers answers = new QueryAnswers(atomicQuery.resolve(materialise).collect(Collectors.toSet()));
+        //QueryAnswers answers = new QueryAnswers(atomicQuery.resolve(materialise).collect(Collectors.toSet()));
+        QueryAnswerStream answerStream = new QueryAnswerStream(atomicQuery.resolve(materialise));
         while(atIt.hasNext()){
             atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-            QueryAnswers subAnswers = new QueryAnswers(atomicQuery.resolve(materialise).collect(Collectors.toSet()));
-            answers = answers.join(subAnswers);
+            //QueryAnswers subAnswers = new QueryAnswers(atomicQuery.resolve(materialise).collect(Collectors.toSet()));
+            //answers = answers.join(subAnswers);
+            QueryAnswerStream subAnswerStream = new QueryAnswerStream(atomicQuery.resolve(materialise));
+            answerStream= answerStream.join(subAnswerStream);
         }
+        /*
         return answers
                 .filterNonEquals(this)
                 .filterVars(this.getSelectedNames())
                 .stream();
+                */
+        return answerStream
+                .filterNonEquals(this)
+                .filterVars(this.getSelectedNames());
     }
 }

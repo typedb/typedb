@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,7 +139,8 @@ public class Reasoner {
                 .getPatterns()
                 .forEach( conj -> {
                     Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
-                    answers.addAll(conjunctiveQuery.resolve(materialise).collect(Collectors.toSet()));
+                    Stream<Map<String, Concept>> cqStream = conjunctiveQuery.resolve(materialise);
+                    answers.addAll(cqStream.collect(Collectors.toSet()));
                 });
         if(materialise) commitGraph(graph);
         return answers;

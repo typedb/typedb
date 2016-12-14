@@ -179,6 +179,7 @@ public class AtomicMatchQuery extends AtomicQuery{
                         .filterVars(this.getSelectedNames())
                         .filterIncomplete(this.getSelectedNames());
                 this.getAnswers().addAll(filteredAnswers);
+                this.newAnswers.addAll(filteredAnswers);
                 cache.record(this);
             }
         }
