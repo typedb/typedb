@@ -1,32 +1,32 @@
 insert
 #string, long, double, boolean
 
-"entity" isa entity-type, is-abstract
+"entity2" sub entity, is-abstract
     has-resource name;
-"place" sub entity;
-"organization" sub entity;
-"tag" sub entity;
-"category" sub entity;
-"forum" sub entity;
+"place" sub entity2;
+"organization" sub entity2;
+"tag" sub entity2;
+"category" sub entity2;
+"forum" sub entity2;
 
 # generic resources
 
 # a generic relationship for resources of entity
-"entity-resource-owner" isa role-type;
-"entity-resource-value" isa role-type;
-"entity-resource" isa relation-type, has-role entity-resource-value, has-role entity-resource-owner;
-entity plays-role entity-resource-owner;
+"entity-resource-owner" sub role;
+"entity-resource-value" sub role;
+"entity-resource" sub relation, has-role entity-resource-value, has-role entity-resource-owner;
+entity2 plays-role entity-resource-owner;
 
 # a generic relationship for resources of relation
-"relation" isa relation-type, is-abstract;
-"relation-resource-owner" isa role-type;
-"relation-resource-value" isa role-type;
-"relation-resource" isa relation-type, has-role relation-resource-value, has-role relation-resource-owner;
-relation plays-role relation-resource-owner;
+relation2 sub relation, is-abstract;
+"relation-resource-owner" sub role;
+"relation-resource-value" sub role;
+"relation-resource" sub relation, has-role relation-resource-value, has-role relation-resource-owner;
+relation2 plays-role relation-resource-owner;
 
 "subject-location" sub location;
-"located-subject" isa role-type;
-"resides" isa relation-type, has-role subject-location, has-role located-subject;
+"located-subject" sub role;
+"resides" sub relation2, has-role subject-location, has-role located-subject;
 
 # place
 "continent" sub place;
@@ -34,11 +34,11 @@ relation plays-role relation-resource-owner;
 "city" sub place;
 
 
-"location" isa role-type, is-abstract;
+"location" sub role, is-abstract;
 
 "member-location" sub location;
 "container-location" sub location;
-"sublocate" isa relation-type, has-role member-location, has-role container-location;
+"sublocate" sub relation2, has-role member-location, has-role container-location;
 place plays-role member-location, plays-role container-location, plays-role subject-location;
 
 # organization
@@ -47,7 +47,7 @@ place plays-role member-location, plays-role container-location, plays-role subj
 organization plays-role located-subject;
 
 # person
-"person" isa entity-type;
+"person" sub entity2;
 
 person
     has-resource name,
@@ -58,68 +58,68 @@ person
     has-resource email,
     has-resource age;
 
-"name" isa resource-type, datatype string;
-"firstname" isa resource-type, datatype string;
-"lastname" isa resource-type, datatype string;
-"gender" isa resource-type, datatype string;
-"birthday" isa resource-type, datatype string;
-"email" isa resource-type, datatype string;
-"age" isa resource-type, datatype long;
+"name" sub resource, datatype string;
+"firstname" sub resource, datatype string;
+"lastname" sub resource, datatype string;
+"gender" sub resource, datatype string;
+"birthday" sub resource, datatype string;
+"email" sub resource, datatype string;
+"age" sub resource, datatype long;
 
 person plays-role located-subject;
 
-"acquaintance" isa role-type, is-abstract;
+"acquaintance" sub role, is-abstract;
 "acquaintance1" sub acquaintance;
 "acquaintance2" sub acquaintance;
-"knows" sub relation, has-role acquaintance1, has-role acquaintance2;
+"knows" sub relation2, has-role acquaintance1, has-role acquaintance2;
 person plays-role acquaintance1, plays-role acquaintance2;
 
-"student" isa role-type;
-"enrolled-university" isa role-type;
-"attends" isa relation-type, has-role student, has-role enrolled-university;
+"student" sub role;
+"enrolled-university" sub role;
+"attends" sub relation2, has-role student, has-role enrolled-university;
 person plays-role student;
 university plays-role enrolled-university;
 
-"employee" isa role-type;
-"employer" isa role-type;
-"employment" isa relation-type, has-role employee, has-role employer;
+"employee" sub role;
+"employer" sub role;
+"employment" sub relation2, has-role employee, has-role employer;
 person plays-role employee;
 company plays-role employer;
 
-"class-year" isa resource-type, datatype string;
-"attends-resource-value" isa role-type;
-"attends-resource-owner" isa role-type;
-"attends-resource" isa relation-type, has-role attends-resource-value, has-role attends-resource-owner;
+"class-year" sub resource, datatype string;
+"attends-resource-value" sub role;
+"attends-resource-owner" sub role;
+"attends-resource" sub relation2, has-role attends-resource-value, has-role attends-resource-owner;
 attends plays-role attends-resource-owner;
 class-year plays-role attends-resource-value;
 
-"employment-startdate" isa resource-type, datatype string;
-"employment-resource-value" isa role-type;
-"employment-resource-owner" isa role-type;
-"employment-resource" isa relation-type, has-role employment-resource-value, has-role employment-resource-owner;
+"employment-startdate" sub resource, datatype string;
+"employment-resource-value" sub role;
+"employment-resource-owner" sub role;
+"employment-resource" sub relation2, has-role employment-resource-value, has-role employment-resource-owner;
 employment plays-role employment-resource-owner;
 employment-startdate plays-role employment-resource-value;
 
 # message
-"message" isa entity-type, is-abstract;
+"message" sub entity2, is-abstract;
 
-"message-resource-owner" isa role-type;
-"message-resource-value" isa role-type;
-"message-resource" isa relation-type, has-role message-resource-value, has-role message-resource-owner;
+"message-resource-owner" sub role;
+"message-resource-value" sub role;
+"message-resource" sub relation2, has-role message-resource-value, has-role message-resource-owner;
 message plays-role message-resource-owner;
 
-"content" isa resource-type, datatype string, plays-role message-resource-value;
-"length" isa resource-type, datatype string, plays-role message-resource-value;
+"content" sub resource, datatype string, plays-role message-resource-value;
+"length" sub resource, datatype string, plays-role message-resource-value;
 
-"liked" isa role-type;
-"liker" isa role-type;
-"likes" sub relation, has-role liked, has-role liker;
+"liked" sub role;
+"liker" sub role;
+"likes" sub relation2, has-role liked, has-role liker;
 message plays-role liked;
 person plays-role liker;
 
-"written" isa role-type;
-"writer" isa role-type;
-"writes" isa relation-type, has-role written, has-role writer;
+"written" sub role;
+"writer" sub role;
+"writes" sub relation2, has-role written, has-role writer;
 message plays-role written;
 person plays-role writer;
 
@@ -127,63 +127,63 @@ message plays-role located-subject;
 
 "comment" sub message;
 
-"reply-owner" isa role-type;
-"reply-content" isa role-type;
-"reply" isa relation-type, has-role reply-content, has-role reply-owner;
+"reply-owner" sub role;
+"reply-content" sub role;
+"reply" sub relation2, has-role reply-content, has-role reply-owner;
 comment plays-role reply-content;
 message plays-role reply-owner;
 
 "post" sub message;
 
-"post-resource-owner" isa role-type;
-"post-resource-value" isa role-type;
-"post-resource" isa relation-type, has-role post-resource-owner, has-role post-resource-value;
+"post-resource-owner" sub role;
+"post-resource-value" sub role;
+"post-resource" sub relation2, has-role post-resource-owner, has-role post-resource-value;
 post plays-role post-resource-owner;
 
-"image-file" isa resource-type, datatype string, plays-role post-resource-value;
+"image-file" sub resource, datatype string, plays-role post-resource-value;
 
 # forum
-"forum-resource-owner" isa role-type;
-"forum-resource-value" isa role-type;
-"forum-resource" isa relation-type, has-role forum-resource-value, has-role forum-resource-owner;
+"forum-resource-owner" sub role;
+"forum-resource-value" sub role;
+"forum-resource" sub relation2, has-role forum-resource-value, has-role forum-resource-owner;
 forum plays-role forum-resource-owner;
 
-"moderator" isa role-type;
-"moderated" isa role-type;
-"moderates" isa relation-type, has-role moderator, has-role moderated;
+"moderator" sub role;
+"moderated" sub role;
+"moderates" sub relation2, has-role moderator, has-role moderated;
 person plays-role moderator;
 forum plays-role moderated;
 
-"forum-member" isa role-type;
-"membered-forum" isa role-type;
-"membership" sub relation, has-role forum-member, has-role membered-forum;
+"forum-member" sub role;
+"membered-forum" sub role;
+"membership" sub relation2, has-role forum-member, has-role membered-forum;
 person plays-role forum-member;
 forum plays-role membered-forum;
 
-"post-container" isa role-type;
-"contained-post" isa role-type;
-"containing" isa relation-type, has-role post-container, has-role contained-post;
+"post-container" sub role;
+"contained-post" sub role;
+"containing" sub relation2, has-role post-container, has-role contained-post;
 post plays-role contained-post;
 forum plays-role post-container;
 
 # tag
-"subject-tag" isa role-type;
-"tagged-subject" isa role-type;
-"tagging" isa relation-type, has-role tagged-subject, has-role subject-tag;
+"subject-tag" sub role;
+"tagged-subject" sub role;
+"tagging" sub relation2, has-role tagged-subject, has-role subject-tag;
 tag plays-role subject-tag;
 forum plays-role tagged-subject;
 message plays-role tagged-subject;
 person plays-role tagged-subject;
 
 # tag class
-"group" isa role-type, is-abstract;
+"group" sub role, is-abstract;
 "subgroup" sub group;
 "supergroup" sub group;
-"subgrouping" isa relation-type, has-role subgroup, has-role supergroup;
+"subgrouping" sub relation2, has-role subgroup, has-role supergroup;
 category plays-role subgroup, plays-role supergroup;
 
-"grouped-tag" isa role-type;
-"tag-group" isa role-type;
-"grouping" isa relation-type, has-role grouped-tag, has-role tag-group;
+"grouped-tag" sub role;
+"tag-group" sub role;
+"grouping" sub relation2, has-role grouped-tag, has-role tag-group;
 tag plays-role grouped-tag;
 category plays-role tag-group;

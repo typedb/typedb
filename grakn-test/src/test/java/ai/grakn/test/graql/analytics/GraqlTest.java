@@ -258,7 +258,7 @@ public class GraqlTest extends AbstractGraphTest {
 
         analyticsCommands.forEach(command -> {
             // insert a node but do not commit it
-            qb.parse("insert thing isa entity-type;").execute();
+            qb.parse("insert thing sub entity;").execute();
             // use analytics
             qb.parse(command).execute();
             // see if the node was commited

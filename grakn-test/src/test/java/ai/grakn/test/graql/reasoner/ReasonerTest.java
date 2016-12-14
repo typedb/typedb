@@ -348,7 +348,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testSub2(){
         GraknGraph lgraph = SNBGraph.getGraph();
-        String queryString = "match $x isa person;$y isa $type;$type sub entity;($x, $y) isa recommendation;";
+        String queryString = "match $x isa person;$y isa $type;$type sub entity2;($x, $y) isa recommendation;";
         String queryString2 = "match $x isa person;$y isa $type;($x, $y) isa recommendation;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().parse(queryString2);
@@ -650,7 +650,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testTypeRegex(){
         GraknGraph lgraph = SNBGraph.getGraph();
-        String queryString = " match $x isa resource-type, regex /name/;";
+        String queryString = " match $x sub resource, regex /name/;";
         Query query = new Query(queryString, lgraph);
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
@@ -660,7 +660,7 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testDataType(){
         GraknGraph lgraph = SNBGraph.getGraph();
-        String queryString = " match $x isa resource-type, datatype string;";
+        String queryString = " match $x sub resource, datatype string;";
         Query query = new Query(queryString, lgraph);
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));

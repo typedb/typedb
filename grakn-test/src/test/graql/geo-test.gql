@@ -4,7 +4,7 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type, is-abstract
+"entity" sub entity, is-abstract
     has-resource name;
 
 "city" sub entity;
@@ -13,18 +13,18 @@ insert
 "continent" sub entity;
 "university" sub entity;
 
-"geo-entity" isa role-type;
-"entity-location" isa role-type;
-"is-located-in" isa relation-type, has-role geo-entity, has-role entity-location;
+"geo-entity" sub role;
+"entity-location" sub role;
+"is-located-in" sub relation, has-role geo-entity, has-role entity-location;
 entity plays-role geo-entity, plays-role entity-location;
 
-"role1" isa role-type;
-"role2" isa role-type;
-"role3" isa role-type;
-"ternary-relation-test" isa relation-type, has-role role1, has-role role2, has-role role3;
+"role1" sub role;
+"role2" sub role;
+"role3" sub role;
+"ternary-relation-test" sub relation, has-role role1, has-role role2, has-role role3;
 entity plays-role role1, plays-role role2, plays-role role3;
 
-"name" isa resource-type, datatype string;
+"name" sub resource, datatype string;
 
 ####################################################
 ##################DATA#############################

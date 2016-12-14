@@ -1,38 +1,38 @@
 insert 
 
-entity isa entity-type, is-abstract;
-product sub entity
+entity2 sub entity, is-abstract;
+product sub entity2
     has-resource name
     has-resource min-age
     has-resource max-age
     has-resource gender;
 
 # product resources
-min-age isa resource-type, datatype long;
-max-age isa resource-type, datatype long;
-gender isa resource-type, datatype string;
+min-age sub resource, datatype long;
+max-age sub resource, datatype long;
+gender sub resource, datatype string;
 
-product-made isa role-type;
-product-origin isa role-type;
-made-in isa relation-type, has-role product-origin, has-role product-made;
+product-made sub role;
+product-origin sub role;
+made-in sub relation, has-role product-origin, has-role product-made;
 product plays-role product-made
     plays-role typed-product;
 
-recommended-product isa role-type;
-recommended-customer isa role-type;
-recommendation isa relation-type, has-role recommended-product, has-role recommended-customer;
+recommended-product sub role;
+recommended-customer sub role;
+recommendation sub relation, has-role recommended-product, has-role recommended-customer;
 product plays-role recommended-product;
 
-person isa entity-type;
+person sub entity2;
 person plays-role recommended-customer;
 
-place sub entity;
+place sub entity2;
 place plays-role product-origin;
 
-typed-product isa role-type;
-product-type isa role-type;
-typing isa relation-type, has-role typed-product, has-role product-type;
-category isa entity-type
+typed-product sub role;
+product-type sub role;
+typing sub relation, has-role typed-product, has-role product-type;
+category sub entity2
     has-resource name
     plays-role product-type
     plays-role typed-product;

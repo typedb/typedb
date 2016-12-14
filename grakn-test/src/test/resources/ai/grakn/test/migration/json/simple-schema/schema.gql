@@ -1,39 +1,39 @@
 
 insert
-  person isa entity-type
+  person sub entity
     plays-role person-with-address
     plays-role person-with-phone;
 
-  address isa entity-type
+  address sub entity
     plays-role address-of-person
     plays-role address-with-street
     has-resource city;
 
-  street-address isa entity-type
+  street-address sub entity
     plays-role street-of-address
     has-resource number
     has-resource street;
 
-  phone-number isa entity-type
+  phone-number sub entity
     plays-role phone-of-person
     has-resource location
     has-resource code;
 
-  code isa resource-type datatype long;
-  location isa resource-type datatype string;
-  number isa resource-type datatype long;
-  street isa resource-type datatype string;
-  city isa resource-type datatype string;
+  code sub resource datatype long;
+  location sub resource datatype string;
+  number sub resource datatype long;
+  street sub resource datatype string;
+  city sub resource datatype string;
 
-  person-with-address isa role-type;
-  address-of-person isa role-type;
-  address-with-street isa role-type;
-  street-of-address isa role-type;
-  person-with-phone isa role-type;
-  phone-of-person isa role-type;
+  person-with-address sub role;
+  address-of-person sub role;
+  address-with-street sub role;
+  street-of-address sub role;
+  person-with-phone sub role;
+  phone-of-person sub role;
 
-  address-has-street isa relation-type has-role street-of-address has-role address-with-street;
-  has-address isa relation-type has-role address-of-person has-role person-with-address;
-  has-phone isa relation-type has-role phone-of-person has-role person-with-phone;
+  address-has-street sub relation has-role street-of-address has-role address-with-street;
+  has-address sub relation has-role address-of-person has-role person-with-address;
+  has-phone sub relation has-role phone-of-person has-role person-with-phone;
 
 

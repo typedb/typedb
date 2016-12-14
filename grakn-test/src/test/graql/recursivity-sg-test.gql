@@ -4,21 +4,21 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type
+"entity" sub entity
     has-resource name;
 "Human" sub entity;
 
-"parent" isa role-type;
-"child" isa role-type;
-"Parent" isa relation-type, has-role parent, has-role child;
+"parent" sub role;
+"child" sub role;
+"Parent" sub relation, has-role parent, has-role child;
 entity plays-role parent, plays-role child;
 
-"SG-role-A" isa role-type;
-"SG-role-B" isa role-type;
-"SameGen" isa relation-type, has-role SG-role-A, has-role SG-role-B;
+"SG-role-A" sub role;
+"SG-role-B" sub role;
+"SameGen" sub relation, has-role SG-role-A, has-role SG-role-B;
 entity plays-role SG-role-A, plays-role SG-role-B;
 
-"name" isa resource-type, datatype string;
+"name" sub resource, datatype string;
 
 ####################################################
 ##################DATA#############################

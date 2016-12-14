@@ -61,8 +61,6 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY;
-import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -191,7 +189,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var("type").playsRole("character-being-played")
         );
 
-        QueryUtil.assertResultsMatch(query, "type", ENTITY.getName(), graph.getResourceType("title"), "character", "person");
+        QueryUtil.assertResultsMatch(query, "type", null, graph.getResourceType("title"), "character", "person");
     }
 
     @Test
@@ -215,7 +213,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testTypeNameQuery() {
         MatchQuery query = qb.match(or(var("x").name("character"), var("x").name("person")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY.getName(), graph.getResourceType("title"),  "character", "person");
+        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"),  "character", "person");
     }
 
     @Test
@@ -365,7 +363,10 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testSubSelf() {
         MatchQuery query = qb.match(name("movie").sub(var("x")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY.getName(), graph.getResourceType("title"),  "movie", "production");
+        QueryUtil.assertResultsMatch(
+                query, "x", null, graph.getResourceType("title"),
+                "movie", "production", "entity", "concept"
+        );
     }
 
     @Test
@@ -417,22 +418,22 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testMatchDataType() {
         MatchQuery query = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE.getName(), graph.getResourceType("title"), "tmdb-vote-average");
+        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"), "tmdb-vote-average");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.LONG));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE.getName(), graph.getResourceType("title"), "tmdb-vote-count", "runtime", "release-date");
+        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"), "tmdb-vote-count", "runtime", "release-date");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.BOOLEAN));
         assertEquals(0, query.stream().count());
 
         query = qb.match(var("x").datatype(ResourceType.DataType.STRING));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE.getName(), graph.getResourceType("title"), "title", "gender", "real-name", "name");
+        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"), "title", "gender", "real-name", "name");
     }
 
     @Test
     public void testSelectRuleTypes() {
-        MatchQuery query = qb.match(var("x").isa(RULE.getName()));
-        QueryUtil.assertResultsMatch(query, "x", RULE.getName(), graph.getResourceType("title"), "a-rule-type", "inference-rule", "constraint-rule");
+        MatchQuery query = qb.match(var("x").sub(RULE.getName()));
+        QueryUtil.assertResultsMatch(query, "x", null, graph.getResourceType("title"), "rule", "a-rule-type", "inference-rule", "constraint-rule");
     }
 
     @Test
@@ -460,16 +461,16 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         rollbackGraph();
 
         qb.insert(
-                name("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),
+                name("ownership").sub("relation").hasRole("owner").hasRole("possession"),
                 name("organization-with-shares").sub("possession"),
-                name("possession").isa("role-type"),
+                name("possession").sub("role"),
 
                 name("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
                 name("shareholder").sub("owner"),
-                name("owner").isa("role-type"),
+                name("owner").sub("role"),
 
-                name("person").isa("entity-type").playsRole("shareholder"),
-                name("company").isa("entity-type").playsRole("organization-with-shares"),
+                name("person").sub("entity").playsRole("shareholder"),
+                name("company").sub("entity").playsRole("organization-with-shares"),
 
                 var("apple").isa("company"),
                 var("bob").isa("person"),
@@ -497,8 +498,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testPlaysRoleSub() {
         qb.insert(
-                name("c").sub(name("b").sub(name("a").isa("entity-type"))),
-                name("f").sub(name("e").sub(name("d").isa("role-type"))),
+                name("c").sub(name("b").sub(name("a").sub("entity"))),
+                name("f").sub(name("e").sub(name("d").sub("role"))),
                 name("b").playsRole("e")
         ).execute();
 
@@ -704,7 +705,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testHideImplicitTypes() {
-        MatchQuery query = qb.match(var("x").isa("type"));
+        MatchQuery query = qb.match(var("x").sub("concept"));
 
         Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
@@ -713,7 +714,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
-        MatchQuery query = qb.match(var("x").isa("type").name("has-title"));
+        MatchQuery query = qb.match(var("x").sub("concept").name("has-title"));
 
         Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
@@ -724,7 +725,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testDontHideImplicitTypesIfImplicitTypesOn() {
         graph.showImplicitConcepts(true);
 
-        MatchQuery query = qb.match(var("x").isa("type"));
+        MatchQuery query = qb.match(var("x").sub("concept"));
 
         Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
@@ -733,14 +734,14 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testHideImplicitTypesTwice() {
-        MatchQuery query = qb.match(var("x").isa("type"));
+        MatchQuery query = qb.match(var("x").sub("concept"));
 
         Set<String> types = query.get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
         assertThat(types, allOf(hasItem("movie"), not(hasItem("has-title"))));
 
         GraknGraph graph2 = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-        Set<String> typesAgain = graph2.graql().match(var("x").isa("type")).get("x").map(Concept::asType).map(Type::getName).collect(toSet());
+        Set<String> typesAgain = graph2.graql().match(var("x").sub("concept")).get("x").map(Concept::asType).map(Type::getName).collect(toSet());
 
         assertEquals(types, typesAgain);
     }

@@ -4,52 +4,52 @@ insert
 ####################ONTOLOGY##########################
 ######################################################
 
-"entity" isa entity-type;
+"entity2" sub entity;
 
-"P1-role-A" isa role-type;
-"P1-role-B" isa role-type;
-"P1" isa relation-type, has-role P1-role-A, has-role P1-role-B;
-entity plays-role P1-role-A, plays-role P1-role-B;
+"P1-role-A" sub role;
+"P1-role-B" sub role;
+"P1" sub relation, has-role P1-role-A, has-role P1-role-B;
+entity2 plays-role P1-role-A, plays-role P1-role-B;
 
-"P2-role-A" isa role-type;
-"P2-role-B" isa role-type;
-"P2" isa relation-type, has-role P2-role-A, has-role P2-role-B;
-entity plays-role P2-role-A, plays-role P2-role-B;
+"P2-role-A" sub role;
+"P2-role-B" sub role;
+"P2" sub relation, has-role P2-role-A, has-role P2-role-B;
+entity2 plays-role P2-role-A, plays-role P2-role-B;
 
-"P-role-A" isa role-type;
-"P-role-B" isa role-type;
-"P" isa relation-type, has-role P-role-A, has-role P-role-B;
-entity plays-role P-role-A, plays-role P-role-B;
+"P-role-A" sub role;
+"P-role-B" sub role;
+"P" sub relation, has-role P-role-A, has-role P-role-B;
+entity2 plays-role P-role-A, plays-role P-role-B;
 
-"Q-role-A" isa role-type;
-"Q-role-B" isa role-type;
-"Q" isa relation-type, has-role Q-role-A, has-role Q-role-B;
-entity plays-role Q-role-A, plays-role Q-role-B;
+"Q-role-A" sub role;
+"Q-role-B" sub role;
+"Q" sub relation, has-role Q-role-A, has-role Q-role-B;
+entity2 plays-role Q-role-A, plays-role Q-role-B;
 
-"B1-role-A" isa role-type;
-"B1-role-B" isa role-type;
-"B1" isa relation-type, has-role B1-role-A, has-role B1-role-B;
-entity plays-role B1-role-A, plays-role B1-role-B;
+"B1-role-A" sub role;
+"B1-role-B" sub role;
+"B1" sub relation, has-role B1-role-A, has-role B1-role-B;
+entity2 plays-role B1-role-A, plays-role B1-role-B;
 
-"B2-role-A" isa role-type;
-"B2-role-B" isa role-type;
-"B2" isa relation-type, has-role B2-role-A, has-role B2-role-B;
-entity plays-role B2-role-A, plays-role B2-role-B;
+"B2-role-A" sub role;
+"B2-role-B" sub role;
+"B2" sub relation, has-role B2-role-A, has-role B2-role-B;
+entity2 plays-role B2-role-A, plays-role B2-role-B;
 
-"B3-role-A" isa role-type;
-"B3-role-B" isa role-type;
-"B3" isa relation-type, has-role B3-role-A, has-role B3-role-B;
-entity plays-role B3-role-A, plays-role B3-role-B;
+"B3-role-A" sub role;
+"B3-role-B" sub role;
+"B3" sub relation, has-role B3-role-A, has-role B3-role-B;
+entity2 plays-role B3-role-A, plays-role B3-role-B;
 
-"B4-role-A" isa role-type;
-"B4-role-B" isa role-type;
-"B4" isa relation-type, has-role B4-role-A, has-role B4-role-B;
-entity plays-role B4-role-A, plays-role B4-role-B;
+"B4-role-A" sub role;
+"B4-role-B" sub role;
+"B4" sub relation, has-role B4-role-A, has-role B4-role-B;
+entity2 plays-role B4-role-A, plays-role B4-role-B;
 
-"B5-role-A" isa role-type;
-"B5-role-B" isa role-type;
-"B5" isa relation-type, has-role B5-role-A, has-role B5-role-B;
-entity plays-role B5-role-A, plays-role B5-role-B;
+"B5-role-A" sub role;
+"B5-role-B" sub role;
+"B5" sub relation, has-role B5-role-A, has-role B5-role-B;
+entity2 plays-role B5-role-A, plays-role B5-role-B;
 
 ##################################################
 ####################RULES##########################

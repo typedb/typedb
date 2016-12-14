@@ -4,35 +4,35 @@ insert
 ####################Ontology######################
 #################################################
 
-"person" isa entity-type
+"person" sub entity
      has-resource name;
 
-"parent" isa role-type;
-"child" isa role-type;
-"Parent" isa relation-type, has-role parent, has-role child;
+"parent" sub role;
+"child" sub role;
+"Parent" sub relation, has-role parent, has-role child;
 person plays-role parent, plays-role child;
 
-"RSG-from" isa role-type;
-"RSG-to" isa role-type;
-"RevSG" isa relation-type, has-role RSG-from, has-role RSG-to;
+"RSG-from" sub role;
+"RSG-to" sub role;
+"RevSG" sub relation, has-role RSG-from, has-role RSG-to;
 person plays-role RSG-from, plays-role RSG-to;
 
-"up-from" isa role-type;
-"up-to" isa role-type;
-"up" isa relation-type, has-role up-from, has-role up-to;
+"up-from" sub role;
+"up-to" sub role;
+"up" sub relation, has-role up-from, has-role up-to;
 person plays-role up-from, plays-role up-to;
 
-"down-from" isa role-type;
-"down-to" isa role-type;
-"down" isa relation-type, has-role down-from, has-role down-to;
+"down-from" sub role;
+"down-to" sub role;
+"down" sub relation, has-role down-from, has-role down-to;
 person plays-role down-from, plays-role down-to;
 
-"flat-from" isa role-type;
-"flat-to" isa role-type;
-"flat" isa relation-type, has-role flat-to, has-role flat-from;
+"flat-from" sub role;
+"flat-to" sub role;
+"flat" sub relation, has-role flat-to, has-role flat-from;
 person plays-role flat-from, plays-role flat-to;
 
-"name" isa resource-type, datatype string;
+"name" sub resource, datatype string;
 
 ####################################################
 ##################DATA#############################

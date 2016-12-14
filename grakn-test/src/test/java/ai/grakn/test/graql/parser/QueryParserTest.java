@@ -308,23 +308,23 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertOntologyQuery() {
         qb.parse("insert " +
-                "'pokemon' isa entity-type;" +
-                "evolution isa relation-type;" +
-                "evolves-from isa role-type;" +
-                "type-name \"evolves-to\" isa role-type;" +
+                "'pokemon' sub entity;" +
+                "evolution sub relation;" +
+                "evolves-from sub role;" +
+                "type-name \"evolves-to\" sub role;" +
                 "evolution has-role evolves-from, has-role evolves-to;" +
                 "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
-                "name isa resource-type datatype string;" +
+                "name sub resource datatype string;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +
                 "$z has name 'Raichu' isa pokemon;" +
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
                 "(evolves-from: $y, evolves-to: $z) isa evolution;").execute();
 
-        assertTrue(qb.match(name("pokemon").isa(ENTITY.getName())).ask().execute());
-        assertTrue(qb.match(name("evolution").isa(RELATION.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-from").isa(ROLE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-to").isa(ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("pokemon").sub(ENTITY.getName())).ask().execute());
+        assertTrue(qb.match(name("evolution").sub(RELATION.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").sub(ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").sub(ROLE.getName())).ask().execute());
         assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
@@ -360,7 +360,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertIsAbstractQuery() {
-        qb.parse("insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;").execute();
+        qb.parse("insert concrete-type sub entity; abstract-type is-abstract sub entity;").execute();
 
         assertFalse(qb.<AskQuery>parse("match concrete-type is-abstract; ask;").execute());
         assertTrue(qb.<AskQuery>parse("match abstract-type is-abstract; ask;").execute());
@@ -376,7 +376,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        qb.parse("insert my-type isa resource-type, datatype long;").execute();
+        qb.parse("insert my-type sub resource, datatype long;").execute();
 
         MatchQuery query = qb.match(var("x").name("my-type"));
         ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
@@ -410,10 +410,10 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         Pattern lhsPattern = and(qb.parsePatterns(lhs));
         Pattern rhsPattern = and(qb.parsePatterns(rhs));
 
-        qb.parse("insert '" + ruleTypeId + "' isa rule-type; \n" +
+        qb.parse("insert '" + ruleTypeId + "' sub rule; \n" +
                 "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
-        assertTrue(qb.match(name("my-rule-thing").isa(RULE.getName())).ask().execute());
+        assertTrue(qb.match(name("my-rule-thing").sub(RULE.getName())).ask().execute());
 
         RuleType ruleType = graph.getRuleType(ruleTypeId);
         boolean found = false;
@@ -623,8 +623,8 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         exception.expectMessage(allOf(containsString("id"), containsString("plays-role product-type")));
         qb.parse(
                 "insert " +
-                "tag-group isa role-type; product-type isa role-type;" +
-                "category isa entity-type, plays-role tag-group; plays-role product-type;"
+                "tag-group sub role; product-type sub role;" +
+                "category sub entity, plays-role tag-group; plays-role product-type;"
         ).execute();
     }
 

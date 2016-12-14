@@ -181,10 +181,10 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertOntology() {
         qb.insert(
-                name("pokemon").isa(Schema.MetaSchema.ENTITY.getName()),
-                name("evolution").isa(Schema.MetaSchema.RELATION.getName()),
-                name("evolves-from").isa(Schema.MetaSchema.ROLE.getName()),
-                name("evolves-to").isa(Schema.MetaSchema.ROLE.getName()),
+                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName()),
+                name("evolution").sub(Schema.MetaSchema.RELATION.getName()),
+                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName()),
+                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName()),
                 name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
                 name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
 
@@ -195,10 +195,10 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).execute();
 
-        assertTrue(qb.match(name("pokemon").isa(Schema.MetaSchema.ENTITY.getName())).ask().execute());
-        assertTrue(qb.match(name("evolution").isa(Schema.MetaSchema.RELATION.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-from").isa(Schema.MetaSchema.ROLE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-to").isa(Schema.MetaSchema.ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("pokemon").sub(Schema.MetaSchema.ENTITY.getName())).ask().execute());
+        assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
         assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
@@ -224,8 +224,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertIsAbstract() {
         qb.insert(
-                name("concrete-type").isa(Schema.MetaSchema.ENTITY.getName()),
-                name("abstract-type").isAbstract().isa(Schema.MetaSchema.ENTITY.getName())
+                name("concrete-type").sub(Schema.MetaSchema.ENTITY.getName()),
+                name("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getName())
         ).execute();
 
         assertFalse(qb.match(name("concrete-type").isAbstract()).ask().execute());
@@ -235,7 +235,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                name("my-type").isa(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.LONG)
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").name("my-type"));
@@ -247,7 +247,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                name("my-type").isa(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.STRING),
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.STRING),
                 name("sub-type").sub("my-type")
         ).execute();
 
@@ -260,8 +260,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                name("marriage").isa(Schema.MetaSchema.RELATION.getName()).hasRole("spouse1").hasRole("spouse2"),
-                name("spouse").isa(Schema.MetaSchema.ROLE.getName()).isAbstract(),
+                name("marriage").sub(Schema.MetaSchema.RELATION.getName()).hasRole("spouse1").hasRole("spouse2"),
+                name("spouse").sub(Schema.MetaSchema.ROLE.getName()).isAbstract(),
                 name("spouse1").sub("spouse"),
                 name("spouse2").sub("spouse")
         ).execute();
@@ -272,13 +272,13 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testReferenceByVariableNameAndTypeName() {
         qb.insert(
-                var("abc").isa("entity-type"),
+                var("abc").sub("entity"),
                 var("abc").name("123"),
                 name("123").playsRole("actor"),
                 var("abc").playsRole("director")
         ).execute();
 
-        assertTrue(qb.match(name("123").isa("entity-type")).ask().execute());
+        assertTrue(qb.match(name("123").sub("entity")).ask().execute());
         assertTrue(qb.match(name("123").playsRole("actor")).ask().execute());
         assertTrue(qb.match(name("123").playsRole("director")).ask().execute());
     }
@@ -333,7 +333,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertReferenceByName() {
         qb.insert(
-                name("new-type").isa(Schema.MetaSchema.ENTITY.getName()),
+                name("new-type").sub(Schema.MetaSchema.ENTITY.getName()),
                 name("new-type").isAbstract(),
                 name("new-type").playsRole("has-title-owner"),
                 var("x").isa("new-type")
@@ -355,14 +355,14 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertRuleType() {
-        assertInsert(var("x").name("my-inference-rule").isa(Schema.MetaSchema.RULE.getName()));
+        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName()));
     }
 
     @Test
     public void testInsertRule() {
         String ruleTypeId = "a-rule-type";
-        Pattern lhsPattern = qb.parsePattern("$x isa entity-type");
-        Pattern rhsPattern = qb.parsePattern("$x isa entity-type");
+        Pattern lhsPattern = qb.parsePattern("$x sub entity");
+        Pattern rhsPattern = qb.parsePattern("$x sub entity");
         Var vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
         qb.insert(vars).execute();
 
@@ -391,7 +391,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
                 name("movie").hasResource("my-resource"),
-                name("my-resource").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("my-resource").sub("resource").datatype(ResourceType.DataType.STRING),
                 var("x").isa("movie").has("my-resource", "look a string")
         ).execute();
     }
@@ -399,23 +399,23 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testHasResource() {
         qb.insert(
-                name("a-new-type").isa("entity-type").hasResource("a-new-resource-type"),
-                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
-                name("an-unconnected-resource-type").isa("resource-type").datatype(ResourceType.DataType.LONG)
+                name("a-new-type").sub("entity").hasResource("a-new-resource-type"),
+                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                name("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
         ).execute();
 
         graph.showImplicitConcepts(true);
 
         // Make sure a-new-type can have the given resource type, but not other resource types
-        assertTrue(qb.match(name("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").sub("entity").hasResource("a-new-resource-type")).ask().execute());
         assertFalse(qb.match(name("a-new-type").hasResource("title")).ask().execute());
         assertFalse(qb.match(name("movie").hasResource("a-new-resource-type")).ask().execute());
         assertFalse(qb.match(name("a-new-type").hasResource("an-unconnected-resource-type")).ask().execute());
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(name("has-a-new-resource-type").isa("relation-type")).ask().execute());
-        assertTrue(qb.match(name("has-a-new-resource-type-owner").isa("role-type")).ask().execute());
-        assertTrue(qb.match(name("has-a-new-resource-type-value").isa("role-type")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type").sub("relation")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type-owner").sub("role")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type-value").sub("role")).ask().execute());
         assertTrue(qb.match(name("has-a-new-resource-type").hasRole("has-a-new-resource-type-owner")).ask().execute());
         assertTrue(qb.match(name("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
         assertTrue(qb.match(name("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
@@ -425,20 +425,20 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testKey() {
         qb.insert(
-                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
-                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING)
+                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertTrue(qb.match(name("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());
-        assertTrue(qb.match(name("a-new-type").isa("entity-type").hasKey("a-new-resource-type")).ask().execute());
-        assertFalse(qb.match(name("a-new-type").isa("entity-type").hasKey("title")).ask().execute());
-        assertFalse(qb.match(name("movie").isa("entity-type").hasKey("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").sub("entity").hasResource("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").sub("entity").hasKey("a-new-resource-type")).ask().execute());
+        assertFalse(qb.match(name("a-new-type").sub("entity").hasKey("title")).ask().execute());
+        assertFalse(qb.match(name("movie").sub("entity").hasKey("a-new-resource-type")).ask().execute());
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(name("has-a-new-resource-type").isa("relation-type")).ask().execute());
-        assertTrue(qb.match(name("has-a-new-resource-type-owner").isa("role-type")).ask().execute());
-        assertTrue(qb.match(name("has-a-new-resource-type-value").isa("role-type")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type").sub("relation")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type-owner").sub("role")).ask().execute());
+        assertTrue(qb.match(name("has-a-new-resource-type-value").sub("role")).ask().execute());
         assertTrue(qb.match(name("has-a-new-resource-type").hasRole("has-a-new-resource-type-owner")).ask().execute());
         assertTrue(qb.match(name("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
         assertTrue(qb.match(name("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
@@ -451,8 +451,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
-                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
@@ -465,8 +465,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
-                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
@@ -480,8 +480,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
-                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello"),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
@@ -496,8 +496,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
-                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type")
         ).execute();
 
@@ -511,8 +511,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").isa("entity-type").hasKey("a-new-resource-type"),
-                name("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-resource-type").value("hello")
         ).execute();
 
@@ -522,7 +522,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testResourceTypeRegex() {
-        qb.insert(name("greeting").isa("resource-type").datatype(ResourceType.DataType.STRING).regex("hello|good day")).execute();
+        qb.insert(name("greeting").sub("resource").datatype(ResourceType.DataType.STRING).regex("hello|good day")).execute();
 
         MatchQuery match = qb.match(var("x").name("greeting"));
         assertEquals("hello|good day", match.get("x").findFirst().get().asResourceType().getRegex());
@@ -546,16 +546,16 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        qb.insert(name("my-resource").isa(Schema.MetaSchema.RESOURCE.getName())).execute();
+        qb.insert(name("my-resource").sub(Schema.MetaSchema.RESOURCE.getName())).execute();
     }
 
     @Test
-    public void testErrorWhenAddingMetaType() {
+    public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.RELATION.getName()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getName()))
         );
-        qb.insert(name("my-thing").sub(Schema.MetaSchema.RELATION.getName())).execute();
+        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getName())).execute();
     }
 
     @Test
@@ -569,7 +569,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testErrorTypeWithoutId() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("type"), containsString("name")));
-        qb.insert(var().isa("entity-type")).execute();
+        qb.insert(var().sub("entity")).execute();
     }
 
     @Test

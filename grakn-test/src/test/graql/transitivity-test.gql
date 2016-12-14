@@ -4,54 +4,54 @@ insert
 ########################ONTOLOGY######################
 #######################################################
 
-"entity" isa entity-type
+"entity2" sub entity
     has-resource index;
 
-"R-role-A" isa role-type;
-"R-role-B" isa role-type;
-"R" isa relation-type, has-role R-role-A, has-role R-role-B;
-entity plays-role R-role-A, plays-role R-role-B;
+"R-role-A" sub role;
+"R-role-B" sub role;
+"R" sub relation, has-role R-role-A, has-role R-role-B;
+entity2 plays-role R-role-A, plays-role R-role-B;
 
-"E-role-A" isa role-type;
-"E-role-B" isa role-type;
-"E" isa relation-type, has-role E-role-A, has-role E-role-B;
-entity plays-role E-role-A, plays-role E-role-B;
+"E-role-A" sub role;
+"E-role-B" sub role;
+"E" sub relation, has-role E-role-A, has-role E-role-B;
+entity2 plays-role E-role-A, plays-role E-role-B;
 
-"F-role-A" isa role-type;
-"F-role-B" isa role-type;
-"F" isa relation-type, has-role F-role-A, has-role F-role-B;
-entity plays-role F-role-A, plays-role F-role-B;
+"F-role-A" sub role;
+"F-role-B" sub role;
+"F" sub relation, has-role F-role-A, has-role F-role-B;
+entity2 plays-role F-role-A, plays-role F-role-B;
 
-"G-role-A" isa role-type;
-"G-role-B" isa role-type;
-"G" isa relation-type, has-role G-role-A, has-role G-role-B;
-entity plays-role G-role-A, plays-role G-role-B;
+"G-role-A" sub role;
+"G-role-B" sub role;
+"G" sub relation, has-role G-role-A, has-role G-role-B;
+entity2 plays-role G-role-A, plays-role G-role-B;
 
-"H-role-A" isa role-type;
-"H-role-B" isa role-type;
-"H" isa relation-type, has-role H-role-A, has-role H-role-B;
-entity plays-role H-role-A, plays-role H-role-B;
+"H-role-A" sub role;
+"H-role-B" sub role;
+"H" sub relation, has-role H-role-A, has-role H-role-B;
+entity2 plays-role H-role-A, plays-role H-role-B;
 
-"index" isa resource-type, datatype string;
+"index" sub resource, datatype string;
 
 #######################################################
 ######################DATA########################
 #######################################################
 
-$i isa entity, has index "i";
-$j isa entity, has index "j";
-$k isa entity, has index "k";
-$l isa entity, has index "l";
-$m isa entity, has index "m";
-$n isa entity, has index "n";
-$o isa entity, has index "o";
-$p isa entity, has index "p";
-$q isa entity, has index "q";
-$r isa entity, has index "r";
-$s isa entity, has index "s";
-$t isa entity, has index "t";
-$u isa entity, has index "u";
-$v isa entity, has index "v";
+$i isa entity2, has index "i";
+$j isa entity2, has index "j";
+$k isa entity2, has index "k";
+$l isa entity2, has index "l";
+$m isa entity2, has index "m";
+$n isa entity2, has index "n";
+$o isa entity2, has index "o";
+$p isa entity2, has index "p";
+$q isa entity2, has index "q";
+$r isa entity2, has index "r";
+$s isa entity2, has index "s";
+$t isa entity2, has index "t";
+$u isa entity2, has index "u";
+$v isa entity2, has index "v";
 
 (E-role-A: $i, E-role-B: $j) isa E;
 (E-role-A: $l, E-role-B: $m) isa E;

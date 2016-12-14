@@ -1,6 +1,6 @@
 insert
 
-the-thing isa entity-type
+the-thing sub entity
    has-resource a-string;
 
-a-string isa resource-type datatype string;
+a-string sub resource datatype string;

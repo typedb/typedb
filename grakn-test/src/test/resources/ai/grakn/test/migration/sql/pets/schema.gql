@@ -1,6 +1,6 @@
 insert
 
-pet isa entity-type
+pet sub entity
     has-resource name
     has-resource owner
     has-resource sex
@@ -14,9 +14,9 @@ snake sub pet;
 hamster sub pet;
 bird sub pet;
 
-name isa resource-type datatype string;
-owner isa resource-type datatype string;
-sex isa resource-type datatype string;
-birth isa resource-type datatype string;
-death isa resource-type datatype string;
-count isa resource-type datatype long;
+name sub resource datatype string;
+owner sub resource datatype string;
+sex sub resource datatype string;
+birth sub resource datatype string;
+death sub resource datatype string;
+count sub resource datatype long;

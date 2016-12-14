@@ -4,18 +4,18 @@ insert
 ####################Ontology######################
 #################################################
 
-"start-vertex" isa entity-type;
-"vertex" isa entity-type;
+"start-vertex" sub entity;
+"vertex" sub entity;
 
-"arcA" isa role-type;
-"arcB" isa role-type;
-"arc" isa relation-type, has-role arcA, has-role arcB;
+"arcA" sub role;
+"arcB" sub role;
+"arc" sub relation, has-role arcA, has-role arcB;
 vertex plays-role arcA, plays-role arcB;
 start-vertex plays-role arcA, plays-role arcB;
 
-"pathA" isa role-type;
-"pathB" isa role-type;
-"path" isa relation-type, has-role pathA, has-role pathB;
+"pathA" sub role;
+"pathB" sub role;
+"path" sub relation, has-role pathA, has-role pathB;
 vertex plays-role pathA, plays-role pathB;
 start-vertex plays-role pathA, plays-role pathB;
 
