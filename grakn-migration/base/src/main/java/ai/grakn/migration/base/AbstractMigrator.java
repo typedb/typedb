@@ -18,13 +18,17 @@
 
 package ai.grakn.migration.base;
 
+import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -32,8 +36,9 @@ import java.util.stream.StreamSupport;
 
 public abstract class AbstractMigrator implements Migrator {
 
+    private final static Logger LOG = LoggerFactory.getLogger(AbstractMigrator.class);
+    private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
-    public final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
 
     /**
      * Register a macro to use in templating
@@ -48,8 +53,14 @@ public abstract class AbstractMigrator implements Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected InsertQuery template(String template, Map<String, Object> data){
-        return (InsertQuery) queryBuilder.parseTemplate(template, data);
+    protected Optional<InsertQuery> template(String template, Map<String, Object> data){
+        try {
+            return Optional.of((InsertQuery) queryBuilder.parseTemplate(template, data));
+        } catch (GraqlTemplateParsingException e){
+            LOG.warn("Query was not sent to loader- Unable to parse template with data: " + data);
+        }
+
+        return Optional.empty();
     }
 
     /**

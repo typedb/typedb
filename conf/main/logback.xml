@@ -52,6 +52,10 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <logger name="ai.grakn.migration.base.AbstractMigrator" level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </logger>>
+
     <!--<logger name="ai.grakn.engine." level="WARN">-->
     <!--</logger>-->
 

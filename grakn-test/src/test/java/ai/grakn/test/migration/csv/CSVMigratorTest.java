@@ -71,9 +71,29 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
     @Test
     public void quotesWithoutContentTest() throws IOException {
         load(getFile("csv", "pets/schema.gql"));
-        String template = Files.readLines(getFile("csv", "pets/quotes/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
-        migrate(new CSVMigrator(template, getFile("csv", "pets/quotes/emptyquotes.csv")));
+        String template = getFileAsString("csv", "pets/template.gql");
+        migrate(new CSVMigrator(template, getFile("csv", "pets/data/pets.quotes")));
         assertPetGraphCorrect();
+    }
+
+    @Test
+    public void testMissingDataDoesNotThrowError() {
+        load(getFile("csv", "pets/schema.gql"));
+        String template = getFileAsString("csv", "pets/template.gql");
+        migrate(new CSVMigrator(template, getFile("csv", "pets/data/pets.empty")).setNullString(""));
+
+        graph = factory.getGraph();
+        Collection<Entity> pets = graph.getEntityType("pet").instances();
+        assertEquals(1, pets.size());
+
+        Collection<Entity> cats = graph.getEntityType("cat").instances();
+        assertEquals(1, cats.size());
+
+        ResourceType<String> name = graph.getResourceType("name");
+        ResourceType<String> death = graph.getResourceType("death");
+
+        Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
+        assertEquals(1, fluffy.resources(death).size());
     }
 
     @Test
@@ -82,7 +102,7 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
         load(getFile("csv", "single-file/schema.gql"));
         assertNotNull(graph.getEntityType("make"));
 
-        String template = Files.readLines(getFile("csv", "single-file/template.gql"), StandardCharsets.UTF_8).stream().collect(joining("\n"));
+        String template = getFileAsString("csv", "single-file/template.gql");
         migrate(new CSVMigrator(template, getFile("csv", "single-file/data/cars.csv")));
 
         // test

@@ -38,6 +38,7 @@ public class Main {
         options.addOption("t", "template", true, "graql template to apply over data");
         options.addOption("s", "separator", true, "separator of columns in input file");
         options.addOption("q", "quote", true, "character used to encapsulate values containing special characters");
+        options.addOption("l", "null", true, "string that will be evaluated as null");
         options.addOption("b", "batch", true, "number of row to load at once");
         return options;
     }
@@ -51,12 +52,20 @@ public class Main {
         String csvTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : AbstractMigrator.BATCH_SIZE;
         String delimiterString = cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.SEPARATOR);
+        String quoteString = cli.hasOption("q") ? cli.getOption("q") : Character.toString(CSVMigrator.QUOTE);
+        String nullString = cli.hasOption("l") ? cli.getOption("l") : CSVMigrator.NULL_STRING;
 
         if (delimiterString.toCharArray().length != 1) {
             cli.die("Wrong number of characters in delimiter " + delimiterString);
         }
 
         char csvDelimiter = delimiterString.toCharArray()[0];
+
+        if (quoteString.toCharArray().length != 1) {
+            cli.die("Wrong number of characters in quote " + quoteString);
+        }
+
+        char quote = quoteString.toCharArray()[0];
 
         // get files
         File csvDataFile = new File(csvDataFileName);
@@ -75,7 +84,10 @@ public class Main {
         String template = cli.fileAsString(csvTemplate);
         try (
                 CSVMigrator csvMigrator =
-                        new CSVMigrator(template, csvDataFile).setSeparator(csvDelimiter)
+                        new CSVMigrator(template, csvDataFile)
+                                .setSeparator(csvDelimiter)
+                                .setQuoteChar(quote)
+                                .setNullString(nullString);
         ) {
 
             if (cli.hasOption("n")) {

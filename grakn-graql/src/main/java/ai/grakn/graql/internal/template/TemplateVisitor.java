@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template;
 
+import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.macro.Macro;
@@ -45,15 +46,17 @@ import static java.util.stream.Collectors.toList;
 public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
     private final CommonTokenStream tokens;
+    private final Map<String, Object> originalContext;
     private final Map<String, Macro<Object>> macros;
 
     private Map<String, Integer> iteration = new HashMap<>();
     private Scope scope;
 
-    TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<Object>> macros){
+    public TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<Object>> macros){
         this.tokens = tokens;
         this.macros = macros;
         this.scope = new Scope(context);
+        this.originalContext = context;
     }
 
     // template
@@ -173,7 +176,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value rValue = this.visit(ctx.expr(1));
 
         if(!lValue.isBoolean() || !rValue.isBoolean()){
-            throw new RuntimeException("Invalid OR statement: " + ctx.getText());
+            throw new GraqlTemplateParsingException("Invalid OR statement: " + ctx.getText() + " for data " + originalContext);
         }
 
         return new Value(lValue.asBoolean() || rValue.asBoolean());
@@ -186,7 +189,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value rValue = this.visit(ctx.expr(1));
 
         if(!lValue.isBoolean() || !rValue.isBoolean()){
-            throw new RuntimeException("Invalid AND statement: " + ctx.getText());
+            throw new GraqlTemplateParsingException("Invalid AND statement: " + ctx.getText() + " for data " + originalContext);
         }
 
         return new Value(lValue.asBoolean() && rValue.asBoolean());
@@ -210,7 +213,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value value = this.visit(ctx.expr());
 
         if(!value.isBoolean()){
-            throw new RuntimeException("Invalid NOT statement: " + ctx.getText());
+            throw new GraqlTemplateParsingException("Invalid NOT statement: " + ctx.getText() + " for data " + originalContext);
         }
 
         return new Value(!value.asBoolean());
@@ -253,7 +256,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value rValue = this.visit(ctx.expr(1));
 
         if(!lValue.isNumber() || !rValue.isNumber()){
-            throw new RuntimeException("Invalid GREATER THAN expression " + ctx.getText());
+            throw new GraqlTemplateParsingException("Invalid GREATER THAN expression " + ctx.getText() + " for data " + originalContext);
         }
 
         Number lNumber = lValue.isDouble() ? lValue.asDouble() : lValue.asInteger();
@@ -269,7 +272,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value rValue = this.visit(ctx.expr(1));
 
         if(!lValue.isNumber() || !rValue.isNumber()){
-            throw new RuntimeException("Invalid GREATER THAN EQUALS expression " + ctx.getText());
+            throw new GraqlTemplateParsingException("Invalid GREATER THAN EQUALS expression " + ctx.getText() + " for data " + originalContext);
         }
 
         Number lNumber = lValue.isDouble() ? lValue.asDouble() : lValue.asInteger();
@@ -285,7 +288,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value rValue = this.visit(ctx.expr(1));
 
         if(!lValue.isNumber() || !rValue.isNumber()){
-            throw new RuntimeException("Invalid LESS THAN expression " + ctx.getText());
+            throw new GraqlTemplateParsingException("Invalid LESS THAN expression " + ctx.getText() + " for data " + originalContext);
         }
 
         Number lNumber = lValue.isDouble() ? lValue.asDouble() : lValue.asInteger();
@@ -301,7 +304,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value rValue = this.visit(ctx.expr(1));
 
         if(!lValue.isNumber() || !rValue.isNumber()){
-            throw new RuntimeException("Invalid LESS THAN EQUALS expression " + ctx.getText());
+            throw new GraqlTemplateParsingException("Invalid LESS THAN EQUALS expression " + ctx.getText() + " for data " + originalContext);
         }
 
         Number lNumber = lValue.isInteger() ? lValue.asInteger() : lValue.asDouble();
@@ -381,7 +384,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value eval = evaluate(var);
 
         if(eval == Value.NULL){
-            throw new RuntimeException("Value " + var + " is not present in data");
+            throw new GraqlTemplateParsingException("Key " + var + " not present in data: " + originalContext);
         }
 
         if(left.isEmpty() && right.isEmpty()){

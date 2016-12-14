@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
@@ -42,8 +43,10 @@ public class CSVMigrator extends AbstractMigrator {
 
     public static final char SEPARATOR = ',';
     public static final char QUOTE = '\"';
+    public static final String NULL_STRING = null;
     private char separator = SEPARATOR;
     private char quote = QUOTE;
+    private String nullString = NULL_STRING;
 
     private final Reader reader;
     private final String template;
@@ -91,6 +94,16 @@ public class CSVMigrator extends AbstractMigrator {
     }
 
     /**
+     * Set string that will be evaluated as null
+     * @param nullString string that will be evaluated as null, if null, everything will be
+     *                   evaluated as a string
+     */
+    public CSVMigrator setNullString(String nullString){
+        this.nullString = nullString;
+        return this;
+    }
+
+    /**
      * Each String in the stream is a CSV file
      * @return stream of parsed insert queries
      */
@@ -102,10 +115,14 @@ public class CSVMigrator extends AbstractMigrator {
                             .withEscape('\\' )
                             .withFirstRecordAsHeader()
                             .withQuote(quote)
+                            .withNullString(nullString)
                             .parse(reader);
 
             Iterator<CSVRecord> it = csvParser.iterator();
-            return stream(it).map(col -> template(template, parse(col)));
+            return stream(it)
+                    .map(col -> template(template, parse(col)))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get);
         } catch (IOException e){
             throw new RuntimeException(e);
         }

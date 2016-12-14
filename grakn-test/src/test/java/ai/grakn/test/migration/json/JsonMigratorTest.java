@@ -175,4 +175,15 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
     }
+
+    @Test
+    public void testMissingDataDoesNotThrowError(){
+        load(getFile("json", "string-or-object/schema.gql"));
+        String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
+        migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));
+
+        graph = factory.getGraph();
+        EntityType theThing = graph.getEntityType("the-thing");
+        assertEquals(1, theThing.instances().size());
+    }
 }
