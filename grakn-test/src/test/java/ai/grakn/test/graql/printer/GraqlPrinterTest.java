@@ -25,7 +25,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.AbstractMovieGraphTest;
-import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import org.junit.Test;
 
@@ -110,7 +109,7 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
         assertThat(productionString, containsString("sub"));
         assertThat(productionString, containsString("entity"));
         assertThat(productionString, not(containsString("isa")));
-        assertThat(productionString, not(containsString(Schema.MetaSchema.ENTITY.getName())));
+        assertThat(productionString, not(containsString("entity-type")));
     }
 
     @Test

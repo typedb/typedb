@@ -156,7 +156,7 @@ public class GraqlTest extends AbstractGraphTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        String resourceTypeId = "resource";
+        String resourceTypeId = "my-resource";
 
         RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
         RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
@@ -182,15 +182,15 @@ public class GraqlTest extends AbstractGraphTest {
         graph.commit();
 
         // use graql to compute various statistics
-        Optional<Number> result = (Optional<Number>) qb.parse("compute sum of resource;").execute();
+        Optional<Number> result = (Optional<Number>) qb.parse("compute sum of my-resource;").execute();
         assertEquals(6L, (long) result.orElse(0L));
-        result = (Optional<Number>) qb.parse("compute min of resource;").execute();
+        result = (Optional<Number>) qb.parse("compute min of my-resource;").execute();
         assertEquals(1L, (long) result.orElse(0L));
-        result = (Optional<Number>) qb.parse("compute max of resource;").execute();
+        result = (Optional<Number>) qb.parse("compute max of my-resource;").execute();
         assertEquals(3L, (long) result.orElse(0L));
-        result = (Optional<Number>) qb.parse("compute mean of resource;").execute();
+        result = (Optional<Number>) qb.parse("compute mean of my-resource;").execute();
         assertEquals(2.0, (double) result.orElse(0L), 0.1);
-        result = (Optional<Number>) qb.parse("compute median of resource;").execute();
+        result = (Optional<Number>) qb.parse("compute median of my-resource;").execute();
         assertEquals(2L, (long) result.orElse(0L));
     }
 
