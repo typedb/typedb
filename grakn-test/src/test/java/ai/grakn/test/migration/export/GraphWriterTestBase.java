@@ -37,6 +37,7 @@ import org.junit.Before;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -65,7 +66,6 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
     public void assertDataEqual(GraknGraph one, GraknGraph two){
         one.admin().getMetaConcept().instances().stream()
-                .flatMap(c -> c.asType().instances().stream())
                 .map(Concept::asInstance)
                 .forEach(i -> assertInstanceCopied(i, two));
     }
@@ -144,7 +144,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
     }
 
     public void assertOntologiesEqual(GraknGraph one, GraknGraph two){
-        boolean ontologyCorrect = one.admin().getMetaConcept().instances().stream()
+        boolean ontologyCorrect = one.admin().getMetaConcept().subTypes().stream()
                 .allMatch(t -> typesEqual(t.asType(), two.getType(t.asType().getName())));
         assertEquals(true, ontologyCorrect);
     }
@@ -152,7 +152,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
     public boolean typesEqual(Type one, Type two){
         return one.getName().equals(two.getName())
                 && one.isAbstract().equals(two.isAbstract())
-                && one.type().getName().equals(two.type().getName())
-                && (!one.isResourceType() || one.asResourceType().getDataType().equals(two.asResourceType().getDataType()));
+                && (one.superType() == null || one.superType().getName().equals(two.superType().getName()))
+                && (!one.isResourceType() || Objects.equals(one.asResourceType().getDataType(), two.asResourceType().getDataType()));
     }
 }
