@@ -31,6 +31,9 @@ import org.semanticweb.owlapi.model.OWLOntology;
 
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertThat;
+
 /**
  * Load and verify the ontology from the test sample resources. 
  * 
@@ -57,7 +60,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType sub = migrator.graph().getEntityType("tTshirts");
             Assert.assertNotNull(type);
             Assert.assertNotNull(sub);
-            Assert.assertTrue(type.subTypes().contains(sub));
+            assertThat(type.subTypes(), hasItem(sub));
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
