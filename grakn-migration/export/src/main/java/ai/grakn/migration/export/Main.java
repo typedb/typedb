@@ -21,6 +21,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.migration.base.io.MigrationCLI;
 
+import java.util.Optional;
+
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
 import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
@@ -32,7 +34,10 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
 public class Main {
 
     public static void main(String[] args){
-        MigrationCLI.create(new GraphWriterOptions(args)).ifPresent(Main::runExport);
+        MigrationCLI.init(args, GraphWriterOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runExport);
     }
 
     public static void runExport(GraphWriterOptions options) {

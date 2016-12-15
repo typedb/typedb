@@ -24,6 +24,7 @@ import ai.grakn.migration.base.io.MigrationLoader;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.Optional;
 
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
@@ -41,7 +42,10 @@ import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 public class Main {
 
     public static void main(String[] args){
-        MigrationCLI.create(new SQLMigrationOptions(args)).ifPresent(Main::runSQL);
+        MigrationCLI.init(args, SQLMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runSQL);
     }
 
     public static void runSQL(SQLMigrationOptions options) {

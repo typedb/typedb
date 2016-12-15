@@ -33,11 +33,4 @@ public class OwlMigrationOptions extends MigrationOptions {
         options.addOption("i", "input", true, "input csv file");
         parse(args);
     }
-
-    public String getInput() {
-        if(!command.hasOption("i")){
-            die("OWL file missing (-i)");
-        }
-        return command.getOptionValue("i");
-    }
 }

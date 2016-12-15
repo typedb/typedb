@@ -23,31 +23,58 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import com.google.common.io.Files;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.var;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
+/**
+ *
+ * @author alexandraorth
+ */
 public class MigrationCLI {
 
     private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn.sh start'?";
-    private static final ConfigProperties properties = ConfigProperties.getInstance();
 
-    public static <T extends MigrationOptions> Optional<T> create(T options){
+    public static <T extends MigrationOptions> List<Optional<T>> init(String[] args, Function<String[], T> constructor) {
+
+        // get the options from the command line
+        T baseOptions = constructor.apply(args).parse(args);
+
+        // if there is configuration, create multiple options objects from the config
+        if(baseOptions.getConfiguration() != null){
+            return extractOptionsFromConfiguration(baseOptions.getConfiguration(), args).stream()
+                    .map(constructor::apply)
+                    .map(MigrationCLI::validate)
+                    .collect(toList());
+        }
+
+        return singletonList(validate(baseOptions));
+    }
+
+    public static <T extends MigrationOptions> Optional<T> validate(T options){
         try {
             if (options.isHelp()) {
                 printHelpMessage(options);
@@ -103,7 +130,6 @@ public class MigrationCLI {
         System.out.println("Migrating data " + dataToMigrate +
                 " using Grakn Engine " + options.getUri() +
                 " into graph " + options.getKeyspace());
-        System.out.println("See the Grakn engine logs for more detail about loading status and any resulting stacktraces: " + properties.getLogFilePath());
     }
 
     public static void printWholeCompletionMessage(MigrationOptions options){
@@ -138,7 +164,6 @@ public class MigrationCLI {
     public static void initiateShutdown(){
         System.out.println("Initiating shutdown...");
         InMemoryTaskManager.getInstance().shutdown();
-        System.out.println("Completed shutdown...");
     }
 
     public static String fileAsString(File file){
@@ -166,5 +191,33 @@ public class MigrationCLI {
         int descPadding = helpFormatter.getDescPadding();
         helpFormatter.printHelp(printWriter, width, "migration.sh", null, options.getOptions(), leftPadding, descPadding, null);
         printWriter.flush();
+    }
+
+    private static List<String[]> extractOptionsFromConfiguration(String path, String[] args){
+        // check file exists
+        File configuration = new File(path);
+        if(!configuration.exists()){
+            throw new RuntimeException("Could not find configuration file "+ path);
+        }
+
+        try (FileReader reader = new FileReader(configuration)){
+            List<Map<String, String>> config = (List<Map<String, String>>) new Yaml().load(reader);
+
+            List<String[]> options = new ArrayList<>();
+            for(Map<String, String> c:config){
+
+                List<String> parameters = new ArrayList<>(Arrays.asList(args));
+
+                c.entrySet().stream()
+                        .flatMap(m -> Stream.of("-" + m.getKey(), m.getValue()))
+                        .forEach(parameters::add);
+
+                options.add(parameters.toArray(new String[parameters.size()]));
+            }
+
+            return options;
+        } catch (IOException e){
+            throw new RuntimeException("Could not parse configuration file.");
+        }
     }
 }

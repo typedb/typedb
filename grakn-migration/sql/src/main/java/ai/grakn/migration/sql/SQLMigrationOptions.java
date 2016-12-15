@@ -81,13 +81,6 @@ public class SQLMigrationOptions extends MigrationOptions {
         return die("No SQL query specified (-query)");
     }
 
-    public String getTemplate() {
-        if(command.hasOption("t")){
-            return command.getOptionValue("t");
-        }
-        return die("Template file missing (-t)");
-    }
-
     public int getBatch() {
         return parseInt(command.getOptionValue("b", batch));
     }

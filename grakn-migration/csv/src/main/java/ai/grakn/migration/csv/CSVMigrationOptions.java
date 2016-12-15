@@ -69,20 +69,6 @@ public class CSVMigrationOptions extends MigrationOptions {
         return command.getOptionValue("l", nullString);
     }
 
-    public String getInput() {
-        if(!command.hasOption("i")){
-            die("Data file missing (-i)");
-        }
-        return command.getOptionValue("i");
-    }
-
-    public String getTemplate() {
-        if(!command.hasOption("t")){
-            die("Template file missing (-t)");
-        }
-        return command.getOptionValue("t");
-    }
-
     public int getBatch() {
         return parseInt(command.getOptionValue("b", batch));
     }

@@ -23,10 +23,10 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
 import ai.grakn.concept.EntityType;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -34,24 +34,23 @@ import static org.junit.Assert.assertTrue;
 
 public class OwlMigratorMainTest extends TestOwlGraknBase {
 
-    @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
     public void owlMainFileTest(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        runAndataCorrect("owl", "-input", owlFile, "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("owl", "-input", owlFile, "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void owlMainNoFileSpecifiedTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage("OWL file missing (-i)");
+        exception.expectMessage("Data file missing (-i)");
         run("owl", "-keyspace", graph.getKeyspace());
     }
 
     @Test
     public void owlMainCannotOpenFileTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot find file: grah/?*");
+        exception.expectMessage(containsString("Cannot find file:"));
         run("owl", "-input", "grah/?*", "-keyspace", graph.getKeyspace());
     }
 
@@ -59,7 +58,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         Main.main(args);
     }
 
-    public void runAndataCorrect(String... args){
+    public void runAndAssertDataCorrect(String... args){
         run(args);
 
         graph = factory.getGraph();

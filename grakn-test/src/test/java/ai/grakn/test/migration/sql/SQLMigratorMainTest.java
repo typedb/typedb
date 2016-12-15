@@ -94,6 +94,20 @@ public class SQLMigratorMainTest extends SQLMigratorTestBase {
                 "-pass", PASS, "-user", USER, "-q", query);
     }
 
+    @Test
+    public void sqlMainPropertiesTest() throws SQLException {
+        connection.close();
+        connection = setupExample("pokemon");
+
+        String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
+
+        run("sql", "-driver", DRIVER, "-location", URL,
+                "-pass", PASS, "-user", USER, "-k", graph.getKeyspace(),
+                "-c", configurationFile);
+
+        assertPokemonGraphCorrect();
+    }
+
     private void run(String... args){
         Main.main(args);
     }

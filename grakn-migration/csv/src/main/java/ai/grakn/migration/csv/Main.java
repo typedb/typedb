@@ -22,6 +22,7 @@ import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
 
 import java.io.File;
+import java.util.Optional;
 
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
@@ -40,7 +41,10 @@ import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 public class Main {
 
     public static void main(String[] args) {
-        MigrationCLI.create(new CSVMigrationOptions(args)).ifPresent(Main::runCSV);
+        MigrationCLI.init(args, CSVMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runCSV);
     }
 
     public static void runCSV(CSVMigrationOptions options){

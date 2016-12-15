@@ -21,7 +21,6 @@ package ai.grakn.migration.json;
 import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.io.MigrationOptions;
 
-import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static java.lang.Integer.parseInt;
 
 /**
@@ -40,20 +39,6 @@ public class JsonMigrationOptions extends MigrationOptions {
         options.addOption("b", "batch", true, "number of row to load at once");
 
         parse(args);
-    }
-
-    public String getInput() {
-        if(!command.hasOption("i")){
-            die("Data file missing (-i)");
-        }
-        return command.getOptionValue("i");
-    }
-
-    public String getTemplate() {
-        if(!command.hasOption("t")){
-            die("Template file missing (-t)");
-        }
-        return command.getOptionValue("t");
     }
 
     public int getBatch() {

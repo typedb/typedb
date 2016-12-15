@@ -1,0 +1,4 @@
+match
+    $pokemon has description <SPECIES>;
+    $type has description <TYPE>;
+insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;

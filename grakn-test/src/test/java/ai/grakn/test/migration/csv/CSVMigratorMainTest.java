@@ -72,10 +72,13 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
     }
 
-//    @Test
-//    public void csvMainMigrateFromProperties(){
-//        runAndAssertDataCorrect("-config", configurationFile);
-//    }
+    @Test
+    public void csvMainPropertiesTest(){
+        load(getFile("csv", "multi-file/schema.gql"));
+        String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
+        run("csv", "-config", configurationFile, "-keyspace", graph.getKeyspace());
+        assertPokemonGraphCorrect();
+    }
 
     @Test
     public void csvMainNoArgsTest(){

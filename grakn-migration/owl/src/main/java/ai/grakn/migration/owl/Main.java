@@ -23,6 +23,7 @@ import ai.grakn.migration.base.io.MigrationCLI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;
+import java.util.Optional;
 
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
@@ -45,7 +46,10 @@ import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessag
 public class Main {
 
     public static void main(String[] args) {
-        MigrationCLI.create(new OwlMigrationOptions(args)).ifPresent(Main::runOwl);
+        MigrationCLI.init(args, OwlMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runOwl);
     }
 
     public static void runOwl(OwlMigrationOptions options){

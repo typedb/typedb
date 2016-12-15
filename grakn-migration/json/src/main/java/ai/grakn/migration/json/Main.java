@@ -22,6 +22,7 @@ import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.base.io.MigrationCLI;
 
 import java.io.File;
+import java.util.Optional;
 
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
@@ -41,7 +42,10 @@ import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 public class Main {
 
     public static void main(String[] args){
-        MigrationCLI.create(new JsonMigrationOptions(args)).ifPresent(Main::runJson);
+        MigrationCLI.init(args, JsonMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runJson);
     }
 
     public static void runJson(JsonMigrationOptions options){

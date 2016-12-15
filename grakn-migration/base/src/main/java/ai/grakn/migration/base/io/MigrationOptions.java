@@ -26,6 +26,9 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 
 /**
@@ -36,7 +39,6 @@ public class MigrationOptions {
     private static final ConfigProperties properties = ConfigProperties.getInstance();
 
     private static final String keyspace = properties.getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
-    private static final String configuration = null;
     private static final String uri = Grakn.DEFAULT_URI;
     private int numberOptions;
 
@@ -49,7 +51,7 @@ public class MigrationOptions {
         options.addOption("k", "keyspace", true, "Grakn graph.");
         options.addOption("u", "uri", true, "Location of Grakn Engine.");
         options.addOption("n", "no", false, "Write to standard out.");
-        options.addOption("c", "config", false, "Configuration file.");
+        options.addOption("c", "config", true, "Configuration file.");
     }
 
     public boolean isVerbose() {
@@ -69,7 +71,7 @@ public class MigrationOptions {
     }
 
     public String getConfiguration() {
-        return command.hasOption("c") ? command.getOptionValue("c") : configuration;
+        return command.hasOption("c") ? command.getOptionValue("c") : null;
     }
 
     public String getUri() {
@@ -84,13 +86,40 @@ public class MigrationOptions {
         return numberOptions;
     }
 
-    protected void parse(String[] args){
+    public String getInput() {
+        if(!command.hasOption("i")){
+            die("Data file missing (-i)");
+        }
+
+        return resolvePath(command.getOptionValue("i"));
+    }
+
+    public String getTemplate() {
+        if(!command.hasOption("t")){
+            die("Template file missing (-t)");
+        }
+
+        return resolvePath(command.getOptionValue("t"));
+    }
+
+    protected <T extends MigrationOptions> T parse(String[] args){
         try {
             CommandLineParser parser = new DefaultParser();
             command = parser.parse(options, args);
             numberOptions = command.getOptions().length;
+
+            return (T) this;
         } catch (ParseException e){
-            die(e);
+            throw new RuntimeException(e);
         }
+    }
+
+    private String resolvePath(String path){
+        Path givenPath = Paths.get(path);
+        if(givenPath.isAbsolute()){
+            return givenPath.toAbsolutePath().toString();
+        }
+
+        return Paths.get("").toAbsolutePath().resolve(givenPath).toString();
     }
 }
