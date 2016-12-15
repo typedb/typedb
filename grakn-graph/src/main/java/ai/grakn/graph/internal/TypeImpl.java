@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -45,7 +46,7 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
  * @param <V> The type of the instances of this concept type.
  */
-class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
+class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
         super(graknGraph, v, Optional.empty());
         superType.ifPresent(this::superType);
@@ -90,7 +91,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     public void innerDelete(){
         Collection<? extends Concept> subSet = subTypes();
-        Collection<? extends Concept> instanceSet = instances();
+        Collection<? extends Instance> instanceSet = instances();
         subSet.remove(this);
 
         if(subSet.isEmpty() && instanceSet.isEmpty()){
@@ -131,8 +132,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         Set<T> results = new HashSet<>();
         results.add((T) root);
 
-        Collection<TypeImpl<Type, Concept>> children = root.getSubConceptTypes();
-        for(TypeImpl<Type, Concept> child: children){
+        Collection<TypeImpl<Type, Instance>> children = root.getSubConceptTypes();
+        for(TypeImpl<Type, Instance> child: children){
             results.addAll(nextSubLevel(child));
         }
 
@@ -152,9 +153,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      *
      * @return All of the concepts direct sub children spanning a single level.
      */
-    private Collection<TypeImpl<Type, Concept>> getSubConceptTypes(){
-        Collection<TypeImpl<Type, Concept>> subSet = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(concept -> subSet.add((TypeImpl<Type, Concept>) concept));
+    private Collection<TypeImpl<Type, Instance>> getSubConceptTypes(){
+        Collection<TypeImpl<Type, Instance>> subSet = new HashSet<>();
+        getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(concept -> subSet.add((TypeImpl<Type, Instance>) concept));
         return subSet;
     }
 
