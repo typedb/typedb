@@ -27,6 +27,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
@@ -140,7 +141,7 @@ class HALConceptData {
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "RHS-"+rule.getId())
                 .withProperty(TYPE_PROPERTY, "RHS")
-                .withProperty(BASETYPE_PROPERTY, "resource-type")
+                .withProperty(BASETYPE_PROPERTY, Schema.MetaSchema.RESOURCE.getName())
                 .withProperty(VALUE_PROPERTY,rule.getRHS().admin().toString());
         halResource.withRepresentation("RHS", RHS);
     }
@@ -151,7 +152,7 @@ class HALConceptData {
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "LHS-"+rule.getId())
                 .withProperty(TYPE_PROPERTY, "LHS")
-                .withProperty(BASETYPE_PROPERTY, "resource-type")
+                .withProperty(BASETYPE_PROPERTY, Schema.MetaSchema.RESOURCE.getName())
                 .withProperty(VALUE_PROPERTY,rule.getLHS().admin().toString());
         halResource.withRepresentation("LHS", LHS);
     }

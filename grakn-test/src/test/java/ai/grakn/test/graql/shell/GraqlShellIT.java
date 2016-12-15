@@ -21,6 +21,7 @@ package ai.grakn.test.graql.shell;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import mjson.Json;
 import org.junit.AfterClass;
@@ -249,7 +250,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testGraqlOutput() throws Exception {
         String result = testShell("", "-e", "match $x sub type;", "-o", "graql");
-        assertThat(result, allOf(containsString("$x"), containsString("entity-type")));
+        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getName())));
     }
 
     @Test
