@@ -22,8 +22,12 @@ import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.GraknGraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MigrationLoader {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MigrationLoader.class);
 
     public static void load(GraknGraph graph, Migrator migrator){
         load(new LoaderImpl(graph.getKeyspace()), migrator);
@@ -39,6 +43,7 @@ public class MigrationLoader {
             migrator.migrate().forEach(loader::add);
         } finally {
             loader.waitToFinish();
+            LOG.info("Loading finished with status: " + loader.getLoaderState());
         }
     }
 }

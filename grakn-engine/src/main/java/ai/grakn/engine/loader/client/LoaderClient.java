@@ -250,7 +250,7 @@ public class LoaderClient implements Loader {
                 int failed = states.get(FAILED.name());
                 int stopped = states.get(STOPPED.name());
 
-                printLoaderState(created, scheduled, completed, running, failed, stopped);
+                LOG.info(getLoaderState(created, scheduled, completed, running, failed, stopped));
 
                 runningCreated += created;
                 runningScheduled += scheduled;
@@ -260,7 +260,7 @@ public class LoaderClient implements Loader {
                 runningStopped += stopped;
             }
 
-            printLoaderState(runningCreated, runningScheduled, runningCompleted, runningRunning, runningFailed, runningStopped);
+            LOG.info(getLoaderState(runningCreated, runningScheduled, runningCompleted, runningRunning, runningFailed, runningStopped));
 
             try {
                 Thread.sleep(pollingFrequency);
@@ -397,7 +397,7 @@ public class LoaderClient implements Loader {
     /**
      * Method that logs the current state of loading transactions
      */
-    public void printLoaderState(){
+    public String getLoaderState(){
         int runningCreated = 0;
         int runningScheduled = 0;
         int runningCompleted = 0;
@@ -419,21 +419,21 @@ public class LoaderClient implements Loader {
             runningStopped += states.get(STOPPED.name());
         }
 
-        printLoaderState(runningCreated, runningScheduled, runningCompleted, runningRunning, runningFailed, runningStopped);
+        return getLoaderState(runningCreated, runningScheduled, runningCompleted, runningRunning, runningFailed, runningStopped);
     }
 
     /**
      * Method that logs the current state of loading transactions
      */
-    public void printLoaderState(int created, int scheduled, int completed, int running, int failed, int stopped) {
-        LOG.info(Json.object()
+    public String getLoaderState(int created, int scheduled, int completed, int running, int failed, int stopped) {
+        return Json.object()
                 .set(CREATED.name(), created)
                 .set(SCHEDULED.name(), scheduled)
                 .set(COMPLETED.name(), completed)
                 .set(RUNNING.name(), running)
                 .set(FAILED.name(), failed)
                 .set(STOPPED.name(), stopped)
-                .toString());
+                .toString();
     }
 
     /**
@@ -454,7 +454,6 @@ public class LoaderClient implements Loader {
     private String getPostParams(){
         return TASK_CLASS_NAME_PARAMETER + "=" + LoaderTask.class.getName() + "&" +
                 TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
-                LIMIT_PARAM + "=" + 10000 + "&" +
                 TASK_CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
     }
 

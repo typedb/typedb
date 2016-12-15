@@ -51,6 +51,18 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
     }
 
     @Test
+    public void quoteMainTest(){
+        String quoteFile = getFile("csv", "pets/data/pets.singlequotes").getAbsolutePath();
+        runAndAssertDataCorrect("-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", graph.getKeyspace());
+    }
+
+    @Test
+    public void nullMainTest(){
+        String nullTemplate = getFile("csv", "pets/template-null.gql").getAbsolutePath();
+        runAndAssertDataCorrect("-input", dataFile, "-template", nullTemplate, "-keyspace", graph.getKeyspace(), "-null", "");
+    }
+
+    @Test
     public void csvMainTestDistributedLoader(){
         runAndAssertDataCorrect("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
     }

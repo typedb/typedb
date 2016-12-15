@@ -122,8 +122,14 @@ public class InMemoryTaskManager implements TaskManager {
         try {
             return CompletableFuture.runAsync(() -> {
                 try {
-                    instantiatedTasks.get(taskId).getKey().get();
-                } catch (InterruptedException | ExecutionException e) {
+                    while(true){
+                        TaskState state = storage().getState(taskId);
+                        if(state.status().equals(COMPLETED) || state.status().equals(FAILED)){
+                            break;
+                        }
+                        Thread.sleep(1000);
+                    }
+                } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             });

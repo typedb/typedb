@@ -189,7 +189,8 @@ public class QueryBuilderImpl implements QueryBuilder {
      */
     @Override
     public <T extends Query<?>> T parseTemplate(String template, Map<String, Object> data){
-        return parse(templateParser.parseTemplate(template, data));
+        String templated = templateParser.parseTemplate(template, data);
+        return parse(templated);
     }
 
     @Override
