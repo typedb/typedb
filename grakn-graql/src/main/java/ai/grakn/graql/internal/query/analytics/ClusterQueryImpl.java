@@ -42,6 +42,7 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
 
     private boolean members = false;
     private boolean persist = false;
+    private long clusterSize = -1L;
 
     public ClusterQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
@@ -64,11 +65,28 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
                 }
                 mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
                 waitOnMutateResourceOntology(connectedComponent);
-                result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace),
-                        new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                if (clusterSize == -1L) {
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace),
+                            new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                } else {
+                    // get the clusters with right size in the first run
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                            new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
+                                    clusterSize));
+                    // persist the cluster labels in the second run
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace,
+                                    ((Map) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY)).keySet()),
+                            new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
+                                    clusterSize));
+                }
             } else {
-                result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
-                        new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                if (clusterSize == -1L)
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                            new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                else
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                            new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
+                                    clusterSize));
             }
         } else {
             if (persist) {
@@ -78,11 +96,29 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
                 }
                 mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
                 waitOnMutateResourceOntology(connectedComponent);
-                result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace),
-                        new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                if (clusterSize == -1L) {
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace),
+                            new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                } else {
+                    // get the clusters with right size in the first run
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                            new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
+                                    clusterSize));
+                    // persist the cluster labels in the second run
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace,
+                                    ((Map) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY)).keySet()),
+                            new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
+                                    clusterSize));
+                }
             } else {
-                result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
-                        new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                if (clusterSize == -1L) {
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                            new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+                } else {
+                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                            new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
+                                    clusterSize));
+                }
             }
         }
         LOGGER.info("ConnectedComponentsVertexProgram is done");
@@ -107,6 +143,12 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
     }
 
     @Override
+    public ClusterQuery<T> clusterSize(long clusterSize) {
+        this.clusterSize = clusterSize;
+        return this;
+    }
+
+    @Override
     public ClusterQuery<T> in(String... subTypeNames) {
         return (ClusterQuery<T>) super.in(subTypeNames);
     }
@@ -126,6 +168,10 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
 
         if (persist) {
             string += " persist;";
+        }
+
+        if (clusterSize != -1L) {
+            string += " size, 1;";
         }
 
         return string;
