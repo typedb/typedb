@@ -71,6 +71,8 @@ public class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>>
             throw e;
         }
         Map<Integer, Set<String>> map = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        String middlePoint = result.memory().get(ShortestPathVertexProgram.MIDDLE);
+        if (!middlePoint.equals("")) map.put(0, Collections.singleton(middlePoint));
 
         List<String> path = new ArrayList<>();
         path.add(sourceId);

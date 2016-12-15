@@ -34,6 +34,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private static final int MAX_ITERATION = 50;
 
+    private static final String DIVIDER = "\t";
+
     // element key
     private static final String IS_ACTIVE_CASTING = "shortestPathVertexProgram.isActiveCasting";
     private static final String PREDECESSOR = "shortestPathVertexProgram.fromVertex";
@@ -45,12 +47,14 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private static final String FOUND_PATH = "shortestPathVertexProgram.foundDestination";
     private static final String PREDECESSOR_FROM_SOURCE = "shortestPathVertexProgram.fromSource";
     private static final String PREDECESSOR_FROM_DESTINATION = "shortestPathVertexProgram.fromDestination";
+    private static final String PREDECESSORS = "shortestPathVertexProgram.predecessors";
+    public static final String MIDDLE = "shortestPathVertexProgram.middle";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS =
             Sets.newHashSet(IS_ACTIVE_CASTING, PREDECESSOR, FOUND_IN_ITERATION);
     private static final Set<String> MEMORY_COMPUTE_KEYS =
             Sets.newHashSet(VOTE_TO_HALT_SOURCE, VOTE_TO_HALT_DESTINATION, FOUND_PATH,
-                    PREDECESSOR_FROM_SOURCE, PREDECESSOR_FROM_DESTINATION);
+                    PREDECESSOR_FROM_SOURCE, PREDECESSOR_FROM_DESTINATION, PREDECESSORS, MIDDLE);
 
     private static final String MESSAGE_FROM_ROLE_PLAYER = "R";
     private static final String MESSAGE_FROM_ASSERTION = "A";
@@ -79,7 +83,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        if ((Boolean)memory.get(FOUND_PATH)) return Collections.emptySet();
+        if ((Boolean) memory.get(FOUND_PATH)) return Collections.emptySet();
         return messageScopeSet;
     }
 
@@ -91,6 +95,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         memory.set(FOUND_PATH, false);
         memory.set(PREDECESSOR_FROM_SOURCE, "");
         memory.set(PREDECESSOR_FROM_DESTINATION, "");
+        memory.set(PREDECESSORS, "");
+        memory.set(MIDDLE, "");
     }
 
     @Override
@@ -144,9 +150,14 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 }
                 break;
             default:
-                if ((Boolean)memory.get(FOUND_PATH)) {
-                    String id = vertex.id().toString(); //This will likely have to change as we support more and more vendors.
-                    if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
+                if ((Boolean) memory.get(FOUND_PATH)) {
+                    //This will likely have to change as we support more and more vendors.
+                    String id = vertex.id().toString();
+//                    if (memory.get(MIDDLE).equals(id)) {
+//                        vertex.property(FOUND_IN_ITERATION, memory.getIteration() - 1);
+//                        memory.set(MIDDLE, " ");
+//                    } else
+                        if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
                         LOGGER.debug("Traversing back to vertex " + id);
                         memory.set(PREDECESSOR_FROM_SOURCE, vertex.value(PREDECESSOR));
                         vertex.property(FOUND_IN_ITERATION, -1 * memory.getIteration());
@@ -211,10 +222,9 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 if (hasMessageSource && hasMessageDestination) {
                     LOGGER.debug("Found path");
                     memory.or(FOUND_PATH, true);
-                    memory.set(PREDECESSOR_FROM_SOURCE, predecessorFromSource);
-                    memory.set(PREDECESSOR_FROM_DESTINATION, predecessorFromDestination);
-
-                    vertex.property(FOUND_IN_ITERATION, memory.getIteration());
+                    memory.set(PREDECESSORS, predecessorFromSource + DIVIDER + predecessorFromDestination +
+                            DIVIDER + id);
+//                    vertex.property(FOUND_IN_ITERATION, memory.getIteration());
                     return;
                 }
             }
@@ -241,11 +251,15 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             LOGGER.debug("Found path");
             memory.or(FOUND_PATH, true);
             if (sum == 1) {
-                memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(1).getValue(0));
-                memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-2).getValue(0));
+                memory.set(PREDECESSORS, messageMap.get(1).getValue(0) + DIVIDER +
+                        messageMap.get(-2).getValue(0));
+//                memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(1).getValue(0));
+//                memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-2).getValue(0));
             } else {
-                memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
-                memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-1).getValue(0));
+                memory.set(PREDECESSORS, messageMap.get(2).getValue(0) + DIVIDER +
+                        messageMap.get(-1).getValue(0));
+//                memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
+//                memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-1).getValue(0));
             }
             return;
         }
@@ -267,14 +281,18 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 case 1:
                     LOGGER.debug("Found path");
                     memory.or(FOUND_PATH, true);
-                    memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
-                    memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-1).getValue(0));
+                    memory.set(PREDECESSORS, messageMap.get(2).getValue(0) + DIVIDER +
+                            messageMap.get(-1).getValue(0));
+//                    memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(2).getValue(0));
+//                    memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-1).getValue(0));
                     break;
                 case -1:
                     LOGGER.debug("Found path");
                     memory.or(FOUND_PATH, true);
-                    memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(1).getValue(0));
-                    memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-2).getValue(0));
+                    memory.set(PREDECESSORS, messageMap.get(1).getValue(0) + DIVIDER +
+                            messageMap.get(-2).getValue(0));
+//                    memory.set(PREDECESSOR_FROM_SOURCE, messageMap.get(1).getValue(0));
+//                    memory.set(PREDECESSOR_FROM_DESTINATION, messageMap.get(-2).getValue(0));
                     break;
             }
         } else if (messageMap.size() == 1) {
@@ -301,7 +319,16 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() == 0) return false;
 
-        if ((Boolean)memory.get(FOUND_PATH)) {
+        if ((Boolean) memory.get(FOUND_PATH)) {
+            if (!memory.get(PREDECESSORS).equals("")) {
+                String[] predecessors = ((String) memory.get(PREDECESSORS)).split(DIVIDER);
+                memory.set(PREDECESSORS, "");
+                memory.set(PREDECESSOR_FROM_SOURCE, predecessors[0]);
+                memory.set(PREDECESSOR_FROM_DESTINATION, predecessors[1]);
+                if (predecessors.length > 2) {
+                    memory.set(MIDDLE, predecessors[2]);
+                }
+            }
             return memory.get(PREDECESSOR_FROM_SOURCE).equals(persistentProperties.get(SOURCE));
         }
 
