@@ -22,11 +22,17 @@ import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
+    private static final String CLUSTER_SIZE = "clusterSizeMapReduce.clusterSize";
 
     public ClusterMemberMapReduce() {
     }
@@ -34,6 +40,11 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     public ClusterMemberMapReduce(Set<String> selectedTypes, String clusterLabel) {
         this.selectedTypes = selectedTypes;
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
+    }
+
+    public ClusterMemberMapReduce(Set<String> selectedTypes, String clusterLabel, Long clusterSize) {
+        this(selectedTypes, clusterLabel);
+        this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
     }
 
     @Override
@@ -71,7 +82,14 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     @Override
     public Map<Serializable, Set<String>> generateFinalResult(Iterator<KeyValue<Serializable, Set<String>>> keyValues) {
         final Map<Serializable, Set<String>> clusterPopulation = new HashMap<>();
-        keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        if (this.persistentProperties.containsKey(CLUSTER_SIZE)) {
+            keyValues.forEachRemaining(pair -> {
+                if (Long.valueOf(pair.getValue().size()).equals(persistentProperties.get(CLUSTER_SIZE)))
+                    clusterPopulation.put(pair.getKey(), pair.getValue());
+            });
+        } else {
+            keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        }
         clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }

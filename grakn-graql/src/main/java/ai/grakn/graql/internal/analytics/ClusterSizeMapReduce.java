@@ -30,7 +30,8 @@ import java.util.Set;
 
 public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
 
-    private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
+    private static final String CLUSTER_LABEL = "clusterSizeMapReduce.clusterLabel";
+    private static final String CLUSTER_SIZE = "clusterSizeMapReduce.clusterSize";
 
     public ClusterSizeMapReduce() {
     }
@@ -38,6 +39,11 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     public ClusterSizeMapReduce(Set<String> selectedTypes, String clusterLabel) {
         this.selectedTypes = selectedTypes;
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
+    }
+
+    public ClusterSizeMapReduce(Set<String> selectedTypes, String clusterLabel, Long clusterSize) {
+        this(selectedTypes, clusterLabel);
+        this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
     }
 
     @Override
@@ -70,7 +76,14 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     @Override
     public Map<Serializable, Long> generateFinalResult(Iterator<KeyValue<Serializable, Long>> keyValues) {
         final Map<Serializable, Long> clusterPopulation = new HashMap<>();
-        keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        if (this.persistentProperties.containsKey(CLUSTER_SIZE)) {
+            keyValues.forEachRemaining(pair -> {
+                if (pair.getValue().equals(persistentProperties.get(CLUSTER_SIZE)))
+                    clusterPopulation.put(pair.getKey(), pair.getValue());
+            });
+        } else {
+            keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        }
         clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }

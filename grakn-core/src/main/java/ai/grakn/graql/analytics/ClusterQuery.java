@@ -43,6 +43,12 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<T> persist();
 
     /**
+     * @param clusterSize the size of the clusters returned and/or persisted
+     * @return a ClusterQuery with cluster set
+     */
+    ClusterQuery<T> clusterSize(long clusterSize);
+
+    /**
      * @param subTypeNames an array of types to include in the subgraph
      * @return a ClusterQuery with the subTypeNames set
      */

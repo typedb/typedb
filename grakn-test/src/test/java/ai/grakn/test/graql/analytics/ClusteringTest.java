@@ -37,7 +37,6 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -106,6 +105,55 @@ public class ClusteringTest extends AbstractGraphTest {
         assertTrue(memberMap.isEmpty());
 
         assertEquals(0L, graph.graql().compute().count().execute().longValue());
+    }
+
+    @Test
+    public void testConnectedComponentSize() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        Map<String, Long> sizeMap;
+        Map<String, Set<String>> memberMap;
+        Map<String, Long> sizeMapPersist;
+        Map<String, Set<String>> memberMapPersist;
+
+        addOntologyAndEntities();
+
+        sizeMap = Graql.compute().withGraph(graph).cluster().clusterSize(1L).execute();
+        assertEquals(0, sizeMap.size());
+        memberMap = graph.graql().compute().cluster().members().clusterSize(1L).execute();
+        assertEquals(0, memberMap.size());
+
+        addResourceRelations();
+
+        sizeMap = graph.graql().compute().cluster().clusterSize(1L).execute();
+        assertEquals(5, sizeMap.size());
+
+        memberMap = graph.graql().compute().cluster().members().clusterSize(1L).execute();
+        assertEquals(5, memberMap.size());
+
+        sizeMapPersist = graph.graql().compute().cluster().clusterSize(1L).execute();
+        assertEquals(5, sizeMapPersist.size());
+
+        for (int i = 0; i < 2; i++) {
+            sizeMapPersist = graph.graql().compute().cluster().persist().clusterSize(1L).execute();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+
+            assertEquals(5, sizeMapPersist.size());
+            memberMap.values().stream()
+                    .flatMap(Collection::stream)
+                    .forEach(id -> checkConnectedComponent(id, id));
+        }
+
+        for (int i = 0; i < 2; i++) {
+            memberMapPersist = graph.graql().compute().cluster().persist().members().clusterSize(1L).execute();
+            graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+
+            assertEquals(5, memberMapPersist.size());
+            memberMapPersist.values().stream()
+                    .flatMap(Collection::stream)
+                    .forEach(id -> checkConnectedComponent(id, id));
+        }
     }
 
     @Test

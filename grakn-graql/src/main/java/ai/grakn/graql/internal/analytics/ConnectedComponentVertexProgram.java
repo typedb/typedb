@@ -22,8 +22,10 @@ import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import com.google.common.collect.Sets;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -53,6 +55,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     private static final String KEYSPACE = "connectedComponentVertexProgram.keyspace";
 
     private BulkResourceMutate bulkResourceMutate;
+    private Set<String> selectedLabels = new HashSet<>();
 
     public ConnectedComponentVertexProgram() {
     }
@@ -66,6 +69,26 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         this.selectedTypes = selectedTypes;
         this.persistentProperties.put(PERSIST, true);
         this.persistentProperties.put(KEYSPACE, keyspace);
+    }
+
+    public ConnectedComponentVertexProgram(Set<String> selectedTypes, String keyspace, Set<String> selectedLabels) {
+        this(selectedTypes, keyspace);
+        this.selectedLabels = selectedLabels;
+    }
+
+    @Override
+    public void storeState(final Configuration configuration) {
+        super.storeState(configuration);
+        if (!selectedLabels.isEmpty()) {
+            selectedLabels.forEach(label -> configuration.addProperty(CLUSTER_LABEL + "." + label, label));
+        }
+    }
+
+    @Override
+    public void loadState(final Graph graph, final Configuration configuration) {
+        super.loadState(graph, configuration);
+        configuration.subset(CLUSTER_LABEL).getKeys().forEachRemaining(key ->
+                selectedLabels.add((String) configuration.getProperty(CLUSTER_LABEL + "." + key)));
     }
 
     @Override
@@ -135,9 +158,10 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 }
                 break;
             default:
-                if ((Boolean)memory.get(IS_LAST_ITERATION)) {
+                if ((Boolean) memory.get(IS_LAST_ITERATION)) {
                     if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                        bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
+                        if (selectedLabels.isEmpty() || selectedLabels.contains(vertex.value(CLUSTER_LABEL)))
+                            bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
                     }
                 } else {
                     // split the default case because shortcut edges cannot be filtered out
@@ -172,7 +196,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() < 3) return false;
-        if ((Boolean)memory.get(IS_LAST_ITERATION)) return true;
+        if ((Boolean) memory.get(IS_LAST_ITERATION)) return true;
 
         final boolean voteToHalt = memory.<Boolean>get(VOTE_TO_HALT);
         if (voteToHalt) {
