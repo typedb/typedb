@@ -74,8 +74,7 @@ export default {
             data: JSON.stringify({
                 'name': credentials.name,
                 'surname': credentials.surname,
-                'email': credentials.email,
-                'community': credentials.community
+                'email': credentials.email
             }),
             url: 'https://grakn-community-inviter.herokuapp.com/invite'
         }).always(function(r) {
@@ -143,9 +142,9 @@ export default {
     /**
      * Send graql shell command to engine. Returns a string representing shell output.
      */
-    graqlShell(query, fn) {
+    graqlShell(query, fn, useReasoner, materialise) {
         this.request({
-            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query,
+            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query+ "&reasoner=" + useReasoner+"&materialise=" + materialise,
             callback: fn,
             dataType: "text",
             contentType: "application/text",
@@ -170,9 +169,9 @@ export default {
     /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
-    graqlHAL(query, fn, useReasoner) {
+    graqlHAL(query, fn, useReasoner,materialise) {
         this.request({
-            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query + "&reasoner=" + useReasoner,
+            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query + "&reasoner=" + useReasoner+"&materialise=" + materialise,
             callback: fn,
             accepts: {
                 json: "application/hal+json"

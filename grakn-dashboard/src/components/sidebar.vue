@@ -30,7 +30,7 @@
     </nav>
     <a @click="openSignUp()">
         <div class="join-community">
-            Support our Community!
+            Join our Community
         </div>
     </a>
 </aside>
@@ -51,14 +51,13 @@
     font-size: 150%;
     height: 50px;
     line-height: 20px;
-    color: #FF8D7D;
-
+    color: #848c94;
     cursor: pointer;
 }
 
 .join-community:hover {
-  text-decoration: underline;
-  text-decoration-color: #FF8D7D;
+    text-decoration: underline;
+    text-decoration-color: #FF8D7D;
 }
 </style>
 
@@ -74,14 +73,13 @@ export default {
             isUserAuth: User.isAuthenticated()
         }
     },
-    created: function() {
-    },
+    created: function() {},
     mounted: function() {
         this.$nextTick(function() {
             EngineClient.getConfig((r, e) => {
                 this.version = (r == null ? 'error' : r['project.version'])
             });
-
+            if (!User.getModalShown()) $('#signupModal').modal('show');
         })
     },
     methods: {
@@ -89,7 +87,7 @@ export default {
             $('#keySpacesModal').modal('show');
         },
         openSignUp() {
-          $('#signupModal').modal('show');
+            $('#signupModal').modal('show');
         },
         logout() {
             User.logout();

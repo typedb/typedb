@@ -27,14 +27,13 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     <h5 class="modal-title"><i style="font-size:35px;" class="pe page-header-icon pe-7s-rocket"></i>&nbsp; Join our GRAKN.AI Community &nbsp;<i style="font-size:35px;" class="pe page-header-icon pe-7s-rocket"></i></h5>
                 </div>
                 <div class="modal-body">
-                    <p class="signup-text">Hey! </p>
-                    <p class="signup-text">We're an open-source technology. We get our funding based on adoption.</p>
-                    <p class="signup-text">It would mean a lot to us if you would like to join our community and support us! <i class="fa fa-smile-o"></i></p>
+                    <p class="signup-text">We'd like to invite you to join our Slack and Discussion community.</p>
+                    <p class="signup-text">As an open source technology, your support means a lot to us!</p>
                     <div class="panel panel-filled">
                         <div class="panel-body in-line">
                             <form @submit.prevent="validateBeforeSubmit" v-if="!formSubmitted">
                                 <div class="form-group">
-                                    <label class="label">Name</label>
+                                    <label class="label">First Name</label>
                                     <input v-model="credentials.name" v-validate.initial="name" data-vv-rules="required|alpha" :class="{'input': true, 'is-danger': errors.has('name') }" type="text" class="form-control">
                                     <span v-show="errors.has('name')" class="help-block"> <i v-show="errors.has('name')" class="fa fa-warning"></i>&nbsp;{{ errors.first('name') }}</span>
                                 </div>
@@ -75,17 +74,16 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </div>
 </template>
 
-<style>
+<style scoped>
 #signupModal .modal-body {
     padding-top: 20px 40px;
 }
-
-
-/*
-#signupModal .modal-header{
-  border-color: white;
-  background-color: #87A0B2;
-}*/
+.panel-filled{
+  margin-top: 15px;
+}
+button{
+  color:white;
+}
 
 #signupModal .btn-info {
     color: white;
@@ -94,6 +92,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .signup-text {
     color: white;
     font-size: 120%;
+    text-align:center;
 }
 </style>
 
@@ -119,7 +118,7 @@ export default {
 
     mounted: function() {
         this.$nextTick(function() {
-
+            User.setModalShown(true);
         });
     },
 
@@ -138,7 +137,6 @@ export default {
             EngineClient.sendInvite(this.credentials, this.signupComplete);
         },
         signupComplete(response) {
-
             $('#signupModal').modal('hide');
             $('#signupSuccess').modal('show');
             this.formSubmitted = false;

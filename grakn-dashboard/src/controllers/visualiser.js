@@ -21,7 +21,6 @@ export default {
     },
     data: function() {
         return {
-            engineQueryType: API.HAL_REQUEST,
             errorMessage: undefined,
             errorPanelClass: undefined,
             visualiser: {},
@@ -31,6 +30,8 @@ export default {
             typeKeys: [],
             doubleClickTime: 0,
             useReasoner: User.getReasonerStatus(),
+            materialiseReasoner:User.getMaterialiseStatus(),
+
 
             // resources keys used to change label of a node type
             allNodeProps: [],
@@ -71,8 +72,8 @@ export default {
 
             function resizeElements() {
                 // set graph div height
-                var divHeight = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top - 20;
-                $('.graph-div').height(divHeight);
+                var divHeight = window.innerHeight - graph.offsetTop - $('#graph-div').offset().top - 20;
+                $('#graph-div').height(divHeight);
                 //set the height of right panel of same size of graph-div
                 $('.properties-tab').height(divHeight + 7);
                 //fix the height of panel-body so that it is possible to make it overflow:scroll
@@ -82,7 +83,7 @@ export default {
             window.onresize = resizeElements;
 
             $('.properties-tab').hide();
-            var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top + 20;
+            var height = window.innerHeight - graph.offsetTop - $('#graph-div').offset().top + 20;
             // make the list of resources tab resizable with mouse - jQueryUI
             $('#list-resources-tab').resizable({
                 //make it fixed height and only resizable towards west
@@ -98,8 +99,8 @@ export default {
         onLoadOntology() {
             let query_isa = "match $x isa " + API.TYPE_TYPE + ";";
             let query_sub = "match $x sub " + API.TYPE_TYPE + ";";
-            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner);
-            EngineClient.graqlHAL(query_isa, this.onGraphResponse, this.useReasoner);
+            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
+            EngineClient.graqlHAL(query_isa, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
         },
 
         singleClick(param) {
@@ -126,7 +127,7 @@ export default {
             if (query.trim().startsWith("compute")) {
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             } else {
-                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner);
+                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
             }
         },
         /*
