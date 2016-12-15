@@ -67,7 +67,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 Type superType = type.superType();
 
                 if (superType != null) {
-                    sb.append(colorKeyword("sub ")).append(colorType(idToString(superType.getName())));
+                    sb.append(colorKeyword(" sub ")).append(colorType(idToString(superType.getName())));
                 }
             } else {
                 sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
