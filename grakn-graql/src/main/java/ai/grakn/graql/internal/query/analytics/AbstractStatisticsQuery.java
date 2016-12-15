@@ -86,8 +86,9 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         }
 
         ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
-        metaResourceType.instances().forEach(type ->
-                resourceTypesDataTypeMap.put(type.asType().getName(), type.asResourceType().getDataType().getName()));
+        metaResourceType.subTypes().stream()
+                .filter(type -> !type.equals(metaResourceType))
+                .forEach(type -> resourceTypesDataTypeMap.put(type.asType().getName(), type.asResourceType().getDataType().getName()));
     }
 
     String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
