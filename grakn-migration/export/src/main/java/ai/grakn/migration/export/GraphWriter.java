@@ -21,9 +21,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import ai.grakn.util.Schema;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -37,7 +36,6 @@ public class GraphWriter {
     private static final String EOL = ";\n";
 
     private final GraknGraph graph;
-    private final List<String> reserved = Arrays.asList("inference-rule", "constraint-rule");
 
     public GraphWriter(GraknGraph graph){
         this.graph = graph;
@@ -57,7 +55,6 @@ public class GraphWriter {
      */
     public String dumpData(){
         return join(types()
-                .filter(t -> t.superType() == null)
                 .filter(t -> !t.isRoleType())
                 .flatMap(c -> c.instances().stream())
                 .map(Concept::asInstance)
@@ -80,9 +77,8 @@ public class GraphWriter {
      * Get all the types in a graph.
      * @return a stream of all types with non-reserved IDs
      */
-    private Stream<Type> types(){
-        return graph.admin().getMetaConcept().instances().stream()
-                .map(Concept::asType)
-                .filter(t -> !reserved.contains(t.getName()));
+    private Stream<? extends Type> types(){
+        return graph.admin().getMetaConcept().subTypes().stream()
+                .filter(t -> !Schema.MetaSchema.isMetaName(t.getName()));
     }
 }
