@@ -44,7 +44,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     
     private SystemKeyspace<M, G> systemSpace() {
     	if (this.systemKeyspace == null)
-    		this.systemKeyspace = new SystemKeyspace<M, G>(this.engineUrl, this.config);
+    		this.systemKeyspace = new SystemKeyspace<M, G>(this.engineUrl, this.properties);
     	return this.systemKeyspace;
     }
 

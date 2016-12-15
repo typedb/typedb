@@ -18,13 +18,12 @@
 
 package ai.grakn.factory;
 
-import com.orientechnologies.orient.core.metadata.schema.OImmutableClass;
-import com.orientechnologies.orient.core.metadata.schema.OType;
-
 import ai.grakn.Grakn;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.orientechnologies.orient.core.metadata.schema.OImmutableClass;
+import com.orientechnologies.orient.core.metadata.schema.OType;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraphFactory;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -43,8 +43,14 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     private static final String UNIQUE = "type";
     private static final String SPECIAL_IN_MEMORY = "memory";
 
+    @Deprecated
     public OrientDBInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
+        openFactories = new HashMap<>();
+    }
+
+    public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties) {
+        super(keyspace, engineUrl, properties);
         openFactories = new HashMap<>();
     }
 

@@ -20,15 +20,18 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Properties;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -38,9 +41,19 @@ public class FactoryBuilderTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn-tinker.properties";
     private final static String KEYSPACE = "keyspace";
     private final static String ENGINE_URL = Grakn.IN_MEMORY;
+    private final static Properties TEST_PROPERTIES = new Properties();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+
+    @BeforeClass
+    public static void setupProperties(){
+        try (InputStream in = new FileInputStream(TEST_CONFIG)){
+            TEST_PROPERTIES.load(in);
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+        }
+    }
 
     @Test(expected=InvocationTargetException.class)
     public void testConstructorIsPrivate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
@@ -51,16 +64,16 @@ public class FactoryBuilderTest {
 
     @Test
     public void testBuildGraknFactory(){
-        InternalFactory mgf = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        InternalFactory mgf = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
         assertThat(mgf, instanceOf(TinkerInternalFactory.class));
     }
 
     @Test
     public void testSingleton(){
-        InternalFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        InternalFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        InternalFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
-        InternalFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
+        InternalFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
+        InternalFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
+        InternalFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
+        InternalFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);
@@ -68,14 +81,4 @@ public class FactoryBuilderTest {
         assertEquals(mgf1.getGraph(true), mgf2.getGraph(true));
         assertNotEquals(mgf1.getGraph(true), mgf3.getGraph(true));
     }
-
-    @Test
-    public void testBadConfigPath(){
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage("rubbish"))
-        ));
-        FactoryBuilder.getFactory(KEYSPACE, "rubbish", "rubbish");
-    }
-
 }

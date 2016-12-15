@@ -27,12 +27,9 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.PropertyResourceBundle;
+import java.io.StringReader;
+import java.util.Properties;
 
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
@@ -90,39 +87,38 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
     protected static ConfiguredFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
         try {
             String restFactoryUri = engineUrl + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
-            String config = EngineCommunicator.contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD);
 
-            //TODO: We should make config handling generic rather than through files. Using a temp file here is a bit strange
-            //Creating Temp File
-            File file = File.createTempFile("grakn-config", ".tmp");
-            String path = file.getAbsolutePath();
-            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
-            bw.write(config);
-            bw.close();
-
-            //Creating the actual grakn graph using reflection to identify the factory
-            FileInputStream fis = new FileInputStream(path);
-            PropertyResourceBundle bundle = new PropertyResourceBundle(fis);
-            fis.close();
+            Properties properties = new Properties();
+            properties.load(new StringReader(EngineCommunicator.contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)));
 
             String computer = null;
-            if(bundle.containsKey(COMPUTER)){
-                computer = bundle.getString(COMPUTER);
+            if(properties.containsKey(COMPUTER)){
+                computer = properties.get(COMPUTER).toString();
             }
 
-            return new ConfiguredFactory(path, computer, FactoryBuilder.getFactory(keyspace, engineUrl, path));
+            return new ConfiguredFactory(properties, computer, FactoryBuilder.getFactory(keyspace, engineUrl, properties));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
     }
 
     static class ConfiguredFactory {
+        Properties properties;
         String path;
         String graphComputer;
         InternalFactory factory;
 
+        @Deprecated
         ConfiguredFactory(String path, String graphComputer, InternalFactory factory){
             this.path = path;
+            this.graphComputer = graphComputer;
+            this.factory = factory;
+            this.properties = null;
+        }
+
+        ConfiguredFactory(Properties properties, String graphComputer, InternalFactory factory){
+            this.path = null;
+            this.properties = properties;
             this.graphComputer = graphComputer;
             this.factory = factory;
         }

@@ -24,6 +24,8 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Properties;
+
 
 /**
  * A graph factory which provides a grakn graph with a tinker graph backend.
@@ -31,8 +33,13 @@ import org.slf4j.LoggerFactory;
 class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TinkerInternalFactory.class);
 
+    @Deprecated
     TinkerInternalFactory(String keyspace, String engineUrl, String config){
         super(keyspace, engineUrl, config);
+    }
+
+    TinkerInternalFactory(String keyspace, String engineUrl, Properties properties){
+        super(keyspace, engineUrl, properties);
     }
 
     @Override
