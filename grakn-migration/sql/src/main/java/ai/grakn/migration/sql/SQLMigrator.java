@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 /**
  * The SQL migrator will execute the given SQL query and then apply the given template to those results.
+ * @author alexandraorth
  */
 public class SQLMigrator extends AbstractMigrator {
 

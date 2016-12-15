@@ -20,60 +20,61 @@ package ai.grakn.migration.json;
 
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.base.io.MigrationCLI;
-import org.apache.commons.cli.Options;
 
 import java.io.File;
+import java.util.Optional;
+
+import static ai.grakn.migration.base.io.MigrationCLI.die;
+import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
+import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
+import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
+import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
+import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
+import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 
 /**
  * Main program to migrate a JSON schema and data into a Grakn graph. For use from a command line.
  * Expected arguments are the JSON schema files and the Grakn graph name.
  * Additionally, JSON data file or directory of files may be provided as well as the URL of Grakn engine.
+ *
+ * @author alexandraorth
  */
 public class Main {
 
-    private static Options options = new Options();
-    static {
-        options.addOption("i", "input", true, "input json data file");
-        options.addOption("t", "template", true, "graql template to apply over data");
-        options.addOption("b", "batch", true, "number of row to load at once");
-    }
-
     public static void main(String[] args){
-        MigrationCLI.create(args, options).ifPresent(Main::runJson);
+        MigrationCLI.init(args, JsonMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runJson);
     }
 
-    public static void runJson(MigrationCLI cli){
-        String jsonDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
-        String jsonTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
-        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : JsonMigrator.BATCH_SIZE;
-
-        // get files
-        File jsonDataFile = new File(jsonDataFileName);
-        File jsonTemplateFile = new File(jsonTemplateName);
+    public static void runJson(JsonMigrationOptions options){
+        File jsonDataFile = new File(options.getInput());
+        File jsonTemplateFile = new File(options.getTemplate());
 
         if(!jsonDataFile.exists()){
-            cli.die("Cannot find file: " + jsonDataFileName);
+            die("Cannot find file: " + options.getInput());
         }
 
         if(!jsonTemplateFile.exists() || jsonTemplateFile.isDirectory()){
-            cli.die("Cannot find file: " + jsonTemplateName);
+            die("Cannot find file: " + options.getTemplate());
         }
 
-        cli.printInitMessage(jsonDataFile.getPath());
+        printInitMessage(options, jsonDataFile.getPath());
 
-        String template = cli.fileAsString(jsonTemplateFile);
+        String template = fileAsString(jsonTemplateFile);
         try(JsonMigrator jsonMigrator = new JsonMigrator(template, jsonDataFile)){
 
-            if(cli.hasOption("n")){
-                cli.writeToSout(jsonMigrator.migrate());
+            if(options.isNo()){
+                writeToSout(jsonMigrator.migrate());
             } else {
-                MigrationLoader.load(cli.getLoader(), batchSize, jsonMigrator);
-                cli.printWholeCompletionMessage();
+                MigrationLoader.load(getLoader(options), options.getBatch(), jsonMigrator);
+                printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable){
-            cli.die(throwable);
+            die(throwable);
         }
 
-        cli.initiateShutdown();
+        initiateShutdown();
     }
 }

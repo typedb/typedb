@@ -1,0 +1,3 @@
+insert $x isa pokemon-type
+    has type-id <ID>
+    has description <IDENTIFIER>;
