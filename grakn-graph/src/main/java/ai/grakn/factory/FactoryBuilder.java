@@ -22,13 +22,10 @@ import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.shaded.minlog.Log;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.MissingResourceException;
-import java.util.PropertyResourceBundle;
-import java.util.ResourceBundle;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 class FactoryBuilder {
@@ -39,20 +36,14 @@ class FactoryBuilder {
         throw new UnsupportedOperationException();
     }
 
-    static InternalFactory getFactory(String keyspace, String engineUrl, String config){
+    static InternalFactory getFactory(String keyspace, String engineUrl, Properties properties){
         try{
-        	String factoryType = null;
-        	if (!Grakn.IN_MEMORY.equals(engineUrl)) 
-        		try (FileInputStream fis = new FileInputStream(config)) {
-		            ResourceBundle bundle = new PropertyResourceBundle(fis);
-		            factoryType = bundle.getString(FACTORY);
-		            fis.close();
-        		}
-        	else
-        		factoryType = TinkerInternalFactory.class.getName();
-            return getGraknGraphFactory(factoryType, keyspace, engineUrl, config);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(config), e);
+            String factoryType;
+            if (!Grakn.IN_MEMORY.equals(engineUrl))
+                factoryType = properties.get(FACTORY).toString();
+            else
+                factoryType = TinkerInternalFactory.class.getName();
+            return getGraknGraphFactory(factoryType, keyspace, engineUrl, properties);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
         }
@@ -64,7 +55,7 @@ class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
+    static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
         String key = factoryType + keyspace.toLowerCase();
         Log.debug("Get factory for " + key);
         InternalFactory factory = openFactories.get(key);
@@ -75,8 +66,8 @@ class FactoryBuilder {
             try {
                 //internalFactory = (InternalFactory) Class.forName(factoryType).newInstance();
                 internalFactory = (InternalFactory) Class.forName(factoryType)
-                        .getDeclaredConstructor(String.class, String.class, String.class)
-                        .newInstance(keyspace, engineUrl, config);
+                        .getDeclaredConstructor(String.class, String.class, Properties.class)
+                        .newInstance(keyspace, engineUrl, properties);
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
             }
@@ -84,7 +75,7 @@ class FactoryBuilder {
             Log.debug("New factory created " + internalFactory);
             if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
             	Log.debug("This is a system factory, loading system ontology.");
-            	new SystemKeyspace(engineUrl, config).loadSystemOntology();
+            	new SystemKeyspace(engineUrl, properties).loadSystemOntology();
             }
             else
             	Log.debug("This is not a system factory, not loading system ontology.");

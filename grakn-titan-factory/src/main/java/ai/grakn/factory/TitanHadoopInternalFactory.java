@@ -20,23 +20,23 @@ package ai.grakn.factory;
 
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.util.Properties;
 
 public class TitanHadoopInternalFactory extends AbstractInternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TitanHadoopInternalFactory.class);
 
-    TitanHadoopInternalFactory(String keyspace, String engineUrl, String config) {
-        super(keyspace, engineUrl, config);
+    TitanHadoopInternalFactory(String keyspace, String engineUrl, Properties properties) {
+        super(keyspace, engineUrl, properties);
+
+        properties.setProperty(CLUSTER_KEYSPACE, keyspace);
+        properties.setProperty(INPUT_KEYSPACE, keyspace);
     }
 
     @Override
@@ -52,17 +52,6 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     @Override
     HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
-        return (HadoopGraph) GraphFactory.open(buildConfig(super.keyspace, super.config));
-    }
-
-    private static Configuration buildConfig(String name, String pathToConfig){
-        try {
-            PropertiesConfiguration properties = new PropertiesConfiguration(new File(pathToConfig));
-            properties.setProperty(CLUSTER_KEYSPACE, name);
-            properties.setProperty(INPUT_KEYSPACE, name);
-            return properties;
-        } catch (ConfigurationException e) {
-            throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
-        }
+        return (HadoopGraph) GraphFactory.open(properties);
     }
 }
