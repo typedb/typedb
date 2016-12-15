@@ -30,7 +30,7 @@ export default {
             typeKeys: [],
             doubleClickTime: 0,
             useReasoner: User.getReasonerStatus(),
-            materialiseReasoner:User.getMaterialiseStatus(),
+            materialiseReasoner: User.getMaterialiseStatus(),
 
 
             // resources keys used to change label of a node type
@@ -42,7 +42,7 @@ export default {
             allNodeOntologyProps: {},
             allNodeResources: {},
             allNodeLinks: {},
-
+            currentTypeProperties: {},
             numOfResources: 0,
             numOfLinks: 0,
             codeMirror: {}
@@ -99,8 +99,8 @@ export default {
         onLoadOntology() {
             let query_isa = "match $x isa " + API.TYPE_TYPE + ";";
             let query_sub = "match $x sub " + API.TYPE_TYPE + ";";
-            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
-            EngineClient.graqlHAL(query_isa, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
+            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner, this.materialiseReasoner);
+            EngineClient.graqlHAL(query_isa, this.onGraphResponse, this.useReasoner, this.materialiseReasoner);
         },
 
         singleClick(param) {
@@ -127,7 +127,7 @@ export default {
             if (query.trim().startsWith("compute")) {
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             } else {
-                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
+                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner, this.materialiseReasoner);
             }
         },
         /*
@@ -243,6 +243,7 @@ export default {
          * User interaction: visual elements control
          */
         configureNode(p) {
+            this.currentTypeProperties.push(p);
             if (!(this.nodeType in this.selectedProps)) {
                 this.selectedProps[this.nodeType] = [];
             }
@@ -272,6 +273,8 @@ export default {
 
             this.allNodeProps = visualiser.getAllNodeProperties(node);
             this.nodeType = visualiser.getNodeType(node);
+            this.currentTypeProperties = this.selectedProps[this.nodeType];
+            if (this.currentTypeProperties == undefined) this.currentTypeProperties = [];
             $('#myModal2').modal('show');
         },
 

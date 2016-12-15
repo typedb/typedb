@@ -178,7 +178,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                 <p v-else>There is nothing configurable for nodes of type "{{nodeType}}".</p>
                                 <br/>
                                 <ul class="dd-list">
-                                    <li class="dd-item" v-for="prop in allNodeProps" v-bind:class="{'li-active':selectedProps.includes(prop)}">
+                                    <li class="dd-item" v-for="prop in allNodeProps" v-bind:class="{'li-active':currentTypeProperties.includes(prop)}">
                                         <div class="dd-handle" @click="configureNode(prop)">{{prop}}</div>
                                     </li>
                                 </ul>

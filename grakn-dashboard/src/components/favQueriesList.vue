@@ -89,6 +89,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     background-color: rgba(68, 70, 79, 1);
 }
 
+.panel-heading{
+  padding:5px 10px;
+}
+
 .tooltip-query .tooltiptext {
     visibility: hidden;
     width: 120px;
