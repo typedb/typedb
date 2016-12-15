@@ -1,6 +1,6 @@
 insert
 
-pokemon isa entity-type
+pokemon sub entity
     plays-role ancestor
     plays-role descendant
     plays-role pokemon-with-type
@@ -10,35 +10,35 @@ pokemon isa entity-type
     has-resource height
     has-resource weight;
 
-pokemon-type isa entity-type
+pokemon-type sub entity
     has-resource name
     plays-role type-of-pokemon
     plays-role defending-type
     plays-role attacking-type;
 
-name isa resource-type datatype string;
-pokedex-no isa resource-type datatype long;
-description isa resource-type datatype string;
-height isa resource-type datatype double;
-weight isa resource-type datatype double;
+name sub resource datatype string;
+pokedex-no sub resource datatype long;
+description sub resource datatype string;
+height sub resource datatype double;
+weight sub resource datatype double;
 
-evolution isa relation-type
+evolution sub relation
     has-role ancestor
     has-role descendant;
-ancestor isa role-type;
-descendant isa role-type;
+ancestor sub role;
+descendant sub role;
 
-has-type isa relation-type
+has-type sub relation
     has-role pokemon-with-type
     has-role type-of-pokemon;
-pokemon-with-type isa role-type;
-type-of-pokemon isa role-type;
+pokemon-with-type sub role;
+type-of-pokemon sub role;
 
-super-effective isa relation-type
+super-effective sub relation
     has-role defending-type
     has-role attacking-type;
-defending-type isa role-type;
-attacking-type isa role-type;
+defending-type sub role;
+attacking-type sub role;
 
 
 # Data retrieved from Pokeapi: $https://pokeapi.co/

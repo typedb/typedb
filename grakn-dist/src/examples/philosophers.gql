@@ -3,7 +3,7 @@ insert
 
 # Concept types
 
-person isa entity-type
+person sub entity
     plays-role philosopher
     plays-role teacher
     plays-role student
@@ -12,41 +12,41 @@ person isa entity-type
     has-resource title
     has-resource epithet;
 
-school isa entity-type
+school sub entity
     has-resource name
     plays-role philosophy;
 
-fact isa entity-type
+fact sub entity
     plays-role thought
     has-resource name
     has-resource description;
 
-name isa resource-type datatype string;
-title isa resource-type datatype string;
-epithet isa resource-type datatype string;
-description isa resource-type datatype string;
+name sub resource datatype string;
+title sub resource datatype string;
+epithet sub resource datatype string;
+description sub resource datatype string;
 
 
 # Relation types
 
-practice isa relation-type
+practice sub relation
     has-role philosopher
     has-role philosophy;
-philosopher isa role-type;
-philosophy isa role-type;
+philosopher sub role;
+philosophy sub role;
 
-education isa relation-type
+education sub relation
     has-role teacher
     has-role student;
-teacher isa role-type;
-student isa role-type;
+teacher sub role;
+student sub role;
 
-knowledge isa relation-type
+knowledge sub relation
     has-role thinker
     has-role thought
     plays-role thought;
-thinker isa role-type;
-thought isa role-type;
+thinker sub role;
+thought sub role;
 
 
 # Instances
