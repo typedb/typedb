@@ -27,6 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -648,6 +649,24 @@ public class GraknGraphHighLevelTest extends GraphTestBase{
         assertEquals(1, resourceType.playsRoles().size());
         assertEquals(3, graknGraph.getMetaRelationType().subTypes().size());
         assertEquals(6, graknGraph.getMetaRoleType().subTypes().size());
+    }
+
+    @Test
+    public void testStuff() throws GraknValidationException {
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "bib").getGraph();
+
+        graknGraph.graql().parse("insert " +
+                "name sub resource datatype string;\n" +
+                "firstname sub name;\n" +
+                "surname sub name;\n" +
+                "middlename sub name;");
+
+        graknGraph.graql().parse("insert person sub entity\n" +
+                "\thas-resource firstname\n" +
+                "\thas-resource middlename\n" +
+                "\thas-resource surname;");
+
+        graknGraph.commit();
     }
 
 }

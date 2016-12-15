@@ -244,7 +244,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
             });
         }
 
-        if(currentSuperType == null || !currentSuperType.equals(superType)) {
+        if(currentSuperType == null || (!currentSuperType.equals(superType) && !Schema.MetaSchema.isMetaName(superType.getName()))) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
             putEdge(superType, Schema.EdgeLabel.SUB);

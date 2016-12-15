@@ -142,7 +142,7 @@ class ValidateGlobalRules {
      */
     static Collection<RoleType> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.superType();
-        if(superRelationType == null){ //No super type, no validation rule
+        if(Schema.MetaSchema.isMetaName(superRelationType.getName())){ //No super type, no validation rule
             return Collections.emptyList();
         }
 
@@ -160,7 +160,7 @@ class ValidateGlobalRules {
 
             for (RoleType hasRole : hasRoles) {
                 RoleType superRoleType = hasRole.superType();
-                if (superRoleType == null || !allSuperRolesPlayed.contains(superRoleType.getName())) {
+                if (superRoleType == null || (!Schema.MetaSchema.isMetaName(superRoleType.getName()) && !allSuperRolesPlayed.contains(superRoleType.getName()))    ) {
                     invalidTypes.add(hasRole);
                 }
             }
