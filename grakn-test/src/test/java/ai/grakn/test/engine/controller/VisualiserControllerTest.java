@@ -122,7 +122,6 @@ public class VisualiserControllerTest extends AbstractGraphTest {
                 .at("_embedded")
                 .at("isa").at(0);
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), embeddedType.at("_baseType").asString());
-        assertEquals(Schema.BaseType.ENTITY.name(), embeddedType.at("_type").asString());
     }
 
     private void checkHALStructureOfPersonWithoutEmbedded(Json person){
@@ -190,10 +189,9 @@ public class VisualiserControllerTest extends AbstractGraphTest {
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
 
-        assertEquals(message.at("_type").asString(), Schema.BaseType.ENTITY.name());
         //TODO:maybe change person to proper id? and add  _nameType property
         assertEquals(message.at("_id").asString(),"person");
-        assertEquals(message.at("_baseType").asString(),"type");
+        assertEquals(Schema.BaseType.ENTITY_TYPE.name(), message.at("_baseType").asString());
         assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId()+"?keyspace="+graph.getKeyspace());
         assertEquals(2,message.at("_embedded").at("isa").asJsonList().size());
     }
