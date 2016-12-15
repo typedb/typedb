@@ -38,7 +38,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -47,8 +49,13 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     protected final Logger LOG = LoggerFactory.getLogger(TitanInternalFactory.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
+    @Deprecated
     TitanInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
+    }
+
+    TitanInternalFactory(String keyspace, String engineUrl, Properties properties) {
+        super(keyspace, engineUrl, properties);
     }
 
     @Override
@@ -74,6 +81,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         return newTitanGraph(super.keyspace, super.engineUrl, super.config, batchLoading);
     }
 
+    @Deprecated
     private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig, boolean batchLoading){
         TitanGraph titanGraph = configureGraph(name, address, pathToConfig, batchLoading);
         buildTitanIndexes(titanGraph);
@@ -81,6 +89,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         return titanGraph;
     }
 
+    @Deprecated
     private TitanGraph configureGraph(String name, String address, String pathToConfig, boolean batchLoading){
         ResourceBundle defaultConfig;
         if(pathToConfig == null) {
@@ -103,6 +112,37 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         defaultConfig.keySet().forEach(key -> builder.set(key, defaultConfig.getString(key)));
         return builder.open();
     }
+
+    private synchronized TitanGraph newTitanGraph(String name, String address, Properties properties, boolean batchLoading){
+        TitanGraph titanGraph = configureGraph(name, address, properties, batchLoading);
+        buildTitanIndexes(titanGraph);
+        titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+        return titanGraph;
+    }
+
+    private TitanGraph configureGraph(String name, String address, Properties properties, boolean batchLoading){
+        //Load default properties if none provided
+        if(properties == null){
+            properties = new Properties();
+            InputStream in = getClass().getResourceAsStream(DEFAULT_CONFIG);
+            try {
+                properties.load(in);
+                in.close();
+            } catch (IOException e) {
+                throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
+            }
+        }
+
+        TitanFactory.Builder builder = TitanFactory.build().
+                set("storage.hostname", address).
+                set("storage.cassandra.keyspace", name).
+                set("storage.batch-loading", batchLoading);
+
+        properties.entrySet().forEach(entry-> builder.set(entry.getKey().toString(), entry.getValue()));
+
+        return builder.open();
+    }
+
 
     private static void buildTitanIndexes(TitanGraph graph) {
         TitanManagement management = graph.openManagement();

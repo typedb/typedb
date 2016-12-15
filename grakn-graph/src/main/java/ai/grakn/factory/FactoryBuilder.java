@@ -58,6 +58,8 @@ class FactoryBuilder {
         }
     }
 
+
+
     /**
      *
      * @param factoryType The string defining which factory should be used for creating the grakn graph.

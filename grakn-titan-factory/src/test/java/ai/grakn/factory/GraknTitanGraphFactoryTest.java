@@ -70,7 +70,7 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = new TitanInternalFactory(TEST_SHARED, TEST_URI, TEST_CONFIG);
+        titanGraphFactory = new TitanInternalFactory(TEST_SHARED, TEST_URI, TEST_PROPERTIES);
 
         sharedGraph = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
 
