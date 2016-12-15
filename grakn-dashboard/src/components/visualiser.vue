@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 -->
 
+
 <template>
 <section class="wrapper">
     <side-bar></side-bar>
@@ -42,7 +43,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <div class="tab-content">
                             <div id="tab-1" class="tab-pane active">
                                 <div class="panel-body graph-panel-body">
-                                    <div class="graph-div" ref="graph"></div>
+                                    <div id="graph-div" ref="graph"></div>
                                     <div class="panel panel-filled panel-c-accent properties-tab" id="list-resources-tab">
                                         <div class="panel-heading">
                                             <div class="panel-tools">

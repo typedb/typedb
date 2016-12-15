@@ -13,8 +13,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
--->
+along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
+
 
 <template>
 <section class="wrapper">
@@ -95,6 +95,7 @@ import HALParser from '../js/HAL/HALParser.js';
 import EngineClient from '../js/EngineClient.js';
 import * as PLang from '../js/prismGraql.js';
 import simpleGraql from '../js/codemirrorGraql.js';
+import User from '../js/User.js'
 
 // Components
 var GraqlEditor = require('./graqlEditor.vue')
@@ -110,7 +111,8 @@ export default {
             errorPanelClass: undefined,
             graqlResponse: undefined,
             halParser: {},
-
+            useReasoner: User.getReasonerStatus(),
+            materialiseReasoner:User.getMaterialiseStatus(),
             typeInstances: false,
             typeKeys: [],
 
@@ -133,7 +135,7 @@ export default {
          */
         onClickSubmit(query) {
             this.errorMessage = undefined;
-            EngineClient.graqlShell(query, this.shellResponse);
+            EngineClient.graqlShell(query, this.shellResponse,this.useReasoner,this.materialiseReasoner);
         },
         onClear() {
             this.graqlResponse = undefined;

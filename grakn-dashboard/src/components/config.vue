@@ -39,6 +39,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                             <td><input type="checkbox" v-model="useReasoner"></td>
                                         </tr>
                                         <tr>
+                                            <td>Materialise Inference</td>
+                                            <td><input type="checkbox" v-model="materialiseReasoner"></td>
+                                        </tr>
+                                        <tr>
                                             <td>Materialisation</td>
                                             <td><button @click="materialiseAll" class="btn btn-default">Materialise All</button></td>
                                         </tr>
@@ -103,8 +107,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                             <td>{{response['blockingLoader.batch-size']}}</td>
                                         </tr>
                                         <tr>
-                                            <td>Default Graph Name</td>
-                                            <td>{{response['graphdatabase.default-graph-name']}}</td>
+                                            <td>Default Keyspace</td>
+                                            <td>{{response['graphdatabase.default-keyspace']}}</td>
                                         </tr>
                                         <tr>
                                             <td>Repeat Commits</td>
@@ -168,7 +172,8 @@ export default {
         return {
             response: undefined,
             errorMessage: undefined,
-            useReasoner: (User.getReasonerStatus()==='true')
+            useReasoner: User.getReasonerStatus(),
+            materialiseReasoner: User.getMaterialiseStatus()
         };
     },
 
@@ -181,6 +186,9 @@ export default {
     watch:{
       useReasoner:function(newVal,oldVal){
         User.setReasonerStatus(newVal);
+      },
+      materialiseReasoner:function(newVal,oldVal){
+        User.setMaterialiseStatus(newVal);
       }
     },
 

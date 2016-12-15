@@ -30,6 +30,7 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * Export contents of a Grakn graph as a Graql insert query.
+ * @author alexandraorth
  */
 public class GraphWriter {
 

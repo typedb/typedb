@@ -5,7 +5,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -17,8 +16,13 @@ import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -195,6 +199,74 @@ public class ShortestPathTest extends AbstractGraphTest {
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
+        }
+    }
+
+    @Test
+    public void testMultipleIndependentShortestPaths() throws GraknValidationException {
+        assumeFalse(usingTinker());
+
+        EntityType entityType = graph.putEntityType(thing);
+
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
+        entityType.playsRole(role1).playsRole(role2);
+        RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
+
+        Entity start = entityType.addEntity();
+        Entity end = entityType.addEntity();
+
+        String startId = start.getId();
+        String endId = end.getId();
+
+        // create N identical length paths
+        int numberOfPaths = 10;
+        Set<List<String>> validPaths = new HashSet<>();
+
+        for (int i = 0; i < numberOfPaths; i++) {
+
+            List<String> validPath = new ArrayList<>();
+            validPath.add(startId);
+
+            Entity middle = entityType.addEntity();
+            String middleId = middle.getId();
+            String assertion1 = relationType.addRelation()
+                    .putRolePlayer(role1, start)
+                    .putRolePlayer(role2, middle).getId();
+
+            validPath.add(assertion1);
+            validPath.add(middleId);
+
+            String assertion2 = relationType.addRelation()
+                    .putRolePlayer(role1, middle)
+                    .putRolePlayer(role2, end).getId();
+
+            validPath.add(assertion2);
+            validPath.add(endId);
+            validPaths.add(validPath);
+        }
+
+        graph.commit();
+
+        Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
+        assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
+    }
+
+    private boolean checkPathsAreEqual(List<String> correctPath, Optional<List<Concept>> computedPath) {
+        if (computedPath.isPresent()) {
+            List<Concept> actualPath = computedPath.get();
+            if (actualPath.isEmpty()) {
+                return correctPath.isEmpty();
+            } else {
+                ListIterator<Concept> elements = actualPath.listIterator();
+                boolean returnState = true;
+                while (elements.hasNext()) {
+                    returnState &= (correctPath.get(elements.nextIndex()).equals(elements.next().getId()));
+                }
+                return returnState;
+            }
+        } else {
+            return correctPath.isEmpty();
         }
     }
 

@@ -48,7 +48,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Before
     public void setup(){
-        graknGraph = FactoryBuilder.getFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);// new TitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
+        graknGraph = FactoryBuilder.getFactory(TEST_NAME, TEST_URI, TEST_PROPERTIES).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
@@ -120,8 +120,8 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void testCaseSensitiveKeyspaces(){
-        TitanInternalFactory factory1 = (TitanInternalFactory)FactoryBuilder.getFactory("case", TEST_URI, TEST_CONFIG);
-        TitanInternalFactory factory2 = (TitanInternalFactory)FactoryBuilder.getFactory("Case", TEST_URI, TEST_CONFIG);
+        TitanInternalFactory factory1 = (TitanInternalFactory)FactoryBuilder.getFactory("case", TEST_URI, TEST_PROPERTIES);
+        TitanInternalFactory factory2 = (TitanInternalFactory)FactoryBuilder.getFactory("Case", TEST_URI, TEST_PROPERTIES);
         GraknTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
         GraknTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
 
@@ -130,7 +130,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void testClearTitanGraph(){
-        GraknTitanGraph graph = (GraknTitanGraph)FactoryBuilder.getFactory("case", TEST_URI, TEST_CONFIG).getGraph(false);
+        GraknTitanGraph graph = (GraknTitanGraph)FactoryBuilder.getFactory("case", TEST_URI, TEST_PROPERTIES).getGraph(false);
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(allOf(
@@ -141,7 +141,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void testStableTransactions() throws GraknValidationException {
-        GraknTitanGraph graph = (GraknTitanGraph)FactoryBuilder.getFactory("stabletransactions", TEST_URI, TEST_CONFIG).getGraph(false);
+        GraknTitanGraph graph = (GraknTitanGraph)FactoryBuilder.getFactory("stabletransactions", TEST_URI, TEST_PROPERTIES).getGraph(false);
         assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
 
         graph.putEntityType("name 1");

@@ -1,20 +1,20 @@
 package ai.grakn.factory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -58,17 +58,17 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     
 	private String engineUrl;
-	private String config;
+	private Properties properties;
 	private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<String, Boolean>();
 	private InternalFactory<M, T> factory;
 	
-	public SystemKeyspace(String engineUrl, String config) {
+	public SystemKeyspace(String engineUrl, Properties properties) {
 		this.engineUrl = engineUrl;
-		this.config = config;
-		if (config != null)
-			this.factory = FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, config);
+		this.properties = properties;
+		if (properties != null)
+			this.factory = FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, properties);
 		else
-			this.factory = 	FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, Grakn.IN_MEMORY, config); //Grakn.factory(engineUrl, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph()) {
+			this.factory = 	FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, Grakn.IN_MEMORY, properties);
 	}
 
 	/**
@@ -99,7 +99,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	 * multiple times.
 	 */
 	public void loadSystemOntology() {
-		try (GraknGraph graph = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, config).getGraph(false)) {
+		try (GraknGraph graph = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties).getGraph(false)) {
 			if (graph.getEntityType(KEYSPACE_ENTITY) != null)
 				return;
 			ClassLoader loader = this.getClass().getClassLoader();

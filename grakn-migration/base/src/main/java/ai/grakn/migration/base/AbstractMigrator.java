@@ -18,6 +18,7 @@
 
 package ai.grakn.migration.base;
 
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -35,6 +36,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public abstract class AbstractMigrator implements Migrator {
+
+    private static final ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static Logger LOG = LoggerFactory.getLogger(AbstractMigrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
@@ -57,7 +60,8 @@ public abstract class AbstractMigrator implements Migrator {
         try {
             return Optional.of((InsertQuery) queryBuilder.parseTemplate(template, data));
         } catch (GraqlTemplateParsingException e){
-            LOG.warn("Query was not sent to loader- Unable to parse template with data: " + data);
+            LOG.warn("Query was not sent to loader- " + e.getMessage());
+            LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces: " + properties.getLogFilePath());
         }
 
         return Optional.empty();

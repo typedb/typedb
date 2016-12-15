@@ -38,6 +38,7 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Migrator for migrating JSON data into Grakn instances
+ * @author alexandraorth
  */
 public class JsonMigrator extends AbstractMigrator {
 

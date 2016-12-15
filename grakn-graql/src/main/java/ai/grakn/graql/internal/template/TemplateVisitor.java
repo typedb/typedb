@@ -384,7 +384,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Value eval = evaluate(var);
 
         if(eval == Value.NULL){
-            throw new GraqlTemplateParsingException("Key " + var + " not present in data: " + originalContext);
+            throw new GraqlTemplateParsingException("Key [" + var + "] not present in data: " + originalContext);
         }
 
         if(left.isEmpty() && right.isEmpty()){

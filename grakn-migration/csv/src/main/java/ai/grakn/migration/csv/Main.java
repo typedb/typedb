@@ -18,88 +18,69 @@
 
 package ai.grakn.migration.csv;
 
-import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
-import org.apache.commons.cli.Options;
 
 import java.io.File;
+import java.util.Optional;
+
+import static ai.grakn.migration.base.io.MigrationCLI.die;
+import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
+import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
+import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
+import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
+import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
+import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 
 /**
  * Main program to migrate CSV files into a Grakn graph. For use from a command line.
  * Expected arguments are the CSV file and the Graql template.
  * Additionally, delimiter, batch size, location of engine and graph name can be provided.
+ * @author alexandraorth
  */
 public class Main {
 
-    private static Options getOptions(){
-        Options options = new Options();
-        options.addOption("i", "input", true, "input csv file");
-        options.addOption("t", "template", true, "graql template to apply over data");
-        options.addOption("s", "separator", true, "separator of columns in input file");
-        options.addOption("q", "quote", true, "character used to encapsulate values containing special characters");
-        options.addOption("l", "null", true, "string that will be evaluated as null");
-        options.addOption("b", "batch", true, "number of row to load at once");
-        return options;
-    }
-
     public static void main(String[] args) {
-        MigrationCLI.create(args, getOptions()).ifPresent(Main::runCSV);
+        MigrationCLI.init(args, CSVMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runCSV);
     }
 
-    public static void runCSV(MigrationCLI cli){
-        String csvDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
-        String csvTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
-        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : AbstractMigrator.BATCH_SIZE;
-        String delimiterString = cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.SEPARATOR);
-        String quoteString = cli.hasOption("q") ? cli.getOption("q") : Character.toString(CSVMigrator.QUOTE);
-        String nullString = cli.hasOption("l") ? cli.getOption("l") : CSVMigrator.NULL_STRING;
-
-        if (delimiterString.toCharArray().length != 1) {
-            cli.die("Wrong number of characters in delimiter " + delimiterString);
-        }
-
-        char csvDelimiter = delimiterString.toCharArray()[0];
-
-        if (quoteString.toCharArray().length != 1) {
-            cli.die("Wrong number of characters in quote " + quoteString);
-        }
-
-        char quote = quoteString.toCharArray()[0];
-
+    public static void runCSV(CSVMigrationOptions options){
         // get files
-        File csvDataFile = new File(csvDataFileName);
-        File csvTemplate = new File(csvTemplateName);
+        File csvDataFile = new File(options.getInput());
+        File csvTemplate = new File(options.getTemplate());
 
         if (!csvTemplate.exists()) {
-            cli.die("Cannot find file: " + csvTemplateName);
+            die("Cannot find file: " + options.getTemplate());
         }
 
         if (!csvDataFile.exists()) {
-            cli.die("Cannot find file: " + csvDataFileName);
+            die("Cannot find file: " + options.getInput());
         }
 
-        cli.printInitMessage(csvDataFile.getPath());
+        printInitMessage(options, csvDataFile.getPath());
 
-        String template = cli.fileAsString(csvTemplate);
+        String template = fileAsString(csvTemplate);
         try (
                 CSVMigrator csvMigrator =
                         new CSVMigrator(template, csvDataFile)
-                                .setSeparator(csvDelimiter)
-                                .setQuoteChar(quote)
-                                .setNullString(nullString);
+                                .setSeparator(options.getSeparator())
+                                .setQuoteChar(options.getQuote())
+                                .setNullString(options.getNullString())
         ) {
 
-            if (cli.hasOption("n")) {
-                cli.writeToSout(csvMigrator.migrate());
+            if (options.isNo()) {
+                writeToSout(csvMigrator.migrate());
             } else {
-                MigrationLoader.load(cli.getLoader(), batchSize, csvMigrator);
-                cli.printWholeCompletionMessage();
+                MigrationLoader.load(getLoader(options), options.getBatch(), csvMigrator);
+                printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable) {
-            cli.die(throwable);
+            die(throwable);
         }
 
-        cli.initiateShutdown();
+        initiateShutdown();
     }
 }

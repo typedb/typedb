@@ -171,9 +171,10 @@ public class VisualiserController {
     private String match(Request req, Response res) {
         String keyspace = getKeyspace(req);
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
+        boolean materialise = parseBoolean(req.queryParams("materialise"));
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-            QueryBuilder qb = graph.graql().infer(useReasoner);
+            QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
                 switch (getAcceptType(req)) {

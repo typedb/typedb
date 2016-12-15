@@ -18,16 +18,18 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+
+import java.util.Properties;
 
 abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<M, G> {
 	
     protected final String keyspace;
     protected final String engineUrl;
-    protected final String config;
+    protected final Properties properties;
 
     protected M graknGraph = null;
     private M batchLoadingGraknGraph = null;
@@ -41,18 +43,18 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     
     private SystemKeyspace<M, G> systemSpace() {
     	if (this.systemKeyspace == null)
-    		this.systemKeyspace = new SystemKeyspace<M, G>(this.engineUrl, this.config);
+    		this.systemKeyspace = new SystemKeyspace<M, G>(this.engineUrl, this.properties);
     	return this.systemKeyspace;
     }
-    
-    AbstractInternalFactory(String keyspace, String engineUrl, String config){
+
+    AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
         if(keyspace == null) {
             throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
         }
 
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
-        this.config = config;        
+        this.properties = properties;
     }
 
     abstract boolean isClosed(G innerGraph);
