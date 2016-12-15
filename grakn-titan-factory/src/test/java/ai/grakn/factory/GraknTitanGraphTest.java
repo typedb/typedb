@@ -48,7 +48,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Before
     public void setup(){
-        graknGraph = FactoryBuilder.getFactory(TEST_NAME, TEST_URI, TEST_PROPERTIES).getGraph(TEST_BATCH_LOADING);// new TitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
+        graknGraph = FactoryBuilder.getFactory(TEST_NAME, TEST_URI, TEST_PROPERTIES).getGraph(TEST_BATCH_LOADING);
     }
 
     @After

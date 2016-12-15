@@ -186,7 +186,7 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
-        TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", TEST_URI, TEST_CONFIG);
+        TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", TEST_URI, TEST_PROPERTIES);
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
@@ -228,7 +228,7 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString().replaceAll("-", "");
-        titanGraphFactory = new TitanInternalFactory(name, TEST_URI, TEST_CONFIG);
+        titanGraphFactory = new TitanInternalFactory(name, TEST_URI, TEST_PROPERTIES);
         Graph graph = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;

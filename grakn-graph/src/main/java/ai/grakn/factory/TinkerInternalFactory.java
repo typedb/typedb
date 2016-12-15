@@ -33,11 +33,6 @@ import java.util.Properties;
 class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TinkerInternalFactory.class);
 
-    @Deprecated
-    TinkerInternalFactory(String keyspace, String engineUrl, String config){
-        super(keyspace, engineUrl, config);
-    }
-
     TinkerInternalFactory(String keyspace, String engineUrl, Properties properties){
         super(keyspace, engineUrl, properties);
     }
@@ -55,7 +50,7 @@ class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, Ti
     @Override
     TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn("In memory Tinkergraph ignores the address [" + super.engineUrl + "] and " +
-                 "the config path [" + super.config + "]");
+                 "the config path [" + super.properties + "]");
         return TinkerGraph.open();
     }
 

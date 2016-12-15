@@ -43,11 +43,6 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     private static final String UNIQUE = "type";
     private static final String SPECIAL_IN_MEMORY = "memory";
 
-    @Deprecated
-    public OrientDBInternalFactory(String keyspace, String engineUrl, String config) {
-        super(keyspace, engineUrl, config);
-        openFactories = new HashMap<>();
-    }
 
     public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
@@ -69,7 +64,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
     @Override
     OrientGraph buildTinkerPopGraph(boolean batchLoading) {
-        LOG.warn(ErrorMessage.CONFIG_IGNORED.getMessage("pathToConfig", super.config));
+        LOG.warn(ErrorMessage.CONFIG_IGNORED.getMessage("properties", properties));
         return configureGraph(super.keyspace, super.engineUrl);
     }
 

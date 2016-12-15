@@ -33,26 +33,16 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
 
 class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
-    protected final Logger LOG = LoggerFactory.getLogger(TitanInternalFactory.class);
     private final static String DEFAULT_CONFIG = "backend-default";
-
-    @Deprecated
-    TitanInternalFactory(String keyspace, String engineUrl, String config) {
-        super(keyspace, engineUrl, config);
-    }
 
     TitanInternalFactory(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
@@ -78,39 +68,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
 
     @Override
     TitanGraph buildTinkerPopGraph(boolean batchLoading) {
-        return newTitanGraph(super.keyspace, super.engineUrl, super.config, batchLoading);
-    }
-
-    @Deprecated
-    private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig, boolean batchLoading){
-        TitanGraph titanGraph = configureGraph(name, address, pathToConfig, batchLoading);
-        buildTitanIndexes(titanGraph);
-        titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
-        return titanGraph;
-    }
-
-    @Deprecated
-    private TitanGraph configureGraph(String name, String address, String pathToConfig, boolean batchLoading){
-        ResourceBundle defaultConfig;
-        if(pathToConfig == null) {
-            defaultConfig = ResourceBundle.getBundle(DEFAULT_CONFIG);
-        } else {
-            try {
-                FileInputStream fis = new FileInputStream(pathToConfig);
-                defaultConfig = new PropertyResourceBundle(fis);
-            } catch (IOException e) {
-                LOG.error(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
-                throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig));
-            }
-        }
-
-        TitanFactory.Builder builder = TitanFactory.build().
-                set("storage.hostname", address).
-                set("storage.cassandra.keyspace", name).
-                set("storage.batch-loading", batchLoading);
-
-        defaultConfig.keySet().forEach(key -> builder.set(key, defaultConfig.getString(key)));
-        return builder.open();
+        return newTitanGraph(super.keyspace, super.engineUrl, super.properties, batchLoading);
     }
 
     private synchronized TitanGraph newTitanGraph(String name, String address, Properties properties, boolean batchLoading){

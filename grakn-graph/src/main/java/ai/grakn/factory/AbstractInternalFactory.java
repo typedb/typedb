@@ -29,7 +29,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 	
     protected final String keyspace;
     protected final String engineUrl;
-    protected final String config;
     protected final Properties properties;
 
     protected M graknGraph = null;
@@ -48,18 +47,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     	return this.systemKeyspace;
     }
 
-    @Deprecated
-    AbstractInternalFactory(String keyspace, String engineUrl, String config){
-        if(keyspace == null) {
-            throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
-        }
-
-        this.keyspace = keyspace.toLowerCase();
-        this.engineUrl = engineUrl;
-        this.config = config;
-        this.properties = null;
-    }
-
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
         if(keyspace == null) {
             throw new GraphRuntimeException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
@@ -67,7 +54,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
-        this.config = null;
         this.properties = properties;
     }
 

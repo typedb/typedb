@@ -104,20 +104,10 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
 
     static class ConfiguredFactory {
         Properties properties;
-        String path;
         String graphComputer;
         InternalFactory factory;
 
-        @Deprecated
-        ConfiguredFactory(String path, String graphComputer, InternalFactory factory){
-            this.path = path;
-            this.graphComputer = graphComputer;
-            this.factory = factory;
-            this.properties = null;
-        }
-
         ConfiguredFactory(Properties properties, String graphComputer, InternalFactory factory){
-            this.path = null;
             this.properties = properties;
             this.graphComputer = graphComputer;
             this.factory = factory;
