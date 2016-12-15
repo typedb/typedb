@@ -5,7 +5,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class ShortestPathTest extends AbstractGraphTest {
@@ -225,7 +223,7 @@ public class ShortestPathTest extends AbstractGraphTest {
         int numberOfPaths = 10;
         Set<List<String>> validPaths = new HashSet<>();
 
-        for (int i=0;i<numberOfPaths;i++) {
+        for (int i = 0; i < numberOfPaths; i++) {
 
             List<String> validPath = new ArrayList<>();
             validPath.add(startId);
@@ -251,7 +249,6 @@ public class ShortestPathTest extends AbstractGraphTest {
         graph.commit();
 
         Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
-        System.out.println("Matching path is: "+validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).collect(Collectors.toSet()));
         assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
     }
 
