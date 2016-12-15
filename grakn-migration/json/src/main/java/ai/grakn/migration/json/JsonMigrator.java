@@ -30,6 +30,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -77,7 +78,9 @@ public class JsonMigrator extends AbstractMigrator {
         return readers.stream()
                 .map(this::asString)
                 .map(this::toJsonMap)
-                .map(data -> template(template, data));
+                .map(data -> template(template, data))
+                .filter(Optional::isPresent)
+                .map(Optional::get);
     }
 
     /**

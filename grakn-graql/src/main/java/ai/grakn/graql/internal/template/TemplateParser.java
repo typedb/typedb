@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.template.macro.EqualsMacro;
 import ai.grakn.graql.internal.template.macro.IntMacro;
 import ai.grakn.graql.internal.template.macro.LongMacro;
 import ai.grakn.graql.internal.template.macro.LowerMacro;
+import ai.grakn.graql.internal.template.macro.SplitMacro;
 import ai.grakn.graql.internal.template.macro.UpperMacro;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.graql.internal.template.macro.NoescpMacro;
@@ -119,5 +120,6 @@ public class TemplateParser {
         registerMacro("lower", new LowerMacro());
         registerMacro("upper", new UpperMacro());
         registerMacro("boolean", new BooleanMacro());
+        registerMacro("split", new SplitMacro());
     }
 }

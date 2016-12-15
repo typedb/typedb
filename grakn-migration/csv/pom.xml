@@ -28,8 +28,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
             <version>${csv.version}</version>
         </dependency>
         <dependency>

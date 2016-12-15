@@ -67,6 +67,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <outputDirectory>docs/rest-api</outputDirectory>
+            <directory>${project.parent.basedir}/grakn-engine/target/jaxrs-raml/</directory>
+            <includes>
+                <include>engine-apis.html</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <outputDirectory>bin</outputDirectory>
             <directory>${basedir}/src/bin/</directory>
             <includes>

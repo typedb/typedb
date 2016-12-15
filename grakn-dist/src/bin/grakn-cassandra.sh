@@ -96,7 +96,11 @@ stop)
 
     echo "Stopping cassandra"
     if [[ -e $CASSANDRA_PS ]]; then
-        kill `cat $CASSANDRA_PS`
+        pid=`cat $CASSANDRA_PS`
+        kill "$pid"
+        while kill -0 "$pid"; do
+            sleep 0.5
+        done
         rm $CASSANDRA_PS
     fi
     ;;

@@ -64,5 +64,5 @@ public interface Loader {
     /**
      * Print the number of jobs that have completed
      */
-    void printLoaderState();
+    String getLoaderState();
 }

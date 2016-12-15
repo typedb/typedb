@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.template;
 
+import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,6 +48,18 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void concatenateValuesTest(){
+        String template = "insert $x isa <first>-<last>;";
+        String expected = "insert $x0 isa one-two;";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", "one");
+        data.put("last", "two");
+
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
     public void multiValueOneLineTest(){
         String template = "insert $x isa person has name <name> , has feet <numFeet>;";
         String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";
@@ -58,7 +71,7 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void dataMissingTest() {
         String template = "insert $x isa person has name <name> , has feet <numFeet> ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";
@@ -359,7 +372,7 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void wrongDataTest(){
         String template = "$<person.namefhwablfewqhbfli> isa person";
         String expected = "$Phil-Collins isa person";
@@ -443,7 +456,7 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void andExpressionWrongTypeTest(){
         Map<String, Object> data = new HashMap<>();
         data.put("this", true);
@@ -477,7 +490,7 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void orExpressionWrongTypeTest(){
         Map<String, Object> data = new HashMap<>();
         data.put("this", true);
@@ -496,7 +509,7 @@ public class TemplateParserTest {
         assertParseEquals(template, Collections.singletonMap("this", true), expected);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void notExpressionWrongTypeTest(){
         assertParseEquals("if(not this) do {insert isa y;} else {insert isa z;}", Collections.singletonMap("this", "string"), "");
     }
@@ -511,7 +524,7 @@ public class TemplateParserTest {
         assertParseEquals("if(second > first) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void greaterExpressionWrongTypeTest(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
@@ -535,7 +548,7 @@ public class TemplateParserTest {
         assertParseEquals("if(first >= second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void greaterEqualsExpressionWrongTypeTest(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
@@ -556,7 +569,7 @@ public class TemplateParserTest {
         assertParseEquals("if(second < first) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void lessExpressionWrongTypeTest(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
@@ -580,7 +593,7 @@ public class TemplateParserTest {
         assertParseEquals("if(first <= second) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = GraqlTemplateParsingException.class)
     public void lessEqualsExpressionWrongTypeTest(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);

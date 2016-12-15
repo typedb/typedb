@@ -162,10 +162,10 @@ public class LoaderImpl implements Loader {
         final long initial = new Date().getTime();
         Collection<String> currentTasks = getTasks();
         while ((new Date().getTime())-initial < timeout) {
-            printLoaderState();
+            LOG.info(getLoaderState());
 
             if(currentTasks.stream().allMatch(this::isCompleted)){
-                printLoaderState();
+                LOG.info(getLoaderState());
                 return;
             }
 
@@ -180,14 +180,14 @@ public class LoaderImpl implements Loader {
     /**
      * Method that logs the current state of loading tasks
      */
-    public void printLoaderState(){
-        LOG.info(new JSONObject()
+    public String getLoaderState(){
+        return new JSONObject()
                 .put(CREATED.name(), getTasks(CREATED).size())
                 .put(SCHEDULED.name(), getTasks(SCHEDULED).size())
                 .put(RUNNING.name(), getTasks(RUNNING).size())
                 .put(COMPLETED.name(), getTasks(COMPLETED).size())
                 .put(FAILED.name(), getTasks(FAILED).size())
-                .toString());
+                .toString();
     }
 
     /**

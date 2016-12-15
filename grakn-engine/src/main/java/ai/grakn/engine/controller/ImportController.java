@@ -135,7 +135,7 @@ public class ImportController {
      */
     private ScheduledFuture scheduledPrinting(Loader loader){
         return Executors.newSingleThreadScheduledExecutor()
-                .scheduleAtFixedRate(loader::printLoaderState, 10, 10, SECONDS);
+                .scheduleAtFixedRate(() -> LOG.info(loader.getLoaderState()), 10, 10, SECONDS);
     }
 
     // This method works under the following assumption:
