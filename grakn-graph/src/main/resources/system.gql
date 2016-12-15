@@ -1,23 +1,23 @@
 insert 
 
 # Primary Scheduled task entity.
-scheduled-task isa entity;
+scheduled-task sub entity;
 
 # scheduled-task resources
-status isa resource, datatype string;
-status-change-time isa resource, datatype long;
-status-change-by isa resource, datatype string;
-task-class-name isa resource, datatype string;
-created-by isa resource, datatype string;
-executing-hostname isa resource, datatype string;
-run-at isa resource, datatype long;
-recurring isa resource, datatype boolean;
-recur-interval isa resource, datatype long;
-task-failure isa resource, datatype string;
-stack-trace isa resource, datatype string;
-task-exception isa resource, datatype string;
-task-checkpoint isa resource, datatype string;
-task-configuration isa resource, datatype string;
+status sub resource, datatype string;
+status-change-time sub resource, datatype long;
+status-change-by sub resource, datatype string;
+task-class-name sub resource, datatype string;
+created-by sub resource, datatype string;
+executing-hostname sub resource, datatype string;
+run-at sub resource, datatype long;
+recurring sub resource, datatype boolean;
+recur-interval sub resource, datatype long;
+task-failure sub resource, datatype string;
+stack-trace sub resource, datatype string;
+task-exception sub resource, datatype string;
+task-checkpoint sub resource, datatype string;
+task-configuration sub resource, datatype string;
 
 scheduled-task has-resource status,
                has-resource status-change-time,
@@ -34,19 +34,19 @@ scheduled-task has-resource status,
                has-resource task-configuration;
 
 # Keep track of all keyspaces in system.
-keyspace isa entity;
-keyspace-name isa resource, datatype string;
+keyspace sub entity;
+keyspace-name sub resource, datatype string;
 keyspace has-resource keyspace-name;
 keyspace has-key keyspace-name;
 
 # Users
-user isa entity;
-user-name isa resource, datatype string;
-user-password isa resource, datatype string;
-user-first-name isa resource, datatype string;
-user-last-name isa resource, datatype string;
-user-email isa resource, datatype string;
-user-is-admin isa resource, datatype boolean;
+user sub entity;
+user-name sub resource, datatype string;
+user-password sub resource, datatype string;
+user-first-name sub resource, datatype string;
+user-last-name sub resource, datatype string;
+user-email sub resource, datatype string;
+user-is-admin sub resource, datatype boolean;
 user has-key user-name;
 
 user has-resource user-password,
