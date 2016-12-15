@@ -108,7 +108,7 @@ public class GraknOrientDBGraphFactoryTest {
 
         assertNotNull(graknOrientDBGraph.getMetaEntityType());
         assertNotNull(graknOrientDBGraph.getMetaRelationType());
-        assertNotNull(graknOrientDBGraph.getMetaType());
+        assertNotNull(graknOrientDBGraph.getMetaConcept());
     }
 
 

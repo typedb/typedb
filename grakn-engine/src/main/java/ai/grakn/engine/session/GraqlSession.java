@@ -348,7 +348,7 @@ class GraqlSession {
      * @return all type IDs in the ontology
      */
     private static Stream<String> getTypes(GraknGraph graph) {
-        Stream<String> types = graph.admin().getMetaType().instances().stream().map(Concept::asType).map(Type::getName);
+        Stream<String> types = graph.admin().getMetaConcept().instances().stream().map(Concept::asType).map(Type::getName);
 
         Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getName);
 

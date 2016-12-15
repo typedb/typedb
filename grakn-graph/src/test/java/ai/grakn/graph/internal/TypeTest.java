@@ -326,7 +326,7 @@ public class TypeTest extends GraphTestBase{
         Instance musicVideo = production.addEntity();
         Instance godfather = movie.addEntity();
 
-        Collection<? extends Concept> types = graknGraph.getMetaType().instances();
+        Collection<? extends Concept> types = graknGraph.getMetaConcept().instances();
         Collection<? extends Concept> data = production.instances();
 
         assertEquals(3, types.size());

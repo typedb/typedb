@@ -33,7 +33,7 @@ public interface GraknAdmin {
      *
      * @return The meta type -> type.
      */
-    Type getMetaType();
+    Type getMetaConcept();
 
     /**
      * Get the root of all Relation Types.

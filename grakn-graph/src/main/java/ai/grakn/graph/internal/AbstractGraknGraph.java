@@ -178,7 +178,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private boolean isMetaOntologyNotInitialised(){
-        return getMetaType() == null;
+        return getMetaConcept() == null;
     }
 
     public G getTinkerPopGraph(){
@@ -394,7 +394,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Type getMetaType() {
+    public Type getMetaConcept() {
         return getTypeByName(Schema.MetaSchema.CONCEPT.getName());
     }
 

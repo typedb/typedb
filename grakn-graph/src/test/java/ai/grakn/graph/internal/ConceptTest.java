@@ -301,7 +301,7 @@ public class ConceptTest extends GraphTestBase{
 
     @Test
     public void  testAsType() {
-        Concept concept = graknGraph.getMetaType();
+        Concept concept = graknGraph.getMetaConcept();
         assertTrue(concept.isType());
         Type concept2 = concept.asType();
         assertEquals(concept2, concept);
@@ -342,6 +342,6 @@ public class ConceptTest extends GraphTestBase{
 
     @Test
     public void name(){
-        System.out.println(graknGraph.getMetaType().superType());
+        System.out.println(graknGraph.getMetaConcept().superType());
     }
 }

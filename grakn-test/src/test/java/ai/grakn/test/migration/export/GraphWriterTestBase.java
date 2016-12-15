@@ -64,7 +64,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
     }
 
     public void assertDataEqual(GraknGraph one, GraknGraph two){
-        one.admin().getMetaType().instances().stream()
+        one.admin().getMetaConcept().instances().stream()
                 .flatMap(c -> c.asType().instances().stream())
                 .map(Concept::asInstance)
                 .forEach(i -> assertInstanceCopied(i, two));
@@ -144,7 +144,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
     }
 
     public void assertOntologiesEqual(GraknGraph one, GraknGraph two){
-        boolean ontologyCorrect = one.admin().getMetaType().instances().stream()
+        boolean ontologyCorrect = one.admin().getMetaConcept().instances().stream()
                 .allMatch(t -> typesEqual(t.asType(), two.getType(t.asType().getName())));
         assertEquals(true, ontologyCorrect);
     }

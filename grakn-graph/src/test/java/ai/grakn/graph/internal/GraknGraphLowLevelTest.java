@@ -260,7 +260,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void getSuperConceptType(){
-        assertEquals(graknGraph.getMetaType().getName(), Schema.MetaSchema.CONCEPT.getName());
+        assertEquals(graknGraph.getMetaConcept().getName(), Schema.MetaSchema.CONCEPT.getName());
     }
 
     @Test
@@ -290,7 +290,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testMetaOntologyInitialisation(){
-        Type type = graknGraph.getMetaType();
+        Type type = graknGraph.getMetaConcept();
         Type relationType = graknGraph.getMetaRelationType();
         Type roleType = graknGraph.getMetaRoleType();
         Type resourceType = graknGraph.getMetaResourceType();
@@ -379,7 +379,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testGetInstancesFromMeta(){
-        Type metaType = graknGraph.getMetaType();
+        Type metaType = graknGraph.getMetaConcept();
         Type metaEntityType = graknGraph.getMetaEntityType();
         Type metaRelationType = graknGraph.getMetaRelationType();
         Type metaResourceType = graknGraph.getMetaResourceType();
