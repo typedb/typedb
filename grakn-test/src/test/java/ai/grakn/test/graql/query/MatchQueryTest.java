@@ -562,6 +562,19 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testMatchAllInstances() {
+        MatchQuery query = qb.match(var("x").isa(Schema.MetaSchema.CONCEPT.getName()));
+
+        // Make sure there a reasonable number of results
+        assertTrue(query.stream().count() > 10);
+
+        query.get("x").forEach(concept -> {
+            assertTrue(concept.toString(), concept.isInstance());
+            assertFalse(concept.asInstance().type().isRoleType());
+        });
+    }
+
+    @Test
     public void testMatchAllPairs() {
         long numConcepts = qb.match(var("x")).stream().count();
         MatchQuery pairs = qb.match(var("x"), var("y"));
