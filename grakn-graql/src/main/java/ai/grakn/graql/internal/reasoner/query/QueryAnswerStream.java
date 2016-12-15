@@ -2,18 +2,13 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import com.google.common.collect.Maps;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,19 +34,7 @@ public class QueryAnswerStream {
         );
     }
 
-    public Set<String> getVars(){
-        //stream().peek
-        return new HashSet<>();
-    }
-
     public QueryAnswerStream filterKnown(QueryAnswers known){
-        /*
-        if (this.getVars().equals(known.getVars())){
-            QueryAnswers results = new QueryAnswers(this);
-            results.removeAll(known);
-            return results;
-        }
-        */
         return new QueryAnswerStream(
             this.stream.filter(answer ->{
                 boolean isKnown = false;

@@ -47,7 +47,7 @@ class MatchQueryInfer extends MatchQueryModifier {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        return new Reasoner(graph).resolveToQuery(inner.withGraph(graph), materialise).stream();
+        return new Reasoner(graph).resolve(inner.withGraph(graph), materialise);
     }
 
     @Override
