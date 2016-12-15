@@ -56,7 +56,6 @@ class HALConceptData {
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
-    private final static String ROOT_CONCEPT = "type";
 
 
     // - State properties
@@ -141,7 +140,7 @@ class HALConceptData {
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "RHS-"+rule.getId())
                 .withProperty(TYPE_PROPERTY, "RHS")
-                .withProperty(BASETYPE_PROPERTY, Schema.MetaSchema.RESOURCE.getName())
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
                 .withProperty(VALUE_PROPERTY,rule.getRHS().admin().toString());
         halResource.withRepresentation("RHS", RHS);
     }
@@ -152,7 +151,7 @@ class HALConceptData {
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "LHS-"+rule.getId())
                 .withProperty(TYPE_PROPERTY, "LHS")
-                .withProperty(BASETYPE_PROPERTY, Schema.MetaSchema.RESOURCE.getName())
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
                 .withProperty(VALUE_PROPERTY,rule.getLHS().admin().toString());
         halResource.withRepresentation("LHS", LHS);
     }
@@ -272,7 +271,7 @@ class HALConceptData {
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
-        if (!type.getName().equals(ROOT_CONCEPT)) {
+        if (!type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
             type.instances().parallelStream().forEach(instance -> {
 
                 if (instance.isType() && instance.asType().isImplicit()) return;

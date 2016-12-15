@@ -160,7 +160,7 @@ class ValidateGlobalRules {
 
             for (RoleType hasRole : hasRoles) {
                 RoleType superRoleType = hasRole.superType();
-                if (superRoleType == null || (!Schema.MetaSchema.isMetaName(superRoleType.getName()) && !allSuperRolesPlayed.contains(superRoleType.getName()))    ) {
+                if (superRoleType == null || !allSuperRolesPlayed.contains(superRoleType.getName())) {
                     invalidTypes.add(hasRole);
                 }
             }

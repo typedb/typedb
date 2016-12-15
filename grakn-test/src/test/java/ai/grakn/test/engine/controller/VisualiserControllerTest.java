@@ -47,6 +47,7 @@ import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest extends AbstractGraphTest {
@@ -109,10 +110,9 @@ public class VisualiserControllerTest extends AbstractGraphTest {
     }
 
     private void checkHALStructureOfPerson(Json person){
-
-        Assert.assertEquals(person.at("_type").asString(), "person");
-        Assert.assertNotNull(person.at("_id"));
-        Assert.assertEquals(person.at("_baseType").asString(), Schema.MetaSchema.ENTITY.getName());
+        assertEquals(person.at("_type").asString(), "person");
+        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
         String hrefLink = person.at("_links").at("self").at("href").asString();
@@ -121,20 +121,19 @@ public class VisualiserControllerTest extends AbstractGraphTest {
         Json embeddedType = person
                 .at("_embedded")
                 .at("isa").at(0);
-        Assert.assertEquals(embeddedType.at("_baseType").asString(),"type");
-        Assert.assertEquals(embeddedType.at("_type").asString(), Schema.MetaSchema.ENTITY.getName());
+        assertEquals(Schema.BaseType.ENTITY_TYPE.name(), embeddedType.at("_baseType").asString());
+        assertEquals(Schema.BaseType.ENTITY.name(), embeddedType.at("_type").asString());
     }
 
     private void checkHALStructureOfPersonWithoutEmbedded(Json person){
 
-        Assert.assertEquals(person.at("_type").asString(), "person");
-        Assert.assertNotNull(person.at("_id"));
-        Assert.assertEquals(person.at("_baseType").asString(), Schema.MetaSchema.ENTITY.getName());
+        assertEquals(person.at("_type").asString(), "person");
+        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
         String hrefLink = person.at("_links").at("self").at("href").asString();
         Assert.assertEquals(true,hrefLink.substring(hrefLink.indexOf("keyspace")+9).equals(graph.getKeyspace()));
-
     }
 
     private Json retrieveConceptById(String id){
@@ -191,14 +190,12 @@ public class VisualiserControllerTest extends AbstractGraphTest {
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
 
-        Assert.assertEquals(message.at("_type").asString(), Schema.MetaSchema.ENTITY.getName());
+        assertEquals(message.at("_type").asString(), Schema.BaseType.ENTITY.name());
         //TODO:maybe change person to proper id? and add  _nameType property
-        Assert.assertEquals(message.at("_id").asString(),"person");
-        Assert.assertEquals(message.at("_baseType").asString(),"type");
-        Assert.assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId()+"?keyspace="+graph.getKeyspace());
-
-        Assert.assertEquals(2,message.at("_embedded").at("isa").asJsonList().size());
-
+        assertEquals(message.at("_id").asString(),"person");
+        assertEquals(message.at("_baseType").asString(),"type");
+        assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId()+"?keyspace="+graph.getKeyspace());
+        assertEquals(2,message.at("_embedded").at("isa").asJsonList().size());
     }
 
 
