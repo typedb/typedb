@@ -131,7 +131,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
     public void assertResourceCopied(Resource resource1, GraknGraph two){
         assertEquals(true, two.getResourcesByValue(resource1.getValue()).stream()
-                .map(Concept::type)
+                .map(Instance::type)
                 .map(Type::getName)
                 .anyMatch(t -> resource1.type().getName().equals(t)));
     }

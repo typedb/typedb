@@ -120,10 +120,10 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(1, results.size());
 
         Map<String, Concept> result = results.get(0);
-        Concept tgf = result.get("tgf");
+        Resource<String> tgf = result.get("tgf").asResource();
 
         assertEquals("title", tgf.type().getName());
-        assertEquals("Godfather", tgf.asResource().getValue());
+        assertEquals("Godfather", tgf.getValue());
     }
 
     @Test
@@ -293,8 +293,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         List<Concept> results = query.collect(toList());
 
         assertEquals(1, results.size());
-        Concept result = results.get(0);
-        assertEquals(1000L, result.asResource().getValue());
+        Resource<Long> result = results.get(0).asResource();
+        assertEquals(1000L, (long) result.getValue());
         assertEquals("tmdb-vote-count", result.type().getName());
     }
 
@@ -555,8 +555,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
         query.get("x").forEach(concept -> {
             // Make sure results never contain castings
-            if (concept.type() != null) {
-                assertFalse(concept.type().isRoleType());
+            if (concept.isInstance()) {
+                assertFalse(concept.asInstance().type().isRoleType());
             }
         });
     }

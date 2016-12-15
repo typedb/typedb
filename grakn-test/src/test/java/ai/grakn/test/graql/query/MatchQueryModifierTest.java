@@ -171,7 +171,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
                 String foundTitle = result.asEntity().resources(title).iterator().next().asResource().getValue().toString();
                 assertEquals(expectedTitle, foundTitle);
             }
-            if (expectedType != null) assertEquals(expectedType, result.type().getName());
+            if (expectedType != null) assertEquals(expectedType, result.asInstance().type().getName());
         });
 
         assertTrue("expected titles not found: " + expectedQueue, expectedQueue.isEmpty());

@@ -174,7 +174,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The type of the concept casted to the correct interface
      */
     @SuppressWarnings("unchecked")
-    @Override
     public V type() {
         HashSet<Concept> visitedConcepts = new HashSet<>();
         ConceptImpl currentConcept = this;

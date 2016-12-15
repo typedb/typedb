@@ -472,12 +472,11 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         );
 
         //noinspection unchecked
-        AggregateQuery<Concept> query =
-                (AggregateQuery<Concept>) qb.parse("match $x isa movie; aggregate get-any $x;");
+        AggregateQuery<Concept> query = qb.parse("match $x isa movie; aggregate get-any $x;");
 
         Concept result = query.execute();
 
-        assertEquals("movie", result.type().getName());
+        assertEquals("movie", result.asInstance().type().getName());
     }
 
     @Test

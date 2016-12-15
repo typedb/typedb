@@ -61,7 +61,14 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             if (concept.isResource()) {
                 sb.append(colorKeyword("value ")).append(valueToString(concept.asResource().getValue()));
             } else if (concept.isType()) {
-                sb.append(colorKeyword("type-name ")).append(colorType(idToString(concept.asType().getName())));
+                Type type = concept.asType();
+                sb.append(colorKeyword("type-name ")).append(colorType(idToString(type.getName())));
+
+                Type superType = type.superType();
+
+                if (superType != null) {
+                    sb.append(colorKeyword("sub ")).append(colorType(idToString(superType.getName())));
+                }
             } else {
                 sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
             }
@@ -82,9 +89,9 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append(" (").append(relationString).append(")");
             }
 
-            // Display type of each concept
-            Type type = concept.type();
-            if (type != null) {
+            // Display type of each instance
+            if (concept.isInstance()) {
+                Type type = concept.asInstance().type();
                 sb.append(colorKeyword(" isa ")).append(colorType(idToString(type.getName())));
             }
 

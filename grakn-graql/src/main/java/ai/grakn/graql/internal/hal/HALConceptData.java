@@ -27,7 +27,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
@@ -35,6 +34,8 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.getBaseType;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -298,37 +299,5 @@ class HALConceptData {
 
     Representation getRepresentation() {
         return halResource;
-    }
-
-    private Schema.BaseType getBaseType(Instance instance) {
-        if (instance.isEntity()) {
-            return Schema.BaseType.ENTITY;
-        } else if (instance.isRelation()) {
-            return Schema.BaseType.RELATION;
-        } else if (instance.isResource()) {
-            return Schema.BaseType.RESOURCE;
-        } else if (instance.isRule()) {
-            return Schema.BaseType.RULE;
-        } else {
-            throw new RuntimeException("Unrecognized base type of " + instance);
-        }
-    }
-
-    private Schema.BaseType getBaseType(Type type) {
-        if (type.isEntityType()) {
-            return Schema.BaseType.ENTITY_TYPE;
-        } else if (type.isRelationType()) {
-            return Schema.BaseType.RELATION_TYPE;
-        } else if (type.isResourceType()) {
-            return Schema.BaseType.RESOURCE_TYPE;
-        } else if (type.isRuleType()) {
-            return Schema.BaseType.RULE_TYPE;
-        } else if (type.isRoleType()) {
-            return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
-            return Schema.BaseType.TYPE;
-        } else {
-            throw new RuntimeException("Unrecognized base type of " + type);
-        }
     }
 }

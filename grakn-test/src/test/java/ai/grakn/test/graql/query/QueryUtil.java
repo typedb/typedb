@@ -71,7 +71,7 @@ class QueryUtil {
 
             assertTrue("Unexpected value: " + resourceValue, expectedSet.contains(resourceValue));
             unfoundSet.remove(resourceValue);
-            if (type != null) assertEquals(type, result.type().getName());
+            if (type != null) assertEquals(type, result.asInstance().type().getName());
         });
 
         assertTrue("expected values not found: " + unfoundSet, unfoundSet.isEmpty());
