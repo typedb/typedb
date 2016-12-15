@@ -164,6 +164,7 @@ public class Query implements MatchQueryInternal {
     }
 
     public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+    public QueryAnswers getNewAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void lookup(QueryCache cache){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void memoryLookup(QueryCache cache){

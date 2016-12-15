@@ -50,7 +50,6 @@ public class ReasonerMatchQuery extends Query{
         return answers.stream();
     }
 
-    //TODO not lazy!
     @Override
     public Stream<Map<String, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())
@@ -63,17 +62,9 @@ public class ReasonerMatchQuery extends Query{
             QueryAnswerStream subAnswerStream = new QueryAnswerStream(atomicQuery.resolve(materialise));
             answerStream = answerStream.join(subAnswerStream);
         }
-        /*
-        return answers
-                .filterNonEquals(this)
-                .filterVars(this.getSelectedNames())
-                .stream();
-        */
-
         return answerStream
                 .filterNonEquals(this)
                 .filterVars(this.getSelectedNames())
                 .stream();
-
     }
 }

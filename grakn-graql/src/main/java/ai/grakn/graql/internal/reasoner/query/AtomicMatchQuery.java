@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 public class AtomicMatchQuery extends AtomicQuery{
 
-    //final private Stream<Map<String, Concept>> answers;
     final private QueryAnswers answers;
     final private QueryAnswers newAnswers;
     private static final Logger LOG = LoggerFactory.getLogger(AtomicQuery.class);
@@ -54,7 +53,6 @@ public class AtomicMatchQuery extends AtomicQuery{
         super(query);
         answers = new QueryAnswers(ans);
         newAnswers = new QueryAnswers();
-
     }
 
     @Override
@@ -62,6 +60,8 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public QueryAnswers getAnswers(){ return answers;}
+    @Override
+    public QueryAnswers getNewAnswers(){ return newAnswers;}
 
     @Override
     public void lookup(QueryCache cache){
@@ -97,6 +97,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         getChildren().forEach(childQuery -> {
             QueryAnswers ans = QueryAnswers.getUnifiedAnswers(childQuery, this, cache.get(this).getAnswers());
             childQuery.getAnswers().addAll(ans);
+            childQuery.getNewAnswers().addAll(ans);
             childQuery.propagateAnswers(cache);
         });
     }
@@ -181,7 +182,6 @@ public class AtomicMatchQuery extends AtomicQuery{
                 cache.record(this);
             }
         }
-
         return this.getAnswers();
     }
 
@@ -262,10 +262,14 @@ public class AtomicMatchQuery extends AtomicQuery{
         private int iter = 0;
         private QueryCache cache = new QueryCache();
         private Set<AtomicQuery> subGoals = new HashSet<>();
-        Iterator<Map<String, Concept>> answers = outer().getMatchQuery().Collections.emptyIterator();
+        Iterator<Map<String, Concept>> answers = Collections.emptyIterator();
 
         public QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
+            lookup(cache);
+            answers = outer().newAnswers.iterator();
+            //answers = outer().getMatchQuery().iterator();
+            //cache.record(outer());
         }
 
         public Stream<Map<String, Concept>> hasStream(){
