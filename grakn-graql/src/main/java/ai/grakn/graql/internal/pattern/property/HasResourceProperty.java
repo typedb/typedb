@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
-import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
@@ -48,7 +47,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     public HasResourceProperty(VarAdmin resource) {
         this.resourceType = Optional.empty();
-        this.resource = resource.isa(var().isa(Schema.MetaSchema.RESOURCE.getName())).admin();
+        this.resource = resource.isa(Schema.MetaSchema.RESOURCE.getName()).admin();
     }
 
     public HasResourceProperty(String resourceType, VarAdmin resource) {

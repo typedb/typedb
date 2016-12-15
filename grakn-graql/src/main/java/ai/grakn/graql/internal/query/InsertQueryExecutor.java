@@ -53,7 +53,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
-import static ai.grakn.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
 
 /**
  * A class for executing insert queries.
@@ -159,15 +158,19 @@ public class InsertQueryExecutor {
             throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_SUB.getMessage(printableName));
         }
 
-        // Use either sub or isa to decide type
-        Optional<Type> typeConcept = optionalOr(
-                subVar.map(this::getConcept).map(Concept::type),
-                typeVar.map(this::getConcept).map(Concept::asType)
-        );
+        Optional<Type> type = typeVar.map(this::getConcept).map(Concept::asType);
+        Optional<Type> superType = subVar.map(this::getConcept).map(Concept::asType);
+
+        var.getTypeName().ifPresent(name -> {
+            if (type.isPresent()) {
+                throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(name));
+            }
+        });
 
         // If type provided, then 'put' the concept, else 'get' it by ID or name
         Optional<Concept> concept = optionalOr(
-                typeConcept.map(type -> putConceptByType(var.getTypeName(), var.getId(), var, type)),
+                superType.map(s -> putType(var.getTypeName(), var, s)),
+                type.map(t -> putInstance(var.getId(), var, t)),
                 var.getId().map(graph::<Concept>getConcept),
                 var.getTypeName().map(graph::getType)
         );
@@ -224,36 +227,12 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * @param name the name of the concept
      * @param id the ID of the concept
      * @param var the Var representing the concept in the insert query
      * @param type the type of the concept
      * @return a concept with the given ID and the specified type
      */
-    private Concept putConceptByType(Optional<String> name, Optional<String> id, VarAdmin var, Type type) {
-        String typeName = type.getName();
-
-        if (!type.isResourceType() && var.hasProperty(ValueProperty.class)) {
-            throw new IllegalStateException(INSERT_NON_RESOURCE_WITH_VALUE.getMessage(type.getId()));
-        }
-
-        if (typeName.equals(Schema.MetaSchema.ENTITY.getName())) {
-            return graph.putEntityType(getTypeNameOrThrow(name));
-        } else if (typeName.equals(Schema.MetaSchema.RELATION.getName())) {
-            return graph.putRelationType(getTypeNameOrThrow(name));
-        } else if (typeName.equals(Schema.MetaSchema.ROLE.getName())) {
-            return graph.putRoleType(getTypeNameOrThrow(name));
-        } else if (typeName.equals(Schema.MetaSchema.RESOURCE.getName())) {
-            return graph.putResourceType(getTypeNameOrThrow(name), getDataType(var));
-        } else if (typeName.equals(Schema.MetaSchema.RULE.getName())) {
-            return graph.putRuleType(getTypeNameOrThrow(name));
-        }
-
-        // Concept must be an instance, so confirm it has no name set
-        name.ifPresent(theName -> {
-            throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(theName));
-        });
-
+    private Instance putInstance(Optional<String> id, VarAdmin var, Type type) {
         if (type.isEntityType()) {
             return addOrGetInstance(id, type.asEntityType()::addEntity);
         } else if (type.isRelationType()) {
@@ -268,8 +247,32 @@ public class InsertQueryExecutor {
                 Pattern rhs = var.getProperty(RhsProperty.class).get().getRhs();
                 return type.asRuleType().addRule(lhs, rhs);
             });
+        } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
+            throw new IllegalStateException(var + " cannot be an instance of meta-type " + type.getName());
         } else {
-            throw new RuntimeException("Unrecognized type " + type.getId());
+            throw new RuntimeException("Unrecognized type " + type.getName());
+        }
+    }
+
+    /**
+     * @param name the name of the concept
+     * @param var the Var representing the concept in the insert query
+     * @param superType the supertype of the concept
+     * @return a concept with the given ID and the specified type
+     */
+    private Type putType(Optional<String> name, VarAdmin var, Type superType) {
+        if (superType.isEntityType()) {
+            return graph.putEntityType(getTypeNameOrThrow(name)).superType(superType.asEntityType());
+        } else if (superType.isRelationType()) {
+            return graph.putRelationType(getTypeNameOrThrow(name)).superType(superType.asRelationType());
+        } else if (superType.isRoleType()) {
+            return graph.putRoleType(getTypeNameOrThrow(name)).superType(superType.asRoleType());
+        } else if (superType.isResourceType()) {
+            return graph.putResourceType(getTypeNameOrThrow(name), getDataType(var)).superType(superType.asResourceType());
+        } else if (superType.isRuleType()) {
+            return graph.putRuleType(getTypeNameOrThrow(name)).superType(superType.asRuleType());
+        } else {
+            throw new RuntimeException("Unrecognized type " + superType.getName());
         }
     }
 
