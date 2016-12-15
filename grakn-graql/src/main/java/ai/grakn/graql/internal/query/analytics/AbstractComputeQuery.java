@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
@@ -126,10 +127,15 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subGraph.isEmpty()) {
-            graph.admin().getMetaEntityType().subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            EntityType metaEntityType = graph.admin().getMetaEntityType();
+            metaEntityType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
             ResourceType<?> metaResourceType = graph.admin().getMetaResourceType(); //Yay for losing the type
             metaResourceType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
-            graph.admin().getMetaRelationType().subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            RelationType metaRelationType = graph.admin().getMetaRelationType();
+            metaRelationType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            subTypeNames.remove(metaEntityType.getName());
+            subTypeNames.remove(metaResourceType.getName());
+            subTypeNames.remove(metaRelationType.getName());
             this.subTypeNames.removeAll(CommonOLAP.analyticsElements);
         } else {
             for (Type type : subGraph) {
