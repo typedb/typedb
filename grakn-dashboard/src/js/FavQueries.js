@@ -10,9 +10,9 @@ export default {
         } else
             return JSON.parse(queries);
     },
-    addFavQuery(query){
+    addFavQuery(queryName,queryValue){
       let queries = this.getFavQueries();
-      queries[query.name]=query.value;
+      queries[queryName]=queryValue;
       this.setFavQueries(queries);
     },
     setFavQueries(queriesObject){
