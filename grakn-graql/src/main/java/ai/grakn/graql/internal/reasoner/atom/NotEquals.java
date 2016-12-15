@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import java.util.Map;
 
@@ -98,5 +99,12 @@ public class NotEquals extends AtomBase {
                 .filter(answer -> !answer.get(varName).equals(answer.get(refVarName)))
                 .forEach(results::add);
         return results;
+    }
+
+    public QueryAnswerStream filter(QueryAnswerStream answers){
+        return new QueryAnswerStream(
+                answers.stream()
+                .filter(answer -> !answer.get(varName).equals(answer.get(refVarName)))
+        );
     }
 }

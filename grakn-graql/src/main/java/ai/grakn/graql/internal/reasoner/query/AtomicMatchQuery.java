@@ -64,8 +64,13 @@ public class AtomicMatchQuery extends AtomicQuery{
     public QueryAnswers getAnswers(){ return answers;}
 
     @Override
-    public void lookup(){
-
+    public void lookup(QueryCache cache){
+        boolean queryVisited = cache.contains(this);
+        if (!queryVisited){
+            this.DBlookup();
+            cache.record(this);
+        }
+        else this.memoryLookup(cache);
     }
 
     @Override
@@ -136,16 +141,9 @@ public class AtomicMatchQuery extends AtomicQuery{
     @Override
     protected QueryAnswers answerWM(Set<AtomicQuery> subGoals, QueryCache cache){
         boolean queryAdmissible = !subGoals.contains(this);
-        boolean queryVisited = cache.contains(this);
+        lookup(cache);
 
         if(queryAdmissible) {
-            if (!queryVisited){
-                this.DBlookup();
-                cache.record(this);
-            }
-            else
-                this.memoryLookup(cache);
-
             Atom atom = this.getAtom();
             Set<Rule> rules = atom.getApplicableRules();
             for (Rule rl : rules) {
@@ -183,8 +181,6 @@ public class AtomicMatchQuery extends AtomicQuery{
                 cache.record(this);
             }
         }
-        else
-            this.memoryLookup(cache);
 
         return this.getAnswers();
     }
@@ -192,17 +188,9 @@ public class AtomicMatchQuery extends AtomicQuery{
     @Override
     protected QueryAnswers answer(Set<AtomicQuery> subGoals, QueryCache cache){
         boolean queryAdmissible = !subGoals.contains(this);
-        boolean queryVisited = cache.contains(this);
-
+        lookup(cache);
 
         if(queryAdmissible) {
-            if (!queryVisited){
-                this.DBlookup();
-                cache.record(this);
-            }
-            else
-                this.memoryLookup(cache);
-
             Atom atom = this.getAtom();
             Set<Rule> rules = atom.getApplicableRules();
             for (Rule rl : rules) {
@@ -245,8 +233,6 @@ public class AtomicMatchQuery extends AtomicQuery{
                 cache.record(this);
             }
         }
-        else
-            this.memoryLookup(cache);
 
         return this.getAnswers();
     }
@@ -263,14 +249,10 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public Stream<Map<String, Concept>> resolve(boolean materialise) {
-        if (!this.getAtom().isRuleResolvable()){
-            this.DBlookup();
-            return this.stream();
-        }
-        else {
-            QueryAnswerIterator it = new QueryAnswerIterator(materialise);
-            return it.hasStream();
-        }
+        if (!this.getAtom().isRuleResolvable())
+            return this.getMatchQuery().stream();
+        else
+            return new QueryAnswerIterator(materialise).hasStream();
     }
 
     private class QueryAnswerIterator implements Iterator<Map<String, Concept>> {
@@ -280,7 +262,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         private int iter = 0;
         private QueryCache cache = new QueryCache();
         private Set<AtomicQuery> subGoals = new HashSet<>();
-        Iterator<Map<String, Concept>> answers = Collections.emptyIterator();
+        Iterator<Map<String, Concept>> answers = outer().getMatchQuery().Collections.emptyIterator();
 
         public QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
