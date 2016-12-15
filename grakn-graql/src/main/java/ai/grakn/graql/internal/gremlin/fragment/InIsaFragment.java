@@ -38,7 +38,7 @@ class InIsaFragment extends AbstractFragment {
             // Make sure we never get instances of role types
             traversal.not(__.hasLabel(Schema.BaseType.ROLE_TYPE.name()));
         }
-        Fragments.inSubs(Fragments.inSubs(traversal).in(Schema.EdgeLabel.ISA.getLabel()));
+        Fragments.inSubs(traversal).in(Schema.EdgeLabel.ISA.getLabel());
     }
 
     @Override
