@@ -49,7 +49,7 @@ input {
     background-color: #494b54;
     padding: 7px 13px;
     margin: 0px;
-    width: 450px;
+    width: 480px;
     text-align: left;
 }
 
@@ -64,7 +64,7 @@ input {
     border: 1px solid white;
 }
 .language-graql-wrapper{
-  width: 450px;
+  width: 480px;
   background-color: #494b54;
   overflow: scroll;
   -moz-user-select: none;
@@ -132,7 +132,7 @@ div>span {
 }
 
 .arrow_box {
-    width: 750px;
+    width: 700px;
     padding: 5px 10px;
     background-color: rgba(37, 114, 116, 0.8);
     color: #fff;

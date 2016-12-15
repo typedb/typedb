@@ -179,7 +179,7 @@ export default {
                 EngineClient.getMetaTypes(x => {
                     if (x != null) {
                         this.typeInstances = x;
-                        this.typeKeys = _.keys(x)
+                        this.typeKeys = Object.keys(x)
                     }
                 });
         },

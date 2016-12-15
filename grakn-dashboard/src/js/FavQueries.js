@@ -15,6 +15,11 @@ export default {
       queries[queryName]=queryValue;
       this.setFavQueries(queries);
     },
+    removeFavQuery(queryName){
+      let queries = this.getFavQueries();
+      delete queries[queryName];
+      this.setFavQueries(queries);
+    },
     setFavQueries(queriesObject){
       localStorage.setItem(QUERIES_LS_KEY,JSON.stringify(queriesObject));
     }
