@@ -81,6 +81,7 @@ public class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>>
                 .map(pair -> pair.getValue().iterator().next())
                 .collect(Collectors.toList()));
         path.add(destinationId);
+        LOGGER.debug("The path found is: "+path);
         LOGGER.info("ShortestPathVertexProgram is done");
         return Optional.of(path.stream().map(graph.get()::<Instance>getConcept).collect(Collectors.toList()));
     }
