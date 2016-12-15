@@ -19,7 +19,6 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
@@ -28,7 +27,6 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
 import com.google.common.base.Splitter;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -348,11 +346,7 @@ class GraqlSession {
      * @return all type IDs in the ontology
      */
     private static Stream<String> getTypes(GraknGraph graph) {
-        Stream<String> types = graph.admin().getMetaConcept().instances().stream().map(Concept::asType).map(Type::getName);
-
-        Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getName);
-
-        return Stream.concat(types, metaTypes);
+        return graph.admin().getMetaConcept().subTypes().stream().map(Type::getName);
     }
 
     private Printer getPrinter(ResourceType... resources) {
