@@ -1,7 +1,7 @@
 insert 
 
 entity2 sub entity, is-abstract;
-product sub entity2
+product sub recommendable
     has-resource name
     has-resource min-age
     has-resource max-age

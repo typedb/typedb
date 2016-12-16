@@ -3,9 +3,10 @@ insert
 
 "entity2" sub entity, is-abstract
     has-resource name;
+"recommendable" sub entity2;
 "place" sub entity2;
 "organization" sub entity2;
-"tag" sub entity2;
+"tag" sub recommendable;
 "category" sub entity2;
 "forum" sub entity2;
 
