@@ -111,7 +111,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             Iterator<Map.Entry<String, Type>> it = filteredMap.entrySet().iterator();
             while( it.hasNext() && isCompatible){
                 Map.Entry<String, Type> entry = it.next();
-                isCompatible = answer.get(entry.getKey()).type().equals(entry.getValue());
+                isCompatible = answer.get(entry.getKey()).asInstance().type().equals(entry.getValue());
             }
             if (isCompatible) results.add(answer);
         });

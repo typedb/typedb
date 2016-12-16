@@ -72,7 +72,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
                 assertEquals(movie, result.get("x"));
-                assertEquals(graph.getEntityType("person"), result.get("y").type());
+                assertEquals(graph.getEntityType("person"), result.get("y").asInstance().type());
             });
         });
     }

@@ -22,6 +22,10 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderImpl;
+import ai.grakn.engine.loader.client.LoaderClient;
+import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -150,10 +154,10 @@ public class MigrationCLI {
             builder.append("\t ").append(graph.admin().getMetaRuleType().instances().size()).append(" rule types\n\n");
 
             builder.append("Graph data contains:\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("relation-type")).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.ENTITY.getName())).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.RELATION.getName())).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.RESOURCE.getName())).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.RULE.getName())).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
 
             System.out.println(builder);
 

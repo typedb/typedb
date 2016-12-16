@@ -22,23 +22,34 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Properties;
 
-import static ai.grakn.util.REST.Request.*;
+import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest extends AbstractGraphTest {
@@ -77,6 +88,22 @@ public class VisualiserControllerTest extends AbstractGraphTest {
         }
     }
 
+    @Test
+    public void testOntologyRetrieval(){
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .get(REST.WebPath.GRAPH_ONTOLOGY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+
+        //noinspection unchecked
+        Map<String, ArrayList> resultArray = (Map<String, ArrayList>) Json.read(response.getBody().asString()).getValue();
+
+        assertEquals(4,resultArray.size());
+        assertEquals(9,resultArray.get("entities").size());
+        assertEquals(35,resultArray.get("roles").size());
+        assertEquals(19,resultArray.get("resources").size());
+        assertEquals(10,resultArray.get("relations").size());
+    }
 
     @Test
     public void testPersonViaMatchAndId(){
@@ -101,10 +128,9 @@ public class VisualiserControllerTest extends AbstractGraphTest {
     }
 
     private void checkHALStructureOfPerson(Json person){
-
-        Assert.assertEquals(person.at("_type").asString(), "person");
-        Assert.assertNotNull(person.at("_id"));
-        Assert.assertEquals(person.at("_baseType").asString(),"entity-type");
+        assertEquals(person.at("_type").asString(), "person");
+        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
         String hrefLink = person.at("_links").at("self").at("href").asString();
@@ -113,20 +139,18 @@ public class VisualiserControllerTest extends AbstractGraphTest {
         Json embeddedType = person
                 .at("_embedded")
                 .at("isa").at(0);
-        Assert.assertEquals(embeddedType.at("_baseType").asString(),"type");
-        Assert.assertEquals(embeddedType.at("_type").asString(),"entity-type");
+        assertEquals(Schema.BaseType.ENTITY_TYPE.name(), embeddedType.at("_baseType").asString());
     }
 
     private void checkHALStructureOfPersonWithoutEmbedded(Json person){
 
-        Assert.assertEquals(person.at("_type").asString(), "person");
-        Assert.assertNotNull(person.at("_id"));
-        Assert.assertEquals(person.at("_baseType").asString(),"entity-type");
+        assertEquals(person.at("_type").asString(), "person");
+        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
         String hrefLink = person.at("_links").at("self").at("href").asString();
         Assert.assertEquals(true,hrefLink.substring(hrefLink.indexOf("keyspace")+9).equals(graph.getKeyspace()));
-
     }
 
     private Json retrieveConceptById(String id){
@@ -183,14 +207,11 @@ public class VisualiserControllerTest extends AbstractGraphTest {
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
 
-        Assert.assertEquals(message.at("_type").asString(),"entity-type");
         //TODO:maybe change person to proper id? and add  _nameType property
-        Assert.assertEquals(message.at("_id").asString(),"person");
-        Assert.assertEquals(message.at("_baseType").asString(),"type");
-        Assert.assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId()+"?keyspace="+graph.getKeyspace());
-
-        Assert.assertEquals(2,message.at("_embedded").at("isa").asJsonList().size());
-
+        assertEquals(message.at("_id").asString(),"person");
+        assertEquals(Schema.BaseType.ENTITY_TYPE.name(), message.at("_baseType").asString());
+        assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId()+"?keyspace="+graph.getKeyspace());
+        assertEquals(2,message.at("_embedded").at("isa").asJsonList().size());
     }
 
 

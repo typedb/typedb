@@ -34,11 +34,11 @@ class InIsaFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        Fragments.inSubs(traversal).in(Schema.EdgeLabel.ISA.getLabel());
         if (!allowCastings) {
-            // Make sure we never get instances of role types
-            traversal.not(__.hasLabel(Schema.BaseType.ROLE_TYPE.name()));
+            // Make sure we never get any castings
+            traversal.not(__.hasLabel(Schema.BaseType.CASTING.name()));
         }
-        Fragments.inSubs(Fragments.inSubs(traversal).in(Schema.EdgeLabel.ISA.getLabel()));
     }
 
     @Override

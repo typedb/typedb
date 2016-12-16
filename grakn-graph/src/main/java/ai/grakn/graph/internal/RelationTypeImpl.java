@@ -21,31 +21,26 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Type;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * A Relation Type is an ontological element used to concept how entity types relate to one another.
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    RelationTypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractGraknGraph graknGraph) {
-        super(v, type, isImplicit, graknGraph);
-    }
-    RelationTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit) {
+        super(graknGraph, v, type, isImplicit);
     }
 
     @Override
     public Relation addRelation() {
-        return addInstance(Schema.BaseType.RELATION, (vertex, type) -> {
-            RelationImpl relation = getGraknGraph().getElementFactory().buildRelation(vertex, type);
-            return relation;
-        });
+        return addInstance(Schema.BaseType.RELATION,
+                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
     }
 
     /**

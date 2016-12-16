@@ -139,8 +139,8 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
 
         QueryBuilder emptyQb = empty.graql();
         emptyQb.insert(
-                name("person").isa("entity-type"),
-                name("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
+                name("person").sub("entity"),
+                name("name").sub("resource").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         exception.expect(ConceptException.class);

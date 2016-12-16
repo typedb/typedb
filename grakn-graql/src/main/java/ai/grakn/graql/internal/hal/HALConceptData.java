@@ -18,8 +18,16 @@
 
 package ai.grakn.graql.internal.hal;
 
-import ai.grakn.concept.*;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
@@ -27,7 +35,8 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.getBaseType;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -47,7 +56,6 @@ class HALConceptData {
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
-    private final static String ROOT_CONCEPT = "type";
 
 
     // - State properties
@@ -82,14 +90,13 @@ class HALConceptData {
 
         generateStateAndLinks(halResource, concept);
 
-        if (embedType && concept.type() != null &&
-                (typesInQuery.contains(concept.type().getName())
-                        || (concept.type().superType() != null &&
-                        typesInQuery.contains(concept.type().superType().getName()))))
-            embedType(halResource, concept);
-
-        if (concept.type() == null)
-            embedType(halResource, concept);
+        if (embedType && concept.isInstance()) {
+            Instance instance = concept.asInstance();
+            if (typesInQuery.contains(instance.type().getName())
+                    || (instance.type().superType() != null &&
+                    typesInQuery.contains(instance.type().superType().getName())))
+                embedType(halResource, instance);
+        }
 
         if (concept.isType() && concept.asType().superType() != null)
             embedSuperType(halResource, concept.asType());
@@ -129,7 +136,7 @@ class HALConceptData {
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "RHS-"+rule.getId())
                 .withProperty(TYPE_PROPERTY, "RHS")
-                .withProperty(BASETYPE_PROPERTY, "resource-type")
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
                 .withProperty(VALUE_PROPERTY,rule.getRHS().admin().toString());
         halResource.withRepresentation("RHS", RHS);
     }
@@ -140,20 +147,17 @@ class HALConceptData {
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "LHS-"+rule.getId())
                 .withProperty(TYPE_PROPERTY, "LHS")
-                .withProperty(BASETYPE_PROPERTY, "resource-type")
-                .withProperty(VALUE_PROPERTY,rule.getLHS().admin().asConjunction()
-                        .getPatterns()
-                        .stream().map(Object::toString).collect(Collectors.joining("; \n")));
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
+                .withProperty(VALUE_PROPERTY,rule.getLHS().admin().toString());
         halResource.withRepresentation("LHS", LHS);
     }
 
-    private void generateOwnerInstances(Representation halResource, Resource conceptResource, int separationDegree) {
+    private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
         final String roleType = conceptResource.type().getName();
-        conceptResource.ownerInstances().forEach(object -> {
-            Instance currentInstance = (Instance) object;
-            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + currentInstance.getId()+this.keyspace)
+        conceptResource.ownerInstances().forEach(instance -> {
+            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId()+this.keyspace)
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-            handleConcept(instanceResource, currentInstance, separationDegree - 1);
+            handleConcept(instanceResource, instance, separationDegree - 1);
             halResource.withRepresentation(roleType, instanceResource);
         });
     }
@@ -165,17 +169,14 @@ class HALConceptData {
         halResource.withRepresentation(SUB_EDGE, HALType);
     }
 
-    private void embedType(Representation halResource, Concept concept) {
+    private void embedType(Representation halResource, Instance instance) {
 
         // temp fix until a new behaviour is defined
-        Representation HALType;
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + instance.type().getId()+this.keyspace)
+                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
 
-        if (concept.type() != null) {
-            HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId()+this.keyspace)
-                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(HALType, concept.type());
-            halResource.withRepresentation(ISA_EDGE, HALType);
-        }
+        generateStateAndLinks(HALType, instance.type());
+        halResource.withRepresentation(ISA_EDGE, HALType);
     }
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
@@ -183,16 +184,17 @@ class HALConceptData {
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId()+this.keyspace);
 
         //State
-        if (concept.isInstance())
-            resource.withProperty(ID_PROPERTY, concept.getId())
-                    .withProperty(TYPE_PROPERTY, concept.type().getName())
-                    .withProperty(BASETYPE_PROPERTY, concept.type().type().getName());
-        else // temp fix until a new behaviour is defined
-            resource.withProperty(ID_PROPERTY, concept.asType().getName())
-                    .withProperty(TYPE_PROPERTY, (concept.type() == null) ? ROOT_CONCEPT : concept.type().getName())
-                    .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT);
+        if (concept.isInstance()) {
+            Instance instance = concept.asInstance();
+            resource.withProperty(ID_PROPERTY, instance.getId())
+                    .withProperty(TYPE_PROPERTY, instance.type().getName())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
+        } else { // temp fix until a new behaviour is defined
+            Type type = concept.asType();
+            resource.withProperty(ID_PROPERTY, type.getName())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
 
-        if (concept.isResource()) {
+        } if (concept.isResource()) {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
         }
 
@@ -265,7 +267,7 @@ class HALConceptData {
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
-        if (!type.getName().equals(ROOT_CONCEPT)) {
+        if (!type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
             type.instances().parallelStream().forEach(instance -> {
 
                 if (instance.isType() && instance.asType().isImplicit()) return;
@@ -276,7 +278,7 @@ class HALConceptData {
                 halResource.withRepresentation(ISA_EDGE, instanceResource);
             });
         }
-        type.subTypes().stream().forEach(instance -> {
+        type.subTypes().forEach(instance -> {
             // let's not put the current type in its own embedded
             if (!instance.getName().equals(type.getName())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId()+this.keyspace)

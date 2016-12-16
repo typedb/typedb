@@ -1,5 +1,5 @@
 insert
-"production" isa entity-type
+"production" sub entity
 	is-abstract
 	## Filming details
 	plays-role production-with-crew
@@ -82,7 +82,7 @@ insert
 
 "tv-series" sub production;
 
-"production-crew" isa relation-type
+"production-crew" sub relation
     has-role production-with-crew
     has-role director
     has-role production-designer
@@ -94,8 +94,8 @@ insert
     has-role art-director
     has-role photography-director
     has-role costume-designer;
-"production-with-crew" isa role-type;
-"crew-member" isa role-type is-abstract;
+"production-with-crew" sub role;
+"crew-member" sub role is-abstract;
 "director" sub crew-member;
 "production-designer" sub crew-member;
 "composer" sub crew-member;
@@ -107,97 +107,97 @@ insert
 "photography-director" sub crew-member;
 "art-director" sub crew-member;
 
-"has-cast" isa relation-type
+"has-cast" sub relation
     has-role character-being-played
     has-role actor
     has-role production-with-cast
     has-resource billing-number;
-"character-being-played" isa role-type;
-"actor" isa role-type;
-"production-with-cast" isa role-type;
+"character-being-played" sub role;
+"actor" sub role;
+"production-with-cast" sub role;
 
-"has-production-company" isa relation-type
+"has-production-company" sub relation
     has-role production-with-company
     has-role production-company;
-"production-with-company" isa role-type;
-"production-company" isa role-type;
+"production-with-company" sub role;
+"production-company" sub role;
 
-"production-location" isa relation-type
+"production-location" sub relation
     has-role production-with-location
     has-role location-of-subject
     has-role filming-location
     has-role narrative-location;
-"production-with-location" isa role-type;
-"location-of-subject" isa role-type;
-"narrative-location" isa role-type;
-"filming-location" isa role-type;
+"production-with-location" sub role;
+"location-of-subject" sub role;
+"narrative-location" sub role;
+"filming-location" sub role;
 
-"production-language" isa relation-type
+"production-language" sub relation
     has-role production-with-language
     has-role language-of-subject
     has-role original-language
     has-role translation;
-"production-with-language" isa role-type;
-"language-of-subject" isa role-type;
-"original-language" isa role-type;
-"translation" isa role-type;
+"production-with-language" sub role;
+"language-of-subject" sub role;
+"original-language" sub role;
+"translation" sub role;
 
-"has-certificate" isa relation-type
+"has-certificate" sub relation
     has-role production-with-certificate
     has-role certificate-of-production;
-"production-with-certificate" isa role-type;
-"certificate-of-production" isa role-type;
+"production-with-certificate" sub role;
+"certificate-of-production" sub role;
 
 
-"accolade" isa relation-type
+"accolade" sub relation
     has-role nominee
     has-role award-of-subject
     has-role nominated-award;
-"nominee" isa role-type;
-"award-of-subject" isa role-type;
-"nominated-award" isa role-type;
+"nominee" sub role;
+"award-of-subject" sub role;
+"nominated-award" sub role;
 
-"has-review" isa relation-type
+"has-review" sub relation
     has-role subject-with-review
     has-role review-of-subject;
-"subject-with-review" isa role-type;
-"review-of-subject" isa role-type;
+"subject-with-review" sub role;
+"review-of-subject" sub role;
 
-"has-genre" isa relation-type
+"has-genre" sub relation
     has-role production-with-genre
     has-role genre-of-production;
-"production-with-genre" isa role-type;
-"genre-of-production" isa role-type;
+"production-with-genre" sub role;
+"genre-of-production" sub role;
 
-"has-mood" isa relation-type
+"has-mood" sub relation
     has-role production-with-mood
     has-role mood-of-production
     has-resource weight;
-"production-with-mood" isa role-type;
-"mood-of-production" isa role-type;
+"production-with-mood" sub role;
+"mood-of-production" sub role;
 
-"has-cluster" isa relation-type
+"has-cluster" sub relation
     has-role production-with-cluster
     has-role cluster-of-production
     has-resource weight;
-"production-with-cluster" isa role-type;
-"cluster-of-production" isa role-type;
+"production-with-cluster" sub role;
+"cluster-of-production" sub role;
 
-"has-keyword" isa relation-type
+"has-keyword" sub relation
     has-role subject-with-keyword
     has-role keyword-of-subject;
-"subject-with-keyword" isa role-type;
-"keyword-of-subject" isa role-type;
+"subject-with-keyword" sub role;
+"keyword-of-subject" sub role;
 
-"has-streaming-service" isa relation-type
+"has-streaming-service" sub relation
     has-role streaming-provider
     has-role streaming-url-role
     has-role production-with-stream;
-"streaming-provider" isa role-type;
-"streaming-url-role" isa role-type;
-"production-with-stream" isa role-type;
+"streaming-provider" sub role;
+"streaming-url-role" sub role;
+"production-with-stream" sub role;
 
-"person" isa entity-type
+"person" sub entity
     plays-role crew-member
     plays-role actor
     plays-role board-member
@@ -222,48 +222,48 @@ insert
     has-resource deathday
     has-resource has-spouse
     has-resource homepage;
-"relative" isa role-type is-abstract;
+"relative" sub role is-abstract;
 
-"marriage" isa relation-type
+"marriage" sub relation
     has-role spouse1
     has-role spouse2;
 "spouse" sub relative, is-abstract;
 "spouse1" sub spouse;
 "spouse2" sub spouse;
 
-"has-child" isa relation-type
+"has-child" sub relation
     has-role parent
     has-role child;
 "parent" sub relative;
 "child" sub relative;
 
-"has-partner" isa relation-type
+"has-partner" sub relation
     has-role person-has-partner
     has-role partner;
 "person-has-partner" sub relative;
 "partner" sub relative;
 
-"personal-details" isa relation-type
+"personal-details" sub relation
     has-role detailed-person
     has-role country-of-citizenship
     has-role education-company
     has-role occupation-of-person
     has-role location-of-birth
     has-role location-of-death;
-"detailed-person" isa role-type;
-"country-of-citizenship" isa role-type;
-"education-company" isa role-type;
-"occupation-of-person" isa role-type;
-"location-of-birth" isa role-type;
-"location-of-death" isa role-type;
+"detailed-person" sub role;
+"country-of-citizenship" sub role;
+"education-company" sub role;
+"occupation-of-person" sub role;
+"location-of-birth" sub role;
+"location-of-death" sub role;
 
-"person-via-keyword" isa relation-type
+"person-via-keyword" sub relation
     has-role keyword-person
     has-role movie-with-keyword-person;
-"keyword-person" isa role-type;
-"movie-with-keyword-person" isa role-type;
+"keyword-person" sub role;
+"movie-with-keyword-person" sub role;
 
-"company" isa entity-type
+"company" sub entity
     plays-role production-company
     plays-role streaming-provider
     plays-role education-company
@@ -286,24 +286,24 @@ insert
     has-resource imdb-identifier
     has-resource name;
 
-"company-board" isa relation-type
+"company-board" sub relation
     has-role company-with-board
     has-role ceo
     has-role founder
     has-role chairperson;
-"company-with-board" isa role-type;
-"board-member" isa role-type is-abstract;
+"company-with-board" sub role;
+"board-member" sub role is-abstract;
 "ceo" sub board-member;
 "founder" sub board-member;
 "chairperson" sub board-member;
 
-"company-has-headquarters-location" isa relation-type
+"company-has-headquarters-location" sub relation
     has-role company-with-headquarters
     has-role location-of-headquarters;
-"company-with-headquarters" isa role-type;
-"location-of-headquarters" isa role-type;
+"company-with-headquarters" sub role;
+"location-of-headquarters" sub role;
 
-"location" isa entity-type
+"location" sub entity
     plays-role parent-of-feature
     plays-role location-of-headquarters
     plays-role location-of-birth
@@ -317,7 +317,7 @@ insert
 "country" sub location
     has-resource iso-3166;
 
-"language" isa entity-type
+"language" sub entity
     plays-role language-of-subject
     plays-role original-language
     plays-role translation
@@ -327,304 +327,304 @@ insert
     has-resource iso-639-3
     has-resource wikimedia-language-code;
 
-"award" isa entity-type
+"award" sub entity
     plays-role award-of-subject
     plays-role nominated-award
     has-resource description
     has-resource name;
 
-"parent-feature" isa relation-type
+"parent-feature" sub relation
     has-role parent-of-feature
     has-role child-of-feature;
-"parent-of-feature" isa role-type;
-"child-of-feature" isa role-type;
+"parent-of-feature" sub role;
+"child-of-feature" sub role;
 
-"character" isa entity-type
+"character" sub entity
     plays-role character-being-played
     has-resource name;
 
-"certificate" isa entity-type
+"certificate" sub entity
     plays-role certificate-of-production
     has-resource description;
 
-"genre" isa entity-type
+"genre" sub entity
     plays-role genre-of-production
     has-resource weight
     has-resource description;
 
-"keyword" isa entity-type
+"keyword" sub entity
     plays-role keyword-of-subject
     has-resource name
     has-resource weight;
 
-"review" isa entity-type
+"review" sub entity
     plays-role review-of-subject
     has-resource content
     has-resource media-type
     has-resource author;
 
-"occupation" isa entity-type
+"occupation" sub entity
     plays-role occupation-of-person
     has-resource description;
 
-"cluster" isa entity-type
+"cluster" sub entity
     plays-role cluster-of-production
     has-resource description
     has-resource cluster-id;
 
-"mood" isa entity-type
+"mood" sub entity
     plays-role mood-of-production
     has-resource description;
 
 
 ### RESOURCE TYPES:
 
-"title" isa resource-type
+"title" sub resource
     datatype string;
 
-"alternate-titles" isa resource-type
+"alternate-titles" sub resource
     datatype string;
 
-"original-title" isa resource-type
+"original-title" sub resource
     datatype string;
 
-"imdb-vote" isa resource-type
+"imdb-vote" sub resource
     datatype long;
 
-"rotten-tomatoes-critic-rating" isa resource-type
+"rotten-tomatoes-critic-rating" sub resource
     datatype double;
 
-"rotten-tomatoes-critic-fresh-votes" isa resource-type
+"rotten-tomatoes-critic-fresh-votes" sub resource
     datatype long;
 
-"rotten-tomatoes-critic-rotten-votes" isa resource-type
+"rotten-tomatoes-critic-rotten-votes" sub resource
     datatype long;
 
-"rotten-tomatoes-critic-total-votes" isa resource-type
+"rotten-tomatoes-critic-total-votes" sub resource
     datatype long;
 
-"rotten-tomatoes-user-rating" isa resource-type
+"rotten-tomatoes-user-rating" sub resource
     datatype double;
 
-"rotten-tomatoes-user-total-votes" isa resource-type
+"rotten-tomatoes-user-total-votes" sub resource
     datatype long;
 
-"rotten-tomatoes-user-meter" isa resource-type
+"rotten-tomatoes-user-meter" sub resource
     datatype long;
 
-"rotten-tomatoes-total-meter" isa resource-type
+"rotten-tomatoes-total-meter" sub resource
     datatype long;
 
-"rotten-tomatoes-url" isa resource-type
+"rotten-tomatoes-url" sub resource
     datatype string;
 
-"free-web-sources" isa resource-type
+"free-web-sources" sub resource
     datatype string;
 
-"free-ios-sources" isa resource-type
+"free-ios-sources" sub resource
     datatype string;
 
-"free-android-sources" isa resource-type
+"free-android-sources" sub resource
     datatype string;
 
-"tv-everywhere-web-sources" isa resource-type
+"tv-everywhere-web-sources" sub resource
     datatype string;
 
-"tv-everywhere-ios-sources" isa resource-type
+"tv-everywhere-ios-sources" sub resource
     datatype string;
 
-"tv-everywhere-android-sources" isa resource-type
+"tv-everywhere-android-sources" sub resource
     datatype string;
 
-"subscription-web-sources" isa resource-type
+"subscription-web-sources" sub resource
     datatype string;
 
-"subscription-ios-sources" isa resource-type
+"subscription-ios-sources" sub resource
     datatype string;
 
-"subscription-android-sources" isa resource-type
+"subscription-android-sources" sub resource
     datatype string;
 
-"purchase-web-sources" isa resource-type
+"purchase-web-sources" sub resource
     datatype string;
 
-"purchase-ios-sources" isa resource-type
+"purchase-ios-sources" sub resource
     datatype string;
 
-"purchase-android-sources" isa resource-type
+"purchase-android-sources" sub resource
     datatype string;
 
-"guidebox-web-trailer" isa resource-type
+"guidebox-web-trailer" sub resource
     datatype string;
 
-"guidebox-ios-trailer" isa resource-type
+"guidebox-ios-trailer" sub resource
     datatype string;
 
-"guidebox-android-trailer" isa resource-type
+"guidebox-android-trailer" sub resource
     datatype string;
 
-"youtube-trailer" isa resource-type
+"youtube-trailer" sub resource
     datatype string;
 
-"tmdb-id" isa resource-type
+"tmdb-id" sub resource
     datatype string;
 
-"guidebox-id" isa resource-type
+"guidebox-id" sub resource
     datatype string;
 
-"imdb-identifier" isa resource-type
+"imdb-identifier" sub resource
     datatype string;
 
-"freebase-identifier" isa resource-type
+"freebase-identifier" sub resource
     datatype string;
 
-"tagline" isa resource-type
+"tagline" sub resource
     datatype string;
 
-"metacritic-link" isa resource-type
+"metacritic-link" sub resource
     datatype string;
 
-"wikidata-id" isa resource-type
+"wikidata-id" sub resource
     datatype string;
 
-"links" isa resource-type
+"links" sub resource
     datatype string;
 
-"tmdb-vote-average" isa resource-type
+"tmdb-vote-average" sub resource
     datatype double;
 
-"overview" isa resource-type
+"overview" sub resource
     datatype string;
 
-"metascore" isa resource-type
+"metascore" sub resource
     datatype double;
 
-"revenue" isa resource-type
+"revenue" sub resource
     datatype double;
 
-"tmdb-popularity" isa resource-type
+"tmdb-popularity" sub resource
     datatype double;
 
-"runtime" isa resource-type
+"runtime" sub resource
     datatype double;
 
-"tmdb-vote-count" isa resource-type
+"tmdb-vote-count" sub resource
     datatype double;
 
-"images" isa resource-type
+"images" sub resource
     datatype string;
 
-"budget" isa resource-type
+"budget" sub resource
     datatype double;
 
-"soundtracks" isa resource-type
+"soundtracks" sub resource
     datatype string;
 
-"backdrops" isa resource-type
+"backdrops" sub resource
     datatype string;
 
-"alternate-versions" isa resource-type
+"alternate-versions" sub resource
     datatype string;
 
-"release-date" isa resource-type
+"release-date" sub resource
     datatype long;
 
-"status" isa resource-type
+"status" sub resource
     datatype string;
 
-"name" isa resource-type
+"name" sub resource
     datatype string;
 
-"has-spouse" isa resource-type
+"has-spouse" sub resource
     datatype string;
 
-"also-known-as" isa resource-type
+"also-known-as" sub resource
     datatype string;
 
-"biography" isa resource-type
+"biography" sub resource
     datatype string;
 
-"deathday" isa resource-type
+"deathday" sub resource
     datatype long;
 
-"birthday" isa resource-type
+"birthday" sub resource
     datatype long;
 
-"place-of-birth" isa resource-type
+"place-of-birth" sub resource
     datatype string;
 
-"homepage" isa resource-type
+"homepage" sub resource
     datatype string;
 
-"residence" isa resource-type
+"residence" sub resource
     datatype string;
 
-"gender" isa resource-type
+"gender" sub resource
     datatype string;
 
-"cause-of-death" isa resource-type
+"cause-of-death" sub resource
     datatype string;
 
-"child-string" isa resource-type
+"child-string" sub resource
     datatype string;
 
-"headquarters" isa resource-type
+"headquarters" sub resource
     datatype string;
 
-"parent-company" isa resource-type
+"parent-company" sub resource
     datatype string;
 
-"inception" isa resource-type
+"inception" sub resource
     datatype long;
 
-"dissolved" isa resource-type
+"dissolved" sub resource
     datatype long;
 
-"industry" isa resource-type
+"industry" sub resource
     datatype string;
 
-"owned-by" isa resource-type
+"owned-by" sub resource
     datatype string;
 
-"description" isa resource-type
+"description" sub resource
     datatype string;
 
-"weight" isa resource-type
+"weight" sub resource
     datatype double;
 
-"iso-639-1" isa resource-type
+"iso-639-1" sub resource
     datatype string;
 
-"iso-639-2" isa resource-type
+"iso-639-2" sub resource
     datatype string;
 
-"iso-639-3" isa resource-type
+"iso-639-3" sub resource
     datatype string;
 
-"wikimedia-language-code" isa resource-type
+"wikimedia-language-code" sub resource
     datatype string;
 
-"author" isa resource-type
+"author" sub resource
     datatype string;
 
-"media-type" isa resource-type
+"media-type" sub resource
     datatype string;
 
-"content" isa resource-type
+"content" sub resource
     datatype string;
 
-"billing-number" isa resource-type
+"billing-number" sub resource
     datatype long;
 
-"streaming-url" isa entity-type
+"streaming-url" sub entity
     has-resource url
     plays-role streaming-url-role;
 
-"url" isa resource-type
+"url" sub resource
     datatype string;
 
-"iso-3166" isa resource-type
+"iso-3166" sub resource
     datatype string;
 
-"cluster-id" isa resource-type
+"cluster-id" sub resource
     datatype string;

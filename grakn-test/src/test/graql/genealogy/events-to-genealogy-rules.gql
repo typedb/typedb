@@ -24,7 +24,7 @@ insert
  lhs
  {$b isa birth has confidence "high" has firstname $name;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
- $rel has role "newborn";}
+ $rel has event-role "newborn";}
  rhs
  {$p has firstname $name;};
  
@@ -32,7 +32,7 @@ insert
  lhs
  {$b isa birth has confidence "high" has middlename $name;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
- $rel has role "newborn";}
+ $rel has event-role "newborn";}
  rhs
  {$p has middlename $name;};
  
@@ -40,7 +40,7 @@ insert
  lhs
  {$b isa birth has confidence "high" has surname $name;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
- $rel has role "newborn";}
+ $rel has event-role "newborn";}
  rhs
  {$p has surname $name;};
  
@@ -48,7 +48,7 @@ insert
  lhs
  {$b isa birth has confidence "high" has gender $gender;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
- $rel has role "newborn";}
+ $rel has event-role "newborn";}
  rhs
  {$p has gender $gender;};
  
@@ -56,7 +56,7 @@ insert
  lhs
  {$b isa birth has confidence "high" has birth-date $date;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
- $rel has role "newborn";}
+ $rel has event-role "newborn";}
  rhs
  {$p has birth-date $date;};
  
@@ -64,7 +64,7 @@ insert
  lhs
  {$b isa death has confidence "high" has death-date $date;
  $rel (happening: $b, protagonist: $p);
- $rel isa event-protagonist has role "deceased";}
+ $rel isa event-protagonist has event-role "deceased";}
  rhs
  {$p has death-date $date;};
 
@@ -78,9 +78,9 @@ $materializeParentChildRelations isa inference-rule
 lhs
 {$b isa birth has confidence "high";
 $rel1 (happening: $b, protagonist: $p) isa event-protagonist;
-$rel1 has role "parent";
+$rel1 has event-role "parent";
 $rel2 (happening: $b, protagonist: $c) isa event-protagonist;
-$rel2 has role "newborn";}
+$rel2 has event-role "newborn";}
 rhs
 {(parent: $p, child: $c) isa parentship;};
 
@@ -96,9 +96,9 @@ $materializeMarriagesFromWeddings isa inference-rule
 lhs
 {$w isa wedding has confidence "high";
 $rel1 (happening: $w, protagonist: $s1) isa event-protagonist;
-$rel1 has role "spouse";
+$rel1 has event-role "spouse";
 $rel2 (happening: $w, protagonist: $s2) isa event-protagonist;
-$rel2 has role "spouse";
+$rel2 has event-role "spouse";
 $s1 != $s2;
 }
 rhs

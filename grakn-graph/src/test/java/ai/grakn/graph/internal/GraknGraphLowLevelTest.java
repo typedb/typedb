@@ -149,7 +149,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
     public void testAddCastingLongManyCastingFound() {
         //Artificially Make First Casting
         RelationType relationType = graknGraph.putRelationType("RelationType");
-        RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("role");
+        RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("role-thing");
         EntityType thing = graknGraph.putEntityType("thing");
         InstanceImpl rolePlayer = (InstanceImpl) thing.addEntity();
         RelationImpl relation = (RelationImpl) relationType.addRelation();
@@ -260,22 +260,22 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void getSuperConceptType(){
-        assertEquals(graknGraph.getMetaType().getName(), Schema.MetaSchema.TYPE.getName());
+        assertEquals(graknGraph.getMetaConcept().getName(), Schema.MetaSchema.CONCEPT.getName());
     }
 
     @Test
     public void getSuperRelationType(){
-        assertEquals(graknGraph.getMetaRelationType().getName(), Schema.MetaSchema.RELATION_TYPE.getName());
+        assertEquals(graknGraph.getMetaRelationType().getName(), Schema.MetaSchema.RELATION.getName());
     }
 
     @Test
     public void getSuperRoleType(){
-        assertEquals(graknGraph.getMetaRoleType().getName(), Schema.MetaSchema.ROLE_TYPE.getName());
+        assertEquals(graknGraph.getMetaRoleType().getName(), Schema.MetaSchema.ROLE.getName());
     }
 
     @Test
     public void getSuperResourceType(){
-        assertEquals(graknGraph.getMetaResourceType().getName(), Schema.MetaSchema.RESOURCE_TYPE.getName());
+        assertEquals(graknGraph.getMetaResourceType().getName(), Schema.MetaSchema.RESOURCE.getName());
     }
 
     @Test
@@ -290,7 +290,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testMetaOntologyInitialisation(){
-        Type type = graknGraph.getMetaType();
+        Type type = graknGraph.getMetaConcept();
         Type relationType = graknGraph.getMetaRelationType();
         Type roleType = graknGraph.getMetaRoleType();
         Type resourceType = graknGraph.getMetaResourceType();
@@ -312,10 +312,10 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RoleType testRoleType = graknGraph.putRoleType("Test Role Type");
         RelationType testRelationType = graknGraph.putRelationType("Test Relation Type");
 
-        assertEquals(Schema.MetaSchema.ENTITY_TYPE.getName(), testType.type().getName());
-        assertEquals(Schema.MetaSchema.RESOURCE_TYPE.getName(), testResourceType.type().getName());
-        assertEquals(Schema.MetaSchema.ROLE_TYPE.getName(), testRoleType.type().getName());
-        assertEquals(Schema.MetaSchema.RELATION_TYPE.getName(), testRelationType.type().getName());
+        assertEquals(Schema.MetaSchema.ENTITY.getName(), testType.superType().getName());
+        assertEquals(Schema.MetaSchema.RESOURCE.getName(), testResourceType.superType().getName());
+        assertEquals(Schema.MetaSchema.ROLE.getName(), testRoleType.superType().getName());
+        assertEquals(Schema.MetaSchema.RELATION.getName(), testRelationType.superType().getName());
 
     }
 
@@ -379,7 +379,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testGetInstancesFromMeta(){
-        Type metaType = graknGraph.getMetaType();
+        Type metaType = graknGraph.getMetaConcept();
         Type metaEntityType = graknGraph.getMetaEntityType();
         Type metaRelationType = graknGraph.getMetaRelationType();
         Type metaResourceType = graknGraph.getMetaResourceType();
@@ -391,6 +391,7 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         RoleType sampleRoleType = graknGraph.putRoleType("Sample Role Type");
 
         Collection<? extends Concept> instances = metaType.instances();
+        Collection<? extends Type> subTypes = metaType.subTypes();
 
         assertFalse(instances.contains(metaEntityType));
         assertFalse(instances.contains(metaRelationType));
@@ -398,8 +399,8 @@ public class GraknGraphLowLevelTest extends GraphTestBase{
         assertFalse(instances.contains(metaRoleType));
         assertFalse(instances.contains(metaRuleType));
 
-        assertTrue(instances.contains(sampleEntityType));
-        assertTrue(instances.contains(sampleRelationType));
-        assertTrue(instances.contains(sampleRoleType));
+        assertTrue(subTypes.contains(sampleEntityType));
+        assertTrue(subTypes.contains(sampleRelationType));
+        assertTrue(subTypes.contains(sampleRoleType));
     }
 }

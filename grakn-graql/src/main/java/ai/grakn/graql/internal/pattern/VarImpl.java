@@ -60,6 +60,7 @@ import java.util.Stack;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -258,7 +259,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var datatype(ResourceType.DataType<?> datatype) {
-        return addProperty(new DataTypeProperty(datatype));
+        return addProperty(new DataTypeProperty(requireNonNull(datatype)));
     }
 
     @Override

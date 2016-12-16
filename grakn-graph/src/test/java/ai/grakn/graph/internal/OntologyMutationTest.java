@@ -179,7 +179,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void testAddingHasRolesWhileBatchLoading(){
-        String roleTypeId = "role";
+        String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
         graknGraph.putRoleType(roleTypeId);
         graknGraph.putRelationType(relationTypeId);
@@ -197,7 +197,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void testAddingPlaysRoleWhileBatchLoading(){
-        String roleTypeId = "role";
+        String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         graknGraph.putRoleType(roleTypeId);
         graknGraph.putEntityType(entityTypeId);
@@ -235,7 +235,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void testDeletingPlaysRoleWhileBatchLoading(){
-        String roleTypeId = "role";
+        String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         RoleType roleType = graknGraph.putRoleType(roleTypeId);
         graknGraph.putEntityType(entityTypeId).playsRole(roleType);
@@ -253,7 +253,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void testDeletingHasRolesWhileBatchLoading(){
-        String roleTypeId = "role";
+        String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
         RoleType roleType = graknGraph.putRoleType(roleTypeId);
         graknGraph.putRelationType(relationTypeId).hasRole(roleType);

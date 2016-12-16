@@ -34,13 +34,6 @@ public interface Concept extends Comparable<Concept>{
      */
     String getId();
 
-    /**
-     * Return the Type of the Concept.
-     *
-     * @return A Type which is the type of this concept. This concept is an instance of that type.
-     */
-    Type type();
-
     //------------------------------------- Other ---------------------------------
 
     /**

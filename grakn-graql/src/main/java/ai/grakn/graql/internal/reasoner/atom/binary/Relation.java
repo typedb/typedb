@@ -40,6 +40,7 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.util.Optional;
@@ -516,9 +517,11 @@ public class Relation extends TypeAtom {
             rolesToAllocate.remove(role);
         });
         varsToAllocate.removeAll(allocatedVars);
+        //if unambiguous assign top role
         if (varsToAllocate.size() == 1) {
             RoleType role = rolesToAllocate.iterator().next();
-            RoleType allocatedRole = role.superType() != null? role.superType() : role;
+            RoleType superType = role.superType();
+            RoleType allocatedRole = Schema.MetaSchema.isMetaName(superType.getName()) ? role : superType;
             String var = varsToAllocate.iterator().next();
             Type type = varTypeMap.get(var);
             roleVarTypeMap.put(allocatedRole, new Pair<>(var, type));

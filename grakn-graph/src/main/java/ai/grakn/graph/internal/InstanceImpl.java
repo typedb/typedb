@@ -18,12 +18,12 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,8 +44,8 @@ import java.util.stream.Collectors;
  * @param <V> The type of the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
-    InstanceImpl(Vertex v, V type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type) {
+        super(graknGraph, v, type);
     }
 
     /**
@@ -165,6 +166,5 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
         return relation;
     }
-
 
 }

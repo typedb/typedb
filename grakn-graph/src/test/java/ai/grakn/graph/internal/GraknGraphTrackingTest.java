@@ -79,7 +79,7 @@ public class GraknGraphTrackingTest extends GraphTestBase{
 
         // check the concept tracker is empty
         modifiedConcepts = graknGraph.getConceptLog().getModifiedConcepts();
-        assertEquals(3, modifiedConcepts.size());
+        assertEquals(4, modifiedConcepts.size());
 
         // add primitive edges in as many ways as possible
         c1.superType(c2);

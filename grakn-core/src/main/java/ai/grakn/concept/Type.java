@@ -62,7 +62,8 @@ public interface Type extends Concept {
      */
     RelationType hasResource(ResourceType resourceType);
 
-    //------------------------------------- Accessors ----------------------------------
+    //------------------------------------- Accessors ---------------------------------
+
     /**
      * Returns the name of this Type.
      *
@@ -92,7 +93,7 @@ public interface Type extends Concept {
      *
      * @return All the instances of this type.
      */
-    Collection<? extends Concept> instances();
+    Collection<? extends Instance> instances();
 
     /**
      *

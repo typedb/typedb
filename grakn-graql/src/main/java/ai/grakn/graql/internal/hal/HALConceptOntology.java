@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -28,6 +29,8 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import java.util.Collection;
+
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.getBaseType;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -81,14 +84,16 @@ class HALConceptOntology {
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
 
         //State
-        if (concept.isInstance())
-            resource.withProperty(ID_PROPERTY, concept.getId())
-                    .withProperty(TYPE_PROPERTY, concept.type().getId())
-                    .withProperty(BASETYPE_PROPERTY, concept.type().type().getName());
-        else // temp fix until a new behaviour is defined
+        if (concept.isInstance()) {
+            Instance instance = concept.asInstance();
+            resource.withProperty(ID_PROPERTY, instance.getId())
+                    .withProperty(TYPE_PROPERTY, instance.type().getName())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
+        } else { // temp fix until a new behaviour is defined
+            Type type = concept.asType();
             resource.withProperty(ID_PROPERTY, concept.asType().getName())
-                    .withProperty(TYPE_PROPERTY, (concept.type() == null) ? ROOT_CONCEPT : concept.type().getName())
-                    .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT);
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
+        }
 
         if (concept.isResource()) {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
@@ -99,10 +104,11 @@ class HALConceptOntology {
 
         // temp fix until a new behaviour is defined
         Representation HALType;
-        if (concept.type() != null) {
-            HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId()+this.keyspace)
+        if (concept.isInstance()) {
+            Instance instance = concept.asInstance();
+            HALType = factory.newRepresentation(resourceLinkPrefix + instance.type().getId()+this.keyspace)
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(HALType, concept.type());
+            generateStateAndLinks(HALType, instance.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
         }
 

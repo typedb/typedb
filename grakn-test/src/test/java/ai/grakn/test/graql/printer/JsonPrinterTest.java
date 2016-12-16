@@ -78,13 +78,13 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
     @Test
     public void testJsonMetaType() {
         String id = graph.admin().getMetaEntityType().getId();
-        assertJsonEquals(Json.object("id", id, "name", "entity-type"), graph.admin().getMetaEntityType());
+        assertJsonEquals(Json.object("id", id, "name", "entity", "sub", "concept"), graph.admin().getMetaEntityType());
     }
 
     @Test
     public void testJsonEntityType() {
         String id = graph.getEntityType("movie").getId();
-        assertJsonEquals(Json.object("id", id, "name", "movie", "isa", "entity-type"), graph.getEntityType("movie"));
+        assertJsonEquals(Json.object("id", id, "name", "movie", "sub", "production"), graph.getEntityType("movie"));
     }
 
     @Test

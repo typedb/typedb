@@ -4,47 +4,47 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type
+"entity2" sub entity
     has-resource index;
-"start" sub entity;
-"end" sub entity;
-"a-entity" sub entity;
-"b-entity" sub entity;
+"start" sub entity2;
+"end" sub entity2;
+"a-entity" sub entity2;
+"b-entity" sub entity2;
 
-"R1-from" isa role-type;
-"R1-to" isa role-type;
-"R1" isa relation-type, has-role R1-from, has-role R1-to;
-entity plays-role R1-from plays-role R1-to;
+"R1-from" sub role;
+"R1-to" sub role;
+"R1" sub relation, has-role R1-from, has-role R1-to;
+entity2 plays-role R1-from plays-role R1-to;
 
-"R2-from" isa role-type;
-"R2-to" isa role-type;
-"R2" isa relation-type, has-role R2-from, has-role R2-to;
-entity plays-role R2-from plays-role R2-to;
+"R2-from" sub role;
+"R2-to" sub role;
+"R2" sub relation, has-role R2-from, has-role R2-to;
+entity2 plays-role R2-from plays-role R2-to;
 
-"Q1-from" isa role-type;
-"Q1-to" isa role-type;
-"Q1" isa relation-type, has-role Q1-from, has-role Q1-to;
-entity plays-role Q1-from plays-role Q1-to;
+"Q1-from" sub role;
+"Q1-to" sub role;
+"Q1" sub relation, has-role Q1-from, has-role Q1-to;
+entity2 plays-role Q1-from plays-role Q1-to;
 
-"Q2-from" isa role-type;
-"Q2-to" isa role-type;
-"Q2" isa relation-type, has-role Q2-from, has-role Q2-to;
-entity plays-role Q2-from plays-role Q2-to;
+"Q2-from" sub role;
+"Q2-to" sub role;
+"Q2" sub relation, has-role Q2-from, has-role Q2-to;
+entity2 plays-role Q2-from plays-role Q2-to;
 
-"P-from" isa role-type;
-"P-to" isa role-type;
-"P" isa relation-type, has-role P-from, has-role P-to;
-entity plays-role P-from plays-role P-to;
+"P-from" sub role;
+"P-to" sub role;
+"P" sub relation, has-role P-from, has-role P-to;
+entity2 plays-role P-from plays-role P-to;
 
-"index" isa resource-type, datatype string;
+"index" sub resource, datatype string;
 
 ####################################################
 ##################DATA#############################
 ####################################################
 
-$c isa entity, has index "c";
-$d isa entity, has index "d";
-$e isa entity, has index "e";
+$c isa entity2, has index "c";
+$d isa entity2, has index "d";
+$e isa entity2, has index "e";
 
 ####################################################
 ##################RULES#############################

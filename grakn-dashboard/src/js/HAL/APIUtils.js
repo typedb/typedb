@@ -39,7 +39,7 @@ export function edgeLeftToRight(a, b) {
 export function defaultProperties(resource) {
     return {
         id: resource[API.KEY_ID],
-        type: resource[API.KEY_TYPE],
+        type: resource[API.KEY_TYPE] || "",
         baseType: resource[API.KEY_BASE_TYPE],
         label: buildLabel(resource),
         ontology: resource[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF]
@@ -86,7 +86,7 @@ function buildLabel(resource) {
             label = resource[API.KEY_TYPE] + ": " + resource[API.KEY_ID];
             break;
         case API.RELATION_TYPE:
-            label = resource[API.KEY_BASE_TYPE].substring(0,3) + ": " + resource[API.KEY_TYPE];
+            label = resource[API.KEY_BASE_TYPE].substring(0, 3) + ": " + resource[API.KEY_TYPE];
             break;
         case API.RESOURCE_TYPE:
             label = resource[API.KEY_VALUE];

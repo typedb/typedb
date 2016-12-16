@@ -79,7 +79,7 @@ public class GenealogyTest extends AbstractEngineTest{
 
     @Test
     public void testMatchAll2(){
-        String queryString = "match $x isa document; ($x, $y); $y isa $z; $z isa entity-type;";
+        String queryString = "match $x isa document; ($x, $y); $y isa entity;";
         Query query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         assertTrue(answers.isEmpty());
@@ -90,9 +90,9 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString= "match " +
                 "$w isa wedding has confidence 'high';" +
                 "$rel1 (happening: $w, protagonist: $s1) isa event-protagonist;" +
-                "$rel1 has role 'spouse';"+
+                "$rel1 has event-role 'spouse';"+
                 "$rel2 (happening: $w, protagonist: $s2) isa event-protagonist;" +
-                "$rel2 has role 'spouse';" +
+                "$rel2 has event-role 'spouse';" +
                 "$s1 != $s2;select $s1, $s2;";
         Query query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
@@ -151,16 +151,16 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match (child: $c, parent: $p) isa parentship;";
         String queryString2 = "match $b isa birth has confidence 'high';" +
         "$rel1 (happening: $b, protagonist: $p) isa event-protagonist;" +
-        "$rel1 has role 'parent';" +
+        "$rel1 has event-role 'parent';" +
         "$rel2 (happening: $b, protagonist: $c) isa event-protagonist;" +
-        "$rel2 has role 'newborn';select $c, $p;";
+        "$rel2 has event-role 'newborn';select $c, $p;";
         MatchQuery query = graph.graql().parse(queryString);
         MatchQuery query2 = graph.graql().parse(queryString2);
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers answers2 = new QueryAnswers(query2.execute());
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
-        assertTrue(answers.size() == 76);
+        assertEquals(76, answers.size());
         assertEquals(answers, answers2);
     }
 
@@ -532,8 +532,8 @@ public class GenealogyTest extends AbstractEngineTest{
     //Bug #11150 Relations with resources as single VarAdmin
     @Test
     public void testRelationResources(){
-        String queryString = "match $rel (happening: $b, protagonist: $p) isa event-protagonist has role 'parent';";
-        String queryString2 = "match $rel (happening: $b, protagonist: $p) isa event-protagonist; $rel has role 'parent';";
+        String queryString = "match $rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';";
+        String queryString2 = "match $rel (happening: $b, protagonist: $p) isa event-protagonist; $rel has event-role 'parent';";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);
 

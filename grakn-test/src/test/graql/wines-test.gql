@@ -4,49 +4,49 @@ insert
 ########################ONTOLOGY######################
 #######################################################
 
-"context-preference-owner" isa role-type;
-"context-preference-id" isa role-type;
-"context-preference" isa relation-type, has-role context-preference-owner, has-role context-preference-id;
+"context-preference-owner" sub role;
+"context-preference-id" sub role;
+"context-preference" sub relation, has-role context-preference-owner, has-role context-preference-id;
 
-"preferred-context" isa resource-type, datatype string;
+"preferred-context" sub resource, datatype string;
 
-"body-preference-owner" isa role-type;
-"body-preference-id" isa role-type;
-"body-preference" isa relation-type, has-role body-preference-owner, has-role body-preference-id;
+"body-preference-owner" sub role;
+"body-preference-id" sub role;
+"body-preference" sub relation, has-role body-preference-owner, has-role body-preference-id;
 
-"preferred-body" isa resource-type, datatype string;
+"preferred-body" sub resource, datatype string;
 
-"dryness-preference-owner" isa role-type;
-"dryness-preference-id" isa role-type;
-"dryness-preference" isa relation-type, has-role dryness-preference-owner, has-role dryness-preference-id;
+"dryness-preference-owner" sub role;
+"dryness-preference-id" sub role;
+"dryness-preference" sub relation, has-role dryness-preference-owner, has-role dryness-preference-id;
 
-"preferred-dryness" isa resource-type, datatype string;
+"preferred-dryness" sub resource, datatype string;
 
-"entree-preference-owner" isa role-type;
-"entree-preference-id" isa role-type;
-"entree-preference" isa relation-type, has-role entree-preference-owner, has-role entree-preference-id;
+"entree-preference-owner" sub role;
+"entree-preference-id" sub role;
+"entree-preference" sub relation, has-role entree-preference-owner, has-role entree-preference-id;
 
-"preferred-entree" isa resource-type, datatype string;
+"preferred-entree" sub resource, datatype string;
 
-"colour-preference-owner" isa role-type;
-"colour-preference-id" isa role-type;
-"colour-preference" isa relation-type, has-role colour-preference-owner, has-role colour-preference-id;
+"colour-preference-owner" sub role;
+"colour-preference-id" sub role;
+"colour-preference" sub relation, has-role colour-preference-owner, has-role colour-preference-id;
 
-"preferred-colour" isa resource-type, datatype string;
+"preferred-colour" sub resource, datatype string;
 
-"sparklingness-preference-owner" isa role-type;
-"sparklingness-preference-id" isa role-type;
-"sparkingness-preference" isa relation-type, has-role sparklingness-preference-owner, has-role sparklingness-preference-id;
+"sparklingness-preference-owner" sub role;
+"sparklingness-preference-id" sub role;
+"sparkingness-preference" sub relation, has-role sparklingness-preference-owner, has-role sparklingness-preference-id;
 
-"preferred-sparklingness" isa resource-type, datatype string;
+"preferred-sparklingness" sub resource, datatype string;
 
-"recommended-wine" isa role-type;
-"recommendation-owner" isa role-type;
-"wine-recommendation" isa relation-type, has-role recommended-wine, has-role recommendation-owner;
+"recommended-wine" sub role;
+"recommendation-owner" sub role;
+"wine-recommendation" sub relation, has-role recommended-wine, has-role recommendation-owner;
 
-"recommended-generic-wine-type" isa resource-type, datatype string;
+"recommended-generic-wine-type" sub resource, datatype string;
 
-"person" isa entity-type
+"person" sub entity
     has-resource name;
 person plays-role recommendation-owner;
 person has-resource preferred-context;
@@ -57,9 +57,9 @@ person has-resource preferred-colour;
 person has-resource preferred-sparklingness;
 person has-resource recommended-generic-wine-type;
 
-"name" isa resource-type, datatype string;
+"name" sub resource, datatype string;
 
-"wine" isa entity-type
+"wine" sub entity
     has-resource name;
 wine plays-role recommended-wine;
 

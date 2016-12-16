@@ -5,24 +5,24 @@ insert
 #################################################
 
 
-"vertex" isa entity-type
+"vertex" sub entity
    has-resource index;
-"start-vertex" isa entity-type
+"start-vertex" sub entity
    has-resource index;
 
-"arc-from" isa role-type;
-"arc-to" isa role-type;
-"arc" isa relation-type, has-role arc-from, has-role arc-to;
+"arc-from" sub role;
+"arc-to" sub role;
+"arc" sub relation, has-role arc-from, has-role arc-to;
 vertex plays-role arc-from, plays-role arc-to;
 start-vertex plays-role arc-from;
 
-"path-from" isa role-type;
-"path-to" isa role-type;
-"path" isa relation-type, has-role path-from, has-role path-to;
+"path-from" sub role;
+"path-to" sub role;
+"path" sub relation, has-role path-from, has-role path-to;
 vertex plays-role path-from, plays-role path-to;
 start-vertex plays-role path-from;
 
-"index" isa resource-type, datatype string;
+"index" sub resource, datatype string;
 
 ####################################################
 ##################RULES#############################

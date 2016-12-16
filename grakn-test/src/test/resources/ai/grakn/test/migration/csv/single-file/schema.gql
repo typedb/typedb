@@ -1,21 +1,21 @@
 insert
 
-model isa entity-type
+model sub entity
     has-resource name
     has-resource year
     has-resource description
     has-resource price
     plays-role model-of-car;
-make isa entity-type
+make sub entity
     has-resource name
     plays-role make-of-car;
 
-name isa resource-type datatype string;
-year isa resource-type datatype string;
-description isa resource-type datatype string;
-price isa resource-type datatype double;
+name sub resource datatype string;
+year sub resource datatype string;
+description sub resource datatype string;
+price sub resource datatype double;
 
-make-and-model isa relation-type, has-role make-of-car, has-role model-of-car;
-make-of-car isa role-type;
-model-of-car isa role-type;
+make-and-model sub relation, has-role make-of-car, has-role model-of-car;
+make-of-car sub role;
+model-of-car sub role;
 

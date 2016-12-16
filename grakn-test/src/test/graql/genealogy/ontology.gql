@@ -1,25 +1,25 @@
 insert
 
-document isa entity-type
+document sub entity
 	plays-role evidence
 	has-resource identifier
 	has-resource document-location
 	has-resource document-type
 	has-resource notes;
-document-location isa resource-type datatype string;
-document-type isa resource-type datatype string;
+document-location sub resource datatype string;
+document-type sub resource datatype string;
 
-notes isa resource-type datatype string;
+notes sub resource datatype string;
 
-conclusion-evidence isa relation-type
+conclusion-evidence sub relation
 	has-role evidence
 	has-role conclusion;
-evidence isa role-type;
-conclusion isa role-type;
+evidence sub role;
+conclusion sub role;
 
 ### Events are inferred and supported by documents
 
-event isa entity-type
+event sub entity
 	is-abstract
 	plays-role conclusion
 	plays-role happening
@@ -30,16 +30,16 @@ event isa entity-type
 	has-resource notes;
 
 # This is needed otherwise reasoner complains about the missing resource if it has not been persisted
-degree isa resource-type datatype long;
+degree sub resource datatype long;
 # The following links events to people, specifying the role of the person in the event
 
-event-protagonist isa relation-type
+event-protagonist sub relation
 	has-role happening
 	has-role protagonist
-	has-resource role;
-happening isa role-type;
-protagonist isa role-type;
-role isa resource-type datatype string;
+	has-resource event-role;
+happening sub role;
+protagonist sub role;
+event-role sub resource datatype string;
 
 wedding sub event;
 funeral sub event
@@ -59,14 +59,14 @@ parent-identifier sub identifier;
 death sub event
 	has-resource death-date;
 
-date isa resource-type datatype string;
+date sub resource datatype string;
 
 #confidence level: low-mid-high
-confidence isa resource-type datatype string;
+confidence sub resource datatype string;
 
 ### Genealogy tree: this is inferred from the events
 
-person isa entity-type
+person sub entity
 	plays-role protagonist
 	plays-role spouse
 	plays-role parent	
@@ -85,16 +85,16 @@ person isa entity-type
 	has-resource middlename
 	has-resource surname;
 
-gender isa resource-type datatype string;
+gender sub resource datatype string;
 birth-date sub date;
 death-date sub date;
-name isa resource-type datatype string;
+name sub resource datatype string;
 firstname sub name;
 middlename sub name;
 surname sub name;
-identifier isa resource-type datatype string;
+identifier sub resource datatype string;
 
-relatives isa relation-type
+relatives sub relation
 	is-abstract;
 
 marriage sub relatives
@@ -103,7 +103,7 @@ marriage sub relatives
 	has-role husband
 	has-role wife
 	has-resource date;
-spouse isa role-type is-abstract;
+spouse sub role is-abstract;
 generic-spouse sub spouse is-abstract;
 spouse1 sub generic-spouse;
 spouse2 sub generic-spouse;
@@ -117,10 +117,10 @@ parentship sub relatives
 	has-role child
 	has-role son
 	has-role daughter;
-parent isa role-type;
+parent sub role;
 mother sub parent;
 father sub parent;
-child isa role-type;
+child sub role;
 son sub child;
 daughter sub child;
 
@@ -128,7 +128,7 @@ daughter sub child;
 siblings sub relatives
 	has-role sibling1
 	has-role sibling2;
-sibling isa role-type is-abstract;
+sibling sub role is-abstract;
 sibling1 sub sibling;
 sibling2 sub sibling;
 
@@ -139,17 +139,17 @@ grandparentship sub relatives
 	has-role grandchild
 	has-role granddaughter
 	has-role grandson;
-grandparent isa role-type;
+grandparent sub role;
 grandfather sub grandparent;
 grandmother sub grandparent;
-grandchild isa role-type;
+grandchild sub role;
 grandson sub grandchild;
 granddaughter sub grandchild;
 
 cousins sub relatives
 	has-role cousin1
 	has-role cousin2;
-cousin isa role-type is-abstract;
+cousin sub role is-abstract;
 cousin1 sub cousin;
 cousin2 sub cousin;
 
@@ -160,9 +160,9 @@ in-laws sub relatives
 	has-role parent-in-law
 	has-role mother-in-law
 	has-role father-in-law;
-child-in-law isa role-type;
+child-in-law sub role;
 son-in-law sub child-in-law;
 daughter-in-law sub child-in-law;
-parent-in-law isa role-type;
+parent-in-law sub role;
 mother-in-law sub parent-in-law;
 father-in-law sub parent-in-law;

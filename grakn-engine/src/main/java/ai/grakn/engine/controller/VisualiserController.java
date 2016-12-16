@@ -276,6 +276,6 @@ public class VisualiserController {
      * @return JSONArray with IDs of instances
      */
     private JSONArray instances(Type type) {
-        return new JSONArray(type.instances().stream().map(x -> x.asType().getName()).toArray());
+        return new JSONArray(type.subTypes().stream().map(Type::getName).toArray());
     }
 }

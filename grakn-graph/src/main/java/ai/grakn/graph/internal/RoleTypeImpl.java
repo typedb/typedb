@@ -29,17 +29,15 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * An ontological element which defines a role which can be played in a relation type.
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    RoleTypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractGraknGraph graknGraph) {
-        super(v, type, isImplicit, graknGraph);
-    }
-    RoleTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit) {
+        super(graknGraph, v, type, isImplicit);
     }
 
     /**

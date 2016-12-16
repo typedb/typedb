@@ -19,6 +19,7 @@
 package ai.grakn.shell;
 
 import ai.grakn.graql.GraqlShell;
+import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.base.Strings;
@@ -179,7 +180,7 @@ public class GraqlShellTest {
         assertThat(
                 result,
                 allOf(
-                        containsString("relation-type"), containsString("match"),
+                        containsString(Schema.MetaSchema.RELATION.getName()), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );

@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,7 +66,7 @@ class Validator {
                     }
                 } else if (nextToValidate.isCasting()) {
                     validateCasting((CastingImpl) nextToValidate);
-                } else if (nextToValidate.isType()) {
+                } else if (nextToValidate.isType() && !Schema.MetaSchema.isMetaName(nextToValidate.asType().getName())) {
                     validateType((TypeImpl) nextToValidate);
 
                     if (nextToValidate.isRoleType()) {

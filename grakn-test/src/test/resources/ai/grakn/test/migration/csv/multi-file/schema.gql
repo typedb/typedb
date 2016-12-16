@@ -1,26 +1,26 @@
 insert
 
-pokemon isa entity-type
+pokemon sub entity
     plays-role pokemon-with-type
     has-resource pokedex-no
     has-resource description
     has-resource height
     has-resource weight;
 
-type-id isa resource-type datatype string;
-pokedex-no isa resource-type datatype string;
-description isa resource-type datatype string;
-number isa resource-type datatype long;
-height isa resource-type datatype long;
-weight isa resource-type datatype long;
+type-id sub resource datatype string;
+pokedex-no sub resource datatype string;
+description sub resource datatype string;
+number sub resource datatype long;
+height sub resource datatype long;
+weight sub resource datatype long;
 
-pokemon-type isa entity-type
+pokemon-type sub entity
     has-resource description
     has-resource type-id
     plays-role type-of-pokemon;
 
-has-type isa relation-type
+has-type sub relation
     has-role pokemon-with-type
     has-role type-of-pokemon;
-pokemon-with-type isa role-type;
-type-of-pokemon isa role-type;
+pokemon-with-type sub role;
+type-of-pokemon sub role;
