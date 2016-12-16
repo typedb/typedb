@@ -30,7 +30,7 @@ export default {
             typeKeys: [],
             doubleClickTime: 0,
             useReasoner: User.getReasonerStatus(),
-            materialiseReasoner:User.getMaterialiseStatus(),
+            materialiseReasoner: User.getMaterialiseStatus(),
 
 
             // resources keys used to change label of a node type
@@ -42,7 +42,7 @@ export default {
             allNodeOntologyProps: {},
             allNodeResources: {},
             allNodeLinks: {},
-
+            currentTypeProperties: {},
             numOfResources: 0,
             numOfLinks: 0,
             codeMirror: {}
@@ -98,7 +98,7 @@ export default {
 
         onLoadOntology() {
             let query_sub = "match $x sub " + API.ROOT_CONCEPT + ";";
-            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
+            EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner, this.materialiseReasoner);
         },
 
         singleClick(param) {
@@ -125,7 +125,7 @@ export default {
             if (query.trim().startsWith("compute")) {
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             } else {
-                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
+                EngineClient.graqlHAL(query, this.onGraphResponse, this.useReasoner, this.materialiseReasoner);
             }
         },
         /*
@@ -241,14 +241,12 @@ export default {
          * User interaction: visual elements control
          */
         configureNode(p) {
-            if (!(this.nodeType in this.selectedProps)) {
-                this.selectedProps[this.nodeType] = [];
-            }
-
-            if (this.selectedProps[this.nodeType].includes(p))
+            if (this.selectedProps[this.nodeType].includes(p)) {
                 this.selectedProps[this.nodeType] = this.selectedProps[this.nodeType].filter(x => x != p);
-            else
+            } else {
                 this.selectedProps[this.nodeType].push(p);
+            }
+            this.currentTypeProperties=this.selectedProps[this.nodeType];
 
             visualiser.setDisplayProperties(this.nodeType, this.selectedProps[this.nodeType]);
         },
@@ -270,6 +268,12 @@ export default {
 
             this.allNodeProps = visualiser.getAllNodeProperties(node);
             this.nodeType = visualiser.getNodeType(node);
+            this.currentTypeProperties = this.selectedProps[this.nodeType];
+
+            if (this.currentTypeProperties == undefined) {
+                this.currentTypeProperties = [];
+                this.selectedProps[this.nodeType] = [];
+            }
             $('#myModal2').modal('show');
         },
 

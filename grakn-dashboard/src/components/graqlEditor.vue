@@ -26,17 +26,14 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <textarea ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
                     </div>
                     <div class="form-buttons col-xs-4">
-                      <!-- To be released in 0.9 -->
-                        <!-- <button @click="loadFavQueries" class="btn btn-default console-button"><i class="pe-7s-search"></i>
-                  </button> -->
+                        <fav-queries-list  v-on:type-query="typeFavQuery"></fav-queries-list>
                         <button @click="getMetaTypes" class="btn btn-info console-button">Types<i class="types-button" v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
                     </button>
                         <button @click="clearGraph" class="btn btn-default console-button">Clear<i class="pe-7s-refresh"></i>
                     </button>
                         <button @click="runQuery" class="btn btn-default search-button console-button">Submit<i
                               class="pe-7s-angle-right-circle"></i></button>
-                              <!-- To be released in 0.9 -->
-                        <!-- <add-current-query :code-mirror="codeMirror"></add-current-query> -->
+                        <add-current-query :current-query="currentQuery"></add-current-query>
                     </div>
                 </div>
             </div>
@@ -73,17 +70,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
         </div>
     </transition>
-    <transition name="slide-fade">
-        <div v-if="showFavourites" style="margin-bottom: 0px; margin-top: 20px;">
-            <div class="panel panel-filled">
-                <div class="dd-item" v-for="(value,key) in favouriteQueries">
-                    <div @click="typeFavQuery(value)" class="dd-handle"><span class="list-key">{{key}}:</span>
-                        <span> {{value}}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </transition>
     <div class="row" v-show="errorMessage">
         <div class="col-xs-12">
             <div class="panel panel-filled" v-bind:class="errorPanelClass">
@@ -113,23 +99,23 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </style>
 
 <script>
-import _ from 'underscore';
-import Prism from 'prismjs';
 import CodeMirror from 'codemirror';
 import placeholder from 'codemirror/addon/display/placeholder.js';
 import simpleMode from 'codemirror/addon/mode/simple.js';
 
 import EngineClient from '../js/EngineClient.js';
-import * as PLang from '../js/prismGraql.js';
 import simpleGraql from '../js/codemirrorGraql.js';
-var addCurrentQuery = require('./addCurrentQuery.vue')
-import FavQueries from '../js/FavQueries.js'
+
+//Sub-components
+var addCurrentQuery = require('./addCurrentQuery.vue');
+var favQueriesList = require('./favQueriesList.vue');
 
 
 export default {
     name: "GraqlEditor",
     components: {
-        addCurrentQuery
+        addCurrentQuery,
+        favQueriesList
     },
     props: ['errorMessage', 'errorPanelClass', 'showVisualise'],
     data: function() {
@@ -139,8 +125,7 @@ export default {
             typeInstances: false,
             typeKeys: [],
             codeMirror: {},
-            showFavourites: false,
-            favouriteQueries: {}
+            currentQuery: undefined
         }
     },
     created: function() {},
@@ -156,18 +141,14 @@ export default {
                     "Shift-Backspace": this.clearGraph
                 }
             });
+
+            this.codeMirror.on("change", (codeMirrorObj, changeObj) => {
+                this.currentQuery = codeMirrorObj.getValue();
+            });
         });
     },
 
     methods: {
-        loadFavQueries() {
-          if(!this.showFavourites){
-            this.favouriteQueries = FavQueries.getFavQueries();
-            this.showFavourites = true;
-          }else{
-            this.showFavourites=false;
-          }
-        },
         runQuery(ev) {
             const query = this.codeMirror.getValue();
 
@@ -182,8 +163,8 @@ export default {
         updateCurrentQuery() {
             this.currentQuery = this.codeMirror.getValue();
         },
-        typeFavQuery(query){
-          this.codeMirror.setValue(query);
+        typeFavQuery(query) {
+            this.codeMirror.setValue(query);
         },
         typeQuery(t, ti) {
             this.codeMirror.setValue("match $x " + (t === 'roles' ? 'plays-role' : 'isa') + " " + ti + ";");
@@ -198,7 +179,7 @@ export default {
                 EngineClient.getMetaTypes(x => {
                     if (x != null) {
                         this.typeInstances = x;
-                        this.typeKeys = _.keys(x)
+                        this.typeKeys = Object.keys(x)
                     }
                 });
         },

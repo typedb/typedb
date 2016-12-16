@@ -17,48 +17,67 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 
 
 <template>
-<div id="addCurrentQuery">
+<div v-if="currentQuery" id="addCurrentQuery">
     <span @click="showToolTipFn" class="pe-7s-plus"></span>
     <transition name="slide-fade">
         <div v-if="showToolTip" class="arrow_box">
-            <div class="row"><p>Add query to favourites</p></div>
             <div class="row">
-            <form class="form-inline">
-                <input type="text" class="form-control input-sm query-name" v-model="currentQuery.name" placeholder="input a query name">
-                <input type="text" class="form-control input-sm query-value" v-model="currentQuery.value" disabled>
-                <button @click="addQuery" class="btn btn-sm btn-default">Save<i
-                        class="pe-7s-angle-right-circle"></i></button>
-            </form>
-          </div>
+                <p>Save current query</p>
+            </div>
+            <div class="row">
+                <div><input type="text" class="form-control query-name" v-model="currentQueryName" placeholder="query name" v-focus></div>
+                <div class="language-graql-wrapper">
+                    <div class="language-graql" v-html="highlightedQuery"></div>
+                </div>
+                <div><button @click="addQuery" class="btn btn-default" :disabled="currentQueryName.length==0">Save<i
+                        class="pe-7s-angle-right-circle"></i></button></div>
+            </div>
         </div>
     </transition>
 </div>
 </template>
 
 <style scoped>
-.query-name{
-  width:130px;
+/*TODO: force language-graql to stay on 1 line and scroll horizontally*/
+.query-name {
+    width: 130px;
 }
-.query-value{
-  width:270px;
-}
-
 input {
     color: white;
+}
+.language-graql {
+    background-color: #494b54;
+    padding: 7px 13px;
+    margin: 0px;
+    width: 480px;
+    text-align: left;
+}
+
+.row>div {
+    display: inline-block;
+    float: left;
+    margin-left: 5px;
 }
 
 .btn-default {
     color: white;
+    border: 1px solid white;
+}
+.language-graql-wrapper{
+  width: 480px;
+  background-color: #494b54;
+  overflow: scroll;
+  -moz-user-select: none;
+  -ms-overflow-style: none;
+  overflow: -moz-scrollbars-none;
 }
 
-.form-group {
-    margin-bottom: 5px;
+.language-graql-wrapper::-webkit-scrollbar {
+    display: none;
 }
 
-form, p {
-    float: left;
-    margin-left:10px;
-}
+
+/*Transition for the arrow box*/
 
 .slide-fade-enter-active {
     transition: all .6s ease;
@@ -74,21 +93,31 @@ form, p {
     opacity: 0;
 }
 
+
+/*Icon with plus sign*/
+
 div>span {
-    color: white;
-    font-size: 20px;
+    color: #56C0E0;
+    font-size: 25px;
     cursor: pointer;
+    margin-left: 5px;
+    margin-top: 4px;
 }
+
+
+/*Tooltip positioning*/
 
 #addCurrentQuery {
     position: relative;
     display: inline-block;
+    float:right;
+    margin-right: 10px;
 }
 
 .arrow_box:after,
 .arrow_box:before {
     bottom: 100%;
-    left: 95%;
+    left: 96%;
     border: solid transparent;
     content: " ";
     height: 0;
@@ -100,14 +129,15 @@ div>span {
 .arrow_box:after {
     position: absolute;
     border-color: rgba(136, 183, 213, 0);
-    border-bottom-color: rgba(132, 135, 148, 0.8);
+    border-bottom-color: rgba(38, 41, 48, 1);
     border-width: 8px;
 }
 
+
 .arrow_box {
-    width: 490px;
+    width: 700px;
     padding: 5px 10px;
-    background-color: rgba(132, 135, 148, 0.8);
+    background-color: rgba(38, 41, 48, 1);
     color: #fff;
     text-align: center;
     border-radius: 4px;
@@ -120,22 +150,30 @@ div>span {
 
 <script>
 import FavQueries from '../js/FavQueries.js'
+import Prism from 'prismjs';
+import * as PLang from '../js/prismGraql.js';
+
 
 export default {
     name: "addQueryButton",
-    props: ['codeMirror'],
+    props: ['currentQuery'],
     data() {
         return {
             showToolTip: false,
-            currentQuery: {
-                name: undefined,
-                value: undefined
-            }
+            currentQueryName: "",
+            highlightedQuery: undefined
         }
     },
 
     created() {},
-
+    directives: {
+        //Registering local directive to always force focus on query-name input
+        focus: {
+            inserted: function(el) {
+                el.focus()
+            }
+        }
+    },
     mounted: function() {
         this.$nextTick(function() {
             // code for previous attach() method.
@@ -143,19 +181,17 @@ export default {
     },
 
     methods: {
-        /*r
-         * Listener methods on emit from GraqlEditor
-         */
         showToolTipFn() {
             if (!this.showToolTip) {
-                this.currentQuery.value = this.codeMirror.getValue();
-                if (this.currentQuery.value === "") return;
+                if (this.currentQuery === "") return;
+                this.highlightedQuery = Prism.highlight(this.currentQuery, PLang.graql);
             }
             this.showToolTip = !this.showToolTip;
         },
         addQuery() {
-            FavQueries.addFavQuery(this.currentQuery);
+            FavQueries.addFavQuery(this.currentQueryName, this.currentQuery);
             this.showToolTip = false;
+            this.currentQueryName = "";
         }
 
     }

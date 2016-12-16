@@ -3,7 +3,7 @@
 /*style that was injected in page*/
 
 .tab-row {
-    padding-top: 20px;
+    padding-top: 10px;
 }
 
 .pe-7s-angle-right-circle {
@@ -1322,6 +1322,7 @@ sup {
 .luna-nav.nav .nav-category {
     color: #FFFFFF;
     margin-top: 10px;
+    padding-left: 12px;
 }
 
 .luna-nav.nav .sub-nav-icon {
