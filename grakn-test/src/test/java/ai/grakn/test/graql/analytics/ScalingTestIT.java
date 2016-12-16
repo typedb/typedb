@@ -39,7 +39,7 @@ import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.AbstractScalingTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
@@ -81,7 +81,7 @@ import static org.junit.Assert.assertFalse;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
-public class ScalingTestIT extends AbstractGraphTest {
+public class ScalingTestIT extends AbstractScalingTest {
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};
@@ -92,7 +92,7 @@ public class ScalingTestIT extends AbstractGraphTest {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 10000; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 20; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
