@@ -142,7 +142,7 @@ class ValidateGlobalRules {
      */
     static Collection<RoleType> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.superType();
-        if(Schema.MetaSchema.isMetaName(superRelationType.getName())){ //No super type, no validation rule
+        if(Schema.MetaSchema.isMetaName(superRelationType.getName())){ //If super type is a meta type no validation needed
             return Collections.emptyList();
         }
 
