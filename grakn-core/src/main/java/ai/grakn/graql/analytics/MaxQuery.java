@@ -24,6 +24,9 @@ import ai.grakn.graql.ComputeQuery;
 import java.util.Collection;
 import java.util.Optional;
 
+/**
+ * Compute the maximum value of the selected resource-type.
+ */
 public interface MaxQuery extends ComputeQuery<Optional<Number>> {
 
     /**

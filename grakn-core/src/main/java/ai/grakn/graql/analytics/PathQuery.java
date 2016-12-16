@@ -26,6 +26,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Compute the shortest path between two instances.
+ */
 public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
 
     /**

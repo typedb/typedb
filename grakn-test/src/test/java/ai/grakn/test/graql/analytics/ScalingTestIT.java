@@ -18,25 +18,24 @@
 
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.RoleType;
 import ai.grakn.engine.loader.client.LoaderClient;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.analytics.Analytics;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
+import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 import ai.grakn.test.AbstractScalingTest;
@@ -420,7 +419,6 @@ public class ScalingTestIT extends AbstractScalingTest {
 
         // create the ontology
         simpleOntology(keyspace);
-        new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
         LoaderClient loaderClient = new LoaderClient(keyspace, Arrays.asList(HOST_NAME));
 //        loaderClient.setThreadsNumber(30);

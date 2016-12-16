@@ -22,7 +22,10 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
-import java.util.Optional;
+
+/**
+ * Count the number of instances in the subgraph.
+ */
 
 public interface CountQuery extends ComputeQuery<Long> {
 

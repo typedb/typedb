@@ -30,9 +30,9 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -140,9 +140,10 @@ public class GraqlTest extends AbstractGraphTest {
 
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.getConcept(entry.getKey()).asInstance().resources(graph.getResourceType(Analytics.degree));
+                    graph.getConcept(entry.getKey()).asInstance()
+                            .resources(graph.getResourceType(AbstractComputeQuery.degree));
             assertEquals(1, resources.size());
-            assertEquals(entry.getValue(),resources.iterator().next().getValue());
+            assertEquals(entry.getValue(), resources.iterator().next().getValue());
         });
     }
 

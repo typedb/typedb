@@ -22,9 +22,10 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
+/**
+ * Compute the number of relations that each instance takes part in.
+ */
 public interface DegreeQuery<T> extends ComputeQuery<T> {
 
     /**
