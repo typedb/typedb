@@ -241,15 +241,12 @@ export default {
          * User interaction: visual elements control
          */
         configureNode(p) {
-            this.currentTypeProperties.push(p);
-            if (!(this.nodeType in this.selectedProps)) {
-                this.selectedProps[this.nodeType] = [];
-            }
-
-            if (this.selectedProps[this.nodeType].includes(p))
+            if (this.selectedProps[this.nodeType].includes(p)) {
                 this.selectedProps[this.nodeType] = this.selectedProps[this.nodeType].filter(x => x != p);
-            else
+            } else {
                 this.selectedProps[this.nodeType].push(p);
+            }
+            this.currentTypeProperties=this.selectedProps[this.nodeType];
 
             visualiser.setDisplayProperties(this.nodeType, this.selectedProps[this.nodeType]);
         },
@@ -272,7 +269,11 @@ export default {
             this.allNodeProps = visualiser.getAllNodeProperties(node);
             this.nodeType = visualiser.getNodeType(node);
             this.currentTypeProperties = this.selectedProps[this.nodeType];
-            if (this.currentTypeProperties == undefined) this.currentTypeProperties = [];
+
+            if (this.currentTypeProperties == undefined) {
+                this.currentTypeProperties = [];
+                this.selectedProps[this.nodeType] = [];
+            }
             $('#myModal2').modal('show');
         },
 

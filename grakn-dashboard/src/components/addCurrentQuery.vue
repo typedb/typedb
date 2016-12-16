@@ -22,10 +22,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     <transition name="slide-fade">
         <div v-if="showToolTip" class="arrow_box">
             <div class="row">
-                <p>Bookmark current query</p>
+                <p>Save current query</p>
             </div>
             <div class="row">
-                <div><input type="text" class="form-control query-name" v-model="currentQueryName" placeholder="input a query name" v-focus></div>
+                <div><input type="text" class="form-control query-name" v-model="currentQueryName" placeholder="query name" v-focus></div>
                 <div class="language-graql-wrapper">
                     <div class="language-graql" v-html="highlightedQuery"></div>
                 </div>
@@ -110,6 +110,8 @@ div>span {
 #addCurrentQuery {
     position: relative;
     display: inline-block;
+    float:right;
+    margin-right: 10px;
 }
 
 .arrow_box:after,
@@ -127,14 +129,15 @@ div>span {
 .arrow_box:after {
     position: absolute;
     border-color: rgba(136, 183, 213, 0);
-    border-bottom-color: rgba(37, 114, 116, 0.8);
+    border-bottom-color: rgba(38, 41, 48, 1);
     border-width: 8px;
 }
+
 
 .arrow_box {
     width: 700px;
     padding: 5px 10px;
-    background-color: rgba(37, 114, 116, 0.8);
+    background-color: rgba(38, 41, 48, 1);
     color: #fff;
     text-align: center;
     border-radius: 4px;

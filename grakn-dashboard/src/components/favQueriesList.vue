@@ -18,55 +18,22 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 
 <template>
 <div>
-    <button @click="loadFavQueries" class="btn btn-default console-button"><i class="pe-7s-search"></i>
+    <button @click="loadFavQueries" class="btn btn-default console-button"><i class="fa fa-star-o"></i>
   </button>
     <transition name="slide-fade">
-        <!-- <div class="panel-body graph-panel-body">
-            <div id="graph-div" ref="graph"></div>
-            <div class="panel panel-filled panel-c-accent properties-tab" id="list-resources-tab">
-                <div class="panel-heading">
-                    <div class="panel-tools">
-                        <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
-                    </div>
-                    <h4><i id="graph-icon" class="pe page-header-icon pe-7s-share"></i>{{selectedNodeLabel}}</h4>
-                </div>
-                <div class="panel-body">
-                    <div class="properties-list">
-                        <span>Node:</span>
-                        <div class="node-properties">
-                            <div class="dd-item" v-for="(value, key) in allNodeOntologyProps">
-                                <div><span class="list-key">{{key}}:</span> {{value}}</div>
-                            </div>
-                        </div>
-                        <span v-show="numOfResources>0">Resources:</span>
-                        <div class="dd-item" v-for="(value,key) in allNodeResources">
-                            <div class="dd-handle" @dblclick="addResourceNodeWithOwners(value.link)"><span class="list-key">{{key}}:</span>
-                                <a v-if="value.href" :href="value.label" style="word-break: break-all;" target="_blank">{{value.label}}</a>
-                                <span v-else> {{value.label}}</span>
-                            </div>
-                        </div>
-                        <span v-show="numOfLinks>0">Links:</span>
-                        <div class="dd-item" v-for="(value, key) in allNodeLinks">
-                            <div class="dd-handle"><span class="list-key">{{key}}:</span> {{value}}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
-        <!-- --------------------------- -->
         <div v-if="showFavourites" style="margin-bottom: 0px; margin-top: 20px;" class="dropdown-content">
-            <div class="panel panel-filled" id="queriesDropDown">
+            <div class="panel panel-filled" id="queriesDropDown" v-resize>
                 <div class="panel-heading">
                     <div class="panel-tools">
                         <a class="panel-close" @click="closeFavQueriesList"><i class="fa fa-times"></i></a>
                     </div>
-                    <h4><i id="graph-icon" class="pe page-header-icon pe-7s-share"></i>Fav queries</h4>
+                    <h4><i class="page-header-icon fa fa-star-o"></i>Saved queries</h4>
                 </div>
                 <div class="panel-body">
                     <div class="dd-item row" v-for="(query,index) in favouriteQueries">
                         <div class="full-query tooltip-query col-sm-8 dd-handle" @click="emitTypeQuery(query.value)">
-                            <span class="list-key"> {{query.name}}</span>
-                            <span class="tooltiptext"> {{query.value}}</span>
+                            <span class="list-key" style="word-break: break-all;"> {{query.name}}</span>
+                            <span class="tooltiptext" style="word-break: break-all;"> {{query.value}}</span>
                         </div>
                         <div class="col-sm-2">
                             <button class="btn btn-sm btn-danger" @click="removeFavQuery(index,query.name)">Delete</button>
@@ -80,7 +47,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 </template>
 
 <style scoped>
-#queriesDropDown {}
+/*#queriesDropDown .panel-body {
+  overflow: scroll;
+}*/
 
 
 /* Tooltip text */
@@ -93,18 +62,29 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
   padding:5px 10px;
 }
 
+.page-header-icon{
+  font-size: 20px;
+  float:left;
+  margin-right: 10px;
+}
+
 .tooltip-query .tooltiptext {
     visibility: hidden;
-    width: 120px;
-    background-color: black;
+    width: 300px;
+    background-color: rgba(38, 41, 48, 1);
     color: #fff;
     text-align: center;
-    padding: 5px 0;
-    border-radius: 6px;
+    padding: 5px 10px;
+    border-radius: 3px;
     position: absolute;
     z-index: 5;
-    top: -10px;
-    right: 105%;
+    top: 0px;
+    right: 110%;
+    text-align: left;
+    overflow: scroll;
+    -moz-user-select: none;
+    -ms-overflow-style: none;
+    overflow: -moz-scrollbars-none;
 }
 
 
@@ -117,7 +97,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 .dropdown-content {
     position: absolute;
     right: 0px;
-    top: 80px;
+    top: 78px;
     z-index: 10;
 }
 
@@ -146,18 +126,42 @@ export default {
     },
 
     created() {},
+    directives:{
+      resize:{
+        inserted:function(el){
+          let divHeight = window.innerHeight-$('#graph-div').offset().top - 20;
+          // code for previous attach() method.
+          $(el).height(divHeight);
+          $('#queriesDropDown .panel-body').height(divHeight - 85);
+
+        }
+      }
+    },
 
     mounted: function() {
         this.$nextTick(function() {
-            // code for previous attach() method.
+
         });
     },
 
     methods: {
         loadFavQueries() {
             if (!this.showFavourites) {
+                this.closeConfigPanel();
                 this.favouriteQueries = this.objectToArray(FavQueries.getFavQueries());
                 this.showFavourites = true;
+            }
+        },
+        //TODO: move following function a method in a mixin to import.
+        closeConfigPanel() {
+            if ($('.properties-tab.active').hasClass('slideInRight')) {
+                $('.properties-tab.active').removeClass('animated slideInRight');
+                $('.properties-tab.active').fadeOut(300, () => {
+                    this.nodeType = undefined;
+                    this.allNodeProps = [];
+                    this.selectedProps = [];
+                });
+                $('.properties-tab.active').removeClass('active');
             }
         },
         closeFavQueriesList() {
@@ -168,7 +172,7 @@ export default {
                 (r, k) => {
                     r.push({
                         name: k,
-                        value: object[k]
+                        value: object[k].replace("\n"," ")
                     });
                     return r;
                 }, []);
