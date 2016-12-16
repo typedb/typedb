@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -214,20 +215,10 @@ public class AtomicQuery extends Query{
             throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         return selectedAtoms;
     }
-
-    protected QueryAnswers answerWM(Set<AtomicQuery> subGoals, QueryCache cache){
+    public void resolveViaRule(Rule rl, Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
-
-    protected QueryAnswers answer(Set<AtomicQuery> subGoals, QueryCache cache){
-        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
-    }
-
-    public void answer(Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
-        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
-    }
-
-    public QueryAnswers resolve(boolean materialise) {
+    public QueryAnswers answer(Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 }
