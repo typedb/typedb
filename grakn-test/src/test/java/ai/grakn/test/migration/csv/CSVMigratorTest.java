@@ -47,8 +47,8 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
                 "insert $x isa pokemon                      " +
                 "    has description <identifier>  \n" +
                 "    has pokedex-no <id>           \n" +
-                "    has height @int(height)       \n" +
-                "    has weight @int(weight);        ";
+                "    has height @int(<height>)       \n" +
+                "    has weight @int(<weight>);        ";
 
         String pokemonTypeTemplate = "               " +
                 "insert $x isa pokemon-type                 " +
@@ -127,11 +127,12 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
         load(getFile("csv", "multi-file/schema.gql"));
         assertNotNull(graph.getEntityType("pokemon"));
 
-        String pokemonTypeTemplate = "insert $x isa pokemon-type has type-id <id>-type has description <identifier>;";
+        String pokemonTypeTemplate = "insert $x isa pokemon-type has type-id @concat(@noescp(<id>), \"-type\") has description <identifier>;";
         String templated = new CSVMigrator(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv")).migrate()
                 .map(InsertQuery::toString)
                 .collect(joining("\n"));
 
+        System.out.println(templated);
         String expected = "id \"17-type\"";
         assertTrue(templated.contains(expected));
     }

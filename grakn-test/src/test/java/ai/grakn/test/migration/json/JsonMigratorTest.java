@@ -56,7 +56,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
                 "\n" +
                 "(person-with-address: $person, address-of-person: $address) isa has-address;\n" +
                 "\n" +
-                "for ( phoneNumber ) do {\n" +
+                "for ( <phoneNumber> ) do {\n" +
                 "  $phone isa phone-number\n" +
                 "    has location <location>\n" +
                 "    has code <code>;\n" +
@@ -106,11 +106,11 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
                 "insert $x isa thing\n" +
                 "  has a-boolean <a-boolean>\n" +
                 "  has a-number  <a-number>\n" +
-                "  for (int in array-of-ints ) do {\n" +
+                "  for (int in <array-of-ints> ) do {\n" +
                 "  has a-int <int>\n" +
                 "  }\n" +
                 "  has a-string <a-string>\n" +
-                "  if (a-null != null) do {has a-null <a-null>};";
+                "  if (<a-null> != null) do {has a-null <a-null>};";
 
         migrate(new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
 
@@ -142,7 +142,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
-                "        has a-string if (the-thing.a-string != null) do {<the-thing.a-string>}\n" +
+                "        has a-string if (<the-thing.a-string> != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
         migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));
@@ -166,7 +166,7 @@ public class JsonMigratorTest extends AbstractGraknMigratorTest {
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
-                "        has a-string if (the-thing.a-string != null) do {<the-thing.a-string>}\n" +
+                "        has a-string if (<the-thing.a-string> != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
         migrate(new JsonMigrator(template, getFile("json", "string-or-object/data")));

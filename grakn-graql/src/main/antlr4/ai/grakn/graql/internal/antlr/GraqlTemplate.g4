@@ -44,14 +44,13 @@ elsePartial
  ;
 
 macro
- : ID_MACRO LPAREN expr* RPAREN
+ : ID_MACRO LPAREN expr? (',' expr)* RPAREN
  ;
 
 // evaluate and return value
 expr
- : ID                     #idExpression
+ : LPAREN expr RPAREN     #groupExpression
  | NOT expr               #notExpression
- | LPAREN expr RPAREN     #groupExpression
  | expr EQ expr           #eqExpression
  | expr NEQ expr          #notEqExpression
  | expr OR expr           #orExpression
@@ -61,13 +60,20 @@ expr
  | expr LESS expr         #lessExpression
  | expr LESSEQ expr       #lessEqExpression
  | STRING                 #stringExpression
+ | INT                    #intExpression
+ | DOUBLE                 #doubleExpression
  | BOOLEAN                #booleanExpression
  | NULL                   #nullExpression
+ | resolve                #resolveExpression
  | macro                  #macroExpression
  ;
 
+resolve
+ : '<' ID '>'
+ ;
+
 replaceStatement
- : DOLLAR? (REPLACE | macro)+
+ : DOLLAR? (resolve | macro)+
  ;
 
 graqlVariable
@@ -113,6 +119,8 @@ IN          : 'in';
 
 NULL        : 'null';
 STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
+INT         : [0-9]+;
+DOUBLE      : [0-9.]+;
 BOOLEAN     : TRUE | FALSE;
 TRUE        : 'true';
 FALSE       : 'false';
@@ -136,8 +144,6 @@ SQOUTE      : '\'';
 ID          : [a-zA-Z0-9_-]+ ('.' [a-zA-Z0-9_-]+ )*;
 ID_GRAQL    : '$' ID;
 ID_MACRO    : '@' ID;
-
-REPLACE     : ID? '<' ID '>' ID? ;
 
 // hidden channels
 WS          : [ \t\r\n]                  -> channel(1);

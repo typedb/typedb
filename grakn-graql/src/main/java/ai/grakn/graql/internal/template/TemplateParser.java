@@ -23,6 +23,7 @@ import ai.grakn.graql.internal.antlr.GraqlTemplateLexer;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.internal.parser.GraqlErrorListener;
 import ai.grakn.graql.internal.template.macro.BooleanMacro;
+import ai.grakn.graql.internal.template.macro.ConcatMacro;
 import ai.grakn.graql.internal.template.macro.DateMacro;
 import ai.grakn.graql.internal.template.macro.DoubleMacro;
 import ai.grakn.graql.internal.template.macro.EqualsMacro;
@@ -121,5 +122,6 @@ public class TemplateParser {
         registerMacro("upper", new UpperMacro());
         registerMacro("boolean", new BooleanMacro());
         registerMacro("split", new SplitMacro());
+        registerMacro("concat", new ConcatMacro());
     }
 }
