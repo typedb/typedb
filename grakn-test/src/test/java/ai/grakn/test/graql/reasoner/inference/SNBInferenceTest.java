@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class SNBInferenceTest extends AbstractEngineTest{
@@ -113,6 +114,40 @@ public class SNBInferenceTest extends AbstractEngineTest{
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testRecommendation() {
+        GraknGraph graph = SNBGraph.getGraph();
+        QueryBuilder qbr = graph.graql().infer(true);
+        QueryBuilder qb = graph.graql().infer(false);
+        Reasoner reasoner = new Reasoner(graph);
+        String queryString = "match $x isa person;($x, $y) isa recommendation;";
+        String limitedQueryString = "match $x isa person;($x, $y) isa recommendation; limit 1;";
+        MatchQuery query = qbr.parse(queryString);
+        MatchQuery limitedQuery = qbr.parse(limitedQueryString);
+
+        String explicitQuery = "match $x isa person;" +
+                "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
+                "{$x has name 'Bob';{$y has name 'Ducatti 1299';} or {$y has name 'The Good the Bad the Ugly';};} or" +
+                "{$x has name 'Charlie';{$y has name 'Blizzard of Ozz';} or {$y has name 'Stratocaster';};} or " +
+                "{$x has name 'Denis';{$y has name 'Colour of Magic';} or {$y has name 'Dorian Gray';};} or"+
+                "{$x has name 'Frank';$y has name 'Nocturnes';} or" +
+                "{$x has name 'Karl Fischer';{$y has name 'Faust';} or {$y has name 'Nocturnes';};} or " +
+                "{$x has name 'Gary';$y has name 'The Wall';} or" +
+                "{$x has name 'Charlie';" +
+                "{$y has name 'Yngwie Malmsteen';} or {$y has name 'Cacophony';} or {$y has name 'Steve Vai';} or {$y has name 'Black Sabbath';};} or " +
+                "{$x has name 'Gary';$y has name 'Pink Floyd';};";
+
+        long startTime = System.nanoTime();
+        QueryAnswers limitedAnswers = new QueryAnswers(limitedQuery.execute());
+        System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
+
+        startTime = System.nanoTime();
+        QueryAnswers answers = new QueryAnswers(query.execute());
+        System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertTrue(answers.containsAll(limitedAnswers));
     }
 
     /**

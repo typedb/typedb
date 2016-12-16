@@ -306,7 +306,7 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $y isa a-entity or $y isa end;";
 
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /** test 6.3 from Cao p 75*/

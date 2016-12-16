@@ -50,7 +50,6 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
     public QueryAnswers filterVars(Set<String> vars) {
         QueryAnswers results = new QueryAnswers();
         if (this.isEmpty()) return results;
-
         this.forEach(answer -> {
             Map<String, Concept> map = new HashMap<>();
             answer.forEach((var, concept) -> {

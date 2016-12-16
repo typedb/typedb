@@ -23,8 +23,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -33,11 +33,10 @@ import ai.grakn.graql.internal.reasoner.query.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -55,7 +54,6 @@ public class Reasoner {
         this.graph = graph;
         linkConceptTypes(graph);
     }
-
     private static void commitGraph(GraknGraph graph) {
         try {
             graph.commit();
@@ -63,7 +61,6 @@ public class Reasoner {
             LOG.error(e.getMessage());
         }
     }
-
     private static void linkConceptTypes(GraknGraph graph, Rule rule) {
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(rule.getLHS());
@@ -128,23 +125,23 @@ public class Reasoner {
     /**
      * Resolve a given query using the rule base
      * @param inputQuery the query string to be expanded
-     * @return set of answers
+     * @return stream of answers
      */
-    public QueryAnswers resolve(MatchQuery inputQuery, boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
         Set<String> selectVars = inputQuery.admin().getSelectedNames();
-        QueryAnswers answers = new QueryAnswers();
-        inputQuery.admin().getPattern()
-                .getDisjunctiveNormalForm()
-                .getPatterns()
-                .forEach( conj -> {
-                    Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conj).select(selectVars), graph);
-                    answers.addAll(conjunctiveQuery.resolve(materialise));
-                });
-        if(materialise) commitGraph(graph);
-        return answers;
+        Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
+        Stream<Map<String, Concept>> answerStream = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph)
+                .resolve(materialise);
+        while(conjIt.hasNext()) {
+            Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
+            answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
+        }
+        return answerStream;
     }
 
-    public QueryAnswers resolve(MatchQuery inputQuery) { return resolve(inputQuery, false);}
+    public QueryAnswers resolve(MatchQuery inputQuery) {
+        return new QueryAnswers(resolve(inputQuery, false).collect(Collectors.toSet()));
+    }
 
     /**
      * Resolve a given query using the rule base
@@ -154,11 +151,9 @@ public class Reasoner {
     public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
         if (!Reasoner.hasRules(graph))
             return inputQuery;
-        else {
-            MatchQuery outputQuery = new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
-            if (materialise) commitGraph(graph);
-            return outputQuery;
-        }
+        else
+            return new ReasonerMatchQuery(inputQuery, graph,
+                    new QueryAnswers(resolve(inputQuery, materialise).collect(Collectors.toSet())));
     }
 
     /**

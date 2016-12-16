@@ -671,10 +671,14 @@ public class ReasonerTest extends AbstractEngineTest{
     @Test
     public void testOrderAndOffset(){
         GraknGraph lgraph = SNBGraph.getGraph();
+        String fullQueryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;";
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; offset 3;";
+        MatchQuery fullQuery = lgraph.graql().infer(true).parse(fullQueryString);
         MatchQuery query = lgraph.graql().infer(true).parse(queryString);
 
+        List<Map<String, Concept>> fullAnswers = fullQuery.execute();
         List<Map<String, Concept>> answers = query.execute();
+        assertTrue(fullAnswers.size() == answers.size() + 3);
         assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("23"));
     }
 

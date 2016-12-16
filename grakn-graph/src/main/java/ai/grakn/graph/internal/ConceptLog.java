@@ -53,6 +53,7 @@ public class ConceptLog {
         modifiedConcepts.clear();
         modifiedCastings.clear();
         modifiedResources.clear();
+        modifiedRelations.clear();
     }
 
     /**

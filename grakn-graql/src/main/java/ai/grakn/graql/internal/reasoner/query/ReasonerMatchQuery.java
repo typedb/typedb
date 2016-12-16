@@ -24,10 +24,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import com.google.common.collect.Sets;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilterFunction;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 public class ReasonerMatchQuery extends Query{
 
@@ -48,20 +51,21 @@ public class ReasonerMatchQuery extends Query{
         return answers.stream();
     }
 
+
     @Override
-    public QueryAnswers resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())
-            return new QueryAnswers(Sets.newHashSet(this.execute()));
+            return this.getMatchQuery().stream();
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-        QueryAnswers answers = atomicQuery.resolve(materialise);
-        while(atIt.hasNext()){
+        Stream<Map<String, Concept>> answerStream = atomicQuery.resolve(materialise);
+        while (atIt.hasNext()) {
             atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-            QueryAnswers subAnswers = atomicQuery.resolve(materialise);
-            answers = answers.join(subAnswers);
+            Stream<Map<String, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
+            answerStream = join(answerStream, subAnswerStream);
         }
-        return answers
-                .filterNonEquals(this)
-                .filterVars(this.getSelectedNames());
+        return answerStream
+                .flatMap(a -> nonEqualsFilterFunction.apply(a, this.getFilters()))
+                .flatMap(a -> varFilterFunction.apply(a, this.getSelectedNames()));
     }
 }

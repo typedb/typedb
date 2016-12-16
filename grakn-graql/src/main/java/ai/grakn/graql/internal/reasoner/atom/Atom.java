@@ -85,7 +85,9 @@ public abstract class Atom extends AtomBase {
     @Override
     public boolean isRuleResolvable() {
         Type type = getType();
-        return type != null && !getType().getRulesOfConclusion().isEmpty();
+        return type != null
+                && !type.getRulesOfConclusion().isEmpty()
+                && !this.getApplicableRules().isEmpty();
     }
 
     @Override
