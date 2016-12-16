@@ -203,11 +203,11 @@ public class AtomicMatchQuery extends AtomicQuery{
     }
 
     @Override
-    public Stream<Map<String, Concept>> resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(QueryCache cache, boolean materialise) {
         if (!this.getAtom().isRuleResolvable())
             return this.getMatchQuery().stream();
         else
-            return new QueryAnswerIterator(materialise).hasStream();
+            return new QueryAnswerIterator(cache, materialise).hasStream();
     }
 
     private class QueryAnswerIterator implements Iterator<Map<String, Concept>> {
@@ -215,17 +215,18 @@ public class AtomicMatchQuery extends AtomicQuery{
         private int dAns = 0;
         private int iter = 0;
         private final boolean materialise;
-        private final QueryCache cache = new QueryCache();
+        private final QueryCache cache;
         private final Set<AtomicQuery> subGoals = new HashSet<>();
         private final Set<Rule> rules;
         private Iterator<Map<String, Concept>> answerIterator = Collections.emptyIterator();
         private Iterator<Rule> ruleIterator = Collections.emptyIterator();
 
-        public QueryAnswerIterator(boolean materialise){
+        public QueryAnswerIterator(QueryCache cache, boolean materialise){
             this.materialise = materialise;
-            rules = outer().getAtom().getApplicableRules();
+            this.cache = cache;
+            this.rules = outer().getAtom().getApplicableRules();
             lookup(cache);
-            answerIterator = outer().newAnswers.iterator();
+            this.answerIterator = outer().newAnswers.iterator();
         }
 
         public Stream<Map<String, Concept>> hasStream(){

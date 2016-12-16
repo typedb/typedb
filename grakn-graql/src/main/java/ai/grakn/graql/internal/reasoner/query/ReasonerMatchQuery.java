@@ -48,15 +48,15 @@ public class ReasonerMatchQuery extends Query{
     }
 
     @Override
-    public Stream<Map<String, Concept>> resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(QueryCache cache, boolean materialise) {
         if (!this.isRuleResolvable())
             return this.getMatchQuery().stream();
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-        QueryAnswerStream answerStream = new QueryAnswerStream(atomicQuery.resolve(materialise));
+        QueryAnswerStream answerStream = new QueryAnswerStream(atomicQuery.resolve(cache, materialise));
         while(atIt.hasNext()){
             atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-            QueryAnswerStream subAnswerStream = new QueryAnswerStream(atomicQuery.resolve(materialise));
+            QueryAnswerStream subAnswerStream = new QueryAnswerStream(atomicQuery.resolve(cache, materialise));
             answerStream = answerStream.join(subAnswerStream);
         }
         return answerStream

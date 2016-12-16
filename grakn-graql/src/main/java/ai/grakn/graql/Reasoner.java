@@ -104,20 +104,10 @@ public class Reasoner {
 
     public void precomputeInferences(){
         QueryCache cache = new QueryCache();
-        Set<AtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
             AtomicQuery atomicQuery = new AtomicMatchQuery(rule.getHead(), new QueryAnswers());
-            int dAns;
-            Set<AtomicQuery> SG;
-            do {
-                SG = new HashSet<>(subGoals);
-                dAns = atomicQuery.getAnswers().size();
-                atomicQuery.answer(SG, cache, true);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + atomicQuery.getAnswers().size());
-                dAns = atomicQuery.getAnswers().size() - dAns;
-            } while (dAns != 0);
-            subGoals.addAll(SG);
+            atomicQuery.resolve(cache, true).collect(Collectors.toSet());
         });
         commitGraph(graph);
     }
@@ -129,12 +119,13 @@ public class Reasoner {
      */
     public Stream<Map<String, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
         Set<String> selectVars = inputQuery.admin().getSelectedNames();
+        QueryCache cache = new QueryCache();
         Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Stream<Map<String, Concept>> answerStream = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph)
-                .resolve(materialise);
+                .resolve(cache, materialise);
         while(conjIt.hasNext()) {
             Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
-            answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
+            answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(cache, materialise));
         }
         return answerStream;
     }

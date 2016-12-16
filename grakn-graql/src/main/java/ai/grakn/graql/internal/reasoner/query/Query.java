@@ -431,7 +431,7 @@ public class Query implements MatchQueryInternal {
         return equivalent;
     }
 
-    public Stream<Map<String, Concept>> resolve(boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(QueryCache cache, boolean materialise) {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 }
