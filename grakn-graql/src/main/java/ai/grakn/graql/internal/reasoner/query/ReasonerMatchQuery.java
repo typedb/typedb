@@ -24,9 +24,15 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilterFunction;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 public class ReasonerMatchQuery extends Query{
 
@@ -48,20 +54,20 @@ public class ReasonerMatchQuery extends Query{
     }
 
     @Override
-    public Stream<Map<String, Concept>> resolve(QueryCache cache, boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())
             return this.getMatchQuery().stream();
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-        QueryAnswerStream answerStream = new QueryAnswerStream(atomicQuery.resolve(cache, materialise));
-        while(atIt.hasNext()){
+        Stream<Map<String, Concept>> answerStream = atomicQuery.resolve(materialise);
+        while (atIt.hasNext()) {
             atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-            QueryAnswerStream subAnswerStream = new QueryAnswerStream(atomicQuery.resolve(cache, materialise));
-            answerStream = answerStream.join(subAnswerStream);
+            Stream<Map<String, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
+            answerStream = join(answerStream, subAnswerStream);
         }
+
         return answerStream
-                .filterNonEquals(this)
-                .filterVars(this.getSelectedNames())
-                .stream();
+                .flatMap(a -> nonEqualsFilterFunction.apply(a, this.getFilters()))
+                .flatMap(a -> varFilterFunction.apply(a, this.getSelectedNames()));
     }
 }

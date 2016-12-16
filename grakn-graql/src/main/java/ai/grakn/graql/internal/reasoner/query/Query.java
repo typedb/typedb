@@ -30,6 +30,7 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -207,6 +208,13 @@ public class Query implements MatchQueryInternal {
                 .filter(Atomic::isAtom)
                 .map(at -> (Atom) at)
                 .filter(Atom::isType)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<NotEquals> getFilters(){
+        return getAtoms().stream()
+                .filter(at -> at.getClass() == NotEquals.class)
+                .map(at -> (NotEquals) at)
                 .collect(Collectors.toSet());
     }
 
@@ -431,7 +439,7 @@ public class Query implements MatchQueryInternal {
         return equivalent;
     }
 
-    public Stream<Map<String, Concept>> resolve(QueryCache cache, boolean materialise) {
+    public Stream<Map<String, Concept>> resolve(boolean materialise) {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 }

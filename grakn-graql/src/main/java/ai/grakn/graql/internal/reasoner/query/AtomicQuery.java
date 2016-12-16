@@ -222,9 +222,4 @@ public class AtomicQuery extends Query{
     public QueryAnswers answer(Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
-    /*
-    public Stream<Map<String, Concept>> resolve(boolean materialise) {
-        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
-    }
-    */
 }

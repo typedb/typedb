@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class SNBInferenceTest extends AbstractEngineTest{
@@ -145,9 +146,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
         startTime = System.nanoTime();
         QueryAnswers answers = new QueryAnswers(query.execute());
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
-
-        //assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertTrue(answers.containsAll(limitedAnswers));
     }
 
     /**
