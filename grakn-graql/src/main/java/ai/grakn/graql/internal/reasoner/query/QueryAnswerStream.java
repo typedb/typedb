@@ -76,7 +76,12 @@ public class QueryAnswerStream {
     public QueryAnswerStream filterNonEquals(Query query){
         Set<NotEquals> filters = query.getFilters();
         if(filters.isEmpty()) return new QueryAnswerStream(this.stream);
-        return new QueryAnswerStream(this.stream.flatMap(a -> nonEqualsFilterFunction.apply(a, filters)));
+        //return new QueryAnswerStream(this.stream.flatMap(a -> nonEqualsFilterFunction.apply(a, filters)));
+
+        Stream<Map<String, Concept>> results = Stream.empty();
+        for (NotEquals filter : filters) results = filter.filter(this.stream());
+        return new QueryAnswerStream(results);
+
     }
 
     private static Map<String, Concept> joinOperator(Map<String, Concept> m1, Map<String, Concept> m2){

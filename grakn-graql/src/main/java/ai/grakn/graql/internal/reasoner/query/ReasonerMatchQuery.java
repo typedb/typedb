@@ -51,6 +51,7 @@ public class ReasonerMatchQuery extends Query{
         return answers.stream();
     }
 
+
     @Override
     public Stream<Map<String, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())
@@ -63,7 +64,6 @@ public class ReasonerMatchQuery extends Query{
             Stream<Map<String, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
             answerStream = join(answerStream, subAnswerStream);
         }
-
         return answerStream
                 .flatMap(a -> nonEqualsFilterFunction.apply(a, this.getFilters()))
                 .flatMap(a -> varFilterFunction.apply(a, this.getSelectedNames()));
