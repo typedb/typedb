@@ -47,18 +47,18 @@ public class QueryAnswerStream {
         return filter;
     }
 
-    public static BiFunction<Map<String, Concept>, Set<String>, Stream<Map<String, Concept>>> varFilterFunction = (a, vars) -> {
+    public static final BiFunction<Map<String, Concept>, Set<String>, Stream<Map<String, Concept>>> varFilterFunction = (a, vars) -> {
         Map<String, Concept> filteredAnswer = varFilterOperator(a, vars);
         return filteredAnswer.isEmpty() ? Stream.empty() : Stream.of(filteredAnswer);
     };
 
-    public static BiFunction<Map<String, Concept>, QueryAnswers, Stream<Map<String, Concept>>> knownFilterFunction =
+    public static final BiFunction<Map<String, Concept>, QueryAnswers, Stream<Map<String, Concept>>> knownFilterFunction =
             (a, known) -> knownFilterOperator(a, known) ? Stream.empty() : Stream.of(a);
 
-    public static BiFunction<Map<String, Concept>, Set<String>, Stream<Map<String, Concept>>> incompleteFilterFunction =
+    public static final BiFunction<Map<String, Concept>, Set<String>, Stream<Map<String, Concept>>> incompleteFilterFunction =
             (a, vars) -> a.size() == vars.size() ? Stream.of(a) : Stream.empty();
 
-    public static BiFunction<Map<String, Concept>, Set<NotEquals>, Stream<Map<String, Concept>>> nonEqualsFilterFunction =
+    public static final BiFunction<Map<String, Concept>, Set<NotEquals>, Stream<Map<String, Concept>>> nonEqualsFilterFunction =
             (a, atoms) -> nonEqualsOperator(a, atoms) ? Stream.empty() : Stream.of(a);
 
     public QueryAnswerStream filterVars(Set<String> vars) {
@@ -75,15 +75,8 @@ public class QueryAnswerStream {
 
     public QueryAnswerStream filterNonEquals(Query query){
         Set<NotEquals> filters = query.getFilters();
-        if(filters.isEmpty())
-            return new QueryAnswerStream(this.stream);
+        if(filters.isEmpty()) return new QueryAnswerStream(this.stream);
         return new QueryAnswerStream(this.stream.flatMap(a -> nonEqualsFilterFunction.apply(a, filters)));
-
-        /*
-        Stream<Map<String, Concept>> results = Stream.empty();
-        for (NotEquals filter : filters) results = filter.filter(this.stream());
-        return new QueryAnswerStream(results);
-        */
     }
 
     private static Map<String, Concept> joinOperator(Map<String, Concept> m1, Map<String, Concept> m2){
@@ -102,7 +95,7 @@ public class QueryAnswerStream {
         } else return new HashMap<>();
     }
 
-    private static BiFunction<Map<String, Concept>, Map<String, Concept>, Stream<Map<String, Concept>>> joinFunction = (a1, a2) -> {
+    private static final BiFunction<Map<String, Concept>, Map<String, Concept>, Stream<Map<String, Concept>>> joinFunction = (a1, a2) -> {
         Map<String, Concept> merged = joinOperator(a1, a2);
         return merged.isEmpty()? Stream.empty(): Stream.of(merged);
     };
@@ -115,9 +108,8 @@ public class QueryAnswerStream {
     }
 
     public static Stream<Map<String, Concept>> join(Stream<Map<String, Concept>> stream, Stream<Map<String, Concept>> stream2) {
-        Stream<Map<String, Concept>> result =  stream;
         Collection<Map<String, Concept>> c = stream2.collect(Collectors.toSet());
-        return result.flatMap(a1 -> c.stream().flatMap(a2 -> joinFunction.apply(a1, a2)));
+        return stream.flatMap(a1 -> c.stream().flatMap(a2 -> joinFunction.apply(a1, a2)));
     }
 }
 

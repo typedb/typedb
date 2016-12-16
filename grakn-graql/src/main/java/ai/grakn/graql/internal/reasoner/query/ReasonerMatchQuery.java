@@ -24,10 +24,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;

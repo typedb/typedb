@@ -124,7 +124,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         return fullAnswers;
     }
 
-    public QueryAnswers propagateHeadIdPredicates(Query ruleHead, QueryAnswers answers){
+    private QueryAnswers propagateHeadIdPredicates(Query ruleHead, QueryAnswers answers){
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 

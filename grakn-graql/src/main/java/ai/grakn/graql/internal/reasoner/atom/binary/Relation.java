@@ -123,7 +123,7 @@ public class Relation extends TypeAtom {
      * @param roleMap      rolePlayer-roleType typeName roleMap
      * @return
      */
-    public static VarAdmin constructRelationVar(String varName, String typeVariable, Map<String, String> roleMap) {
+    private static VarAdmin constructRelationVar(String varName, String typeVariable, Map<String, String> roleMap) {
         Var var;
         if (!varName.isEmpty())
             var = Graql.var(varName);
@@ -278,7 +278,7 @@ public class Relation extends TypeAtom {
         }
     }
 
-    public boolean hasExplicitRoleTypes() {
+    private boolean hasExplicitRoleTypes() {
         boolean rolesDefined = false;
         Iterator<RelationPlayer> it = relationPlayers.iterator();
         while (it.hasNext() && !rolesDefined)
@@ -556,7 +556,7 @@ public class Relation extends TypeAtom {
         return roleVarTypeMap;
     }
 
-    public Map<String, String> getRelationUnifiers(Relation parentAtom){
+    private Map<String, String> getRelationUnifiers(Relation parentAtom){
         Map<String, String> unifiers = new HashMap<>();
         Set<String> varsToAllocate = parentAtom.getRolePlayers();
         Set<String> childBVs = getRolePlayers();
