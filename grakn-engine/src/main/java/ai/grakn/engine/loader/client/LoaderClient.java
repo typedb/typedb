@@ -487,7 +487,7 @@ public class LoaderClient implements Loader {
             states.put(status, states.get(status) + 1);
 
             String job = ((HashMap) map).get("id").toString();
-            if(submitted.contains(job)){
+            if(submitted.contains(job) && status.equals(COMPLETED.name()) || status.equals(FAILED.name())){
                 availability.get(host).release();
                 submitted.remove(job);
             }
