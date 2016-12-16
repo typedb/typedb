@@ -22,12 +22,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -36,12 +32,10 @@ import ai.grakn.graql.internal.reasoner.query.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -59,13 +53,7 @@ public class Reasoner {
         this.graph = graph;
         linkConceptTypes(graph);
     }
-    private static void commitGraph(GraknGraph graph) {
-        try {
-            graph.commit();
-        } catch (GraknValidationException e) {
-            LOG.error(e.getMessage());
-        }
-    }
+
     private static void linkConceptTypes(GraknGraph graph, Rule rule) {
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(rule.getLHS());
@@ -103,7 +91,6 @@ public class Reasoner {
                     linkConceptTypes(graph, rule);
                     linkedRules.add(rule);
                 });
-        if(!linkedRules.isEmpty()) commitGraph(graph);
         LOG.debug(linkedRules.size() + " rules linked...");
     }
 
@@ -124,7 +111,6 @@ public class Reasoner {
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
-        commitGraph(graph);
     }
 
     /**
