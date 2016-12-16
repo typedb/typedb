@@ -21,13 +21,11 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -214,9 +212,9 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     private class QueryAnswerIterator implements Iterator<Map<String, Concept>> {
 
-        boolean materialise;
         private int dAns = 0;
         private int iter = 0;
+        private final boolean materialise;
         private final QueryCache cache = new QueryCache();
         private final Set<AtomicQuery> subGoals = new HashSet<>();
         private final Set<Rule> rules;

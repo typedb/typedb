@@ -24,11 +24,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.Sets;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReasonerMatchQuery extends Query{

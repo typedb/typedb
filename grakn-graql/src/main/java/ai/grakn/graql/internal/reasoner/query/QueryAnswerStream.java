@@ -83,7 +83,7 @@ public class QueryAnswerStream {
         } else return new HashMap<>();
     }
 
-    public static BiFunction<Map<String, Concept>, Map<String, Concept>, Stream<Map<String, Concept>>> joinFunction = (a1, a2) -> {
+    public final static BiFunction<Map<String, Concept>, Map<String, Concept>, Stream<Map<String, Concept>>> joinFunction = (a1, a2) -> {
         Map<String, Concept> merged = joinOperator(a1, a2);
         return merged.isEmpty()? Stream.empty(): Stream.of(merged);
     };

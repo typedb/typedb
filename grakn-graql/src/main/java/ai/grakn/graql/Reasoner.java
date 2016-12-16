@@ -125,7 +125,7 @@ public class Reasoner {
     /**
      * Resolve a given query using the rule base
      * @param inputQuery the query string to be expanded
-     * @return set of answers
+     * @return stream of answers
      */
     public Stream<Map<String, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
         Set<String> selectVars = inputQuery.admin().getSelectedNames();
@@ -135,7 +135,6 @@ public class Reasoner {
         while(conjIt.hasNext()) {
             Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
             answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
-
         }
         return answerStream;
     }
@@ -152,10 +151,9 @@ public class Reasoner {
     public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
         if (!Reasoner.hasRules(graph))
             return inputQuery;
-        else {
+        else
             return new ReasonerMatchQuery(inputQuery, graph,
                     new QueryAnswers(resolve(inputQuery, materialise).collect(Collectors.toSet())));
-        }
     }
 
     /**

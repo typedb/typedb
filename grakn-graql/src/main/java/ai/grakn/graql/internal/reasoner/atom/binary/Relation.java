@@ -54,7 +54,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
-import static ai.grakn.graql.internal.reasoner.Utility.createFreshVariable;
 
 public class Relation extends TypeAtom {
 
