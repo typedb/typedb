@@ -32,6 +32,8 @@ public class GraknComputerImpl implements GraknComputer {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputer;
 
+    private static int numWorkers = 0;
+
     public GraknComputerImpl(Graph graph, String graphComputerType) {
         this.graph = graph;
         this.graphComputer = getGraphComputer(graphComputerType);
@@ -80,7 +82,11 @@ public class GraknComputerImpl implements GraknComputer {
     }
 
     protected GraphComputer getComputer() {
-        return graph.compute(this.graphComputer);
+        if (numWorkers == 0) {
+            return graph.compute(this.graphComputer);
+        } else {
+            return graph.compute(this.graphComputer).workers(numWorkers);
+        }
     }
 
 }
