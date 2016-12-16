@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.template;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.lang.ObjectUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +31,7 @@ import static java.util.stream.Collectors.toSet;
 public class Scope {
 
     private Scope parent;
-    private Map<String, Value> values;
+    private Map<String, Object> values;
     private Set<String> variablesEncountered;
 
     public Scope(Map<String, Object> data){
@@ -63,7 +64,7 @@ public class Scope {
             }
         }
         else {
-            values.put(prefix, value == null ? Value.NULL : new Value(value));
+            values.put(prefix, value == null ? null : value);
         }
     }
 
@@ -75,8 +76,8 @@ public class Scope {
         removed.forEach(values::remove);
     }
 
-    public Value resolve(String var) {
-        Value value = values.get(var);
+    public Object resolve(String var) {
+        Object value = values.get(var);
 
         if(value != null) {
             // The variable resides in this scope
@@ -88,7 +89,7 @@ public class Scope {
         }
         else {
             // Unknown variable
-            return Value.NULL;
+            return ObjectUtils.NULL;
         }
     }
 

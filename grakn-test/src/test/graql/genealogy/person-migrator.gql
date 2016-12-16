@@ -2,12 +2,12 @@ insert
 $p isa person has identifier <pid>;
 $x isa birth has firstname <name1> has gender <gender> has confidence "high";
 (happening: $x, protagonist: $p) isa event-protagonist has role "newborn";
-if (surname != null) do {
+if (<surname> != null) do {
 $x has surname <surname>;}
-if (name2 != null) do {
+if (<name2> != null) do {
 $x has middlename <name2>;}
-if (born != null) do {
+if (<born> != null) do {
 $x has birth-date <born>;}
-if (dead != null) do {
+if (<dead> != null) do {
 $y isa death has death-date <dead> has confidence "high";
 (happening: $y, protagonist: $p) isa event-protagonist has role "deceased";}

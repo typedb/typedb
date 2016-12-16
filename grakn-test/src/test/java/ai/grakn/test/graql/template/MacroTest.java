@@ -34,7 +34,7 @@ public class MacroTest {
 
     @Test
     public void noescpMacroOneVarTest(){
-        String template = "insert $this isa @noescp(value);";
+        String template = "insert $this isa @noescp(<value>);";
         String expected = "insert $this0 isa whale;";
 
         Map<String, Object> data = Collections.singletonMap("value", "whale");
@@ -44,7 +44,7 @@ public class MacroTest {
 
     @Test
     public void noescpMacroMultiVarTest(){
-        String template = "insert $x has fn @noescp(firstname) has ln @noescp(lastname);";
+        String template = "insert $x has fn @noescp(<firstname>) has ln @noescp(<lastname>);";
         String expected = "insert $x0 has fn 4 has ln 5;";
 
         Map<String, Object> data = new HashMap<>();
@@ -56,7 +56,7 @@ public class MacroTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void noescpMacroBreaksWithWrongNumberArguments(){
-        String template = "@noescp(value otherValue)";
+        String template = "@noescp(<value>, <otherValue>)";
         Graql.parseTemplate(template, new HashMap<>());
     }
 
@@ -64,7 +64,7 @@ public class MacroTest {
 
     @Test
     public void intMacroTest(){
-        String template = "insert $x value @int(value);";
+        String template = "insert $x value @int(<value>);";
         String expected = "insert $x0 value 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
@@ -80,7 +80,7 @@ public class MacroTest {
 
     @Test
     public void doubleMacroTest(){
-        String template = "insert $x value @double(value);";
+        String template = "insert $x value @double(<value>);";
         String expected = "insert $x0 value 4.0;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
@@ -96,7 +96,7 @@ public class MacroTest {
 
     @Test
     public void equalsMacroTest(){
-        String template = "insert $x value @equals(this that);";
+        String template = "insert $x value @equals(<this>, <that>);";
         String expected = "insert $x0 value true;";
 
         Map<String, Object> data = new HashMap<>();
@@ -105,7 +105,7 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(this notThat);";
+        template = "insert $x value @equals(<this>, <notThat>);";
         expected = "insert $x0 value false;";
 
         data = new HashMap<>();
@@ -114,7 +114,7 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(this notThat);";
+        template = "insert $x value @equals(<this>, <notThat>);";
         expected = "insert $x0 value false;";
 
         data = new HashMap<>();
@@ -123,7 +123,7 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(this that those);";
+        template = "insert $x value @equals(<this>, <that>, <those>);";
         expected = "insert $x0 value true;";
 
         data = new HashMap<>();
@@ -133,7 +133,7 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(this that notThat);";
+        template = "insert $x value @equals(<this>, <that>, <notThat>);";
         expected = "insert $x0 value false;";
 
         data = new HashMap<>();
@@ -146,12 +146,12 @@ public class MacroTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void equalsMacroBreaksWithWrongNumberArguments(){
-        assertParseEquals("@equals(this)", Collections.singletonMap("this", "one"), "");
+        assertParseEquals("@equals(<this>)", Collections.singletonMap("this", "one"), "");
     }
 
     @Test
     public void macroInArgumentTest(){
-        String template = "if (@equals(this that)) do { insert $this isa equals; } else { insert $this isa not; }";
+        String template = "if (@equals(<this>, <that>)) do { insert $this isa equals; } else { insert $this isa not; }";
         String expected = "insert $this0 isa equals;";
         Map<String, Object> data = new HashMap<>();
         data.put("this", "50");
@@ -169,7 +169,7 @@ public class MacroTest {
 
     @Test
     public void stringMacroTest(){
-        String template = "insert $this value @string(value);";
+        String template = "insert $this value @string(<value>);";
         String expected = "insert $this0 value \"1000\";";
 
         Map<String, Object> data = Collections.singletonMap("value", 1000);
@@ -179,7 +179,7 @@ public class MacroTest {
 
     @Test
     public void longMacroTest(){
-        String template = "insert $x value @long(value);";
+        String template = "insert $x value @long(<value>);";
         String expected = "insert $x0 value 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
@@ -188,7 +188,7 @@ public class MacroTest {
 
     @Test
     public void booleanMacroTest(){
-        String template = "insert $x value @boolean(value);";
+        String template = "insert $x value @boolean(<value>);";
         String expected = "insert $x0 value true;";
 
         assertParseEquals(template, Collections.singletonMap("value", "true"), expected);
@@ -202,7 +202,7 @@ public class MacroTest {
 
     @Test
     public void convertDateFormatMacroTest(){
-        String template = "insert $x value @date(date \"mm/dd/yyyy\" \"dd/mm/yyyy\");";
+        String template = "insert $x value @date(<date>, \"mm/dd/yyyy\", \"dd/mm/yyyy\");";
         String expected = "insert $x0 value \"09\\/10\\/1993\";";
 
         assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
@@ -213,14 +213,14 @@ public class MacroTest {
     	java.text.DateFormat format = new java.text.SimpleDateFormat("mm/dd/yyyy");
     	String dateAsString = "10/09/1993";
     	long time = format.parse(dateAsString).getTime();
-        String template = "insert $x value @date(date \"mm/dd/yyyy\");";
+        String template = "insert $x value @date(<date>, \"mm/dd/yyyy\");";
         String expected = "insert $x0 value \"" + time + "\";";
         assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void wrongDateFormatTest(){
-        String template = "insert $x value @date(date \"this is not a format\");";
+        String template = "insert $x value @date(<date>, \"this is not a format\");";
         String expected = "insert $x0 value \"726538200000\";";
 
         assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
@@ -228,7 +228,7 @@ public class MacroTest {
 
     @Test
     public void stringToUpperCaseTest(){
-        String template = "insert $this has something @upper(value);";
+        String template = "insert $this has something @upper(<value>);";
         String expected = "insert $this0 has something \"CAMELCASEVALUE\";";
 
         Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
@@ -237,7 +237,7 @@ public class MacroTest {
 
     @Test
     public void stringToLowerCaseTest(){
-        String template = "insert $this has something @lower(value);";
+        String template = "insert $this has something @lower(<value>);";
         String expected = "insert $this0 has something \"camelcasevalue\";";
 
         Map<String, Object> data = Collections.singletonMap("value", "camelCaseValue");
@@ -249,14 +249,14 @@ public class MacroTest {
         java.text.DateFormat format = new java.text.SimpleDateFormat("mm/dd/yyyy");
         String dateAsString = "10/09/1993";
         long time = format.parse(dateAsString).getTime();
-        String template = "insert $x value @long(@date(date \"mm/dd/yyyy\"));";
+        String template = "insert $x value @long(@date(<date>, \"mm/dd/yyyy\"));";
         String expected = "insert $x0 value " + time + ";";
         assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
     @Test
     public void splitMacroTest() {
-        String template = "insert $x for (val in @split(list \",\") ) do { has description <val>};";
+        String template = "insert $x for (val in @split(<list>, \",\") ) do { has description <val>};";
         String expected = "insert $x0 has description \"orange\" has description \"cat\" has description \"dog\";";
 
         assertParseEquals(template, Collections.singletonMap("list", "cat,dog,orange"), expected);

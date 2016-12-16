@@ -12,7 +12,7 @@ $street isa street-address
 
 (person-with-address: $person, address-of-person: $address) isa has-address;
 
-for ( phoneNumber ) do {
+for ( <phoneNumber> ) do {
   $phone isa phone-number
     has location <location>
     has code <code>;
