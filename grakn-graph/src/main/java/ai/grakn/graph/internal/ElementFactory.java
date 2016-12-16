@@ -47,7 +47,7 @@ final class ElementFactory {
     }
 
     // ------------------------------------------- Building Castings  --------------------------------------------------
-    public CastingImpl buildCasting(Vertex v, RoleType type){
+    CastingImpl buildCasting(Vertex v, RoleType type){
         return buildCasting(v, Optional.of(type));
     }
     private CastingImpl buildCasting(Vertex v, Optional<RoleType> type){
@@ -55,15 +55,12 @@ final class ElementFactory {
     }
 
     // -------------------------------------------- Building Types  ----------------------------------------------------
-    public TypeImpl buildType(Vertex v, Type type, Boolean isImplicit){
-        return buildType(v, Optional.of(type), Optional.of(isImplicit));
-    }
     private TypeImpl buildType(Vertex v, Optional<Type> type, Optional<Boolean> isImplicit){
         return new TypeImpl(graknGraph, v, type, isImplicit);
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType type, ResourceType.DataType<V> dataType, Boolean isUnique){
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType type, ResourceType.DataType<V> dataType, Boolean isUnique){
         return buildResourceType(v, Optional.of(type), Optional.of(dataType), Optional.of(isUnique));
     }
     private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
@@ -71,7 +68,7 @@ final class ElementFactory {
     }
 
     // ------------------------------------------ Building Resources
-    public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
+    <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
         return buildResource(v, Optional.of(type), Optional.of(value));
     }
     private <V> ResourceImpl <V> buildResource(Vertex v, Optional<ResourceType<V>> type, Optional<V> value){
@@ -79,7 +76,7 @@ final class ElementFactory {
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    public RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
+    RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
         return buildRelationType(v, Optional.of(type), Optional.of(isImplicit));
     }
     private RelationTypeImpl buildRelationType(Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit){
@@ -87,7 +84,7 @@ final class ElementFactory {
     }
 
     // -------------------------------------------- Building Relations
-    public RelationImpl buildRelation(Vertex v, RelationType type){
+    RelationImpl buildRelation(Vertex v, RelationType type){
         return buildRelation(v, Optional.of(type));
     }
     private RelationImpl buildRelation(Vertex v, Optional<RelationType> type){
@@ -95,15 +92,12 @@ final class ElementFactory {
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    public EntityTypeImpl buildEntityType(Vertex v, EntityType type){
-        return buildEntityType(v, Optional.of(type));
-    }
     private EntityTypeImpl buildEntityType(Vertex v, Optional<EntityType> type){
         return new EntityTypeImpl(graknGraph, v, type);
     }
 
     // ------------------------------------------- Building Entities
-    public EntityImpl buildEntity(Vertex v, EntityType type){
+    EntityImpl buildEntity(Vertex v, EntityType type){
         return buildEntity(v, Optional.of(type));
     }
     private EntityImpl buildEntity(Vertex v, Optional<EntityType> type){
@@ -111,15 +105,12 @@ final class ElementFactory {
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    public RuleTypeImpl buildRuleType(Vertex v, RuleType type){
-        return buildRuleType(v, Optional.of(type));
-    }
     private RuleTypeImpl buildRuleType(Vertex v, Optional<RuleType> type){
         return new RuleTypeImpl(graknGraph, v, type);
     }
 
     // -------------------------------------------- Building Rules
-    public RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
+    RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
         if(lhs == null)
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS.name()));
 
@@ -133,7 +124,7 @@ final class ElementFactory {
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    public RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
+    RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
         return buildRoleType(v, Optional.of(type), Optional.of(isImplicit));
     }
     private RoleTypeImpl buildRoleType(Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit){
@@ -145,7 +136,7 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    public <X extends Concept> X buildConcept(Vertex v){
+    <X extends Concept> X buildConcept(Vertex v){
         Schema.BaseType type;
         try {
             type = Schema.BaseType.valueOf(v.label());
@@ -194,7 +185,7 @@ final class ElementFactory {
         return (X) concept;
     }
 
-    public TypeImpl buildSpecificType(Vertex vertex, Type type){
+    TypeImpl buildSpecificType(Vertex vertex, Type type){
         Schema.BaseType baseType = Schema.BaseType.valueOf(vertex.label());
         TypeImpl conceptType;
         switch (baseType){
