@@ -23,10 +23,10 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.loader.client.LoaderClient;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
@@ -48,10 +48,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -68,6 +66,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
@@ -92,7 +91,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 20; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 24; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
@@ -201,13 +200,6 @@ public class ScalingTestIT extends AbstractScalingTest {
         CSVPrinter printerWrite = createCSVPrinter("persistConstantIncreasingLoadITWrite.txt");
         CSVPrinter printerMutate = createCSVPrinter("persistConstantIncreasingLoadITMutate.txt");
 
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter("persistConstantIncreasingLoadITProgress.txt", "UTF-8");
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
         for (int graphSize : graphSizes) {
             Long conceptCount = Long.valueOf(graphSize) * 3 / 2;
             printerWrite.print(String.valueOf(conceptCount));
@@ -218,7 +210,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                 // repeat persist
                 for (int i = 0; i < REPEAT; i++) {
-                    writer.println("repeat number: " + i);
+                    LOGGER.info("repeat number: " + i);
                     String CURRENT_KEYSPACE = keyspace
                             + "g" + String.valueOf(graphSize)
                             + "w" + String.valueOf(workerNumber)
@@ -226,51 +218,47 @@ public class ScalingTestIT extends AbstractScalingTest {
                     simpleOntology(CURRENT_KEYSPACE);
 
                     // construct graph
-                    writer.println("start generate graph " + System.currentTimeMillis() / 1000L + "s");
-                    writer.flush();
+                    LOGGER.info("start generate graph " + System.currentTimeMillis() / 1000L + "s");
                     addNodes(CURRENT_KEYSPACE, 0, graphSize);
-                    writer.println("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
+                    LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
 
                     GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
-                    writer.println("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
+                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
 
-                    writer.println("persist degree");
-                    writer.flush();
+                    LOGGER.info("persist degree");
                     Long startTime = System.currentTimeMillis();
                     getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
                     Long stopTime = System.currentTimeMillis();
                     degreeAndPersistTimeWrite += stopTime - startTime;
-                    writer.println("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
+                    LOGGER.info("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
 
                     // mutate graph
-                    writer.println("start mutate graph " + System.currentTimeMillis() / 1000L + "s");
-                    writer.flush();
+                    LOGGER.info("start mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
                     // add edges to force mutation
                     addEdges(CURRENT_KEYSPACE, graphSize);
 
-                    writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
+                    LOGGER.info("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
                     graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
-                    writer.println("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
+                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
 
-                    writer.println("mutate degree");
-                    writer.flush();
+                    LOGGER.info("mutate degree");
                     startTime = System.currentTimeMillis();
                     getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
                     stopTime = System.currentTimeMillis();
                     degreeAndPersistTimeMutate += stopTime - startTime;
-                    writer.println("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
+                    LOGGER.info("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
 
-                    writer.println("start clean graph" + System.currentTimeMillis() / 1000L + "s");
+                    LOGGER.info("start clean graph" + System.currentTimeMillis() / 1000L + "s");
                     graph.clear();
-                    writer.println("stop clean graph" + System.currentTimeMillis() / 1000L + "s");
+                    LOGGER.info("stop clean graph" + System.currentTimeMillis() / 1000L + "s");
                 }
 
                 degreeAndPersistTimeWrite /= REPEAT * 1000;
                 degreeAndPersistTimeMutate /= REPEAT * 1000;
-                writer.println("time to degreesAndPersistWrite: " + degreeAndPersistTimeWrite);
-                writer.println("time to degreesAndPersistMutate: " + degreeAndPersistTimeMutate);
+                LOGGER.info("time to degreesAndPersistWrite: " + degreeAndPersistTimeWrite);
+                LOGGER.info("time to degreesAndPersistMutate: " + degreeAndPersistTimeMutate);
 
                 printerWrite.print(String.valueOf(degreeAndPersistTimeWrite));
                 printerMutate.print(String.valueOf(degreeAndPersistTimeMutate));
@@ -284,8 +272,6 @@ public class ScalingTestIT extends AbstractScalingTest {
         printerWrite.close();
         printerMutate.close();
 
-        writer.flush();
-        writer.close();
     }
 
     @Test
@@ -296,34 +282,38 @@ public class ScalingTestIT extends AbstractScalingTest {
         // construct graph
         addNodes(keyspace, 0, MAX_SIZE);
 
+        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
         Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
 
         // assert mutated degrees are as expected
         GraknGraph graph = factory.getGraph();
         EntityType thing = graph.getEntityType("thing");
+        ResourceType degree = graph.getResourceType("degree");
         Collection<Entity> things = thing.instances();
 
         assertFalse(things.isEmpty());
         things.forEach(thisThing -> {
-            assertEquals(1L, thisThing.resources().size());
-            assertEquals(0L, thisThing.resources().iterator().next().getValue());
+            assertEquals(1L, thisThing.resources(degree).size());
+            assertEquals(1L, thisThing.resources(degree).iterator().next().getValue());
         });
 
 
         // add edges to force mutation
         addEdges(keyspace, MAX_SIZE);
 
+        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
         Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
 
         // assert mutated degrees are as expected
         graph = factory.getGraph();
         thing = graph.getEntityType("thing");
         things = thing.instances();
+        ResourceType degreeAlso = graph.getResourceType("degree");
 
         assertFalse(things.isEmpty());
         things.forEach(thisThing -> {
-            assertEquals(1L, thisThing.resources().size());
-            assertEquals(1L, thisThing.resources().iterator().next().getValue());
+            assertEquals(1L, thisThing.resources(degreeAlso).size());
+            assertEquals(2L, thisThing.resources(degreeAlso).iterator().next().getValue());
         });
 
         Collection<Relation> relations = graph.getRelationType("related").instances();
@@ -410,29 +400,16 @@ public class ScalingTestIT extends AbstractScalingTest {
             printers.put(method,createCSVPrinter(method));
         }
 
-        // generic output
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter("testStatisticsWithConstantDegreeProgress.txt", "UTF-8");
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
         // create the ontology
         simpleOntology(keyspace);
-        new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
         LoaderClient loaderClient = new LoaderClient(keyspace, Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
 
         for (int g=1; g<totalSteps+1; g++) {
-            writer.println("starting step: "+g);
+            LOGGER.info("starting step: " + g);
 
             // load data
-            writer.println("start loading data");
-            writer.flush();
+            LOGGER.info("start loading data");
             for (int m=1; m<nodesPerStep+1; m++) {
                 loaderClient.add(insert(var().isa("thing").has("degree", v_m)));
                 loaderClient.add(insert(var().isa("thing").has("degree", V_m)));
@@ -440,15 +417,14 @@ public class ScalingTestIT extends AbstractScalingTest {
                 V_m+=2;
             }
             loaderClient.waitToFinish();
-            writer.println("stop loading data");
-            writer.println("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
-            writer.flush();
+            LOGGER.info("stop loading data");
+            LOGGER.info("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
 
             for (String method : methods) {
                 printers.get(method).print(2 * g * nodesPerStep);
-                writer.println("starting to execute: "+method);
+                LOGGER.info("starting to execute: " + method);
                 for (int workerNumber : workerNumbers) {
-                    writer.println("starting with: " + workerNumber + " threads");
+                    LOGGER.info("starting with: " + workerNumber + " threads");
 
                     // configure assertions
                     final long currentG = Long.valueOf(g);
@@ -487,8 +463,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                     long averageTime = 0;
                     for (int i = 0; i < REPEAT; i++) {
-                        writer.println("starting repeat: " + i);
-                        writer.flush();
+                        LOGGER.info("starting repeat: " + i);
                         // check stats are correct
                         Long startTime = System.currentTimeMillis();
                         Number currentResult = (Number) statisticsMethods.get(method).apply(getComputeQueryBuilder(Grakn.DEFAULT_URI,keyspace,workerNumber)).get();
@@ -533,37 +508,12 @@ public class ScalingTestIT extends AbstractScalingTest {
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
-        // batch in the nodes
         LoaderClient loaderClient = new LoaderClient(keyspace,
                 Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
-            loaderClient.add(insert(var().isa("thing").id(nodeId)));
-        }
-
-        loaderClient.waitToFinish();
-
-    }
-
-    private void addEdgesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
-        // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
-
-        for (String supernodeId : superNodes) {
-            for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
-                String nodeId = "node-" + nodeIndex;
-                loaderClient.add(insert(var().isa("related")
-                        .rel("relation1", var().id(nodeId))
-                        .rel("relation2", var().id(supernodeId))));
-            }
+            loaderClient.add(insert(var().isa("thing").has("node-id", nodeId)));
         }
 
         loaderClient.waitToFinish();
@@ -576,12 +526,15 @@ public class ScalingTestIT extends AbstractScalingTest {
         RoleType relation2 = graph.putRoleType("relation2");
         thing.playsRole(relation1).playsRole(relation2);
         graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        ResourceType<String> id = graph.putResourceType("node-id", ResourceType.DataType.STRING);
+        thing.hasResource(id);
+        ResourceType<Long> degree = graph.putResourceType("degree", ResourceType.DataType.LONG);
+        thing.hasResource(degree);
         graph.commit();
         graph.close();
     }
 
     private Set<String> makeSuperNodes(String keyspace) throws GraknValidationException {
-        // make the supernodes
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();
@@ -599,21 +552,18 @@ public class ScalingTestIT extends AbstractScalingTest {
             throw new RuntimeException("sorry graphsize has to be even");
         }
 
-        // batch in the nodes
         LoaderClient loaderClient = new LoaderClient(keyspace,
                 Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
 
         int startNode = 0;
         while (startNode<graphSize) {
 
             String nodeId1 = "node-" + startNode;
             String nodeId2 = "node-" + ++startNode;
-            loaderClient.add(insert(var().isa("related")
-                    .rel("relation1", var().id(nodeId1))
-                    .rel("relation2", var().id(nodeId2))));
+            loaderClient.add(match(var("node1").has("node-id",nodeId1),var("node2").has("node-id",nodeId2))
+                    .insert(var().isa("related")
+                            .rel("relation1", var("node1"))
+                            .rel("relation2", var("node2"))));
 
             startNode++;
         }
@@ -624,8 +574,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         // batch in the nodes
         LoaderClient loaderClient = new LoaderClient(keyspace,
                 Arrays.asList(HOST_NAME));
-        loaderClient.setQueueSize(8);
-        loaderClient.setBatchSize(30);
+        loaderClient.setBatchSize(10);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<Var> insertQuery = new ArrayList<>();
