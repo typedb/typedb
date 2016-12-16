@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
@@ -53,7 +54,13 @@ public class Reasoner {
         this.graph = graph;
         linkConceptTypes(graph);
     }
-
+    private static void commitGraph(GraknGraph graph) {
+        try {
+            graph.commit();
+        } catch (GraknValidationException e) {
+            LOG.error(e.getMessage());
+        }
+    }
     private static void linkConceptTypes(GraknGraph graph, Rule rule) {
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(rule.getLHS());
@@ -91,6 +98,7 @@ public class Reasoner {
                     linkConceptTypes(graph, rule);
                     linkedRules.add(rule);
                 });
+        if(!linkedRules.isEmpty()) commitGraph(graph);
         LOG.debug(linkedRules.size() + " rules linked...");
     }
 
@@ -111,6 +119,7 @@ public class Reasoner {
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
+        commitGraph(graph);
     }
 
     /**
@@ -144,9 +153,8 @@ public class Reasoner {
         if (!Reasoner.hasRules(graph))
             return inputQuery;
         else {
-            MatchQuery outputQuery = new ReasonerMatchQuery(inputQuery, graph,
+            return new ReasonerMatchQuery(inputQuery, graph,
                     new QueryAnswers(resolve(inputQuery, materialise).collect(Collectors.toSet())));
-            return outputQuery;
         }
     }
 
