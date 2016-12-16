@@ -51,6 +51,18 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
     }
 
     @Test
+    public void quoteMainTest(){
+        String quoteFile = getFile("csv", "pets/data/pets.singlequotes").getAbsolutePath();
+        runAndAssertDataCorrect("-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", graph.getKeyspace());
+    }
+
+    @Test
+    public void nullMainTest(){
+        String nullTemplate = getFile("csv", "pets/template-null.gql").getAbsolutePath();
+        runAndAssertDataCorrect("-input", dataFile, "-template", nullTemplate, "-keyspace", graph.getKeyspace(), "-null", "");
+    }
+
+    @Test
     public void csvMainTestDistributedLoader(){
         runAndAssertDataCorrect("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
     }
@@ -58,6 +70,14 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
     @Test
     public void csvMainDifferentBatchSizeTest(){
         runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace());
+    }
+
+    @Test
+    public void csvMainPropertiesTest(){
+        load(getFile("csv", "multi-file/schema.gql"));
+        String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
+        run("csv", "-config", configurationFile, "-keyspace", graph.getKeyspace());
+        assertPokemonGraphCorrect();
     }
 
     @Test
@@ -80,7 +100,7 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void csvMainThrowableTest(){
-        exception.expect(NumberFormatException.class);
+        exception.expect(RuntimeException.class);
         run("-input", dataFile, "-template", templateFile, "-batch", "hello");
     }
 

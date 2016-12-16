@@ -65,12 +65,12 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        TYPE("type"),
-        ENTITY_TYPE("entity-type"),
-        ROLE_TYPE("role-type"),
-        RESOURCE_TYPE("resource-type"),
-        RELATION_TYPE("relation-type"),
-        RULE_TYPE("rule-type"),
+        CONCEPT("concept"),
+        ENTITY("entity"),
+        ROLE("role"),
+        RESOURCE("resource"),
+        RELATION("relation"),
+        RULE("rule"),
         INFERENCE_RULE("inference-rule"),
         CONSTRAINT_RULE("constraint-rule");
 

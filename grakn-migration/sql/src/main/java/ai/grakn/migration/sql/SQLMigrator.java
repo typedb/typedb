@@ -31,10 +31,12 @@ import org.jooq.impl.DSL;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
  * The SQL migrator will execute the given SQL query and then apply the given template to those results.
+ * @author alexandraorth
  */
 public class SQLMigrator extends AbstractMigrator {
 
@@ -62,7 +64,9 @@ public class SQLMigrator extends AbstractMigrator {
     public Stream<InsertQuery> migrate() {
         return records.map(Record::intoMap)
                 .map(this::convertToValidValues)
-                .map(r -> template(template, r));
+                .map(r -> template(template, r))
+                .filter(Optional::isPresent)
+                .map(Optional::get);
     }
 
     /**

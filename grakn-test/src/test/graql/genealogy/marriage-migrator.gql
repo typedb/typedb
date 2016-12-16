@@ -1,6 +1,6 @@
 match $x has identifier <spouse1>; $y has identifier <spouse2>;
 insert
 $m isa wedding has confidence "high";
-(happening: $m, protagonist: $x) isa event-protagonist has role "spouse";
-(happening: $m, protagonist: $y) isa event-protagonist has role "spouse";
+(happening: $m, protagonist: $x) isa event-protagonist has event-role "spouse";
+(happening: $m, protagonist: $y) isa event-protagonist has event-role "spouse";
 if (date != null) do {$m has date <date>;}

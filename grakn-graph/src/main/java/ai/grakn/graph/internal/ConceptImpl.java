@@ -45,6 +45,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -62,11 +63,31 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     private final AbstractGraknGraph graknGraph;
     private Vertex vertex;
 
-    ConceptImpl(Vertex v, V type, AbstractGraknGraph graknGraph){
+    ConceptImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type){
         this.vertex = v;
         this.graknGraph = graknGraph;
-        type(type);
+        type.ifPresent(this::type);
         graknGraph.getConceptLog().putConcept(this);
+    }
+
+    /**
+     *
+     * @param type The type of this concept
+     * @return The concept itself casted to the correct interface
+     */
+    protected T type(V type) {
+        if(type != null && type() == null){
+            TypeImpl currentIsa = getParentIsa();
+            if(currentIsa == null){
+                setType(String.valueOf(type.getName()));
+                putEdge(type, Schema.EdgeLabel.ISA);
+            } else if(!currentIsa.equals(type)){
+                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
+            }
+
+        }
+
+        return getThis();
     }
 
     /**
@@ -95,7 +116,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getGraknGraph().getElementFactory().buildUnknownConcept(vertex);
+        ConceptImpl properType = getGraknGraph().getElementFactory().buildConcept(vertex);
         properType.innerDelete(); //This will execute the proper deletion method.
     }
 
@@ -139,8 +160,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         vertex.edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildUnknownConcept(e.outVertex()));}
+                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
+                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.outVertex()));}
                 );
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
@@ -153,7 +174,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The type of the concept casted to the correct interface
      */
     @SuppressWarnings("unchecked")
-    @Override
     public V type() {
         HashSet<Concept> visitedConcepts = new HashSet<>();
         ConceptImpl currentConcept = this;
@@ -422,26 +442,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @param type The type of this concept
-     * @return The concept itself casted to the correct interface
-     */
-    private T type(V type) {
-        if(type != null && type() == null){
-            TypeImpl currentIsa = getParentIsa();
-            if(currentIsa == null){
-                setType(String.valueOf(type.getName()));
-                putEdge(type, Schema.EdgeLabel.ISA);
-            } else if(!currentIsa.equals(type)){
-                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
-            }
-
-        }
-
-        return getThis();
-    }
-
-    /**
-     *
      * @return The result of following one outgoing isa edge to a Type.
      */
     public TypeImpl getParentIsa(){
@@ -671,9 +671,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                 forEachRemaining(
                         e -> {
                             graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
+                                    getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
                             graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildUnknownConcept(e.outVertex()));
+                                    getGraknGraph().getElementFactory().buildConcept(e.outVertex()));
                         }
                 );
 
@@ -732,7 +732,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
             return false;
 
         try {
-            return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
+            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
         } catch (IllegalStateException e){
             return false;
         }

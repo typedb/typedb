@@ -30,6 +30,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -37,6 +38,7 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Migrator for migrating JSON data into Grakn instances
+ * @author alexandraorth
  */
 public class JsonMigrator extends AbstractMigrator {
 
@@ -77,7 +79,9 @@ public class JsonMigrator extends AbstractMigrator {
         return readers.stream()
                 .map(this::asString)
                 .map(this::toJsonMap)
-                .map(data -> template(template, data));
+                .map(data -> template(template, data))
+                .filter(Optional::isPresent)
+                .map(Optional::get);
     }
 
     /**

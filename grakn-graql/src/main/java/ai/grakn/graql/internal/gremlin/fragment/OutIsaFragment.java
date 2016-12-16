@@ -40,7 +40,7 @@ class OutIsaFragment extends AbstractFragment {
             // Make sure we never get castings' types
             traversal.not(__.hasLabel(CASTING.name()));
         }
-        Fragments.outSubs(Fragments.outSubs(traversal).out(ISA.getLabel()));
+        Fragments.outSubs(traversal.out(ISA.getLabel()));
     }
 
     @Override

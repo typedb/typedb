@@ -20,18 +20,19 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Optional;
 
 /**
  * An ontological element used to define different types of rule.
  * Currently supported rules include Constraint Rules and Inference Rules.
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
-    RuleTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type) {
+        super(graknGraph, v, type, Optional.empty());
     }
 
     @Override

@@ -19,17 +19,18 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.EntityType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Optional;
 
 /**
  * An ontological element which represents the categories instances can fall within.
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {
+        super(graknGraph, v, type, Optional.empty());
     }
 
     @Override

@@ -110,9 +110,9 @@ export default class Style {
      */
     getNodeShape(baseType) {
         switch(baseType) {
-            case "resource-type":
-            case "relation-type":
-            case "entity-type":
+            case "resource":
+            case "relation":
+            case "entity":
             default:
                 return this.node.shape;
         }

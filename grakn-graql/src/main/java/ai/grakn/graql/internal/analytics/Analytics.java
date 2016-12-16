@@ -107,14 +107,13 @@ public class Analytics {
         }).collect(Collectors.toSet());
 
         // collect resource-types for statistics
-        graph.admin().getMetaResourceType().instances().stream()
-                .map(Concept::asResourceType)
-                .forEach(type -> resourceTypeNames.put(type.getName(), type.getDataType().getName()));
+        ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
+        metaResourceType.subTypes().forEach(type -> resourceTypeNames.put(type.getName(), type.getDataType().getName()));
 
         if (subtypes.isEmpty()) {
-            graph.admin().getMetaEntityType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
-            graph.admin().getMetaResourceType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
-            graph.admin().getMetaRelationType().instances().forEach(type -> this.subtypeNames.add(type.asType().getName()));
+            graph.admin().getMetaEntityType().subTypes().forEach(type -> this.subtypeNames.add(type.getName()));
+            metaResourceType.subTypes().forEach(type -> this.subtypeNames.add(type.getName()));
+            graph.admin().getMetaRelationType().subTypes().forEach(type -> this.subtypeNames.add(type.getName()));
             this.subtypeNames.removeAll(analyticsElements);
         } else {
             for (Type t : subtypes) {
@@ -539,8 +538,8 @@ public class Analytics {
     protected boolean verticesExistInSubgraph(String... ids) {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
         for (String id : ids) {
-            Concept concept = graph.getConcept(id);
-            if (concept == null || !subtypeNames.contains(concept.type().getName())) return false;
+            Instance instance = graph.getConcept(id);
+            if (instance == null || !subtypeNames.contains(instance.type().getName())) return false;
         }
         return true;
     }

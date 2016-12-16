@@ -40,6 +40,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -143,8 +144,9 @@ public class AtomicTest extends AbstractEngineTest{
         Atom atom2 = query2.getAtom();
 
         Map<RoleType, Pair<String, Type>> roleMap2 = atom2.getRoleVarTypeMap();
-        assertTrue(roleMap.size() == 2 && roleMap2.size() == 2);
-        assertTrue(roleMap.keySet().equals(roleMap2.keySet()));
+        assertEquals(2, roleMap.size());
+        assertEquals(2, roleMap2.size());
+        assertEquals(roleMap.keySet(), roleMap2.keySet());
     }
 
     @Test
@@ -159,8 +161,9 @@ public class AtomicTest extends AbstractEngineTest{
         AtomicQuery query2 = new AtomicQuery(queryString2, graph);
         Atom atom2 = query2.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap2 = atom2.getRoleVarTypeMap();
-        assertTrue(roleMap.size() == 3 && roleMap2.size() == 3);
-        assertTrue(roleMap.keySet().equals(roleMap2.keySet()));
+        assertEquals(3, roleMap.size());
+        assertEquals(3, roleMap2.size());
+        assertEquals(roleMap.keySet(), roleMap2.keySet());
     }
 
 

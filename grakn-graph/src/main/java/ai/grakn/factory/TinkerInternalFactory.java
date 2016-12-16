@@ -24,6 +24,8 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Properties;
+
 
 /**
  * A graph factory which provides a grakn graph with a tinker graph backend.
@@ -31,13 +33,13 @@ import org.slf4j.LoggerFactory;
 class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TinkerInternalFactory.class);
 
-    TinkerInternalFactory(String keyspace, String engineUrl, String config){
-        super(keyspace, engineUrl, config);
+    TinkerInternalFactory(String keyspace, String engineUrl, Properties properties){
+        super(keyspace, engineUrl, properties);
     }
 
     @Override
     boolean isClosed(TinkerGraph innerGraph) {
-        return !innerGraph.traversal().V().has(Schema.ConceptProperty.NAME.name(), Schema.MetaSchema.ENTITY_TYPE.getName()).hasNext();
+        return !innerGraph.traversal().V().has(Schema.ConceptProperty.NAME.name(), Schema.MetaSchema.ENTITY.getName()).hasNext();
     }
 
     @Override
@@ -48,7 +50,7 @@ class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, Ti
     @Override
     TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn("In memory Tinkergraph ignores the address [" + super.engineUrl + "] and " +
-                 "the config path [" + super.config + "]");
+                 "the config path [" + super.properties + "]");
         return TinkerGraph.open();
     }
 

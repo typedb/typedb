@@ -57,7 +57,7 @@ public class PokemonGraphFactoryTest {
     @Test
     public void failToLoad(){
         GraknGraph graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        graknGraph.putRelationType("fake");
+        graknGraph.putRoleType("fake");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(

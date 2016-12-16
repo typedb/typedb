@@ -4,20 +4,20 @@ insert
 ####################Ontology######################
 #################################################
 
-"vertex" isa entity-type
+"vertex" sub entity
     has-resource index;
 
-"link-endA" isa role-type;
-"link-endB" isa role-type;
-"link" isa relation-type, has-role link-endA, has-role link-endB;
+"link-endA" sub role;
+"link-endB" sub role;
+"link" sub relation, has-role link-endA, has-role link-endB;
 vertex plays-role link-endA, plays-role link-endB;
 
-"reach-endA" isa role-type;
-"reach-endB" isa role-type;
-"reachable" isa relation-type, has-role reach-endA, has-role reach-endB;
+"reach-endA" sub role;
+"reach-endB" sub role;
+"reachable" sub relation, has-role reach-endA, has-role reach-endB;
 vertex plays-role reach-endA, plays-role reach-endB;
 
-"index" isa resource-type, datatype string;
+"index" sub resource, datatype string;
 
 ####################################################
 ##################DATA#############################

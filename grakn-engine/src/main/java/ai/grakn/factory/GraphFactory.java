@@ -20,9 +20,14 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.util.ErrorMessage;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 
 public class GraphFactory {
-    private String graphConfig;
+    private Properties properties;
     private static GraphFactory instance = null;
 
 
@@ -34,11 +39,18 @@ public class GraphFactory {
     }
 
     private GraphFactory() {
-        graphConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+        properties = new Properties();
+        String pathToConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+
+        try(FileInputStream input = new FileInputStream(pathToConfig)){
+            properties.load(input);
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
+        }
     }
 
     public synchronized GraknGraph getGraph(String keyspace) {
-        return FactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
+        return FactoryBuilder.getFactory(keyspace, null, properties).getGraph(false);
     }
 }
 

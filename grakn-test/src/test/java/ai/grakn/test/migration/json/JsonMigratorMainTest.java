@@ -89,7 +89,7 @@ public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void jsonMainThrowableTest(){
-        exception.expect(NumberFormatException.class);
+        exception.expect(RuntimeException.class);
         run("-input", dataFile, "-template", templateFile, "-batch", "hello");
     }
 

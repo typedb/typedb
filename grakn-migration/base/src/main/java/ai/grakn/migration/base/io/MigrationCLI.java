@@ -25,83 +25,84 @@ import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.engine.loader.client.LoaderClient;
+import ai.grakn.util.Schema;
 import com.google.common.io.Files;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.var;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
+/**
+ *
+ * @author alexandraorth
+ */
 public class MigrationCLI {
 
     private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn.sh start'?";
 
-    private static final ConfigProperties properties = ConfigProperties.getInstance();
-    private Options defaultOptions = new Options();
-    {
-        defaultOptions.addOption("v", "verbose", false, "Print counts of migrated data.");
-        defaultOptions.addOption("h", "help", false, "Print usage message.");
-        defaultOptions.addOption("k", "keyspace", true, "Grakn graph.");
-        defaultOptions.addOption("u", "uri", true, "Location of Grakn Engine.");
-        defaultOptions.addOption("n", "no", false, "Write to standard out.");
+    public static <T extends MigrationOptions> List<Optional<T>> init(String[] args, Function<String[], T> constructor) {
+
+        // get the options from the command line
+        T baseOptions = constructor.apply(args).parse(args);
+
+        // if there is configuration, create multiple options objects from the config
+        if(baseOptions.getConfiguration() != null){
+            return extractOptionsFromConfiguration(baseOptions.getConfiguration(), args).stream()
+                    .map(constructor::apply)
+                    .map(MigrationCLI::validate)
+                    .collect(toList());
+        }
+
+        return singletonList(validate(baseOptions));
     }
 
-    private CommandLine cmd;
-
-    private MigrationCLI(String[] args, Options options){
-        addOptions(options);
-        CommandLineParser parser = new DefaultParser();
-
+    public static <T extends MigrationOptions> Optional<T> validate(T options){
         try {
-            cmd = parser.parse(defaultOptions, args);
-        } catch (ParseException e) {
-            die(e.getMessage());
-        }
+            if (options.isHelp()) {
+                printHelpMessage(options);
+            }
 
-        if (cmd.hasOption("h")) {
-            printHelpMessage();
-        }
+            if(options.getNumberOptions() == 0){
+                printHelpMessage(options);
+                throw new IllegalArgumentException("Helping");
+            } else if(options.getNumberOptions() == 1 && options.isHelp()){
+                throw new IllegalArgumentException("Helping");
+            }
 
-        if(cmd.getOptions().length == 0){
-            printHelpMessage();
-            throw new IllegalArgumentException("Helping");
-        } else if(cmd.getOptions().length == 1 && cmd.hasOption("h")){
-            throw new IllegalArgumentException("Helping");
-        }
+            if(!GraknEngineServer.isRunning()){
+                System.out.println(COULD_NOT_CONNECT);
+            }
 
-        if(!GraknEngineServer.isRunning()){
-            System.out.println(COULD_NOT_CONNECT);
-        }
-    }
-
-    public static Optional<MigrationCLI> create(String[] args, Options options){
-        try {
-            return Optional.of(new MigrationCLI(args, options));
-        } catch (IllegalArgumentException e){
+            //noinspection unchecked
+            return Optional.of(options);
+        } catch (Throwable e){
             return Optional.empty();
         }
     }
 
-    public void writeToSout(Stream<InsertQuery> queries){
+    public static void writeToSout(Stream<InsertQuery> queries){
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
 
         queries.map(InsertQuery::toString).forEach((str) -> {
@@ -119,7 +120,7 @@ public class MigrationCLI {
         }
     }
 
-    public void writeToSout(String string){
+    public static void writeToSout(String string){
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
         try{
             writer.write(string);
@@ -129,19 +130,19 @@ public class MigrationCLI {
         }
     }
 
-    public void printInitMessage(String dataToMigrate){
+    public static void printInitMessage(MigrationOptions options, String dataToMigrate){
         System.out.println("Migrating data " + dataToMigrate +
-                " using Grakn Engine " + getEngineURI() +
-                " into graph " + getKeyspace());
+                " using Grakn Engine " + options.getUri() +
+                " into graph " + options.getKeyspace());
     }
 
-    public void printWholeCompletionMessage(){
+    public static void printWholeCompletionMessage(MigrationOptions options){
         System.out.println("Migration complete.");
 
-        if(hasOption("v")) {
+        if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknGraph graph = getGraph();
+            GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph();
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();
@@ -153,10 +154,10 @@ public class MigrationCLI {
             builder.append("\t ").append(graph.admin().getMetaRuleType().instances().size()).append(" rule types\n\n");
 
             builder.append("Graph data contains:\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("relation-type")).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.ENTITY.getName())).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.RELATION.getName())).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.RESOURCE.getName())).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Schema.MetaSchema.RULE.getName())).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
 
             System.out.println(builder);
 
@@ -164,32 +165,12 @@ public class MigrationCLI {
         }
     }
 
-    public void initiateShutdown(){
+    public static void initiateShutdown(){
         System.out.println("Initiating shutdown...");
         InMemoryTaskManager.getInstance().shutdown();
     }
 
-    public String getEngineURI(){
-        return cmd.getOptionValue("u", Grakn.DEFAULT_URI);
-    }
-
-    public String getKeyspace(){
-        return cmd.getOptionValue("k", properties.getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY));
-    }
-
-    public String getOption(String opt){
-        return cmd.getOptionValue(opt);
-    }
-
-    public String getRequiredOption(String opt, String errorMessage){
-        return hasOption(opt) ? getOption(opt) : die(errorMessage);
-    }
-
-    public boolean hasOption(String opt){
-        return cmd.hasOption(opt);
-    }
-
-    public String fileAsString(File file){
+    public static String fileAsString(File file){
         try {
             return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
         } catch (IOException e) {
@@ -198,36 +179,49 @@ public class MigrationCLI {
         }
     }
 
-    public Loader getLoader(){
-        return getEngineURI().equals(Grakn.DEFAULT_URI)
-                ? new LoaderImpl(getKeyspace())
-                : new LoaderClient(getKeyspace(), Collections.singleton(getEngineURI()));
-    }
-
-    public GraknGraph getGraph(){
-        return Grakn.factory(getEngineURI(), getKeyspace()).getGraph();
-    }
-
-    public void addOptions(Options options) {
-        options.getOptions().forEach(defaultOptions::addOption);
-    }
-
-    public String die(Throwable throwable){
+    public static String die(Throwable throwable){
         return die(ExceptionUtils.getFullStackTrace(throwable));
     }
 
-    public String die(String errorMsg) {
-        printHelpMessage();
+    public static String die(String errorMsg) {
         throw new RuntimeException(errorMsg);
     }
 
-    private void printHelpMessage(){
+    public static void printHelpMessage(MigrationOptions options){
         HelpFormatter helpFormatter = new HelpFormatter();
         PrintWriter printWriter = new PrintWriter(System.out);
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "migration.sh", null, defaultOptions, leftPadding, descPadding, null);
+        helpFormatter.printHelp(printWriter, width, "migration.sh", null, options.getOptions(), leftPadding, descPadding, null);
         printWriter.flush();
+    }
+
+    private static List<String[]> extractOptionsFromConfiguration(String path, String[] args){
+        // check file exists
+        File configuration = new File(path);
+        if(!configuration.exists()){
+            throw new RuntimeException("Could not find configuration file "+ path);
+        }
+
+        try (FileReader reader = new FileReader(configuration)){
+            List<Map<String, String>> config = (List<Map<String, String>>) new Yaml().load(reader);
+
+            List<String[]> options = new ArrayList<>();
+            for(Map<String, String> c:config){
+
+                List<String> parameters = new ArrayList<>(Arrays.asList(args));
+
+                c.entrySet().stream()
+                        .flatMap(m -> Stream.of("-" + m.getKey(), m.getValue()))
+                        .forEach(parameters::add);
+
+                options.add(parameters.toArray(new String[parameters.size()]));
+            }
+
+            return options;
+        } catch (IOException e){
+            throw new RuntimeException("Could not parse configuration file.");
+        }
     }
 }

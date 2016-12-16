@@ -18,9 +18,15 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -28,12 +34,19 @@ import static org.junit.Assert.assertThat;
 
 public class GraknTitanHadoopGraphFactoryTest {
     private final String TEST_CONFIG = "../conf/main/grakn-analytics.properties";
+    private final static Properties TEST_PROPERTIES = new Properties();
 
     private TitanHadoopInternalFactory factory;
 
     @Before
     public void setUp() throws Exception {
-        factory = new TitanHadoopInternalFactory("rubbish", "rubbish", TEST_CONFIG);
+        try (InputStream in = new FileInputStream(TEST_CONFIG)){
+            TEST_PROPERTIES.load(in);
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+        }
+
+        factory = new TitanHadoopInternalFactory("rubbish", "rubbish", TEST_PROPERTIES);
     }
 
     @Test(expected=UnsupportedOperationException.class)

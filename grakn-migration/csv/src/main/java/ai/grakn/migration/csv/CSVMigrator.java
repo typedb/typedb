@@ -20,11 +20,9 @@ package ai.grakn.migration.csv;
 
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.base.AbstractMigrator;
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.enums.CSVReaderNullFieldIndicator;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.migration.base.AbstractMigrator;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 import java.io.File;
 import java.io.FileReader;
@@ -32,20 +30,24 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.stream.IntStream;
+import java.util.Optional;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
  * The CSV migrator will migrate all of the data in a CSV file into Grakn Graql var patters, to be
  * imported into a graph as the user sees fit.
+ * @author alexandraorth
  */
 public class CSVMigrator extends AbstractMigrator {
 
     public static final char SEPARATOR = ',';
+    public static final char QUOTE = '\"';
+    public static final String NULL_STRING = null;
     private char separator = SEPARATOR;
+    private char quote = QUOTE;
+    private String nullString = NULL_STRING;
 
     private final Reader reader;
     private final String template;
@@ -84,30 +86,44 @@ public class CSVMigrator extends AbstractMigrator {
     }
 
     /**
+     * Set character used to encapsulate values containing special characters.
+     * @param quote the quote character
+     */
+    public CSVMigrator setQuoteChar(char quote){
+        this.quote = quote;
+        return this;
+    }
+
+    /**
+     * Set string that will be evaluated as null
+     * @param nullString string that will be evaluated as null, if null, everything will be
+     *                   evaluated as a string
+     */
+    public CSVMigrator setNullString(String nullString){
+        this.nullString = nullString;
+        return this;
+    }
+
+    /**
      * Each String in the stream is a CSV file
      * @return stream of parsed insert queries
      */
     @Override
     public Stream<InsertQuery> migrate() {
-        try(
-                CSVReader csvReader =
-                        new CSVReader(reader, 0, new CSVParserBuilder()
-                                .withSeparator(separator)
-                                .withIgnoreLeadingWhiteSpace(true)
-                                .withEscapeChar('\\')
-                                .withFieldAsNull(CSVReaderNullFieldIndicator.EMPTY_SEPARATORS)
-                                .build())
+        try{
+                CSVParser csvParser = CSVFormat.newFormat(separator)
+                            .withIgnoreEmptyLines()
+                            .withEscape('\\' )
+                            .withFirstRecordAsHeader()
+                            .withQuote(quote)
+                            .withNullString(nullString)
+                            .parse(reader);
 
-        ) {
-
-            Iterator<String[]> it = csvReader.iterator();
-
-            String[] header = it.next();
-
-            //TODO don't collect here
-            return stream(it).collect(toList()).stream()
-                    .map(col -> parse(header, col))
-                    .map(col -> template(template, col));
+            Iterator<CSVRecord> it = csvParser.iterator();
+            return stream(it)
+                    .map(col -> template(template, parse(col)))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get);
         } catch (IOException e){
             throw new RuntimeException(e);
         }
@@ -128,21 +144,15 @@ public class CSVMigrator extends AbstractMigrator {
     /**
      * Convert data in arrays (from CSV reader) to Map<String, Object>, the current input format for
      * graql templating.
-     * @param header first row of input file, representing keys in the template
      * @param data all bu first row of input file
      * @return given data in a map
      */
-    private Map<String, Object> parse(String[] header, String[] data){
-        if(header.length != data.length){
-            throw new RuntimeException("Invalid CSV");
+    private Map<String, Object> parse(CSVRecord data){
+        if(!data.isConsistent()){
+            throw new RuntimeException("Invalid CSV " + data.toMap());
         }
-
-        return IntStream.range(0, header.length)
-                .mapToObj(Integer::valueOf)
-                .filter(i -> validValue(data[i]))
-                .collect(toMap(
-                        i -> header[i],
-                        i -> data[i]
-                ));
+        return data.toMap().entrySet().stream()
+                .filter((e) -> validValue(e.getValue()))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

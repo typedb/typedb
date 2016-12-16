@@ -41,10 +41,9 @@ class JsonPrinter implements Printer<Json> {
 
         if (concept.isType()) {
             json.set("name", concept.asType().getName());
-        }
-
-        if (concept.type() != null) {
-            json.set("isa", concept.type().getName());
+            json.set("sub", concept.asType().superType().getName());
+        } else {
+            json.set("isa", concept.asInstance().type().getName());
         }
 
         if (concept.isResource()) {

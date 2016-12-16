@@ -1,0 +1,5 @@
+insert $x isa pokemon
+    has description <identifier>
+    has pokedex-no <id>
+    has height @int(height)
+    has weight @int(weight);

@@ -20,6 +20,7 @@ package ai.grakn.test.graql.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
@@ -93,5 +94,50 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
         Map<String, Concept> emptyResult = Maps.newHashMap();
 
         assertEquals("{}", printer.graqlString(emptyResult));
+    }
+
+    @Test
+    public void testType() {
+        Printer printer = Printers.graql();
+
+        Type production = graph.getEntityType("production");
+
+        String productionString = printer.graqlString(production);
+
+        assertThat(productionString, containsString("type-name"));
+        assertThat(productionString, containsString("production"));
+        assertThat(productionString, containsString("sub"));
+        assertThat(productionString, containsString("entity"));
+        assertThat(productionString, not(containsString("isa")));
+        assertThat(productionString, not(containsString("entity-type")));
+    }
+
+    @Test
+    public void testEntityType() {
+        Printer printer = Printers.graql();
+
+        Type entity = graph.admin().getMetaEntityType();
+
+        String entityString = printer.graqlString(entity);
+
+        assertThat(entityString, containsString("type-name"));
+        assertThat(entityString, containsString("entity"));
+        assertThat(entityString, containsString("sub"));
+        assertThat(entityString, containsString("concept"));
+        assertThat(entityString, not(containsString("isa")));
+    }
+
+    @Test
+    public void testConcept() {
+        Printer printer = Printers.graql();
+
+        Type concept = graph.admin().getMetaConcept();
+
+        String conceptString = printer.graqlString(concept);
+
+        assertThat(conceptString, containsString("type-name"));
+        assertThat(conceptString, containsString("concept"));
+        assertThat(conceptString, not(containsString("sub")));
+        assertThat(conceptString, not(containsString("isa")));
     }
 }

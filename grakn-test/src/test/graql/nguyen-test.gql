@@ -4,33 +4,33 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type
+"entity2" sub entity
     has-resource index;
-"a-entity" sub entity;
-"b-entity" sub entity;
-"S" sub entity;
+"a-entity" sub entity2;
+"b-entity" sub entity2;
+"S" sub entity2;
 
-"R-rA" isa role-type;
-"R-rB" isa role-type;
-"R" isa relation-type, has-role R-rA, has-role R-rB;
-entity plays-role R-rA plays-role R-rB;
+"R-rA" sub role;
+"R-rB" sub role;
+"R" sub relation, has-role R-rA, has-role R-rB;
+entity2 plays-role R-rA plays-role R-rB;
 
-"N-rA" isa role-type;
-"N-rB" isa role-type;
-"N" isa relation-type, has-role N-rA, has-role N-rB;
-entity plays-role N-rA plays-role N-rB;
+"N-rA" sub role;
+"N-rB" sub role;
+"N" sub relation, has-role N-rA, has-role N-rB;
+entity2 plays-role N-rA plays-role N-rB;
 
-"Q-rA" isa role-type;
-"Q-rB" isa role-type;
-"Q" isa relation-type, has-role Q-rA, has-role Q-rB;
-entity plays-role Q-rA plays-role Q-rB;
+"Q-rA" sub role;
+"Q-rB" sub role;
+"Q" sub relation, has-role Q-rA, has-role Q-rB;
+entity2 plays-role Q-rA plays-role Q-rB;
 
-"P-rA" isa role-type;
-"P-rB" isa role-type;
-"P" isa relation-type, has-role P-rA, has-role P-rB;
-entity plays-role P-rA plays-role P-rB;
+"P-rA" sub role;
+"P-rB" sub role;
+"P" sub relation, has-role P-rA, has-role P-rB;
+entity2 plays-role P-rA plays-role P-rB;
 
-"index" isa resource-type, datatype string;
+"index" sub resource, datatype string;
 
 ####################################################
 ##################RULES#############################

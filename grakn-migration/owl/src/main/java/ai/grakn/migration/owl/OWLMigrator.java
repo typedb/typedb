@@ -26,6 +26,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;
@@ -153,7 +154,7 @@ public class OWLMigrator {
     public EntityType entityType(OWLClass owlclass) {
         EntityType type = graph.putEntityType(namer.classEntityTypeName(owlclass.getIRI()));
         EntityType thing = owlThingEntityType();
-        if (type.superType() == null && !type.equals(thing))
+        if (Schema.MetaSchema.isMetaName(type.superType().getName()) && !type.equals(thing))
             type.superType(thing);
         return type;
     }

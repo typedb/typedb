@@ -18,25 +18,25 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 
 /**
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(Vertex v, RuleType type, AbstractGraknGraph graknGraph, Pattern lhs, Pattern rhs) {
-        super(v, type, graknGraph);
-
-        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
-        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
+    RuleImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs) {
+        super(graknGraph, v, type);
+        lhs.ifPresent(l -> setImmutableProperty(Schema.ConceptProperty.RULE_LHS, l, getLHS(), Pattern::toString));
+        rhs.ifPresent(r -> setImmutableProperty(Schema.ConceptProperty.RULE_RHS, r, getRHS(), Pattern::toString));
     }
 
     //TODO: Fill out details on this method

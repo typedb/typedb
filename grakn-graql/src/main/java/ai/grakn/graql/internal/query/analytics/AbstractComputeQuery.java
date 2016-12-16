@@ -21,7 +21,8 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -126,9 +127,15 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subGraph.isEmpty()) {
-            graph.admin().getMetaEntityType().instances().forEach(type -> this.subTypeNames.add(type.asType().getName()));
-            graph.admin().getMetaResourceType().instances().forEach(type -> this.subTypeNames.add(type.asType().getName()));
-            graph.admin().getMetaRelationType().instances().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            EntityType metaEntityType = graph.admin().getMetaEntityType();
+            metaEntityType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            ResourceType<?> metaResourceType = graph.admin().getMetaResourceType(); //Yay for losing the type
+            metaResourceType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            RelationType metaRelationType = graph.admin().getMetaRelationType();
+            metaRelationType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            subTypeNames.remove(metaEntityType.getName());
+            subTypeNames.remove(metaResourceType.getName());
+            subTypeNames.remove(metaRelationType.getName());
             this.subTypeNames.removeAll(CommonOLAP.analyticsElements);
         } else {
             for (Type type : subGraph) {
@@ -151,8 +158,8 @@ public abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     boolean verticesExistInSubgraph(String... ids) {
         for (String id : ids) {
-            Concept concept = this.graph.get().getConcept(id);
-            if (concept == null || !subTypeNames.contains(concept.type().getName())) return false;
+            Instance instance = this.graph.get().getConcept(id);
+            if (instance == null || !subTypeNames.contains(instance.type().getName())) return false;
         }
         return true;
     }

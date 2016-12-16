@@ -280,7 +280,7 @@ public class RelationTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation2.toString()))
+                containsString(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()))
         ));
 
         graknGraph.commit();

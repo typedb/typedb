@@ -29,6 +29,7 @@ import static ai.grakn.graql.Graql.var;
 
 /**
  * Map Grakn Core type to equivalent Graql representation
+ * @author alexandraorth
  */
 public class TypeMapper {
 
@@ -110,7 +111,13 @@ public class TypeMapper {
      * @return Var containing basic information about the given type
      */
     private static Var formatBase(Type type) {
-        Var var = var().name(type.getName()).isa(type.type().getName());
+        Var var = var().name(type.getName());
+
+        Type superType = type.superType();
+        if (type.superType() != null) {
+            var.sub(superType.getName());
+        }
+
         var = playsRoles(var, type);
         var = isAbstract(var, type);
 
@@ -159,6 +166,11 @@ public class TypeMapper {
      * @return var with appropriate datatype
      */
     private static Var datatype(Var var, ResourceType type) {
-        return var.datatype(type.getDataType());
+        ResourceType.DataType dataType = type.getDataType();
+        if (dataType != null) {
+            return var.datatype(dataType);
+        } else {
+            return var;
+        }
     }
 }

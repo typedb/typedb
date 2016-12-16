@@ -167,7 +167,7 @@ public class PropertyMapper {
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
-        atoms.add(new TypeAtom(resVar, parent));
+        atoms.add(new TypeAtom(resVar, predicate, parent));
         if (predicate != null) atoms.add(predicate);
         return atoms;
     }
@@ -181,7 +181,7 @@ public class PropertyMapper {
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
-        atoms.add(new TypeAtom(resVar, parent));
+        atoms.add(new TypeAtom(resVar, predicate, parent));
         if (predicate != null) atoms.add(predicate);
         return atoms;
     }
@@ -223,7 +223,7 @@ public class PropertyMapper {
 
         //isa part
         VarAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
-        atoms.add(new TypeAtom(scVar, parent));
+        atoms.add(new TypeAtom(scVar, predicate, parent));
         if (predicate != null) atoms.add(predicate);
         return atoms;
     }

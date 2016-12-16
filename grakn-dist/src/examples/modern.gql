@@ -1,9 +1,9 @@
 insert
-name isa resource-type
+name sub resource
     datatype string;
-age isa resource-type
+age sub resource
 	datatype long;
-person isa entity-type;
+person sub entity;
 person has-resource name;
 person has-resource age;
 
@@ -20,16 +20,16 @@ $josh has age 32;
 $vadas has age 27;
 $peter has age 35;
 
-weight isa resource-type
+weight sub resource
 	datatype double;
 
-knower isa role-type;
-known-about isa role-type;
+knower sub role;
+known-about sub role;
 
 person plays-role knower;
 person plays-role known-about;
 
-knows isa relation-type
+knows sub relation
 	has-role knower
 	has-role known-about
 	has-resource weight;
@@ -37,9 +37,9 @@ knows isa relation-type
 (knower: $marko, known-about: $josh) isa knows has weight 1.0;
 (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
 
-lang isa resource-type
+lang sub resource
 	datatype string;
-software isa entity-type;
+software sub entity;
 software has-resource name;
 software has-resource lang;
 
@@ -52,13 +52,13 @@ $ripple has name "ripple";
 $lop has lang "java";
 $ripple has lang "java";
 
-programmer isa role-type;
-programmed isa role-type;
+programmer sub role;
+programmed sub role;
 
 person plays-role programmer;
 software plays-role programmed;
 
-programming isa relation-type
+programming sub relation
 	has-role programmer
 	has-role programmed
 	has-resource weight;

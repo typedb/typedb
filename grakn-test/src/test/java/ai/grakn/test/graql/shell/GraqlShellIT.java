@@ -21,6 +21,7 @@ package ai.grakn.test.graql.shell;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import mjson.Json;
 import org.junit.AfterClass;
@@ -95,7 +96,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testExecuteOption() throws Exception {
-        String result = testShell("", "-e", "match $x isa role-type; ask;");
+        String result = testShell("", "-e", "match $x isa entity; ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -112,34 +113,34 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testMatchQuery() throws Exception {
-        String[] result = testShell("match $x isa type;\nexit").split("\r\n?|\n");
+        String[] result = testShell("match $x sub concept;\nexit").split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x isa type;", result[4]);
+        assertEquals(">>> match $x sub concept;", result[4]);
         assertTrue(result.length > 5);
     }
 
     @Test
     public void testAskQuery() throws Exception {
-        String result = testShell("match $x isa relation-type; ask;\n");
+        String result = testShell("match $x isa relation; ask;\n");
         assertThat(result, containsString("False"));
     }
 
     @Test
     public void testInsertQuery() throws Exception {
         String result = testShell(
-                "match $x isa entity-type; ask;\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask;\n"
+                "match $x isa entity; ask;\ninsert $x isa entity;\nmatch $x isa entity; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
 
     @Test
     public void testInsertOutput() throws Exception {
-        String[] result = testShell("insert a-type isa entity-type; $thingy isa a-type;\n").split("\r\n?|\n");
+        String[] result = testShell("insert X sub entity; $thingy isa X;\n").split("\r\n?|\n");
 
         // Expect six lines output - four for the license, one for the query, no results and a new prompt
         assertEquals(6, result.length);
-        assertEquals(">>> insert a-type isa entity-type; $thingy isa a-type;", result[4]);
+        assertEquals(">>> insert X sub entity; $thingy isa X;", result[4]);
         assertEquals(">>> ", result[5]);
     }
 
@@ -167,14 +168,14 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testAutocompleteFill() throws Exception {
-        String result = testShell("match $x sub typ\t;\n");
-        assertThat(result, containsString("\"relation-type\""));
+        String result = testShell("match $x sub concep\t;\n");
+        assertThat(result, containsString(Schema.MetaSchema.RELATION.getName()));
     }
 
     @Test
     public void testReasonerOff() throws Exception {
         String result = testShell(
-                "insert man isa entity-type has-resource name; person isa entity-type; name isa resource-type datatype string;\n" +
+                "insert man sub entity has-resource name; person sub entity; name sub resource datatype string;\n" +
                         "insert has name 'felix' isa man;\n" +
                         "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
                         "match isa person, has name $x;\n"
@@ -192,7 +193,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testReasoner() throws Exception {
         String result = testShell(
-                "insert man isa entity-type has-resource name; person isa entity-type; name isa resource-type datatype string;\n" +
+                "insert man sub entity has-resource name; person sub entity; name sub resource datatype string;\n" +
                 "insert has name 'felix' isa man;\n" +
                 "match isa person, has name $x;\n" +
                 "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
@@ -223,14 +224,14 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testInvalidQuery() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("insert movie isa entity-type; $moon isa movie; $europa isa $moon;\n", err);
+        testShell("insert movie sub entity; $moon isa movie; $europa isa $moon;\n", err);
 
         assertThat(err.toString(), allOf(containsString("not"), containsString("type")));
     }
 
     @Test
     public void testComputeCount() throws Exception {
-        String result = testShell("insert X isa entity-type; $a isa X; $b isa X; $c isa X;\ncommit\ncompute count;\n");
+        String result = testShell("insert X sub entity; $a isa X; $b isa X; $c isa X;\ncommit\ncompute count;\n");
         assertThat(result, containsString("\n3\n"));
     }
 
@@ -239,22 +240,22 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String[] result = testShell("insert E isa entity-type;\nrollback\nmatch $x isa entity-type;\n").split("\n");
+        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x sub entity;\n").split("\n");
 
         // Make sure there are no results for match query
-        assertEquals(">>> match $x isa entity-type", result[result.length-2]);
+        assertEquals(">>> match $x sub entity", result[result.length-2]);
         assertEquals(">>> ", result[result.length-1]);
     }
 
     @Test
     public void testGraqlOutput() throws Exception {
-        String result = testShell("", "-e", "match $x sub type;", "-o", "graql");
-        assertThat(result, allOf(containsString("$x"), containsString("entity-type")));
+        String result = testShell("", "-e", "match $x sub concept;", "-o", "graql");
+        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getName())));
     }
 
     @Test
     public void testJsonOutput() throws Exception {
-        String[] result = testShell("", "-e", "match $x sub type;", "-o", "json").split("\n");
+        String[] result = testShell("", "-e", "match $x sub concept;", "-o", "json").split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
         Json x = json.at("x");
@@ -264,7 +265,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testHALOutput() throws Exception {
-        String[] result = testShell("", "-e", "match $x sub type;", "-o", "hal").split("\n");
+        String[] result = testShell("", "-e", "match $x sub concept;", "-o", "hal").split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
         Json x = json.at("x");
@@ -277,17 +278,18 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String[] result = testShell("insert E isa entity-type;\nrollback;\nmatch $x isa entity-type;\n").split("\n");
+        String result = testShell("insert $x isa entity;\nrollback;\nmatch $x isa entity;\n");
+        String[] lines = result.split("\n");
 
         // Make sure there are no results for match query
-        assertEquals(">>> match $x isa entity-type", result[result.length-2]);
-        assertEquals(">>> ", result[result.length-1]);
+        assertEquals(result, ">>> match $x isa entity;", lines[lines.length-2]);
+        assertEquals(result, ">>> ", lines[lines.length-1]);
     }
 
     @Test
     public void testErrorWhenEngineNotRunning() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("", err, "-u", "localhost:7654");
+        testShell("", err, "-r", "localhost:7654");
 
         assertFalse(err.toString().isEmpty());
     }
@@ -304,28 +306,28 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testLargeQuery() throws Exception {
         String value = Strings.repeat("really-", 100000) + "long-value";
-        String[] result = testShell("insert X isa resource-type datatype string; value '" + value + "' isa X;\nmatch $x isa X;\n").split("\n");
+        String[] result = testShell("insert X sub resource datatype string; value '" + value + "' isa X;\nmatch $x isa X;\n").split("\n");
         assertThat(result[result.length-2], allOf(containsString("$x"), containsString(value)));
     }
 
     @Test
     public void testCommitError() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("insert bob isa relation-type;\ncommit;\nmatch $x isa relation-type;\n", err);
+        String out = testShell("insert bob sub relation;\ncommit;\nmatch $x sub relation;\n", err);
         assertFalse(out, err.toString().isEmpty());
     }
 
     @Test
     public void testCommitErrorExecuteOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("", err, "-e", "insert bob isa relation-type;");
+        String out = testShell("", err, "-e", "insert bob sub relation;");
         assertFalse(out, err.toString().isEmpty());
     }
 
     @Test
     public void testDefaultDontDisplayResources() throws Exception {
         String result = testShell(
-                "insert X isa entity-type; R isa resource-type datatype string; X has-resource R; isa X has R 'foo';\n" +
+                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';\n" +
                 "match $x isa X;\n"
         );
 
@@ -336,7 +338,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testDisplayResourcesCommand() throws Exception {
         String result = testShell(
-                "insert X isa entity-type; R isa resource-type datatype string; X has-resource R; isa X has R 'foo';\n" +
+                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';\n" +
                 "display R;\n" +
                 "match $x isa X;\n"
         );
@@ -357,7 +359,8 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     private String testShell(String input, String... args) throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String result = testShell(input, err, args);
-        assertTrue(err.toString(), err.toString().isEmpty());
+        String errMessage = err.toString();
+        assertTrue("Error: \"" + errMessage + "\"", errMessage.isEmpty());
         return result;
     }
 

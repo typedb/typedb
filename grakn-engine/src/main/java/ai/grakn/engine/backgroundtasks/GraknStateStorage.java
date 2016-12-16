@@ -27,6 +27,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.util.Schema;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -154,7 +155,7 @@ public class GraknStateStorage implements StateStorage {
 
         TaskState state = new TaskState(name.getValue().toString());
 
-        List<Map<String, Concept>> resources = graph.graql().match(var().rel(var().id(id)).rel(var("r").isa(var().isa("resource-type"))))
+        List<Map<String, Concept>> resources = graph.graql().match(var().rel(var().id(id)).rel(var("r").isa(var().sub(Schema.MetaSchema.RESOURCE.getName()))))
                 .select("r")
                 .execute();
 

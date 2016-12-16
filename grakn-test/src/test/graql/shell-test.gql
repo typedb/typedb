@@ -1,1 +1,1 @@
-insert movie isa entity-type;
+insert movie sub entity;

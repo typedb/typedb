@@ -42,7 +42,7 @@ public class SchemaTest {
         Schema.EdgeLabel has_scope = Schema.EdgeLabel.valueOf("HAS_SCOPE");
         Schema.EdgeLabel casting = Schema.EdgeLabel.valueOf("CASTING");
 
-        Schema.MetaSchema role_type = Schema.MetaSchema.valueOf("ROLE_TYPE");
+        Schema.MetaSchema role_type = Schema.MetaSchema.valueOf("ROLE");
 
         // Basic Edges
         assertEquals(Schema.EdgeLabel.ISA, isa);
@@ -53,7 +53,7 @@ public class SchemaTest {
         assertEquals(Schema.EdgeLabel.CASTING, casting);
 
         //Internal Vertex
-        assertEquals(Schema.MetaSchema.ROLE_TYPE, role_type);
+        assertEquals(Schema.MetaSchema.ROLE, role_type);
 
     }
 }

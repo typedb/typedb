@@ -20,9 +20,6 @@ package ai.grakn.test.graql.examples;
 
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.test.AbstractRollbackGraphTest;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.Before;
@@ -44,8 +41,8 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
     @Test
     public void testPhilosophers() {
         load(
-                "insert person isa entity-type;",
-                "insert name isa resource-type, datatype string;",
+                "insert person sub entity;",
+                "insert name sub resource, datatype string;",
                 "insert person has-resource name;",
                 "insert isa person, has name 'Socrates';",
                 "insert isa person, has name 'Plato';",
@@ -56,7 +53,7 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
         assertEquals(4, qb.<MatchQuery>parse("match $p isa person;").stream().count());
 
         load(
-                "insert school isa entity-type, has-resource name;",
+                "insert school sub entity, has-resource name;",
                 "insert isa school, has name 'Peripateticism';",
                 "insert isa school, has name 'Platonism';",
                 "insert isa school, has name 'Idealism';",
@@ -66,9 +63,9 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
         assertEquals(1, qb.<MatchQuery>parse("match $x has name 'Cynicism';").stream().count());
 
         load(
-                "insert practice isa relation-type;",
-                "insert philosopher isa role-type;",
-                "insert philosophy isa role-type;",
+                "insert practice sub relation;",
+                "insert philosopher sub role;",
+                "insert philosophy sub role;",
                 "insert practice has-role philosopher, has-role philosophy;",
                 "insert person plays-role philosopher;",
                 "insert school plays-role philosophy;",
@@ -84,9 +81,9 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
         );
 
         load(
-                "insert education isa relation-type;",
-                "insert teacher isa role-type;",
-                "insert student isa role-type;",
+                "insert education sub relation;",
+                "insert teacher sub role;",
+                "insert student sub role;",
                 "insert education has-role teacher, has-role student;",
                 "insert person plays-role teacher, plays-role student;",
                 "match $socrates has name 'Socrates'; $plato has name 'Plato'; insert (teacher: $socrates, student: $plato) isa education;",
@@ -95,8 +92,8 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
         );
 
         load(
-                "insert title isa resource-type, datatype string;",
-                "insert epithet isa resource-type, datatype string;",
+                "insert title sub resource, datatype string;",
+                "insert epithet sub resource, datatype string;",
                 "insert person has-resource title;",
                 "insert person has-resource epithet;"
         );
@@ -114,12 +111,12 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
         assertEquals("Alexander", pharaoh.iterator().next().get("x").asResource().getValue());
 
         load(
-                "insert knowledge isa relation-type;",
-                "insert thinker isa role-type;",
-                "insert thought isa role-type;",
+                "insert knowledge sub relation;",
+                "insert thinker sub role;",
+                "insert thought sub role;",
                 "insert knowledge has-role thinker, has-role thought;",
-                "insert fact isa entity-type, plays-role thought;",
-                "insert description isa resource-type, datatype string;",
+                "insert fact sub entity, plays-role thought;",
+                "insert description sub resource, datatype string;",
                 "insert fact has-resource name, has-resource description;",
                 "insert person plays-role thinker;",
                 "insert isa fact, has name 'sun-fact', has description 'The Sun is bigger than the Earth';",

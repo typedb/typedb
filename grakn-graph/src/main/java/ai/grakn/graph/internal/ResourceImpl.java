@@ -18,9 +18,9 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -37,12 +38,9 @@ import java.util.regex.Pattern;
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
-    ResourceImpl(Vertex v, ResourceType type, AbstractGraknGraph graknGraph, D value) {
-        super(v, type, graknGraph);
-        setValue(value);
-    }
-    ResourceImpl(Vertex v, ResourceType type, AbstractGraknGraph graknGraph) {
-        super(v, type, graknGraph);
+    ResourceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<ResourceType<D>> type, Optional<D> value) {
+        super(graknGraph, v, type);
+        value.ifPresent(this::setValue);
     }
 
     /**

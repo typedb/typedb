@@ -30,6 +30,13 @@ import java.util.Collection;
 public interface Instance extends Concept{
     //------------------------------------- Accessors ----------------------------------
     /**
+     * Return the Type of the Concept.
+     *
+     * @return A Type which is the type of this concept. This concept is an instance of that type.
+     */
+    Type type();
+
+    /**
      * Retrieves a Relations which the Instance takes part in, which may optionally be narrowed to a particular set
      * according to the RoleType you are interested in.
      * @see RoleType
