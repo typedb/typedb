@@ -118,7 +118,7 @@ public class DegreeTest extends AbstractGraphTest {
 
         // compute degrees
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        assertTrue(!degrees.isEmpty());
+        assertEquals(3, degrees.size());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
                     assertTrue(correctDegrees.containsKey(id));
@@ -148,6 +148,27 @@ public class DegreeTest extends AbstractGraphTest {
                     assertEquals(correctDegrees.get(id), entry.getKey());
                 }
         ));
+        degrees3 = graph.graql().compute().degree().of("thing").execute();
+        assertEquals(2, degrees3.size());
+        assertEquals(2, degrees3.get(1L).size());
+        assertEquals(1, degrees3.get(3L).size());
+
+        degrees3 = graph.graql().compute().degree().of("thing", "related").execute();
+        assertEquals(3, degrees3.size());
+        assertEquals(2, degrees3.get(1L).size());
+        assertEquals(3, degrees3.get(2L).size());
+        assertEquals(1, degrees3.get(3L).size());
+
+        degrees3 = graph.graql().compute().degree().of().execute();
+        assertEquals(3, degrees3.size());
+        assertEquals(3, degrees3.get(1L).size());
+        assertEquals(3, degrees3.get(2L).size());
+        assertEquals(1, degrees3.get(3L).size());
+
+        degrees3 = graph.graql().compute().degree().of("thing").in("thing", "related").execute();
+        assertEquals(2, degrees3.size());
+        assertEquals(2, degrees3.get(1L).size());
+        assertEquals(1, degrees3.get(3L).size());
     }
 
     @Test

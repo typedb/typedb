@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.analytics.MeanMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -44,7 +45,7 @@ public class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> imp
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes),
+        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes, Collections.emptySet()),
                 new MeanMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> mean = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);

@@ -159,7 +159,7 @@ public class Analytics {
         allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes, Collections.emptySet()),
                 new MinMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("MinMapReduce is done");
@@ -182,7 +182,7 @@ public class Analytics {
         allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes, Collections.emptySet()),
                 new MaxMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("MaxMapReduce is done");
@@ -205,7 +205,7 @@ public class Analytics {
         allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes, Collections.emptySet()),
                 new SumMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("SumMapReduce is done");
@@ -228,7 +228,7 @@ public class Analytics {
         allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes, Collections.emptySet()),
                 new MeanMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> mean = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
@@ -274,7 +274,7 @@ public class Analytics {
         allSubtypes.addAll(statisticsResourceTypeNames);
 
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes, Collections.emptySet()),
                 new StdMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
@@ -375,7 +375,7 @@ public class Analytics {
     public Map<Long, Set<String>> degrees() {
         LOGGER.info("DegreeVertexProgram is called");
         GraknComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypeNames),
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypeNames, Collections.emptySet()),
                 new DegreeDistributionMapReduce(subtypeNames));
         LOGGER.info("DegreeVertexProgram is done");
         return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -398,7 +398,7 @@ public class Analytics {
         waitOnMutateResourceOntology(resourceType);
 
         GraknComputer computer = getGraphComputer();
-        computer.compute(new DegreeAndPersistVertexProgram(subtypeNames, keySpace));
+        computer.compute(new DegreeAndPersistVertexProgram(subtypeNames, keySpace, Collections.emptySet()));
         LOGGER.info("DegreeVertexProgram is done");
     }
 
