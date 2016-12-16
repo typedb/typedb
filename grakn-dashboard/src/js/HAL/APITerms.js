@@ -20,13 +20,15 @@
  * Keys used in HAL API JSON Objects
  */
 
-export const RELATION_TYPE = "relation";
-export const TYPE_TYPE = "concept";
-export const RULE_TYPE = "rule";
-export const RESOURCE_TYPE = "resource";
-export const ROLE_TYPE = "role";
-export const ENTITY_TYPE = "entity";
+export const RELATION_TYPE = "RELATION";
+export const TYPE_TYPE = "TYPE";
+export const RULE_TYPE = "RULE";
+export const RESOURCE_TYPE = "RESOURCE";
+export const ROLE_TYPE = "ROLE";
+export const ENTITY_TYPE = "ENTITY";
 export const GENERATED_RELATION_TYPE = "generated-relation";
+
+export const ROOT_CONCEPT="concept";
 
 export const KEY_EMPTY_ROLE_NAME = "EMPTY-GRAKN-ROLE";
 export const KEY_ID = "_id";

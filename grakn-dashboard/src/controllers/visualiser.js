@@ -97,10 +97,8 @@ export default {
     methods: {
 
         onLoadOntology() {
-            let query_isa = "match $x isa " + API.TYPE_TYPE + ";";
-            let query_sub = "match $x sub " + API.TYPE_TYPE + ";";
+            let query_sub = "match $x sub " + API.ROOT_CONCEPT + ";";
             EngineClient.graqlHAL(query_sub, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
-            EngineClient.graqlHAL(query_isa, this.onGraphResponse, this.useReasoner,this.materialiseReasoner);
         },
 
         singleClick(param) {
