@@ -48,6 +48,11 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
+    <!--ASCII TEXT-->
+    <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
     <logger name="ai.grakn.migration.base.io.MigrationLoader" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
@@ -55,9 +60,6 @@
     <logger name="ai.grakn.migration.base.AbstractMigrator" level="WARN">
         <appender-ref ref="STDOUT"/>
     </logger>>
-
-    <!--<logger name="ai.grakn.engine." level="WARN">-->
-    <!--</logger>-->
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->
     <!--<logger name="ai.grakn.engine.postprocessing.PostProcessing" level="DEBUG">-->
