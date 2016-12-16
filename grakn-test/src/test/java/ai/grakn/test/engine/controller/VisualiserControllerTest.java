@@ -37,6 +37,8 @@ import org.junit.rules.ExpectedException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Properties;
 
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
@@ -86,6 +88,22 @@ public class VisualiserControllerTest extends AbstractGraphTest {
         }
     }
 
+    @Test
+    public void testOntologyRetrieval(){
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .get(REST.WebPath.GRAPH_ONTOLOGY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+
+        //noinspection unchecked
+        Map<String, ArrayList> resultArray = (Map<String, ArrayList>) Json.read(response.getBody().asString()).getValue();
+
+        assertEquals(4,resultArray.size());
+        assertEquals(9,resultArray.get("entities").size());
+        assertEquals(35,resultArray.get("roles").size());
+        assertEquals(19,resultArray.get("resources").size());
+        assertEquals(10,resultArray.get("relations").size());
+    }
 
     @Test
     public void testPersonViaMatchAndId(){
