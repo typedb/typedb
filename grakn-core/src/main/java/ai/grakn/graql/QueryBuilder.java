@@ -59,16 +59,6 @@ public interface QueryBuilder {
      */
     ComputeQueryBuilder compute();
 
-    //TODO: Get rid of the three compute methods with parameters
-    @Deprecated
-    ComputeQuery compute(String computeMethod);
-
-    @Deprecated
-    ComputeQuery compute(String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds);
-
-    @Deprecated
-    ComputeQuery compute(String computeMethod, String from, String to, Set<String> subTypeIds);
-
     /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns

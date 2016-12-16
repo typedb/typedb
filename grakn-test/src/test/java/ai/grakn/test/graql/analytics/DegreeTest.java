@@ -118,7 +118,7 @@ public class DegreeTest extends AbstractGraphTest {
 
         // compute degrees
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        assertTrue(!degrees.isEmpty());
+        assertEquals(3, degrees.size());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
                     assertTrue(correctDegrees.containsKey(id));
@@ -137,11 +137,56 @@ public class DegreeTest extends AbstractGraphTest {
                 }
         ));
 
+        degrees2 = graph.graql().compute().degree().of("thing").execute();
+        assertEquals(2, degrees2.size());
+        assertEquals(2, degrees2.get(1L).size());
+        assertEquals(1, degrees2.get(3L).size());
+        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
+
+        degrees2 = graph.graql().compute().degree().of("thing", "related").execute();
+        assertEquals(3, degrees2.size());
+        assertEquals(2, degrees2.get(1L).size());
+        assertEquals(3, degrees2.get(2L).size());
+        assertEquals(1, degrees2.get(3L).size());
+        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
+
+        degrees2 = graph.graql().compute().degree().of().execute();
+        assertEquals(3, degrees2.size());
+        assertEquals(3, degrees2.get(1L).size());
+        assertEquals(3, degrees2.get(2L).size());
+        assertEquals(1, degrees2.get(3L).size());
+        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
+
         // compute degrees on subgraph
-        graph = factory.getGraph();
         Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in("thing", "related").execute();
         correctDegrees.put(id3, 1L);
         assertTrue(!degrees3.isEmpty());
+        degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
+
+        degrees3 = graph.graql().compute().degree().of("thing").in("thing", "related").execute();
+        assertEquals(2, degrees3.size());
+        assertEquals(2, degrees3.get(1L).size());
+        assertEquals(1, degrees3.get(3L).size());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
                     assertTrue(correctDegrees.containsKey(id));
@@ -186,19 +231,28 @@ public class DegreeTest extends AbstractGraphTest {
         graph.commit();
 
         // compute degrees on subgraph
-        Graql.compute().degree().in("thing", "related").persist().withGraph(graph).execute();
+        Graql.compute().degree().of("thing").in("thing", "related").persist().withGraph(graph).execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
-        correctDegrees.clear();
         correctDegrees.put(entity1, 1L);
         correctDegrees.put(entity2, 3L);
         correctDegrees.put(entity3, 1L);
+
+        // assert persisted degrees are correct
+        graph = factory.getGraph();
+        checkDegrees(correctDegrees);
+        checkNoDegree(id1, id2, id3, entity4);
+
+        Graql.compute().degree().in("thing", "related").persist().withGraph(graph).execute();
+
         correctDegrees.put(id1, 2L);
         correctDegrees.put(id2, 2L);
         correctDegrees.put(id3, 1L);
 
         // assert persisted degrees are correct
+        graph = factory.getGraph();
         checkDegrees(correctDegrees);
+        checkNoDegree(entity4);
 
         // compute again and again ...
         long numVertices = 0;
@@ -234,6 +288,14 @@ public class DegreeTest extends AbstractGraphTest {
                     graph.<Instance>getConcept(entry.getKey()).resources(graph.getResourceType(AbstractComputeQuery.degree));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(), resources.iterator().next().getValue());
+        });
+    }
+
+    private void checkNoDegree(String... ids) {
+        Sets.newHashSet(ids).forEach(id -> {
+            Collection<Resource<?>> resources =
+                    graph.<Instance>getConcept(id).resources(graph.getResourceType(AbstractComputeQuery.degree));
+            assertEquals(0, resources.size());
         });
     }
 

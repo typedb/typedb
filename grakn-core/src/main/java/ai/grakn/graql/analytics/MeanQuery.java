@@ -24,6 +24,9 @@ import ai.grakn.graql.ComputeQuery;
 import java.util.Collection;
 import java.util.Optional;
 
+/**
+ * Compute the mean of the selected resource-type.
+ */
 public interface MeanQuery extends ComputeQuery<Optional<Double>> {
 
     /**

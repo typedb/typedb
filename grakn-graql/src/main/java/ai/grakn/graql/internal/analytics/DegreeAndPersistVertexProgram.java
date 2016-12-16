@@ -20,24 +20,43 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.util.Schema;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
 
     private static final String KEYSPACE_KEY = "keyspace";
+    private static final String OF_TYPE_NAMES = "degreeAndPersistVertexProgram.ofTypeNames";
 
     private BulkResourceMutate bulkResourceMutate;
+    private Set<String> ofTypeNames = new HashSet<>();
 
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(Set<String> types, String keySpace) {
+    public DegreeAndPersistVertexProgram(Set<String> types, String keySpace, Set<String> ofTypeNames) {
         persistentProperties.put(KEYSPACE_KEY, keySpace);
         selectedTypes = types;
+        this.ofTypeNames = ofTypeNames;
+    }
+
+    @Override
+    public void storeState(final Configuration configuration) {
+        super.storeState(configuration);
+        ofTypeNames.forEach(type -> configuration.addProperty(OF_TYPE_NAMES + "." + type, type));
+    }
+
+    @Override
+    public void loadState(final Graph graph, final Configuration configuration) {
+        super.loadState(graph, configuration);
+        configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
+                ofTypeNames.add((String) configuration.getProperty(OF_TYPE_NAMES + "." + key)));
     }
 
     @Override
@@ -54,8 +73,12 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
                 break;
 
             case 2:
-                if (selectedTypes.contains(Utility.getVertexType(vertex)))
-                    bulkResourceMutate.putValue(vertex, getEdgeCount(messenger));
+                String type = Utility.getVertexType(vertex);
+                if (selectedTypes.contains(type)) {
+                    if (ofTypeNames.isEmpty() || ofTypeNames.contains(type))
+                        bulkResourceMutate.putValue(vertex, getEdgeCount(messenger));
+
+                }
                 break;
         }
     }

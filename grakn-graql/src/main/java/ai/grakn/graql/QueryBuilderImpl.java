@@ -128,24 +128,6 @@ public class QueryBuilderImpl implements QueryBuilder {
         return Queries.compute(graph);
     }
 
-    @Deprecated
-    @Override
-    public ComputeQuery compute(String computeMethod) {
-        return Queries.compute(graph, computeMethod);
-    }
-
-    @Deprecated
-    @Override
-    public ComputeQuery compute(String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
-        return Queries.compute(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
-    }
-
-    @Deprecated
-    @Override
-    public ComputeQuery compute(String computeMethod, String from, String to, Set<String> subTypeIds) {
-        return Queries.compute(graph, computeMethod, from, to, subTypeIds);
-    }
-
     /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns

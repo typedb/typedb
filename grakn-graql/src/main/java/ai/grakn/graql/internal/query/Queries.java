@@ -84,18 +84,6 @@ public class Queries {
         return new ComputeQueryBuilderImpl(graph);
     }
 
-    public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod) {
-        return new ComputeQueryImpl(graph, computeMethod, new HashSet<>(), new HashSet<>(), null, null);
-    }
-
-    public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod, String from, String to, Set<String> subTypeIds) {
-        return new ComputeQueryImpl(graph, computeMethod, subTypeIds, new HashSet<>(), from, to);
-    }
-
-    public static ComputeQuery compute(Optional<GraknGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
-        return new ComputeQueryImpl(graph, computeMethod, subTypeIds, statisticsResourceTypeIds, null, null);
-    }
-
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {
         return new AggregateQueryImpl<>(matchQuery, aggregate);
     }
