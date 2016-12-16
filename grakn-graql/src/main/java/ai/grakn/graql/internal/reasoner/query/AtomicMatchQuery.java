@@ -147,7 +147,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         return newAnswers;
     }
 
-    public void resolveViaRuleWM(Rule rl, Set<AtomicQuery> subGoals, QueryCache cache){
+    public void resolveViaRule(Rule rl, Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
@@ -159,10 +159,12 @@ public class AtomicMatchQuery extends AtomicQuery{
 
         subGoals.add(this);
         AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-        QueryAnswers subs = childAtomicQuery.answer(subGoals, cache, true);
+        if(!materialise) this.establishRelation(childAtomicQuery);
+        QueryAnswers subs = childAtomicQuery.answer(subGoals, cache, materialise);
         while(atIt.hasNext()){
             childAtomicQuery = new AtomicMatchQuery(atIt.next(), getSelectedNames());
-            QueryAnswers localSubs = childAtomicQuery.answer(subGoals, cache, true);
+            if(!materialise) this.establishRelation(childAtomicQuery);
+            QueryAnswers localSubs = childAtomicQuery.answer(subGoals, cache, materialise);
             subs = subs.join(localSubs);
         }
 
@@ -170,10 +172,16 @@ public class AtomicMatchQuery extends AtomicQuery{
                 .filterNonEquals(ruleBody)
                 .filterVars(ruleHead.getSelectedNames())
                 .filterKnown(this.getAnswers());
-        QueryAnswers newAnswers = new QueryAnswers();
-        newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
 
-        if (!newAnswers.isEmpty()) answers = newAnswers;
+        QueryAnswers newAnswers = new QueryAnswers();
+        if (materialise
+                || (atom.isResource() || atom.isUserDefinedName() && atom.getType().isRelationType() ))
+            newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
+        if (!newAnswers.isEmpty()){
+            if (materialise) answers = newAnswers;
+            else answers = answers.join(newAnswers);
+        }
+
         //TODO do all combinations if roles missing
         QueryAnswers filteredAnswers = answers
                 .filterVars(this.getSelectedNames())
@@ -181,53 +189,6 @@ public class AtomicMatchQuery extends AtomicQuery{
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
-    }
-
-    public void resolveViaRule(Rule rl, Set<AtomicQuery> subGoals, QueryCache cache){
-        Atom atom = this.getAtom();
-        InferenceRule rule = new InferenceRule(rl, graph());
-        rule.unify(atom);
-        Query ruleBody = rule.getBody();
-        AtomicQuery ruleHead = rule.getHead();
-
-        Set<Atom> atoms = ruleBody.selectAtoms();
-        Iterator<Atom> atIt = atoms.iterator();
-
-        subGoals.add(this);
-        Atom at = atIt.next();
-        AtomicQuery childAtomicQuery = new AtomicMatchQuery(at, this.getSelectedNames());
-        this.establishRelation(childAtomicQuery);
-        QueryAnswers subs = childAtomicQuery.answer(subGoals, cache, false);
-        while (atIt.hasNext()) {
-            at = atIt.next();
-            childAtomicQuery = new AtomicMatchQuery(at, this.getSelectedNames());
-            this.establishRelation(childAtomicQuery);
-            QueryAnswers localSubs = childAtomicQuery.answer(subGoals, cache, false);
-            subs = subs.join(localSubs);
-        }
-
-        QueryAnswers answers = this.propagateHeadIdPredicates(ruleHead, subs)
-                .filterNonEquals(ruleBody)
-                .filterVars(ruleHead.getSelectedNames())
-                .filterKnown(this.getAnswers());
-        QueryAnswers newAnswers = new QueryAnswers();
-        if (atom.isResource()
-                || atom.isUserDefinedName() && atom.getType().isRelationType() )
-            newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
-        if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
-
-        QueryAnswers filteredAnswers = answers
-                .filterVars(this.getSelectedNames())
-                .filterIncomplete(this.getSelectedNames());
-        this.getAnswers().addAll(filteredAnswers);
-        this.newAnswers.addAll(filteredAnswers);
-        cache.record(this);
-    }
-
-    @Override
-    public void resolveViaRule(Rule rl, Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
-        if(!materialise) resolveViaRule(rl, subGoals, cache);
-        else resolveViaRuleWM(rl, subGoals, cache);
     }
 
     @Override
@@ -255,16 +216,17 @@ public class AtomicMatchQuery extends AtomicQuery{
         boolean materialise;
         private int dAns = 0;
         private int iter = 0;
-        private QueryCache cache = new QueryCache();
-        private Set<AtomicQuery> subGoals = new HashSet<>();
-        Iterator<Map<String, Concept>> answerIterator = Collections.emptyIterator();
-        Iterator<Rule> ruleIterator = Collections.emptyIterator();
+        private final QueryCache cache = new QueryCache();
+        private final Set<AtomicQuery> subGoals = new HashSet<>();
+        private final Set<Rule> rules;
+        private Iterator<Map<String, Concept>> answerIterator = Collections.emptyIterator();
+        private Iterator<Rule> ruleIterator = Collections.emptyIterator();
 
         public QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
+            rules = outer().getAtom().getApplicableRules();
             lookup(cache);
             answerIterator = outer().newAnswers.iterator();
-            ruleIterator = outer().getAtom().getApplicableRules().iterator();
         }
 
         public Stream<Map<String, Concept>> hasStream(){
@@ -272,34 +234,36 @@ public class AtomicMatchQuery extends AtomicQuery{
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
-        private boolean hasNextRule(){
-            if (ruleIterator.hasNext()) return true;
-            else{
-                ruleIterator = outer().getAtom().getApplicableRules().iterator();
-
-                iter++;
-                if (!materialise) cache.propagateAnswers();
-                return ruleIterator.hasNext();
-            }
-        }
-
+        private boolean hasNextRule(){ return ruleIterator.hasNext();}
         private Rule nextRule(){return ruleIterator.next();}
 
-        private void computeNext(){
+        private void initIteration(){
+            ruleIterator = rules.iterator();
             dAns = size();
-            outer().newAnswers.clear();
             subGoals.clear();
-            Rule rule = nextRule();
-            outer().resolveViaRule(rule, subGoals, cache, materialise);
-            //outer().answer(subGoals, cache, materialise);
-            System.out.println("Atom: " + outer().getAtom() + " iter: " + iter + " rule: " + rule.getId() + " answers: " + size());
+        }
+
+        private void completeIteration(){
+            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + size());
             dAns = size() - dAns;
+            iter++;
+            if (!materialise) cache.propagateAnswers();
+        }
+
+        private void computeNext(){
+            if (!hasNextRule()) initIteration();
+            outer().newAnswers.clear();
+            Rule rule = nextRule();
+            LOG.debug("Resolving rule: " + rule.getId() + " answers: " + size());
+            outer().resolveViaRule(rule, subGoals, cache, materialise);
+            if (!hasNextRule()) completeIteration();
+
             answerIterator = outer().newAnswers.iterator();
         }
 
         public boolean hasNext() {
             if (answerIterator.hasNext()) return true;
-            else if (hasNextRule() && ( dAns != 0 || iter == 0 ) ){
+            else if (dAns != 0 || iter == 0 ){
                 computeNext();
                 return hasNext();
             }
