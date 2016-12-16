@@ -173,7 +173,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
                 .has(Schema.ConceptProperty.NAME.name(), getName())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel());
-                //.union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
 
         traversal.forEachRemaining(vertex -> {
             ConceptImpl<Concept, Type> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
