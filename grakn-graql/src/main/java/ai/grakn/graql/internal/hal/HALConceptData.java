@@ -98,10 +98,6 @@ class HALConceptData {
                 embedType(halResource, instance);
         }
 
-        if (concept.isInstance()) {
-            embedType(halResource, concept.asInstance());
-        }
-
         if (concept.isType() && concept.asType().superType() != null)
             embedSuperType(halResource, concept.asType());
 
