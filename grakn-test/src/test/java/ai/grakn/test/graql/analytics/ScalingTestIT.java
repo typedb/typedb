@@ -23,9 +23,7 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.engine.loader.client.LoaderClient;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.concept.EntityType;
@@ -85,7 +83,7 @@ public class ScalingTestIT extends AbstractGraphTest {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 10000; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 20; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
@@ -120,8 +118,6 @@ public class ScalingTestIT extends AbstractGraphTest {
         // fetch the logger
         LOGGER = (Logger) org.slf4j.LoggerFactory.getLogger(ScalingTestIT.class);
         LOGGER.setLevel(Level.INFO);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.LoaderTask.class)).setLevel(Level.INFO);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.LoaderImpl.class)).setLevel(Level.INFO);
     }
 
     @After
@@ -137,6 +133,11 @@ public class ScalingTestIT extends AbstractGraphTest {
         // Insert super nodes into graph
         simpleOntology(keyspace);
 
+        // get a count before adding any data
+        Long emptyCount = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
+                .admin().getTinkerTraversal().count().next();
+        LOGGER.info("gremlin count before data is: " + emptyCount);
+
         Set<String> superNodes = makeSuperNodes(keyspace);
 
         int previousGraphSize = 0;
@@ -150,19 +151,22 @@ public class ScalingTestIT extends AbstractGraphTest {
             previousGraphSize = graphSize;
             LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
 
+            Long gremlinCount = Long.valueOf(NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
+            LOGGER.info("gremlin count is: " +
+                    Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().admin().getTinkerTraversal().count().next());
+            gremlinCount += emptyCount;
+            LOGGER.info("expected gremlin count is: "+gremlinCount);
+
             for (int workerNumber : workerNumbers) {
                 LOGGER.info("Setting number of workers to: "+workerNumber);
-                Analytics computer = new AnalyticsMock(keyspace, new HashSet<>(), new HashSet<>(), workerNumber);
 
                 Long countTime = 0L;
 
-                GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
-
                 for (int i = 0; i < REPEAT; i++) {
-                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
                     LOGGER.info("repeat number: " + i);
                     Long startTime = System.currentTimeMillis();
-                    Long count = graph.graql().compute().count().execute();
+                    Long count = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
+                            .graql().compute().count().execute();
                     assertEquals(conceptCount, count);
                     LOGGER.info("count: " + count);
                     Long stopTime = System.currentTimeMillis();
@@ -391,9 +395,9 @@ public class ScalingTestIT extends AbstractGraphTest {
         methods.add("testStatisticsWithConstantDegreeMax.txt");
         statisticsMethods.put(methods.get(2), analyticsMock -> analyticsMock.max());
         methods.add("testStatisticsWithConstantDegreeMean.txt");
-        statisticsMethods.put(methods.get(3),analyticsMock -> analyticsMock.mean());
+        statisticsMethods.put(methods.get(3), analyticsMock -> analyticsMock.mean());
         methods.add("testStatisticsWithConstantDegreeStd.txt");
-        statisticsMethods.put(methods.get(4),analyticsMock -> analyticsMock.std());
+        statisticsMethods.put(methods.get(4), analyticsMock -> analyticsMock.std());
         methods.add("testStatisticsWithConstantDegreeMedian.txt");
         statisticsMethods.put(methods.get(5), analyticsMock -> analyticsMock.median());
 
@@ -617,17 +621,14 @@ public class ScalingTestIT extends AbstractGraphTest {
         // batch in the nodes
         LoaderClient loaderClient = new LoaderClient(keyspace,
                 Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-//        loaderClient.setPollingFrequency(1000);
-//        loaderClient.setBatchSize(100);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<Var> insertQuery = new ArrayList<>();
-            insertQuery.add(var(String.valueOf(nodeIndex)).isa("thing"));
+            insertQuery.add(var("node"+String.valueOf(nodeIndex)).isa("thing"));
             for (String supernodeId : superNodes) {
                 insertQuery.add(var(supernodeId).id(supernodeId));
                 insertQuery.add(var().isa("related")
-                        .rel("relation1", String.valueOf(nodeIndex))
+                        .rel("relation1", "node"+String.valueOf(nodeIndex))
                         .rel("relation2", supernodeId));
             }
             loaderClient.add(insert(insertQuery));
