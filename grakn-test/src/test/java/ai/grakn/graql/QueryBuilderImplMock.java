@@ -1,27 +1,26 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.internal.query.MockComputeQueryBuilderImpl;
-import ai.grakn.graql.internal.query.Queries;
+import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
 
 import java.util.Optional;
 
 /**
  *
  */
-public class MockQueryBuilderImpl extends QueryBuilderImpl {
+public class QueryBuilderImplMock extends QueryBuilderImpl {
     private int numWorkers;
     private Optional<GraknGraph> graph;
 
-    MockQueryBuilderImpl() {
+    QueryBuilderImplMock() {
         super();
     }
 
-    public MockQueryBuilderImpl(GraknGraph graph) {
+    public QueryBuilderImplMock(GraknGraph graph) {
         super(graph);
     }
 
-    public MockQueryBuilderImpl(GraknGraph graph, int numWorkers) {
+    public QueryBuilderImplMock(GraknGraph graph, int numWorkers) {
         super(graph);
         this.graph = Optional.of(graph);
         this.numWorkers = numWorkers;
@@ -32,6 +31,6 @@ public class MockQueryBuilderImpl extends QueryBuilderImpl {
      */
     @Override
     public ComputeQueryBuilder compute(){
-        return new MockComputeQueryBuilderImpl(graph, numWorkers);
+        return new ComputeQueryBuilderImplMock(graph, numWorkers);
     }
 }

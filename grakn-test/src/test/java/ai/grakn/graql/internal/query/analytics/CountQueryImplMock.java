@@ -10,11 +10,11 @@ import java.util.Optional;
 /**
  *
  */
-public class MockCountQueryImpl extends CountQueryImpl {
+public class CountQueryImplMock extends CountQueryImpl {
 
     int numberOfWorkers;
 
-    public MockCountQueryImpl(Optional<GraknGraph> graph, int numberOfWorkers) {
+    public CountQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);
         this.numberOfWorkers = numberOfWorkers;
     }

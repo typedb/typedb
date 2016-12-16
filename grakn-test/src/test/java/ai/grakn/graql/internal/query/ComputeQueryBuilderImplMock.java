@@ -15,7 +15,7 @@ import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.MockCountQueryImpl;
+import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 
@@ -24,16 +24,16 @@ import java.util.Optional;
 /**
  *
  */
-public class MockComputeQueryBuilderImpl extends ComputeQueryBuilderImpl {
+public class ComputeQueryBuilderImplMock extends ComputeQueryBuilderImpl {
     private Optional<GraknGraph> graph;
     private int numWorkers;
 
-    public MockComputeQueryBuilderImpl(Optional<GraknGraph> graph) {
+    public ComputeQueryBuilderImplMock(Optional<GraknGraph> graph) {
         super(graph);
     }
 
 
-    public MockComputeQueryBuilderImpl(Optional<GraknGraph> graph, int numWorkers) {
+    public ComputeQueryBuilderImplMock(Optional<GraknGraph> graph, int numWorkers) {
         super(graph);
         this.graph = graph;
         this.numWorkers = numWorkers;
@@ -47,7 +47,7 @@ public class MockComputeQueryBuilderImpl extends ComputeQueryBuilderImpl {
 
     @Override
     public CountQuery count() {
-        return new MockCountQueryImpl(graph,numWorkers);
+        return new CountQueryImplMock(graph,numWorkers);
     }
 
     @Override

@@ -24,23 +24,22 @@ import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relation;
 import ai.grakn.engine.loader.client.LoaderClient;
-import ai.grakn.graql.MockQueryBuilderImpl;
+import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.internal.query.MockComputeQueryBuilderImpl;
+import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
 import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.MockCountQueryImpl;
+import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 import ai.grakn.test.AbstractGraphTest;
-import ai.grakn.test.AbstractScalingTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
@@ -390,7 +389,7 @@ public class ScalingTestIT extends AbstractGraphTest {
 
         // detail methods that must be executed when testing
         List<String> methods = new ArrayList<>();
-        Map<String,Function<MockComputeQueryBuilderImpl,Optional>> statisticsMethods = new HashMap<>();
+        Map<String,Function<ComputeQueryBuilderImplMock,Optional>> statisticsMethods = new HashMap<>();
         Map<String,Consumer<Number>> statisticsAssertions = new HashMap<>();
         methods.add("testStatisticsWithConstantDegreeSum.txt");
         statisticsMethods.put(methods.get(0), queryBuilder -> getSumQuery(queryBuilder).of(Collections.singleton("degree")).execute());
@@ -647,22 +646,22 @@ public class ScalingTestIT extends AbstractGraphTest {
         return ((DegreeQueryImplMock) getComputeQueryBuilder(uri, keyspace, numWorkers).degree());
     }
 
-    private MockCountQueryImpl getCountQuery(String uri, String keyspace, int numWorkers) {
-        return ((MockCountQueryImpl) getComputeQueryBuilder(uri, keyspace, numWorkers).count());
+    private CountQueryImplMock getCountQuery(String uri, String keyspace, int numWorkers) {
+        return ((CountQueryImplMock) getComputeQueryBuilder(uri, keyspace, numWorkers).count());
     }
 
     private MinQueryImplMock getMinQuery(String uri, String keyspace, int numWorkers) {
         return getMinQuery(getComputeQueryBuilder(uri, keyspace, numWorkers));
     }
 
-    private MinQueryImplMock getMinQuery(MockComputeQueryBuilderImpl cqb) {return ((MinQueryImplMock) cqb.min());}
-    private MaxQueryImplMock getMaxQuery(MockComputeQueryBuilderImpl cqb) {return ((MaxQueryImplMock) cqb.max());}
-    private MeanQueryImplMock getMeanQuery(MockComputeQueryBuilderImpl cqb) {return ((MeanQueryImplMock) cqb.mean());}
-    private MedianQueryImplMock getMedianQuery(MockComputeQueryBuilderImpl cqb) {return ((MedianQueryImplMock) cqb.median());}
-    private SumQueryImplMock getSumQuery(MockComputeQueryBuilderImpl cqb) {return ((SumQueryImplMock) cqb.sum());}
-    private StdQueryImplMock getStdQuery(MockComputeQueryBuilderImpl cqb) {return ((StdQueryImplMock) cqb.std());}
+    private MinQueryImplMock getMinQuery(ComputeQueryBuilderImplMock cqb) {return ((MinQueryImplMock) cqb.min());}
+    private MaxQueryImplMock getMaxQuery(ComputeQueryBuilderImplMock cqb) {return ((MaxQueryImplMock) cqb.max());}
+    private MeanQueryImplMock getMeanQuery(ComputeQueryBuilderImplMock cqb) {return ((MeanQueryImplMock) cqb.mean());}
+    private MedianQueryImplMock getMedianQuery(ComputeQueryBuilderImplMock cqb) {return ((MedianQueryImplMock) cqb.median());}
+    private SumQueryImplMock getSumQuery(ComputeQueryBuilderImplMock cqb) {return ((SumQueryImplMock) cqb.sum());}
+    private StdQueryImplMock getStdQuery(ComputeQueryBuilderImplMock cqb) {return ((StdQueryImplMock) cqb.std());}
 
-    private MockComputeQueryBuilderImpl getComputeQueryBuilder(String uri, String keyspace, int numWorkers){
-        return ((MockComputeQueryBuilderImpl) (new MockQueryBuilderImpl(Grakn.factory(uri, keyspace).getGraph(), numWorkers)).compute());
+    private ComputeQueryBuilderImplMock getComputeQueryBuilder(String uri, String keyspace, int numWorkers){
+        return ((ComputeQueryBuilderImplMock) (new QueryBuilderImplMock(Grakn.factory(uri, keyspace).getGraph(), numWorkers)).compute());
     }
 }
