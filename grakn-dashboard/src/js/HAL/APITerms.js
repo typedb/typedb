@@ -21,7 +21,7 @@
  */
 
 export const RELATION_TYPE = "relation";
-export const TYPE_TYPE = "type";
+export const TYPE_TYPE = "concept";
 export const RULE_TYPE = "rule";
 export const RESOURCE_TYPE = "resource";
 export const ROLE_TYPE = "role";
