@@ -146,6 +146,12 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
+    public ClusterQuery<T> persist(String resourceTypeName) {
+        this.clusterName = resourceTypeName;
+        return this.persist();
+    }
+
+    @Override
     public ClusterQuery<T> clusterSize(long clusterSize) {
         this.anySize = false;
         this.clusterSize = clusterSize;

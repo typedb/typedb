@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -157,6 +158,24 @@ public class ClusteringTest extends AbstractGraphTest {
     }
 
     @Test
+    public void testConnectedComponentName() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        Map<String, Set<String>> memberMap;
+
+        addOntologyAndEntities();
+        addResourceRelations();
+
+        String label = "label";
+        memberMap = graph.graql().compute().cluster().in(thing, anotherThing).members().persist(label).execute();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+        memberMap.values().stream()
+                .flatMap(Collection::stream)
+                .forEach(id -> checkConnectedComponent(id, id, label));
+    }
+
+    @Test
     public void testConnectedComponent() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
@@ -261,6 +280,13 @@ public class ClusteringTest extends AbstractGraphTest {
     private void checkConnectedComponent(String id, String expectedClusterLabel) {
         Collection<Resource<?>> resources = graph.getConcept(id).asInstance()
                 .resources(graph.getResourceType(Schema.Analytics.CLUSTER.getName()));
+        assertEquals(1, resources.size());
+        assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
+    }
+
+    private void checkConnectedComponent(String id, String expectedClusterLabel, String resourceTypeName) {
+        Collection<Resource<?>> resources = graph.getConcept(id).asInstance()
+                .resources(graph.getResourceType(resourceTypeName));
         assertEquals(1, resources.size());
         assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
     }
