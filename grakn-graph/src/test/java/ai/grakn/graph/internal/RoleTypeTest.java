@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.RelationType;
+import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
@@ -87,6 +88,16 @@ public class RoleTypeTest extends GraphTestBase {
         relationType2.hasRole(roleType);
 
         roleType.relationType();
+    }
+
+    @Test
+    public void testRoleTypeCannotPlayItself(){
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()))
+        ));
+
+        roleType.playsRole(roleType);
     }
 
     @Test

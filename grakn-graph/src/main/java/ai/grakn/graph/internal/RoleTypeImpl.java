@@ -23,6 +23,8 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -82,4 +84,18 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> getGraknGraph().getConceptLog().putConcept(relation)));
         return castings;
     }
+
+    /**
+     *
+     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @return The Type itself.
+     */
+    @Override
+    public RoleType playsRole(RoleType roleType) {
+        if(equals(roleType)){
+            throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()));
+        }
+        return super.playsRole(roleType, false);
+    }
+
 }
