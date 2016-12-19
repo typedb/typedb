@@ -68,7 +68,7 @@ import static java.util.stream.Collectors.toSet;
  */
 class VarImpl implements VarAdmin {
 
-    private Set<VarProperty> properties = new HashSet<>();
+    private final Set<VarProperty> properties = new HashSet<>();
 
     private String name;
     private final boolean userDefinedName;

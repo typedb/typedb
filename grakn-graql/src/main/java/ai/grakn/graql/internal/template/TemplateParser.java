@@ -44,7 +44,7 @@ import java.util.Map;
 
 public class TemplateParser {
 
-    private final Map<String, Macro<Object>> macros = new HashMap<>();
+    private final Map<String, Macro<?>> macros = new HashMap<>();
 
     /**
      * Create a template parser

@@ -23,6 +23,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.query.predicate.Predicates;
 import ai.grakn.graql.internal.util.AdminConverter;
@@ -210,7 +211,7 @@ public class Graql {
      * Create an aggregate that will find the maximum of a variable's values.
      * @param varName the variable to find the maximum of
      */
-    public static Aggregate<Map<String, Concept>, Optional<?>> max(String varName) {
+    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> max(String varName) {
         return Aggregates.max(varName);
     }
 
@@ -218,7 +219,7 @@ public class Graql {
      * Create an aggregate that will find the minimum of a variable's values.
      * @param varName the variable to find the maximum of
      */
-    public static Aggregate<Map<String, Concept>, Optional<?>> min(String varName) {
+    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> min(String varName) {
         return Aggregates.min(varName);
     }
 

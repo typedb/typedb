@@ -158,10 +158,10 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 }
                 break;
             default:
-                if ((Boolean) memory.get(IS_LAST_ITERATION)) {
+                if (memory.get(IS_LAST_ITERATION)) {
                     if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                        if (selectedLabels.isEmpty() || selectedLabels.contains(vertex.value(CLUSTER_LABEL)))
-                            bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
+                        if (selectedLabels.isEmpty() || selectedLabels.contains(vertex.<String>value(CLUSTER_LABEL)))
+                            bulkResourceMutate.putValue(vertex, vertex.<String>value(CLUSTER_LABEL));
                     }
                 } else {
                     // split the default case because shortcut edges cannot be filtered out
@@ -196,7 +196,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() < 3) return false;
-        if ((Boolean) memory.get(IS_LAST_ITERATION)) return true;
+        if (memory.get(IS_LAST_ITERATION)) return true;
 
         final boolean voteToHalt = memory.<Boolean>get(VOTE_TO_HALT);
         if (voteToHalt) {

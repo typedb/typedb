@@ -23,9 +23,9 @@ import org.apache.commons.lang.StringUtils;
 
 class SyntaxError {
     private final String queryLine;
-    private int line;
-    private int charPositionInLine;
-    private String msg;
+    private final int line;
+    private final int charPositionInLine;
+    private final String msg;
 
     SyntaxError(int line, String msg) {
         this.queryLine = null;

@@ -18,11 +18,10 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.Aggregate;
-import com.google.common.collect.ImmutableSet;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 import java.util.Map;
@@ -67,8 +66,8 @@ public class Aggregates {
     /**
      * Aggregate that finds maximum of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Optional<?>> max(String varName) {
-        return new MaxAggregate(varName);
+    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> max(String varName) {
+        return new MaxAggregate<>(varName);
     }
 
     /**
@@ -81,8 +80,8 @@ public class Aggregates {
     /**
      * Aggregate that finds minimum of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Optional<?>> min(String varName) {
-        return new MinAggregate(varName);
+    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> min(String varName) {
+        return new MinAggregate<>(varName);
     }
 
     /**

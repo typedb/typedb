@@ -16,15 +16,22 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.graql.macro.Macro;
@@ -37,7 +44,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -57,7 +63,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     private boolean infer = false;
     private boolean materialise = false;
 
-    QueryBuilderImpl() {
+    public QueryBuilderImpl() {
         this.graph = Optional.empty();
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();

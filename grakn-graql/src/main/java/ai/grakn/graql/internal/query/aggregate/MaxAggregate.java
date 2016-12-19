@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Concept;
 
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +29,7 @@ import static java.util.Comparator.naturalOrder;
 /**
  * Aggregate that finds maximum of a match query.
  */
-class MaxAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> {
+class MaxAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<String, Concept>, Optional<T>> {
 
     private final String varName;
 
@@ -39,12 +38,16 @@ class MaxAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> 
     }
 
     @Override
-    public Optional<?> apply(Stream<? extends Map<String, Concept>> stream) {
-        return stream.map(result -> (Comparable) result.get(varName).asResource().getValue()).max(naturalOrder());
+    public Optional<T> apply(Stream<? extends Map<String, Concept>> stream) {
+        return stream.map(this::getValue).max(naturalOrder());
     }
 
     @Override
     public String toString() {
         return "max $" + varName;
+    }
+
+    private T getValue(Map<String, Concept> result) {
+        return result.get(varName).<T>asResource().getValue();
     }
 }

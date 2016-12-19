@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.NamedAggregate;
 import com.google.common.collect.ImmutableSet;
 import ai.grakn.graql.NamedAggregate;
 
