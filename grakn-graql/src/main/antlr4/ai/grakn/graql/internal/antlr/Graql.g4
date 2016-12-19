@@ -34,7 +34,7 @@ std            : STD     'of' ofList       ('in' inList)? ';' ;
 sum            : SUM     'of' ofList       ('in' inList)? ';' ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
-cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (PERSIST ';')? ;
+cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (PERSIST ';')? (SIZE INTEGER ';')? ;
 degrees        : DEGREES                   ('in' inList)? ';'                (PERSIST ';')? ;
 
 ofList         : nameList ;
@@ -111,7 +111,7 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREES | MEMBERS | PERSIST
+               | DEGREES | MEMBERS | PERSIST | SIZE
                ;
 
 // keywords
@@ -127,6 +127,7 @@ CLUSTER        : 'cluster' ;
 DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
 PERSIST        : 'persist' ;
+SIZE           : 'size' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
 ORDER          : 'asc' | 'desc' ;

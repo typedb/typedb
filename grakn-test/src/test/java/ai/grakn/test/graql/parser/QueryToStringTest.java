@@ -22,9 +22,9 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.AbstractMovieGraphTest;
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,7 +48,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testSimpleMatchQueryToString() {
-        assertValidToString(qb.match(var("x").isa("movie").name("Godfather")));
+        assertSameResults(qb.match(var("x").isa("movie").name("Godfather")));
     }
 
     @Test
@@ -62,27 +62,27 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
                 ),
                 var("y").has("name", var("n"))
         ).orderBy("n").select("x", "y").limit(8).offset(4);
-        assertValidToString(query);
+        assertSameResults(query);
     }
 
     @Test
     public void testQueryWithResourcesToString() {
-        assertValidToString(qb.match(var("x").has("tmdb-vote-count", lte(400))));
+        assertSameResults(qb.match(var("x").has("tmdb-vote-count", lte(400))));
     }
 
     @Test
     public void testQueryWithSubToString() {
-        assertValidToString(qb.match(var("x").sub(var("y"))));
+        assertSameResults(qb.match(var("x").sub(var("y"))));
     }
 
     @Test
     public void testQueryWithPlaysRoleToString() {
-        assertValidToString(qb.match(var("x").playsRole(var("y"))));
+        assertSameResults(qb.match(var("x").playsRole(var("y"))));
     }
 
     @Test
     public void testQueryWithHasRoleToString() {
-        assertValidToString(qb.match(var("x").hasRole(var("y"))));
+        assertSameResults(qb.match(var("x").hasRole(var("y"))));
     }
 
     @Test
@@ -92,12 +92,12 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testQueryWithDatatypeToString() {
-        assertValidToString(qb.match(var("x").datatype(ResourceType.DataType.LONG)));
+        assertSameResults(qb.match(var("x").datatype(ResourceType.DataType.LONG)));
     }
 
     @Test
     public void testQueryIsAbstractToString() {
-        assertValidToString(qb.match(var("x").isAbstract()));
+        assertSameResults(qb.match(var("x").isAbstract()));
     }
 
     @Test
@@ -155,7 +155,19 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
     @Test
     public void testComputeQuerySubgraphToString() {
         ComputeQuery query = qb.compute().degree().in("movie", "person");
-        assertEquals("compute degrees in movie, person;", query.toString());
+        assertEquivalent(query, "compute degrees in movie, person;");
+    }
+
+    @Test
+    public void testClusterToString() {
+        ComputeQuery query = qb.compute().cluster().in("movie", "person");
+        assertEquivalent(query, "compute cluster in movie, person;");
+    }
+
+    @Test
+    public void testClusterSizeToString() {
+        ComputeQuery query = qb.compute().cluster().in("movie", "person").clusterSize(10);
+        assertEquivalent(query, "compute cluster in movie, person; size 10;");
     }
 
     @Test
@@ -177,7 +189,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testResourceWithoutTypeToString() {
-        assertValidToString(qb.match(var("x").has(var("y"))));
+        assertSameResults(qb.match(var("x").has(var("y"))));
     }
 
     @Test
@@ -201,7 +213,12 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
         qb.match(var("x").isa(var().value("abc"))).toString();
     }
 
-    private void assertValidToString(MatchQuery query) {
+    private void assertSameResults(MatchQuery query) {
         QueryParserTest.assertQueriesEqual(query, qb.parse(query.toString()));
+    }
+
+    private void assertEquivalent(Query<?> query, String queryString) {
+        assertEquals(query.toString(), queryString);
+        assertEquals(query.toString(), qb.parse(queryString).toString());
     }
 }

@@ -284,6 +284,8 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.PERSIST() != null) cluster = cluster.persist();
 
+        if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
+
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
