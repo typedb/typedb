@@ -56,7 +56,7 @@ class FactoryBuilder {
      * @return A graph factory which produces the relevant expected graph.
     */
     static InternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
-        String key = factoryType + keyspace.toLowerCase();
+        String key = engineUrl + factoryType + keyspace.toLowerCase();
         Log.debug("Get factory for " + key);
         InternalFactory factory = openFactories.get(key);
         if (factory != null)
