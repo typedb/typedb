@@ -172,7 +172,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         }
 
         if (clusterSize != -1L) {
-            string += " size, 1;";
+            string += " size " + clusterSize + ";";
         }
 
         return string;

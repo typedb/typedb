@@ -123,10 +123,12 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
 
     @Override
     String graqlString() {
-        String string = "degrees" + subtypeString();
+        String string = "degrees";
 
         if (!ofTypeNames.isEmpty()) string += " of " + ofTypeNames.stream()
-                .map(StringConverter::idToString).collect(joining(", ")) + ";";
+                .map(StringConverter::idToString).collect(joining(", "));
+
+        string += subtypeString();
 
         if (persist) string += " persist;";
 

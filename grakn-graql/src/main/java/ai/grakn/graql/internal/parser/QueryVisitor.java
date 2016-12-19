@@ -284,6 +284,8 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.PERSIST() != null) cluster = cluster.persist();
 
+        if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
+
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
@@ -296,6 +298,10 @@ class QueryVisitor extends GraqlBaseVisitor {
         DegreeQuery<?> degree = queryBuilder.compute().degree();
 
         if (ctx.PERSIST() != null) degree = degree.persist();
+
+        if (ctx.ofList() != null) {
+            degree = degree.of(visitOfList(ctx.ofList()));
+        }
 
         if (ctx.inList() != null) {
             degree = degree.in(visitInList(ctx.inList()));
