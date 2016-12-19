@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class PostProcessing {
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
@@ -122,8 +123,10 @@ public class PostProcessing {
     private void performResourceFix(){
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                futures.add(postpool.submit(() ->
-                        ConceptFixer.checkResources(cache, keyspace, cache.getResourceJobs(keyspace))));
+                futures.add(postpool.submit(() -> {
+                    Set<String> deepCopy = cache.getResourceJobs(keyspace).stream().map(String::new).collect(Collectors.toSet());
+                    ConceptFixer.checkResources(cache, keyspace, deepCopy);
+                }));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
