@@ -2,6 +2,7 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
+import ai.grakn.graql.internal.query.QueryBuilderImpl;
 
 import java.util.Optional;
 

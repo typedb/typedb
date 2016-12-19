@@ -44,9 +44,9 @@ import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.getBas
 
 class HALConceptData {
 
-    private RepresentationFactory factory;
+    private final RepresentationFactory factory;
 
-    private Representation halResource;
+    private final Representation halResource;
 
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
@@ -66,8 +66,8 @@ class HALConceptData {
     private final static String DIRECTION_PROPERTY = "_direction";
     private final static String VALUE_PROPERTY = "value";
 
-    private boolean embedType;
-    private Set<String> typesInQuery = null;
+    private final boolean embedType;
+    private final Set<String> typesInQuery;
 
     HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<String> typesInQuery, String keyspace) {
 

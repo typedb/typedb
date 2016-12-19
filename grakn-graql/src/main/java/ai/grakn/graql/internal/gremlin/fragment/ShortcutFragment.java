@@ -77,6 +77,9 @@ class ShortcutFragment extends AbstractFragment {
         ShortcutFragment that = (ShortcutFragment) o;
 
         if (relationType != null ? !relationType.equals(that.relationType) : that.relationType != null) return false;
+
+        // "simplifying" this makes it harder to read
+        //noinspection SimplifiableIfStatement
         if (roleStart != null ? !roleStart.equals(that.roleStart) : that.roleStart != null) return false;
         return roleEnd != null ? roleEnd.equals(that.roleEnd) : that.roleEnd == null;
 

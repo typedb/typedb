@@ -334,6 +334,8 @@ public class GraqlTraversal {
 
         GraqlTraversal that = (GraqlTraversal) o;
 
+        // "simplifying" this makes it harder to read
+        //noinspection SimplifiableIfStatement
         if (fragments != null ? !fragments.equals(that.fragments) : that.fragments != null) return false;
         return graph != null ? graph.equals(that.graph) : that.graph == null;
 

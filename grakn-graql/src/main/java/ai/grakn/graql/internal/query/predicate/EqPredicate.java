@@ -25,7 +25,7 @@ import java.util.Optional;
 
 class EqPredicate extends ComparatorPredicate {
 
-    private Object value;
+    private final Object value;
 
     /**
      * @param value the value that this predicate is testing against

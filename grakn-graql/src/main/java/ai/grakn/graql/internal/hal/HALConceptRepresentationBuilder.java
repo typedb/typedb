@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -101,7 +102,7 @@ public class HALConceptRepresentationBuilder {
                                     .getRelationPlayers()
                                     //get all the other vars(rolePlayers) contained in the relation
                                     .filter(x -> (!x.getRolePlayer().getVarName().equals(currentVarName)))
-                                    .map(y -> y.getRolePlayer()).forEach(otherVar -> {
+                                    .map(RelationPlayer::getRolePlayer).forEach(otherVar -> {
 
                                 if(resultLine.get(otherVar.getVarName())!=null) {
                                     attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(String.valueOf(currentRelation.hashCode())), currentVarName, otherVar.getVarName(), relationType);
@@ -114,7 +115,6 @@ public class HALConceptRepresentationBuilder {
     }
 
     private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<String, String> roleTypes, String currentVarName, String otherVarName, String relationType) {
-        Concept otherRolePlayer = otherVar;
         String currentID = currentVar.getId();
 
         String firstID;
@@ -122,13 +122,13 @@ public class HALConceptRepresentationBuilder {
         String firstRole;
         String secondRole;
 
-        if (currentID.compareTo(otherRolePlayer.getId()) > 0) {
+        if (currentID.compareTo(otherVar.getId()) > 0) {
             firstID = currentID;
-            secondID = otherRolePlayer.getId();
+            secondID = otherVar.getId();
             firstRole = (roleTypes.get(currentVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(currentVarName) + ":";
             secondRole = (roleTypes.get(otherVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
         } else {
-            firstID = otherRolePlayer.getId();
+            firstID = otherVar.getId();
             secondID = currentID;
             secondRole = (roleTypes.get(currentVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(currentVarName) + ":";
             firstRole = (roleTypes.get(otherVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";

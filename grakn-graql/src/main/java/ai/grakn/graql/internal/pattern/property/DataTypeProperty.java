@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;

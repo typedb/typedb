@@ -29,7 +29,7 @@ import static java.util.Comparator.naturalOrder;
 /**
  * Aggregate that finds minimum of a match query.
  */
-class MinAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> {
+class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<String, Concept>, Optional<T>> {
 
     private final String varName;
 
@@ -38,12 +38,16 @@ class MinAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> 
     }
 
     @Override
-    public Optional<?> apply(Stream<? extends Map<String, Concept>> stream) {
-        return stream.map(result -> (Comparable) result.get(varName).asResource().getValue()).min(naturalOrder());
+    public Optional<T> apply(Stream<? extends Map<String, Concept>> stream) {
+        return stream.map(this::getValue).min(naturalOrder());
     }
 
     @Override
     public String toString() {
         return "min $" + varName;
+    }
+
+    private T getValue(Map<String, Concept> result) {
+        return result.get(varName).<T>asResource().getValue();
     }
 }

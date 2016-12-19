@@ -26,10 +26,10 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -81,7 +81,7 @@ public class ClusteringTest extends AbstractGraphTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
@@ -260,7 +260,7 @@ public class ClusteringTest extends AbstractGraphTest {
 
     private void checkConnectedComponent(String id, String expectedClusterLabel) {
         Collection<Resource<?>> resources = graph.getConcept(id).asInstance()
-                .resources(graph.getResourceType(AbstractComputeQuery.connectedComponent));
+                .resources(graph.getResourceType(Schema.Analytics.CONNECTED_COMPONENT.getName()));
         assertEquals(1, resources.size());
         assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
     }

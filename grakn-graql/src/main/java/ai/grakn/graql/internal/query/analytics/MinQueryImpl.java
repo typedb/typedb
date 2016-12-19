@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
+class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
 
-    public MinQueryImpl(Optional<GraknGraph> graph) {
+    MinQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.Aggregate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 

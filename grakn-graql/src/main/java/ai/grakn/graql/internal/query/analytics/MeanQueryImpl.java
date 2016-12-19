@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
+class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
 
-    public MeanQueryImpl(Optional<GraknGraph> graph) {
+    MeanQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

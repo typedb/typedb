@@ -44,12 +44,12 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     private final CommonTokenStream tokens;
     private final Map<String, Object> originalContext;
-    private final Map<String, Macro<Object>> macros;
+    private final Map<String, Macro<?>> macros;
 
-    private Map<String, Integer> iteration = new HashMap<>();
+    private final Map<String, Integer> iteration = new HashMap<>();
     private Scope scope;
 
-    public TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<Object>> macros){
+    public TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<?>> macros){
         this.tokens = tokens;
         this.macros = macros;
         this.scope = new Scope(context);

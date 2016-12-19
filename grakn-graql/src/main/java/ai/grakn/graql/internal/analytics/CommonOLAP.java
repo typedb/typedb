@@ -29,9 +29,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.query.analytics.AbstractComputeQuery.connectedComponent;
-import static ai.grakn.graql.internal.query.analytics.AbstractComputeQuery.degree;
-
 /**
  * Core Grakn implementation of the common methods on the MapReduce and VertexProgram interfaces.
  */
@@ -44,8 +41,8 @@ public abstract class CommonOLAP {
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
     public static final Set<String> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
-            degree, Schema.Resource.HAS_RESOURCE.getName(degree),
-            connectedComponent, Schema.Resource.HAS_RESOURCE.getName(connectedComponent)));
+            Schema.Analytics.DEGREE.getName(), Schema.Resource.HAS_RESOURCE.getName(Schema.Analytics.DEGREE.getName()),
+            Schema.Analytics.CONNECTED_COMPONENT.getName(), Schema.Resource.HAS_RESOURCE.getName(Schema.Analytics.CONNECTED_COMPONENT.getName())));
 
     /**
      * The concepts that can be "seen" by analytics by default.

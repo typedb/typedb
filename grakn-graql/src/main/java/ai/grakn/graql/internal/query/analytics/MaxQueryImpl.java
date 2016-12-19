@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MaxQuery {
+class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MaxQuery {
 
-    public MaxQueryImpl(Optional<GraknGraph> graph) {
+    MaxQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

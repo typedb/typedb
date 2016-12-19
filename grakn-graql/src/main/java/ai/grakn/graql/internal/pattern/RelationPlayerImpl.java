@@ -52,8 +52,7 @@ class RelationPlayerImpl implements RelationPlayer {
 
         RelationPlayerImpl casting = (RelationPlayerImpl) o;
 
-        if (!roleType.equals(casting.roleType)) return false;
-        return rolePlayer.equals(casting.rolePlayer);
+        return roleType.equals(casting.roleType) && rolePlayer.equals(casting.rolePlayer);
 
     }
 

@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
+class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
 
-    public SumQueryImpl(Optional<GraknGraph> graph) {
+    SumQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

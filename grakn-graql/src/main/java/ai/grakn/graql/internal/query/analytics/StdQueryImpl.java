@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
+class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
 
-    public StdQueryImpl(Optional<GraknGraph> graph) {
+    StdQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

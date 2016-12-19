@@ -21,9 +21,6 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty {
 
@@ -39,8 +36,7 @@ public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarP
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        return !(o == null || getClass() != o.getClass());
+        return this == o || !(o == null || getClass() != o.getClass());
 
     }
 

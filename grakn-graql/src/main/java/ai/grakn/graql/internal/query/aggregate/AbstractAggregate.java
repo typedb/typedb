@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
 
 public abstract class AbstractAggregate<T, S> implements Aggregate<T, S> {
