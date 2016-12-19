@@ -299,6 +299,10 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.PERSIST() != null) degree = degree.persist();
 
+        if (ctx.ofList() != null) {
+            degree = degree.of(visitOfList(ctx.ofList()));
+        }
+
         if (ctx.inList() != null) {
             degree = degree.in(visitInList(ctx.inList()));
         }

@@ -171,6 +171,12 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testDegreeOf() {
+        ComputeQuery query = qb.compute().degree().in("movie", "person").of("person");
+        assertEquivalent(query, "compute degrees of person in movie, person;");
+    }
+
+    @Test
     public void testQueryToStringWithReservedKeywords() {
         MatchQuery query = qb.match(var("x").isa("isa"));
         assertEquals("match $x isa \"isa\";", query.toString());
@@ -218,7 +224,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
     }
 
     private void assertEquivalent(Query<?> query, String queryString) {
-        assertEquals(query.toString(), queryString);
+        assertEquals(queryString, query.toString());
         assertEquals(query.toString(), qb.parse(queryString).toString());
     }
 }
