@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
@@ -40,12 +41,12 @@ import java.util.Set;
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
 import static java.util.stream.Collectors.joining;
 
-public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
+class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
 
     private boolean persist = false;
     private Set<String> ofTypeNames = new HashSet<>();
 
-    public DegreeQueryImpl(Optional<GraknGraph> graph) {
+    DegreeQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
@@ -69,8 +70,8 @@ public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements Degre
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
             }
-            mutateResourceOntology(degree, ResourceType.DataType.LONG);
-            waitOnMutateResourceOntology(degree);
+            mutateResourceOntology(Schema.Analytics.DEGREE.getName(), ResourceType.DataType.LONG);
+            waitOnMutateResourceOntology(Schema.Analytics.DEGREE.getName());
             computer.compute(new DegreeAndPersistVertexProgram(subTypeNames, keySpace, ofTypeNames));
             LOGGER.info("DegreeAndPersistVertexProgram is done");
             return (T) "Degrees have been persisted";

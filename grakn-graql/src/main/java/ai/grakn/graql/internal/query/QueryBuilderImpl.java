@@ -32,6 +32,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
 import ai.grakn.graql.internal.query.match.MatchQueryBase;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.internal.util.AdminConverter;

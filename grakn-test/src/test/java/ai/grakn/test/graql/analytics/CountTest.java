@@ -19,9 +19,9 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.concept.EntityType;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -43,7 +43,7 @@ public class CountTest extends AbstractGraphTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
     }
 

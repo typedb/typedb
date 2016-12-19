@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
-import com.google.common.collect.Sets;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -221,7 +220,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
             LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
             bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE),
-                    AbstractComputeQuery.connectedComponent);
+                    Schema.Analytics.CONNECTED_COMPONENT.getName());
         }
     }
 

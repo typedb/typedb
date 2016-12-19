@@ -29,17 +29,17 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public class DegreeTest extends AbstractGraphTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
@@ -285,7 +285,7 @@ public class DegreeTest extends AbstractGraphTest {
     private void checkDegrees(Map<String, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(entry.getKey()).resources(graph.getResourceType(AbstractComputeQuery.degree));
+                    graph.<Instance>getConcept(entry.getKey()).resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(), resources.iterator().next().getValue());
         });
@@ -294,7 +294,7 @@ public class DegreeTest extends AbstractGraphTest {
     private void checkNoDegree(String... ids) {
         Sets.newHashSet(ids).forEach(id -> {
             Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(id).resources(graph.getResourceType(AbstractComputeQuery.degree));
+                    graph.<Instance>getConcept(id).resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
             assertEquals(0, resources.size());
         });
     }
@@ -452,7 +452,7 @@ public class DegreeTest extends AbstractGraphTest {
 
         // check only expected resources exist
         Collection<String> allConcepts = new ArrayList<>();
-        ResourceType<Long> rt = graph.getResourceType(AbstractComputeQuery.degree);
+        ResourceType<Long> rt = graph.getResourceType(Schema.Analytics.DEGREE.getName());
         Collection<Resource<Long>> degrees = rt.instances();
         Map<Instance, Long> currentDegrees = new HashMap<>();
         degrees.forEach(degree -> {
@@ -468,7 +468,7 @@ public class DegreeTest extends AbstractGraphTest {
 
         // check only expected resources exist
         graph = factory.getGraph();
-        rt = graph.getResourceType(AbstractComputeQuery.degree);
+        rt = graph.getResourceType(Schema.Analytics.DEGREE.getName());
         degrees = rt.instances();
         degrees.forEach(i -> i.ownerInstances().iterator()
                 .forEachRemaining(r -> allConcepts.add(r.getId())));
@@ -532,7 +532,7 @@ public class DegreeTest extends AbstractGraphTest {
         HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
         graph.graql().compute().degree().persist().in(ct).execute();
         graph = factory.getGraph();
-        ResourceType<Long> degreeResource = graph.getResourceType(AbstractComputeQuery.degree);
+        ResourceType<Long> degreeResource = graph.getResourceType(Schema.Analytics.DEGREE.getName());
 
         // check degrees are correct
         boolean isSeen = false;
@@ -878,10 +878,10 @@ public class DegreeTest extends AbstractGraphTest {
         graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
         // compute sum
-        assertEquals(4L, graph.graql().compute().sum().of(AbstractComputeQuery.degree).execute().get());
+        assertEquals(4L, graph.graql().compute().sum().of(Schema.Analytics.DEGREE.getName()).execute().get());
 
         // compute count
-        assertEquals(graph.getResourceType(AbstractComputeQuery.degree).instances().size(),
-                graph.graql().compute().count().in(AbstractComputeQuery.degree).execute().intValue());
+        assertEquals(graph.getResourceType(Schema.Analytics.DEGREE.getName()).instances().size(),
+                graph.graql().compute().count().in(Schema.Analytics.DEGREE.getName()).execute().intValue());
     }
 }

@@ -28,8 +28,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.graql.internal.query.analytics.AbstractComputeQuery;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -56,7 +56,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(AbstractComputeQuery.class);
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
     }
 
@@ -123,7 +123,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.graql().compute().degree().persist().execute();
 
         Collection<Resource<Object>> degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
-                .getResourceType(AbstractComputeQuery.degree).instances();
+                .getResourceType(Schema.Analytics.DEGREE.getName()).instances();
         assertTrue(degrees.size() > 1);
 
         //Wait for cache to be updated
