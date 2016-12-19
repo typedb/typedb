@@ -22,7 +22,7 @@ package ai.grakn.util;
  * A type enum which restricts the types of links/concepts which can be created
  */
 public final class Schema {
-    private Schema(){
+    private Schema() {
         throw new UnsupportedOperationException();
     }
 
@@ -43,17 +43,17 @@ public final class Schema {
 
         private final String label;
 
-        EdgeLabel(String l){
+        EdgeLabel(String l) {
             label = l;
         }
 
-        public String getLabel(){
+        public String getLabel() {
             return label;
         }
 
-        public static EdgeLabel getEdgeLabel(String label){
+        public static EdgeLabel getEdgeLabel(String label) {
             for (EdgeLabel edgeLabel : EdgeLabel.values()) {
-                if(edgeLabel.getLabel().equals(label)){
+                if (edgeLabel.getLabel().equals(label)) {
                     return edgeLabel;
                 }
             }
@@ -76,17 +76,18 @@ public final class Schema {
 
 
         private final String name;
-        MetaSchema(String i){
+
+        MetaSchema(String i) {
             name = i;
         }
 
-        public String getName(){
+        public String getName() {
             return name;
         }
 
-        public static boolean isMetaName(String name){
+        public static boolean isMetaName(String name) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
-                if(metaSchema.getName().equals(name))
+                if (metaSchema.getName().equals(name))
                     return true;
             }
             return false;
@@ -96,7 +97,7 @@ public final class Schema {
     /**
      * Base Types reflecting the possible objects in the concept
      */
-    public enum BaseType{
+    public enum BaseType {
         RELATION, CASTING, TYPE, ROLE_TYPE, RELATION_TYPE, RESOURCE_TYPE, ENTITY, RESOURCE, RULE, RULE_TYPE, ENTITY_TYPE
     }
 
@@ -114,10 +115,12 @@ public final class Schema {
         VALUE_STRING(String.class), VALUE_LONG(Long.class), VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class);
 
         private final Class dataType;
-        ConceptProperty(Class dataType){
+
+        ConceptProperty(Class dataType) {
             this.dataType = dataType;
         }
-        public Class getDataType(){
+
+        public Class getDataType() {
             return dataType;
         }
     }
@@ -139,10 +142,12 @@ public final class Schema {
         REQUIRED(Boolean.class);
 
         private final Class dataType;
-        EdgeProperty(Class dataType){
+
+        EdgeProperty(Class dataType) {
             this.dataType = dataType;
         }
-        public Class getDataType(){
+
+        public Class getDataType() {
             return dataType;
         }
     }
@@ -150,7 +155,7 @@ public final class Schema {
     /**
      * This stores the schema which is required when implicitly creating roles for the has-resource methods
      */
-    public enum Resource{
+    public enum Resource {
         /**
          * The name of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
          */
@@ -183,7 +188,7 @@ public final class Schema {
     public enum Analytics {
 
         DEGREE("degree"),
-        CONNECTED_COMPONENT("cluster");
+        CLUSTER("cluster");
 
         private final String name;
 

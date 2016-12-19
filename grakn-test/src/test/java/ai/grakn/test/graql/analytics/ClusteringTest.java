@@ -260,7 +260,7 @@ public class ClusteringTest extends AbstractGraphTest {
 
     private void checkConnectedComponent(String id, String expectedClusterLabel) {
         Collection<Resource<?>> resources = graph.getConcept(id).asInstance()
-                .resources(graph.getResourceType(Schema.Analytics.CONNECTED_COMPONENT.getName()));
+                .resources(graph.getResourceType(Schema.Analytics.CLUSTER.getName()));
         assertEquals(1, resources.size());
         assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
     }

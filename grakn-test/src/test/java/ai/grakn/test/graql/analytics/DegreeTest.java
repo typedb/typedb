@@ -285,7 +285,8 @@ public class DegreeTest extends AbstractGraphTest {
     private void checkDegrees(Map<String, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(entry.getKey()).resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
+                    graph.<Instance>getConcept(entry.getKey())
+                            .resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(), resources.iterator().next().getValue());
         });
