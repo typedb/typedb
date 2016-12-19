@@ -18,20 +18,15 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.AskQueryAdmin;
-import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.query.match.MatchQueryBase;
 import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
@@ -44,14 +39,6 @@ import java.util.Optional;
 public class Queries {
 
     private Queries() {
-    }
-
-    /**
-     * @param pattern a pattern to match in the graph
-     */
-    public static MatchQueryAdmin match(Conjunction<PatternAdmin> pattern, boolean infer, boolean materialise) {
-        MatchQueryBase query = new MatchQueryBase(pattern);
-        return infer ? query.infer(materialise).admin() : query;
     }
 
     /**
@@ -69,20 +56,8 @@ public class Queries {
         return new InsertQueryImpl(vars, Optional.of(matchQuery), Optional.empty());
     }
 
-    /**
-     * @param graph the graph to execute on
-     * @param vars  a collection of Vars to insert
-     */
-    public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, Optional<GraknGraph> graph) {
-        return new InsertQueryImpl(vars, Optional.empty(), graph);
-    }
-
     public static DeleteQueryAdmin delete(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
         return new DeleteQueryImpl(deleters, matchQuery);
-    }
-
-    public static ComputeQueryBuilder compute(Optional<GraknGraph> graph) {
-        return new ComputeQueryBuilderImpl(graph);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {

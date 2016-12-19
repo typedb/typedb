@@ -32,6 +32,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.match.MatchQueryBase;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.graql.macro.Macro;
@@ -103,7 +104,8 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public MatchQuery match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
-        MatchQuery query = Queries.match(conjunction, infer, materialise);
+        MatchQueryBase base = new MatchQueryBase(conjunction);
+        MatchQuery query = infer ? base.infer(materialise).admin() : base;
         return graph.map(query::withGraph).orElse(query);
     }
 
@@ -123,7 +125,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableList<VarAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
-        return Queries.insert(varAdmins, graph);
+        return new InsertQueryImpl(varAdmins, Optional.empty(), graph);
     }
 
     /**
@@ -131,7 +133,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      */
     @Override
     public ComputeQueryBuilder compute(){
-        return Queries.compute(graph);
+        return new ComputeQueryBuilderImpl(graph);
     }
 
     /**
