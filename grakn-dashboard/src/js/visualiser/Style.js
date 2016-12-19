@@ -39,7 +39,7 @@ export default class Style {
                 }
             },
             shape: "box",
-            shadow:true
+            shadow: true
         };
 
         this.edge = {
@@ -62,17 +62,17 @@ export default class Style {
      */
     getNodeColour(type, baseType) {
         // Meta-ontology
-        if(type === baseType)
+        if (type === "")
             return {
                 background: this.node.colour.background,
-                border: "#FF84C9",
+                border: "#5bc2e7",
                 highlight: {
-                    border: "#FF84C9"
+                    border: "#5bc2e7"
                 }
             };
 
         // User defined ontology & instances
-        switch(baseType) {
+        switch (baseType) {
             case API.GENERATED_RELATION_TYPE:
             case API.RELATION_TYPE:
                 return {
@@ -80,14 +80,6 @@ export default class Style {
                     border: "#77dd77",
                     highlight: {
                         border: "#77dd77"
-                    }
-                };
-            case API.TYPE_TYPE:
-                return {
-                    background: this.node.colour.background,
-                    border: "#5bc2e7",
-                    highlight: {
-                        border: "#5bc2e7"
                     }
                 };
             case API.RESOURCE_TYPE:
@@ -109,7 +101,7 @@ export default class Style {
      * @returns {string}
      */
     getNodeShape(baseType) {
-        switch(baseType) {
+        switch (baseType) {
             case "resource":
             case "relation":
             case "entity":
@@ -149,7 +141,9 @@ export default class Style {
         return {
             background: this.node.colour.background,
             border: "#fc1dbb",
-            highlight: { border: "#fc1dbb" }
+            highlight: {
+                border: "#fc1dbb"
+            }
         };
     }
 
