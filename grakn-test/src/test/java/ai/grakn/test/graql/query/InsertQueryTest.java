@@ -562,7 +562,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testErrorRecursiveType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
-        qb.insert(name("thingy").isa("thingy")).execute();
+        qb.insert(name("thingy").sub("thingy")).execute();
     }
 
     @Test
@@ -639,7 +639,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testInsertInstanceWithoutType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("123"), containsString("isa")));
-        qb.insert(name("123").has("name", "Bob")).execute();
+        qb.insert(var().id("123").has("name", "Bob")).execute();
     }
 
     private void assertInsert(Var... vars) {
