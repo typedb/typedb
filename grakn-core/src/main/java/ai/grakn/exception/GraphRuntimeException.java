@@ -22,6 +22,10 @@ package ai.grakn.exception;
  * This exception is thrown when the graph is malformed in any way.
  */
 public class GraphRuntimeException extends RuntimeException {
+    public GraphRuntimeException(String message, Exception e) {
+        super(message, e);
+    }
+
     public GraphRuntimeException(String message) {
         super(message);
     }
