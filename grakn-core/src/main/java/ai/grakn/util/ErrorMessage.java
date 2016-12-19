@@ -55,6 +55,7 @@ public enum ErrorMessage {
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_RESOURCE_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
+    BACKEND_EXCEPTION("Unknown Backend Exception."),
 	
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
