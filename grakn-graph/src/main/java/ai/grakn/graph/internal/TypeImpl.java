@@ -232,22 +232,20 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
     public T superType(T superType) {
         checkTypeMutation();
 
-        //Track any existing data if there is some
         Type currentSuperType = superType();
-        if(currentSuperType != null){
-            currentSuperType.instances().forEach(concept -> {
-                if(concept.isInstance()){
-                    ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getGraknGraph().getConceptLog().putConcept(instance));
-                }
-            });
-        }
-
         if(currentSuperType == null || (!currentSuperType.equals(superType) && !Schema.MetaSchema.isMetaName(superType.getName()))) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
             putEdge(superType, Schema.EdgeLabel.SUB);
             type(); //Check if there is a circular sub loop
+
+            //Track any existing data if there is some
+            instances().forEach(concept -> {
+                if (concept.isInstance()) {
+                    ((InstanceImpl<?, ?>) concept).castings().forEach(
+                            instance -> getGraknGraph().getConceptLog().putConcept(instance));
+                }
+            });
         }
         
         return getThis();
