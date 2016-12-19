@@ -60,9 +60,9 @@ public class BulkResourceMutate<T> {
     private int batchSize = 100;
     private GraknGraph graph;
     private int currentNumberOfVertices = 0;
-    private String resourceTypeName;
+    private final String resourceTypeName;
     private final String keyspace;
-    private Map<String, T> resourcesToPersist = new HashMap<>();
+    private final Map<String, T> resourcesToPersist = new HashMap<>();
 
     private ResourceType<T> resourceType;
     private RoleType resourceOwner;

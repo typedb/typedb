@@ -18,10 +18,12 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.graql.*;
-import com.google.common.collect.ImmutableCollection;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.AskQueryAdmin;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
@@ -30,12 +32,11 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.query.match.MatchQueryBase;
+import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Internal query factory

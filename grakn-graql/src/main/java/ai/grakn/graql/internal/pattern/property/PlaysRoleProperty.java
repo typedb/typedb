@@ -91,8 +91,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
         PlaysRoleProperty that = (PlaysRoleProperty) o;
 
-        if (required != that.required) return false;
-        return role.equals(that.role);
+        return required == that.required && role.equals(that.role);
 
     }
 

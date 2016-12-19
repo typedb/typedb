@@ -478,7 +478,11 @@ class VarImpl implements VarAdmin {
         VarImpl var = (VarImpl) o;
 
         if (userDefinedName != var.userDefinedName) return false;
+
+        // "simplifying" this makes it harder to read
+        //noinspection SimplifiableIfStatement
         if (!properties.equals(var.properties)) return false;
+
         return !userDefinedName || name.equals(var.name);
 
     }

@@ -19,8 +19,6 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
@@ -166,9 +164,7 @@ public class Graql {
      */
     public static Pattern and(Collection<? extends Pattern> patterns) {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
-        Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(patternAdmins));
-
-        return conjunction;
+        return Patterns.conjunction(Sets.newHashSet(patternAdmins));
     }
 
     /**
@@ -185,9 +181,7 @@ public class Graql {
      */
     public static Pattern or(Collection<? extends Pattern> patterns) {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
-        Disjunction<PatternAdmin> disjunction = Patterns.disjunction(Sets.newHashSet(patternAdmins));
-
-        return disjunction;
+        return Patterns.disjunction(Sets.newHashSet(patternAdmins));
     }
 
 
