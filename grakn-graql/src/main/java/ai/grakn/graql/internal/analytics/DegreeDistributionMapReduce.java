@@ -73,6 +73,7 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public Map<Serializable, Set<String>> generateFinalResult(Iterator<KeyValue<Serializable, Set<String>>> keyValues) {
         final Map<Serializable, Set<String>> clusterPopulation = new HashMap<>();
         keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }
 }

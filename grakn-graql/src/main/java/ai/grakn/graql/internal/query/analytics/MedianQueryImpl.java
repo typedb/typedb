@@ -27,9 +27,9 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-public class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
+class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
-    public MedianQueryImpl(Optional<GraknGraph> graph) {
+    MedianQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

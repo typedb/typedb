@@ -176,4 +176,23 @@ public final class Schema {
             return String.format(name, resourceTypeName);
         }
     }
+
+    /**
+     * An enum representing analytics schema elements
+     */
+    public enum Analytics {
+
+        DEGREE("degree"),
+        CONNECTED_COMPONENT("cluster");
+
+        private final String name;
+
+        Analytics(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
 }

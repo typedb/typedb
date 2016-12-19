@@ -50,16 +50,16 @@ public class CountMapReduce extends GraknMapReduce<Long> {
         // use the ghost node detector here again
         if (!selectedTypes.isEmpty()) {
             if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                emitter.emit(MEMORY_KEY, 1l);
+                emitter.emit(MEMORY_KEY, 1L);
                 return;
             }
         } else if (baseTypes.contains(vertex.label())) {
-            emitter.emit(MEMORY_KEY, 1l);
+            emitter.emit(MEMORY_KEY, 1L);
             return;
         }
 
         // TODO: this is a bug with hasNext implementation - must send a message
-        emitter.emit(MEMORY_KEY, 0l);
+        emitter.emit(MEMORY_KEY, 0L);
     }
 
     @Override

@@ -128,7 +128,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMaxLong() {
-        AggregateQuery<Optional<?>> query = qb
+        AggregateQuery<Optional<Long>> query = qb
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(max("y"));
 
@@ -137,7 +137,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMaxDouble() {
-        AggregateQuery<Optional<?>> query = qb
+        AggregateQuery<Optional<Double>> query = qb
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
                 .aggregate(max("y"));
 
@@ -146,13 +146,13 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMaxString() {
-        AggregateQuery<Optional<?>> query = qb.match(var("x").isa("title")).aggregate(max("x"));
+        AggregateQuery<Optional<String>> query = qb.match(var("x").isa("title")).aggregate(max("x"));
         assertEquals(Optional.of("The Muppets"), query.execute());
     }
 
     @Test
     public void testMinLong() {
-        AggregateQuery<Optional<?>> query = qb
+        AggregateQuery<Optional<Long>> query = qb
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(min("y"));
 

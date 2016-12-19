@@ -98,10 +98,9 @@ stop)
     if [[ -e $CASSANDRA_PS ]]; then
         pid=`cat $CASSANDRA_PS`
         kill "$pid"
-        while kill -0 "$pid"; do
+        while kill -0 "$pid" 2>/dev/null; do
             sleep 0.5
         done
-        rm $CASSANDRA_PS
     fi
     ;;
 

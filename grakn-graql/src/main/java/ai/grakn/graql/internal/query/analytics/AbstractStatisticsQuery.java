@@ -38,7 +38,7 @@ import static java.util.stream.Collectors.joining;
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<String> statisticsResourceTypeNames = new HashSet<>();
-    Map<String, String> resourceTypesDataTypeMap = new HashMap<>();
+    final Map<String, String> resourceTypesDataTypeMap = new HashMap<>();
 
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeNames) {
         this.statisticsResourceTypeNames = Sets.newHashSet(statisticsResourceTypeNames);

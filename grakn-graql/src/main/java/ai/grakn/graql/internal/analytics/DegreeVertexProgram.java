@@ -19,25 +19,45 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.Schema;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     public static final String DEGREE = "medianVertexProgram.degree";
+    private static final String OF_TYPE_NAMES = "degreeAndPersistVertexProgram.ofTypeNames";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
+
+    private Set<String> ofTypeNames = new HashSet<>();
 
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<String> types) {
+    public DegreeVertexProgram(Set<String> types, Set<String> ofTypeNames) {
         selectedTypes = types;
+        this.ofTypeNames = ofTypeNames;
+    }
+
+    @Override
+    public void storeState(final Configuration configuration) {
+        super.storeState(configuration);
+        ofTypeNames.forEach(type -> configuration.addProperty(OF_TYPE_NAMES + "." + type, type));
+    }
+
+    @Override
+    public void loadState(final Graph graph, final Configuration configuration) {
+        super.loadState(graph, configuration);
+        configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
+                ofTypeNames.add((String) configuration.getProperty(OF_TYPE_NAMES + "." + key)));
     }
 
     @Override
@@ -60,8 +80,11 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                 break;
 
             case 2:
-                if (selectedTypes.contains(Utility.getVertexType(vertex)))
-                    vertex.property(DEGREE, getEdgeCount(messenger));
+                String type = Utility.getVertexType(vertex);
+                if (selectedTypes.contains(type)) {
+                    if (ofTypeNames.isEmpty() || ofTypeNames.contains(type))
+                        vertex.property(DEGREE, getEdgeCount(messenger));
+                }
                 break;
         }
     }

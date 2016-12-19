@@ -79,7 +79,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         return matchQuery.map(
                 m -> Queries.insert(vars, m.withGraph(graph).admin())
         ).orElseGet(
-                () -> Queries.insert(vars, Optional.of(graph))
+                () -> new InsertQueryImpl(vars, Optional.empty(), Optional.of(graph))
         );
     }
 

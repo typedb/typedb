@@ -22,7 +22,7 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.QueryBuilderImpl;
+import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

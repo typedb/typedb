@@ -149,12 +149,12 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testComputeQueryToString() {
-        assertEquals("compute count;", qb.compute("count").toString());
+        assertEquals("compute count;", qb.compute().count().toString());
     }
 
     @Test
     public void testComputeQuerySubgraphToString() {
-        ComputeQuery query = qb.compute("degrees", Sets.newHashSet("movie", "person"), Sets.newHashSet());
+        ComputeQuery query = qb.compute().degree().in("movie", "person");
         assertEquals("compute degrees in movie, person;", query.toString());
     }
 

@@ -26,13 +26,14 @@ import ai.grakn.graql.internal.analytics.StdMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
+class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
 
-    public StdQueryImpl(Optional<GraknGraph> graph) {
+    StdQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
@@ -44,7 +45,7 @@ public class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> impl
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes),
+        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes, Collections.emptySet()),
                 new StdMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);

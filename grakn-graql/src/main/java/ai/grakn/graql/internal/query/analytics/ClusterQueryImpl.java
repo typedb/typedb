@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
@@ -38,13 +39,13 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
 
-public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
+class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
 
     private boolean members = false;
     private boolean persist = false;
     private long clusterSize = -1L;
 
-    public ClusterQueryImpl(Optional<GraknGraph> graph) {
+    ClusterQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
@@ -63,8 +64,8 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
                     throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                             .getMessage(this.getClass().toString()));
                 }
-                mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
-                waitOnMutateResourceOntology(connectedComponent);
+                mutateResourceOntology(Schema.Analytics.CONNECTED_COMPONENT.getName(), ResourceType.DataType.STRING);
+                waitOnMutateResourceOntology(Schema.Analytics.CONNECTED_COMPONENT.getName());
                 if (clusterSize == -1L) {
                     result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace),
                             new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
@@ -94,8 +95,8 @@ public class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements Clus
                     throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                             .getMessage(this.getClass().toString()));
                 }
-                mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
-                waitOnMutateResourceOntology(connectedComponent);
+                mutateResourceOntology(Schema.Analytics.CONNECTED_COMPONENT.getName(), ResourceType.DataType.STRING);
+                waitOnMutateResourceOntology(Schema.Analytics.CONNECTED_COMPONENT.getName());
                 if (clusterSize == -1L) {
                     result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace),
                             new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));

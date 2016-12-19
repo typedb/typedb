@@ -25,6 +25,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Compute the connected components in the subgraph.
+ */
 public interface ClusterQuery<T> extends ComputeQuery<T> {
 
     /**

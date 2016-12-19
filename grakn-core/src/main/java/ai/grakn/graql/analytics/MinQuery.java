@@ -24,6 +24,9 @@ import ai.grakn.graql.ComputeQuery;
 import java.util.Collection;
 import java.util.Optional;
 
+/**
+ * Compute the minimum value of the selected resource-type.
+ */
 public interface MinQuery extends ComputeQuery<Optional<Number>> {
 
     /**

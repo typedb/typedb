@@ -18,6 +18,8 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.exception.GraknBackendException;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -41,7 +43,12 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     @Override
     public void commitTx(){
-        super.commitTx();
+        try {
+            super.commitTx();
+        } catch (TitanException e){
+            throw new GraknBackendException(e);
+        }
+
         if(!getTinkerPopGraph().tx().isOpen()){
             getTinkerPopGraph().tx().open(); //Until we sort out the transaction handling properly commits have to result in transactions being auto opened
         }

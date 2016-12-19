@@ -26,21 +26,27 @@ import ai.grakn.graql.internal.analytics.DegreeAndPersistVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
+import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
+import static java.util.stream.Collectors.joining;
 
-public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
+class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
 
     private boolean persist = false;
+    private Set<String> ofTypeNames = new HashSet<>();
 
-    public DegreeQueryImpl(Optional<GraknGraph> graph) {
+    DegreeQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
@@ -50,6 +56,11 @@ public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements Degre
         else LOGGER.info("DegreeVertexProgram is called");
         initSubGraph();
         if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
+        ofTypeNames.forEach(type -> {
+            if (!subTypeNames.contains(type))
+                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                        .getMessage(type));
+        });
 
         ComputerResult result;
         GraknComputer computer = getGraphComputer();
@@ -59,14 +70,19 @@ public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements Degre
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
             }
-            mutateResourceOntology(degree, ResourceType.DataType.LONG);
-            waitOnMutateResourceOntology(degree);
-            computer.compute(new DegreeAndPersistVertexProgram(subTypeNames, keySpace));
+            mutateResourceOntology(Schema.Analytics.DEGREE.getName(), ResourceType.DataType.LONG);
+            waitOnMutateResourceOntology(Schema.Analytics.DEGREE.getName());
+            computer.compute(new DegreeAndPersistVertexProgram(subTypeNames, keySpace, ofTypeNames));
             LOGGER.info("DegreeAndPersistVertexProgram is done");
             return (T) "Degrees have been persisted";
         } else {
-            result = computer.compute(new DegreeVertexProgram(subTypeNames),
-                    new DegreeDistributionMapReduce(subTypeNames));
+            if (ofTypeNames.isEmpty()) {
+                result = computer.compute(new DegreeVertexProgram(subTypeNames, ofTypeNames),
+                        new DegreeDistributionMapReduce(subTypeNames));
+            } else {
+                result = computer.compute(new DegreeVertexProgram(subTypeNames, ofTypeNames),
+                        new DegreeDistributionMapReduce(ofTypeNames));
+            }
             LOGGER.info("DegreeVertexProgram is done");
             return (T) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         }
@@ -94,8 +110,23 @@ public class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements Degre
     }
 
     @Override
+    public DegreeQuery<T> of(String... ofTypeNames) {
+        this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        return this;
+    }
+
+    @Override
+    public DegreeQuery<T> of(Collection<String> ofTypeNames) {
+        this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        return this;
+    }
+
+    @Override
     String graqlString() {
-        String string =  "degrees" + subtypeString();
+        String string = "degrees" + subtypeString();
+
+        if (!ofTypeNames.isEmpty()) string += " of " + ofTypeNames.stream()
+                .map(StringConverter::idToString).collect(joining(", ")) + ";";
 
         if (persist) string += " persist;";
 

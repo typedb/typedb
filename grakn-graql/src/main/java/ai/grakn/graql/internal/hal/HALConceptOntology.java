@@ -38,9 +38,9 @@ import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.getBas
 
 class HALConceptOntology {
 
-    private RepresentationFactory factory;
+    private final RepresentationFactory factory;
 
-    private Representation halResource;
+    private final Representation halResource;
 
     private final String keyspace;
 

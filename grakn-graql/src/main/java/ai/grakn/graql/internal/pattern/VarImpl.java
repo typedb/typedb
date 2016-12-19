@@ -68,7 +68,7 @@ import static java.util.stream.Collectors.toSet;
  */
 class VarImpl implements VarAdmin {
 
-    private Set<VarProperty> properties = new HashSet<>();
+    private final Set<VarProperty> properties = new HashSet<>();
 
     private String name;
     private final boolean userDefinedName;
@@ -478,7 +478,11 @@ class VarImpl implements VarAdmin {
         VarImpl var = (VarImpl) o;
 
         if (userDefinedName != var.userDefinedName) return false;
+
+        // "simplifying" this makes it harder to read
+        //noinspection SimplifiableIfStatement
         if (!properties.equals(var.properties)) return false;
+
         return !userDefinedName || name.equals(var.name);
 
     }

@@ -26,13 +26,14 @@ import ai.grakn.graql.internal.analytics.MinMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
+class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
 
-    public MinQueryImpl(Optional<GraknGraph> graph) {
+    MinQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
@@ -44,7 +45,7 @@ public class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> impl
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes),
+        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes, Collections.emptySet()),
                 new MinMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("MinMapReduce is done");

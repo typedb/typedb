@@ -6,7 +6,7 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 class HALGeneratedRelation {
 
-    private RepresentationFactory factory;
+    private final RepresentationFactory factory;
 
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String INBOUND_EDGE = "IN";
@@ -23,12 +23,11 @@ class HALGeneratedRelation {
     }
 
     Representation getNewGeneratedRelation(String assertionID, String relationType) {
-        Representation assertionResource = factory.newRepresentation(assertionID)
+        return factory.newRepresentation(assertionID)
                 .withProperty(ID_PROPERTY, "temp-assertion")
                 .withProperty(TYPE_PROPERTY, relationType)
                 .withProperty(BASETYPE_PROPERTY, "generated-relation")
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, "");
-        return assertionResource;
     }
 }

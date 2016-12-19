@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 import java.util.ArrayList;
 import java.util.List;

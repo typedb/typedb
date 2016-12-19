@@ -30,11 +30,12 @@ import static java.util.stream.Collectors.toSet;
 
 public class Scope {
 
-    private Scope parent;
-    private Map<String, Object> values;
-    private Set<String> variablesEncountered;
+    private final Scope parent;
+    private final Map<String, Object> values;
+    private final Set<String> variablesEncountered;
 
     public Scope(Map<String, Object> data){
+        parent = null;
         this.values = new HashMap<>();
         this.variablesEncountered = new HashSet<>();
         assign("", data);

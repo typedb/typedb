@@ -27,6 +27,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
 
 class RegexPredicate implements ValuePredicateAdmin {
 
@@ -40,7 +42,8 @@ class RegexPredicate implements ValuePredicateAdmin {
     }
 
     private P<Object> regexPredicate() {
-        return new P<>((value, p) -> java.util.regex.Pattern.matches((String) p, (String) value), pattern);
+        BiPredicate<Object, Object> predicate = (value, p) -> Pattern.matches((String) p, (String) value);
+        return new P<>(predicate, pattern);
     }
 
     @Override

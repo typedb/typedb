@@ -153,8 +153,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         HasResourceProperty that = (HasResourceProperty) o;
 
-        if (!resourceType.equals(that.resourceType)) return false;
-        return resource.equals(that.resource);
+        return resourceType.equals(that.resourceType) && resource.equals(that.resource);
 
     }
 

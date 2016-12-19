@@ -40,12 +40,12 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
-public class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
+class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
 
     private String sourceId = null;
     private String destinationId = null;
 
-    public PathQueryImpl(Optional<GraknGraph> graph) {
+    PathQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

@@ -28,9 +28,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
-public class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
+class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
-    public CountQueryImpl(Optional<GraknGraph> graph) {
+    CountQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 

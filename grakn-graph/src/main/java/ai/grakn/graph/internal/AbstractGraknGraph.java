@@ -37,7 +37,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.QueryBuilderImpl;
+import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
