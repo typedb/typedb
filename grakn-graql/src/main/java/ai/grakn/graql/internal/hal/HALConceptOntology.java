@@ -81,7 +81,7 @@ class HALConceptOntology {
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
-        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
+        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + this.keyspace);
 
         //State
         if (concept.isInstance()) {
