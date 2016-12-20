@@ -107,6 +107,8 @@ public abstract class Atom extends AtomBase {
         return atomRecursive;
     }
 
+    public boolean requiresMaterialisation(){ return false; }
+
     public Type getType(){
         if (type == null)
             type = getParentQuery().getGraph().orElse(null).getType(typeId);

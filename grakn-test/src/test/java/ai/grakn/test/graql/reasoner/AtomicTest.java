@@ -19,7 +19,9 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -36,6 +38,8 @@ import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.util.ErrorMessage;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -204,6 +208,41 @@ public class AtomicTest extends AbstractEngineTest{
         correctUnifiers2.put("c", "y");
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
         assertTrue(unifiers2.entrySet().containsAll(correctUnifiers2.entrySet()));
+    }
+
+    @Test
+    public void testMatchAllUnification(){
+        GraknGraph graph = snbGraph;
+        Relation relation = (Relation) new AtomicQuery("match ($z, $b) isa recommendation;", graph).getAtom();
+        Relation parentRelation = (Relation) new AtomicQuery("match ($a, $x);", graph).getAtom();
+        Map<String, String> unifiers = relation.getUnifiers(parentRelation);
+        relation.unify(unifiers);
+        assertTrue(unifiers.size() == 2);
+        Set<String> vars = relation.getVarNames();
+        Set<String> correctVars = new HashSet<>();
+        correctVars.add("a");
+        correctVars.add("x");
+        assertTrue(!vars.contains(""));
+        assertTrue(vars.containsAll(correctVars));
+
+    }
+
+    @Test
+    public void testMatchAllUnification2(){
+        GraknGraph graph = snbGraph;
+        Relation parent = (Relation) new AtomicQuery("match $r($a, $x);", graph).getAtom();
+        PatternAdmin body = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
+        PatternAdmin head = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
+        InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
+
+        rule.unify(parent);
+        Set<String> vars = rule.getHead().getAtom().getVarNames();
+        Set<String> correctVars = new HashSet<>();
+        correctVars.add("r");
+        correctVars.add("a");
+        correctVars.add("x");
+        assertTrue(!vars.contains(""));
+        assertTrue(vars.containsAll(correctVars));
     }
 
 

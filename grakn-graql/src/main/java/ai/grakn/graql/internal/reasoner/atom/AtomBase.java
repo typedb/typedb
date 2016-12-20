@@ -87,21 +87,14 @@ public abstract class AtomBase implements Atomic{
 
     public void unify(String from, String to) {
         String var = getVarName();
-        if (var.equals(from)) {
-            setVarName(to);
-        } else if (var.equals(to)) {
-            setVarName("captured->" + var);
-        }
+        if (var.equals(from)) setVarName(to);
+        else if (var.equals(to)) setVarName("captured->" + var);
     }
 
     public void unify(Map<String, String> unifiers){
         String var = getVarName();
-        if (unifiers.containsKey(var)) {
-            setVarName(unifiers.get(var));
-        }
-        else if (unifiers.containsValue(var)) {
-            setVarName("captured->" + var);
-        }
+        if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
+        else if (unifiers.containsValue(var)) setVarName("captured->" + var);
     }
 
     public Map<String, String> getUnifiers(Atomic parentAtom) {
