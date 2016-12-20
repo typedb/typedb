@@ -54,7 +54,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     private static final String KEYSPACE = "connectedComponentVertexProgram.keyspace";
     private static final String CLUSTER_NAME = "connectedComponentVertexProgram.clusterName";
 
-    private BulkResourceMutate bulkResourceMutate;
+    private BulkResourceMutate<String> bulkResourceMutate;
     private Set<String> selectedLabels = new HashSet<>();
 
     public ConnectedComponentVertexProgram() {
@@ -163,7 +163,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 if (memory.get(IS_LAST_ITERATION)) {
                     if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                         if (selectedLabels.isEmpty() || selectedLabels.contains(vertex.<String>value(CLUSTER_LABEL)))
-                            bulkResourceMutate.putValue(vertex, vertex.<String>value(CLUSTER_LABEL));
+                            bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
                     }
                 } else {
                     // split the default case because shortcut edges cannot be filtered out
@@ -222,7 +222,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void workerIterationStart(Memory memory) {
         if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
             LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
-            bulkResourceMutate = new BulkResourceMutate<String>((String) persistentProperties.get(KEYSPACE),
+            bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE),
                     (String) persistentProperties.get(CLUSTER_NAME));
         }
     }

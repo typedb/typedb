@@ -34,7 +34,7 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     private static final String OF_TYPE_NAMES = "degreeAndPersistVertexProgram.ofTypeNames";
     private static final String DEGREE_NAME = "degreeAndPersistVertexProgram.degreeName";
 
-    private BulkResourceMutate bulkResourceMutate;
+    private BulkResourceMutate<Long> bulkResourceMutate;
     private Set<String> ofTypeNames = new HashSet<>();
 
     public DegreeAndPersistVertexProgram() {
@@ -87,7 +87,7 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     @Override
     public void workerIterationStart(Memory memory) {
         if (memory.getIteration() == 2) {
-            bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY),
+            bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE_KEY),
                     (String) persistentProperties.get(DEGREE_NAME));
         }
     }
