@@ -47,7 +47,7 @@ public class HALConceptRepresentationBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
-    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;?keyspace=%s";
+    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;";
     private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<String, Concept>> graqlResultsList, String keyspace) {
@@ -136,7 +136,7 @@ public class HALConceptRepresentationBuilder {
 
         String isaString = (relationType.length()==0) ? "" : "isa "+relationType;
 
-        String assertionID = String.format(ASSERTION_URL, firstID, secondID, firstRole, secondRole,isaString,keyspace);
+        String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString);
         currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(assertionID, relationType));
     }
 
