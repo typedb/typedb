@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
+import ai.grakn.factory.GraphFactory;
 import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.Test;
 
@@ -96,5 +97,13 @@ public class GraphTest extends AbstractRollbackGraphTest {
         } catch (Exception e){
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testSameGraphs(){
+        String key = "mykeyspace";
+        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).getGraph();
+        GraknGraph graph2 = GraphFactory.getInstance().getGraph(key);
+        assertEquals(graph1, graph2);
     }
 }
