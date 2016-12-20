@@ -39,6 +39,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -58,6 +60,31 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
+    }
+
+    @Test
+    public void testInferredResourceRelation() throws GraknValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        String resourceTypeName = "degree";
+        ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
+        EntityType thing = graph.putEntityType("thing");
+        thing.hasResource(degree);
+
+        Entity thisThing = thing.addEntity();
+        Resource thisResource = degree.putResource(1L);
+        thisThing.hasResource(thisResource);
+        graph.commit();
+
+        Map<Long, Set<String>> degrees;
+        degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
+        assertEquals(1, degrees.size());
+        assertEquals(1, degrees.get(1L).size());
+
+        degrees = graph.graql().compute().degree().in("thing", "degree").execute();
+        assertEquals(1, degrees.size());
+        assertEquals(2, degrees.get(1L).size());
     }
 
     @Test

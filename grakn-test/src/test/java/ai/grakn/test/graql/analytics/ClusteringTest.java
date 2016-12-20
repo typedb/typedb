@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -173,6 +173,9 @@ public class ClusteringTest extends AbstractGraphTest {
         memberMap.values().stream()
                 .flatMap(Collection::stream)
                 .forEach(id -> checkConnectedComponent(id, id, label));
+
+        assertEquals(null, graph.getType(Schema.Analytics.CLUSTER.getName()));
+        assertNotEquals(null, graph.getType(label));
     }
 
     @Test

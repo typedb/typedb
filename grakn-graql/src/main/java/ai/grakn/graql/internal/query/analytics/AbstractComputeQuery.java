@@ -205,8 +205,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 }
             }
 
-            if (isOntologyComplete) return;
+            if (isOntologyComplete) {
+                theGraph.showImplicitConcepts(false);
+                return;
+            }
         }
+        theGraph.showImplicitConcepts(false);
         throw new RuntimeException(
                 ErrorMessage.ONTOLOGY_MUTATION
                         .getMessage("Failed to confirm ontology is present after mutation."));
@@ -226,5 +230,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     @Override
     public String toString() {
         return "compute " + graqlString();
+    }
+
+    Set<String> getHasResourceRelationTypes() {
+        return subTypeNames.stream()
+                .filter(type -> graph.get().getType(type).isResourceType())
+                .map(Schema.Resource.HAS_RESOURCE::getName)
+                .collect(Collectors.toSet());
     }
 }
