@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Grakn;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -62,17 +63,12 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
     private static TitanGraph noIndexGraph;
     private static TitanGraph indexGraph;
 
-    private static InternalFactory titanGraphFactory ;
-
-
     @BeforeClass
     public static void setupClass() throws InterruptedException {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = new TitanInternalFactory(TEST_SHARED, TEST_URI, TEST_PROPERTIES);
-
-        sharedGraph = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+        sharedGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING).getTinkerPopGraph();
 
         int max = 1000;
         noIndexGraph = getGraph();
@@ -113,9 +109,9 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     @Test
     public void testSingleton(){
-        GraknTitanGraph mg1 = (GraknTitanGraph) titanGraphFactory.getGraph(true);
-        GraknTitanGraph mg2 = (GraknTitanGraph) titanGraphFactory.getGraph(false);
-        GraknTitanGraph mg3 = (GraknTitanGraph) titanGraphFactory.getGraph(true);
+        GraknTitanGraph mg1 = titanGraphFactory.getGraph(true);
+        GraknTitanGraph mg2 = titanGraphFactory.getGraph(false);
+        GraknTitanGraph mg3 = titanGraphFactory.getGraph(true);
 
         assertEquals(mg1, mg3);
         assertEquals(mg1.getTinkerPopGraph(), mg3.getTinkerPopGraph());
@@ -186,7 +182,7 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
-        TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", TEST_URI, TEST_PROPERTIES);
+        TitanInternalFactory factory = new TitanInternalFactory("simplekeyspace", Grakn.IN_MEMORY, TEST_PROPERTIES);
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
@@ -215,12 +211,12 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     @Test
     public void testGraphNotClosed(){
-        GraknTitanGraph graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
+        GraknTitanGraph graph = titanGraphFactory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
         graph.close();
 
-        graph = (GraknTitanGraph) titanGraphFactory.getGraph(false);
+        graph = titanGraphFactory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
     }
@@ -228,8 +224,8 @@ public class GraknTitanGraphFactoryTest extends TitanTestBase{
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString().replaceAll("-", "");
-        titanGraphFactory = new TitanInternalFactory(name, TEST_URI, TEST_PROPERTIES);
-        Graph graph = ((GraknTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+        titanGraphFactory = new TitanInternalFactory(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        Graph graph = titanGraphFactory.getGraph(TEST_BATCH_LOADING).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;
     }

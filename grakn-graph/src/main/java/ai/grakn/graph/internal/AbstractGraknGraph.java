@@ -619,6 +619,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void commit() throws GraknValidationException {
+        commit(true);
+    }
+    public void commit(boolean submitLogs) throws GraknValidationException {
         validateGraph();
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
@@ -635,7 +638,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        if(modifiedConcepts.size() > 0)
+        if(submitLogs && modifiedConcepts.size() > 0)
             submitCommitLogs(modifiedConcepts);
     }
     protected void commitTx(){
@@ -680,9 +683,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         String result = EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString());
         LOG.debug("Response from engine [" + result + "]");
     }
-    String getCommitLogEndPoint(){
-        if(engine == null || Grakn.IN_MEMORY.equals(engine))
-            return null;
+    private String getCommitLogEndPoint(){
+        if(Grakn.IN_MEMORY.equals(engine))
+            return Grakn.IN_MEMORY;
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 

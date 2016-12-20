@@ -1,5 +1,6 @@
 package ai.grakn.factory;
 
+import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -16,8 +17,8 @@ import java.util.Properties;
 
 public abstract class TitanTestBase {
     final static boolean TEST_BATCH_LOADING = false;
-    final static String TEST_CONFIG = "../conf/main/grakn.properties";
-    final static String TEST_URI = null;
+    private final static String TEST_SHARED = "shared";
+    static TitanInternalFactory titanGraphFactory;
     final static Properties TEST_PROPERTIES = new Properties();
 
     @Rule
@@ -33,11 +34,13 @@ public abstract class TitanTestBase {
             throw new RuntimeException(e);
         }
 
-        try (InputStream in = new FileInputStream(TEST_CONFIG)){
+        try (InputStream in = new FileInputStream("../conf/main/grakn.properties")){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage("../conf/main/grakn.properties"), e);
         }
+
+        titanGraphFactory = new TitanInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 
     @AfterClass
