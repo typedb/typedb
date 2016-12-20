@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
@@ -178,6 +179,26 @@ public class Utility {
 
         Var headVar = Graql.var().isa(relation.getName()).rel(fromRoleName, "x").rel(toRoleName, varNames.peek());
         return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
+    }
+
+    public static Set<RoleType> getNonMetaSuperRoleTypes(RoleType role){
+        Set<RoleType> roles = new HashSet<>();
+        RoleType baseRole = role.superType();
+        while(!Schema.MetaSchema.isMetaName(baseRole.getName())){
+            roles.add(baseRole);
+            baseRole = baseRole.superType();
+        }
+        return roles;
+    }
+
+    public static RoleType getNonMetaTopRole(RoleType role){
+        RoleType topRole = role;
+        RoleType superRole = topRole.superType();
+        while(!Schema.MetaSchema.isMetaName(superRole.getName())) {
+            topRole = superRole;
+            superRole = superRole.superType();
+        }
+        return topRole;
     }
 
     //check whether child is compatible with parent, i.e. whether if child is true parent is also true
