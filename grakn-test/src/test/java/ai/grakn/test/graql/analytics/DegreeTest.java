@@ -241,7 +241,7 @@ public class DegreeTest extends AbstractGraphTest {
         // assert persisted degrees are correct
         graph = factory.getGraph();
         checkDegrees(correctDegrees);
-        checkNoDegree(id1, id2, id3, entity4);
+        checkNoDegree(Schema.Analytics.DEGREE.getName(), id1, id2, id3, entity4);
 
         Graql.compute().degree().in("thing", "related").persist().withGraph(graph).execute();
 
@@ -252,7 +252,7 @@ public class DegreeTest extends AbstractGraphTest {
         // assert persisted degrees are correct
         graph = factory.getGraph();
         checkDegrees(correctDegrees);
-        checkNoDegree(entity4);
+        checkNoDegree(Schema.Analytics.DEGREE.getName(), entity4);
 
         // compute again and again ...
         long numVertices = 0;
@@ -282,19 +282,83 @@ public class DegreeTest extends AbstractGraphTest {
         }
     }
 
+    @Test
+    public void testDegreesAndPersistName() throws Exception {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        // create instances
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+
+        String entity1 = thing.addEntity().getId();
+        String entity2 = thing.addEntity().getId();
+        String entity3 = thing.addEntity().getId();
+        String entity4 = anotherThing.addEntity().getId();
+
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
+        thing.playsRole(role1).playsRole(role2);
+        anotherThing.playsRole(role1).playsRole(role2);
+        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
+
+        // relate them
+        String id1 = related.addRelation()
+                .putRolePlayer(role1, graph.getConcept(entity1))
+                .putRolePlayer(role2, graph.getConcept(entity2))
+                .getId();
+        String id2 = related.addRelation()
+                .putRolePlayer(role1, graph.getConcept(entity2))
+                .putRolePlayer(role2, graph.getConcept(entity3))
+                .getId();
+        String id3 = related.addRelation()
+                .putRolePlayer(role1, graph.getConcept(entity2))
+                .putRolePlayer(role2, graph.getConcept(entity4))
+                .getId();
+        graph.commit();
+
+        Map<String, Long> correctDegrees = new HashMap<>();
+        correctDegrees.put(entity1, 1L);
+        correctDegrees.put(entity2, 3L);
+        correctDegrees.put(entity3, 1L);
+        correctDegrees.put(id1, 2L);
+        correctDegrees.put(id2, 2L);
+        correctDegrees.put(id3, 1L);
+
+        // assert persisted degrees are correct
+        String label = "label";
+        Graql.compute().degree().in("thing", "related").persist(label).withGraph(graph).execute();
+
+        // assert persisted degrees are correct
+        graph = factory.getGraph();
+        checkDegrees(correctDegrees, label);
+        checkNoDegree(label, entity4);
+    }
+
     private void checkDegrees(Map<String, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(entry.getKey()).resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
+                    graph.<Instance>getConcept(entry.getKey())
+                            .resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(), resources.iterator().next().getValue());
         });
     }
 
-    private void checkNoDegree(String... ids) {
+    private void checkDegrees(Map<String, Long> correctDegrees, String resourceTypeName) {
+        correctDegrees.entrySet().forEach(entry -> {
+            Collection<Resource<?>> resources =
+                    graph.<Instance>getConcept(entry.getKey())
+                            .resources(graph.getResourceType(resourceTypeName));
+            assertEquals(1, resources.size());
+            assertEquals(entry.getValue(), resources.iterator().next().getValue());
+        });
+    }
+
+    private void checkNoDegree(String resourceTypeName, String... ids) {
         Sets.newHashSet(ids).forEach(id -> {
             Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(id).resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
+                    graph.<Instance>getConcept(id).resources(graph.getResourceType(resourceTypeName));
             assertEquals(0, resources.size());
         });
     }

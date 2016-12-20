@@ -52,6 +52,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
 
     private static final String PERSIST = "connectedComponentVertexProgram.persist";
     private static final String KEYSPACE = "connectedComponentVertexProgram.keyspace";
+    private static final String CLUSTER_NAME = "connectedComponentVertexProgram.clusterName";
 
     private BulkResourceMutate bulkResourceMutate;
     private Set<String> selectedLabels = new HashSet<>();
@@ -64,14 +65,16 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         this.persistentProperties.put(PERSIST, false);
     }
 
-    public ConnectedComponentVertexProgram(Set<String> selectedTypes, String keyspace) {
+    public ConnectedComponentVertexProgram(Set<String> selectedTypes, String keyspace, String clusterName) {
         this.selectedTypes = selectedTypes;
         this.persistentProperties.put(PERSIST, true);
         this.persistentProperties.put(KEYSPACE, keyspace);
+        this.persistentProperties.put(CLUSTER_NAME, clusterName);
     }
 
-    public ConnectedComponentVertexProgram(Set<String> selectedTypes, String keyspace, Set<String> selectedLabels) {
-        this(selectedTypes, keyspace);
+    public ConnectedComponentVertexProgram(Set<String> selectedTypes, String keyspace, String clusterName,
+                                           Set<String> selectedLabels) {
+        this(selectedTypes, keyspace, clusterName);
         this.selectedLabels = selectedLabels;
     }
 
@@ -219,8 +222,8 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void workerIterationStart(Memory memory) {
         if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
             LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
-            bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE),
-                    Schema.Analytics.CONNECTED_COMPONENT.getName());
+            bulkResourceMutate = new BulkResourceMutate<String>((String) persistentProperties.get(KEYSPACE),
+                    (String) persistentProperties.get(CLUSTER_NAME));
         }
     }
 

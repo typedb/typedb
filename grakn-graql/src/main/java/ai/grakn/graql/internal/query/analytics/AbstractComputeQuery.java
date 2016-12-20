@@ -218,7 +218,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         if (subTypeNames.isEmpty()) {
             return ";";
         } else {
-            return " in " + subTypeNames.stream().map(StringConverter::idToString).collect(joining(", ")) + ";";
+            return " in "
+                    + subTypeNames.stream().map(StringConverter::idToString).collect(joining(", ")) + ";";
         }
     }
 
