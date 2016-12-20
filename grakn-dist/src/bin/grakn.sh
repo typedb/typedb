@@ -23,20 +23,28 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_HOME=$(cd "${GRAKN_BIN}"/.. && pwd -P)
 fi
 
+export GRAKN_INCLUDE="${GRAKN_HOME}/bin/grakn.in.sh"
+. "$GRAKN_INCLUDE"
+
+
 SLEEP_INTERVAL_S=2
 
 case "$1" in
 
 start)
 
-    "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
+    if [ $USE_CASSANDRA ]; then
+        "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
+    fi
     "${GRAKN_HOME}/bin/grakn-engine.sh" start
     ;;
 
 stop)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
-    "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
+    if [ $USE_CASSANDRA ]; then
+        "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
+    fi
     ;;
 
 clean)

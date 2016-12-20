@@ -23,6 +23,10 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_HOME=$(cd "${GRAKN_BIN}"/.. && pwd -P)
 fi
 
+export GRAKN_INCLUDE="${GRAKN_HOME}/bin/grakn.in.sh"
+. "$GRAKN_INCLUDE"
+
+
 CASSANDRA_STARTUP_TIMEOUT_S=60
 SLEEP_INTERVAL_S=2
 NODETOOL="${GRAKN_HOME}/bin/nodetool"

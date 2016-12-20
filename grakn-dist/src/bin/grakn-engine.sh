@@ -23,6 +23,9 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_HOME=$(cd "${GRAKN_BIN}"/.. && pwd -P)
 fi
 
+export GRAKN_INCLUDE="${GRAKN_HOME}/bin/grakn.in.sh"
+. "$GRAKN_INCLUDE"
+
 ENGINE_STARTUP_TIMEOUT_S=30
 SLEEP_INTERVAL_S=2
 
@@ -49,6 +52,10 @@ wait_for_engine() {
     return 1
 }
 
+if [[ ! -z "${GRAKN_ENGINE_CONFIG}" ]]; then
+    ENGINE_OPTS=$ENGINE_OPTS" -Dgrakn.conf=${GRAKN_ENGINE_CONFIG}"
+fi
+
 case "$1" in
 
 start)
@@ -58,7 +65,7 @@ start)
     else
         # engine has not already started
         echo -n "Starting engine"
-        java -cp "${GRAKN_HOME}/lib/*" -Dgrakn.dir="${GRAKN_HOME}/bin" ai.grakn.engine.GraknEngineServer &
+        java -cp "${GRAKN_HOME}/lib/*" -Dgrakn.dir="${GRAKN_HOME}/bin" ${ENGINE_OPTS} ai.grakn.engine.GraknEngineServer &
         echo $!>$ENGINE_PS
         wait_for_engine
     fi
