@@ -282,7 +282,13 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.MEMBERS() != null) cluster = cluster.members();
 
-        if (ctx.PERSIST() != null) cluster = cluster.persist();
+        if (ctx.PERSIST() != null) {
+            if (ctx.id() != null) {
+                cluster = cluster.persist(visitId(ctx.id()));
+            } else {
+                cluster = cluster.persist();
+            }
+        }
 
         if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
 
@@ -297,7 +303,13 @@ class QueryVisitor extends GraqlBaseVisitor {
     public DegreeQuery<?> visitDegrees(GraqlParser.DegreesContext ctx) {
         DegreeQuery<?> degree = queryBuilder.compute().degree();
 
-        if (ctx.PERSIST() != null) degree = degree.persist();
+        if (ctx.PERSIST() != null) {
+            if (ctx.id() != null) {
+                degree = degree.persist(visitId(ctx.id()));
+            } else {
+                degree = degree.persist();
+            }
+        }
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));
