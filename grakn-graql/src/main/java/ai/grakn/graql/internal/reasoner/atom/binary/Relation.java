@@ -55,6 +55,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
 
 public class Relation extends TypeAtom {
 
@@ -513,19 +514,16 @@ public class Relation extends TypeAtom {
         Collection<RoleType> rolesToAllocate = relType.hasRoles();
         //remove sub and super roles of allocated roles
         allocatedRoles.forEach(role -> {
-            rolesToAllocate.removeAll(role.subTypes());
-            if (role.superType() != null) rolesToAllocate.remove(role.superType());
-            rolesToAllocate.remove(role);
+            RoleType topRole = getNonMetaTopRole(role);
+            rolesToAllocate.removeAll(topRole.subTypes());
         });
         varsToAllocate.removeAll(allocatedVars);
         //if unambiguous assign top role
-        if (varsToAllocate.size() == 1) {
-            RoleType role = rolesToAllocate.iterator().next();
-            RoleType superType = role.superType();
-            RoleType allocatedRole = Schema.MetaSchema.isMetaName(superType.getName()) ? role : superType;
+        if (varsToAllocate.size() == 1 && !rolesToAllocate.isEmpty()) {
+            RoleType topRole = getNonMetaTopRole(rolesToAllocate.iterator().next());
             String var = varsToAllocate.iterator().next();
             Type type = varTypeMap.get(var);
-            roleVarTypeMap.put(allocatedRole, new Pair<>(var, type));
+            roleVarTypeMap.put(topRole, new Pair<>(var, type));
         }
 
         //update pattern and castings
@@ -539,7 +537,6 @@ public class Relation extends TypeAtom {
         //pattern mutation!
         atomPattern = constructRelationVar(isUserDefinedName()? varName : "", getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
-
         return roleVarTypeMap;
     }
 
