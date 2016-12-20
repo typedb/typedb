@@ -171,6 +171,12 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testClusterSizePersistToString() {
+        ComputeQuery query = qb.compute().cluster().in("movie", "person").clusterSize(10).persist();
+        assertEquivalent(query, "compute cluster in movie, person; size 10; persist;");
+    }
+
+    @Test
     public void testDegreeOf() {
         ComputeQuery query = qb.compute().degree().in("movie", "person").of("person");
         assertEquivalent(query, "compute degrees of person in movie, person;");

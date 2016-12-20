@@ -176,12 +176,12 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
             string += " members;";
         }
 
-        if (persist) {
-            string += " persist;";
-        }
-
         if (!anySize) {
             string += " size " + clusterSize + ";";
+        }
+
+        if (persist) {
+            string += " persist;";
         }
 
         return string;
