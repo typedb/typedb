@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -32,7 +33,9 @@ import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.util.ErrorMessage;
+import java.util.HashMap;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -164,6 +167,43 @@ public class AtomicTest extends AbstractEngineTest{
         assertEquals(3, roleMap.size());
         assertEquals(3, roleMap2.size());
         assertEquals(roleMap.keySet(), roleMap2.keySet());
+    }
+
+    @Test
+    public void testRoleInference3(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+
+        Relation relation = (Relation) new AtomicQuery("match ($p, son: $gc) isa parentship;", graph).getAtom();
+        Relation correctFullRelation = (Relation) new AtomicQuery("match (parent: $p, son: $gc) isa parentship;", graph).getAtom();
+        Relation relation2 = (Relation) new AtomicQuery("match (father: $gp, $p) isa parentship;", graph).getAtom();
+        Relation correctFullRelation2 = (Relation) new AtomicQuery("match (father: $gp, child: $p) isa parentship;", graph).getAtom();
+
+        assertTrue(relation.getRoleVarTypeMap().equals(correctFullRelation.getRoleVarTypeMap()));
+        assertTrue(relation2.getRoleVarTypeMap().equals(correctFullRelation2.getRoleVarTypeMap()));
+    }
+
+    @Test
+    public void testUnification(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+
+        String relation = "match (parent: $y, child: $x);";
+        String specialisedRelation = "match (father: $p, daughter: $c);";
+        String specialisedRelation2 = "match (daughter: $p, father: $c);";
+
+        Atomic atom = new AtomicQuery(relation, graph).getAtom();
+        Atomic specialisedAtom = new AtomicQuery(specialisedRelation, graph).getAtom();
+        Atomic specialisedAtom2 = new AtomicQuery(specialisedRelation2, graph).getAtom();
+
+        Map<String, String> unifiers = specialisedAtom.getUnifiers(atom);
+        Map<String, String> unifiers2 = specialisedAtom2.getUnifiers(atom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("p", "y");
+        correctUnifiers.put("c", "x");
+        Map<String, String> correctUnifiers2 = new HashMap<>();
+        correctUnifiers2.put("p", "x");
+        correctUnifiers2.put("c", "y");
+        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+        assertTrue(unifiers2.entrySet().containsAll(correctUnifiers2.entrySet()));
     }
 
 
