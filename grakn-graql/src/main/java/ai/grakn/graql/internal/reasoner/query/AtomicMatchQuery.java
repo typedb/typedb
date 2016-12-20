@@ -172,8 +172,7 @@ public class AtomicMatchQuery extends AtomicQuery{
                 .filterKnown(this.getAnswers());
 
         QueryAnswers newAnswers = new QueryAnswers();
-        if (materialise
-                || (atom.isResource() || atom.isUserDefinedName() && atom.getType().isRelationType() ))
+        if (materialise || ruleHead.getAtom().requiresMaterialisation())
             newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
         if (!newAnswers.isEmpty()){
             if (materialise) answers = newAnswers;

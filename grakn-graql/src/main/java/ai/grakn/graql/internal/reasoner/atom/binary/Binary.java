@@ -89,6 +89,11 @@ public abstract class Binary extends Atom {
     }
 
     @Override
+    public boolean requiresMaterialisation(){
+        return isUserDefinedName() && getType() != null && getType().isRelationType();
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -222,7 +227,9 @@ public abstract class Binary extends Atom {
             if (!childVarName.equals(parentVarName))
                 unifiers.put(childVarName, parentVarName);
         }
-        if (!childValVarName.equals(parentValVarName)) unifiers.put(childValVarName, parentValVarName);
+        if (!parentValVarName.isEmpty()
+                && !childValVarName.equals(parentValVarName))
+            unifiers.put(childValVarName, parentValVarName);
         return unifiers;
     }
 }
