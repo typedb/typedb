@@ -45,6 +45,7 @@ import static java.util.stream.Collectors.joining;
 class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
 
     private boolean persist = false;
+    private boolean ofTypeNamesSet = false;
     private Set<String> ofTypeNames = new HashSet<>();
     private String degreeName = Schema.Analytics.DEGREE.getName();
 
@@ -125,13 +126,19 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
 
     @Override
     public DegreeQuery<T> of(String... ofTypeNames) {
-        this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        if (ofTypeNames.length > 0) {
+            ofTypeNamesSet = true;
+            this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        }
         return this;
     }
 
     @Override
     public DegreeQuery<T> of(Collection<String> ofTypeNames) {
-        this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        if (!ofTypeNames.isEmpty()) {
+            ofTypeNamesSet = true;
+            this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        }
         return this;
     }
 
@@ -139,7 +146,7 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     String graqlString() {
         String string = "degrees";
 
-        if (!ofTypeNames.isEmpty()) string += " of " + ofTypeNames.stream()
+        if (ofTypeNamesSet) string += " of " + ofTypeNames.stream()
                 .map(StringConverter::idToString).collect(joining(", "));
 
         string += subtypeString();
