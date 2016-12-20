@@ -26,16 +26,16 @@ computeQuery   : 'compute' computeMethod ;
 
 computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
 
-min            : MIN      'of' ofList      ('in' inList)? ';' ;
-max            : MAX      'of' ofList      ('in' inList)? ';' ;
-median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
-mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
-std            : STD      'of' ofList      ('in' inList)? ';' ;
-sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';'                                    (PERSIST id? ';')? ;
-cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (SIZE INTEGER ';')? (PERSIST id? ';')? ;
-path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
-count          : COUNT                     ('in' inList)? ';' ;
+min            : MIN      'of' ofList      'in' inList   ';' ;
+max            : MAX      'of' ofList      'in' inList   ';' ;
+median         : MEDIAN   'of' ofList      'in' inList   ';' ;
+mean           : MEAN     'of' ofList      'in' inList   ';' ;
+std            : STD      'of' ofList      'in' inList   ';' ;
+sum            : SUM      'of' ofList      'in' inList   ';' ;
+degrees        : DEGREES ('of' ofList)?    'in' inList   ';'                                    (PERSIST id? ';')? ;
+cluster        : CLUSTER                   'in' inList   ';' (MEMBERS ';')? (SIZE INTEGER ';')? (PERSIST id? ';')? ;
+path           : PATH    'from' id 'to' id 'in' inList   ';' ;
+count          : COUNT                    ('in' inList)? ';' ;
 
 ofList         : nameList ;
 inList         : nameList ;
