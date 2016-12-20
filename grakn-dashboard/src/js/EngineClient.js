@@ -115,7 +115,7 @@ export default {
      */
     preMaterialiseAll(fn) {
         this.request({
-            url: "/graph/preMaterialiseAll",
+            url: "/graph/preMaterialiseAll?keyspace=" + User.getCurrentKeySpace(),
             callback: fn,
             dataType: "text",
             contentType: "application/text"
@@ -155,16 +155,16 @@ export default {
     },
 
     /**
-     * Pre materialise
-     */
+     * Pre materialise. Possible duplicate
+     
     preMaterialiseAll(fn) {
         this.request({
-            url: "/graph/preMaterialiseAll",
+            url: "/graph/preMaterialiseAll?keyspace=" + User.getCurrentKeySpace(),
             callback: fn,
             dataType: "text",
             contentType: "application/text"
         });
-    },
+    },*/
 
     /**
      * Send graql query to Engine, returns an array of HAL objects.
