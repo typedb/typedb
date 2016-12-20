@@ -45,6 +45,7 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
 
     private boolean persist = false;
     private Set<String> ofTypeNames = new HashSet<>();
+    private String degreeName = Schema.Analytics.DEGREE.getName();
 
     DegreeQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
@@ -70,9 +71,9 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
             }
-            mutateResourceOntology(Schema.Analytics.DEGREE.getName(), ResourceType.DataType.LONG);
-            waitOnMutateResourceOntology(Schema.Analytics.DEGREE.getName());
-            computer.compute(new DegreeAndPersistVertexProgram(subTypeNames, keySpace, ofTypeNames));
+            mutateResourceOntology(degreeName, ResourceType.DataType.LONG);
+            waitOnMutateResourceOntology(degreeName);
+            computer.compute(new DegreeAndPersistVertexProgram(subTypeNames, ofTypeNames, keySpace, degreeName));
             LOGGER.info("DegreeAndPersistVertexProgram is done");
             return (T) "Degrees have been persisted";
         } else {
@@ -97,6 +98,12 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     public DegreeQuery<String> persist() {
         this.persist = true;
         return (DegreeQuery<String>) this;
+    }
+
+    @Override
+    public DegreeQuery<String> persist(String resourceTypeName) {
+        this.degreeName = resourceTypeName;
+        return this.persist();
     }
 
     @Override

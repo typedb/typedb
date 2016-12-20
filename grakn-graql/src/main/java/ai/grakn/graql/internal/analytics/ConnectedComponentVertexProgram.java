@@ -41,7 +41,6 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
 
     // memory key
-    private static final String CLUSTER_NAME = "connectedComponentVertexProgram.clusterName";
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
     private static final String IS_LAST_ITERATION = "connectedComponentVertexProgram.isLastIteration";
 
@@ -53,6 +52,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
 
     private static final String PERSIST = "connectedComponentVertexProgram.persist";
     private static final String KEYSPACE = "connectedComponentVertexProgram.keyspace";
+    private static final String CLUSTER_NAME = "connectedComponentVertexProgram.clusterName";
 
     private BulkResourceMutate bulkResourceMutate;
     private Set<String> selectedLabels = new HashSet<>();
