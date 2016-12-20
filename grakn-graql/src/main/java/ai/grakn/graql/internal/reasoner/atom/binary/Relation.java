@@ -571,9 +571,13 @@ public class Relation extends TypeAtom {
             if(!varsToAllocate.isEmpty()) {
                 RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
                 //map to empty if no var matching
-                String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
-                if (pVar.isEmpty())
-                    pVar = varsToAllocate.iterator().next();
+                String pVar = "";
+                while(role != null && pVar.isEmpty()
+                        && !Schema.MetaSchema.isMetaName(role.getName())) {
+                    if (parentMap.containsKey(role)) pVar = parentMap.get(role).getKey();
+                    role = role.superType();
+                }
+                if (pVar.isEmpty()) pVar = varsToAllocate.iterator().next();
                 if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
                 varsToAllocate.remove(pVar);
             }
