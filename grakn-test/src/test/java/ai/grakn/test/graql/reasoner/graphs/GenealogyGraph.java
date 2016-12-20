@@ -18,65 +18,27 @@
 
 package ai.grakn.test.graql.reasoner.graphs;
 
-import ai.grakn.migration.base.Migrator;
-import ai.grakn.migration.base.io.MigrationLoader;
-import ai.grakn.migration.csv.CSVMigrator;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static java.util.stream.Collectors.joining;
-
 public class GenealogyGraph extends TestGraph{
 
-    final static String ontologyFile = "genealogy/ontology.gql";
+    final private static String dataDir = "genealogy/";
+    final private static String ontologyFile = dataDir + "ontology.gql";
 
-    final static String peopleTemplatePath = filePath + "genealogy/person-migrator.gql";
-    final static String peoplePath = filePath + "genealogy/people.csv";
+    final private static String peopleTemplatePath = filePath + dataDir + "people-migrator.gql";
+    final private static String peoplePath = filePath + dataDir + "people.csv";
 
-    final static String parentTemplatePath = filePath + "genealogy/parentage-migrator.gql";
-    final static String parentageFilePath = filePath + "genealogy/parentage.csv";
+    final private static String parentTemplatePath = filePath + dataDir + "parentage-migrator.gql";
+    final private static String parentageFilePath = filePath + dataDir + "parentage.csv";
 
-    final static String marriageTemplatePath = filePath + "genealogy/marriage-migrator.gql";
-    final static String marriageFilePath = filePath + "genealogy/marriages.csv";
+    final private static String marriageTemplatePath = filePath + dataDir + "weddings-migrator.gql";
+    final private static String marriageFilePath = filePath + dataDir + "/weddings.csv";
 
-    final static String rules = "genealogy/rules.gql";
-    final static String ruleFile = "genealogy/events-to-genealogy-rules.gql";
-    final static String ruleFile2 = "genealogy/role-genderization-rules.gql";
-    final static String ruleFile3 = "genealogy/inferred-kinships.gql";
+    final private static String rules = dataDir + "rules.gql";
 
     public GenealogyGraph(){
         super(null, ontologyFile);
-        try {
-            String peopleTemplate = getResourceAsString(peopleTemplatePath);
-            String parentTemplate = getResourceAsString(parentTemplatePath);
-            String marriageTemplate = getResourceAsString(marriageTemplatePath);
-            File peopleFile = new File(peoplePath);
-            File parentFile = new File(parentageFilePath);
-            File marriageFile = new File(marriageFilePath);
-
-            // create a migrator with your macro
-            Migrator personMigrator = new CSVMigrator(peopleTemplate, peopleFile);
-            MigrationLoader.load(graph(), personMigrator);
-
-            Migrator parentMigrator = new CSVMigrator(parentTemplate, parentFile);
-            MigrationLoader.load(graph(), parentMigrator);
-
-            Migrator marriageMigrator = new CSVMigrator(marriageTemplate, marriageFile);
-            MigrationLoader.load(graph(), marriageMigrator);
-        } catch (IOException e){
-            throw new RuntimeException(e);
-        }
-        loadFiles(ruleFile, ruleFile2, ruleFile3);
-    }
-
-    public static Path getResource(String resourceName){
-        return Paths.get(resourceName);
-    }
-
-    public static String getResourceAsString(String resourceName) throws IOException {
-        return Files.readAllLines(getResource(resourceName)).stream().collect(joining("\n"));
+        migrateCSV(peopleTemplatePath, peoplePath);
+        migrateCSV(parentTemplatePath, parentageFilePath);
+        migrateCSV(marriageTemplatePath, marriageFilePath);
+        loadFiles(rules);
     }
 }

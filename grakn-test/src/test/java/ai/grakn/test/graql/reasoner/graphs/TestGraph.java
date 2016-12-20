@@ -27,14 +27,20 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 
+import ai.grakn.migration.base.io.MigrationLoader;
+import ai.grakn.migration.csv.CSVMigrator;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 
 public class TestGraph {
     protected GraknGraph graknGraph;
@@ -74,6 +80,18 @@ public class TestGraph {
     }
     public static GraknGraph getGraph(String primaryKeyId, String... files) {
         return new TestGraph(primaryKeyId, files).graph();
+    }
+
+    public void migrateCSV(String templatePath, String dataPath){ migrateCSV(templatePath, dataPath, ',');}
+    public void migrateCSV(String templatePath, String dataPath, char separator){
+        System.out.println("Migrating " + dataPath);
+        try {
+            String hsaMatureTemplate = getResourceAsString(templatePath);
+            File hsaMatureFile = new File(dataPath);
+            MigrationLoader.load(graph(), new CSVMigrator(hsaMatureTemplate, hsaMatureFile).setSeparator(separator));
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     protected void loadGraqlFile(String fileName) {
@@ -134,5 +152,13 @@ public class TestGraph {
     protected <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
         Resource resourceInstance = resourceType.putResource(resource);
         instance.hasResource(resourceInstance);
+    }
+
+    public static Path getResource(String resourceName){
+        return Paths.get(resourceName);
+    }
+
+    public static String getResourceAsString(String resourceName) throws IOException {
+        return Files.readAllLines(getResource(resourceName)).stream().collect(joining("\n"));
     }
 }
