@@ -684,8 +684,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.debug("Response from engine [" + result + "]");
     }
     private String getCommitLogEndPoint(){
-        if(engine == null || Grakn.IN_MEMORY.equals(engine))
-            return null;
+        if(Grakn.IN_MEMORY.equals(engine))
+            return Grakn.IN_MEMORY;
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 

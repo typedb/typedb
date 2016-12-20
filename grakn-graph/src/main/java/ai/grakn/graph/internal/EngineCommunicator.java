@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +46,8 @@ public class EngineCommunicator {
      * @return The result of the request
      */
     public static String contactEngine(String engineUrl, String restType, String body){
-        if(engineUrl == null)
-            return "Engine Not Contacted";
+        if(engineUrl.equals(Grakn.IN_MEMORY))
+            return "Engine not contacted due to in memory graph being used";
 
         for(int i = 0; i < MAX_RETRY; i++) {
             try {
