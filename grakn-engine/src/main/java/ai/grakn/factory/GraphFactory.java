@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.ErrorMessage;
@@ -50,7 +51,7 @@ public class GraphFactory {
     }
 
     public synchronized GraknGraph getGraph(String keyspace) {
-        return FactoryBuilder.getFactory(keyspace, null, properties).getGraph(false);
+        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
     }
 }
 

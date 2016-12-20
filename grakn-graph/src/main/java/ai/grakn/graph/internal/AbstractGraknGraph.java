@@ -619,6 +619,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void commit() throws GraknValidationException {
+        commit(false);
+    }
+
+    public void commit(boolean submitLogs) throws GraknValidationException {
         validateGraph();
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
@@ -635,9 +639,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        if(modifiedConcepts.size() > 0)
+        if(submitLogs && modifiedConcepts.size() > 0)
             submitCommitLogs(modifiedConcepts);
     }
+
     protected void commitTx(){
         try {
             getTinkerPopGraph().tx().commit();
