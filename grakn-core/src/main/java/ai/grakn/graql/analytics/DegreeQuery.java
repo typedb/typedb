@@ -29,11 +29,20 @@ import java.util.Collection;
 public interface DegreeQuery<T> extends ComputeQuery<T> {
 
     /**
-     * Persist the result in the graph after executing the query.
+     * Persist the result in the graph after executing the query.  Be default, the degree is saved as a resource
+     * of the vertex, with resource type name "degree".
      *
      * @return a DegreeQuery with persist flag set
      */
     DegreeQuery<String> persist();
+
+    /**
+     * Persist the result in the graph after executing the query.  The degree is saved as a resource of the vertex.
+     *
+     * @param resourceTypeName the name of the resource type to save the degree
+     * @return a DegreeQuery with persist flag and customised resource type name set
+     */
+    DegreeQuery<String> persist(String resourceTypeName);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph

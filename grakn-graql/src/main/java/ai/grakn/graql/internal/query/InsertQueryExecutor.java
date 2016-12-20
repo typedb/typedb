@@ -140,6 +140,7 @@ public class InsertQueryExecutor {
         visitedVars.push(name);
         Concept concept = concepts.computeIfAbsent(name, n -> addConcept(var));
         visitedVars.pop();
+        assert concept != null : var ;
         return concept;
     }
 
@@ -150,45 +151,36 @@ public class InsertQueryExecutor {
     private Concept addConcept(VarAdmin varToAdd) {
         VarAdmin var = mergeVar(varToAdd);
 
-        Optional<VarAdmin> typeVar = var.getProperty(IsaProperty.class).map(IsaProperty::getType);
-        Optional<VarAdmin> subVar = getSub(var);
+        Optional<IsaProperty> type = var.getProperty(IsaProperty.class);
+        Optional<SubProperty> sub = var.getProperty(SubProperty.class);
 
-        if (typeVar.isPresent() && subVar.isPresent()) {
+        if (type.isPresent() && sub.isPresent()) {
             String printableName = var.getPrintableName();
             throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_SUB.getMessage(printableName));
         }
 
-        Optional<Type> type = typeVar.map(this::getConcept).map(Concept::asType);
-        Optional<Type> superType = subVar.map(this::getConcept).map(Concept::asType);
+        Optional<String> typeName = var.getTypeName();
+        Optional<String> id = var.getId();
 
-        var.getTypeName().ifPresent(name -> {
+        typeName.ifPresent(name -> {
             if (type.isPresent()) {
                 throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(name));
             }
         });
 
         // If type provided, then 'put' the concept, else 'get' it by ID or name
-        Optional<Concept> concept = optionalOr(
-                superType.map(s -> putType(var.getTypeName(), var, s)),
-                type.map(t -> putInstance(var.getId(), var, t)),
-                var.getId().map(graph::<Concept>getConcept),
-                var.getTypeName().map(graph::getType)
-        );
-
-        if (concept.isPresent()) {
-            return concept.get();
+        if (sub.isPresent()) {
+            return putType(typeName, var, sub.get());
+        } else if (type.isPresent()) {
+            return putInstance(id, var, type.get());
+        } else if (id.isPresent()) {
+            Concept concept = graph.getConcept(id.get());
+            if (concept == null) throw new IllegalStateException(ErrorMessage.INSERT_WITHOUT_TYPE.getMessage(id.get()));
+            return concept;
+        } else if (typeName.isPresent()) {
+            return graph.getType(typeName.get());
         } else {
-            String message;
-
-            if (subVar.isPresent()) {
-                String subId = subVar.get().getTypeName().orElse("<no-name>");
-                message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), subId);
-            } else {
-                message = var.getId().map(ErrorMessage.INSERT_WITHOUT_TYPE::getMessage)
-                                .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
-            }
-
-            throw new IllegalStateException(message);
+            throw new IllegalStateException(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
         }
     }
 
@@ -229,10 +221,12 @@ public class InsertQueryExecutor {
     /**
      * @param id the ID of the concept
      * @param var the Var representing the concept in the insert query
-     * @param type the type of the concept
+     * @param isa the type property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Instance putInstance(Optional<String> id, VarAdmin var, Type type) {
+    private Instance putInstance(Optional<String> id, VarAdmin var, IsaProperty isa) {
+        Type type = getConcept(isa.getType()).asType();
+
         if (type.isEntityType()) {
             return addOrGetInstance(id, type.asEntityType()::addEntity);
         } else if (type.isRelationType()) {
@@ -257,10 +251,12 @@ public class InsertQueryExecutor {
     /**
      * @param name the name of the concept
      * @param var the Var representing the concept in the insert query
-     * @param superType the supertype of the concept
+     * @param sub the supertype property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Type putType(Optional<String> name, VarAdmin var, Type superType) {
+    private Type putType(Optional<String> name, VarAdmin var, SubProperty sub) {
+        Type superType = getConcept(sub.getSuperType()).asType();
+
         if (superType.isEntityType()) {
             return graph.putEntityType(getTypeNameOrThrow(name)).superType(superType.asEntityType());
         } else if (superType.isRelationType()) {

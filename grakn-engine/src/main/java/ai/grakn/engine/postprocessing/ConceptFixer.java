@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
@@ -35,9 +34,9 @@ class ConceptFixer {
         boolean notDone = true;
         int retry = 0;
         while (notDone) {
-            try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
-                if (((AbstractGraknGraph) graph).fixDuplicateCasting(castingId)) {
-                    graph.commit();
+            try (AbstractGraknGraph graph = (AbstractGraknGraph) GraphFactory.getInstance().getGraph(keyspace)) {
+                if (graph.fixDuplicateCasting(castingId)) {
+                    graph.commit(false);
                 }
                 cache.deleteJobCasting(graph.getKeyspace(), castingId);
                 notDone = false;
@@ -58,9 +57,9 @@ class ConceptFixer {
         int retry = 0;
 
         while (notDone) {
-            try(GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace))  {
-                if (((AbstractGraknGraph) graph).fixDuplicateResources(resourceIds)) {
-                    graph.commit();
+            try(AbstractGraknGraph graph = (AbstractGraknGraph) GraphFactory.getInstance().getGraph(keyspace))  {
+                if (graph.fixDuplicateResources(resourceIds)) {
+                    graph.commit(false);
                 }
                 resourceIds.forEach(resourceId -> cache.deleteJobResource(graph.getKeyspace(), resourceId));
                 notDone = false;

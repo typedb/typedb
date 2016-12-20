@@ -30,8 +30,9 @@ import java.util.Set;
 
 public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
 
-    private static final String KEYSPACE_KEY = "keyspace";
+    private static final String KEYSPACE_KEY = "degreeAndPersistVertexProgram.keyspace";
     private static final String OF_TYPE_NAMES = "degreeAndPersistVertexProgram.ofTypeNames";
+    private static final String DEGREE_NAME = "degreeAndPersistVertexProgram.degreeName";
 
     private BulkResourceMutate bulkResourceMutate;
     private Set<String> ofTypeNames = new HashSet<>();
@@ -39,9 +40,11 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(Set<String> types, String keySpace, Set<String> ofTypeNames) {
-        persistentProperties.put(KEYSPACE_KEY, keySpace);
-        selectedTypes = types;
+    public DegreeAndPersistVertexProgram(Set<String> types, Set<String> ofTypeNames,
+                                         String keySpace, String degreeName) {
+        this.persistentProperties.put(KEYSPACE_KEY, keySpace);
+        this.persistentProperties.put(DEGREE_NAME, degreeName);
+        this.selectedTypes = types;
         this.ofTypeNames = ofTypeNames;
     }
 
@@ -76,7 +79,6 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
                 if (selectedTypes.contains(type)) {
                     if (ofTypeNames.isEmpty() || ofTypeNames.contains(type))
                         bulkResourceMutate.putValue(vertex, getEdgeCount(messenger));
-
                 }
                 break;
         }
@@ -84,13 +86,17 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public void workerIterationStart(Memory memory) {
-        bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY),
-                Schema.Analytics.DEGREE.getName());
+        if (memory.getIteration() == 2) {
+            bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY),
+                    (String) persistentProperties.get(DEGREE_NAME));
+        }
     }
 
     @Override
     public void workerIterationEnd(Memory memory) {
-        bulkResourceMutate.flush();
+        if (memory.getIteration() == 2) {
+            bulkResourceMutate.flush();
+        }
     }
 
     @Override
