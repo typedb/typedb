@@ -33,6 +33,7 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -118,9 +119,8 @@ class HALConceptData {
         }
         if (concept.isRelation()) {
             generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
-
             //Only when double clicking on a specific relation we want to fetch also the other relations the current one plays a role into.
-            embedRelationsPlaysRole(halResource,concept.asRelation(),separationDegree);
+            embedRelationsPlaysRole(halResource,concept.asRelation());
         }
         if (concept.isResource()) {
             generateOwnerInstances(halResource, concept.asResource(), separationDegree);
@@ -261,7 +261,6 @@ class HALConceptData {
 
     private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
 
-
         rel.rolePlayers().forEach((roleType, instance) -> {
             if (instance != null) {
                 Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
@@ -272,17 +271,13 @@ class HALConceptData {
         });
     }
 
-    private void embedRelationsPlaysRole(Representation halResource,Relation rel , int separationDegree){
+    private void embedRelationsPlaysRole(Representation halResource,Relation rel){
         rel.playsRoles().forEach(roleTypeRel -> {
             rel.relations(roleTypeRel).forEach(relation -> {
-                relation.rolePlayers().forEach((roleType, instance) -> {
-                    if (instance != null && !roleType.getId().equals(roleTypeRel.getId())) {
-                        Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
-                                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                        handleConcept(roleResource, instance, separationDegree - 1);
-                        halResource.withRepresentation(roleType.getName(), roleResource);
-                    }
-                });
+                Representation relationRepresentation = factory.newRepresentation(resourceLinkPrefix+relation.getId()+this.keyspace)
+                        .withProperty(DIRECTION_PROPERTY,INBOUND_EDGE);
+                handleConcept(relationRepresentation,relation,0);
+                halResource.withRepresentation(roleTypeRel.getName(),relationRepresentation);
             });
         });
     }
