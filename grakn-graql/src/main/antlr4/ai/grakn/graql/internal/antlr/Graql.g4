@@ -32,8 +32,8 @@ median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
 mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';'                                    (PERSIST ';')? ;
-cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (SIZE INTEGER ';')? (PERSIST ';')? ;
+degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';'                                    (PERSIST id? ';')? ;
+cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (SIZE INTEGER ';')? (PERSIST id? ';')? ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 

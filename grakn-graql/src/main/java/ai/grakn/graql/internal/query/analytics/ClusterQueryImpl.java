@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
+import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
 class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
 
@@ -181,7 +182,11 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         }
 
         if (persist) {
-            string += " persist;";
+            string += " persist";
+            if (!clusterName.equals(Schema.Analytics.CLUSTER.getName())) {
+                string += " " + idToString(clusterName);
+            }
+            string += ";";
         }
 
         return string;
