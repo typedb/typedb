@@ -45,7 +45,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes, Collections.emptySet()),
+        ComputerResult result = getGraphComputer().compute(
+                new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new MaxMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("MaxMapReduce is done");

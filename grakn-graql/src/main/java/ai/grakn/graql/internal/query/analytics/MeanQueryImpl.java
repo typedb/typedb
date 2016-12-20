@@ -45,7 +45,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes, Collections.emptySet()),
+        ComputerResult result = getGraphComputer().compute(
+                new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new MeanMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> mean = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
