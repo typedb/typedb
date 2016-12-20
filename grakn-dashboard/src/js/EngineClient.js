@@ -115,7 +115,7 @@ export default {
      */
     preMaterialiseAll(fn) {
         this.request({
-            url: "/graph/preMaterialiseAll",
+            url: "/graph/preMaterialiseAll?keyspace=" + User.getCurrentKeySpace()",
             callback: fn,
             dataType: "text",
             contentType: "application/text"
@@ -159,7 +159,7 @@ export default {
      */
     preMaterialiseAll(fn) {
         this.request({
-            url: "/graph/preMaterialiseAll",
+            url: "/graph/preMaterialiseAll?keyspace=" + User.getCurrentKeySpace(),
             callback: fn,
             dataType: "text",
             contentType: "application/text"
