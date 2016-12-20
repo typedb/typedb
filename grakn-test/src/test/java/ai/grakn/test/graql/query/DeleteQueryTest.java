@@ -18,11 +18,15 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.exception.ConceptException;
+import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.Schema;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,17 +37,30 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+    private MatchQuery kurtz;
+    private MatchQuery alPacino;
+    private MatchQuery apocalypseNow;
+    private MatchQuery kurtzCastRelation;
 
     @Before
     public void setUp() {
         qb = graph.graql();
+
+        kurtz = qb.match(var("x").has("name", "Colonel Walter E. Kurtz"));
+        alPacino = qb.match(var("x").has("name", "Al Pacino"));
+        apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now"));
+        kurtzCastRelation =
+                qb.match(var("a").rel("character-being-played", var().has("name", "Colonel Walter E. Kurtz")));
     }
 
     @Test
@@ -130,6 +147,163 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testDeleteEntity() {
+        AskQuery godfatherExists = qb.match(var().has("title", "Godfather")).ask();
+        AskQuery godfatherHasRelations = qb.match(
+                var("x").has("title", "Godfather"),
+                var().rel("x").rel("y").isa("has-cast")
+        ).ask();
+        AskQuery donVitoCorleoneExists = qb.match(var().has("name", "Don Vito Corleone")).ask();
+
+        assertTrue(godfatherExists.execute());
+        assertTrue(godfatherHasRelations.execute());
+        assertTrue(donVitoCorleoneExists.execute());
+
+        qb.match(var("x").has("title", "Godfather")).delete("x").execute();
+
+        assertFalse(godfatherExists.execute());
+        assertFalse(godfatherHasRelations.execute());
+        assertTrue(donVitoCorleoneExists.execute());
+    }
+
+    @Test
+    public void testDeleteRelation() {
+        assertTrue(exists(kurtz));
+        assertTrue(exists(alPacino));
+        assertTrue(exists(apocalypseNow));
+        assertTrue(exists(kurtzCastRelation));
+
+        kurtzCastRelation.delete("a").execute();
+
+        assertTrue(exists(kurtz));
+        assertTrue(exists(alPacino));
+        assertTrue(exists(apocalypseNow));
+        assertFalse(exists(kurtzCastRelation));
+    }
+
+    // TODO: Fix this scenario (test is fine, implementation is wrong!)
+    @Ignore
+    @Test
+    public void testDeleteAllRolePlayers() {
+        String id = kurtzCastRelation.get("a").findFirst().get().getId();
+        MatchQuery relation = qb.match(var().id(id));
+
+        assertTrue(exists(kurtz));
+        assertTrue(exists(alPacino));
+        assertTrue(exists(apocalypseNow));
+        assertTrue(exists(relation));
+
+        kurtz.delete("x").execute();
+
+        assertFalse(exists(kurtz));
+        assertTrue(exists(alPacino));
+        assertTrue(exists(apocalypseNow));
+        assertTrue(exists(relation));
+
+        alPacino.delete("x").execute();
+
+        assertFalse(exists(kurtz));
+        assertFalse(exists(alPacino));
+        assertTrue(exists(apocalypseNow));
+        assertTrue(exists(relation));
+
+        apocalypseNow.delete("x").execute();
+
+        assertFalse(exists(kurtz));
+        assertFalse(exists(alPacino));
+        assertFalse(exists(apocalypseNow));
+        assertFalse(exists(relation));
+    }
+
+    @Test
+    public void testDeleteResource() {
+        MatchQuery godfather = qb.match(var().has("title", "Godfather"));
+        String id = qb.match(
+                var("x").has("title", "Godfather"),
+                var("a").rel("x").rel("y").isa("has-tmdb-vote-count")
+        ).get("a").findFirst().get().getId();
+        MatchQuery relation = qb.match(var().id(id));
+        MatchQuery voteCount = qb.match(var().value(1000L).isa("tmdb-vote-count"));
+
+        assertTrue(exists(godfather));
+        assertTrue(exists(relation));
+        assertTrue(exists(voteCount));
+
+        qb.match(var("x").value(1000L).isa("tmdb-vote-count")).delete("x").execute();
+
+        assertTrue(exists(godfather));
+        assertTrue(exists(relation));
+        assertFalse(exists(voteCount));
+    }
+
+    @Test
+    public void testDeleteEntityTypeWithNoInstances() {
+        MatchQuery shoeType = qb.match(var("x").name("shoe").sub("entity"));
+
+        qb.insert(name("shoe").sub("entity")).execute();
+
+        assertTrue(exists(shoeType));
+
+        shoeType.delete("x").execute();
+
+        assertFalse(exists(shoeType));
+    }
+
+    @Test
+    public void testDeleteEntityTypeAfterInstances() {
+        MatchQuery movie = qb.match(var("x").isa("movie"));
+
+        assertNotNull(graph.getEntityType("movie"));
+        assertTrue(exists(movie));
+
+        movie.delete("x").execute();
+
+        assertNotNull(graph.getEntityType("movie"));
+        assertFalse(exists(movie));
+
+        qb.match(var("x").name("movie").sub("entity")).delete("x").execute();
+
+        assertNull(graph.getEntityType("movie"));
+    }
+
+    @Test
+    public void testErrorWhenDeleteEntityTypeWithInstances() {
+        MatchQuery movieType = qb.match(var("x").name("movie").sub("entity"));
+        MatchQuery movie = qb.match(var("x").isa("movie"));
+
+        assertTrue(exists(movieType));
+        assertTrue(exists(movie));
+
+        exception.expect(ConceptException.class);
+        exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
+        movieType.delete("x").execute();
+    }
+
+    @Test
+    public void testErrorWhenDeleteSuperEntityType() {
+        MatchQuery productionType = qb.match(var("x").name("production").sub("entity"));
+
+        assertTrue(exists(productionType));
+
+        exception.expect(ConceptException.class);
+        exception.expectMessage(allOf(containsString("production"), containsString("delet")));
+        productionType.delete("x").execute();
+    }
+
+    // TODO: Fix this scenario (test is fine, implementation is wrong!)
+    @Ignore
+    @Test
+    public void testErrorWhenDeleteRoleTypeWithPlayers() {
+        MatchQuery actor = qb.match(var("x").name("actor"));
+
+        assertTrue(exists(actor));
+
+        exception.expect(ConceptException.class);
+        exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
+        actor.delete("x").execute();
+    }
+
+    @Test
     public void testErrorWhenDeleteValue() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("value")));
@@ -141,5 +315,9 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("has"), containsString("$y")));
         qb.match(var("x").isa("movie")).delete(var("x").has(var("y"))).execute();
+    }
+
+    private boolean exists(MatchQuery query) {
+        return query.ask().execute();
     }
 }
