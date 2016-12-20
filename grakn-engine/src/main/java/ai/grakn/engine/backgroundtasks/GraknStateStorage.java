@@ -25,6 +25,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
@@ -67,7 +68,7 @@ public class GraknStateStorage implements StateStorage {
         graph.graql().insert(state).execute();
 
         try {
-            graph.commit();
+            ((AbstractGraknGraph) graph).commit(false);
         } catch (GraknValidationException e) {
             LOG.error("Could not commit task to graph: "+e.getMessage());
             return null;

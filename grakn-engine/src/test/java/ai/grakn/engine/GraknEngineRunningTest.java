@@ -19,9 +19,9 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import com.jayway.restassured.RestAssured;
-import ai.grakn.engine.util.ConfigProperties;
 import org.junit.Before;
 import org.junit.Test;
 

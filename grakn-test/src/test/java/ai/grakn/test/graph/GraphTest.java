@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
+import ai.grakn.factory.GraphFactory;
 import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.Test;
 
@@ -15,6 +16,7 @@ import java.util.concurrent.Future;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class GraphTest extends AbstractRollbackGraphTest {
@@ -96,5 +98,15 @@ public class GraphTest extends AbstractRollbackGraphTest {
         } catch (Exception e){
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testDifferentGraphs(){
+        String key = "mykeyspace";
+        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).getGraph();
+        GraknGraph graph2 = GraphFactory.getInstance().getGraph(key);
+
+        assertEquals(graph1, graph1);
+        assertNotEquals(graph1, graph2);
     }
 }

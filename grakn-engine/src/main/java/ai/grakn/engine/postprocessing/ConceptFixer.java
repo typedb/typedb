@@ -37,7 +37,7 @@ class ConceptFixer {
         while (notDone) {
             try (GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace)) {
                 if (((AbstractGraknGraph) graph).fixDuplicateCasting(castingId)) {
-                    graph.commit();
+                    ((AbstractGraknGraph) graph).commit(false);
                 }
                 cache.deleteJobCasting(graph.getKeyspace(), castingId);
                 notDone = false;
@@ -60,7 +60,7 @@ class ConceptFixer {
         while (notDone) {
             try(GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace))  {
                 if (((AbstractGraknGraph) graph).fixDuplicateResources(resourceIds)) {
-                    graph.commit();
+                    ((AbstractGraknGraph) graph).commit(false);
                 }
                 resourceIds.forEach(resourceId -> cache.deleteJobResource(graph.getKeyspace(), resourceId));
                 notDone = false;
