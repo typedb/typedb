@@ -36,7 +36,20 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * An ontological element which defines a role which can be played in a relation type.
+ * <p>
+ *     An ontological element which defines a role which can be played in a relation type.
+ * </p>
+ *
+ * <p>
+ *     This ontological element defines the roles which make up a {@link RelationType}.
+ *     It behaves similarly to {@link Type} when relating to other types.
+ *     It has some additional functionality:
+ *     1. It cannot play a role to itself.
+ *     2. It is special in that it is unique to relation types.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit) {

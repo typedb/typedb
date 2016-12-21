@@ -42,9 +42,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * A Type represents any ontological element in the graph. For example Entity Types and Rule Types.
- * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
- * @param <V> The type of the instances of this concept type.
+ * <p>
+ *     A Type represents any ontological element in the graph.
+ * </p>
+ *
+ * <p>
+ *     Types are used to model the behaviour of {@link Instance} and how they relate to each other.
+ *     They also aid in categorising {@link Instance} to different types.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
+ * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {

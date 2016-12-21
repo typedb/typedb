@@ -28,6 +28,21 @@ import java.util.MissingResourceException;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * <p>
+ *     Builds a Grakn Graph {@link InternalFactory}
+ * </p>
+ *
+ * <p>
+ *     Builds a Grakn Graph Factory which is locked to a specific keyspace and engine URL.
+ *     This uses refection in order to dynamically build any vendor specific factory which implements the
+ *     {@link InternalFactory} API.
+ *
+ *     The factories in this class are treated as singletons.
+ * </p>
+ *
+ * @author fppt
+ */
 class FactoryBuilder {
     private static final String FACTORY = "factory.internal";
     private static final Map<String, InternalFactory> openFactories = new ConcurrentHashMap<>();

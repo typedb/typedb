@@ -38,6 +38,7 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -64,6 +65,20 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
+/**
+ * <p>
+ *    The Grakn Graph Base Implementation
+ * </p>
+ *
+ * <p>
+ *     This defines how a grakn graph sits on top of a Tinkerpop {@link Graph}.
+ *     It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
+ */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private final ElementFactory elementFactory;

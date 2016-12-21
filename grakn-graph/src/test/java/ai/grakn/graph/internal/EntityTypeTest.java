@@ -50,7 +50,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
-public class TypeTest extends GraphTestBase{
+public class EntityTypeTest extends GraphTestBase{
 
     @Before
     public void buildGraph(){

@@ -39,9 +39,22 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * This represents an instance of a Type. It represents data in the graph.
- * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
- * @param <V> The type of the concept.
+ * <p>
+ *     A data instance in the graph belonging to a specific {@link Type}
+ * </p>
+ *
+ * <p>
+ *     Instances represent data in the graph.
+ *     Every instance belongs to a {@link Type} which serves as a way of categorising them.
+ *     Instances can relate to one another via {@link Relation}
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <T> The leaf interface of the object concept which extends {@link Instance}.
+ *           For example {@link ai.grakn.concept.Entity} or {@link Relation}.
+ * @param <V> The type of the concept which extends {@link Type} of the concept.
+ *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type) {

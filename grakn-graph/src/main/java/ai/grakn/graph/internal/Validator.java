@@ -31,7 +31,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Handles calling the relevant validation depending on the type of the concept.
+ * <p>
+ *     Ensures each concept undergoes the correct type of validation.
+ * </p>
+ *
+ * <p>
+ *      Handles calling the relevant validation defined in {@link ValidateGlobalRules} depending on the
+ *      type of the concept.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 class Validator {
     private final AbstractGraknGraph graknGraph;

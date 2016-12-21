@@ -42,7 +42,7 @@ import static spark.Spark.get;
 
 
 /**
- * REST controller used by GraknGraphFactoryPersistent to retrieve graph configuration for a given graph name.
+ * REST controller used by GraknGraphFactoryImpl to retrieve graph configuration for a given graph name.
  */
 
 public class GraphFactoryController {

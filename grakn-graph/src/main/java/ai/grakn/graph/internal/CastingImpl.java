@@ -33,8 +33,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * An internal concept used to represent the link between a roleplayer and it's role.
- * For example Pacino as an actor would be represented by a single casting regardless of the number of movies he acts in.
+ * <p>
+ *     Internal class representing links between instances and roles.
+ * </p>
+ *
+ * <p>
+ *     An internal concept used to represent the link between an {@link Instance} and it's {@link RoleType}.
+ *     For example Pacino as an actor would be represented by a single casting regardless of the number of movies he acts in.
+ * </p>
+ *
+ * @author fppt
  */
 class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
 

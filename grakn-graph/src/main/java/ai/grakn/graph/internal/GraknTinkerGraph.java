@@ -18,14 +18,22 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
- * A grakn graph which uses a Tinkergraph backend.
- * Primarily used for testing
+ * <p>
+ *     A Grakn Graph using {@link TinkerGraph} as a vendor backend.
+ * </p>
+ *
+ * <p>
+ *     Wraps up a {@link TinkerGraph} as a method of storing the Grakn Graph object Model.
+ *     With this vendor some exceptions are in place:
+ *     1. Transactions do not exists and all threads work on the same graph at the same time.
+ *     2. The {@link #rollback} operation is unsupported due to Tinkerpop Transactions not being supported.
+ * </p>
+ *
+ * @author fppt
  */
 public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){

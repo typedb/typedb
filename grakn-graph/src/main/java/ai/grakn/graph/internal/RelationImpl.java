@@ -34,7 +34,16 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.*;
 
 /**
- * A relation represents and instance of a relation type which concept how different entities relate to one another.
+ * <p>
+ *     Encapsulates relationships between {@link Instance}
+ * </p>
+ *
+ * <p>
+ *     A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
     RelationImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RelationType> type) {

@@ -16,10 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.util;
 
 import ai.grakn.Grakn;
-import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +29,19 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+
 /**
- * Class dedicated to talking with Grakn Engine. Currently used to retrieve factory config and submit commit logs
+ * <p>
+ *     Establishes communication between the graph and engine
+ * </p>
+ *
+ * <p>
+ *     Class dedicated to talking with Grakn Engine. Currently used to retrieve factory config and submit commit logs.
+ *
+ *     The communication with engine is bypassed whenever the engineURL provided is a in-memory location.
+ * </p>
+ *
+ * @author fppt
  */
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);
