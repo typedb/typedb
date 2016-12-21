@@ -39,10 +39,20 @@ import java.util.Optional;
  * Internal factory to produce different types of concepts
  */
 /**
+ * <p>
+ *     Constructs Concepts And Edges
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     This class turns Tinkerpop vertices {@link Vertex} and edges {@link org.apache.tinkerpop.gremlin.structure.Edge}
+ *     into Grakn concepts {@link Concept} and edges {@link EdgeImpl}.
+ *
+ *     Construction is only successful if the vertex and edge properties contain the needed information.
+ *     A concept must include a label which is a Base Type {@link ai.grakn.util.Schema.BaseType}.
+ *     An edge must include a label which is a {@link ai.grakn.util.Schema.EdgeLabel}.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 final class ElementFactory {
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
