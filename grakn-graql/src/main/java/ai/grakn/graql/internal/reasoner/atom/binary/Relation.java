@@ -120,8 +120,8 @@ public class Relation extends TypeAtom {
     /**
      * construct a $varName (rolemap) isa $typeVariable relation
      *
-     * @param varName
-     * @param typeVariable
+     * @param varName variable name
+     * @param typeVariable type variable name
      * @param roleMap      rolePlayer-roleType typeName roleMap
      * @return
      */
