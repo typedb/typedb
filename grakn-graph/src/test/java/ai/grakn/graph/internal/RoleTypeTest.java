@@ -167,7 +167,7 @@ public class RoleTypeTest extends GraphTestBase {
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(roleType.getName()))
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getName()))
         ));
 
         roleType.delete();
@@ -180,7 +180,7 @@ public class RoleTypeTest extends GraphTestBase {
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(roleType.getName()))
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getName()))
         ));
 
         roleType2.delete();
@@ -202,7 +202,7 @@ public class RoleTypeTest extends GraphTestBase {
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(roleA.getName()))
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getName()))
         ));
 
         roleA.delete();
