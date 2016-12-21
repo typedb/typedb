@@ -41,15 +41,13 @@ public class Grakn {
      */
     public static final String DEFAULT_URI = "localhost:4567";
 
-    private static final String ENGINE_CONTROLLED_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryPersistent";
+    private static final String GRAIN_GRAPH_FACTORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryPersistent";
 
     /**
      * Constant to be passed to {@link #factory(String, String)} to specify an in-memory graph.
      */
     public static final String IN_MEMORY = "in-memory";
 
-    private static final String IN_MEMORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryInMemory";
-    
     private static final Map<String, GraknGraphFactory> clients = new HashMap<>();
 
     private static <F extends GraknGraphFactory> F loadImplementation(String className,
@@ -82,7 +80,6 @@ public class Grakn {
     public static GraknGraphFactory factory(String location, String keyspace) {
         String finalKeyspace = keyspace.toLowerCase();
         String key = location + finalKeyspace;
-        String factoryClassname = IN_MEMORY.equals(location) ?IN_MEMORY_IMPLEMENTATION : ENGINE_CONTROLLED_IMPLEMENTATION;
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(factoryClassname, location, finalKeyspace));
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAIN_GRAPH_FACTORY_IMPLEMENTATION, location, finalKeyspace));
     }
 }
