@@ -29,10 +29,18 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * <p>
+ *     Builds a Grakn Graph Factory {@link InternalFactory} which is locked
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     Builds a Grakn Graph Factory which is locked to a specific keyspace and engineURL.
+ *     This uses relfection in order to dynamically build any vendor specific factory which implements the
+ *     {@link InternalFactory} API.
+ *
+ *     The factories in this class are treated as singletons.
+ * </p>.
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 class FactoryBuilder {
     private static final String FACTORY = "factory.internal";

@@ -35,7 +35,7 @@ import java.util.Properties;
  *     For this factory to function a vendor specific implementation of a graph extending
  *     {@link AbstractGraknGraph} must be provided. This must be provided with a maching TinkerPop Graph
  *     @see Graph which is wrapped within the GraknGraph
- * </p>.
+ * </p>
  * @author Filipe Peliz Pinto Teixeira
  *
  * @param <M> A Graph Graph extending {@link AbstractGraknGraph} and wrapping a Tinkerpop Graph

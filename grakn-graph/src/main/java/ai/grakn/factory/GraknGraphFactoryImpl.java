@@ -36,15 +36,19 @@ import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
 
 /**
- * A client for creating a grakn graph from a running engine.
- * This is to abstract away factories and the backend from the user.
- * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
- */
-/**
+ * <p>
+ *     Builds a Grakn Graph factory
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     This class facilitates the construction of Grakn Grahs by determining which factory should be built.
+ *     It does this by either defaulting to an in memory graph {@link ai.grakn.graph.internal.GraknTinkerGraph} or by
+ *     retrieving the factory definition from engine.
+ *
+ *     The deployer of engine decides on the backend and this class will handle producing the correct graphs.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
