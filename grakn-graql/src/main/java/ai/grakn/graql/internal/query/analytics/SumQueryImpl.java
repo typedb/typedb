@@ -45,7 +45,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes, Collections.emptySet()),
+        ComputerResult result = getGraphComputer().compute(
+                new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new SumMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Number> sum = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("SumMapReduce is done");

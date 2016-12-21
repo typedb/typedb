@@ -28,7 +28,12 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.or;
@@ -38,7 +43,7 @@ import static java.util.stream.Collectors.joining;
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<String> statisticsResourceTypeNames = new HashSet<>();
-    final Map<String, String> resourceTypesDataTypeMap = new HashMap<>();
+    private final Map<String, String> resourceTypesDataTypeMap = new HashMap<>();
 
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeNames) {
         this.statisticsResourceTypeNames = Sets.newHashSet(statisticsResourceTypeNames);
@@ -69,7 +74,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     abstract String getName();
 
     final String resourcesString() {
-        return " of " + statisticsResourceTypeNames.stream().map(StringConverter::idToString).collect(joining(", "));
+        return " of " + statisticsResourceTypeNames.stream()
+                .map(StringConverter::idToString).collect(joining(", "));
     }
 
     private void getResourceTypes(GraknGraph graph) {
@@ -88,7 +94,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
         metaResourceType.subTypes().stream()
                 .filter(type -> !type.equals(metaResourceType))
-                .forEach(type -> resourceTypesDataTypeMap.put(type.asType().getName(), type.asResourceType().getDataType().getName()));
+                .forEach(type -> resourceTypesDataTypeMap
+                        .put(type.asType().getName(), type.asResourceType().getDataType().getName()));
     }
 
     String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {

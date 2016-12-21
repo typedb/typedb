@@ -45,7 +45,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
         Set<String> allSubTypes = getCombinedSubTypes();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(allSubTypes, Collections.emptySet()),
+        ComputerResult result = getGraphComputer().compute(
+                new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new StdMapReduce(statisticsResourceTypeNames, dataType));
         Map<String, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);

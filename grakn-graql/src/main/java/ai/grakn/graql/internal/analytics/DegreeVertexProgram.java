@@ -81,9 +81,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
             case 2:
                 String type = Utility.getVertexType(vertex);
-                if (selectedTypes.contains(type)) {
-                    if (ofTypeNames.isEmpty() || ofTypeNames.contains(type))
-                        vertex.property(DEGREE, getEdgeCount(messenger));
+                if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
+                    vertex.property(DEGREE, getEdgeCount(messenger));
                 }
                 break;
         }

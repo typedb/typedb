@@ -45,6 +45,7 @@ import static java.util.stream.Collectors.joining;
 class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
 
     private boolean persist = false;
+    private boolean ofTypeNamesSet = false;
     private Set<String> ofTypeNames = new HashSet<>();
     private String degreeName = Schema.Analytics.DEGREE.getName();
 
@@ -67,6 +68,13 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
         ComputerResult result;
         GraknComputer computer = getGraphComputer();
 
+        Set<String> withResourceRelationTypes = getHasResourceRelationTypes();
+        withResourceRelationTypes.addAll(subTypeNames);
+
+        if (ofTypeNames.isEmpty()) {
+            ofTypeNames.addAll(subTypeNames);
+        }
+
         if (persist) {
             if (!Sets.intersection(subTypeNames, analyticsElements).isEmpty()) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
@@ -74,17 +82,16 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
             }
             mutateResourceOntology(degreeName, ResourceType.DataType.LONG);
             waitOnMutateResourceOntology(degreeName);
-            computer.compute(new DegreeAndPersistVertexProgram(subTypeNames, ofTypeNames, keySpace, degreeName));
+            computer.compute(new DegreeAndPersistVertexProgram(withResourceRelationTypes, ofTypeNames,
+                    keySpace, degreeName));
+
             LOGGER.info("DegreeAndPersistVertexProgram is done");
             return (T) "Degrees have been persisted";
+
         } else {
-            if (ofTypeNames.isEmpty()) {
-                result = computer.compute(new DegreeVertexProgram(subTypeNames, ofTypeNames),
-                        new DegreeDistributionMapReduce(subTypeNames));
-            } else {
-                result = computer.compute(new DegreeVertexProgram(subTypeNames, ofTypeNames),
-                        new DegreeDistributionMapReduce(ofTypeNames));
-            }
+            result = computer.compute(new DegreeVertexProgram(withResourceRelationTypes, ofTypeNames),
+                    new DegreeDistributionMapReduce(ofTypeNames));
+
             LOGGER.info("DegreeVertexProgram is done");
             return (T) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         }
@@ -119,13 +126,19 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
 
     @Override
     public DegreeQuery<T> of(String... ofTypeNames) {
-        this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        if (ofTypeNames.length > 0) {
+            ofTypeNamesSet = true;
+            this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        }
         return this;
     }
 
     @Override
     public DegreeQuery<T> of(Collection<String> ofTypeNames) {
-        this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        if (!ofTypeNames.isEmpty()) {
+            ofTypeNamesSet = true;
+            this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+        }
         return this;
     }
 
@@ -133,7 +146,7 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     String graqlString() {
         String string = "degrees";
 
-        if (!ofTypeNames.isEmpty()) string += " of " + ofTypeNames.stream()
+        if (ofTypeNamesSet) string += " of " + ofTypeNames.stream()
                 .map(StringConverter::idToString).collect(joining(", "));
 
         string += subtypeString();
