@@ -33,6 +33,12 @@ import java.util.Set;
 /**
  * Handles calling the relevant validation depending on the type of the concept.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class Validator {
     private final AbstractGraknGraph graknGraph;
     private final List<String> errorsFound = new ArrayList<>();

@@ -30,6 +30,12 @@ import java.util.Properties;
 /**
  * A graph factory which provides a grakn graph with a tinker graph backend.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TinkerInternalFactory.class);
 

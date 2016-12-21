@@ -38,6 +38,12 @@ import java.util.Optional;
 /**
  * Internal factory to produce different types of concepts
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 final class ElementFactory {
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
     private final AbstractGraknGraph graknGraph;

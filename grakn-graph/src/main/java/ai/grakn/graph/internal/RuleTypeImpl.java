@@ -30,6 +30,12 @@ import java.util.Optional;
  * An ontological element used to define different types of rule.
  * Currently supported rules include Constraint Rules and Inference Rules.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
     RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type) {
         super(graknGraph, v, type, Optional.empty());

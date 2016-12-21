@@ -35,6 +35,12 @@ import java.util.regex.Pattern;
  * A Resource Type which can hold different values.
  * @param <D> The data tyoe of this resource type.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
     ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<ResourceType<D>> type, Optional<DataType<D>> dataType, Optional<Boolean> isUnique) {
         super(graknGraph, v, type, Optional.empty());

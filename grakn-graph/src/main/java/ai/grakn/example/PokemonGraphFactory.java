@@ -29,7 +29,15 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 
 /**
- * A class which loads sample data into a grakn graph
+ * <p>
+ *     A sample graph.
+ * </p>
+ *
+ * <p>
+ *     A class which loads sample data based on pokemon into a grakn graph.
+ * </p>
+ * @author Filipe Peliz Pinto Teixeira
+ * @author Felix Chapman
  */
 public class PokemonGraphFactory{
     private static EntityType pokemon;

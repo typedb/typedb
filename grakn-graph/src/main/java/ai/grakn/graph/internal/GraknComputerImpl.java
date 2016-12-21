@@ -28,6 +28,12 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.concurrent.ExecutionException;
 
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 public class GraknComputerImpl implements GraknComputer {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputer;

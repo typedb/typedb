@@ -40,6 +40,12 @@ import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private static final String COMPUTER = "graph.computer";

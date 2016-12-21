@@ -46,6 +46,12 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
  * @param <V> The type of the instances of this concept type.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
         super(graknGraph, v, Optional.empty());

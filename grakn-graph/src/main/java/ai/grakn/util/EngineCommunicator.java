@@ -32,6 +32,12 @@ import java.net.URL;
 /**
  * Class dedicated to talking with Grakn Engine. Currently used to retrieve factory config and submit commit logs
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);
     private static final String DEFAULT_PROTOCOL = "http://";

@@ -25,6 +25,12 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  * The interface used to build new graphs from different vendors.
  * Adding new vendor support means implementing this interface.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 interface InternalFactory<M extends GraknGraph, T extends Graph> {
     /**
      *

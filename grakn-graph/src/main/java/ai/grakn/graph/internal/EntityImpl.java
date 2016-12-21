@@ -27,6 +27,12 @@ import java.util.Optional;
 /**
  * An instance of Entity Type which represents some data in the graph.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class EntityImpl extends InstanceImpl<Entity, EntityType> implements Entity {
     EntityImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {
         super(graknGraph, v, type);

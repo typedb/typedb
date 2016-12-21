@@ -25,6 +25,22 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Properties;
 
+/**
+ * <p>
+ *     Defines the construction of Grakn Graphs
+ * <p/>
+ *
+ * <p>
+ *     Defines the abstract construction of grakn graphs on top of Tinkerpop Graphs.
+ *     For this factory to function a vendor specific implementation of a graph extending
+ *     {@link AbstractGraknGraph} must be provided. This must be provided with a maching TinkerPop Graph
+ *     @see Graph which is wrapped within the GraknGraph
+ * </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ * @param <M> A Graph Graph extending {@link AbstractGraknGraph} and wrapping a Tinkerpop Graph
+ * @param <G> A vendor implementation of a Tinkerpop Graph {@link AbstractGraknGraph}
+ */
 abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<M, G> {
 	
     protected final String keyspace;

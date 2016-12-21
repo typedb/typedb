@@ -28,6 +28,12 @@ import java.util.Optional;
 /**
  * An ontological element which represents the categories instances can fall within.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
     EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {
         super(graknGraph, v, type, Optional.empty());

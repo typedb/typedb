@@ -37,6 +37,12 @@ import java.util.stream.Collectors;
  * The global structural rules to validate.
  * This ensures the graph conforms to our concept.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {
         throw new UnsupportedOperationException();

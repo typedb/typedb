@@ -28,6 +28,12 @@ import java.util.MissingResourceException;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class FactoryBuilder {
     private static final String FACTORY = "factory.internal";
     private static final Map<String, InternalFactory> openFactories = new ConcurrentHashMap<>();

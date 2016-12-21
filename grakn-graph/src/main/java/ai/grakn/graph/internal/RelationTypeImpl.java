@@ -32,6 +32,12 @@ import java.util.Set;
 /**
  * A Relation Type is an ontological element used to concept how entity types relate to one another.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit) {
         super(graknGraph, v, type, isImplicit);

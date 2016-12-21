@@ -36,6 +36,12 @@ import java.util.stream.Collectors;
  * An internal concept used to represent the link between a roleplayer and it's role.
  * For example Pacino as an actor would be represented by a single casting regardless of the number of movies he acts in.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
 
     CastingImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type) {

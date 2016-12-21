@@ -32,6 +32,12 @@ import java.util.Optional;
 /**
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     RuleImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs) {
         super(graknGraph, v, type);

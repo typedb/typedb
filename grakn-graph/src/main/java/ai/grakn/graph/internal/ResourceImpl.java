@@ -37,6 +37,12 @@ import java.util.regex.Pattern;
  * A concept which represents a resource.
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
+/**
+ *
+ * <p>  </p>.
+ * @author Filipe Peliz Pinto Teixeira
+ *
+ */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
     ResourceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<ResourceType<D>> type, Optional<D> value) {
         super(graknGraph, v, type);
