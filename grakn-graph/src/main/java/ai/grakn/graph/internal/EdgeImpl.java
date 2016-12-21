@@ -26,10 +26,15 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * Wraps a tinkerpop edge constraining it to our object concept
  */
 /**
+ * <p>
+ *     Represent an Edge in a Grakn Graph
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *    Wraps a tinkerpop edge {@link Edge} constraining it to the Grakn Object Model.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 class EdgeImpl {
     private Edge edge;
