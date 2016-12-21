@@ -26,11 +26,15 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 
 /**
- * An ontological element which represents the categories instances can fall within.
- */
-/**
+ * <p>
+ *     Ontology element used to represent categories.
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     An ontological element which represents categories instances can fall within.
+ *     Any instance of a Entity Type is called an Entity {@link Entity}.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
  *
  */
