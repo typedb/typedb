@@ -61,6 +61,9 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         ComputerResult result;
         GraknComputer computer = getGraphComputer();
 
+        Set<String> withResourceRelationTypes = getHasResourceRelationTypes();
+        withResourceRelationTypes.addAll(subTypeNames);
+
         if (members) {
             if (persist) {
                 if (!Sets.intersection(subTypeNames, analyticsElements).isEmpty()) {
@@ -70,25 +73,32 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
                 mutateResourceOntology(clusterName, ResourceType.DataType.STRING);
                 waitOnMutateResourceOntology(clusterName);
                 if (anySize) {
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace, clusterName),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes,
+                                    subTypeNames, keySpace, clusterName),
                             new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
                 } else {
                     // get the clusters with right size in the first run
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                     clusterSize));
                     // persist the cluster labels in the second run
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace, clusterName,
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes,
+                                    subTypeNames, keySpace, clusterName,
                                     ((Map) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY)).keySet()),
                             new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                     clusterSize));
                 }
             } else {
                 if (anySize)
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
                 else
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                     clusterSize));
             }
@@ -101,25 +111,32 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
                 mutateResourceOntology(clusterName, ResourceType.DataType.STRING);
                 waitOnMutateResourceOntology(clusterName);
                 if (anySize) {
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace, clusterName),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes,
+                                    subTypeNames, keySpace, clusterName),
                             new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
                 } else {
                     // get the clusters with right size in the first run
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                     clusterSize));
                     // persist the cluster labels in the second run
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames, keySpace, clusterName,
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes,
+                                    subTypeNames, keySpace, clusterName,
                                     ((Map) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY)).keySet()),
                             new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                     clusterSize));
                 }
             } else {
                 if (anySize) {
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
                 } else {
-                    result = computer.compute(new ConnectedComponentVertexProgram(subTypeNames),
+                    result = computer.compute(
+                            new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                     clusterSize));
                 }

@@ -52,6 +52,7 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -333,6 +334,9 @@ public class DegreeTest extends AbstractGraphTest {
         graph = factory.getGraph();
         checkDegrees(correctDegrees, label);
         checkNoDegree(label, entity4);
+
+        assertEquals(null, graph.getType(Schema.Analytics.DEGREE.getName()));
+        assertNotEquals(null, graph.getType(label));
     }
 
     private void checkDegrees(Map<String, Long> correctDegrees) {
