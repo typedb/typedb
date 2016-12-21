@@ -32,10 +32,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A Resource Type which can hold different values.
- * @param <D> The data tyoe of this resource type.
- */
-/**
  * <p>
  *     An ontological element which models and categorises the various {@link Resource} in the graph.
  * </p>

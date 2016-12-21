@@ -34,10 +34,6 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
- * A concept which represents a resource.
- * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
- */
-/**
  * <p>
  *     Represent a literal resource in the graph.
  * </p>
