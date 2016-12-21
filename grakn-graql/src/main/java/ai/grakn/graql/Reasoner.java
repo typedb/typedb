@@ -128,6 +128,8 @@ public class Reasoner {
      * @return stream of answers
      */
     public Stream<Map<String, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
+        if (!Reasoner.hasRules(graph))
+            return inputQuery.stream();
         Set<String> selectVars = inputQuery.admin().getSelectedNames();
         Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Stream<Map<String, Concept>> answerStream = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph)
@@ -138,28 +140,4 @@ public class Reasoner {
         }
         return answerStream;
     }
-
-    public QueryAnswers resolve(MatchQuery inputQuery) {
-        return new QueryAnswers(resolve(inputQuery, false).collect(Collectors.toSet()));
-    }
-
-    /**
-     * Resolve a given query using the rule base
-     * @param inputQuery the query string to be expanded
-     * @return MatchQuery with answers
-     */
-    public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
-        if (!Reasoner.hasRules(graph))
-            return inputQuery;
-        else
-            return new ReasonerMatchQuery(inputQuery, graph,
-                    new QueryAnswers(resolve(inputQuery, materialise).collect(Collectors.toSet())));
-    }
-
-    /**
-     * Materialised by default, BC reasoning
-     * @param inputQuery
-     * @return query with answers
-     */
-    public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, true);}
 }

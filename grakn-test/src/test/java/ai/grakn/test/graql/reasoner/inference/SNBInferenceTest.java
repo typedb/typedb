@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -27,6 +28,8 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -59,8 +62,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $x isa university, has name 'University of Cambridge';" +
                 "$y isa country, has name 'UK';";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -75,8 +78,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $x isa university, has name 'University of Cambridge';" +
                 "$y isa country, has name 'UK';";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**
@@ -95,8 +98,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK';";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -112,8 +115,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK';";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -169,8 +172,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};} or " +
                 "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y;";
 
-        //assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -188,8 +191,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$tName value 'Steve Vai';} or {$tName value 'Black Sabbath';};} or " +
                 "{$yName value 'Gary';$tName value 'Pink Floyd';};select $y, $t;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**
@@ -213,8 +216,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$xName value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
                 "{$xName value 'Gary';$yName value 'The Wall';};select $x, $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -235,8 +238,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$ny value 'Karl Fischer';{$nyy value 'Faust';} or {$nyy value 'Nocturnes';};} or " +
                 "{$ny value 'Gary';$nyy value 'The Wall';};select $y, $yy;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -260,8 +263,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$y has name 'Yngwie Malmsteen';} or {$y has name 'Cacophony';} or {$y has name 'Steve Vai';} or {$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';};";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -286,8 +289,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$r has name 'Yngwie Malmsteen';} or {$r has name 'Cacophony';} or {$r has name 'Steve Vai';} or {$r has name 'Black Sabbath';};} or " +
                 "{$p has name 'Gary';$r has name 'Pink Floyd';};";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -306,8 +309,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$nx value 'Karl Fischer';$ny value 'Faust';} or " +
                 "{$nx value 'Denis';{$ny value 'Colour of Magic';} or {$ny value 'Dorian Gray';};};select $x, $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -325,8 +328,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$x has name 'Charlie';{$y has name 'Cacophony';} or {$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; select $x, $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**
@@ -346,8 +349,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $x isa person;$y isa product;" +
                 "{$x has name 'Bob';$y has name 'Ducatti 1299';};";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**
@@ -370,8 +373,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$y has name 'Ludwig van Beethoven';} or {$y has name 'Johann Wolfgang von Goethe';} or" +
                 "{$y has name 'Wolfgang Amadeus Mozart';};};";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -383,9 +386,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
         Query query = new Query(queryString, graph);
 
         String explicitQuery = "match {$x has name 'Frank';} or {$x has name 'Karl Fischer';};";
-
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**
@@ -399,7 +401,6 @@ public class SNBInferenceTest extends AbstractEngineTest{
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;" +
                         "$z isa person;$z has name 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y;";
         MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query));
 
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
@@ -407,7 +408,9 @@ public class SNBInferenceTest extends AbstractEngineTest{
         Map<String, String> unifiers = new HashMap<>();
         unifiers.put("z", "y");
 
-        QueryAnswers answers2 = (new QueryAnswers(reasoner.resolve(query2))).unify(unifiers);
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, false).collect(Collectors.toSet()))
+                .unify(unifiers);
         assertEquals(answers, answers2);
     }
 
@@ -433,8 +436,8 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "{$x isa person; $p isa product;$p has name 'Nocturnes'; $tt isa tag; ($tt, $x), isa tagging;};" +
                 "($p, $t) isa typing; select $p, $t;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -443,19 +446,19 @@ public class SNBInferenceTest extends AbstractEngineTest{
         QueryBuilder qb = graph.graql().infer(false);
         Reasoner reasoner = new Reasoner(graph);
         //select recommendationS of Karl Fischer and their types
-        String queryString2 = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
+        String queryString = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
                 "($p, $c) isa typing; ($x, $p) isa recommendation; select $p, $c;";
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = qb.parse(queryString);
 
-        String explicitQuery2 = "match $p isa product;\n" +
+        String explicitQuery = "match $p isa product;" +
                 "$x isa person;$x has name 'Karl Fischer';{($x, $p) isa recommendation;} or" +
                 "{$x isa person;$t isa tag, has name 'Johann Wolfgang von Goethe';" +
                 "($x, $t) isa tagging;$p isa product;$p has name 'Faust';} or" +
                 "{$x isa person; $p isa product;$p has name 'Nocturnes'; $t isa tag; ($t, $x), isa tagging;};" +
                 "($p, $c) isa typing; select $p, $c;";
 
-        assertEquals(reasoner.resolve(query2), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)));
-        assertQueriesEqual(reasoner.resolveToQuery(query2), qb.parse(explicitQuery2));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**
@@ -478,11 +481,11 @@ public class SNBInferenceTest extends AbstractEngineTest{
                 "$p isa product;$p has name 'Faust';};" +
                 "($p, $t) isa typing; select $p, $t;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
+    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }
 }

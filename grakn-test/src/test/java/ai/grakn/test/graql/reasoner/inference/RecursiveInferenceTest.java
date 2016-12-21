@@ -33,6 +33,8 @@ import ai.grakn.test.graql.reasoner.graphs.NguyenGraph;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphSymmetric;
 import ai.grakn.test.graql.reasoner.graphs.TailRecursionGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -63,13 +65,12 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $y has index $ind;" +
                             "{$ind value 'j';} or {$ind value 's';} or {$ind value 'v';}; select $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
-    public void testRecursivity()
-    {
+    public void testRecursivity() {
         GraknGraph graph = TestGraph.getGraph("name", "recursivity-test.gql");
         Reasoner reasoner = new Reasoner(graph);
     }
@@ -89,8 +90,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $Y isa Person, has name $name;" +
                 "{$name value 'aaa';} or {$name value 'aab';} or {$name value 'aaaa';};select $Y, $name;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**as above but both directions*/
@@ -106,8 +107,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $Y isa Person, has name $name;" +
                 "{$name value 'a';} or {$name value 'aaa';} or {$name value 'aab';} or {$name value 'aaaa';};select $Y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        //assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -126,8 +127,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
                 "{$nameX value 'aa';$nameY value 'aab';} or {$nameX value 'aa';$nameY value 'aaaa';} or " +
                 "{$nameX value 'aaa';$nameY value 'aaaa';} or {$nameX value 'c';$nameY value 'ca';}; select $X, $Y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -153,7 +154,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
                 "{$nameX value 'c';$nameY value 'ca';} or " +
                 "{$nameY value 'c';$nameX value 'ca';}; select $X, $Y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        //assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -168,8 +170,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         String explicitQuery = "match $Y has name $name;{$name value 'd';} or {$name value 'g';};";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -183,8 +185,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $Y has name $name;{$name value 'd';} or {$name value 'g';}; select $Y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -200,8 +202,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $X has name $name;" +
                 "{$name value 'a';} or {$name value 'b';} or {$name value 'c';}; select $X;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
@@ -217,8 +219,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $X has name $name;" +
                 "{$name value 'a';} or {$name value 'b';} or {$name value 'c';}; select $X;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
@@ -235,8 +237,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         String explicitQuery = "match $y has name $name;{$name value 'f';} or {$name value 'h';};select $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 18*/
@@ -251,8 +253,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         String explicitQuery = "match $x has index 'a2';";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -273,8 +275,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
                 "{$indX value 'b';$indY value 'd';} or" +
                 "{$indX value 'a';$indY value 'd';};select $x, $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -289,8 +291,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $y has index $indY;" +
                 "{$indY value 'a';} or {$indY value 'b';} or {$indY value 'c';} or {$indY value 'd';};select $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /** test 6.1 from Cao p 71*/
@@ -305,8 +307,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity or $y isa end;";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /** test 6.3 from Cao p 75*/
@@ -322,8 +324,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa b-entity;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**test3 from Nguyen (similar to test 6.5 from Cao)*/
@@ -338,8 +340,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     //TODO bug #10635
@@ -355,8 +357,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**test 6.6 from Cao p.76*/
@@ -372,8 +374,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $y has name $name;" +
                 "{$name value 'ann';} or {$name value 'bill';} or {$name value 'peter';};select $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**test 6.9 from Cao p.82*/
@@ -389,8 +391,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**test 6.10 from Cao p. 82*/
@@ -405,8 +407,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -420,8 +422,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Ignore
@@ -436,8 +438,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -452,8 +454,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -468,8 +470,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
@@ -484,8 +486,8 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
         String explicitQuery = "match $y isa person, has name $name;" +
                                 "{$name value 'b';} or {$name value 'c';} or {$name value 'd';};select $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
     @Test
     public void testReverseSameGeneration2() {
@@ -495,7 +497,6 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;";
         MatchQuery query = qb.parse(queryString);
-        Set<Map<String, Concept>> answers = reasoner.resolve(query);
 
         String explicitQuery = "match $x has name $nameX;$y has name $nameY;" +
                 "{$nameX value 'a';$nameY value 'b';} or {$nameX value 'a';$nameY value 'c';} or" +
@@ -505,11 +506,11 @@ public class RecursiveInferenceTest extends AbstractEngineTest{
                 "{$nameX value 'i';$nameY value 'f';} or {$nameX value 'j';$nameY value 'f';} or" +
                 "{$nameX value 'f';$nameY value 'k';};select $x, $y;";
 
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
+    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }
 }

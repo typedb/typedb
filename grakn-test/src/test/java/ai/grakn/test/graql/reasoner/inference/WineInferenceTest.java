@@ -19,12 +19,16 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.test.AbstractEngineTest;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -58,11 +62,11 @@ public class WineInferenceTest extends AbstractEngineTest{
                         "{$nameP value 'Eva';$nameW value 'Tamaioasa Romaneasca';} or" +
                         "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
+    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }
 }
