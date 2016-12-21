@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknAdmin;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -31,10 +32,16 @@ import java.util.Optional;
  * Currently supported rules include Constraint Rules and Inference Rules.
  */
 /**
+ * <p>
  *
- * <p>  </p>.
+ * </p>
+ *
+ * <p>
+ *     An ontological element used to define different types of {@link Rule}.
+ *     urrently supported rules include {@link GraknAdmin#getMetaRuleInference()} and {@link GraknAdmin#getMetaRuleConstraint()}
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
     RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type) {

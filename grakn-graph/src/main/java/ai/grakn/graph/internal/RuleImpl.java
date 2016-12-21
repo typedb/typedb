@@ -30,9 +30,6 @@ import java.util.HashSet;
 import java.util.Optional;
 
 /**
- * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
- */
-/**
  * <p>
  *     A rule which defines how implicit knowledge can extracted.
  * </p>
