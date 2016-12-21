@@ -176,11 +176,11 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void deleteRoleTypeWithHasRole(){
         RoleType roleType2 = graknGraph.putRoleType("New Role Type");
-        RelationType relationType = graknGraph.putRelationType("Thing").hasRole(roleType2).hasRole(roleType);
+        graknGraph.putRelationType("Thing").hasRole(roleType2).hasRole(roleType);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getName()))
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getName()))
         ));
 
         roleType2.delete();
