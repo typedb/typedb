@@ -19,13 +19,13 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.RelationType;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.MoreThanOneEdgeException;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +33,7 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -153,5 +154,57 @@ public class RoleTypeTest extends GraphTestBase {
 
         assertEquals(roleA.instances().size(), 0);
         assertEquals(roleB.instances().size(), 0);
+    }
+
+    @Test
+    public void deleteRoleTypeWithPlaysRole(){
+        assertNotNull(graknGraph.getRoleType("RoleType"));
+        graknGraph.getRoleType("RoleType").delete();
+        assertNull(graknGraph.getRoleType("RoleType"));
+
+        RoleType roleType = graknGraph.putRoleType("New Role Type");
+        graknGraph.putEntityType("Entity Type").playsRole(roleType);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getName()))
+        ));
+
+        roleType.delete();
+    }
+
+    @Test
+    public void deleteRoleTypeWithHasRole(){
+        RoleType roleType2 = graknGraph.putRoleType("New Role Type");
+        graknGraph.putRelationType("Thing").hasRole(roleType2).hasRole(roleType);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getName()))
+        ));
+
+        roleType2.delete();
+    }
+
+    @Test
+    public void deleteRoleTypeWithPlayers(){
+        RoleType roleA = graknGraph.putRoleType("roleA");
+        RoleType roleB = graknGraph.putRoleType("roleB");
+        RelationType relationType = graknGraph.putRelationType("relationType");
+        EntityType entityType = graknGraph.putEntityType("entityType");
+
+        Entity a = entityType.addEntity();
+        Entity b = entityType.addEntity();
+
+        relationType.addRelation().
+                putRolePlayer(roleA, a).
+                putRolePlayer(roleB, b);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getName()))
+        ));
+
+        roleA.delete();
     }
 }

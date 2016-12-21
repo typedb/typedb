@@ -81,23 +81,21 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
                 return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
             }
         }
-
         return types;
     }
 
     /**
-     * Deletes the concept as a type
+     * Deletes the concept as  type
      */
     @Override
     public void innerDelete(){
-        Collection<? extends Concept> subSet = subTypes();
-        Collection<? extends Instance> instanceSet = instances();
-        subSet.remove(this);
+        boolean hasSubs = getVertex().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
+        boolean hasInstances = getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
 
-        if(subSet.isEmpty() && instanceSet.isEmpty()){
-            deleteNode();
+        if(hasSubs || hasInstances){
+            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
-            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(toString()));
+            deleteNode();
         }
     }
 

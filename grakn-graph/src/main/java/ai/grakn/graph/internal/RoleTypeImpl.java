@@ -26,6 +26,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -96,6 +97,18 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
             throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()));
         }
         return super.playsRole(roleType, false);
+    }
+
+    @Override
+    public void innerDelete(){
+        boolean hasHasRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.HAS_ROLE.getLabel()).hasNext();
+        boolean hasPlaysRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
+
+        if(hasHasRoles || hasPlaysRoles){
+            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
+        } else {
+            super.innerDelete();
+        }
     }
 
 }

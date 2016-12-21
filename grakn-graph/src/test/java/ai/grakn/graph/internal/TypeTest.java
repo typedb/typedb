@@ -533,4 +533,22 @@ public class TypeTest extends GraphTestBase{
         assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
         assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
     }
+
+    @Test
+    public void deleteTypeWithEntities(){
+        EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
+        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB");
+
+        entityTypeB.addEntity();
+
+        entityTypeA.delete();
+        assertNull(graknGraph.getEntityType("entityTypeA"));
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(entityTypeB.getName()))
+        ));
+
+        entityTypeB.delete();
+    }
 }

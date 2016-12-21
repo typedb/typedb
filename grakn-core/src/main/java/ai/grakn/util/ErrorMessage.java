@@ -21,7 +21,7 @@ package ai.grakn.util;
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     NO_EDGE("Concept ['%s'] does not have any edges to a ['%s']"),
-    CANNOT_DELETE("Concept ['%s'] cannot be deleted as it still has edges"),
+    CANNOT_DELETE("Type ['%s'] cannot be deleted as it still has incomind edges"),
     LOOP_DETECTED("Concept ['%s'] loops when following edges of type ['%s']"),
     MORE_THAN_ONE_EDGE("Concept ['%s'] has more than one edge of type ['%s']"),
     ID_NOT_UNIQUE("Failed to change the Id of Concept ['%s'] due to another concept already having an id of " +
