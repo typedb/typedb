@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * </p>
  *
  * <p>
- *    Wraps a tinkerpop edge {@link Edge} constraining it to the Grakn Object Model.
+ *    Wraps a tinkerpop {@link Edge} constraining it to the Grakn Object Model.
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira

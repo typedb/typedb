@@ -23,14 +23,14 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
  * <p>
- *     A Grakn Graph using TinkerGraph {@link TinkerGraph} as a vendor backend.
+ *     A Grakn Graph using {@link TinkerGraph} as a vendor backend.
  * </p>
  *
  * <p>
- *     Wraps up a TinkerGraph {@link TinkerGraph} as a method of storing the Grakn Graph object Model.
+ *     Wraps up a {@link TinkerGraph} as a method of storing the Grakn Graph object Model.
  *     With this vendor some exceptions are in place:
  *     1. Transactions do not exists and all threads work on the same graph at the same time.
- *     2. The {@link #rollback} operation is unsupported due to Tinkerporp Transactions not being supported.
+ *     2. The {@link #rollback} operation is unsupported due to Tinkerpop Transactions not being supported.
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira

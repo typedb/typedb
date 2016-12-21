@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  * </p>
  *
  * <p>
- *     An internal concept used to represent the link between an instance {@link Instance} and it's role {@link RoleType}.
+ *     An internal concept used to represent the link between an {@link Instance} and it's {@link RoleType}.
  *     For example Pacino as an actor would be represented by a single casting regardless of the number of movies he acts in.
  * </p>
  *

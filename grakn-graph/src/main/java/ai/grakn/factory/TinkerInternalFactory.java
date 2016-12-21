@@ -32,7 +32,7 @@ import java.util.Properties;
  */
 /**
  * <p>
- *     A Grakn Graph Ontop of TinkerGraph
+ *     A Grakn Graph on top of TinkerGraph
  * </p>
  *
  * <p>

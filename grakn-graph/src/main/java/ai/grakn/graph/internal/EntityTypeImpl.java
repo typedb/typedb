@@ -32,7 +32,7 @@ import java.util.Optional;
  *
  * <p>
  *     An ontological element which represents categories instances can fall within.
- *     Any instance of a Entity Type is called an Entity {@link Entity}.
+ *     Any instance of a Entity Type is called an {@link Entity}.
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira

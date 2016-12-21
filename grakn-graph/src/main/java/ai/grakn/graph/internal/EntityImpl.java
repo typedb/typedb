@@ -31,8 +31,8 @@ import java.util.Optional;
  *
  * <p>
  *     This represents an entity in the graph.
- *     Entities are objects which are defined by their resources {@link ai.grakn.concept.Resource} and their links to
- *     other entities via relations {@link ai.grakn.concept.Relation}
+ *     Entities are objects which are defined by their {@link ai.grakn.concept.Resource} and their links to
+ *     other entities via {@link ai.grakn.concept.Relation}
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira

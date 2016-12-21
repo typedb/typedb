@@ -36,10 +36,22 @@ import java.util.regex.Pattern;
  * @param <D> The data tyoe of this resource type.
  */
 /**
+ * <p>
+ *     An ontological element which models and categorises the various {@link Resource} in the graph.
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     This ontological element behaves similarly to {@link ai.grakn.concept.Type} when defining how it relates to other
+ *     types. It has two additional functions to be aware of:
+ *     1. It has a {@link ai.grakn.concept.ResourceType.DataType} constraining the data types of the values it's instances may take.
+ *     2. Any of it's instances are unique to the type.
+ *     For example if you have a ResourceType modelling month throughout the year there can only be one January.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
  *
+ * @param <D> The data type of this resource type.
+ *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
     ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<ResourceType<D>> type, Optional<DataType<D>> dataType, Optional<Boolean> isUnique) {

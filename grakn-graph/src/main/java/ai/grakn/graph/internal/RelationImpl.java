@@ -35,11 +35,11 @@ import java.util.*;
 
 /**
  * <p>
- *     Encapsulates relationships between instances {@link Instance}
+ *     Encapsulates relationships between {@link Instance}
  * </p>
  *
  * <p>
- *     A relation which is an instance of a relation type {@link RelationType} defines how instances may relate to one another.
+ *     A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira

@@ -32,6 +32,9 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
+ *
+ * @param <M> A Graph Graph extending {@link GraknGraph} and wrapping a Tinkerpop Graph
+ * @param <T> A vendor implementation of a Tinkerpop {@link Graph}
  */
 interface InternalFactory<M extends GraknGraph, T extends Graph> {
     /**

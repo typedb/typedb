@@ -37,7 +37,7 @@ import ai.grakn.exception.GraknValidationException;
  *     A class which loads sample data based on pokemon into a grakn graph.
  * </p>
  * @author Filipe Peliz Pinto Teixeira
- * @author Felix Chapman
+ * @author aelred
  */
 public class PokemonGraphFactory{
     private static EntityType pokemon;

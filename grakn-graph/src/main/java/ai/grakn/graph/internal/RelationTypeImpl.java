@@ -35,7 +35,7 @@ import java.util.Set;
  * </p>
  *
  * <p>
- *     A relation type defines how types {@link ai.grakn.concept.Type} may relate to one another.
+ *     A relation type defines how {@link ai.grakn.concept.Type} may relate to one another.
  *     They are used to model and categorise n-ary relationships.
  * </p>
  *

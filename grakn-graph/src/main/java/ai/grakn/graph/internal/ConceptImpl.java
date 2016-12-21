@@ -56,7 +56,7 @@ import java.util.function.Function;
  * </p>
  *
  * <p>
- *     A concept which can represent anything in the graph which wraps a tinkerpop vertex {@link Vertex}.
+ *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  * </p>
  *

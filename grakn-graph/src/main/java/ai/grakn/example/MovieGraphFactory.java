@@ -45,7 +45,7 @@ import java.util.Locale;
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
- * @author Felix Chapman
+ * @author aelred
  */
 public class MovieGraphFactory {
     private static GraknGraph graknGraph;
