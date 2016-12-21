@@ -33,7 +33,7 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  *     2. The {@link #rollback} operation is unsupported due to Tinkerpop Transactions not being supported.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){

@@ -35,7 +35,7 @@ import java.util.Optional;
  *     Any instance of a Entity Type is called an {@link Entity}.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{

@@ -40,7 +40,7 @@ import java.util.Optional;
  *     automatically materialise new concepts based on these rules.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {

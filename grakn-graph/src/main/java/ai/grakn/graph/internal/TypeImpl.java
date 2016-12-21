@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  *     They also aid in categorising {@link Instance} to different types.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}

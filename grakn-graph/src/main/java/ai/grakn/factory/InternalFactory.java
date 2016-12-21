@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  *     Adding new vendor support means implementing this interface.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  * @param <M> A Graph Graph extending {@link GraknGraph} and wrapping a Tinkerpop Graph
  * @param <T> A vendor implementation of a Tinkerpop {@link Graph}

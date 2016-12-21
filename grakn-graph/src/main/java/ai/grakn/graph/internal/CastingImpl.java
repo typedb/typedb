@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  *     For example Pacino as an actor would be represented by a single casting regardless of the number of movies he acts in.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
 

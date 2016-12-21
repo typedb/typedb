@@ -52,7 +52,7 @@ import java.util.Optional;
  *     An edge must include a label which is a {@link ai.grakn.util.Schema.EdgeLabel}.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 final class ElementFactory {
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);

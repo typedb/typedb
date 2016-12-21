@@ -48,7 +48,7 @@ import java.util.Set;
  *     2. It is special in that it is unique to relation types.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{

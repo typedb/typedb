@@ -44,7 +44,7 @@ import java.util.Locale;
  *     A class which loads sample data based in the movie domain into a grakn graph.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  * @author aelred
  */
 public class MovieGraphFactory {

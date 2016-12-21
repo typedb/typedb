@@ -36,8 +36,8 @@ import java.util.Properties;
  *     {@link AbstractGraknGraph} must be provided. This must be provided with a matching TinkerPop {@link Graph}
  *     which is wrapped within the Grakn Graph
  * </p>
- * 
- * @author Filipe Peliz Pinto Teixeira
+ *
+ * @author fppt
  *
  * @param <M> A Graph Graph extending {@link AbstractGraknGraph} and wrapping a Tinkerpop Graph
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}

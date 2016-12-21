@@ -75,7 +75,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
  *     It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  */

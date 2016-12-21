@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *     The factories in this class are treated as singletons.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 class FactoryBuilder {
     private static final String FACTORY = "factory.internal";

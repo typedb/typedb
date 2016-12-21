@@ -60,7 +60,7 @@ import java.util.function.Function;
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .

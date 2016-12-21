@@ -39,7 +39,7 @@ import java.util.Set;
  *     They are used to model and categorise n-ary relationships.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {

@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
  *     8. Unique Relation Validation which ensures that no duplicate {@link ai.grakn.concept.Relation} are created.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {

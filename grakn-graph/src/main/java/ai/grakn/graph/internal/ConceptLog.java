@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  *      edge cases, for example, relationship where a new role player is added.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  */
 public class ConceptLog {

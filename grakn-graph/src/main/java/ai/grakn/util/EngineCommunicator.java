@@ -41,7 +41,7 @@ import java.net.URL;
  *     The communication with engine is bypassed whenever the engineURL provided is a in-memory location.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);

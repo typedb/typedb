@@ -40,7 +40,7 @@ import java.util.Properties;
  *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TinkerInternalFactory.class);

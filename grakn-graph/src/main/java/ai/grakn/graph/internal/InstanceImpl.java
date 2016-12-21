@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
  *     Instances can relate to one another via {@link Relation}
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  *
  * @param <T> The leaf interface of the object concept which extends {@link Instance}.
  *           For example {@link ai.grakn.concept.Entity} or {@link Relation}.

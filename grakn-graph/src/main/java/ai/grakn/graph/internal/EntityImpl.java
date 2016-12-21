@@ -35,7 +35,7 @@ import java.util.Optional;
  *     other entities via {@link ai.grakn.concept.Relation}
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 class EntityImpl extends InstanceImpl<Entity, EntityType> implements Entity {
     EntityImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {

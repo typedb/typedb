@@ -48,7 +48,7 @@ import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
  *     The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author fppt
  */
 public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
