@@ -24,7 +24,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
 import java.util.Map;
 import java.util.stream.Collectors;

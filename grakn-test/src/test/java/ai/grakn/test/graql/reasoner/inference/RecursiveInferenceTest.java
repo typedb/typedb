@@ -23,7 +23,6 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.PathGraph;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphII;
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -40,7 +39,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;

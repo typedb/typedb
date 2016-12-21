@@ -25,7 +25,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
-import com.google.common.collect.Sets;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

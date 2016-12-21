@@ -35,11 +35,9 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import com.google.common.collect.Sets;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -469,11 +467,10 @@ public class ReasonerTest extends AbstractEngineTest{
         assertQueriesEqual(reasoner.resolve(query, false), reasoner.resolve(query2, false));
     }
 
-    @Ignore
     @Test
     public void testIndirectRelation(){
         GraknGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match ($x, $y) isa $rel;$rel id is-located-in;";
+        String queryString = "match ($x, $y) isa $rel;$rel type-name is-located-in;select $x, $y;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
@@ -493,8 +490,8 @@ public class ReasonerTest extends AbstractEngineTest{
         assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
     }
 
-    @Test
     @Ignore
+    @Test
     //propagated sub [x/Bob] prevents from capturing the right inference
     public void testVarContraction2(){
         GraknGraph graph = SNBGraph.getGraph();
