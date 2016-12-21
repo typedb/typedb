@@ -16,10 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.util;
 
 import ai.grakn.Grakn;
-import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.graph.internal.EngineCommunicator;
+import ai.grakn.util.EngineCommunicator;
 import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
