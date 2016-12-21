@@ -49,14 +49,18 @@ stop)
 clean)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
-    "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
-    "${GRAKN_HOME}/bin/grakn-cassandra.sh" clean
+    if [ $USE_CASSANDRA ]; then
+        "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
+        "${GRAKN_HOME}/bin/grakn-cassandra.sh" clean
+    fi
     ;;
 
 status)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
-    "${GRAKN_HOME}/bin/grakn-cassandra.sh" status
+    if [ $USE_CASSANDRA ]; then
+        "${GRAKN_HOME}/bin/grakn-cassandra.sh" status
+    fi
     ;;
 
 *)
