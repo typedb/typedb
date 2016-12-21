@@ -25,16 +25,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * <p>
+ *     Tracks Graph Mutations.
+ * </p>
  *
- *  This package keeps track of changes to the rootGraph that need to be validated. This includes:
+ * <p>
+ *     This package keeps track of changes to the rootGraph that need to be validated. This includes:
  *      new concepts,
  *      concepts that have had edges added/deleted,
  *      edge cases, for example, relationship where a new role player is added.
+ * </p>
  *
- */
-/**
- *
- * <p>  </p>.
  * @author Filipe Peliz Pinto Teixeira
  *
  */
