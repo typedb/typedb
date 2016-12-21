@@ -74,6 +74,8 @@ public class Resource extends Binary{
     public boolean isResource(){ return true;}
     @Override
     public boolean isSelectable(){ return true;}
+    @Override
+    public boolean requiresMaterialisation(){ return true;}
 
     //TODO fix the single predicate
     @Override
