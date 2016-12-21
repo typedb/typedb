@@ -41,7 +41,7 @@ public class Grakn {
      */
     public static final String DEFAULT_URI = "localhost:4567";
 
-    private static final String GRAIN_GRAPH_FACTORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryPersistent";
+    private static final String GRAIN_GRAPH_FACTORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryImpl";
 
     /**
      * Constant to be passed to {@link #factory(String, String)} to specify an in-memory graph.
