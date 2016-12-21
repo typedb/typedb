@@ -38,10 +38,29 @@ import java.util.stream.Collectors;
  * This ensures the graph conforms to our concept.
  */
 /**
+ * <p>
+ *     Specific Validation Rules
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     This class contains the implementation for the following validation rules:
+ *     1. Plays Role Validation which ensures that a {@link Instance} is allowed to play the {@link RoleType}
+ *        it has been assigned to.
+ *     2. Has Role Validation which ensures that every {@link RoleType} which is not abstract is
+ *        assigned to a {@link RelationType} via {@link RelationType#hasRole(RoleType)}.
+ *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link RoleType}
+ *        assigned to it via {@link RelationType#hasRole(RoleType)}.
+ *     4. Relation Structure Validation which ensures that each {@link ai.grakn.concept.Relation} has the
+ *        correct structure.
+ *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Instance}.
+ *     6. Relation Type Hierarchy Validation which ensures that {@link RelationType} with a hierarchical structure
+ *        have a valid matching {@link RoleType} hierarchical structure.
+ *     7. Required Resources validation which ensures that each {@link Instance} with required
+ *        {@link ai.grakn.concept.Resource} has a valid {@link ai.grakn.concept.Relation} to that Resource.
+ *     8. Unique Relation Validation which ensures that no duplicate {@link ai.grakn.concept.Relation} are created.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {

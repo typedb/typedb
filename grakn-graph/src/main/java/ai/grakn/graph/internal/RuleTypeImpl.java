@@ -28,17 +28,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 
 /**
- * An ontological element used to define different types of rule.
- * Currently supported rules include Constraint Rules and Inference Rules.
- */
-/**
  * <p>
- *
+ *     An ontological element used to model and categorise different types of {@link Rule}.
  * </p>
  *
  * <p>
  *     An ontological element used to define different types of {@link Rule}.
- *     urrently supported rules include {@link GraknAdmin#getMetaRuleInference()} and {@link GraknAdmin#getMetaRuleConstraint()}
+ *     Currently supported rules include {@link GraknAdmin#getMetaRuleInference()} and {@link GraknAdmin#getMetaRuleConstraint()}
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
