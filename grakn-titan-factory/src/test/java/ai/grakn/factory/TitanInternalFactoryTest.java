@@ -56,9 +56,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTitanGraphFactoryTest extends TitanTestBase{
-    private final static String TEST_SHARED = "shared";
-
+public class TitanInternalFactoryTest extends TitanTestBase{
     private static TitanGraph sharedGraph;
     private static TitanGraph noIndexGraph;
     private static TitanGraph indexGraph;
