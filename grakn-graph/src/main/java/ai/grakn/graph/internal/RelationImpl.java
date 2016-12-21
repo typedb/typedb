@@ -34,11 +34,14 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.*;
 
 /**
- * A relation represents and instance of a relation type which concept how different entities relate to one another.
- */
-/**
+ * <p>
+ *     Encapsulates relationships between instances {@link Instance}
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     A relation which is an instance of a relation type {@link RelationType} defines how instances may relate to one another.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
  *
  */

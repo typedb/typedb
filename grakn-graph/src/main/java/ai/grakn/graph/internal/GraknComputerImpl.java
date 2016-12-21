@@ -29,10 +29,18 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import java.util.concurrent.ExecutionException;
 
 /**
+ * <p>
+ *     Graph Computer Used For Analytics Algorithms
+ * </p>
  *
- * <p>  </p>.
- * @author Filipe Peliz Pinto Teixeira
+ * <p>
+ *     Wraps a Tinkerpop Graph Computer {@link GraphComputer} which enables the execution of pregel programs.
+ *     These programs are defined either via a  Map Reduce Process {@link MapReduce} or a {@link VertexProgram}
+ * </p>
  *
+ * @author duckofyork
+ * @author sheldonkhall
+ * @author fppt
  */
 public class GraknComputerImpl implements GraknComputer {
     private final Graph graph;

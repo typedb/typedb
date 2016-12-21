@@ -30,11 +30,15 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * A Relation Type is an ontological element used to concept how entity types relate to one another.
- */
-/**
+ * <p>
+ *     An ontological element which categorises how instances may relate to each other.
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     A relation type defines how types {@link ai.grakn.concept.Type} may relate to one another.
+ *     They are used to model and categorise n-ary relationships.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
  *
  */
