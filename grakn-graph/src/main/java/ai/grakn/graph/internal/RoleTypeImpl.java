@@ -98,4 +98,9 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         return super.playsRole(roleType, false);
     }
 
+    @Override
+    public void innerDelete(){
+        super.innerDelete();
+    }
+
 }
