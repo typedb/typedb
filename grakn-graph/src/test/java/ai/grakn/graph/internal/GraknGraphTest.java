@@ -16,12 +16,16 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
+import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -175,7 +179,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void checkTypeLinksToMetaOntology(){
+    public void testTypeLinksToMetaOntology(){
         assertEquals(graknGraph.getMetaEntityType(),
                 graknGraph.putEntityType("My Entity Type").superType());
         assertEquals(graknGraph.getMetaRelationType(),
@@ -213,5 +217,51 @@ public class GraknGraphTest extends GraphTestBase {
         assertTrue(subTypes.contains(sampleEntityType));
         assertTrue(subTypes.contains(sampleRelationType));
         assertTrue(subTypes.contains(sampleRoleType));
+    }
+
+    @Test
+    public void testSimpleGraqlQuery(){
+        String entityType = Schema.MetaSchema.ENTITY.getName();
+        EntityType type1 = graknGraph.putEntityType("Concept Type ");
+        EntityType type2 = graknGraph.putEntityType("Concept Type 1");
+
+        List<Map<String, Concept>> results = graknGraph.graql().match(var("x").sub(entityType)).execute();
+
+        boolean found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type1)));
+        assertTrue(found);
+
+        found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type2)));
+        assertTrue(found);
+    }
+
+    @Test
+    public void testImplicitFiltering(){
+        //Build Implicit structures
+        EntityType type = graknGraph.putEntityType("Concept Type ");
+        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        type.hasResource(resourceType);
+
+        assertFalse(graknGraph.implicitConceptsVisible());
+
+        //Check nothing is revealed when returning result sets
+        assertEquals(0, type.playsRoles().size());
+        assertEquals(0, resourceType.playsRoles().size());
+        assertEquals(1, graknGraph.getMetaRelationType().subTypes().size());
+        assertEquals(1, graknGraph.getMetaRoleType().subTypes().size());
+
+        //Check things are still returned when explicitly asking for them
+        assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName())));
+
+        //Switch on flag
+        graknGraph.showImplicitConcepts(true);
+        assertTrue(graknGraph.implicitConceptsVisible());
+
+        //Now check the result sets again
+        assertEquals(1, type.playsRoles().size());
+        assertEquals(1, resourceType.playsRoles().size());
+        assertEquals(2, graknGraph.getMetaRelationType().subTypes().size());
+        assertEquals(3, graknGraph.getMetaRoleType().subTypes().size());
     }
 }
