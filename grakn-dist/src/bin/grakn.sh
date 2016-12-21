@@ -26,7 +26,6 @@ fi
 export GRAKN_INCLUDE="${GRAKN_HOME}/bin/grakn.in.sh"
 . "$GRAKN_INCLUDE"
 
-
 SLEEP_INTERVAL_S=2
 
 case "$1" in
