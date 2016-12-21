@@ -66,10 +66,15 @@ import java.util.stream.Collectors;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 /**
+ * <p>
+ *    The Grakn Graph Base Implementation
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     This defines how a grakn graph sits on top of a Tinkerpop Graph {@link Graph}.
+ *     It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
+ * </p>
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
