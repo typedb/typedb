@@ -29,14 +29,19 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+
 /**
- * Class dedicated to talking with Grakn Engine. Currently used to retrieve factory config and submit commit logs
- */
-/**
+ * <p>
+ *     Establishes communication between the graph and engine
+ * </p>
  *
- * <p>  </p>.
+ * <p>
+ *     Class dedicated to talking with Grakn Engine. Currently used to retrieve factory config and submit commit logs.
+ *
+ *     The communication with engine is bypassed whenever the engineURL provided is a in-memory location.
+ * </p>
+ *
  * @author Filipe Peliz Pinto Teixeira
- *
  */
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);
