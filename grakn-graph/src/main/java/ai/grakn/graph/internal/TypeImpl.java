@@ -89,14 +89,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
      */
     @Override
     public void innerDelete(){
-        Collection<? extends Concept> subSet = subTypes();
-        Collection<? extends Instance> instanceSet = instances();
-        subSet.remove(this);
+        boolean hasSubs = getVertex().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
+        boolean hasInstances = getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
 
-        if(subSet.isEmpty() && instanceSet.isEmpty()){
-            deleteNode();
-        } else {
+        if(hasSubs || hasInstances){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
+        } else {
+            deleteNode();
         }
     }
 
