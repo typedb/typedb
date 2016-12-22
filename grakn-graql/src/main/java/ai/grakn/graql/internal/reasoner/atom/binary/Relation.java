@@ -133,7 +133,7 @@ public class Relation extends TypeAtom {
      * @param varName variable name
      * @param typeVariable type variable name
      * @param roleMap      rolePlayer-roleType typeName roleMap
-     * @return
+     * @return corresponding Var
      */
     private static VarAdmin constructRelationVar(String varName, String typeVariable, Map<String, String> roleMap) {
         Var var;
