@@ -5,7 +5,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.factory.SystemKeyspace;
 import mjson.Json;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -13,12 +13,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class UserHandlerTest extends GraknEngineTestBase {
-    private UsersHandler users;
-    private String userName = "geralt";
-    private String password = "witcher";
+    private static UsersHandler users;
+    private static String userName = "geralt";
+    private static String password = "witcher";
 
-    @Before
-    public void setup(){
+    @BeforeClass
+    public static void setup(){
         Json body = Json.object(UsersHandler.USER_NAME, userName, UsersHandler.USER_PASSWORD, password);
         users = UsersHandler.getInstance();
         users.addUser(body);
