@@ -138,8 +138,7 @@ class Validator {
      * @param roleType The roleType to validate
      */
     private void validateRoleType(RoleTypeImpl roleType){
-        if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
-            errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getName()));
+        ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).ifPresent(errorsFound::add);
     }
 
     /**

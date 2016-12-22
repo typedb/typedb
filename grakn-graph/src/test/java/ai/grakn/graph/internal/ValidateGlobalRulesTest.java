@@ -58,7 +58,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationImpl assertion = (RelationImpl) hunts.addRelation().
                 putRolePlayer(witcher, geralt).putRolePlayer(monster, werewolf);
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         }
 
         hunter.playsRole(witcher);
@@ -76,7 +76,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         creature.playsRole(monster);
 
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertTrue(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         }
     }
 
@@ -101,7 +101,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         // Valid with only a single relation
         relation1.getMappingCasting().forEach(casting -> {
-            assertTrue(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         });
 
         RelationImpl relation2 = (RelationImpl) relationType.addRelation()
@@ -110,12 +110,12 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         // Invalid with multiple relations
         relation1.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertFalse(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+                assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
             }
         });
         relation2.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertFalse(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+                assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
             }
         });
     }
@@ -127,19 +127,19 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationType kills = graknGraph.putRelationType("kills");
         RelationType kills2 = graknGraph.putRelationType("kills2");
 
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter));
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster));
+        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
+        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster).isPresent());
 
         kills.hasRole(hunter);
         kills2.hasRole(hunter);
 
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter));
+        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
 
         kills2.deleteHasRole(hunter);
         kills.hasRole(monster);
 
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter));
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster));
+        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
+        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster).isPresent());
     }
 
     @Test
@@ -193,13 +193,13 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType roleType = graknGraph.putRoleType("hasRole");
         RelationType relationType = graknGraph.putRelationType("relationType");
 
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType));
+        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType));
 
         roleType.setAbstract(true);
         relationType.setAbstract(true);
 
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType));
+        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType));
     }
 

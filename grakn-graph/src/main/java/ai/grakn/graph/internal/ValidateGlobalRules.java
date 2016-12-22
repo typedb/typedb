@@ -110,19 +110,19 @@ class ValidateGlobalRules {
     /**
      *
      * @param roleType The RoleType to validate
-     * @return A flag indicating if the hasRole has a single incoming HAS_ROLE edge
+     * @return An error message if the hasRole has a single incoming HAS_ROLE edge
      */
-    static boolean validateHasSingleIncomingHasRoleEdge(RoleType roleType){
+    static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
         if(roleType.isAbstract())
-            return true;
+            return Optional.empty();
 
         try {
             if(roleType.relationType() == null)
-                return false;
+                return Optional.of(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getName()));
         } catch (MoreThanOneEdgeException e){
-            return false;
+            return Optional.of(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getName()));
         }
-        return true;
+        return Optional.empty();
     }
 
     /**
