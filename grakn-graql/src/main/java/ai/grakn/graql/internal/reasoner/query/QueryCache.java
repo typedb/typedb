@@ -20,17 +20,33 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import java.util.HashMap;
 
+/**
+ *
+ * <p>
+ * Container class for storing performed query resolutions.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class QueryCache extends HashMap<AtomicQuery, AtomicQuery> {
 
     public QueryCache(){ super();}
     public boolean contains(AtomicQuery query){ return this.containsKey(query);}
 
+    /**
+     * propagates answers among related queries in the cache
+     */
     public void propagateAnswers(){
         this.keySet().forEach(aq -> {
             if (aq.getParent() == null) aq.propagateAnswers(this);
         });
     }
 
+    /**
+     * updates the cache by the specified query
+     * @param atomicQuery query to be added/updated
+     */
     public void record(AtomicQuery atomicQuery){
         AtomicQuery equivalentQuery = get(atomicQuery);
         if (equivalentQuery != null) {

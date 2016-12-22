@@ -36,6 +36,15 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.match;
 
+/**
+ *
+ * <p>
+ * Class providing resolution and higher level facilities for rule objects.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class InferenceRule {
 
     private final Query body;
@@ -46,7 +55,14 @@ public class InferenceRule {
         head = new AtomicQuery(match(rule.getRHS()), graph);
     }
 
+    /**
+     * @return body of the rule of the form head :- body
+     */
     public Query getBody(){return body;}
+
+    /**
+     * @return head of the rule of the form head :- body
+     */
     public AtomicQuery getHead(){return head;}
 
     /**
@@ -105,10 +121,6 @@ public class InferenceRule {
         body.unify(unifiers);
     }
 
-    /**
-     * propagate variables to child via a relation atom (atom variables are bound)
-     * @param parentAtom   parent atom (atom) being resolved (subgoal)
-     */
     private void unifyViaAtom(Atom parentAtom) {
         Atomic childAtom = getRuleConclusionAtom();
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
@@ -116,8 +128,8 @@ public class InferenceRule {
     }
 
     /**
-     * make child query consistent by performing variable IdPredicate so that parent variables are propagated
-     * @param parentAtom   parent atom (atom) being resolved (subgoal)
+     * make rule consistent variable-wise with the parent atom by means of unification
+     * @param parentAtom atom the rule should be unified with
      */
    public void unify(Atom parentAtom) {
         rewriteHead(parentAtom);

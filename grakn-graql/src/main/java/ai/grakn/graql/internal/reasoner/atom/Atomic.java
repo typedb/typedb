@@ -23,6 +23,16 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.Map;
 import java.util.Set;
 
+
+/**
+ *
+ * <p>
+ * Interface for atoms.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public interface Atomic extends Cloneable{
 
     Atomic clone();
@@ -34,8 +44,15 @@ public interface Atomic extends Cloneable{
      * @return true if atom alpha-equivalent
      */
     boolean isEquivalent(Object obj);
+
+    /**
+     * @return equivalence hash code
+     */
     int equivalenceHashCode();
 
+    /**
+     * @return true if the variable name is user defined
+     */
     default boolean isUserDefinedName(){ return false;}
 
     /**

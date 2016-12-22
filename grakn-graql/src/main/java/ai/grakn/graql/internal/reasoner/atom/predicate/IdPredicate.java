@@ -26,6 +26,15 @@ import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
+/**
+ *
+ * <p>
+ * Predicate implementation specialising it to be an id predicate.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class IdPredicate extends Predicate<String>{
 
     public IdPredicate(VarAdmin pattern) {

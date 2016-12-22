@@ -37,6 +37,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ *
+ * <p>
+ * Wrapper class for a set of answers providing higher level filtering facilities
+ * as well as unification and join operations.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class QueryAnswers extends HashSet<Map<String, Concept>> {
 
     public QueryAnswers(){super();}
@@ -47,6 +57,11 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
 
+    /**
+     * filter answers by constraining the variable set to the provided one
+     * @param vars set of variable names
+     * @return filtered answers
+     */
     public QueryAnswers filterVars(Set<String> vars) {
         QueryAnswers results = new QueryAnswers();
         if (this.isEmpty()) return results;
@@ -61,6 +76,11 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return new QueryAnswers(results.stream().distinct().collect(Collectors.toSet()));
     }
 
+    /**
+     * filter answers by discarding the already known ones
+     * @param known set of known answers
+     * @return filtered answers
+     */
     public QueryAnswers filterKnown(QueryAnswers known){
         if (this.getVars().equals(known.getVars())){
             QueryAnswers results = new QueryAnswers(this);
@@ -80,12 +100,22 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return results;
     }
 
+    /**
+     * filter answers by discarding answers with incomplete set of variables
+     * @param vars variable set considered complete
+     * @return filtered answers
+     */
     public QueryAnswers filterIncomplete(Set<String> vars) {
         return new QueryAnswers(this.stream()
-                .filter(answer -> answer.size() == vars.size())
+                .filter(answer -> answer.size() < vars.size())
                 .collect(Collectors.toSet()));
     }
 
+    /**
+     * filter answers by applying NonEquals filters
+     * @param query query containing filters
+     * @return filtered answers
+     */
     public QueryAnswers filterNonEquals(Query query){
         Set<NotEquals> filters = query.getAtoms().stream()
                 .filter(at -> at.getClass() == NotEquals.class)
@@ -97,9 +127,15 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return results;
     }
 
-    public QueryAnswers filterByTypes(Set<String> vars, Map<String, Type> varTypeMap){
+    /**
+     * filter answers by discarding answers not adhering to specific types
+     * @param varTypeMap map of variable name - corresponding type pairs
+     * @return filtered vars
+     */
+    public QueryAnswers filterByTypes(Map<String, Type> varTypeMap){
         QueryAnswers results = new QueryAnswers();
         if(this.isEmpty()) return results;
+        Set<String> vars = getVars();
         Map<String, Type> filteredMap = new HashMap<>();
         varTypeMap.forEach( (v, t) -> {
             if(vars.contains(v)) filteredMap.put(v, t);
@@ -117,6 +153,11 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return results;
     }
 
+    /**
+     * perform a join operation between this and provided answers
+     * @param localTuples right operand of join operation
+     * @return joined answers
+     */
     public QueryAnswers join(QueryAnswers localTuples) {
         if (this.isEmpty() || localTuples.isEmpty())
             return new QueryAnswers();
@@ -145,6 +186,11 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return join;
     }
 
+    /**
+     * unify the answers by applying unifiers to variable set
+     * @param unifiers
+     * @return unified query answers
+     */
     public QueryAnswers unify(Map<String, String> unifiers){
         return unify(unifiers, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }

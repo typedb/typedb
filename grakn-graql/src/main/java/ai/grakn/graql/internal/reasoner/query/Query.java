@@ -50,6 +50,15 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ *
+ * <p>
+ * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class Query implements MatchQueryInternal {
 
     private final GraknGraph graph;
@@ -129,6 +138,11 @@ public class Query implements MatchQueryInternal {
         return this;
     }
 
+    /**
+     * append to select variables
+     * @param vars variables to append
+     * @return appended query
+     */
     public MatchQuery selectAppend(Set<String> vars){
         selectVars.addAll(vars);
         return this;
@@ -166,16 +180,42 @@ public class Query implements MatchQueryInternal {
 
     public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public QueryAnswers getNewAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+
+    /**
+     * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
+     * @param cache container of already performed query resolutions
+     */
     public void lookup(QueryCache cache){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+
+    /**
+     * resolve the query by performing a db lookup
+     */
     public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+
+    /**
+     * resolve the query by performing a memory (cache) lookup
+     * @param cache container of already performed query resolutions
+     */
     public void memoryLookup(QueryCache cache){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
+
+    /**
+     * propagate answers to relation resolutions in the cache
+     * @param cache container of already performed query resolutions
+     */
     public void propagateAnswers(QueryCache cache){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
+    /**
+     * @return atom set constituting this query
+     */
     public Set<Atomic> getAtoms() { return Sets.newHashSet(atomSet);}
+
+    /**
+     * @return set of id predicates contained in this query
+     */
     public Set<Predicate> getIdPredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)
@@ -184,6 +224,9 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * @return set of value predicates contained in this query
+     */
     public Set<Predicate> getValuePredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)
@@ -192,6 +235,9 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * @return set of resource atoms contained in this query
+     */
     public Set<Atom> getResources(){
         return getAtoms().stream()
                 .filter(Atomic::isAtom)
@@ -211,6 +257,9 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * @return set of filter atoms (currently only NotEquals) contained in this query
+     */
     public Set<NotEquals> getFilters(){
         return getAtoms().stream()
                 .filter(at -> at.getClass() == NotEquals.class)
@@ -218,13 +267,25 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * @return set of variables appearing in this query
+     */
     public Set<String> getVarSet() {
         Set<String> vars = new HashSet<>();
         atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
         return vars;
     }
 
+    /**
+     * @param atom in question
+     * @return true if atom is contained in the query
+     */
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
+
+    /**
+     * @param atom in question
+     * @return true if query contains an equivalent atom
+     */
     public boolean containsEquivalentAtom(Atomic atom){
         boolean isContained = false;
         Iterator<Atomic> it = atomSet.iterator();
@@ -341,6 +402,9 @@ public class Query implements MatchQueryInternal {
         return newMappings;
     }
 
+    /**
+     * @return corresponding MatchQuery
+     */
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
             return graph.graql().infer(false).match(getPattern());
@@ -348,12 +412,19 @@ public class Query implements MatchQueryInternal {
             return graph.graql().infer(false).match(getPattern()).select(selectVars);
     }
 
+    /**
+     * @return map of variable name - type pairs
+     */
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
         getTypeConstraints().forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
         return map;
     }
 
+    /**
+     * @param var variable name
+     * @return id predicate for the specified var name if any
+     */
     public Predicate getIdPredicate(String var) {
         //direct
         Set<Predicate> relevantSubs = getIdPredicates().stream()
@@ -366,6 +437,10 @@ public class Query implements MatchQueryInternal {
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 
+    /**
+     * @param atom to be added
+     * @return true if the atom set did not already contain the specified atom
+     */
     public boolean addAtom(Atomic atom) {
         if(atomSet.add(atom)) {
             atom.setParentQuery(this);
@@ -374,11 +449,12 @@ public class Query implements MatchQueryInternal {
         else return false;
     }
 
-    public boolean removeAtom(Atomic atom) {return atomSet.remove(atom);}
 
-    public void addAtomConstraints(Set<? extends Atomic> cstrs){
-        cstrs.forEach(con -> addAtom(AtomicFactory.create(con, this)));
-    }
+    /**
+     * @param atom to be removed
+     * @return true if the atom set contained the specified atom
+     */
+    public boolean removeAtom(Atomic atom) {return atomSet.remove(atom);}
 
     private void addAtomConstraints(Atom atom){
         addAtomConstraints(atom.getPredicates());
@@ -393,6 +469,14 @@ public class Query implements MatchQueryInternal {
                 .filter(type -> type.getPredicate() != null)
                 .map(Binary::getPredicate)
                 .collect(Collectors.toSet()));
+    }
+
+    /**
+     * adds a set of constraints (types, predicates) to the atom set
+     * @param cstrs set of constraints
+     */
+    public void addAtomConstraints(Set<? extends Atomic> cstrs){
+        cstrs.forEach(con -> addAtom(AtomicFactory.create(con, this)));
     }
 
     /**
@@ -439,6 +523,11 @@ public class Query implements MatchQueryInternal {
         return equivalent;
     }
 
+    /**
+     * resolves the query
+     * @param materialise materialisation flag
+     * @return stream of answers
+     */
     public Stream<Map<String, Concept>> resolve(boolean materialise) {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }

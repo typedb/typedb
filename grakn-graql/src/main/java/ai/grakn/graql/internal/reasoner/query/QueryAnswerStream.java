@@ -30,6 +30,16 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ *
+ * <p>
+ * Wrapper class for an answer stream providing higher level filtering facilities
+ * as well as unification and join operations.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class QueryAnswerStream {
     private final Stream<Map<String, Concept>> stream;
 
@@ -79,27 +89,42 @@ public class QueryAnswerStream {
     public static final BiFunction<Map<String, Concept>, Set<NotEquals>, Stream<Map<String, Concept>>> nonEqualsFilterFunction =
             (a, atoms) -> nonEqualsOperator(a, atoms) ? Stream.empty() : Stream.of(a);
 
+    /**
+     * filter stream by constraining the variable set to the provided one
+     * @param vars set of variable names
+     * @return filtered answers
+     */
     public QueryAnswerStream filterVars(Set<String> vars) {
         return new QueryAnswerStream(this.stream.flatMap(a -> varFilterFunction.apply(a, vars)));
     }
 
+    /**
+     * filter stream by discarding the already known ones
+     * @param known set of known answers
+     * @return filtered answers
+     */
     public QueryAnswerStream filterKnown(QueryAnswers known){
         return new QueryAnswerStream(this.stream.flatMap(a -> knownFilterFunction.apply(a, known)));
     }
 
+    /**
+     * filter stream by discarding answers with incomplete set of variables
+     * @param vars variable set considered complete
+     * @return filtered answers
+     */
     public QueryAnswerStream filterIncomplete(Set<String> vars) {
         return new QueryAnswerStream(this.stream.flatMap(a -> incompleteFilterFunction.apply(a, vars)));
     }
 
+    /**
+     * filter stream by applying NonEquals filters
+     * @param query query containing filters
+     * @return filtered answers
+     */
     public QueryAnswerStream filterNonEquals(Query query){
         Set<NotEquals> filters = query.getFilters();
         if(filters.isEmpty()) return new QueryAnswerStream(this.stream);
-        //return new QueryAnswerStream(this.stream.flatMap(a -> nonEqualsFilterFunction.apply(a, filters)));
-
-        Stream<Map<String, Concept>> results = Stream.empty();
-        for (NotEquals filter : filters) results = filter.filter(this.stream());
-        return new QueryAnswerStream(results);
-
+        return new QueryAnswerStream(this.stream.flatMap(a -> nonEqualsFilterFunction.apply(a, filters)));
     }
 
     private static Map<String, Concept> joinOperator(Map<String, Concept> m1, Map<String, Concept> m2){
@@ -123,6 +148,11 @@ public class QueryAnswerStream {
         return merged.isEmpty()? Stream.empty(): Stream.of(merged);
     };
 
+    /**
+     * perform a half-lazy join operation on two streams (this and stream2)
+     * @param stream2 right operand of join operation
+     * @return joined stream
+     */
     public QueryAnswerStream join(QueryAnswerStream stream2) {
         Stream<Map<String, Concept>> result =  this.stream;
         Collection<Map<String, Concept>> c = stream2.stream().collect(Collectors.toSet());
@@ -130,6 +160,12 @@ public class QueryAnswerStream {
         return new QueryAnswerStream(result);
     }
 
+    /**
+     * perform a half-lazy join operation on two streams (stream and stream2)
+     * @param stream left operand of join operation
+     * @param stream2 right operand of join operation
+     * @return joined stream
+     */
     public static Stream<Map<String, Concept>> join(Stream<Map<String, Concept>> stream, Stream<Map<String, Concept>> stream2) {
         Collection<Map<String, Concept>> c = stream2.collect(Collectors.toSet());
         return stream.flatMap(a1 -> c.stream().flatMap(a2 -> joinFunction.apply(a1, a2)));

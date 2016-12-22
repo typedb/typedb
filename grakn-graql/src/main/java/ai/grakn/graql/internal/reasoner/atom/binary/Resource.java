@@ -27,6 +27,15 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ *
+ * <p>
+ * Atom implementation defining a resource atom.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class Resource extends Binary{
 
     public Resource(VarAdmin pattern) { this(pattern, null);}
