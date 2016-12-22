@@ -29,10 +29,16 @@ import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -49,52 +55,60 @@ public class GraphFactoryController {
     private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
 
     public GraphFactoryController() {
+        get(REST.WebPath.GRAPH_FACTORY_URI, this::getGraphConfig);
+        get(REST.WebPath.KEYSPACE_LIST, this::getKeySpaces);
+    }
+
+    @GET
+    @Path("/graph_factory")
+    @ApiOperation(value = "Get config which is used to build graphs")
+    @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
+    private String getGraphConfig(Request request, Response response) {
+        String graphConfig = request.queryParams(REST.Request.GRAPH_CONFIG_PARAM);
         ConfigProperties prop = ConfigProperties.getInstance();
 
-        get(REST.WebPath.GRAPH_FACTORY_URI, (req, res) -> {
-            String graphConfig = req.queryParams(REST.Request.GRAPH_CONFIG_PARAM);
-
-            try {
-                if (graphConfig == null) {
-                    graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
-                } else {
-                    switch (graphConfig) {
-                        case REST.GraphConfig.DEFAULT:
-                            graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
-                            break;
-                        case REST.GraphConfig.COMPUTER:
-                            graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
-                            break;
-                    }
+        try {
+            if (graphConfig == null) {
+                graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
+            } else {
+                switch (graphConfig) {
+                    case REST.GraphConfig.DEFAULT:
+                        graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
+                        break;
+                    case REST.GraphConfig.COMPUTER:
+                        graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
+                        break;
                 }
-                return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
-            } catch (IOException e) {
-                throw new GraknEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
             }
-        });
+            return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
+        } catch (IOException e) {
+            throw new GraknEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
+        }
+    }
 
-        get(REST.WebPath.KEYSPACE_LIST, (req, res) -> {
-        	try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-        		ResourceType<String> keyspaceName = graph.getResourceType(SystemKeyspace.KEYSPACE_RESOURCE); 
-            	Json result = Json.array();
-            	if (graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY) == null) {
-            		LOG.warn("No system ontology in system keyspace, possibly a bug!");
-            		return result.toString();
-            	}            		
-            	for (Entity keyspace : graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
-            		Collection<Resource<?>> names = keyspace.resources(keyspaceName);
-            		if (names.size() != 1)
-            			throw new GraknEngineServerException(500,
-            				ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " hos no unique name."));
-            		result.add(names.iterator().next().getValue());
-            	}            	
-            	return result.toString();
+    @GET
+    @Path("/keyspaces")
+    @ApiOperation(value = "Get all the key spaces that have been opened")
+    private String getKeySpaces(Request request, Response response) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            ResourceType<String> keyspaceName = graph.getResourceType(SystemKeyspace.KEYSPACE_RESOURCE);
+            Json result = Json.array();
+            if (graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY) == null) {
+                LOG.warn("No system ontology in system keyspace, possibly a bug!");
+                return result.toString();
             }
-        	catch (Exception e) {
-        		LOG.error("While retrieving keyspace list:", e);
-        		throw e;
-        	}        	
-        });
-        
+            for (Entity keyspace : graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
+                Collection<Resource<?>> names = keyspace.resources(keyspaceName);
+                if (names.size() != 1)
+                    throw new GraknEngineServerException(500,
+                            ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " hos no unique name."));
+                result.add(names.iterator().next().getValue());
+            }
+            return result.toString();
+        }
+        catch (Exception e) {
+            LOG.error("While retrieving keyspace list:", e);
+            throw e;
+        }
     }
 }
