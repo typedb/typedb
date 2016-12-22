@@ -172,7 +172,7 @@ public class PostProcessing {
             if(typeName.equals("Casting")){
                 numJobs = cache.getCastingJobs(keyspace).size();
             } else if(typeName.equals("Resources")){
-                numJobs = cache.getCastingJobs(keyspace).size();
+                numJobs = cache.getResourceJobs(keyspace).size();
             }
             LOG.info("        Post processing step [" + typeName + " for Graph [" + keyspace + "] has jobs : " + numJobs);
             total += numJobs;
