@@ -1,15 +1,17 @@
 package ai.grakn.factory;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
-
-import org.junit.Test;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.util.GraknVersion;
 import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.Collection;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
 
 public class SystemKeyspaceTest {
 
@@ -34,6 +36,8 @@ public class SystemKeyspaceTest {
     	Assert.assertTrue(spaces.contains(space1));
     	Assert.assertTrue(spaces.contains(space2.toLowerCase()));
     	Assert.assertTrue(spaces.contains(space3.toLowerCase()));
+        assertEquals(GraknVersion.VERSION,
+                graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
     	gf2.close();
     	gf3.close();
     	graph.close();
