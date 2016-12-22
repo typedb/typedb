@@ -1,11 +1,14 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
+import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -23,6 +26,7 @@ import static spark.Spark.put;
 @Path("/user")
 @Produces({"application/json", "text/plain"})
 public class UserController {
+    private final Logger LOG = LoggerFactory.getLogger(UserController.class);
 	private UsersHandler users = UsersHandler.getInstance();
 	
 	public UserController() {
@@ -54,11 +58,11 @@ public class UserController {
     }
     
     @GET
-    @Path("/one/:username")
+    @Path("/one/:user-name")
     @ApiOperation(value = "Get one user.")
-    @ApiImplicitParam(name = "username", value = "Username of user.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private Json getUser(Request request, Response response) {
-    	return users.getUser(request.params("username"));
+    	return users.getUser(request.queryParams(UsersHandler.USER_NAME));
     }
     
     @POST
@@ -66,19 +70,24 @@ public class UserController {
     @ApiOperation(value = "Create a new user.")
     @ApiImplicitParam(name = "user", value = "A JSON object representing the new user, with a unique username and a valid password.", dataType = "String", paramType = "body")
     private boolean createUser(Request request, Response response) {
-    	Json user = Json.read(request.body());    	
-    	if (users.userExists(user.at(UsersHandler.USER_NAME).asString()))
-    		return false;
-    	users.addUser(user);
-    	return true;
+        try {
+            Json user = Json.read(request.body());
+            if (users.userExists(user.at(UsersHandler.USER_NAME).asString()))
+                return false;
+            users.addUser(user);
+            return true;
+        } catch(Exception e){
+            LOG.error("Error during creating new user", e);
+            throw new GraknEngineServerException(500,e);
+        }
     }
     
     @GET
-    @Path("/one/:username")
+    @Path("/one/:user-name")
     @ApiOperation(value = "Delete a user.")
-    @ApiImplicitParam(name = "username", value = "Username of user.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private boolean removeUser(Request request, Response response) {
-    	return users.removeUser(request.params("username"));
+        return users.removeUser(request.queryParams(UsersHandler.USER_NAME));
     }
     
     @PUT
