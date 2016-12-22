@@ -6,6 +6,7 @@ import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.factory.SystemKeyspace;
 import mjson.Json;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -41,5 +42,18 @@ public class UserHandlerTest extends GraknEngineTestBase {
         assertTrue(users.userExists(userName));
         users.removeUser(userName);
         assertFalse(users.userExists(userName));
+    }
+
+    @Ignore
+    @Test
+    public void testUpdateUser(){
+        assertFalse(users.getUser(userName).has(UsersHandler.USER_IS_ADMIN));
+
+        Json body = Json.object(UsersHandler.USER_NAME, userName,
+                UsersHandler.USER_PASSWORD, password,
+                UsersHandler.USER_IS_ADMIN, true);
+        users.updateUser(body);
+
+        assertTrue(users.getUser(userName).is(UsersHandler.USER_IS_ADMIN, true));
     }
 }
