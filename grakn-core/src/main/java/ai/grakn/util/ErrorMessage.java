@@ -60,18 +60,22 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
-    VALIDATION_RELATION("The relation [%s] has an invalid structure. " +
-            "This is either due to having more role players than roles or " +
-            "the Relation Type [%s] not having the correct has-role connection to one of the provided roles. " +
-            "The provided roles('%s'): [%s]" +
-            "The provided role players('%s'): [%s] \n"),
+    VALIDATION_RELATION_MORE_CASTING_THAN_ROLES("The relation [%s] has [%s] role players but its type [%s] " +
+            "only allows [%s] roles \n"),
+    VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
+            "which it's type [%s] is not connecting to via a has-role connection \n"),
+
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
     VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
-    VALIDATION_ROLE_TYPE("RoleType [%s] does not have exactly one has-role connection to any Relation Type. \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a has-role connection to any Relation Type. \n"),
+    VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE("RoleType [%s] has more than one has-role connections to Relation Types. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have two or more roles \n"),
     VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type [%s] is playing role [%s] which it is not allowed \n"),
     VALIDATION_INSTANCE("Instance [%s] does not play all required roles \n"),
-    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] does not have a sub or super Role Type in either Relation Type [%s] or Relation Type [%s] \n"),
+
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
+            "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
+
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
     VALIDATION_REQUIRED_RELATION("The role player [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 

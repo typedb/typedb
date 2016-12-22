@@ -149,15 +149,15 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType creature = graknGraph.putRoleType("creature");
         RelationType kills = graknGraph.putRelationType("kills");
 
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(hunter);
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(hunter);
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(monster);
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(creature);
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
     }
 
     @Test
@@ -177,14 +177,14 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
                 putRolePlayer(hunter, cartman).putRolePlayer(monster, werewolf).putRolePlayer(creature, cthulhu);
 
         kills.hasRole(monster);
-        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion));
+        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion).isPresent());
 
         kills.hasRole(hunter);
         kills.hasRole(creature);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion));
+        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion).isPresent());
 
         RelationImpl assertion2 = (RelationImpl) naps.addRelation().putRolePlayer(hunter, cthulhu);
-        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion2));
+        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion2).isPresent());
     }
 
 
@@ -194,13 +194,13 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("relationType");
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType));
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
 
         roleType.setAbstract(true);
         relationType.setAbstract(true);
 
         assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType));
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
     }
 
     @Test
@@ -216,7 +216,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         hasCast.addRelation().putRolePlayer(r1, e1).putRolePlayer(r2, e2);
 
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges((TypeImpl) relationType));
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges((TypeImpl) relationType).isPresent());
     }
 
     @Test
@@ -226,13 +226,13 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         TypeImpl x3 = (TypeImpl) graknGraph.putEntityType("x3");
         TypeImpl x4 = (TypeImpl) graknGraph.putEntityType("x4'");
 
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x2));
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x3));
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x4));
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1).isPresent());
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x2).isPresent());
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x3).isPresent());
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x4).isPresent());
 
         x2.superType(x1);
 
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1).isPresent());
     }
 }

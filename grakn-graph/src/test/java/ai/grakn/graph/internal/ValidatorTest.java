@@ -139,7 +139,7 @@ public class ValidatorTest extends GraphTestBase{
         Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(1, validator.getErrorsFound().size());
-        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(alone.getName())));
+        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(alone.getName())));
     }
 
     @Test
@@ -167,7 +167,6 @@ public class ValidatorTest extends GraphTestBase{
         assertFalse(validator.validate());
 
         assertEquals(6, validator.getErrorsFound().size());
-        assertTrue(expectedErrorFound(validator, "invalid structure."));
     }
 
     @Test
@@ -504,7 +503,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), parenthood.getName()))));
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), "super", "super", parenthood.getName()))));
 
         graknGraph.commit();
     }
@@ -524,7 +523,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), parenthood.getName()))));
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), parenthood.getName(), "sub", "sub", fatherhood.getName()))));
 
         graknGraph.commit();
     }

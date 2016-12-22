@@ -94,12 +94,6 @@ public class OntologyMutationTest extends GraphTestBase{
         }
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), marriage.getName(),
-                        roles.split(",").length, roles,
-                        rolePlayers.split(",").length, roles))
-        ));
-
         graknGraph.commit();
     }
 
