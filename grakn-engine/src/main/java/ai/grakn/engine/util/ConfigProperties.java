@@ -65,7 +65,8 @@ public class ConfigProperties {
     public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
-    public static final String LOGGING_FILE_PATH = "logging.file";
+    public static final String LOGGING_FILE_PATH_MAIN = "logging.file.main";
+    public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
     public static final String LOGGING_LEVEL = "logging.level";
 
 
@@ -73,7 +74,8 @@ public class ConfigProperties {
 
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "grakn.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "grakn.conf";
-    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY = "grakn.log.file";
+    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN = "grakn.log.file.main";
+    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING = "grakn.log.file.postprocessing";
     public static final String LOG_LEVEL_SYSTEM_PROPERTY = "grakn.log.level";
 
 
@@ -110,14 +112,6 @@ public class ConfigProperties {
         LOG.info("Number of threads set to [" + numOfThreads + "]");
     }
 
-
-    // Setters
-
-
-    public void setConfigProperty(String key, String value){
-        prop.setProperty(key,value);
-    }
-
     /**
      * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
      * If it is not set, it sets it to the default one.
@@ -139,7 +133,8 @@ public class ConfigProperties {
         if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
             System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
 
-        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY, getPath(LOGGING_FILE_PATH));
+        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN, getPath(LOGGING_FILE_PATH_MAIN));
+        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING, getPath(LOGGING_FILE_PATH_POST_PROCESSING));
 
         setLogLevel();
 
@@ -184,7 +179,7 @@ public class ConfigProperties {
      * @return The path to the grakn.log file in use.
      */
     public String getLogFilePath() {
-        return System.getProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY);
+        return System.getProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN);
     }
 
     /**
