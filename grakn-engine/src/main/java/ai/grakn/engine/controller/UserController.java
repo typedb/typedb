@@ -1,14 +1,5 @@
 package ai.grakn.engine.controller;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
@@ -17,16 +8,21 @@ import io.swagger.annotations.ApiOperation;
 import mjson.Json;
 import spark.Request;
 import spark.Response;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
+import static spark.Spark.delete;
 import static spark.Spark.get;
 import static spark.Spark.post;
 import static spark.Spark.put;
-import static spark.Spark.delete;
 
 @Path("/user")
 @Produces({"application/json", "text/plain"})
 public class UserController {
-	private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
-	
 	private UsersHandler users = UsersHandler.getInstance();
 	
 	public UserController() {
