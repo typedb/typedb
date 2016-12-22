@@ -107,7 +107,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      */
     public QueryAnswers filterIncomplete(Set<String> vars) {
         return new QueryAnswers(this.stream()
-                .filter(answer -> answer.size() < vars.size())
+                .filter(answer -> answer.keySet().containsAll(vars))
                 .collect(Collectors.toSet()));
     }
 

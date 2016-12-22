@@ -27,6 +27,15 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+/**
+ *
+ * <p>
+ * Implementation of atom corresponding to graql NotEquals property.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class NotEquals extends AtomBase {
 
     private String refVarName;
@@ -102,6 +111,11 @@ public class NotEquals extends AtomBase {
     public static BiFunction<Map<String, Concept>, NotEquals, Stream<Map<String, Concept>>> notEqualsFunction =
             (a, atom) -> notEqualsOperator(a, atom)? Stream.empty(): Stream.of(a);
 
+    /**
+     * apply the not equals filter to answer set
+     * @param answers the filter should be applied to
+     * @return filtered answer set
+     */
     public QueryAnswers filter(QueryAnswers answers){
         QueryAnswers results = new QueryAnswers();
         answers.stream()
@@ -110,6 +124,11 @@ public class NotEquals extends AtomBase {
         return results;
     }
 
+    /**
+     * apply the not equals filter to answer stream
+     * @param answers the filter should be applied to
+     * @return filtered answer stream
+     */
     public Stream<Map<String, Concept>> filter(Stream<Map<String, Concept>> answers){
         return answers.filter(answer -> !answer.get(varName).equals(answer.get(refVarName)));
     }

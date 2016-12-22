@@ -59,8 +59,26 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ *
+ * <p>
+ * Class providing mappings of graql properties to reasoner atoms.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class PropertyMapper {
 
+    /**
+     * map graql property to a set of reasoner atoms
+     * @param prop graql property to be mapped
+     * @param var variable the property is contained in
+     * @param vars set of variables contained in the top level conjunction
+     * @param parent query the atoms should belong to
+     * @param graph of interest
+     * @return set of converted atoms
+     */
     public static Set<Atomic> map(VarProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph){
         if(prop instanceof RelationProperty)
             return map((RelationProperty)prop, var, vars, parent, graph);

@@ -84,7 +84,7 @@ public class QueryAnswerStream {
             (a, known) -> knownFilterOperator(a, known) ? Stream.empty() : Stream.of(a);
 
     public static final BiFunction<Map<String, Concept>, Set<String>, Stream<Map<String, Concept>>> incompleteFilterFunction =
-            (a, vars) -> a.size() == vars.size() ? Stream.of(a) : Stream.empty();
+            (a, vars) -> a.keySet().containsAll(vars) ? Stream.of(a) : Stream.empty();
 
     public static final BiFunction<Map<String, Concept>, Set<NotEquals>, Stream<Map<String, Concept>>> nonEqualsFilterFunction =
             (a, atoms) -> nonEqualsOperator(a, atoms) ? Stream.empty() : Stream.of(a);

@@ -36,8 +36,18 @@ import ai.grakn.util.ErrorMessage;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * Factory class for creating atoms out of graql variables and patterns.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class AtomicFactory {
 
+    //TODO remove as obsolete and only used in tests
     public static Atomic create(PatternAdmin pattern) {
         if (!pattern.isVar() )
             throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
@@ -55,6 +65,7 @@ public class AtomicFactory {
             return new TypeAtom(var);
     }
 
+    //TODO remove as obsolete and only used in tests
     public static Atomic create(PatternAdmin pattern, Query parent) {
         if (!pattern.isVar() )
             throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
@@ -72,12 +83,23 @@ public class AtomicFactory {
             return new TypeAtom(var, parent);
     }
 
+    /**
+     * @param atom to be copied
+     * @param parent query the copied atom should belong to
+     * @return atom copy
+     */
     public static Atomic create(Atomic atom, Query parent) {
         Atomic copy = atom.clone();
         copy.setParentQuery(parent);
         return copy;
     }
 
+    /**
+     * @param pattern conjunction of patterns to be converted to atoms
+     * @param parent query the created atoms should belong to
+     * @param graph graph of interest
+     * @return set of atoms
+     */
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()
