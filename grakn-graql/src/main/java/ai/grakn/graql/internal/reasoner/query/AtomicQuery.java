@@ -43,6 +43,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
+/**
+ *
+ * <p>
+ * Base reasoner atomic query. An atomic query is a query constrained to having at most one rule-resolvable atom
+ * together with its accompanying constraints (predicates and types)
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class AtomicQuery extends Query{
 
     private Atom atom;
@@ -86,6 +96,10 @@ public class AtomicQuery extends Query{
         }
     }
     private void setParent(AtomicQuery q){ parent = q;}
+
+    /**
+     * @return the parent (more specific related query) of this query
+     */
     public AtomicQuery getParent(){ return parent;}
 
     /**
@@ -103,7 +117,14 @@ public class AtomicQuery extends Query{
         }
     }
 
+    /**
+     * @return the atom constituting this atomic query
+     */
     public Atom getAtom(){ return atom;}
+
+    /**
+     * @return set of related, more general queries to this query
+     */
     public Set<AtomicQuery> getChildren(){ return children;}
 
     @Override
@@ -130,8 +151,7 @@ public class AtomicQuery extends Query{
     private QueryAnswers materialiseComplete() {
         Atom atom = getAtom();
         QueryAnswers insertAnswers = new QueryAnswers();
-        boolean dataPresent = (atom.isResource() || atom.isUserDefinedName() && atom.getType().isRelationType())?
-                getMatchQuery().ask().execute() : false;
+        boolean dataPresent = atom.requiresMaterialisation()? getMatchQuery().ask().execute() : false;
         if(!dataPresent){
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
             Set<Concept> insertedConcepts = insert.stream().collect(Collectors.toSet());
@@ -162,6 +182,9 @@ public class AtomicQuery extends Query{
        return insertAnswers;
     }
 
+    /**
+     * @return inserted concepts if the atom required materialisation in order to be referencable
+     */
     public QueryAnswers materialise(){ return materialiseComplete();}
 
     /**
@@ -215,9 +238,25 @@ public class AtomicQuery extends Query{
             throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         return selectedAtoms;
     }
+
+    /**
+     * attempt query resolution via application of a specific rule
+     * @param rl rule through which to resolve the query
+     * @param subGoals set of visited subqueries
+     * @param cache collection of performed query resolutions
+     * @param materialise materialisation flag
+     */
     public void resolveViaRule(Rule rl, Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
+
+    /**
+     * answer the query by providing combined lookup/rule resolutions
+     * @param subGoals set of visited subqueries
+     * @param cache collection of performed query resolutions
+     * @param materialise materialisation flag
+     * @return answers to the query
+     */
     public QueryAnswers answer(Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }

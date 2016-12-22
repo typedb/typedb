@@ -32,6 +32,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ *
+ * <p>
+ * Atom implementation defining binary atoms of the type ($varName, $valueVariable), where value variable
+ * references a predicate.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public abstract class Binary extends Atom {
 
     private Predicate predicate = null;
@@ -58,13 +68,18 @@ public abstract class Binary extends Atom {
     }
 
     protected abstract String extractTypeId(VarAdmin var);
-
     protected abstract String extractValueVariableName(VarAdmin var);
+
+    public String getValueVariable() {
+        return valueVariable;
+    }
+    protected void setValueVariable(String var) {
+        valueVariable = var;
+    }
 
     public Predicate getPredicate() {
         return predicate;
     }
-
     protected void setPredicate(Predicate p) {
         predicate = p;
     }
@@ -128,13 +143,6 @@ public abstract class Binary extends Atom {
         return hashCode;
     }
 
-    public String getValueVariable() {
-        return valueVariable;
-    }
-    protected void setValueVariable(String var) {
-        valueVariable = var;
-    }
-
     @Override
     public boolean isValueUserDefinedName() {
         return predicate == null;
@@ -158,6 +166,9 @@ public abstract class Binary extends Atom {
         return predicates;
     }
 
+    /**
+     * @return set of atoms that are (potentially indirectly) linked to this atom via valueVariable
+     */
     public Set<Atom> getLinkedAtoms(){
         Set<Atom> atoms = new HashSet<>();
         getParentQuery().getAtoms().stream()

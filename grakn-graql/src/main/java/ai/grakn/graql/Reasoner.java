@@ -45,6 +45,15 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
 
+/**
+ *
+ * <p>
+ * Class providing top level reasoning interface and functionalities.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class Reasoner {
 
     private final GraknGraph graph;
@@ -54,6 +63,7 @@ public class Reasoner {
         this.graph = graph;
         linkConceptTypes(graph);
     }
+
     private static void commitGraph(GraknGraph graph) {
         try {
             graph.commit();
@@ -76,10 +86,20 @@ public class Reasoner {
         conclusionConceptTypes.forEach(rule::addConclusion);
     }
 
+    /**
+     *
+     * @param graph to be checked against
+     * @return set of inference rule contained in the graph
+     */
     public static Set<Rule> getRules(GraknGraph graph) {
         return new HashSet<>(graph.admin().getMetaRuleInference().instances());
     }
 
+    /**
+     *
+     * @param graph to be checked against
+     * @return true if at least one inference rule is present in the graph
+     */
     public static boolean hasRules(GraknGraph graph) {
         String inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
         return graph.graql().infer(false).match(var("x").isa(inferenceRule)).ask().execute();
@@ -87,6 +107,7 @@ public class Reasoner {
 
     /**
      * Link all unlinked rules in the rule base to their matching types
+     * @param graph for the linking to be performed
      */
     public static void linkConceptTypes(GraknGraph graph) {
         Set<Rule> rules = getRules(graph);
@@ -102,6 +123,9 @@ public class Reasoner {
         LOG.debug(linkedRules.size() + " rules linked...");
     }
 
+    /**
+     * materialise all possible inferences
+     */
     public void precomputeInferences(){
         QueryCache cache = new QueryCache();
         Set<AtomicQuery> subGoals = new HashSet<>();
@@ -123,8 +147,9 @@ public class Reasoner {
     }
 
     /**
-     * Resolve a given query using the rule base
-     * @param inputQuery the query string to be expanded
+     * Resolve a given general graql query using the knowledge base
+     * @param inputQuery the query string to be resolved
+     * @param materialise materialisation flag
      * @return stream of answers
      */
     public Stream<Map<String, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {

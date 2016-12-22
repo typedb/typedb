@@ -25,6 +25,16 @@ import ai.grakn.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.Map;
 
+
+/**
+ *
+ * <p>
+ * Atom implementation serving as base class for predicate implementations.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public abstract class Predicate<T> extends AtomBase {
 
     protected T predicate = null;

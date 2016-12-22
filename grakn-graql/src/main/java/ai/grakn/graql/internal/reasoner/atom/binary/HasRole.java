@@ -25,6 +25,15 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
+/**
+ *
+ * <p>
+ * Atom implementation defining a has-role atom.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class HasRole extends TypeAtom {
     private Predicate relationPredicate = null;
 
@@ -61,6 +70,5 @@ public class HasRole extends TypeAtom {
 
     @Override
     public Atomic clone(){ return new HasRole(this);}
-
     public Predicate getRelationPredicate(){ return relationPredicate;}
 }

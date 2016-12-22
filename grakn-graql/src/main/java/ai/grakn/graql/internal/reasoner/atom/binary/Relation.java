@@ -57,6 +57,16 @@ import java.util.UUID;
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
 
+
+/**
+ *
+ * <p>
+ * Atom implementation defining a relation atom.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class Relation extends TypeAtom {
 
     private Set<RelationPlayer> relationPlayers;
@@ -350,7 +360,7 @@ public class Relation extends TypeAtom {
         }
     }
 
-
+    @Override
     public void inferTypes(){
         inferTypeFromRoles();
         inferTypeFromHasRole();
@@ -616,6 +626,7 @@ public class Relation extends TypeAtom {
         return roleConceptMap;
     }
 
+    @Override
     public Pair<Atom, Map<String, String>> rewrite(Atom parentAtom, Query parent){
         if(parentAtom.isUserDefinedName()){
             Map<String, String> unifiers = new HashMap<>();
