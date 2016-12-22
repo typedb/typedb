@@ -24,12 +24,14 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.MoreThanOneEdgeException;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -72,11 +74,11 @@ class ValidateGlobalRules {
      * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS_ROLE-> X =
      * Casting -ISA-> X
      * @param casting The casting to be validated
-     * @return A flag indicating if a valid plays-role structure exists
+     * @return A specific error if one is found.
      */
-    static boolean validatePlaysRoleStructure(CastingImpl casting) {
-        InstanceImpl rolePlayer = casting.getRolePlayer();
-        TypeImpl currentConcept = rolePlayer.getParentIsa();
+    static Optional<String> validatePlaysRoleStructure(CastingImpl casting) {
+        InstanceImpl<?, ?> rolePlayer = casting.getRolePlayer();
+        TypeImpl<?, ?> currentConcept = rolePlayer.getParentIsa();
         RoleType roleType = casting.getRole();
 
         boolean satisfiesPlaysRole = false;
@@ -91,7 +93,7 @@ class ValidateGlobalRules {
                     // Assert unique relation for this role type
                     Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
                     if (required && rolePlayer.relations(roleType).size() != 1) {
-                        return false;
+                        return Optional.of(ErrorMessage.VALIDATION_REQUIRED_RELATION.getMessage(rolePlayer.getId(), roleType.getName(), rolePlayer.relations(roleType).size()));
                     }
                 }
             }
@@ -99,7 +101,10 @@ class ValidateGlobalRules {
             currentConcept = (TypeImpl) currentConcept.superType();
         }
 
-        return satisfiesPlaysRole;
+        if(satisfiesPlaysRole)
+            return Optional.empty();
+        else
+            return Optional.of(ErrorMessage.VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
     }
 
     /**

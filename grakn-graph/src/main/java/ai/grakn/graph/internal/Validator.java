@@ -121,10 +121,7 @@ class Validator {
      * @param casting The casting to validate
      */
     private void validateCasting(CastingImpl casting){
-        if(!ValidateGlobalRules.validatePlaysRoleStructure(casting)) {
-            Instance rolePlayer = casting.getRolePlayer();
-            errorsFound.add(ErrorMessage.VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
-        }
+        ValidateGlobalRules.validatePlaysRoleStructure(casting).ifPresent(errorsFound::add);
     }
 
     /**

@@ -19,13 +19,11 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -60,7 +58,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationImpl assertion = (RelationImpl) hunts.addRelation().
                 putRolePlayer(witcher, geralt).putRolePlayer(monster, werewolf);
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+            assertFalse(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         }
 
         hunter.playsRole(witcher);
@@ -68,7 +66,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         boolean [] flags = {false, false};
         int count = 0;
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            flags[count] = ValidateGlobalRules.validatePlaysRoleStructure(casting);
+            flags[count] = ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent();
             count++;
         }
         assertFalse(flags[0] && flags[1]);
@@ -78,32 +76,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         creature.playsRole(monster);
 
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
-        }
-
-        ((Edge) graknGraph.getTinkerTraversal().
-                hasId(werewolf.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.SUB.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
-
-        flags = new boolean[]{false, false};
-        count = 0;
-        for (CastingImpl casting : assertion.getMappingCasting()) {
-            flags[count] = ValidateGlobalRules.validatePlaysRoleStructure(casting);
-            count ++;
-        }
-        assertFalse(flags[0] && flags[1]);
-        assertTrue(flags[0] || flags[1]);
-
-        wolf.playsRole(animal);
-        creature.playsRole(monster);
-
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(hunter.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(witcher.getBaseIdentifier()).select("edge").next()).remove();
-
-        for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+            assertTrue(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         }
     }
 
@@ -128,7 +101,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         // Valid with only a single relation
         relation1.getMappingCasting().forEach(casting -> {
-            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+            assertTrue(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         });
 
         RelationImpl relation2 = (RelationImpl) relationType.addRelation()
@@ -137,12 +110,12 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         // Invalid with multiple relations
         relation1.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+                assertFalse(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
             }
         });
         relation2.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+                assertFalse(!ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
             }
         });
     }
