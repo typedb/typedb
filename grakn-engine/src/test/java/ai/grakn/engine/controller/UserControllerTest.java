@@ -31,8 +31,8 @@ public class UserControllerTest extends GraknEngineTestBase {
                 extract().response().andReturn();
 
         //Check he is there
-        users.getUser(userName).is(UsersHandler.USER_NAME, userName);
-        users.getUser(userName).is(UsersHandler.USER_PASSWORD, password);
+        assertTrue(users.getUser(userName).is(UsersHandler.USER_NAME, userName));
+        assertTrue(users.getUser(userName).is(UsersHandler.USER_PASSWORD, password));
     }
 
     @Test
