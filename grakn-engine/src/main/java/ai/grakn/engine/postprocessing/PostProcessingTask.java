@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.util.ConfigProperties.POST_PROCESSING_DELAY;
 
 public class PostProcessingTask implements BackgroundTask {
-    private final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final ConfigProperties properties = ConfigProperties.getInstance();
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
     private static final Cache cache = Cache.getInstance();

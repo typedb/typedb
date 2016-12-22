@@ -66,7 +66,6 @@ public class ConfigProperties {
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
     public static final String LOGGING_FILE_PATH_MAIN = "logging.file.main";
-    public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
     public static final String LOGGING_LEVEL = "logging.level";
 
 
@@ -75,9 +74,13 @@ public class ConfigProperties {
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "grakn.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "grakn.conf";
     public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN = "grakn.log.file.main";
-    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING = "grakn.log.file.postprocessing";
     public static final String LOG_LEVEL_SYSTEM_PROPERTY = "grakn.log.level";
 
+    //Post Processing Logging
+    public static final String LOG_NAME_POSTPROCESSING_PROPERTY = "grakn.log.name.postprocessing";
+    public static final String LOG_NAME_POSTPROCESSING_DEFAULT = "post-processing";
+    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING = "grakn.log.file.postprocessing";
+    public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
@@ -135,6 +138,7 @@ public class ConfigProperties {
 
         System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN, getPath(LOGGING_FILE_PATH_MAIN));
         System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING, getPath(LOGGING_FILE_PATH_POST_PROCESSING));
+        System.setProperty(LOG_NAME_POSTPROCESSING_PROPERTY, LOG_NAME_POSTPROCESSING_DEFAULT);
 
         setLogLevel();
 

@@ -66,7 +66,7 @@
         <appender-ref ref="MAIN"/>
     </logger>
 
-    <logger name="ai.grakn" level="${grakn.log.level}">
+    <logger name="${grakn.log.name.postprocessing}" level="${grakn.log.level}">
         <appender-ref ref="POST-PROCESSING"/>
     </logger>
 
