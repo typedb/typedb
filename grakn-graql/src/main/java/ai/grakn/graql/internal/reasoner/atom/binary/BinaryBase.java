@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.admin.VarAdmin;
@@ -35,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Atom implementation defining BinaryBase atoms of the type ($varName, $valueVariable), where value variable
+ * Base implementationfor binary atoms of the type ($varName, $valueVariable), where value variable
  * references predicates.
  * </p>
  *

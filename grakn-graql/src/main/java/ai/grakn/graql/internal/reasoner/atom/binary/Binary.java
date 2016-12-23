@@ -8,7 +8,13 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.Map;
 
 /**
- * Created by kasper on 23/12/16.
+ *
+ * <p>
+ * Base implementation for binary atoms with single predicate.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
 public abstract class Binary extends BinaryBase {
     private Predicate predicate = null;

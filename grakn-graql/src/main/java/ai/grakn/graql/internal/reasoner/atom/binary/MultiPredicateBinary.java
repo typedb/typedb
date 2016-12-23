@@ -1,7 +1,6 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.HashSet;
@@ -10,7 +9,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Created by kasper on 23/12/16.
+ *
+ * <p>
+ * Base implementation for binary atoms with multiple predicate.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
 public abstract class MultiPredicateBinary extends BinaryBase {
     private Set<Predicate> multiPredicate = new HashSet<>();
