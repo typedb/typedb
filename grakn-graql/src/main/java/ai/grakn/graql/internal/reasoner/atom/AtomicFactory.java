@@ -46,43 +46,7 @@ import java.util.Set;
  *
  */
 public class AtomicFactory {
-
-    //TODO remove as obsolete and only used in tests
-    public static Atomic create(PatternAdmin pattern) {
-        if (!pattern.isVar() )
-            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
-        VarAdmin var = pattern.asVar();
-        if(var.hasProperty(RelationProperty.class))
-            return new Relation(var);
-        else if(var.hasProperty(HasResourceProperty.class))
-            return new Resource(var);
-        else if (var.getId().isPresent())
-            return new IdPredicate(var);
-        else if (var.hasProperty(ValueProperty.class))
-            return new ValuePredicate(var);
-        else
-            return new TypeAtom(var);
-    }
-
-    //TODO remove as obsolete and only used in tests
-    public static Atomic create(PatternAdmin pattern, Query parent) {
-        if (!pattern.isVar() )
-            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
-        VarAdmin var = pattern.asVar();
-        if(var.hasProperty(RelationProperty.class))
-            return new Relation(var,parent);
-        else if(var.hasProperty(HasResourceProperty.class))
-            return new Resource(var, parent);
-        else if (var.getId().isPresent())
-            return new IdPredicate(var, parent);
-        else if (var.hasProperty(ValueProperty.class))
-            return new ValuePredicate(var, parent);
-        else
-            return new TypeAtom(var, parent);
-    }
-
+    
     /**
      * @param atom to be copied
      * @param parent query the copied atom should belong to
