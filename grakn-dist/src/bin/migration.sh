@@ -5,7 +5,14 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_HOME=$(cd "${GRAKN_BIN}"/.. && pwd -P)
 fi
 
-CONCATCLASSPATH=$CLASSPATH:"${GRAKN_HOME}/lib/*"
+# Define CLASSPATH, exclude commons-csv because of a dependency clash when using migration
+for jar in "${GRAKN_HOME}"/lib/*.jar; do
+    if [[ $jar != *org.apache.servicemix.bundles.commons-csv* ]] ; then
+        CLASSPATH="$CLASSPATH:$jar"
+    fi
+done
+
+CONCATCLASSPATH=$CLASSPATH
 
 if [ "$1" == "csv" ]
 then
