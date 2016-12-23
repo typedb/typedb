@@ -271,7 +271,7 @@ public class PropertyMapper {
         VarAdmin valueVar = prop.getResource();
         String valueVariable = valueVar.isUserDefinedName() ?
                 valueVar.getVarName() : varName + "-" + type.orElse("") + "-" + UUID.randomUUID().toString();
-        Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent, graph);
+        Set<Predicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent, graph);
         atoms.addAll(predicates);
 
         //add resource atom
@@ -279,9 +279,7 @@ public class PropertyMapper {
         VarAdmin resVar = type
                 .map(t ->Graql.var(varName).has(t, resource))
                 .orElseGet(() -> Graql.var(varName).has(resource)).admin();
-        //TODO!!! currently storing single predicate only
-        Predicate predicate = predicates.stream().findFirst().orElse(null);
-        atoms.add(new Resource(resVar, predicate, parent));
+        atoms.add(new Resource(resVar, predicates, parent));
         return atoms;
     }
 
@@ -307,8 +305,8 @@ public class PropertyMapper {
         return predicate;
     }
 
-    private static Set<ValuePredicate> getValuePredicates(String valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, Query parent, GraknGraph graph){
-        Set<ValuePredicate> predicates = new HashSet<>();
+    private static Set<Predicate> getValuePredicates(String valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, Query parent, GraknGraph graph){
+        Set<Predicate> predicates = new HashSet<>();
         if(valueVar.isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))

@@ -102,7 +102,7 @@ public class GenealogyTest extends AbstractEngineTest{
 
     @Test
     public void testSpecificPerson(){
-        Concept concept = Sets.newHashSet(graph.graql().<MatchQuery>parse("match $x isa person;"))
+        Concept concept = Sets.newHashSet(graph.graql().infer(false).<MatchQuery>parse("match $x isa person;"))
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
@@ -155,7 +155,7 @@ public class GenealogyTest extends AbstractEngineTest{
         "$rel1 has event-role 'parent';" +
         "$rel2 (happening: $b, protagonist: $c) isa event-protagonist;" +
         "$rel2 has event-role 'newborn';select $c, $p;";
-        MatchQuery query = graph.graql().parse(queryString);
+        MatchQuery query = graph.graql().infer(true).parse(queryString);
         MatchQuery query2 = graph.graql().parse(queryString2);
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers answers2 = new QueryAnswers(query2.execute());

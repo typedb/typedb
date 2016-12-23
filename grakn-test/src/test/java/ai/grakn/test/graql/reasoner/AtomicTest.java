@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.concept.RoleType;
@@ -40,7 +41,9 @@ import ai.grakn.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
+import junit.framework.TestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -212,5 +215,15 @@ public class AtomicTest extends AbstractEngineTest{
         Atomic atom = new Query("match $x value '0';", snbGraph).getAtoms().iterator().next();
         Atomic atom2 =new Query("match $x value != '0';", snbGraph).getAtoms().iterator().next();
         assertTrue(!atom.isEquivalent(atom2));
+    }
+
+    @Test
+    public void testMultiPredResourceEquivalence(){
+        GraknGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has age $a;$a value >23; $a value <27;";
+        String queryString2 = "match $p has age $a;$a value >23;";
+        AtomicQuery query = new AtomicQuery(queryString, graph);
+        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
+        assertTrue(!query.getAtom().isEquivalent(query2.getAtom()));
     }
 }
