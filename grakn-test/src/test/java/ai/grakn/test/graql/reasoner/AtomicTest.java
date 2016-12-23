@@ -74,7 +74,6 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testRecursive(){
         GraknGraph graph = snbGraph;
-
         String recRelString = "match ($x, $y) isa resides;";
         String nrecRelString = "match ($x, $y) isa recommendation;";
 
@@ -88,7 +87,6 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testFactory(){
         GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
         String atomString = "match $x isa person;";
         String relString = "match ($x, $y) isa recommendation;";
         String resString = "match $x has gender 'male';";
