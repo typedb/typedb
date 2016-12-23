@@ -574,7 +574,6 @@ public class ScalingTestIT extends AbstractScalingTest {
         // batch in the nodes
         LoaderClient loaderClient = new LoaderClient(keyspace,
                 Arrays.asList(HOST_NAME));
-        loaderClient.setBatchSize(10);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<Var> insertQuery = new ArrayList<>();
