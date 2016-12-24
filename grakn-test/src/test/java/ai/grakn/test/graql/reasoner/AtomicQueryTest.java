@@ -45,8 +45,6 @@ import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest extends AbstractEngineTest{
     private static GraknGraph graph;
-    private static QueryBuilder qb;
-
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -54,7 +52,6 @@ public class AtomicQueryTest extends AbstractEngineTest{
     public static void setUpClass() {
         assumeTrue(usingTinker());
         graph = SNBGraph.getGraph();
-        qb = graph.graql();
     }
 
     @Test
@@ -75,6 +72,7 @@ public class AtomicQueryTest extends AbstractEngineTest{
 
     @Test
     public void testMaterialize(){
+        QueryBuilder qb = graph.graql().infer(false);
         assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
 
         String queryString = "match ($x, $y) isa recommendation;";

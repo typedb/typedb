@@ -817,6 +817,21 @@ public class ReasonerTest extends AbstractEngineTest{
         assertEquals(answers, answers2);
     }
 
+    @Test
+    public void testMultiPredResource(){
+        GraknGraph graph = SNBGraph.getGraph();
+        String queryString = "match $p isa person, has age $a;$a value >23; $a value <27;$pr isa product;" +
+                "($p, $pr) isa recommendation; select $p, $pr;";
+        String queryString2 = "match $p isa person, has age >23, has age <27;$pr isa product;" +
+                "($p, $pr) isa recommendation;";
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+        Reasoner reasoner = new Reasoner(graph);
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        assertEquals(answers, answers2);
+    }
+
     private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
         assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }

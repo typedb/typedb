@@ -41,13 +41,11 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest extends AbstractEngineTest {
 
     private static GraknGraph graph;
-    private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
         assumeTrue(usingTinker());
         graph = SNBGraph.getGraph();
-        qb = graph.graql();
     }
 
     @Test

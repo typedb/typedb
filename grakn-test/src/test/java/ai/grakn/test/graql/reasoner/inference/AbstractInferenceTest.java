@@ -44,7 +44,7 @@ public class AbstractInferenceTest extends AbstractEngineTest {
     public static void setUpClass() {
         GraknGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
-        qb = graph.graql();
+        qb = graph.graql().infer(false);
     }
 
     /**silently allows multiple isas*/

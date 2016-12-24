@@ -24,6 +24,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,22 +37,31 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class Resource extends Binary{
+public class Resource extends MultiPredicateBinary{
 
     public Resource(VarAdmin pattern) { this(pattern, null);}
     public Resource(VarAdmin pattern, Query par) { this(pattern, null, par);}
-    public Resource(VarAdmin pattern, Predicate p, Query par){ super(pattern, p, par);}
+    public Resource(VarAdmin pattern, Set<Predicate> p, Query par){ super(pattern, p, par);}
     private Resource(Resource a) { super(a);}
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
         if(!(ruleAtom instanceof Resource)) return false;
+        boolean ruleApplicable = false;
         Resource childAtom = (Resource) ruleAtom;
-        Predicate childPredicate = childAtom.getPredicate();
-        Predicate parentPredicate = getPredicate();
-        return childPredicate == null || parentPredicate == null
-                || parentPredicate.getPredicateValue().equals(childPredicate.getPredicateValue());
+        if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
+
+        Iterator<Predicate> childIt = childAtom.getMultiPredicate().iterator();
+        while(childIt.hasNext() && !ruleApplicable){
+            Predicate childPredicate = childIt.next();
+            Iterator<Predicate> parentIt = getMultiPredicate().iterator();
+            boolean predicateCompatible = false;
+            while(parentIt.hasNext() && !predicateCompatible)
+                predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
+            ruleApplicable = predicateCompatible;
+        }
+        return ruleApplicable;
     }
 
     @Override
@@ -59,7 +69,6 @@ public class Resource extends Binary{
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         return resProp != null? resProp.getType().orElse("") : "";
     }
-
 
     @Override
     protected String extractValueVariableName(VarAdmin var){
@@ -75,9 +84,7 @@ public class Resource extends Binary{
     }
 
     @Override
-    public Atomic clone(){
-        return new Resource(this);
-    }
+    public Atomic clone(){ return new Resource(this);}
 
     @Override
     public boolean isResource(){ return true;}
@@ -97,7 +104,7 @@ public class Resource extends Binary{
     @Override
     public Set<String> getSelectedNames(){
         Set<String> vars = super.getSelectedNames();
-        if(getPredicate() != null) vars.addAll(getPredicate().getSelectedNames());
+        getMultiPredicate().forEach(pred -> vars.addAll(pred.getSelectedNames()));
         return vars;
     }
 }
