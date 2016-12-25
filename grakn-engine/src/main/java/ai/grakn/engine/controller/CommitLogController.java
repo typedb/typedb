@@ -24,6 +24,9 @@ import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -31,6 +34,8 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import java.util.Collections;
 import java.util.Set;
 
@@ -49,12 +54,11 @@ public class CommitLogController {
         delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }
 
-    /**
-     *
-     * @param req The request which contains the graph to be post processed
-     * @param res The current response code
-     * @return The result of clearing the post processing for a single graph
-     */
+
+    @GET
+    @Path("/commit_log")
+    @ApiOperation(value = "Delete all the post processing jobs for a specific keyspace")
+    @ApiImplicitParam(name = "keysoace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
     private String deleteConcepts(Request req, Response res){
         String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
 
@@ -69,12 +73,14 @@ public class CommitLogController {
         return "The cache of Graph [" + graphName + "] has been cleared";
     }
 
-    /**
-     *
-     * @param req The request which contains the graph to be post processed
-     * @param res The current response code
-     * @return The result of adding something for post processing
-     */
+
+    @GET
+    @Path("/commit_log")
+    @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "concepts", value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body")
+    })
     private String submitConcepts(Request req, Response res) {
         try {
             String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);

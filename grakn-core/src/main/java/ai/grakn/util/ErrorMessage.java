@@ -20,27 +20,27 @@ package ai.grakn.util;
 
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
-    NO_EDGE("Concept ['%s'] does not have any edges to a ['%s']"),
-    CANNOT_DELETE("Type ['%s'] cannot be deleted as it still has incomind edges"),
-    LOOP_DETECTED("Concept ['%s'] loops when following edges of type ['%s']"),
-    MORE_THAN_ONE_EDGE("Concept ['%s'] has more than one edge of type ['%s']"),
-    ID_NOT_UNIQUE("Failed to change the Id of Concept ['%s'] due to another concept already having an id of " +
-            "type ['%s'] with value ['%s']"),
-    ID_ALREADY_TAKEN("The id ['%s'] is already taken by concept ['%s']"),
-    TOO_MANY_CONCEPTS("Too many concepts found for key ['%s'] and value ['%s']"),
-    TOO_MANY_CASTINGS("More than one casting found between Role ['%s'] and Instance ['%s']"),
-    INVALID_DATATYPE("The value ['%s'] must be of datatype ['%s']"),
+    NO_EDGE("Concept [%s] does not have any edges to a [%s]"),
+    CANNOT_DELETE("Type [%s] cannot be deleted as it still has incomind edges"),
+    LOOP_DETECTED("Concept [%s] loops when following edges of type [%s]"),
+    MORE_THAN_ONE_EDGE("Concept [%s] has more than one edge of type [%s]"),
+    ID_NOT_UNIQUE("Failed to change the Id of Concept [%s] due to another concept already having an id of " +
+            "type [%s] with value [%s]"),
+    ID_ALREADY_TAKEN("The id [%s] is already taken by concept [%s]"),
+    TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),
+    TOO_MANY_CASTINGS("More than one casting found between Role [%s] and Instance [%s]"),
+    INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
     INVALID_RESOURCE_CAST("The value of [%s] cannot be cast to [%s]"),
-    INVALID_OBJECT_TYPE("The concept ['%s'] is not of type ['%s']"),
-    REGEX_INSTANCE_FAILURE("The regex ['%s'] cannot be applied because instance ['%s'] of the Resource Type does not " +
+    INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
+    REGEX_INSTANCE_FAILURE("The regex [%s] cannot be applied because instance [%s] of the Resource Type does not " +
             "conform to the regular expressions"),
-    REGEX_NOT_STRING("The Resource Type ['%s'] is not of type String so it cannot support regular expressions"),
-    ID_RESERVED("The ID ['%s'] is reserved and cannot be used"),
-    ROLE_IS_NULL("The provided role cannot be null with roleplayer ['%s']"),
-    RESOURCE_TYPE_CANNOT_BE_UNIQUE("The resource type ['%s'] cannot be set to unique because it's resources have " +
+    REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
+    ID_RESERVED("The ID [%s] is reserved and cannot be used"),
+    ROLE_IS_NULL("The provided role cannot be null with roleplayer [%s]"),
+    RESOURCE_TYPE_CANNOT_BE_UNIQUE("The resource type [%s] cannot be set to unique because it's resources have " +
             "duplicate values"),
-    INVALID_EDGE("The edge ['%s'] between concept ['%s'] and ['%s'] is invalid"),
-    NOT_SUPPORTED("Not supported with a ['%s'] backend"),
+    INVALID_EDGE("The edge [%s] between concept [%s] and [%s] is invalid"),
+    NOT_SUPPORTED("Not supported with a [%s] backend"),
     CLOSED_USER("You have closed this graph and it can no longer be used"),
     CLOSED_FACTORY("This graph has been closed due to a transaction being committed and invalidating this graph"),
     CLOSED_CLEAR("This graph has been closed due to clearing it"),
@@ -60,33 +60,38 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
-    VALIDATION_RELATION("The relation ['%s'] has an invalid structure. " +
-            "This is either due to having more role players than roles or " +
-            "the Relation Type ['%s'] not having the correct has-role connection to one of the provided roles. " +
-            "The provided roles('%s'): ['%s']" +
-            "The provided role players('%s'): ['%s'] \n"),
-    VALIDATION_CASTING("The type ['%s'] of role player ['%s'] is not allowed to play RoleType ['%s'] \n"),
-    VALIDATION_IS_ABSTRACT("The abstract Type ['%s'] should not have any instances \n"),
-    VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any Relation Type. \n"),
-    VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
-    VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type ['%s'] is playing role ['%s'] which it is not allowed \n"),
-    VALIDATION_INSTANCE("Instance ['%s'] does not play all required roles \n"),
-    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type ['%s'] does not have a sub or super Role Type in either Relation Type ['%s'] or Relation Type ['%s'] \n"),
-    VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player ['%s'] \n"),
+    VALIDATION_RELATION_MORE_CASTING_THAN_ROLES("The relation [%s] has [%s] role players but its type [%s] " +
+            "only allows [%s] roles \n"),
+    VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
+            "which it's type [%s] is not connecting to via a has-role connection \n"),
+
+    VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
+    VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a has-role connection to any Relation Type. \n"),
+    VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE("RoleType [%s] has more than one has-role connections to Relation Types. \n"),
+    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have two or more roles \n"),
+    VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type [%s] is playing role [%s] which it is not allowed \n"),
+    VALIDATION_INSTANCE("Instance [%s] does not play all required roles \n"),
+
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
+            "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
+
+    VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
+    VALIDATION_REQUIRED_RELATION("The role player [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
     //--------------------------------------------- Factory Errors
-    INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),
-    CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to ['%s']"),
-    INVALID_COMPUTER("The graph computer ['%s'] is not supported"),
-    CONFIG_IGNORED("The config parameter ['%s'] with value ['%s'] is ignored for this implementation"),
-    CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn graph using the backend ['%s']"),
+    INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
+    CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to [%s]"),
+    INVALID_COMPUTER("The graph computer [%s] is not supported"),
+    CONFIG_IGNORED("The config parameter [%s] with value [%s] is ignored for this implementation"),
+    CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn graph using the backend [%s]"),
 
     //--------------------------------------------- Client Errors
-    INVALID_ENGINE_RESPONSE("Grakn Engine located at ['%s'] returned response ['%s'], cannot proceed."),
-    INVALID_FACTORY("Graph Factory ['%s'] is not valid"),
+    INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
+    INVALID_FACTORY("Graph Factory [%s] is not valid"),
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. " +
             "Cannot produce graph"),
-    CONFIG_NOT_FOUND("Grakn Engine located at ['%s'] did not return the expected response, due to ['%s']"),
+    CONFIG_NOT_FOUND("Grakn Engine located at [%s] did not return the expected response, due to [%s]"),
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------

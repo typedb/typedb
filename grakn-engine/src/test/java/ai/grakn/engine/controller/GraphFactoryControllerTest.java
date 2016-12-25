@@ -43,8 +43,7 @@ public class GraphFactoryControllerTest extends GraknEngineTestBase {
 	public void testKeyspaceList() {
 		Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph().close();
         Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").getGraph().close();
-        String endPoint = KEYSPACE_LIST;
-        Response response = get(endPoint).then().statusCode(200).extract().response();
+        Response response = get(KEYSPACE_LIST).then().statusCode(200).extract().response();
         Json result = Json.read(response.body().asString());
         Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest")));
         Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest2")));
@@ -53,7 +52,7 @@ public class GraphFactoryControllerTest extends GraknEngineTestBase {
     @Test
     public void testConfigWorking() {
         Response response = get(GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();
-        String config = response.getBody().prettyPrint();
+        String config = response.getBody().asString();
         assertTrue(config.contains("factory"));
     }
 

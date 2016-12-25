@@ -1,10 +1,9 @@
 package ai.grakn.engine.user;
 
-import java.util.Collection;
+import mjson.Json;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import mjson.Json;
 
 public class UsersHandler {
 	public static final String USER_ENTITY = "user";

@@ -18,16 +18,11 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RoleType;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -97,23 +92,8 @@ class Validator {
      * @param relation The relation to validate
      */
     private void validateRelation(RelationImpl relation){
-        if(!ValidateGlobalRules.validateRelationshipStructure(relation)) {
-            String roles = "";
-            String rolePlayers = "";
-            for(Map.Entry<RoleType, Instance> entry: relation.rolePlayers().entrySet()){
-                if(entry.getKey() != null)
-                    roles = roles + entry.getKey().getName() + ",";
-                if(entry.getValue() != null)
-                    rolePlayers = rolePlayers + entry.getValue().getId() + ",";
-            }
-            errorsFound.add(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), relation.type().getName(),
-                    roles.split(",").length, roles,
-                    rolePlayers.split(",").length, roles));
-        }
-
-        if(!ValidateGlobalRules.validateRelationIsUnique(relation)){
-            errorsFound.add(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation));
-        }
+        ValidateGlobalRules.validateRelationshipStructure(relation).ifPresent(errorsFound::add);
+        ValidateGlobalRules.validateRelationIsUnique(relation).ifPresent(errorsFound::add);
     }
 
     /**
@@ -121,10 +101,7 @@ class Validator {
      * @param casting The casting to validate
      */
     private void validateCasting(CastingImpl casting){
-        if(!ValidateGlobalRules.validatePlaysRoleStructure(casting)) {
-            Instance rolePlayer = casting.getRolePlayer();
-            errorsFound.add(ErrorMessage.VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
-        }
+        ValidateGlobalRules.validatePlaysRoleStructure(casting).ifPresent(errorsFound::add);
     }
 
     /**
@@ -132,8 +109,7 @@ class Validator {
      * @param conceptType The type to validate
      */
     private void validateType(TypeImpl conceptType){
-        if(conceptType.isAbstract() && !ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType))
-            errorsFound.add(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(conceptType.getName()));
+        ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType).ifPresent(errorsFound::add);
     }
 
     /**
@@ -141,8 +117,7 @@ class Validator {
      * @param roleType The roleType to validate
      */
     private void validateRoleType(RoleTypeImpl roleType){
-        if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
-            errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getName()));
+        ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).ifPresent(errorsFound::add);
     }
 
     /**
@@ -150,16 +125,8 @@ class Validator {
      * @param relationType The relationType to validate
      */
     private void validateRelationType(RelationTypeImpl relationType){
-        if(!ValidateGlobalRules.validateHasMinimumRoles(relationType))
-            errorsFound.add(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getName()));
-
-        Collection<RoleType> invalidTypes = ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType);
-        if(!invalidTypes.isEmpty()){
-            invalidTypes.forEach(invalidType -> {
-                errorsFound.add(
-                        ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(invalidType.getName(), relationType.getName(), relationType.superType().getName()));
-            });
-        }
+        ValidateGlobalRules.validateHasMinimumRoles(relationType).ifPresent(errorsFound::add);
+        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType));
     }
 
     /**
@@ -167,7 +134,6 @@ class Validator {
      * @param instance The instance to validate
      */
     private void validateInstance(InstanceImpl instance) {
-        if (!ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance))
-            errorsFound.add(ErrorMessage.VALIDATION_INSTANCE.getMessage(instance.getId()));
+        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(instance).ifPresent(errorsFound::add);
     }
 }

@@ -1,46 +1,21 @@
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
-
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
-import org.junit.*;
-
-import java.lang.reflect.Field;
-import java.util.Properties;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AuthControllerTest {
+public class AuthControllerTest extends GraknEngineTestBase {
 
     //Ignoring a couple of randomly failing tests. I will probably need to create a new config file with password protection enabled.
     //Or maybe find alternative to singleton.
-
-    @BeforeClass
-    public static void setupControllers() throws InterruptedException {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
-        Properties prop = ConfigProperties.getInstance().getProperties();
-      //  ConfigProperties.getInstance().setConfigProperty(ConfigProperties.PASSWORD_PROTECTED_PROPERTY,"true");
-
-        RestAssured.baseURI = "http://" + prop.getProperty("server.host") + ":" + prop.getProperty("server.port");
-        GraknEngineServer.start();
-        Thread.sleep(5000);
-    }
-
-    @AfterClass
-    public static void takeDownControllers() throws InterruptedException {
-    //    ConfigProperties.getInstance().setConfigProperty(ConfigProperties.PASSWORD_PROTECTED_PROPERTY,"false");
-        GraknEngineServer.stop();
-        Thread.sleep(10000);
-    }
-
 
     @Test
     public void newSessionWithNonExistingUser() {
