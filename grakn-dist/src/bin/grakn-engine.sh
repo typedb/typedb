@@ -38,27 +38,6 @@ for jar in "${GRAKN_HOME}"/lib/*.jar; do
     fi
 done
 
-wait_for_engine() {
-    local now_s=`date '+%s'`
-    local stop_s=$(( $now_s + $ENGINE_STARTUP_TIMEOUT_S ))
-    local status_thrift=
-
-    while [ $now_s -le $stop_s ]; do
-        echo -n .
-        # get everything listening on port 4567
-        num_listeners=`lsof -i :4567 -t | wc -l`
-        if [ "$num_listeners" -ne "0" ]; then
-            echo
-            return 0
-        fi
-        sleep $SLEEP_INTERVAL_S
-        now_s=`date '+%s'`
-    done
-
-    echo " timeout exceeded ($ENGINE_STARTUP_TIMEOUT_S seconds)" >&2
-    return 1
-}
-
 if [[ ! -z "${GRAKN_ENGINE_CONFIG}" ]]; then
     ENGINE_OPTS=$ENGINE_OPTS" -Dgrakn.conf=${GRAKN_ENGINE_CONFIG}"
 fi
@@ -72,9 +51,12 @@ start)
     else
         # engine has not already started
         echo -n "Starting engine"
-        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" ${ENGINE_OPTS} ai.grakn.engine.GraknEngineServer &
-        echo $!>$ENGINE_PS
-        wait_for_engine
+        if [[ $FOREGROUND = true ]]; then
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" ${ENGINE_OPTS} ai.grakn.engine.GraknEngineServer
+        else
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" ${ENGINE_OPTS} ai.grakn.engine.GraknEngineServer &
+            echo $!>$ENGINE_PS
+        fi
     fi
     ;;
 
@@ -89,8 +71,11 @@ stop)
 
 status)
 
+    ENGINE_PIDS=$(ps ax | grep -i 'ai\.grakn\.engine\.GraknEngineServer' | grep java | grep -v grep | awk '{print $1}')
     if [ -e $ENGINE_PS ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
-        echo "Engine is running"
+        echo "Engine is $(cat $ENGINE_PS)"
+    elif [ -n $ENGINE_PIDS ]; then
+        echo "Engine is $ENGINE_PIDS (foreground)"
     else
         echo "Engine has stopped"
     fi
