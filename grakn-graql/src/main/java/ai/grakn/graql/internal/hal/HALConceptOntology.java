@@ -156,7 +156,8 @@ class HALConceptOntology {
             halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
         });
 
-        RelationType relType = roleType.relationTypes();
+        //TODO: Adjust HAL to account for multiple relation types from role type
+        RelationType relType = roleType.relationTypes().iterator().next();
         Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId()+this.keyspace)
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
         generateStateAndLinks(roleRepresentation, relType);

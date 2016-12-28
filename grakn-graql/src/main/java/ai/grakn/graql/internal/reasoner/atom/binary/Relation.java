@@ -43,7 +43,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.Optional;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -51,6 +50,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -329,7 +329,8 @@ public class Relation extends TypeAtom {
 
     private void inferTypeFromRoles() {
         if (getParentQuery() != null && getTypeId().isEmpty() && hasExplicitRoleTypes()) {
-            type = getExplicitRoleTypes().iterator().next().relationTypes();
+            //TODO: Properly Infer From Types
+            type = getExplicitRoleTypes().iterator().next().relationTypes().iterator().next();
             addType(type);
         }
     }
