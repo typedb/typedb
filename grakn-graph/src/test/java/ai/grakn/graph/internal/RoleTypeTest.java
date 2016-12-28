@@ -70,12 +70,12 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testGetRelation() throws Exception {
         relationType.hasRole(roleType);
-        assertEquals(relationType, roleType.relationType());
+        assertEquals(relationType, roleType.relationTypes());
     }
 
     @Test
     public void testGetRelationFailNoRelationShip() throws Exception {
-        assertNull(roleType.relationType());
+        assertNull(roleType.relationTypes());
     }
 
     @Test
@@ -89,7 +89,7 @@ public class RoleTypeTest extends GraphTestBase {
         relationType.hasRole(roleType);
         relationType2.hasRole(roleType);
 
-        roleType.relationType();
+        roleType.relationTypes();
     }
 
     @Test
@@ -129,7 +129,7 @@ public class RoleTypeTest extends GraphTestBase {
     public  void testGetInstancesTest(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
-        RelationType relationType = graknGraph.putRelationType("relationType").hasRole(roleA).hasRole(roleB);
+        RelationType relationType = graknGraph.putRelationType("relationTypes").hasRole(roleA).hasRole(roleB);
         EntityType entityType = graknGraph.putEntityType("entityType").playsRole(roleA).playsRole(roleB);
 
         Entity a = entityType.addEntity();
@@ -191,7 +191,7 @@ public class RoleTypeTest extends GraphTestBase {
     public void testDeleteRoleTypeWithPlayers(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
-        RelationType relationType = graknGraph.putRelationType("relationType");
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
         EntityType entityType = graknGraph.putEntityType("entityType");
 
         Entity a = entityType.addEntity();

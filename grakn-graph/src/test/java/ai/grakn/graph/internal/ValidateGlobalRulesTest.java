@@ -191,7 +191,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     @Test
     public void testAbstractConceptValidation(){
         RoleType roleType = graknGraph.putRoleType("hasRole");
-        RelationType relationType = graknGraph.putRelationType("relationType");
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
@@ -208,7 +208,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
         EntityType entityType = graknGraph.putEntityType("entityType").playsRole(r1).playsRole(r2);
-        RelationType relationType = graknGraph.putRelationType("relationType").setAbstract(true);
+        RelationType relationType = graknGraph.putRelationType("relationTypes").setAbstract(true);
         RelationType hasCast = graknGraph.putRelationType("has cast").superType(relationType).hasRole(r1).hasRole(r2);
 
         Entity e1 = entityType.addEntity();

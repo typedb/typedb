@@ -128,7 +128,7 @@ class ValidateGlobalRules {
             return Optional.empty();
 
         try {
-            if(roleType.relationType() == null)
+            if(roleType.relationTypes() == null)
                 return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
         } catch (MoreThanOneEdgeException e){
             return Optional.of(VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE.getMessage(roleType.getName()));
@@ -139,7 +139,7 @@ class ValidateGlobalRules {
     /**
      *
      * @param relationType The RelationType to validate
-     * @return An error message if the relationType does not have at least 2 roles
+     * @return An error message if the relationTypes does not have at least 2 roles
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationType) {
         if(relationType.isAbstract() || relationType.hasRoles().size() >= 2){
@@ -164,7 +164,7 @@ class ValidateGlobalRules {
             return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
 
         for(CastingImpl casting: castings){
-            if(!casting.getRole().relationType().getName().equals(relationType.getName()))
+            if(!casting.getRole().relationTypes().getName().equals(relationType.getName()))
                 return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getName(), relationType.getName()));
         }
 
@@ -201,7 +201,7 @@ class ValidateGlobalRules {
         Set<String> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
-        //Check 1) Every role of relationType is the sub of a role which is in the hasRoles of it's supers
+        //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
         if(!superRelationType.isAbstract()) {
             Set<String> allSuperRolesPlayed = new HashSet<>();
             superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
@@ -214,7 +214,7 @@ class ValidateGlobalRules {
             }
         }
 
-        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationType
+        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationTypes
         for (RoleType superHasRole : superHasRoles) {
             boolean subRoleNotFoundInHasRoles = true;
 

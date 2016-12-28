@@ -75,12 +75,12 @@ public interface RoleType extends Type {
     Collection<RoleType> subTypes();
 
     /**
-     * Returns the RelationType that this RoleType takes part in.
+     * Returns the RelationTypes that this RoleType takes part in.
      * @see RelationType
      *
-     * @return The RelationType which this role takes part in.
+     * @return The RelationTypes which this role takes part in.
      */
-    RelationType relationType();
+    Collection<RelationType> relationTypes();
 
     /**
      * Returns a collection of the Types that can play this RoleType.

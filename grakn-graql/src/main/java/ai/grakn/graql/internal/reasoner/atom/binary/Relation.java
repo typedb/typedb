@@ -329,7 +329,7 @@ public class Relation extends TypeAtom {
 
     private void inferTypeFromRoles() {
         if (getParentQuery() != null && getTypeId().isEmpty() && hasExplicitRoleTypes()) {
-            type = getExplicitRoleTypes().iterator().next().relationType();
+            type = getExplicitRoleTypes().iterator().next().relationTypes();
             addType(type);
         }
     }

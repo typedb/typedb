@@ -61,7 +61,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @return The Relation Type which this role takes part in.
      */
     @Override
-    public RelationType relationType() {
+    public RelationType relationTypes() {
         Concept concept = getIncomingNeighbour(Schema.EdgeLabel.HAS_ROLE);
 
         if(concept == null){
