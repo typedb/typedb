@@ -271,6 +271,16 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
     }
 
     /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this type
+     * @return The Type itself
+     */
+    public T subType(T type){
+        return null;
+    }
+
+    /**
      *
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
