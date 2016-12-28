@@ -535,7 +535,7 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void deleteTypeWithEntities(){
+    public void testDeleteTypeWithEntities(){
         EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
         EntityType entityTypeB = graknGraph.putEntityType("entityTypeB");
 
@@ -550,5 +550,17 @@ public class EntityTypeTest extends GraphTestBase{
         ));
 
         entityTypeB.delete();
+    }
+
+    @Test
+    public void testSubType(){
+        EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
+        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB");
+        EntityType entityTypeC = graknGraph.putEntityType("entityTypeC");
+        assertEquals(0, entityTypeA.subTypes().size());
+        entityTypeA.subType(entityTypeB).subType(entityTypeC);
+        assertEquals(2, entityTypeA.subTypes().size());
+        assertTrue(entityTypeA.subTypes().contains(entityTypeB));
+        assertTrue(entityTypeA.subTypes().contains(entityTypeC));
     }
 }
