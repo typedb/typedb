@@ -58,6 +58,8 @@ import java.util.UUID;
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRelationTypes;
 import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
+import static ai.grakn.graql.internal.reasoner.Utility.roleToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
 
 
 /**
@@ -325,18 +327,18 @@ public class Relation extends TypeAtom {
         if (getParentQuery() != null && !isValueUserDefinedName() && getTypeId().isEmpty()) {
             //look at available roles
             RelationType type = null;
-            Set<RelationType> compatibleTypes = getCompatibleRelationTypes(getExplicitRoleTypes());
+            Set<RelationType> compatibleTypes = getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes);
             if (compatibleTypes.size() == 1) type = compatibleTypes.iterator().next();
 
             //look at types
             if (type == null) {
                 Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
-                Set<RoleType> rolesFromTypes = getRolePlayers().stream()
+                Set<Type> types = getRolePlayers().stream()
                         .filter(varTypeMap::containsKey)
-                        .flatMap(rolePlayer -> varTypeMap.get(rolePlayer).playsRoles().stream())
+                        .map(varTypeMap::get)
                         .collect(Collectors.toSet());
 
-                Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(rolesFromTypes);
+                Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
                 if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
                 else {
                     compatibleTypesFromTypes.retainAll(compatibleTypes);
