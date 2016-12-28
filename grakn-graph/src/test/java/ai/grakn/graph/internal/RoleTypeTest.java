@@ -198,7 +198,16 @@ public class RoleTypeTest extends GraphTestBase {
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         relationType.hasRole(roleA).hasRole(roleType);
-        graknGraph.putRelationType("relationType2").hasRole(roleB).hasRole(roleType);
+        RelationType relationType2 = graknGraph.putRelationType("relationType2").hasRole(roleB).hasRole(roleType);
         graknGraph.commit();
+
+        assertEquals(1, roleA.relationTypes().size());
+        assertEquals(1, roleB.relationTypes().size());
+        assertTrue(roleA.relationTypes().contains(relationType));
+        assertTrue(roleB.relationTypes().contains(relationType2));
+
+        assertEquals(2, roleType.relationTypes().size());
+        assertTrue(roleType.relationTypes().contains(relationType));
+        assertTrue(roleType.relationTypes().contains(relationType2));
     }
 }
