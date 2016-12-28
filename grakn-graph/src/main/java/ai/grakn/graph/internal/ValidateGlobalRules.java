@@ -164,7 +164,15 @@ class ValidateGlobalRules {
             return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
 
         for(CastingImpl casting: castings){
-            if(!casting.getRole().relationTypes().getName().equals(relationType.getName()))
+            boolean notFound = true;
+            for (RelationType innerRelationType : casting.getRole().relationTypes()) {
+                if(innerRelationType.getName().equals(relationType.getName())){
+                    notFound = false;
+                    break;
+                }
+            }
+
+            if(notFound)
                 return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getName(), relationType.getName()));
         }
 

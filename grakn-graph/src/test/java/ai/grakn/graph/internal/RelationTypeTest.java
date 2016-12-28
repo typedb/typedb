@@ -19,9 +19,9 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.concept.RoleType;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,7 +31,6 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RelationTypeTest extends GraphTestBase{
@@ -86,7 +85,7 @@ public class RelationTypeTest extends GraphTestBase{
         RelationType c1 = graknGraph.putRelationType("c1");
         RoleType c2 = graknGraph.putRoleType("c2");
         RoleType c3 = graknGraph.putRoleType("c3");
-        assertNull(c2.relationTypes());
+        assertTrue(c2.relationTypes().isEmpty());
 
         c1.hasRole(c2);
         c1.hasRole(c3);

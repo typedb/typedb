@@ -25,9 +25,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -70,26 +68,12 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testGetRelation() throws Exception {
         relationType.hasRole(roleType);
-        assertEquals(relationType, roleType.relationTypes());
+        assertEquals(relationType, roleType.relationTypes().iterator().next());
     }
 
     @Test
     public void testGetRelationFailNoRelationShip() throws Exception {
-        assertNull(roleType.relationTypes());
-    }
-
-    @Test
-    public void testGetRelationFailTooManyRelationShip() throws Exception {
-        expectedException.expect(MoreThanOneEdgeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(roleType.toString(), Schema.EdgeLabel.HAS_ROLE.name()))
-        ));
-
-        RelationType relationType2 = graknGraph.putRelationType("relationType2");
-        relationType.hasRole(roleType);
-        relationType2.hasRole(roleType);
-
-        roleType.relationTypes();
+        assertTrue(roleType.relationTypes().isEmpty());
     }
 
     @Test
