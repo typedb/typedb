@@ -259,6 +259,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         return getThis();
     }
 
+    /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this type
+     * @return The Type itself
+     */
+    public T subType(T type){
+        ((TypeImpl) type).putEdge(this, Schema.EdgeLabel.SUB);
+        type(); //Check if there is a circular sub loop
+        return getThis();
+    }
+
     T playsRole(RoleType roleType, boolean required) {
         checkTypeMutation();
         EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
@@ -268,16 +280,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         }
 
         return getThis();
-    }
-
-    /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this type
-     * @return The Type itself
-     */
-    public T subType(T type){
-        return null;
     }
 
     /**

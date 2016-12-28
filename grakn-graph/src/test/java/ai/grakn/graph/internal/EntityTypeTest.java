@@ -557,9 +557,9 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
         EntityType entityTypeB = graknGraph.putEntityType("entityTypeB");
         EntityType entityTypeC = graknGraph.putEntityType("entityTypeC");
-        assertEquals(0, entityTypeA.subTypes().size());
+        assertEquals(1, entityTypeA.subTypes().size());
         entityTypeA.subType(entityTypeB).subType(entityTypeC);
-        assertEquals(2, entityTypeA.subTypes().size());
+        assertEquals(3, entityTypeA.subTypes().size());
         assertTrue(entityTypeA.subTypes().contains(entityTypeB));
         assertTrue(entityTypeA.subTypes().contains(entityTypeC));
     }
