@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -48,7 +49,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void overrideFail(){
+    public void testOverrideFail(){
         RelationType relationType = graknGraph.putRelationType("original");
 
         expectedException.expect(RuntimeException.class);
@@ -125,7 +126,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public  void getInstancesTest(){
+    public  void testGetInstancesTest(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         RelationType relationType = graknGraph.putRelationType("relationType").hasRole(roleA).hasRole(roleB);
@@ -157,7 +158,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void deleteRoleTypeWithPlaysRole(){
+    public void testDeleteRoleTypeWithPlaysRole(){
         assertNotNull(graknGraph.getRoleType("RoleType"));
         graknGraph.getRoleType("RoleType").delete();
         assertNull(graknGraph.getRoleType("RoleType"));
@@ -174,7 +175,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void deleteRoleTypeWithHasRole(){
+    public void testDeleteRoleTypeWithHasRole(){
         RoleType roleType2 = graknGraph.putRoleType("New Role Type");
         graknGraph.putRelationType("Thing").hasRole(roleType2).hasRole(roleType);
 
@@ -187,7 +188,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void deleteRoleTypeWithPlayers(){
+    public void testDeleteRoleTypeWithPlayers(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         RelationType relationType = graknGraph.putRelationType("relationType");
@@ -206,5 +207,14 @@ public class RoleTypeTest extends GraphTestBase {
         ));
 
         roleA.delete();
+    }
+
+    @Test
+    public void testSharingRole() throws GraknValidationException {
+        RoleType roleA = graknGraph.putRoleType("roleA");
+        RoleType roleB = graknGraph.putRoleType("roleB");
+        relationType.hasRole(roleA).hasRole(roleType);
+        graknGraph.putRelationType("relationType2").hasRole(roleB).hasRole(roleType);
+        graknGraph.commit();
     }
 }
