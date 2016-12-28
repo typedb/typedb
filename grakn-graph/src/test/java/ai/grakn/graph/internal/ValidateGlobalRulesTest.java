@@ -121,28 +121,6 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     }
 
     @Test
-    public void testValidateHasSingleIncomingHasRoleEdge() throws Exception {
-        RoleType hunter = graknGraph.putRoleType("hunter");
-        RoleType monster = graknGraph.putRoleType("monster");
-        RelationType kills = graknGraph.putRelationType("kills");
-        RelationType kills2 = graknGraph.putRelationType("kills2");
-
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster).isPresent());
-
-        kills.hasRole(hunter);
-        kills2.hasRole(hunter);
-
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
-
-        kills2.deleteHasRole(hunter);
-        kills.hasRole(monster);
-
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster).isPresent());
-    }
-
-    @Test
     public void testValidateRelationTypeHasRoles() throws Exception {
         RoleType hunter = graknGraph.putRoleType("hunter");
         RoleType monster = graknGraph.putRoleType("monster");

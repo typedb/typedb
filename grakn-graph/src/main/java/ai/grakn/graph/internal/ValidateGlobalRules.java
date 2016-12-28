@@ -23,7 +23,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -44,7 +43,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE;
 
 /**
  * The global structural rules to validate.
@@ -126,13 +124,8 @@ class ValidateGlobalRules {
     static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
         if(roleType.isAbstract())
             return Optional.empty();
-
-        try {
-            if(roleType.relationTypes() == null)
-                return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
-        } catch (MoreThanOneEdgeException e){
-            return Optional.of(VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE.getMessage(roleType.getName()));
-        }
+        if(roleType.relationTypes().isEmpty())
+            return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
         return Optional.empty();
     }
 
