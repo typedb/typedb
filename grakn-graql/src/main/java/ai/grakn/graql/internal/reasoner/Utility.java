@@ -81,6 +81,16 @@ public class Utility {
         return cRoles;
     }
 
+    public static Set<RelationType> getCompatibleRelationTypes(Set<RoleType> roles) {
+        Set<RelationType> compatibleTypes = new HashSet<>();
+        if (roles.isEmpty()) return compatibleTypes;
+        Iterator<RoleType> it =  roles.iterator();
+        compatibleTypes.addAll(it.next().relationTypes());
+        while(it.hasNext() && compatibleTypes.size() > 1)
+            compatibleTypes.retainAll(it.next().relationTypes());
+        return compatibleTypes;
+    }
+
     /**
      * compute all rolePlayer-roleType combinations complementing provided roleMap
      * @param vars set of rolePlayers
