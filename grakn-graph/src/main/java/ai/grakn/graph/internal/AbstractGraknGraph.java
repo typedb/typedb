@@ -617,12 +617,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void open(){
-
+        localIsOpen.set(true);
+        localClosedReason.remove();
+        openGraph();
     }
 
-    //Standard Close Operation Overridden in Titan
+    //Standard Close Operation Overridden by Vendor
     public void closeGraph(String closedReason){
         finaliseClose(this::closePermanent, closedReason);
+    }
+
+    //Standard Open Operation Overridden by Vendor
+    public void openGraph(){
+
     }
 
     public void finaliseClose(Runnable closer, String closedReason){
