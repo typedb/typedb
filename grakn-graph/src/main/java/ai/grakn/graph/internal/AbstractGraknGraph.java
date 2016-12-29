@@ -607,6 +607,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         closeGraph(ErrorMessage.CLOSED_USER.getMessage());
     }
 
+    /**
+     * Opens the graph. This must be called before a thread can use the graph
+     */
+    @Override
+    public void open(){
+
+    }
+
     //Standard Close Operation Overridden in Titan
     public void closeGraph(String closedReason){
         finaliseClose(this::closePermanent, closedReason);

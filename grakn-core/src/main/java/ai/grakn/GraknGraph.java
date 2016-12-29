@@ -248,4 +248,9 @@ public interface GraknGraph extends AutoCloseable{
      *
      */
     void close();
+
+    /**
+     * Opens the graph. This must be called before a thread can use the graph
+     */
+    void open();
 }
