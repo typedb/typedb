@@ -244,13 +244,13 @@ public interface GraknGraph extends AutoCloseable{
     void rollback();
 
     /**
-     * Closes the current graph, rendering it unusable.
-     *
+     * Closes the current transaction. If no transactions remain open the graph connection is closed permanently and
+     * the {@link GraknGraphFactory} must be used to get a new connection.
      */
     void close();
 
     /**
-     * Opens the graph. This must be called before a thread can use the graph
+     * Opens the graph. This must be called before a new thread can use the graph.
      */
     void open();
 }

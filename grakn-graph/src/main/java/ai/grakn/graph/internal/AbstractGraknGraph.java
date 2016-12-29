@@ -619,17 +619,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public void open(){
         localIsOpen.set(true);
         localClosedReason.remove();
-        openGraph();
+        getTinkerPopGraph();//Used to check graph is truly open.
     }
 
     //Standard Close Operation Overridden by Vendor
     public void closeGraph(String closedReason){
         finaliseClose(this::closePermanent, closedReason);
-    }
-
-    //Standard Open Operation Overridden by Vendor
-    public void openGraph(){
-
     }
 
     public void finaliseClose(Runnable closer, String closedReason){
@@ -642,7 +637,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     public void closePermanent(){
         try {
-            getTinkerPopGraph().close();
+            graph.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
