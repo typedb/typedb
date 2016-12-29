@@ -43,10 +43,12 @@ keyspace has-key keyspace-name;
 user sub entity;
 user-name sub resource, datatype string;
 user-password sub resource, datatype string;
+user-password-salt sub resource, datatype string;
 user-first-name sub resource, datatype string;
 user-last-name sub resource, datatype string;
 user-email sub resource, datatype string;
 user-is-admin sub resource, datatype boolean;
+
 user has-key user-name;
 
 user has-resource user-password,

@@ -36,14 +36,20 @@ public class SystemKeyspaceUsers extends UsersHandler {
 	@Override
 	public boolean addUser(Json userJson) {
 		final Var user = var().isa(USER_ENTITY);
-		userJson.asJsonMap().forEach( (property, value) -> {
-			if(property.equals(UsersHandler.USER_PASSWORD)){//Hash the password with a salt
-
-			} else {
-				user.has(property, value.getValue());
-			}
-		});
 		try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+
+            userJson.asJsonMap().forEach( (property, value) -> {
+                if(property.equals(UsersHandler.USER_PASSWORD)){//Hash the password with a salt
+                    byte[] salt = Password.getNextSalt(graph);
+                    byte[] hashedPassword = Password.hash(value.getValue().toString().toCharArray(), salt);
+
+                    user.has(UsersHandler.USER_PASSWORD, Password.getString(hashedPassword));
+                    user.has(UsersHandler.USER_SALT, Password.getString(salt));
+                } else {
+                    user.has(property, value.getValue());
+                }
+            });
+
 			InsertQuery query = graph.graql().insert(user);
 			query.execute();
 			graph.commit();
