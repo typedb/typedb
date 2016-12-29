@@ -9,6 +9,9 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -27,8 +30,17 @@ public class UserHandlerTest extends GraknEngineTestBase {
 
     @Test
     public void testGetUser(){
-        assertTrue(users.getUser(userName).is(UsersHandler.USER_NAME, userName));
-        assertTrue(users.getUser(userName).is(UsersHandler.USER_PASSWORD, password));
+        Map<String, Json> retrevedData = users.getUser(userName).asJsonMap();
+        String retrievedUsername = retrevedData.get(UsersHandler.USER_NAME).asString();
+        String retreivedPassword = retrevedData.get(UsersHandler.USER_PASSWORD).asString();
+        String retreivedSalt = retrevedData.get(UsersHandler.USER_SALT).asString();
+
+        byte[] salt = Password.getBytes(retreivedSalt);
+
+        byte[] expectedHash = Password.getBytes(retreivedPassword);
+
+        assertEquals(userName, retrievedUsername);
+        assertTrue("Stored password does not match hashed one", Password.isExpectedPassword(password.toCharArray(), salt, expectedHash));
     }
 
     @Test

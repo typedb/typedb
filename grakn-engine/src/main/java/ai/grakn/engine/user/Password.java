@@ -5,11 +5,11 @@ import ai.grakn.concept.ResourceType;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Random;
 
 /**
@@ -94,11 +94,11 @@ public class Password {
     }
 
     public static String getString(byte [] bytes){
-        return new String(bytes, StandardCharsets.UTF_8);
+        return new String(Base64.getEncoder().encode(bytes));
     }
 
     public static byte[] getBytes(String string){
-        return string.getBytes(StandardCharsets.UTF_8);
+        return Base64.getDecoder().decode(string.getBytes());
     }
 
 }
