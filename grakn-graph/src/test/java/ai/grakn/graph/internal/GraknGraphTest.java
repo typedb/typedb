@@ -299,4 +299,24 @@ public class GraknGraphTest extends GraphTestBase {
         assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
         assertTrue("Error thrown even after opening graph", errorNotThrown[0]);
     }
+
+    @Test
+    public void testCloseAndReOpenGraph(){
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+        graph.close();
+
+        boolean errorThrown = false;
+        try{
+            graph.putEntityType("A Thing");
+        } catch (GraphRuntimeException e){
+            if(e.getMessage().equals(ErrorMessage.CLOSED_USER.getMessage())){
+                errorThrown = true;
+            }
+        }
+        assertTrue("Graph not correctly closed", errorThrown);
+
+        graph.open();
+
+        graph.putEntityType("A Thing");
+    }
 }
