@@ -21,8 +21,10 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -271,15 +273,30 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void testGraphIsClosed(){
+    public void testGraphIsClosed() throws ExecutionException, InterruptedException {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
 
-        expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))
-        ));
+        final boolean[] errorThrown = {false};
+        final boolean[] errorNotThrown = {false};
 
-        pool.submit(() -> graph.putEntityType("A Thing"));
+        Future future = pool.submit(() -> {
+            try{
+                graph.putEntityType("A Thing");
+            } catch (GraphRuntimeException e){
+                if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))){
+                    errorThrown[0] = true;
+                }
+            }
+
+            graph.open();
+            graph.putEntityType("A Thing");
+            errorNotThrown[0] = true;
+        });
+
+        future.get();
+
+        assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
+        assertTrue("Error thrown even after opening graph", errorNotThrown[0]);
     }
 }

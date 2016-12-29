@@ -88,7 +88,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
 
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localIsClosed = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
 
@@ -98,6 +98,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
+        localIsOpen.set(true);
         elementFactory = new ElementFactory(this);
 
         if(initialiseMetaConcepts()) {
@@ -110,7 +111,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         this.committed = false;
-        localIsClosed.set(false);
         localShowImplicitStructures.set(false);
     }
 
@@ -121,7 +121,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isClosed(){
-        return getBooleanFromLocalThread(localIsClosed);
+        return !getBooleanFromLocalThread(localIsOpen);
     }
 
     @Override
@@ -198,7 +198,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     public G getTinkerPopGraph(){
         if(isClosed()){
-            throw new GraphRuntimeException(localClosedReason.get());
+            String reason = localClosedReason.get();
+            if(reason == null){
+                throw new GraphRuntimeException(ErrorMessage.GRAPH_CLOSED.getMessage(getKeyspace()));
+            } else {
+                throw new GraphRuntimeException(reason);
+            }
         }
         return graph;
     }
@@ -624,7 +629,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(!isClosed()) {
             closer.run();
             localClosedReason.set(closedReason);
-            localIsClosed.set(true);
+            localIsOpen.set(false);
         }
     }
 
