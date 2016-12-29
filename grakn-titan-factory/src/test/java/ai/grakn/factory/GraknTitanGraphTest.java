@@ -76,6 +76,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
+        graknGraph.open();
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
             graknGraph.commit();
