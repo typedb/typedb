@@ -50,6 +50,7 @@ user-is-admin sub resource, datatype boolean;
 user has-key user-name;
 
 user has-resource user-password,
+     has-resource user-password-salt,
 	 has-resource user-first-name,
 	 has-resource user-last-name,
 	 has-resource user-email,

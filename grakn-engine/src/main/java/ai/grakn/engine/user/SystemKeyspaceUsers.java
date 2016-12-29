@@ -1,16 +1,7 @@
 package ai.grakn.engine.user;
 
-import static ai.grakn.graql.Graql.var;
-
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
@@ -18,6 +9,13 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
+
+import static ai.grakn.graql.Graql.var;
 
 /**
  * A DAO for managing users in the Grakn system keyspace. System the 'system.gql' ontology
@@ -38,8 +36,12 @@ public class SystemKeyspaceUsers extends UsersHandler {
 	@Override
 	public boolean addUser(Json userJson) {
 		final Var user = var().isa(USER_ENTITY);
-		userJson.asJsonMap().forEach( (n,v) -> {
-			user.has(n, v.getValue());
+		userJson.asJsonMap().forEach( (property, value) -> {
+			if(property.equals(UsersHandler.USER_PASSWORD)){//Hash the password with a salt
+
+			} else {
+				user.has(property, value.getValue());
+			}
 		});
 		try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
 			InsertQuery query = graph.graql().insert(user);
