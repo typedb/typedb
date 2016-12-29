@@ -100,7 +100,8 @@ public class Utility {
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
         compatibleTypes.addAll(typeMapper.apply(it.next()));
-        while(it.hasNext()) compatibleTypes.retainAll(typeMapper.apply(it.next()));
+        while(it.hasNext() && compatibleTypes.size() > 1)
+            compatibleTypes.retainAll(typeMapper.apply(it.next()));
         return compatibleTypes;
     }
 
