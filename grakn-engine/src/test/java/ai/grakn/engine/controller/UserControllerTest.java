@@ -32,7 +32,6 @@ public class UserControllerTest extends GraknEngineTestBase {
 
         //Check he is there
         assertTrue(users.getUser(userName).is(UsersHandler.USER_NAME, userName));
-        assertTrue(users.getUser(userName).is(UsersHandler.USER_PASSWORD, password));
     }
 
     @Test
@@ -50,6 +49,5 @@ public class UserControllerTest extends GraknEngineTestBase {
                         statusCode(200).extract().response().andReturn();
 
         assertTrue(dataResponse.getBody().asString().contains(userName));
-        assertTrue(dataResponse.getBody().asString().contains(password));
     }
 }
