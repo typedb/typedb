@@ -141,6 +141,18 @@ public class GraknTitanGraphTest extends TitanTestBase{
     }
 
     @Test
+    public void testTransactionHandling(){
+        String entityTypeName = "Hello";
+
+        graknGraph.putEntityType(entityTypeName);
+        assertNotNull(graknGraph.getEntityType(entityTypeName));
+
+        graknGraph.close();
+        graknGraph.open();
+        assertNull(graknGraph.getEntityType(entityTypeName));
+    }
+
+    @Test
     public void testStableTransactions() throws GraknValidationException {
         GraknTitanGraph graph = new TitanInternalFactory("stabletransactions", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
         assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
