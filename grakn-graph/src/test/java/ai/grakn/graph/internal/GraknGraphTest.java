@@ -1,5 +1,7 @@
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -9,6 +11,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
@@ -18,6 +21,8 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -263,5 +268,18 @@ public class GraknGraphTest extends GraphTestBase {
         assertEquals(1, resourceType.playsRoles().size());
         assertEquals(2, graknGraph.getMetaRelationType().subTypes().size());
         assertEquals(3, graknGraph.getMetaRoleType().subTypes().size());
+    }
+
+    @Test
+    public void testGraphIsClosed(){
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))
+        ));
+
+        pool.submit(() -> graph.putEntityType("A Thing"));
     }
 }

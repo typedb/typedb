@@ -57,6 +57,7 @@ public enum ErrorMessage {
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
     BACKEND_EXCEPTION("Unknown Backend Exception."),
+    GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
