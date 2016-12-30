@@ -65,6 +65,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 	/**
 	 * Return <code>true</code> if the user with the specified name exists and <code>false</code> otherwise.
 	 */
+	@Override
 	public boolean userExists(String username) {
 		Var lookup = var().isa(USER_ENTITY).has(USER_NAME, username);
 		try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
@@ -81,7 +82,8 @@ public class SystemKeyspaceUsers extends UsersHandler {
 	/**
 	 * Return the user with the specified name as a JSON object where the properties have the same
 	 * names as the Grakn resource types. If the user does not exist, <code>Json.nil()</code> is returned.
-	 */	
+	 */
+	@Override
 	public Json getUser(String username) {
 		Var lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
 		Var resource = var("property");
@@ -105,6 +107,37 @@ public class SystemKeyspaceUsers extends UsersHandler {
 		}		
 	}
 
+    /**
+     *
+     * @param username The username of the user to validate.
+     * @param passwordClient The password sent from the client.
+     * @return true if the user exists and if the password is correct
+     */
+	@Override
+    public boolean validateUser(String username, String passwordClient) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            List<Map<String, Concept>> results = graph.graql().match(
+                    var("salt").isa(USER_SALT),
+                    var("stored-password").isa(USER_PASSWORD),
+                    var("entity").isa(USER_ENTITY).
+                            has(USER_NAME, username).
+                            has(USER_PASSWORD, var("stored-password")).
+                            has(USER_SALT, var("salt"))).execute();
+
+            if(!results.isEmpty()){
+                Concept saltConcept = results.get(0).get("salt");
+                Concept passwordConcept = results.get(0).get("stored-password");
+
+                if(saltConcept != null && passwordConcept != null && saltConcept.isResource() && passwordConcept.isResource()){
+                    byte[] salt = Password.getBytes(saltConcept.asResource().getValue().toString());
+                    byte[] expectedPassword = Password.getBytes(passwordConcept.asResource().getValue().toString());
+                    return Password.isExpectedPassword(passwordClient.toCharArray(), salt, expectedPassword);
+                }
+            }
+        }
+        return false;
+    }
+
 	/**
 	 * Retrieve the list of all users with all their properties. 
 	 * 
@@ -112,6 +145,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 	 * @param limit
 	 * @return
 	 */
+	@Override
 	public Json allUsers(int offset, int limit) {
 		Var lookup = var("entity").isa(USER_ENTITY);		
 		try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
@@ -136,6 +170,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 	 * 
 	 * @return <code>true</code> if the user was removed successfully and <code>false</code> otherwise.
 	 */
+	@Override
 	public boolean removeUser(String username) {
 		Var lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
 		Var resource = var("property");

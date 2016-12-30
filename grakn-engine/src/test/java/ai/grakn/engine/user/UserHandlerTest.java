@@ -5,6 +5,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.factory.SystemKeyspace;
 import mjson.Json;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,9 +25,20 @@ public class UserHandlerTest extends GraknEngineTestBase {
 
     @BeforeClass
     public static void setup(){
-        Json body = Json.object(UsersHandler.USER_NAME, userName, UsersHandler.USER_PASSWORD, password);
         users = UsersHandler.getInstance();
+    }
+
+    @Before
+    public void addUser(){
+        Json body = Json.object(UsersHandler.USER_NAME, userName, UsersHandler.USER_PASSWORD, password);
         users.addUser(body);
+    }
+
+    @After
+    public void removeUser(){
+        assertTrue(users.userExists(userName));
+        users.removeUser(userName);
+        assertFalse(users.userExists(userName));
     }
 
     @Test
@@ -50,10 +63,10 @@ public class UserHandlerTest extends GraknEngineTestBase {
     }
 
     @Test
-    public void removeUser(){
-        assertTrue(users.userExists(userName));
-        users.removeUser(userName);
-        assertFalse(users.userExists(userName));
+    public void testValidateUser(){
+        assertFalse(users.validateUser("bob", password));
+        assertFalse(users.validateUser(userName, "bob"));
+        assertTrue(users.validateUser(userName, password));
     }
 
     @Ignore
