@@ -61,6 +61,14 @@ public interface RuleType extends Type {
     RuleType superType(RuleType type);
 
     /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this rule type
+     * @return The RuleType itself
+     */
+    RuleType subType(RuleType type);
+
+    /**
      *
      * @return All the sub types of this rule type
      */

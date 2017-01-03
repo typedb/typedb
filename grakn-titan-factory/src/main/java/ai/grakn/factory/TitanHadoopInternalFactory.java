@@ -27,6 +27,23 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
+/**
+ * <p>
+ *     A Grakn Graph on top of {@link HadoopGraph}
+ * </p>
+ *
+ * <p>
+ *     This produces a graph on top of {@link HadoopGraph}.
+ *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ *     With this vendor some exceptions are in places:
+ *     1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
+ *     {@link HadoopGraph}.
+ *     2. This factory primarily exists as a means of producing a
+ *     {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
+ * </p>
+ *
+ * @author fppt
+ */
 public class TitanHadoopInternalFactory extends AbstractInternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";

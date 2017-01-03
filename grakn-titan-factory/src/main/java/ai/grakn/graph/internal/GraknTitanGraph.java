@@ -24,6 +24,20 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
+/**
+ * <p>
+ *     A Grakn Graph using {@link TitanGraph} as a vendor backend.
+ * </p>
+ *
+ * <p>
+ *     Wraps up a {@link TitanGraph} as a method of storing the Grakn Graph object Model.
+ *     With this vendor some issues to be aware of:
+ *     1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
+ *     2. Clearing the graph explicitly closes the connection as well.
+ * </p>
+ *
+ * @author fppt
+ */
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
         super(graph, name, engineUrl, batchLoading);
