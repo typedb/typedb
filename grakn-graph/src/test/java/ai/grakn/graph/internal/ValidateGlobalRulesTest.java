@@ -121,28 +121,6 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     }
 
     @Test
-    public void testValidateHasSingleIncomingHasRoleEdge() throws Exception {
-        RoleType hunter = graknGraph.putRoleType("hunter");
-        RoleType monster = graknGraph.putRoleType("monster");
-        RelationType kills = graknGraph.putRelationType("kills");
-        RelationType kills2 = graknGraph.putRelationType("kills2");
-
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster).isPresent());
-
-        kills.hasRole(hunter);
-        kills2.hasRole(hunter);
-
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
-
-        kills2.deleteHasRole(hunter);
-        kills.hasRole(monster);
-
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter).isPresent());
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster).isPresent());
-    }
-
-    @Test
     public void testValidateRelationTypeHasRoles() throws Exception {
         RoleType hunter = graknGraph.putRoleType("hunter");
         RoleType monster = graknGraph.putRoleType("monster");
@@ -191,7 +169,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     @Test
     public void testAbstractConceptValidation(){
         RoleType roleType = graknGraph.putRoleType("hasRole");
-        RelationType relationType = graknGraph.putRelationType("relationType");
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
 
         assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
@@ -208,7 +186,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
         EntityType entityType = graknGraph.putEntityType("entityType").playsRole(r1).playsRole(r2);
-        RelationType relationType = graknGraph.putRelationType("relationType").setAbstract(true);
+        RelationType relationType = graknGraph.putRelationType("relationTypes").setAbstract(true);
         RelationType hasCast = graknGraph.putRelationType("has cast").superType(relationType).hasRole(r1).hasRole(r2);
 
         Entity e1 = entityType.addEntity();
