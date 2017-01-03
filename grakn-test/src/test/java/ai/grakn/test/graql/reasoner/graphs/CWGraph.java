@@ -97,7 +97,6 @@ public class CWGraph extends TestGraph {
         person = graknGraph.putEntityType("person")
                 .playsRole(seller)
                 .playsRole(payee);
-                //.playsRole(nationalityTarget);
         person.hasResource(key);
         person.hasResource(nationality);
 
@@ -112,7 +111,6 @@ public class CWGraph extends TestGraph {
         rocket = graknGraph.putEntityType("rocket")
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
-                //.playsRole(propulsionTarget);
         rocket.hasResource(key);
         rocket.hasResource(propulsion);
 

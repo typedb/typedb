@@ -95,7 +95,7 @@ public class Utility {
                     .filter(rt -> !rt.isImplicit())
                     .collect(Collectors.toSet());
 
-    public static <T> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
+    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
         Set<RelationType> compatibleTypes = new HashSet<>();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
