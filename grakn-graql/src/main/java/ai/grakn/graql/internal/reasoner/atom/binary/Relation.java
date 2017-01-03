@@ -483,12 +483,14 @@ public class Relation extends TypeAtom {
 
     /**
      * Attempts to infer the implicit roleTypes and matching types based on contents of the parent query
-     * @return map containing a RoleType-Type pair
+     * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
     private Map<RoleType, Pair<String, Type>> computeRoleVarTypeMap() {
-        if (getParentQuery() == null || getType() == null) return new HashMap<>();
+        Map<Var, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
+        Map<RoleType, Pair<String, Type>> roleTypeMap = new HashMap<>();
+        if (getParentQuery() == null || getType() == null) return roleTypeMap;
         GraknGraph graph =  getParentQuery().graph();
-        Map<VarAdmin, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
+
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<String> allocatedVars = new HashSet<>();
         Set<RoleType> allocatedRoles = new HashSet<>();
@@ -498,12 +500,21 @@ public class Relation extends TypeAtom {
             String var = c.getRolePlayer().getVarName();
             VarAdmin role = c.getRoleType().orElse(null);
             if (role != null) {
-                String typeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse("");
                 Type type = varTypeMap.get(var);
                 roleVarTypeMap.put(role, new Pair<>(var, type));
+                //try directly
+                String typeName = role.getTypeName().orElse("");
+                RoleType roleType = !typeName.isEmpty() ? graph.getRoleType(typeName): null;
+                //try indirectly
+                if (roleType == null && role.isUserDefinedName()) {
+                    Predicate rolePredicate = getParentQuery().getIdPredicate(role.getVarName());
+                    if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicateValue());
+                }
                 allocatedVars.add(var);
-                if (!typeName.isEmpty())
-                    allocatedRoles.add(graph.getRoleType(typeName));
+                if (roleType != null) {
+                    allocatedRoles.add(roleType);
+                    roleTypeMap.put(roleType, new Pair<>(var, type));
+                }
             }
         });
 
@@ -518,10 +529,11 @@ public class Relation extends TypeAtom {
                 //if roleType is unambigous
                 if (cRoles.size() == 1) {
                     RoleType roleType = cRoles.iterator().next();
-                    VarAdmin role = Graql.var().name(roleType.getName()).admin();
-                    roleVarTypeMap.put(role, new Pair<>(var, type));
+                    VarAdmin roleVar = Graql.var().name(roleType.getName()).admin();
+                    roleVarTypeMap.put(roleVar, new Pair<>(var, type));
                     allocatedVars.add(var);
                     allocatedRoles.add(roleType);
+                    roleTypeMap.put(roleType, new Pair<>(var, type));
                 }
             }
         });
@@ -538,6 +550,7 @@ public class Relation extends TypeAtom {
             RoleType topRole = getNonMetaTopRole(rolesToAllocate.iterator().next());
             String var = varsToAllocate.iterator().next();
             Type type = varTypeMap.get(var);
+            roleTypeMap.put(topRole, new Pair<>(var, type));
             roleVarTypeMap.put(Graql.var().name(topRole.getName()).admin(), new Pair<>(var, type));
         }
 
@@ -553,9 +566,7 @@ public class Relation extends TypeAtom {
         atomPattern = constructRelationVar(isUserDefinedName()? varName : "", getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
 
-        return roleVarTypeMap.entrySet().stream()
-                .filter( e -> e.getKey().getTypeName().isPresent())
-                .collect(Collectors.toMap(e-> graph.getRoleType(e.getKey().getTypeName().get()), Map.Entry::getValue));
+        return roleTypeMap;
     }
 
     @Override
@@ -607,10 +618,12 @@ public class Relation extends TypeAtom {
 
         Map<String, String> unifiers = super.getUnifiers(pAtom);
         if (((Atom) pAtom).isRelation()) unifiers.putAll(getRelationUnifiers((Relation) pAtom));
-
         return unifiers;
     }
 
+    /**
+     * @return map of pairs: varName - Id predicate (substitution) describing this variable
+     */
     private Map<String, Predicate> getVarSubMap() {
         Map<String, Predicate> map = new HashMap<>();
         getPredicates().stream()
@@ -622,6 +635,9 @@ public class Relation extends TypeAtom {
         return map;
     }
 
+    /**
+     * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
+     */
     private Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
         Map<String, Predicate> varSubMap = getVarSubMap();

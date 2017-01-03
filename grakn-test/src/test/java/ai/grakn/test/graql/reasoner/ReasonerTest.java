@@ -838,7 +838,7 @@ public class ReasonerTest extends AbstractEngineTest{
     public void testIndirectRole() {
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match (recommended-product: $x) isa recommendation;$r type-name 'recommended-product';";
-        String queryString2 = "match ($r: $x) isa recommendation;$r type-name 'recommended-product';";
+        String queryString2 = "match ($r: $z) isa recommendation;$r type-name 'recommended-product';";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         AtomicQuery query2 = new AtomicQuery(queryString2, graph);
         Reasoner reasoner = new Reasoner(graph);

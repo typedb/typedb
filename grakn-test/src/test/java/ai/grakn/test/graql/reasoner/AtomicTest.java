@@ -173,6 +173,42 @@ public class AtomicTest extends AbstractEngineTest{
     }
 
     @Test
+    public void testIndirectRoleUnification(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childRelation = "match ($r1: $x1, $r2: $x2) isa parentship;$r1 type-name 'father';$r2 type-name 'daughter';";
+        String parentRelation = "match ($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';";
+
+
+        Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
+        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
+
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("x1", "x");
+        correctUnifiers.put("x2", "y");
+        correctUnifiers.put("r1", "R1");
+        correctUnifiers.put("r2", "R2");
+    }
+
+    @Test
+    public void testIndirectRoleUnification2(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childRelation = "match ($r1: $x1, $r2: $x2);$r1 type-name 'father';$r2 type-name 'daughter';";
+        String parentRelation = "match ($R1: $x, $R2: $y);$R1 type-name 'father';$R2 type-name 'daughter';";
+
+
+        Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
+        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
+
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("x1", "x");
+        correctUnifiers.put("x2", "y");
+        correctUnifiers.put("r1", "R1");
+        correctUnifiers.put("r2", "R2");
+    }
+
+    @Test
     public void testMatchAllUnification(){
         GraknGraph graph = snbGraph;
         Relation relation = (Relation) new AtomicQuery("match ($z, $b) isa recommendation;", graph).getAtom();
