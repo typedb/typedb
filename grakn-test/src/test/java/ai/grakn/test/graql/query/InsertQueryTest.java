@@ -643,6 +643,20 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testInsertRuleWithoutLhs() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("lhs")));
+        qb.insert(var().isa("inference-rule").rhs(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void testInsertRuleWithoutRhs() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
+        qb.insert(var().isa("inference-rule").lhs(var("x").isa("movie"))).execute();
+    }
+
+    @Test
     public void testErrorWhenNonExistentResource() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("nothing");
