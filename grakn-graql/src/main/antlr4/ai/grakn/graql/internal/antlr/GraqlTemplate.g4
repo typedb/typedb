@@ -23,25 +23,12 @@ statement
  | replaceStatement
  ;
 
-forStatement
- : FOR LPAREN (ID IN expr | expr) RPAREN DO block
- ;
+forStatement : FOR LPAREN (ID IN expr | expr) RPAREN DO block ;
 
-ifStatement
- : ifPartial elseIfPartial* elsePartial?
- ;
-
-ifPartial
- : IF LPAREN expr RPAREN DO block
- ;
-
-elseIfPartial
- : ELSEIF LPAREN expr RPAREN DO block
- ;
-
-elsePartial
- : ELSE block
- ;
+ifStatement   : ifPartial elseIfPartial* elsePartial? ;
+ifPartial     : IF LPAREN expr RPAREN DO block ;
+elseIfPartial : ELSEIF LPAREN expr RPAREN DO block ;
+elsePartial   : ELSE block ;
 
 macro
  : ID_MACRO LPAREN expr? (',' expr)* RPAREN
@@ -69,7 +56,7 @@ expr
  ;
 
 resolve
- : '<' ID '>'
+ : '<' (ID | STRING) '>'
  ;
 
 replaceStatement
@@ -117,14 +104,6 @@ ELSE        : 'else';
 DO          : 'do';
 IN          : 'in';
 
-NULL        : 'null';
-STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
-INT         : [0-9]+;
-DOUBLE      : [0-9.]+;
-BOOLEAN     : TRUE | FALSE;
-TRUE        : 'true';
-FALSE       : 'false';
-
 EQ          : '=';
 NEQ         : '!=';
 AND         : 'and';
@@ -141,7 +120,13 @@ DOLLAR      : '$';
 QUOTE       : '"';
 SQOUTE      : '\'';
 
+NULL        : 'null';
+INT         : [0-9]+;
+DOUBLE      : [0-9.]+;
+BOOLEAN     : 'true' | 'false' ;
 ID          : [a-zA-Z0-9_-]+ ('.' [a-zA-Z0-9_-]+ )*;
+STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
+
 ID_GRAQL    : '$' ID;
 ID_MACRO    : '@' ID;
 
