@@ -153,10 +153,7 @@ export default {
     graqlHAL(query, fn, useReasoner,materialise) {
         this.request({
             url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query + "&reasoner=" + useReasoner+"&materialise=" + materialise,
-            callback: fn,
-            accepts: {
-                json: "application/hal+json"
-            }
+            callback: fn
         });
     },
 
