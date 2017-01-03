@@ -43,8 +43,9 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.Optional;
+import java.util.AbstractMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -52,6 +53,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -325,7 +327,8 @@ public class Relation extends TypeAtom {
 
     private void inferTypeFromRoles() {
         if (getParentQuery() != null && getTypeId().isEmpty() && hasExplicitRoleTypes()) {
-            type = getExplicitRoleTypes().iterator().next().relationType();
+            //TODO: Properly Infer From Types
+            type = getExplicitRoleTypes().iterator().next().relationTypes().iterator().next();
             addType(type);
         }
     }
@@ -585,7 +588,41 @@ public class Relation extends TypeAtom {
         return roleVarTypeMap;
     }
 
-    private Map<String, String> getRelationUnifiers(Relation parentAtom){
+    private Map<String, RoleType> getIndirectRoleMap(){
+        GraknGraph graph =  getParentQuery().graph();
+        return getRelationPlayers().stream()
+                .map(RelationPlayer::getRoleType)
+                .flatMap(CommonUtil::optionalToStream)
+                .map(rt -> new AbstractMap.SimpleEntry<>(rt, getParentQuery().getIdPredicate(rt.getVarName())))
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicateValue())));
+    }
+
+    private Map<String, String> getRoleTypeUnifiers(Relation parentAtom){
+        Map<String, String> unifiers = new HashMap<>();
+        Map<String, RoleType> childMap = getIndirectRoleMap();
+        Map<RoleType, String> parentMap = parentAtom.getIndirectRoleMap().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+        Set<String> varsToAllocate = Sets.newHashSet(parentMap.values());
+        childMap.keySet().forEach(chVar -> {
+            if(!varsToAllocate.isEmpty()) {
+            RoleType role = childMap.get(chVar);
+            //map to empty if no var matching
+            String pVar = "";
+            while(role != null && pVar.isEmpty()
+                    && !Schema.MetaSchema.isMetaName(role.getName())) {
+                if (parentMap.containsKey(role)) pVar = parentMap.get(role);
+                role = role.superType();
+            }
+            if (pVar.isEmpty()) pVar = varsToAllocate.iterator().next();
+            if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
+            varsToAllocate.remove(pVar);
+            }
+        });
+        return unifiers;
+    }
+
+    private Map<String, String> getRolePlayerUnifiers(Relation parentAtom){
         Map<String, String> unifiers = new HashMap<>();
         Set<String> varsToAllocate = parentAtom.getRolePlayers();
         Set<String> childBVs = getRolePlayers();
@@ -617,7 +654,10 @@ public class Relation extends TypeAtom {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
 
         Map<String, String> unifiers = super.getUnifiers(pAtom);
-        if (((Atom) pAtom).isRelation()) unifiers.putAll(getRelationUnifiers((Relation) pAtom));
+        if (((Atom) pAtom).isRelation()){
+            unifiers.putAll(getRolePlayerUnifiers((Relation) pAtom));
+            //unifiers.putAll(getRoleTypeUnifiers((Relation) pAtom));
+        }
         return unifiers;
     }
 

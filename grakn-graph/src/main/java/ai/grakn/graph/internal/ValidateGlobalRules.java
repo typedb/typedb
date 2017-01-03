@@ -23,7 +23,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -44,7 +43,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE;
 
 /**
  * The global structural rules to validate.
@@ -126,20 +124,15 @@ class ValidateGlobalRules {
     static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
         if(roleType.isAbstract())
             return Optional.empty();
-
-        try {
-            if(roleType.relationType() == null)
-                return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
-        } catch (MoreThanOneEdgeException e){
-            return Optional.of(VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE.getMessage(roleType.getName()));
-        }
+        if(roleType.relationTypes().isEmpty())
+            return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
         return Optional.empty();
     }
 
     /**
      *
      * @param relationType The RelationType to validate
-     * @return An error message if the relationType does not have at least 2 roles
+     * @return An error message if the relationTypes does not have at least 2 roles
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationType) {
         if(relationType.isAbstract() || relationType.hasRoles().size() >= 2){
@@ -164,7 +157,15 @@ class ValidateGlobalRules {
             return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
 
         for(CastingImpl casting: castings){
-            if(!casting.getRole().relationType().getName().equals(relationType.getName()))
+            boolean notFound = true;
+            for (RelationType innerRelationType : casting.getRole().relationTypes()) {
+                if(innerRelationType.getName().equals(relationType.getName())){
+                    notFound = false;
+                    break;
+                }
+            }
+
+            if(notFound)
                 return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getName(), relationType.getName()));
         }
 
@@ -201,7 +202,7 @@ class ValidateGlobalRules {
         Set<String> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
-        //Check 1) Every role of relationType is the sub of a role which is in the hasRoles of it's supers
+        //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
         if(!superRelationType.isAbstract()) {
             Set<String> allSuperRolesPlayed = new HashSet<>();
             superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
@@ -214,7 +215,7 @@ class ValidateGlobalRules {
             }
         }
 
-        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationType
+        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationTypes
         for (RoleType superHasRole : superHasRoles) {
             boolean subRoleNotFoundInHasRoles = true;
 

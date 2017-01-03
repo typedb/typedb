@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -61,14 +60,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @return The Relation Type which this role takes part in.
      */
     @Override
-    public RelationType relationType() {
-        Concept concept = getIncomingNeighbour(Schema.EdgeLabel.HAS_ROLE);
-
-        if(concept == null){
-            return null;
-        } else {
-            return concept.asRelationType();
-        }
+    public Collection<RelationType> relationTypes() {
+        return getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE);
     }
 
     /**

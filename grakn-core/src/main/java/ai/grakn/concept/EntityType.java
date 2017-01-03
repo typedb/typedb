@@ -46,6 +46,14 @@ public interface EntityType extends Type{
     EntityType superType(EntityType type);
 
     /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this entity type
+     * @return The EntityType itself
+     */
+    EntityType subType(EntityType type);
+
+    /**
      * Sets the RoleType which instances of this EntityType may play.
      *
      * @param roleType The Role Type which the instances of this EntityType are allowed to play.

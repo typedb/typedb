@@ -585,7 +585,7 @@ public class RelationTest extends GraphTestBase{
         RoleType role1 = graknGraph.putRoleType("Role 1");
         RoleType role2 = graknGraph.putRoleType("Role 2");
         EntityType entityType = graknGraph.putEntityType("entityType").playsRole(role1).playsRole(role2);
-        RelationType relationType = graknGraph.putRelationType("relationType").hasRole(role1).hasRole(role2);
+        RelationType relationType = graknGraph.putRelationType("relationTypes").hasRole(role1).hasRole(role2);
 
         Entity instance1 = entityType.addEntity();
         Entity instance2 = entityType.addEntity();

@@ -20,8 +20,8 @@ public class UserControllerTest extends GraknEngineTestBase {
 
     @Test
     public void testAddNewUser(){
-        String userName = "geralt";
-        String password = "witcher";
+        String userName = "person";
+        String password = "password";
 
         //Add New User
         Json body = Json.object(UsersHandler.USER_NAME, userName, UsersHandler.USER_PASSWORD, password);

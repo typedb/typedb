@@ -138,7 +138,6 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testRoleInference3(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
-
         Relation relation = (Relation) new AtomicQuery("match ($p, son: $gc) isa parentship;", graph).getAtom();
         Relation correctFullRelation = (Relation) new AtomicQuery("match (parent: $p, son: $gc) isa parentship;", graph).getAtom();
         Relation relation2 = (Relation) new AtomicQuery("match (father: $gp, $p) isa parentship;", graph).getAtom();
@@ -151,7 +150,6 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testUnification(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
-
         String relation = "match (parent: $y, child: $x);";
         String specialisedRelation = "match (father: $p, daughter: $c);";
         String specialisedRelation2 = "match (daughter: $p, father: $c);";
@@ -177,8 +175,6 @@ public class AtomicTest extends AbstractEngineTest{
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
         String childRelation = "match ($r1: $x1, $r2: $x2) isa parentship;$r1 type-name 'father';$r2 type-name 'daughter';";
         String parentRelation = "match ($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';";
-
-
         Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
         Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
 
@@ -188,18 +184,18 @@ public class AtomicTest extends AbstractEngineTest{
         correctUnifiers.put("x2", "y");
         correctUnifiers.put("r1", "R1");
         correctUnifiers.put("r2", "R2");
+        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 
+    /*
     @Test
     public void testIndirectRoleUnification2(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
         String childRelation = "match ($r1: $x1, $r2: $x2);$r1 type-name 'father';$r2 type-name 'daughter';";
         String parentRelation = "match ($R1: $x, $R2: $y);$R1 type-name 'father';$R2 type-name 'daughter';";
 
-
         Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
         Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
-
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
         Map<String, String> correctUnifiers = new HashMap<>();
         correctUnifiers.put("x1", "x");
@@ -207,6 +203,7 @@ public class AtomicTest extends AbstractEngineTest{
         correctUnifiers.put("r1", "R1");
         correctUnifiers.put("r2", "R2");
     }
+    */
 
     @Test
     public void testMatchAllUnification(){
@@ -222,7 +219,6 @@ public class AtomicTest extends AbstractEngineTest{
         correctVars.add("x");
         assertTrue(!vars.contains(""));
         assertTrue(vars.containsAll(correctVars));
-
     }
 
     @Test

@@ -28,11 +28,8 @@ import java.util.Properties;
 
 
 /**
- * A graph factory which provides a grakn graph with a tinker graph backend.
- */
-/**
  * <p>
- *     A Grakn Graph on top of TinkerGraph
+ *     A Grakn Graph on top of {@link TinkerGraph}
  * </p>
  *
  * <p>
