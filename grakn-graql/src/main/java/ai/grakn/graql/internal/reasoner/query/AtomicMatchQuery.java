@@ -38,6 +38,16 @@ import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+/**
+ *
+ * <p>
+ * Atomic reasoner query providing resolution streaming facilities.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class AtomicMatchQuery extends AtomicQuery{
 
     final private QueryAnswers answers;
@@ -145,6 +155,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         return newAnswers;
     }
 
+    @Override
     public void resolveViaRule(Rule rl, Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
@@ -226,6 +237,9 @@ public class AtomicMatchQuery extends AtomicQuery{
             this.answerIterator = outer().newAnswers.iterator();
         }
 
+        /**
+         * @return stream constructed out of the answer iterator
+         */
         public Stream<Map<String, Concept>> hasStream(){
             Iterable<Map<String, Concept>> iterable = () -> this;
             return StreamSupport.stream(iterable.spliterator(), false);
@@ -258,6 +272,10 @@ public class AtomicMatchQuery extends AtomicQuery{
             answerIterator = outer().newAnswers.iterator();
         }
 
+        /**
+         * check whether answers available, if answers not fully computed compute more answers
+         * @return true if answers available
+         */
         public boolean hasNext() {
             if (answerIterator.hasNext()) return true;
             else if (dAns != 0 || iter == 0 ){
@@ -268,6 +286,9 @@ public class AtomicMatchQuery extends AtomicQuery{
                 return false;
         }
 
+        /**
+         * @return single answer to the query
+         */
         public Map<String, Concept> next() { return answerIterator.next();}
         private AtomicMatchQuery outer(){ return AtomicMatchQuery.this;}
         private int size(){ return outer().getAnswers().size();}

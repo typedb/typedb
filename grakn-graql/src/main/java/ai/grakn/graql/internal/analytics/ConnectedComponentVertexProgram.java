@@ -52,9 +52,11 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
 
     private static final String PERSIST = "connectedComponentVertexProgram.persist";
     private static final String KEYSPACE = "connectedComponentVertexProgram.keyspace";
+    private static final String WITHOUT_HAS_RESOURCE = "connectedComponentVertexProgram.without";
     private static final String CLUSTER_NAME = "connectedComponentVertexProgram.clusterName";
 
-    private BulkResourceMutate bulkResourceMutate;
+    private BulkResourceMutate<String> bulkResourceMutate;
+    private Set<String> withoutHasResource = new HashSet<>();
     private Set<String> selectedLabels = new HashSet<>();
 
     public ConnectedComponentVertexProgram() {
@@ -65,30 +67,35 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         this.persistentProperties.put(PERSIST, false);
     }
 
-    public ConnectedComponentVertexProgram(Set<String> selectedTypes, String keyspace, String clusterName) {
+    public ConnectedComponentVertexProgram(Set<String> selectedTypes, Set<String> withoutHasResource,
+                                           String keyspace, String clusterName) {
         this.selectedTypes = selectedTypes;
+        this.withoutHasResource = withoutHasResource;
         this.persistentProperties.put(PERSIST, true);
         this.persistentProperties.put(KEYSPACE, keyspace);
         this.persistentProperties.put(CLUSTER_NAME, clusterName);
+        System.out.println("withoutHasResource = " + withoutHasResource);
     }
 
-    public ConnectedComponentVertexProgram(Set<String> selectedTypes, String keyspace, String clusterName,
-                                           Set<String> selectedLabels) {
-        this(selectedTypes, keyspace, clusterName);
+    public ConnectedComponentVertexProgram(Set<String> selectedTypes, Set<String> withoutHasResource,
+                                           String keyspace, String clusterName, Set<String> selectedLabels) {
+        this(selectedTypes, withoutHasResource, keyspace, clusterName);
         this.selectedLabels = selectedLabels;
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
-        if (!selectedLabels.isEmpty()) {
-            selectedLabels.forEach(label -> configuration.addProperty(CLUSTER_LABEL + "." + label, label));
-        }
+        withoutHasResource.forEach(type -> configuration.addProperty(WITHOUT_HAS_RESOURCE + "." + type, type));
+        selectedLabels.forEach(label -> configuration.addProperty(CLUSTER_LABEL + "." + label, label));
+
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
+        configuration.subset(WITHOUT_HAS_RESOURCE).getKeys().forEachRemaining(key ->
+                withoutHasResource.add((String) configuration.getProperty(WITHOUT_HAS_RESOURCE + "." + key)));
         configuration.subset(CLUSTER_LABEL).getKeys().forEachRemaining(key ->
                 selectedLabels.add((String) configuration.getProperty(CLUSTER_LABEL + "." + key)));
     }
@@ -161,9 +168,9 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 break;
             default:
                 if (memory.get(IS_LAST_ITERATION)) {
-                    if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                    if (withoutHasResource.contains(Utility.getVertexType(vertex))) {
                         if (selectedLabels.isEmpty() || selectedLabels.contains(vertex.<String>value(CLUSTER_LABEL)))
-                            bulkResourceMutate.putValue(vertex, vertex.<String>value(CLUSTER_LABEL));
+                            bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
                     }
                 } else {
                     // split the default case because shortcut edges cannot be filtered out
@@ -222,7 +229,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void workerIterationStart(Memory memory) {
         if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
             LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
-            bulkResourceMutate = new BulkResourceMutate<String>((String) persistentProperties.get(KEYSPACE),
+            bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE),
                     (String) persistentProperties.get(CLUSTER_NAME));
         }
     }

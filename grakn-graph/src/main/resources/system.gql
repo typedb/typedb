@@ -54,3 +54,6 @@ user has-resource user-password,
 	 has-resource user-last-name,
 	 has-resource user-email,
 	 has-resource user-is-admin;
+
+# Meta System Information
+system-version sub resource, datatype string;

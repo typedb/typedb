@@ -29,6 +29,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
 
+/**
+ *
+ * <p>
+ * Predicate implementation specialising it to be an value predicate.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
     public ValuePredicate(VarAdmin pattern) {

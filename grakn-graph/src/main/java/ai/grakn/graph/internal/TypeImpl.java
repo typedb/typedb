@@ -42,9 +42,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * A Type represents any ontological element in the graph. For example Entity Types and Rule Types.
- * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
- * @param <V> The type of the instances of this concept type.
+ * <p>
+ *     A Type represents any ontological element in the graph.
+ * </p>
+ *
+ * <p>
+ *     Types are used to model the behaviour of {@link Instance} and how they relate to each other.
+ *     They also aid in categorising {@link Instance} to different types.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
+ * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
@@ -81,23 +91,21 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
                 return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
             }
         }
-
         return types;
     }
 
     /**
-     * Deletes the concept as a type
+     * Deletes the concept as  type
      */
     @Override
     public void innerDelete(){
-        Collection<? extends Concept> subSet = subTypes();
-        Collection<? extends Instance> instanceSet = instances();
-        subSet.remove(this);
+        boolean hasSubs = getVertex().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
+        boolean hasInstances = getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
 
-        if(subSet.isEmpty() && instanceSet.isEmpty()){
-            deleteNode();
+        if(hasSubs || hasInstances){
+            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
-            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(toString()));
+            deleteNode();
         }
     }
 
@@ -248,6 +256,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
             });
         }
         
+        return getThis();
+    }
+
+    /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this type
+     * @return The Type itself
+     */
+    public T subType(T type){
+        ((TypeImpl) type).putEdge(this, Schema.EdgeLabel.SUB);
+        type(); //Check if there is a circular sub loop
         return getThis();
     }
 

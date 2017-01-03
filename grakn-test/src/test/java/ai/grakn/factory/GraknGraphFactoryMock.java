@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 /**
  *
  */
-public class GraknGraphFactoryMock extends GraknGraphFactoryPersistent {
+public class GraknGraphFactoryMock extends GraknGraphFactoryImpl {
     private final String keyspace;
     private final String uri;
 

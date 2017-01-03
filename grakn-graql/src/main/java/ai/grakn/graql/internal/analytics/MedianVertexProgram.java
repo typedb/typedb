@@ -38,27 +38,27 @@ import java.util.Set;
 
 public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
-    public static final int MAX_ITERATION = 40;
+    private static final int MAX_ITERATION = 40;
     private static final String RESOURCE_DATA_TYPE = "medianVertexProgram.resourceDataType";
     private static final String RESOURCE_TYPE = "medianVertexProgram.statisticsResourceType";
 
     // element key
     public static final String DEGREE = "medianVertexProgram.degree";
-    public static final String LABEL = "medianVertexProgram.label";
+    private static final String LABEL = "medianVertexProgram.label";
 
     // memory key
     public static final String COUNT = "medianVertexProgram.count";
-    public static final String INDEX_START = "medianVertexProgram.indexStart";
-    public static final String INDEX_END = "medianVertexProgram.indexEnd";
-    public static final String INDEX_MEDIAN = "medianVertexProgram.indexMedian";
+    private static final String INDEX_START = "medianVertexProgram.indexStart";
+    private static final String INDEX_END = "medianVertexProgram.indexEnd";
+    private static final String INDEX_MEDIAN = "medianVertexProgram.indexMedian";
     public static final String MEDIAN = "medianVertexProgram.median";
-    public static final String PIVOT = "medianVertexProgram.pivot";
-    public static final String PIVOT_POSITIVE = "medianVertexProgram.pivotPositive";
-    public static final String PIVOT_NEGATIVE = "medianVertexProgram.pivotNegative";
-    public static final String POSITIVE_COUNT = "medianVertexProgram.positiveCount";
-    public static final String NEGATIVE_COUNT = "medianVertexProgram.negativeCount";
-    public static final String FOUND = "medianVertexProgram.found";
-    public static final String LABEL_SELECTED = "medianVertexProgram.labelSelected";
+    private static final String PIVOT = "medianVertexProgram.pivot";
+    private static final String PIVOT_POSITIVE = "medianVertexProgram.pivotPositive";
+    private static final String PIVOT_NEGATIVE = "medianVertexProgram.pivotNegative";
+    private static final String POSITIVE_COUNT = "medianVertexProgram.positiveCount";
+    private static final String NEGATIVE_COUNT = "medianVertexProgram.negativeCount";
+    private static final String FOUND = "medianVertexProgram.found";
+    private static final String LABEL_SELECTED = "medianVertexProgram.labelSelected";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Sets.newHashSet(DEGREE, LABEL);
     private static final Set<String> MEMORY_COMPUTE_KEYS = Sets.newHashSet(COUNT, MEDIAN, FOUND,

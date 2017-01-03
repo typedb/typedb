@@ -19,12 +19,15 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -62,8 +65,8 @@ public class MoogiInferenceTest {
                             "$y has description 'Sci-Fi' or $y has description 'science fiction' or $y has description 'Science Fiction';" +
                             "$x isa movie; select $x;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -73,7 +76,7 @@ public class MoogiInferenceTest {
                                 "{$x has tmdb-vote-count > 1000.0;} or {$x has rotten-tomatoes-user-total-votes > 25000;};" +
                                 "$x has rotten-tomatoes-user-rating >= 3.0;";
         MatchQuery query = qb.parse(queryString);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
         }
 
     @Test
@@ -81,7 +84,7 @@ public class MoogiInferenceTest {
         String queryString = "match $x has status 'bad popular movie';";
         String explicitQuery = "match $x isa movie;$x has tmdb-vote-count > 1000.0;$x has tmdb-vote-average < 4.0;";
         MatchQuery query = qb.parse(queryString);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
         }
 
     @Test
@@ -89,9 +92,8 @@ public class MoogiInferenceTest {
         String queryString = "match $x has status 'actor-director';";
         String explicitQuery = "match (actor: $x) isa has-cast;(director: $x) isa production-crew;";
         Query query = new Query(queryString, graph);
-
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -100,16 +102,15 @@ public class MoogiInferenceTest {
         String explicitQuery = "match $y has rotten-tomatoes-user-total-votes > 25000;" +
                                "(actor: $x, production-with-cast: $y) isa has-cast; select $x;";
         MatchQuery query = qb.parse(queryString);
-
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
     public void testPerson(){
         String queryString = "match $x isa person has name;";
         MatchQuery query = qb.parse(queryString);
-        MatchQuery mq = reasoner.resolveToQuery(query);
+        reasoner.resolve(query, true);
     }
 
     @Test
@@ -118,13 +119,11 @@ public class MoogiInferenceTest {
         String explicitQuery = "match $x isa movie;$x has rotten-tomatoes-user-rating >= 3.0;($x, director: $y);";
 
         MatchQuery query = qb.parse(queryString);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
+    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }
-
-
 }

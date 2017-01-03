@@ -25,6 +25,15 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * Atom implementation defining type atoms of the type $varName {isa|sub|plays-role|has-resource|has-scope} $valueVariable)
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class TypeAtom extends Binary{
 
     public TypeAtom(VarAdmin pattern) { this(pattern, null);}

@@ -34,13 +34,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class PostProcessing {
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
+
     private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
     private static PostProcessing instance = null;
-
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
-    private final Logger LOG = LoggerFactory.getLogger(PostProcessing.class);
 
     private ExecutorService postpool;
     private ExecutorService statDump;
@@ -172,7 +172,7 @@ public class PostProcessing {
             if(typeName.equals("Casting")){
                 numJobs = cache.getCastingJobs(keyspace).size();
             } else if(typeName.equals("Resources")){
-                numJobs = cache.getCastingJobs(keyspace).size();
+                numJobs = cache.getResourceJobs(keyspace).size();
             }
             LOG.info("        Post processing step [" + typeName + " for Graph [" + keyspace + "] has jobs : " + numJobs);
             total += numJobs;

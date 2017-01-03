@@ -21,20 +21,15 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AskQuery;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.PatternAdmin;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -50,8 +45,6 @@ import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest extends AbstractEngineTest{
     private static GraknGraph graph;
-    private static QueryBuilder qb;
-
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -59,7 +52,6 @@ public class AtomicQueryTest extends AbstractEngineTest{
     public static void setUpClass() {
         assumeTrue(usingTinker());
         graph = SNBGraph.getGraph();
-        qb = graph.graql();
     }
 
     @Test
@@ -79,21 +71,14 @@ public class AtomicQueryTest extends AbstractEngineTest{
     }
 
     @Test
-    public void testPatternNotVar(){
-        exception.expect(IllegalArgumentException.class);
-        Conjunction<PatternAdmin> pattern = qb.<MatchQuery>parse("match $x isa person;").admin().getPattern();
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-        Atomic atom = AtomicFactory.create(pattern);
-    }
-
-    @Test
     public void testMaterialize(){
+        QueryBuilder qb = graph.graql().infer(false);
         assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", getConcept("Bob"))
-                                                , new IdPredicate("y", getConcept("Colour of Magic"))));
+                , new IdPredicate("y", getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
     }
 

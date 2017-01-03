@@ -50,7 +50,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
-public class TypeTest extends GraphTestBase{
+public class EntityTypeTest extends GraphTestBase{
 
     @Before
     public void buildGraph(){
@@ -532,5 +532,35 @@ public class TypeTest extends GraphTestBase{
 
         assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
         assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
+    }
+
+    @Test
+    public void testDeleteTypeWithEntities(){
+        EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
+        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB");
+
+        entityTypeB.addEntity();
+
+        entityTypeA.delete();
+        assertNull(graknGraph.getEntityType("entityTypeA"));
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_DELETE.getMessage(entityTypeB.getName()))
+        ));
+
+        entityTypeB.delete();
+    }
+
+    @Test
+    public void testSubType(){
+        EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
+        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB");
+        EntityType entityTypeC = graknGraph.putEntityType("entityTypeC");
+        assertEquals(1, entityTypeA.subTypes().size());
+        entityTypeA.subType(entityTypeB).subType(entityTypeC);
+        assertEquals(3, entityTypeA.subTypes().size());
+        assertTrue(entityTypeA.subTypes().contains(entityTypeB));
+        assertTrue(entityTypeA.subTypes().contains(entityTypeC));
     }
 }

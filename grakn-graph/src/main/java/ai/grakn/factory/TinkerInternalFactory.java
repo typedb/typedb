@@ -28,7 +28,16 @@ import java.util.Properties;
 
 
 /**
- * A graph factory which provides a grakn graph with a tinker graph backend.
+ * <p>
+ *     A Grakn Graph on top of {@link TinkerGraph}
+ * </p>
+ *
+ * <p>
+ *     This produces an in memory grakn graph on top of {@link TinkerGraph}.
+ *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ * </p>
+ *
+ * @author fppt
  */
 class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TinkerInternalFactory.class);

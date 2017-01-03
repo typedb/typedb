@@ -35,6 +35,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * Atom implementation defining specialised functionalities.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public abstract class Atom extends AtomBase {
 
     protected Type type = null;
@@ -107,24 +116,51 @@ public abstract class Atom extends AtomBase {
         return atomRecursive;
     }
 
+    /**
+     * @return true if the atom requires materialisation in order to be referenced
+     */
     public boolean requiresMaterialisation(){ return false; }
 
+    /**
+     * @return corresponding type if any
+     */
     public Type getType(){
         if (type == null)
             type = getParentQuery().getGraph().orElse(null).getType(typeId);
         return type;
     }
 
+    /**
+     * @return type id of the corresponding type if any
+     */
     public String getTypeId(){ return typeId;}
 
+    /**
+     * @return value variable name
+     */
     public String getValueVariable() {
         throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
     }
 
+    /**
+     * @return set of predicates relevant to this atom
+     */
     public abstract Set<Predicate> getPredicates();
+
+    /**
+     * @return set of id predicates relevant to this atom
+     */
     public abstract Set<Predicate> getIdPredicates();
+
+    /**
+     * @return set of value predicates relevant to this atom
+     */
     public abstract Set<Predicate> getValuePredicates();
 
+
+    /**
+     * @return set of types relevant to this atom
+     */
     public Set<Atom> getTypeConstraints(){
         Set<Atom> relevantTypes = new HashSet<>();
         //ids from indirect types
@@ -137,10 +173,12 @@ public abstract class Atom extends AtomBase {
         return relevantTypes;
     }
 
+    /**
+     * @return map of varName-(var type, var role type) pairs
+     */
     public Map<String, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
         Map<String, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
-
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
@@ -151,7 +189,21 @@ public abstract class Atom extends AtomBase {
         return roleVarTypeMap;
     }
 
+    /**
+     * @return map of role type- (var name, var type) pairs
+     */
     public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
+
+    /**
+     * infers types (type, role types) fo the atom if applicable/possible
+     */
     public void inferTypes(){}
+
+    /**
+     * rewrites the atom to be compatible with parent atom
+     * @param parent atom to be compatible with
+     * @param q query the rewritten atom should belong to
+     * @return pair of (rewritten atom, unifiers required to rewrite)
+     */
     public Pair<Atom, Map<String, String>> rewrite(Atom parent, Query q){ return new Pair<>(this, new HashMap<>());}
 }

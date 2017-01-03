@@ -36,7 +36,16 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 /**
- * A class which loads sample data into a grakn graph
+ * <p>
+ *     A sample graph.
+ * </p>
+ *
+ * <p>
+ *     A class which loads sample data based in the movie domain into a grakn graph.
+ * </p>
+ *
+ * @author fppt
+ * @author aelred
  */
 public class MovieGraphFactory {
     private static GraknGraph graknGraph;

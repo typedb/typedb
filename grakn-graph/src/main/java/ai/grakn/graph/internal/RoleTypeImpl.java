@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -26,6 +25,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -35,7 +35,20 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * An ontological element which defines a role which can be played in a relation type.
+ * <p>
+ *     An ontological element which defines a role which can be played in a relation type.
+ * </p>
+ *
+ * <p>
+ *     This ontological element defines the roles which make up a {@link RelationType}.
+ *     It behaves similarly to {@link Type} when relating to other types.
+ *     It has some additional functionality:
+ *     1. It cannot play a role to itself.
+ *     2. It is special in that it is unique to relation types.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit) {
@@ -47,14 +60,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @return The Relation Type which this role takes part in.
      */
     @Override
-    public RelationType relationType() {
-        Concept concept = getIncomingNeighbour(Schema.EdgeLabel.HAS_ROLE);
-
-        if(concept == null){
-            return null;
-        } else {
-            return concept.asRelationType();
-        }
+    public Collection<RelationType> relationTypes() {
+        return getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE);
     }
 
     /**
@@ -96,6 +103,18 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
             throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()));
         }
         return super.playsRole(roleType, false);
+    }
+
+    @Override
+    public void innerDelete(){
+        boolean hasHasRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.HAS_ROLE.getLabel()).hasNext();
+        boolean hasPlaysRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
+
+        if(hasHasRoles || hasPlaysRoles){
+            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
+        } else {
+            super.innerDelete();
+        }
     }
 
 }

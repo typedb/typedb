@@ -49,10 +49,22 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+
 /**
- * A concept which can represent anything in the graph
- * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
- * @param <V> The type of the concept.
+ * <p>
+ *     The base concept implementation.
+ * </p>
+ *
+ * <p>
+ *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
+ *     This class forms the basis of assuring the graph follows the Grakn object model.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <T> The leaf interface of the object concept.
+ *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
+ * @param <V> The type of the concept. For example if the concept is an {@link Entity} then it's type will be {@link EntityType}
  */
 abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept {
     @SuppressWarnings("unchecked")

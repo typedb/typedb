@@ -26,7 +26,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 
 /**
- * An ontological element which represents the categories instances can fall within.
+ * <p>
+ *     Ontology element used to represent categories.
+ * </p>
+ *
+ * <p>
+ *     An ontological element which represents categories instances can fall within.
+ *     Any instance of a Entity Type is called an {@link Entity}.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
     EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {

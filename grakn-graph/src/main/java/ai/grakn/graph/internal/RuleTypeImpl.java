@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknAdmin;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -27,8 +28,16 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 
 /**
- * An ontological element used to define different types of rule.
- * Currently supported rules include Constraint Rules and Inference Rules.
+ * <p>
+ *     An ontological element used to model and categorise different types of {@link Rule}.
+ * </p>
+ *
+ * <p>
+ *     An ontological element used to define different types of {@link Rule}.
+ *     Currently supported rules include {@link GraknAdmin#getMetaRuleInference()} and {@link GraknAdmin#getMetaRuleConstraint()}
+ * </p>
+ *
+ * @author fppt
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
     RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type) {

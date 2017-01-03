@@ -41,6 +41,18 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+/**
+ * <p>
+ *     A Grakn Graph on top of {@link TitanGraph}
+ * </p>
+ *
+ * <p>
+ *     This produces an in memory grakn graph on top of {@link TitanGraph}.
+ *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ * </p>
+ *
+ * @author fppt
+ */
 class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
     private final static String DEFAULT_CONFIG = "backend-default";
 

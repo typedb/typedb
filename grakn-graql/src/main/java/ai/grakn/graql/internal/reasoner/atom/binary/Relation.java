@@ -43,7 +43,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.Optional;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -51,12 +50,23 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
 
+
+/**
+ *
+ * <p>
+ * Atom implementation defining a relation atom.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class Relation extends TypeAtom {
 
     private Set<RelationPlayer> relationPlayers;
@@ -120,10 +130,10 @@ public class Relation extends TypeAtom {
     /**
      * construct a $varName (rolemap) isa $typeVariable relation
      *
-     * @param varName
-     * @param typeVariable
+     * @param varName variable name
+     * @param typeVariable type variable name
      * @param roleMap      rolePlayer-roleType typeName roleMap
-     * @return
+     * @return corresponding Var
      */
     private static VarAdmin constructRelationVar(String varName, String typeVariable, Map<String, String> roleMap) {
         Var var;
@@ -319,7 +329,8 @@ public class Relation extends TypeAtom {
 
     private void inferTypeFromRoles() {
         if (getParentQuery() != null && getTypeId().isEmpty() && hasExplicitRoleTypes()) {
-            type = getExplicitRoleTypes().iterator().next().relationType();
+            //TODO: Properly Infer From Types
+            type = getExplicitRoleTypes().iterator().next().relationTypes().iterator().next();
             addType(type);
         }
     }
@@ -350,7 +361,7 @@ public class Relation extends TypeAtom {
         }
     }
 
-
+    @Override
     public void inferTypes(){
         inferTypeFromRoles();
         inferTypeFromHasRole();
@@ -616,6 +627,7 @@ public class Relation extends TypeAtom {
         return roleConceptMap;
     }
 
+    @Override
     public Pair<Atom, Map<String, String>> rewrite(Atom parentAtom, Query parent){
         if(parentAtom.isUserDefinedName()){
             Map<String, String> unifiers = new HashMap<>();

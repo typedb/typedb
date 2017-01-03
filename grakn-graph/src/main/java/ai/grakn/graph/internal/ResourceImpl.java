@@ -34,8 +34,20 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
- * A concept which represents a resource.
- * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
+ * <p>
+ *     Represent a literal resource in the graph.
+ * </p>
+ *
+ * <p>
+ *     Acts as an {@link Instance} when relating to other instances except it has the added functionality of:
+ *     1. It is unique to its {@link ResourceType} based on it's value.
+ *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <D> The data type of this resource type.
+ *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
     ResourceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<ResourceType<D>> type, Optional<D> value) {

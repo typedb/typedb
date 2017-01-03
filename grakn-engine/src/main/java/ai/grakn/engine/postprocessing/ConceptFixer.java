@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 
 class ConceptFixer {
-    private static final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final int MAX_RETRY = 10;
 
     public static void checkCasting(Cache cache, String keyspace, String castingId){

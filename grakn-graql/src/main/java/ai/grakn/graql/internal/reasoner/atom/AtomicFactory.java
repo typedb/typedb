@@ -36,48 +36,34 @@ import ai.grakn.util.ErrorMessage;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * Factory class for creating atoms out of graql variables and patterns.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class AtomicFactory {
-
-    public static Atomic create(PatternAdmin pattern) {
-        if (!pattern.isVar() )
-            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
-        VarAdmin var = pattern.asVar();
-        if(var.hasProperty(RelationProperty.class))
-            return new Relation(var);
-        else if(var.hasProperty(HasResourceProperty.class))
-            return new Resource(var);
-        else if (var.getId().isPresent())
-            return new IdPredicate(var);
-        else if (var.hasProperty(ValueProperty.class))
-            return new ValuePredicate(var);
-        else
-            return new TypeAtom(var);
-    }
-
-    public static Atomic create(PatternAdmin pattern, Query parent) {
-        if (!pattern.isVar() )
-            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
-        VarAdmin var = pattern.asVar();
-        if(var.hasProperty(RelationProperty.class))
-            return new Relation(var,parent);
-        else if(var.hasProperty(HasResourceProperty.class))
-            return new Resource(var, parent);
-        else if (var.getId().isPresent())
-            return new IdPredicate(var, parent);
-        else if (var.hasProperty(ValueProperty.class))
-            return new ValuePredicate(var, parent);
-        else
-            return new TypeAtom(var, parent);
-    }
-
+    
+    /**
+     * @param atom to be copied
+     * @param parent query the copied atom should belong to
+     * @return atom copy
+     */
     public static Atomic create(Atomic atom, Query parent) {
         Atomic copy = atom.clone();
         copy.setParentQuery(parent);
         return copy;
     }
 
+    /**
+     * @param pattern conjunction of patterns to be converted to atoms
+     * @param parent query the created atoms should belong to
+     * @param graph graph of interest
+     * @return set of atoms
+     */
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()

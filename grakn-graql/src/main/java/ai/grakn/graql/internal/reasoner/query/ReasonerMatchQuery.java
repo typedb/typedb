@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
@@ -32,6 +31,15 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilterFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
+/**
+ *
+ * <p>
+ * Reasoner query providing resolution streaming facilities for conjunctive queries.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class ReasonerMatchQuery extends Query{
 
     final private QueryAnswers answers;
@@ -50,7 +58,6 @@ public class ReasonerMatchQuery extends Query{
     public Stream<Map<String, Concept>> stream() {
         return answers.stream();
     }
-
 
     @Override
     public Stream<Map<String, Concept>> resolve(boolean materialise) {

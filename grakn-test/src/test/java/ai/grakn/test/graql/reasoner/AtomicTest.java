@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.concept.RoleType;
@@ -40,7 +41,9 @@ import ai.grakn.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
+import junit.framework.TestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -69,48 +72,8 @@ public class AtomicTest extends AbstractEngineTest{
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void testNonVar(){
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
-
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        String atomString = "match $x isa person;";
-
-        Query query = new Query(atomString, graph);
-        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern());
-    }
-
-    @Test
-    public void testNonVa2r(){
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
-
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        String atomString = "match $x isa person;";
-
-        Query query = new Query(atomString, graph);
-        Atomic atom =  AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern(), query);
-    }
-
-    @Test
-    public void testParentMissing(){
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
-
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        String recRelString = "match ($x, $y) isa resides;";
-
-        Atomic recRel = AtomicFactory.create(qb.<MatchQuery>parse(recRelString).admin().getPattern().getPatterns().iterator().next());
-        assert(recRel.isRecursive());
-    }
-
-    @Test
     public void testRecursive(){
         GraknGraph graph = snbGraph;
-
         String recRelString = "match ($x, $y) isa resides;";
         String nrecRelString = "match ($x, $y) isa recommendation;";
 
@@ -124,18 +87,17 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testFactory(){
         GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
         String atomString = "match $x isa person;";
         String relString = "match ($x, $y) isa recommendation;";
         String resString = "match $x has gender 'male';";
 
-        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern().getPatterns().iterator().next());
-        Atomic relation = AtomicFactory.create(qb.<MatchQuery>parse(relString).admin().getPattern().getPatterns().iterator().next());
-        Atomic res = AtomicFactory.create(qb.<MatchQuery>parse(resString).admin().getPattern().getPatterns().iterator().next());
+        Atom atom = new AtomicQuery(atomString, snbGraph).getAtom();
+        Atom relation = new AtomicQuery(relString, snbGraph).getAtom();
+        Atom res = new AtomicQuery(resString, snbGraph).getAtom();
 
-        assert(((Atom) atom).isType());
-        assert(((Atom) relation).isRelation());
-        assert(((Atom) res).isResource());
+        assert(atom.isType());
+        assert(relation.isRelation());
+        assert(res.isResource());
     }
 
     @Test
@@ -248,10 +210,18 @@ public class AtomicTest extends AbstractEngineTest{
 
     @Test
     public void testValuePredicateComparison(){
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        Atomic atom = AtomicFactory.create(qb.parsePatterns("$x value '0';").iterator().next().admin());
-        Atomic atom2 = AtomicFactory.create(qb.parsePatterns("$x value != '0';").iterator().next().admin());
+        Atomic atom = new Query("match $x value '0';", snbGraph).getAtoms().iterator().next();
+        Atomic atom2 =new Query("match $x value != '0';", snbGraph).getAtoms().iterator().next();
         assertTrue(!atom.isEquivalent(atom2));
+    }
+
+    @Test
+    public void testMultiPredResourceEquivalence(){
+        GraknGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has age $a;$a value >23; $a value <27;";
+        String queryString2 = "match $p has age $a;$a value >23;";
+        AtomicQuery query = new AtomicQuery(queryString, graph);
+        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
+        assertTrue(!query.getAtom().isEquivalent(query2.getAtom()));
     }
 }

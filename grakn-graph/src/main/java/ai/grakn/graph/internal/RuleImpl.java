@@ -30,7 +30,18 @@ import java.util.HashSet;
 import java.util.Optional;
 
 /**
- * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
+ * <p>
+ *     A rule which defines how implicit knowledge can extracted.
+ * </p>
+ *
+ * <p>
+ *     It can behave like any other {@link ai.grakn.concept.Instance} but primarily serves as a way of extracting
+ *     implicit data from the graph. By defining the LHS (if statment) and RHS (then conclusion) it is possible to
+ *     automatically materialise new concepts based on these rules.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     RuleImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs) {

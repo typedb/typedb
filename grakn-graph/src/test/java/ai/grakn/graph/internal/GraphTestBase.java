@@ -28,7 +28,7 @@ import java.util.UUID;
 
 public class GraphTestBase {
     protected AbstractGraknGraph graknGraphBatch;
-    protected AbstractGraknGraph graknGraph;
+    protected AbstractGraknGraph<?> graknGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

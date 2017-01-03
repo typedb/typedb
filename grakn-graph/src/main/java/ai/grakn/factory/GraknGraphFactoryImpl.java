@@ -18,10 +18,11 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.graph.internal.EngineCommunicator;
+import ai.grakn.util.EngineCommunicator;
 import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -35,17 +36,28 @@ import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
 
 /**
- * A client for creating a grakn graph from a running engine.
- * This is to abstract away factories and the backend from the user.
- * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
+ * <p>
+ *     Builds a Grakn Graph factory
+ * </p>
+ *
+ * <p>
+ *     This class facilitates the construction of Grakn Grahs by determining which factory should be built.
+ *     It does this by either defaulting to an in memory graph {@link ai.grakn.graph.internal.GraknTinkerGraph} or by
+ *     retrieving the factory definition from engine.
+ *
+ *     The deployer of engine decides on the backend and this class will handle producing the correct graphs.
+ * </p>
+ *
+ * @author fppt
  */
-public class GraknGraphFactoryPersistent implements GraknGraphFactory {
+public class GraknGraphFactoryImpl implements GraknGraphFactory {
+    private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private static final String COMPUTER = "graph.computer";
-    private final String uri;
+    private final String location;
     private final String keyspace;
 
-    public GraknGraphFactoryPersistent(String keyspace, String uri){
-        this.uri = uri;
+    public GraknGraphFactoryImpl(String keyspace, String location){
+        this.location = location;
         this.keyspace = keyspace;
     }
 
@@ -59,32 +71,47 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
 
     /**
      *
-     * @return A new or existing grakn graph with the defined name connecting to the specified remote uri with batch loading enabled
+     * @return A new or existing grakn graph with the defined name connecting to the specified remote location with batch loading enabled
      */
     public GraknGraph getGraphBatchLoading(){
         return getConfiguredFactory().factory.getGraph(true);
     }
 
     private ConfiguredFactory getConfiguredFactory(){
-        return configureGraphFactory(keyspace, uri, REST.GraphConfig.DEFAULT);
+        return configureGraphFactory(keyspace, location, REST.GraphConfig.DEFAULT);
     }
 
     /**
      * @return A new or existing grakn graph compute with the defined name
      */
     public GraknComputer getGraphComputer() {
-        ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
+        ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph, configuredFactory.graphComputer);
     }
 
     /**
-     *
-     * @param engineUrl The remote uri fo where engine is located
+     * @param keyspace The keyspace of the graph
+     * @param location The of where the graph is stored
      * @param graphType The type of graph to produce, default, batch, or compute
-     * @return A new or existing grakn graph with the defined name connecting to the specified remote uri
+     * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
      */
-    protected static ConfiguredFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
+    static ConfiguredFactory configureGraphFactory(String keyspace, String location, String graphType){
+        if(Grakn.IN_MEMORY.equals(location)){
+            return configureGraphFactoryInMemory(keyspace);
+        } else {
+            return configureGraphFactoryRemote(keyspace, location, graphType);
+        }
+    }
+
+    /**
+     *
+     * @param keyspace The keyspace of the graph
+     * @param engineUrl The url of engine to get the graph factory config from
+     * @param graphType The type of graph to produce, default, batch, or compute
+     * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
+     */
+    private static ConfiguredFactory configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
         try {
             String restFactoryUri = engineUrl + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
 
@@ -100,6 +127,16 @@ public class GraknGraphFactoryPersistent implements GraknGraphFactory {
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
+    }
+
+    /**
+     *
+     * @param keyspace The keyspace of the graph
+     * @return  A new or existing grakn graph factory with the defined name holding the graph in memory
+     */
+    private static ConfiguredFactory configureGraphFactoryInMemory(String keyspace){
+        InternalFactory factory = FactoryBuilder.getGraknGraphFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, null);
+        return new ConfiguredFactory(null, TINKER_GRAPH_COMPUTER, factory);
     }
 
     static class ConfiguredFactory {

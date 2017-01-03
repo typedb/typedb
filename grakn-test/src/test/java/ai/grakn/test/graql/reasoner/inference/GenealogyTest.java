@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -73,7 +74,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMatchAll(){
         String queryString = "match $x isa document; ($x, $y);";
         Query query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
 
@@ -81,7 +82,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMatchAll2(){
         String queryString = "match $x isa document; ($x, $y); $y isa entity;";
         Query query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
 
@@ -95,18 +96,18 @@ public class GenealogyTest extends AbstractEngineTest{
                 "$rel2 has event-role 'spouse';" +
                 "$s1 != $s2;select $s1, $s2;";
         Query query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
     }
 
     @Test
     public void testSpecificPerson(){
-        Concept concept = Sets.newHashSet(graph.graql().<MatchQuery>parse("match $x isa person;"))
+        Concept concept = Sets.newHashSet(graph.graql().infer(false).<MatchQuery>parse("match $x isa person;"))
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assert(answers.size() == 1);
     }
 
@@ -114,7 +115,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testGender() {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
@@ -123,7 +124,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testName() {
         String queryString = "match $x isa person, has firstname $n;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
@@ -132,7 +133,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMiddleName() {
         String queryString = "match $x has identifier $i has middlename $mn;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
@@ -141,7 +142,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testSurName() {
         String queryString = "match $x isa person has surname $srn;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
@@ -154,7 +155,7 @@ public class GenealogyTest extends AbstractEngineTest{
         "$rel1 has event-role 'parent';" +
         "$rel2 (happening: $b, protagonist: $c) isa event-protagonist;" +
         "$rel2 has event-role 'newborn';select $c, $p;";
-        MatchQuery query = graph.graql().parse(queryString);
+        MatchQuery query = graph.graql().infer(true).parse(queryString);
         MatchQuery query2 = graph.graql().parse(queryString2);
         QueryAnswers answers = new QueryAnswers(query.execute());
         QueryAnswers answers2 = new QueryAnswers(query2.execute());
@@ -172,8 +173,8 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString2 = "match (child: $x) isa parentship;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
@@ -183,7 +184,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testParentship3(){
         String queryString = "match ($x, son: $y) isa parentship;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
 
@@ -192,7 +193,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $a has firstname 'Ann' has surname 'Niesz';" +
                     "(wife: $a, husband: $w); (husband: $w, wife: $b) isa marriage;$a != $b;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
         assertTrue(answers.size() == 1);
     }
@@ -201,7 +202,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMarriageNotEquals(){
         String queryString = "match ($x, $y) isa marriage; ($y, $z) isa marriage;$x != $z;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
         assertTrue(answers.size() == 4);
     }
@@ -212,8 +213,8 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertEquals(answers, answers2);
     }
@@ -224,7 +225,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
@@ -236,7 +237,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMarriageMaterialisation2() {
         String queryString = "match $rel (spouse1: $x, spouse2: $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
@@ -247,7 +248,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testMarriage() {
         String queryString = "match (spouse1: $x, spouse2: $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
@@ -270,7 +271,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
@@ -280,7 +281,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testCousins() {
         String queryString = "match ($x, $y) isa cousins;";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
@@ -291,7 +292,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$y has gender 'male';";
         MatchQuery query = new Query(queryString, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
@@ -302,7 +303,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $x isa in-laws;";
         MatchQuery query = new Query(queryString, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -315,8 +316,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertTrue(answers.size() == answers2.size());
     }
 
@@ -326,7 +327,7 @@ public class GenealogyTest extends AbstractEngineTest{
                 "$x has gender $g;$g value 'female';$x has identifier $id;";
         MatchQuery query = new Query(queryString, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(checkResource(answers, "g", "female"));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
@@ -339,8 +340,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
@@ -354,8 +355,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
@@ -369,8 +370,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
@@ -384,8 +385,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
@@ -406,8 +407,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(checkResource(answers, "g", "male"));
@@ -422,8 +423,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(checkResource(answers, "g", "female"));
@@ -438,8 +439,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
@@ -453,8 +454,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
@@ -464,7 +465,7 @@ public class GenealogyTest extends AbstractEngineTest{
     public void testFemaleFather() {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g value 'female';";
         MatchQuery query = new Query(queryString, graph);
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
 
@@ -479,8 +480,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
@@ -494,8 +495,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
@@ -509,8 +510,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertTrue(checkResource(answers, "g", "female"));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
@@ -523,7 +524,7 @@ public class GenealogyTest extends AbstractEngineTest{
                 "(grandchild: $x); (granddaughter: $x);$x has gender $g;";
         MatchQuery query = new Query(queryString, graph);
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(checkResource(answers, "g", "female"));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
@@ -536,7 +537,6 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString2 = "match $rel (happening: $b, protagonist: $p) isa event-protagonist; $rel has event-role 'parent';";
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);
-
         assertTrue(query.equals(query2));
     }
 

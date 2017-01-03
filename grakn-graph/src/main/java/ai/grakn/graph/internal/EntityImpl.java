@@ -25,7 +25,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 
 /**
- * An instance of Entity Type which represents some data in the graph.
+ * <p>
+ *     An instance of Entity Type {@link EntityType}
+ * </p>
+ *
+ * <p>
+ *     This represents an entity in the graph.
+ *     Entities are objects which are defined by their {@link ai.grakn.concept.Resource} and their links to
+ *     other entities via {@link ai.grakn.concept.Relation}
+ * </p>
+ *
+ * @author fppt
  */
 class EntityImpl extends InstanceImpl<Entity, EntityType> implements Entity {
     EntityImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {

@@ -22,8 +22,19 @@ import ai.grakn.GraknGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
- * The interface used to build new graphs from different vendors.
- * Adding new vendor support means implementing this interface.
+ * <p>
+ *     Graph Building Interface
+ * </p>
+ *
+ * <p>
+ *     The interface used to build new graphs from different vendors.
+ *     Adding new vendor support means implementing this interface.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <M> A Graph Graph extending {@link GraknGraph} and wrapping a Tinkerpop Graph
+ * @param <T> A vendor implementation of a Tinkerpop {@link Graph}
  */
 interface InternalFactory<M extends GraknGraph, T extends Graph> {
     /**

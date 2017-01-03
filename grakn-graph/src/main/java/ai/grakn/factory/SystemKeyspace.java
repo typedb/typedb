@@ -5,6 +5,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.util.GraknVersion;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,12 +104,13 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 			if (graph.getEntityType(KEYSPACE_ENTITY) != null)
 				return;
 			ClassLoader loader = this.getClass().getClassLoader();
-			String query = null;
+			String query;
 			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE)))) {
 				query = buffer.lines().collect(Collectors.joining("\n"));
 			}
 			LOG.info("System ontology is " + query);
 			graph.graql().parse(query).execute();
+            graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
 			graph.commit();
 			LOG.info("Loaded system ontology to system keyspace.");
 		}

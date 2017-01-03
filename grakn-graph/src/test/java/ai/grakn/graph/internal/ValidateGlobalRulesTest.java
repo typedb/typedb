@@ -19,13 +19,11 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -60,7 +58,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationImpl assertion = (RelationImpl) hunts.addRelation().
                 putRolePlayer(witcher, geralt).putRolePlayer(monster, werewolf);
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         }
 
         hunter.playsRole(witcher);
@@ -68,7 +66,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         boolean [] flags = {false, false};
         int count = 0;
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            flags[count] = ValidateGlobalRules.validatePlaysRoleStructure(casting);
+            flags[count] = ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent();
             count++;
         }
         assertFalse(flags[0] && flags[1]);
@@ -78,32 +76,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         creature.playsRole(monster);
 
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
-        }
-
-        ((Edge) graknGraph.getTinkerTraversal().
-                hasId(werewolf.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.SUB.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
-
-        flags = new boolean[]{false, false};
-        count = 0;
-        for (CastingImpl casting : assertion.getMappingCasting()) {
-            flags[count] = ValidateGlobalRules.validatePlaysRoleStructure(casting);
-            count ++;
-        }
-        assertFalse(flags[0] && flags[1]);
-        assertTrue(flags[0] || flags[1]);
-
-        wolf.playsRole(animal);
-        creature.playsRole(monster);
-
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) graknGraph.getTinkerPopGraph().traversal().V(hunter.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(witcher.getBaseIdentifier()).select("edge").next()).remove();
-
-        for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         }
     }
 
@@ -128,7 +101,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         // Valid with only a single relation
         relation1.getMappingCasting().forEach(casting -> {
-            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         });
 
         RelationImpl relation2 = (RelationImpl) relationType.addRelation()
@@ -137,36 +110,14 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         // Invalid with multiple relations
         relation1.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+                assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
             }
         });
         relation2.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+                assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
             }
         });
-    }
-
-    @Test
-    public void testValidateHasSingleIncomingHasRoleEdge() throws Exception {
-        RoleType hunter = graknGraph.putRoleType("hunter");
-        RoleType monster = graknGraph.putRoleType("monster");
-        RelationType kills = graknGraph.putRelationType("kills");
-        RelationType kills2 = graknGraph.putRelationType("kills2");
-
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter));
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster));
-
-        kills.hasRole(hunter);
-        kills2.hasRole(hunter);
-
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter));
-
-        kills2.deleteHasRole(hunter);
-        kills.hasRole(monster);
-
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(hunter));
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(monster));
     }
 
     @Test
@@ -176,15 +127,15 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType creature = graknGraph.putRoleType("creature");
         RelationType kills = graknGraph.putRelationType("kills");
 
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(hunter);
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(hunter);
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(monster);
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(creature);
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills));
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
     }
 
     @Test
@@ -204,30 +155,30 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
                 putRolePlayer(hunter, cartman).putRolePlayer(monster, werewolf).putRolePlayer(creature, cthulhu);
 
         kills.hasRole(monster);
-        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion));
+        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion).isPresent());
 
         kills.hasRole(hunter);
         kills.hasRole(creature);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion));
+        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion).isPresent());
 
         RelationImpl assertion2 = (RelationImpl) naps.addRelation().putRolePlayer(hunter, cthulhu);
-        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion2));
+        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion2).isPresent());
     }
 
 
     @Test
     public void testAbstractConceptValidation(){
         RoleType roleType = graknGraph.putRoleType("hasRole");
-        RelationType relationType = graknGraph.putRelationType("relationType");
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
 
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType));
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType));
+        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
+        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
 
         roleType.setAbstract(true);
         relationType.setAbstract(true);
 
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType));
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType));
+        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
+        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
     }
 
     @Test
@@ -235,7 +186,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
         EntityType entityType = graknGraph.putEntityType("entityType").playsRole(r1).playsRole(r2);
-        RelationType relationType = graknGraph.putRelationType("relationType").setAbstract(true);
+        RelationType relationType = graknGraph.putRelationType("relationTypes").setAbstract(true);
         RelationType hasCast = graknGraph.putRelationType("has cast").superType(relationType).hasRole(r1).hasRole(r2);
 
         Entity e1 = entityType.addEntity();
@@ -243,7 +194,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         hasCast.addRelation().putRolePlayer(r1, e1).putRolePlayer(r2, e2);
 
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges((TypeImpl) relationType));
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges((TypeImpl) relationType).isPresent());
     }
 
     @Test
@@ -253,13 +204,13 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         TypeImpl x3 = (TypeImpl) graknGraph.putEntityType("x3");
         TypeImpl x4 = (TypeImpl) graknGraph.putEntityType("x4'");
 
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x2));
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x3));
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x4));
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1).isPresent());
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x2).isPresent());
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x3).isPresent());
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x4).isPresent());
 
         x2.superType(x1);
 
-        assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
+        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1).isPresent());
     }
 }
