@@ -642,6 +642,13 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         qb.insert(var().id("123").has("name", "Bob")).execute();
     }
 
+    @Test
+    public void testErrorWhenNonExistentResource() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("nothing");
+        qb.insert(name("blah this").sub("entity").hasResource("nothing")).execute();
+    }
+
     private void assertInsert(Var... vars) {
         // Make sure vars don't exist
         for (Var var : vars) {
