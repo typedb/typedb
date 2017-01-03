@@ -88,8 +88,8 @@ public class Utility {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, String> roleMap,
-                                        Set<Map<String, String>> roleMaps){
+    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, VarAdmin> roleMap,
+                                        Set<Map<String, Var>> roleMaps){
         Set<String> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
         String var = vars.iterator().next();
@@ -97,7 +97,7 @@ public class Utility {
         roles.forEach(role -> {
             tempVars.remove(var);
             tempRoles.remove(role);
-            roleMap.put(var, role.getName());
+            roleMap.put(var, Graql.var().name(role.getName()).admin());
             if (!tempVars.isEmpty() && !tempRoles.isEmpty())
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
             else {
