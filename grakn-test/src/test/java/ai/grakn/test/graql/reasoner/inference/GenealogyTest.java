@@ -339,8 +339,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.size() == answers2.size());
     }
 

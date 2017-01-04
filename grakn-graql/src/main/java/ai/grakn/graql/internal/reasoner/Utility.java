@@ -24,7 +24,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -34,10 +33,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.*;
