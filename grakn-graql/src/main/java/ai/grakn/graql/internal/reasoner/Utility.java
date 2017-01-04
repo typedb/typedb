@@ -37,7 +37,6 @@ import javafx.util.Pair;
 
 import java.util.*;
 
-
 /**
  *
  * <p>
@@ -48,6 +47,8 @@ import java.util.*;
  *
  */
 public class Utility {
+
+    public static final String CAPTURE_MARK = "captured-";
 
     /**
      * Provides more readable answer output.

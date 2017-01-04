@@ -171,6 +171,50 @@ public class AtomicTest extends AbstractEngineTest{
     }
 
     @Test
+    public void testRewrite(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childRelation = "match (father: $x1, daughter: $x2) isa parentship;";
+        String parentRelation = "match $r (father: $x, daughter: $y) isa parentship;";
+        AtomicQuery childQuery = new AtomicQuery(childRelation, graph);
+        Atom childAtom = childQuery.getAtom();
+        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
+
+        Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, childQuery);
+        Atom rewrittenAtom = rewrite.getKey();
+        Map<String, String> unifiers = rewrite.getValue();
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("x1", "x");
+        correctUnifiers.put("x2", "y");
+        correctUnifiers.put("r1", "R1");
+        correctUnifiers.put("r2", "R2");
+        //assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+    }
+
+    @Test
+    public void testIndirectRoleRewrite(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childRelation = "match (father: $x1, daughter: $x2) isa parentship;";
+        String parentRelation = "match $r ($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';";
+        AtomicQuery childQuery = new AtomicQuery(childRelation, graph);
+        AtomicQuery parentQuery = new AtomicQuery(parentRelation, graph);
+        Atom childAtom = childQuery.getAtom();
+        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
+
+        Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, childQuery);
+        Atom rewrittenAtom = rewrite.getKey();
+        //String correctRelation = "match $c6a76fb6-ee82-481e-89aa-210b40065c20 ($R1: $x1, $R2: $x2) isa $rel-bd9debf4-c4a7-41ce-b724-74bbeae2d1e6"
+        //Atom correctRewrite = new AtomicQuery()
+        Map<String, String> unifiers = rewrite.getValue();
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("x1", "x");
+        correctUnifiers.put("x2", "y");
+        correctUnifiers.put("r1", "R1");
+        correctUnifiers.put("r2", "R2");
+        //assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+    }
+
+
+    @Test
     public void testIndirectRoleUnification(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
         String childRelation = "match ($r1: $x1, $r2: $x2) isa parentship;$r1 type-name 'father';$r2 type-name 'daughter';";

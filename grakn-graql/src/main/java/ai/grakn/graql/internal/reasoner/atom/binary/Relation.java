@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
@@ -57,6 +58,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
 
@@ -94,7 +96,8 @@ public class Relation extends TypeAtom {
 
     private Relation(Relation a) {
         super(a);
-        this.relationPlayers = getRelationPlayers(a.getPattern().asVar());
+        this.relationPlayers = getRelationPlayers();
+        //this.relationPlayers = getRelationPlayers(a.getPattern().asVar());
         this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
         this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
     }
@@ -102,7 +105,6 @@ public class Relation extends TypeAtom {
     private Set<RelationPlayer> getRelationPlayers() {
         return getRelationPlayers(this.atomPattern.asVar());
     }
-
     private Set<RelationPlayer> getRelationPlayers(VarAdmin pattern) {
         Set<RelationPlayer> rps = new HashSet<>();
         pattern.getProperty(RelationProperty.class)
@@ -391,12 +393,10 @@ public class Relation extends TypeAtom {
         super.unify(from, to);
         relationPlayers.forEach(c -> {
             String var = c.getRolePlayer().getVarName();
-            if (var.equals(from)) {
+            if (var.equals(from))
                 c.getRolePlayer().setVarName(to);
-            }
-            else if (var.equals(to)) {
-                c.getRolePlayer().setVarName("captured->" + var);
-            }
+            else if (var.equals(to))
+                c.getRolePlayer().setVarName(CAPTURE_MARK + var);
         });
     }
 
@@ -410,7 +410,7 @@ public class Relation extends TypeAtom {
                 c.getRolePlayer().setVarName(target);
             }
             else if (mappings.containsValue(var)) {
-                c.getRolePlayer().setVarName("captured->" + var);
+                c.getRolePlayer().setVarName(CAPTURE_MARK + var);
             }
         });
     }
@@ -568,7 +568,6 @@ public class Relation extends TypeAtom {
         //pattern mutation!
         atomPattern = constructRelationVar(isUserDefinedName()? varName : "", getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
-
         return roleTypeMap;
     }
 
@@ -656,7 +655,7 @@ public class Relation extends TypeAtom {
         Map<String, String> unifiers = super.getUnifiers(pAtom);
         if (((Atom) pAtom).isRelation()){
             unifiers.putAll(getRolePlayerUnifiers((Relation) pAtom));
-            //unifiers.putAll(getRoleTypeUnifiers((Relation) pAtom));
+            unifiers.putAll(getRoleTypeUnifiers((Relation) pAtom));
         }
         return unifiers;
     }
@@ -690,30 +689,39 @@ public class Relation extends TypeAtom {
         return roleConceptMap;
     }
 
+    private Pair<Atom, Map<String, String>> rewriteFromType(Atom parentAtom, Query parent) {
+        Map<String, String> unifiers = new HashMap<>();
+        Var relVar = Graql.var(UUID.randomUUID().toString());
+        getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+
+        relationPlayers.forEach(c -> {
+            VarAdmin rolePlayer = c.getRolePlayer();
+            String rolePlayerVarName = UUID.randomUUID().toString();
+            unifiers .put(rolePlayer.getVarName(), rolePlayerVarName);
+            VarAdmin roleType = c.getRoleType().orElse(null);
+            if (roleType != null)
+                relVar.rel(roleType, rolePlayerVarName);
+            else
+                relVar.rel(rolePlayerVarName);
+        });
+        return new Pair<>(new Relation(relVar.admin(), getPredicate(), parent), unifiers);
+    }
+
     @Override
     public Pair<Atom, Map<String, String>> rewrite(Atom parentAtom, Query parent){
-        if(parentAtom.isUserDefinedName()){
-            Map<String, String> unifiers = new HashMap<>();
-            VarAdmin var = getPattern().asVar();
-            String varName = UUID.randomUUID().toString();
-            Var relVar = Graql.var(varName);
-            var.getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+        if(this.getVarNames().size() != parentAtom.getVarNames().size()){
+            if (!parentAtom.isRelation()) return rewriteFromType(parentAtom, parent);
+            else{
+                Atom rewriteAtom = (Atom) AtomicFactory.create(parentAtom, parent);
+                rewriteAtom.resetNames();
 
-            // This is guaranteed to be a relation
-            //noinspection OptionalGetWithoutIsPresent
-            var.getProperty(RelationProperty.class).get().getRelationPlayers()
-                    .forEach(c -> {
-                        VarAdmin rolePlayer = c.getRolePlayer();
-                        String rolePlayerVarName = UUID.randomUUID().toString();
-                        unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
-                        Optional<VarAdmin> roleType = c.getRoleType();
-                        if (roleType.isPresent())
-                            relVar.rel(roleType.get(), rolePlayerVarName);
-                        else
-                            relVar.rel(rolePlayerVarName);
-                    });
-            return new Pair<>(new Relation(relVar.admin(), getPredicate(), parent), unifiers);
+                Map<String, String> intermedUnifiers = rewriteAtom.getUnifiers(this);
+                rewriteAtom.unify(intermedUnifiers);
+                Map<String, String> unifiers = this.getUnifiers(rewriteAtom);
+                return new Pair<>(rewriteAtom, unifiers);
+            }
         }
-        else return new Pair<>(this, new HashMap<>());
+        else
+            return new Pair<>(this, new HashMap<>());
     }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
+import ai.grakn.graql.Graql;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -27,6 +28,9 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+
+import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
 
 
 /**
@@ -51,7 +55,9 @@ public abstract class AtomBase implements Atomic{
     }
 
     protected AtomBase(AtomBase a) {
-        this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
+        //TODO replace with proper clone method!
+        this.atomPattern = Graql.parsePatterns(a.atomPattern.asVar().toString().concat(";")).iterator().next().admin();
+        //this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
         this.varName = atomPattern.asVar().getVarName();
     }
 
@@ -79,6 +85,12 @@ public abstract class AtomBase implements Atomic{
          Set<String> vars = getParentQuery().getSelectedNames();
         vars.retainAll(getVarNames());
         return vars;
+    }
+
+    public void resetNames(){
+        Map<String, String> unifiers = new HashMap<>();
+        getVarNames().forEach(var -> unifiers.put(var, UUID.randomUUID().toString()));
+        unify(unifiers);
     }
 
     /**
@@ -116,7 +128,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(String from, String to) {
         String var = getVarName();
         if (var.equals(from)) setVarName(to);
-        else if (var.equals(to)) setVarName("captured->" + var);
+        else if (var.equals(to)) setVarName(CAPTURE_MARK + var);
     }
 
     /**
@@ -126,7 +138,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(Map<String, String> unifiers){
         String var = getVarName();
         if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var)) setVarName("captured->" + var);
+        else if (unifiers.containsValue(var)) setVarName(CAPTURE_MARK + var);
     }
 
     /**

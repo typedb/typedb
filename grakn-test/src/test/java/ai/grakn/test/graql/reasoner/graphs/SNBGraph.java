@@ -41,7 +41,7 @@ public class SNBGraph extends TestGraph{
     }
 
     @Override
-    protected void buildRules() { loadGraqlFile("ldbc-snb-rule-test.gql");}
+    protected void buildRules() { loadGraqlFile("ldbc-snb-rules.gql");}
 
     @Override
     protected void buildInstances() {
