@@ -178,7 +178,9 @@ public class InsertQueryExecutor {
             if (concept == null) throw new IllegalStateException(ErrorMessage.INSERT_WITHOUT_TYPE.getMessage(id.get()));
             return concept;
         } else if (typeName.isPresent()) {
-            return graph.getType(typeName.get());
+            Concept concept = graph.getType(typeName.get());
+            if (concept == null) throw new IllegalStateException(ErrorMessage.NAME_NOT_FOUND.getMessage(typeName.get()));
+            return concept;
         } else {
             throw new IllegalStateException(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
         }
