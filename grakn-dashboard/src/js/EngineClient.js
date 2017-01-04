@@ -132,13 +132,6 @@ export default {
         });
     },
 
-    graqlAnalytics(query, fn) {
-        this.request({
-            url: "/graph/analytics?keyspace=" + User.getCurrentKeySpace() + "&query=" + query,
-            callback: fn
-        });
-    },
-
     /**
      * Send graql shell command to engine. Returns a string representing shell output.
      */
@@ -155,27 +148,12 @@ export default {
     },
 
     /**
-     * Pre materialise. Possible duplicate
-     
-    preMaterialiseAll(fn) {
-        this.request({
-            url: "/graph/preMaterialiseAll?keyspace=" + User.getCurrentKeySpace(),
-            callback: fn,
-            dataType: "text",
-            contentType: "application/text"
-        });
-    },*/
-
-    /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
     graqlHAL(query, fn, useReasoner,materialise) {
         this.request({
             url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query + "&reasoner=" + useReasoner+"&materialise=" + materialise,
-            callback: fn,
-            accepts: {
-                json: "application/hal+json"
-            }
+            callback: fn
         });
     },
 
