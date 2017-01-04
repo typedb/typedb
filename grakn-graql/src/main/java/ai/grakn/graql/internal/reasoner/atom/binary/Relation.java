@@ -597,6 +597,9 @@ public class Relation extends TypeAtom {
         return roleVarTypeMap;
     }
 
+    /**
+     * @return map of role variable - role type from a predicate
+     */
     private Map<String, RoleType> getIndirectRoleMap(){
         GraknGraph graph =  getParentQuery().graph();
         return getRelationPlayers().stream()
@@ -607,46 +610,17 @@ public class Relation extends TypeAtom {
                 .collect(Collectors.toMap(e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicateValue())));
     }
 
-    private Map<String, String> getRoleTypeUnifiers(Relation parentAtom){
+    private Map<String, String> getUnifiers(Map<String, RoleType> childMap, Map<RoleType, String> parentMap,
+                                            Set<String> childBVs, Set<String> varsToAllocate){
         Map<String, String> unifiers = new HashMap<>();
-        Map<String, RoleType> childMap = getIndirectRoleMap();
-        Map<RoleType, String> parentMap = parentAtom.getIndirectRoleMap().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-        Set<String> varsToAllocate = Sets.newHashSet(parentMap.values());
-        childMap.keySet().forEach(chVar -> {
-            if(!varsToAllocate.isEmpty()) {
-            RoleType role = childMap.get(chVar);
-            //map to empty if no var matching
-            String pVar = "";
-            while(role != null && pVar.isEmpty()
-                    && !Schema.MetaSchema.isMetaName(role.getName())) {
-                if (parentMap.containsKey(role)) pVar = parentMap.get(role);
-                role = role.superType();
-            }
-            if (pVar.isEmpty()) pVar = varsToAllocate.iterator().next();
-            if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
-            varsToAllocate.remove(pVar);
-            }
-        });
-        return unifiers;
-    }
-
-    private Map<String, String> getRolePlayerUnifiers(Relation parentAtom){
-        Map<String, String> unifiers = new HashMap<>();
-        Set<String> varsToAllocate = parentAtom.getRolePlayers();
-        Set<String> childBVs = getRolePlayers();
-        Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
-        Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
-
-        //find child->parent var mappings based on roles
         childBVs.forEach(chVar -> {
             if(!varsToAllocate.isEmpty()) {
-                RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
+                RoleType role = childMap.get(chVar);
                 //map to empty if no var matching
                 String pVar = "";
                 while(role != null && pVar.isEmpty()
                         && !Schema.MetaSchema.isMetaName(role.getName())) {
-                    if (parentMap.containsKey(role)) pVar = parentMap.get(role).getKey();
+                    pVar = parentMap.getOrDefault(role, "");
                     role = role.superType();
                 }
                 if (pVar.isEmpty()) pVar = varsToAllocate.iterator().next();
@@ -657,6 +631,83 @@ public class Relation extends TypeAtom {
         return unifiers;
     }
 
+    private Map<String, String> getRoleTypeUnifiers(Relation parentAtom){
+        /*
+        Map<String, RoleType> childMap = getIndirectRoleMap();
+        Map<RoleType, String> parentMap =  parentAtom.getIndirectRoleMap()
+                .entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+        Set<String> indirectVarsToAllocate = Sets.newHashSet(parentMap.values());
+        return getUnifiers(childMap, parentMap, childMap.keySet(), indirectVarsToAllocate);
+        */
+
+        Map<String, String> unifiers = new HashMap<>();
+        Map<String, RoleType> childMap = getIndirectRoleMap();
+        Map<RoleType, String> parentMap = parentAtom.getIndirectRoleMap().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+        Set<String> varsToAllocate = Sets.newHashSet(parentMap.values());
+        childMap.keySet().forEach(chVar -> {
+            if(!varsToAllocate.isEmpty()) {
+                RoleType role = childMap.get(chVar);
+                //map to empty if no var matching
+                String pVar = "";
+                while(role != null && pVar.isEmpty()
+                        && !Schema.MetaSchema.isMetaName(role.getName())) {
+                    pVar = parentMap.getOrDefault(role, "");
+                    role = role.superType();
+                }
+                if (pVar.isEmpty()) pVar = varsToAllocate.iterator().next();
+                if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
+                varsToAllocate.remove(pVar);
+            }
+        });
+        return unifiers;
+    }
+
+    private Map<String, String> getRolePlayerUnifiers(Relation parentAtom){
+        /*
+        Map<String, RoleType> childMap = new HashMap<>();
+        Map<RoleType, String> parentMap = new HashMap<>();
+        getVarTypeRoleMap().entrySet().forEach( e -> childMap.put(e.getKey(), e.getValue().getValue()));
+        parentAtom.getRoleVarTypeMap().entrySet().forEach( e -> parentMap.put(e.getKey(), e.getValue().getKey()));
+        return getUnifiers(childMap, parentMap, getRolePlayers(), parentAtom.getRolePlayers());
+        */
+
+        Map<String, String> unifiers = new HashMap<>();
+        Set<String> varsToAllocate = parentAtom.getRolePlayers();
+        Set<String> childBVs = getRolePlayers();
+
+        Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
+        Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
+
+        //find child->parent var mappings based on roles
+
+        Set<String> allocatedVars = new HashSet<>();
+        childBVs.forEach(chVar -> {
+            if(!varsToAllocate.isEmpty()) {
+                RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
+                //map to empty if no var matching
+                String pVar = "";
+                while(role != null && pVar.isEmpty()
+                        && !Schema.MetaSchema.isMetaName(role.getName())) {
+                    if (parentMap.containsKey(role)) pVar = parentMap.get(role).getKey();
+                    role = role.superType();
+                }
+                if (!pVar.isEmpty() && !chVar.equals(pVar)){
+                    unifiers.put(chVar, pVar);
+                    allocatedVars.add(chVar);
+                    varsToAllocate.remove(pVar);
+                }
+            }
+        });
+        //assign unallocated vars
+        childBVs.removeAll(allocatedVars);
+        Iterator<String> cit = childBVs.iterator();
+        Iterator<String> pit = varsToAllocate.iterator();
+        while(pit.hasNext() && cit.hasNext()) unifiers.put(cit.next(), pit.next());
+        return unifiers;
+    }
+
     @Override
     public Map<String, String> getUnifiers(Atomic pAtom) {
         if (!(pAtom instanceof TypeAtom))
@@ -664,8 +715,12 @@ public class Relation extends TypeAtom {
 
         Map<String, String> unifiers = super.getUnifiers(pAtom);
         if (((Atom) pAtom).isRelation()){
-            unifiers.putAll(getRolePlayerUnifiers((Relation) pAtom));
-            unifiers.putAll(getRoleTypeUnifiers((Relation) pAtom));
+            Relation parentAtom = (Relation) pAtom;
+
+            //get role player unifiers
+            unifiers.putAll(getRolePlayerUnifiers(parentAtom));
+            //get role type unifiers
+            unifiers.putAll(getRoleTypeUnifiers(parentAtom));
         }
         return unifiers;
     }

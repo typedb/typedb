@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -42,6 +43,7 @@ import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 import junit.framework.TestCase;
@@ -189,6 +191,42 @@ public class AtomicTest extends AbstractEngineTest{
         correctUnifiers2.put("c", "y");
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
         assertTrue(unifiers2.entrySet().containsAll(correctUnifiers2.entrySet()));
+    }
+
+    @Test
+    public void testUnification2() {
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childString = "match (wife: $5b7a70db-2256-4d03-8fa4-2621a354899e, husband: $0f93f968-873a-43fa-b42f-f674c224ac04) isa marriage;";
+        String parentString = "match (wife: $x) isa marriage;";
+        Atom childAtom = new AtomicQuery(childString, graph).getAtom();
+        Atom parentAtom = new AtomicQuery(parentString, graph).getAtom();
+
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("5b7a70db-2256-4d03-8fa4-2621a354899e", "x");
+        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+
+        Map<String, String> reverseUnifiers = parentAtom.getUnifiers(childAtom);
+        Map<String, String> correctReverseUnifiers = new HashMap<>();
+        correctReverseUnifiers.put("x", "5b7a70db-2256-4d03-8fa4-2621a354899e");
+        assertTrue(reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet()));
+    }
+
+    @Test
+    public void testRewriteAndUnification(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String parentString = "match $r (wife: $x) isa marriage;";
+        Atom parentAtom = new AtomicQuery(parentString, graph).getAtom();
+
+        String childPatternString = "(wife: $x, husband: $y) isa marriage";
+        InferenceRule testRule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(
+                graph.graql().parsePattern(childPatternString),
+                graph.graql().parsePattern(childPatternString)),
+                graph);
+        testRule.unify(parentAtom);
+        Atom headAtom = testRule.getHead().getAtom();
+        Map<String, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
+        assertTrue(varTypeRoleMap.get("x").getValue().equals(graph.getRoleType("wife")));
     }
 
     @Test
