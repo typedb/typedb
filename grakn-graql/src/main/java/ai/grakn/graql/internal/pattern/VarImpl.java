@@ -25,6 +25,7 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
@@ -111,7 +112,7 @@ class VarImpl implements VarAdmin {
      * Create a variable by cloning an existing variable
      * @param var a variable to clone
      */
-    VarImpl(VarAdmin var) {
+    private VarImpl(VarAdmin var) {
         this.name = var.getVarName();
         this.userDefinedName = var.isUserDefinedName();
         var.getProperties().forEach(this::addProperty);
@@ -478,6 +479,11 @@ class VarImpl implements VarAdmin {
         // a disjunction containing only one option
         Conjunction<VarAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
         return Patterns.disjunction(Collections.singleton(conjunction));
+    }
+
+    @Override
+    public PatternAdmin clone() {
+        return new VarImpl(this);
     }
 
     @Override

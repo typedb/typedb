@@ -19,7 +19,6 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Pattern;
 
 import java.util.Set;
 
@@ -28,7 +27,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Admin class for inspecting and manipulating a Pattern
  */
-public interface PatternAdmin extends Pattern {
+public interface PatternAdmin extends Pattern, Cloneable {
     /**
      * Get the disjunctive normal form of this pattern group.
      * This means the pattern group will be transformed into a number of conjunctive patterns, where each is disjunct.
@@ -91,4 +90,6 @@ public interface PatternAdmin extends Pattern {
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());
     }
+
+    PatternAdmin clone();
 }

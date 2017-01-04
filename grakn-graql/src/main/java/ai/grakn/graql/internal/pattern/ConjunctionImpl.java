@@ -37,7 +37,7 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
         this.patterns = patterns;
     }
 
-    ConjunctionImpl(Conjunction<T> conjunction) {
+    private ConjunctionImpl(Conjunction<T> conjunction) {
         this.patterns = conjunction.getPatterns().stream().map(Patterns::copyOf).collect(toSet());
     }
 
@@ -74,6 +74,11 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
     @Override
     public Conjunction<?> asConjunction() {
         return this;
+    }
+
+    @Override
+    public PatternAdmin clone() {
+        return new ConjunctionImpl<>(this);
     }
 
     private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
