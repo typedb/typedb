@@ -377,7 +377,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public Object visitResolve(GraqlTemplateParser.ResolveContext ctx){
-        return scope.resolve(ctx.ID().getText());
+        String key = ctx.ID() != null ? ctx.ID().getText() : ctx.STRING().getText().replaceAll("^\"|\"$", "");
+        return scope.resolve(key);
     }
 
     private Object concat(Object... values){

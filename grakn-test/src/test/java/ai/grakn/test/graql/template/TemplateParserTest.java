@@ -656,6 +656,26 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void keyWithSpacesFailsTest(){
+        exception.expect(IllegalArgumentException.class);
+
+        String template = "insert $x isa person has name <First Name>;    ";
+        String expected = "insert $x0 has name \"Phil Collins\" isa person;";
+
+        assertParseEquals(template, singletonMap("First Name", "Phil Collins"), expected);
+    }
+
+    @Test
+    public void keyWithSpacesInQuotesTest(){
+
+
+        String template = "insert $x isa person has name <\"First Name\">;    ";
+        String expected = "insert $x0 has name \"Phil Collins\" isa person;";
+
+        assertParseEquals(template, singletonMap("First Name", "Phil Collins"), expected);
+    }
+
+    @Test
     public void testGraqlParsingException(){
         exception.expect(IllegalArgumentException.class);
         String template = "<<<<<<<";

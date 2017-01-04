@@ -834,33 +834,6 @@ public class ReasonerTest extends AbstractEngineTest{
         assertEquals(answers, answers2);
     }
 
-    @Test
-    public void testIndirectRole() {
-        GraknGraph graph = SNBGraph.getGraph();
-        String queryString = "match (recommended-product: $x) isa recommendation;$r type-name 'recommended-product';";
-        String queryString2 = "match ($r: $z) isa recommendation;$r type-name 'recommended-product';";
-        AtomicQuery query = new AtomicQuery(queryString, graph);
-        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
-        Reasoner reasoner = new Reasoner(graph);
-        //QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        System.out.println();
-    }
-
-    @Test
-    public void testIndirectRole2() {
-        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
-        String queryString = "match ($r: $x) isa marriage; $r isa wife;";
-        String queryString2 = "match (wife: $x) isa marriage;";
-
-        AtomicQuery query = new AtomicQuery(queryString, graph);
-        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
-        Atom atom = query.getAtom();
-        Atom atom2 = query2.getAtom();
-        atom.getRoleVarTypeMap();
-        System.out.println();
-    }
-
     private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
         assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }

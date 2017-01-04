@@ -38,6 +38,7 @@ import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -148,6 +149,26 @@ public class AtomicTest extends AbstractEngineTest{
     }
 
     @Test
+    public void testTypeInference(){
+        GraknGraph graph = snbGraph;
+        String typeId = graph.getType("recommendation").getId();
+        String queryString = "match ($x, $y); $x isa person; $y isa product;";
+        AtomicQuery query = new AtomicQuery(queryString, graph);
+        Atom atom = query.getAtom();
+        assertTrue(atom.getTypeId().equals(typeId));
+    }
+
+    @Test
+    public void testTypeInference2(){
+        GraknGraph graph = cwGraph;
+        String typeId = graph.getType("transaction").getId();
+        String queryString = "match ($z, $y, $x);$z isa country;$x isa rocket;$y isa person;";
+        AtomicQuery query = new AtomicQuery(queryString, graph);
+        Atom atom = query.getAtom();
+        assertTrue(atom.getTypeId().equals(typeId));
+    }
+
+    @Test
     public void testUnification(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
         String relation = "match (parent: $y, child: $x);";
@@ -182,37 +203,10 @@ public class AtomicTest extends AbstractEngineTest{
         Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, childQuery);
         Atom rewrittenAtom = rewrite.getKey();
         Map<String, String> unifiers = rewrite.getValue();
-        Map<String, String> correctUnifiers = new HashMap<>();
-        correctUnifiers.put("x1", "x");
-        correctUnifiers.put("x2", "y");
-        correctUnifiers.put("r1", "R1");
-        correctUnifiers.put("r2", "R2");
-        //assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+        Set<String> unifiedVariables = Sets.newHashSet("x1", "x2");
+        assertTrue(rewrittenAtom.isUserDefinedName());
+        assertTrue(unifiedVariables.containsAll(unifiers.keySet()));
     }
-
-    @Test
-    public void testIndirectRoleRewrite(){
-        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
-        String childRelation = "match (father: $x1, daughter: $x2) isa parentship;";
-        String parentRelation = "match $r ($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';";
-        AtomicQuery childQuery = new AtomicQuery(childRelation, graph);
-        AtomicQuery parentQuery = new AtomicQuery(parentRelation, graph);
-        Atom childAtom = childQuery.getAtom();
-        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
-
-        Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, childQuery);
-        Atom rewrittenAtom = rewrite.getKey();
-        //String correctRelation = "match $c6a76fb6-ee82-481e-89aa-210b40065c20 ($R1: $x1, $R2: $x2) isa $rel-bd9debf4-c4a7-41ce-b724-74bbeae2d1e6"
-        //Atom correctRewrite = new AtomicQuery()
-        Map<String, String> unifiers = rewrite.getValue();
-        Map<String, String> correctUnifiers = new HashMap<>();
-        correctUnifiers.put("x1", "x");
-        correctUnifiers.put("x2", "y");
-        correctUnifiers.put("r1", "R1");
-        correctUnifiers.put("r2", "R2");
-        //assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
-    }
-
 
     @Test
     public void testIndirectRoleUnification(){
@@ -231,7 +225,6 @@ public class AtomicTest extends AbstractEngineTest{
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 
-    /*
     @Test
     public void testIndirectRoleUnification2(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
@@ -246,8 +239,8 @@ public class AtomicTest extends AbstractEngineTest{
         correctUnifiers.put("x2", "y");
         correctUnifiers.put("r1", "R1");
         correctUnifiers.put("r2", "R2");
+        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
-    */
 
     @Test
     public void testMatchAllUnification(){
@@ -282,8 +275,7 @@ public class AtomicTest extends AbstractEngineTest{
         assertTrue(!vars.contains(""));
         assertTrue(vars.containsAll(correctVars));
     }
-
-
+    
     @Test
     public void testValuePredicateComparison(){
         Atomic atom = new Query("match $x value '0';", snbGraph).getAtoms().iterator().next();

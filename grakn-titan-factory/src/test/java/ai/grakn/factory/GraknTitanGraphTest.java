@@ -53,7 +53,8 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @After
     public void cleanup(){
-        graknGraph.clear();
+        if(!graknGraph.isClosed())
+            graknGraph.clear();
     }
 
     @Test
@@ -76,6 +77,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
+        graknGraph.open();
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
             graknGraph.commit();
@@ -137,6 +139,25 @@ public class GraknTitanGraphTest extends TitanTestBase{
                 containsString(ErrorMessage.CLOSED_CLEAR.getMessage())
         ));
         graph.getEntityType("thing");
+    }
+
+    @Test
+    public void testPermanentlyClosedGraph(){
+        GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
+
+        String entityTypeName = "Hello";
+
+        graph.putEntityType(entityTypeName);
+        assertNotNull(graph.getEntityType(entityTypeName));
+
+        graph.close();
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))
+        ));
+
+        graph.open();
     }
 
     @Test
