@@ -33,6 +33,8 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -84,10 +86,8 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Void execute() {
-        // Do nothing, just execute whole stream
-        stream().forEach(c -> {});
-        return null;
+    public List<Map<String, Concept>> execute() {
+        return stream().collect(Collectors.toList());
     }
 
     @Override
@@ -102,16 +102,16 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Stream<Concept> stream() {
+    public Stream<Map<String, Concept>> stream() {
         GraknGraph theGraph =
                 getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theGraph);
 
         return matchQuery.map(
-                query -> query.stream().flatMap(executor::insertAll)
+                query -> query.stream().map(executor::insertAll)
         ).orElseGet(
-                executor::insertAll
+                () -> Stream.of(executor.insertAll())
         );
     }
 
