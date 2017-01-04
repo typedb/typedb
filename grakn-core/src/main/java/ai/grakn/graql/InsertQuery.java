@@ -19,8 +19,11 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.InsertQueryAdmin;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * A query for inserting data.
@@ -32,7 +35,7 @@ import ai.grakn.concept.Concept;
  * When built from a {@code MatchQuery}, the insert query will execute for each result of the {@code MatchQuery},
  * where variable names in the {@code InsertQuery} are bound to the concept in the result of the {@code MatchQuery}.
  */
-public interface InsertQuery extends Query<Void>, Streamable<Concept> {
+public interface InsertQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
 
     /**
      * @param graph the graph to execute the query on
