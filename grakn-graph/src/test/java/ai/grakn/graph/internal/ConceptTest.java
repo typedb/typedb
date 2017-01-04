@@ -47,7 +47,6 @@ import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
 import static ai.grakn.util.ErrorMessage.LOOP_DETECTED;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -198,7 +197,7 @@ public class ConceptTest extends GraphTestBase{
     @Test
     public void testGetEdgesIncomingOfType(){
         EntityType entityType = graknGraph.putEntityType("entity type");
-        InstanceImpl conceptInstance1 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl<?, ?> conceptInstance1 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance2 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance3 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance4 = (InstanceImpl) entityType.addEntity();
@@ -282,7 +281,7 @@ public class ConceptTest extends GraphTestBase{
 
     @Test
     public void  testAsResource() {
-        ResourceType type = graknGraph.putResourceType("a type", ResourceType.DataType.STRING);
+        ResourceType<String> type = graknGraph.putResourceType("a type", ResourceType.DataType.STRING);
         Concept concept = type.putResource("Test");
         assertTrue(concept.isResource());
         Resource concept2 = concept.asResource();
