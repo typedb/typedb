@@ -23,7 +23,14 @@ import ai.grakn.graql.macro.Macro;
 import java.util.List;
 
 /**
- * Macro that will convert the given value to a long
+ * <p>
+ * Convert the given value into a long. Only accepts one argument.
+ *
+ * Usage:
+ *      @long(<value>)
+ * </p>
+ *
+ * @author alexandraorth
  */
 public class LongMacro implements Macro<Long> {
 

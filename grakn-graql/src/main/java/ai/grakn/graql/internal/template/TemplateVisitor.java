@@ -39,6 +39,8 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * ANTLR visitor class for parsing a template
+ *
+ * @author alexandraorth
  */
 public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
@@ -110,7 +112,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
             scope.unassign(item);
         }
 
-        return returnValue.toString();
+        return returnValue == ObjectUtils.NULL ? "" : returnValue.toString();
     }
 
 

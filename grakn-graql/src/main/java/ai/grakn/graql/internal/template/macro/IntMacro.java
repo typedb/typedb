@@ -22,6 +22,16 @@ import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
+/**
+ * <p>
+ * Convert the given value into an integer. Only accepts one argument.
+ *
+ * Usage:
+ *      @int(<value>)
+ * </p>
+ *
+ * @author alexandraorth
+ */
 public class IntMacro implements Macro<Integer> {
 
     private static final int numberArguments = 1;

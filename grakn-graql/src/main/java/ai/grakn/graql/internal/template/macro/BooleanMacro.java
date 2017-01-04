@@ -22,6 +22,15 @@ import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
+/**
+ * <p>
+ * Templating function that will convert the given value into a boolean (true/false). Only accepts one argument.
+ *
+ * Usage:
+ *      @boolean(<value>)
+ * </p>
+ * @author alexandraorth
+ */
 public class BooleanMacro implements Macro<Boolean> {
 
     private static final int numberArguments = 1;
