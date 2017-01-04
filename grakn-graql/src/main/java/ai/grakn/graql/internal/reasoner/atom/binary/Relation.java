@@ -43,6 +43,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -55,7 +56,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRelationTypes;
 import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
+import static ai.grakn.graql.internal.reasoner.Utility.roleToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
 
 
 /**
@@ -290,14 +294,6 @@ public class Relation extends TypeAtom {
         }
     }
 
-    private boolean hasExplicitRoleTypes() {
-        boolean rolesDefined = false;
-        Iterator<RelationPlayer> it = relationPlayers.iterator();
-        while (it.hasNext() && !rolesDefined)
-            rolesDefined = it.next().getRoleType().isPresent();
-        return rolesDefined;
-    }
-
     private Set<RoleType> getExplicitRoleTypes() {
         Set<RoleType> roleTypes = new HashSet<>();
         GraknGraph graph = getParentQuery().graph();
@@ -328,10 +324,28 @@ public class Relation extends TypeAtom {
     }
 
     private void inferTypeFromRoles() {
-        if (getParentQuery() != null && getTypeId().isEmpty() && hasExplicitRoleTypes()) {
-            //TODO: Properly Infer From Types
-            type = getExplicitRoleTypes().iterator().next().relationTypes().iterator().next();
-            addType(type);
+        if (getParentQuery() != null && !isValueUserDefinedName() && getTypeId().isEmpty()) {
+            //look at available roles
+            RelationType type = null;
+            Set<RelationType> compatibleTypes = getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes);
+            if (compatibleTypes.size() == 1) type = compatibleTypes.iterator().next();
+
+            //look at types
+            if (type == null) {
+                Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
+                Set<Type> types = getRolePlayers().stream()
+                        .filter(varTypeMap::containsKey)
+                        .map(varTypeMap::get)
+                        .collect(Collectors.toSet());
+
+                Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
+                if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
+                else {
+                    compatibleTypesFromTypes.retainAll(compatibleTypes);
+                    if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
+                }
+            }
+            if (type != null) addType(type);
         }
     }
 
