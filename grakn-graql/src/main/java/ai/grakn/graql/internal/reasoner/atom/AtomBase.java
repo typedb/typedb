@@ -57,7 +57,6 @@ public abstract class AtomBase implements Atomic{
     protected AtomBase(AtomBase a) {
         //TODO replace with proper clone method!
         this.atomPattern = Graql.parsePatterns(a.atomPattern.asVar().toString().concat(";")).iterator().next().admin();
-        //this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
         this.varName = atomPattern.asVar().getVarName();
     }
 

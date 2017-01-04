@@ -275,7 +275,7 @@ public class AtomicTest extends AbstractEngineTest{
         assertTrue(!vars.contains(""));
         assertTrue(vars.containsAll(correctVars));
     }
-    
+
     @Test
     public void testValuePredicateComparison(){
         Atomic atom = new Query("match $x value '0';", snbGraph).getAtoms().iterator().next();
