@@ -235,7 +235,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             Vertex vertex = vertices.next();
             if(!isBatchLoadingEnabled() && vertices.hasNext())
                 throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
-            return (T) elementFactory.buildConcept(vertex);
+            return elementFactory.buildConcept(vertex);
         } else {
             return null;
         }
@@ -354,7 +354,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
         if (traversal.hasNext()) {
-            return (T) elementFactory.buildConcept(traversal.next());
+            return elementFactory.buildConcept(traversal.next());
         } else {
             return null;
         }

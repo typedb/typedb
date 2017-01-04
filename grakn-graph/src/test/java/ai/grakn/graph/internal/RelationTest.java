@@ -57,7 +57,6 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ID;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_TYPE_NAME;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -255,7 +254,7 @@ public class RelationTest extends GraphTestBase{
     @Test
     public void testDeleteShortcuts() {
         EntityType type = graknGraph.putEntityType("A thing");
-        ResourceType resourceType = graknGraph.putResourceType("A resource thing", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("A resource thing", ResourceType.DataType.STRING);
         EntityImpl instance1 = (EntityImpl) type.addEntity();
         EntityImpl instance2 = (EntityImpl) type.addEntity();
         EntityImpl instance3 = (EntityImpl) type.addEntity();

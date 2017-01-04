@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 public class ResourceTest extends GraphTestBase{
     @Test
     public void testDataType() throws Exception {
-        ResourceType resourceType = graknGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
         Resource resource = resourceType.putResource("resource");
         assertEquals(ResourceType.DataType.STRING, resource.dataType());
     }
@@ -47,7 +47,7 @@ public class ResourceTest extends GraphTestBase{
     @Test
     public void testOwnerInstances() throws Exception {
         EntityType randomThing = graknGraph.putEntityType("A Thing");
-        ResourceType resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
         RelationType hasResource = graknGraph.putRelationType("Has Resource");
         RoleType resourceRole = graknGraph.putRoleType("Resource Role");
         RoleType actorRole = graknGraph.putRoleType("Actor");
