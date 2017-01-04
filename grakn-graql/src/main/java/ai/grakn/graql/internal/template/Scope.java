@@ -28,6 +28,15 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Represents a scope (association of name to a value) and corresponds to a block
+ * in the TemplateVisitor class.
+ *
+ * This can also be thought of as a block in Graql Temaplates. I.e. any body of text
+ * surrounded by {} or the root.
+ *
+ * @author alexandraorth
+ */
 public class Scope {
 
     private final Scope parent;
@@ -47,10 +56,21 @@ public class Scope {
         this.variablesEncountered = Sets.newHashSet(parent.variablesEncountered);
     }
 
+    /**
+     * Move up one level to the parent scope
+     * @return the parent scope
+     */
     public Scope up() {
         return parent;
     }
 
+    /**
+     * Associate a value with the given key. If the given value is a map, recurse through it and concatenate
+     * the given prefix with the keys in the map separated by ".".
+     *
+     * @param prefix key to use in the map of values.
+     * @param value value to associate.
+     */
     @SuppressWarnings("unchecked")
     public void assign(String prefix, Object value){
         if(value instanceof Map){
@@ -69,6 +89,10 @@ public class Scope {
         }
     }
 
+    /**
+     * Remove a key/value pair from this scope
+     * @param prefix key to remove from the scope
+     */
     public void unassign(String prefix){
         Set<String> removed = values.keySet().stream()
                 .filter(s -> s.startsWith(prefix))
@@ -77,6 +101,11 @@ public class Scope {
         removed.forEach(values::remove);
     }
 
+    /**
+     * Retrieve the value of a key from this scope, or the parent scope if it is not present in the current one.
+     * @param var key to retrieve
+     * @return value associated with the provided key
+     */
     public Object resolve(String var) {
         Object value = values.get(var);
 
@@ -94,14 +123,27 @@ public class Scope {
         }
     }
 
+    /**
+     * Check if this scope is "global", i.e. has no parent
+     * @return true if this is the "root" scope
+     */
     public boolean isGlobalScope() {
         return parent == null;
     }
 
+    /**
+     * Check if the variable has been seen before in this scope
+     * @param variable variable to check the presence of
+     * @return true if the variable has been seen, false otherwise
+     */
     public boolean hasSeen(String variable){
         return variablesEncountered.contains(variable);
     }
 
+    /**
+     * Mark a variable as seen within this scope
+     * @param variable variable to mark as seen
+     */
     public void markAsSeen(String variable){
         variablesEncountered.add(variable);
     }
