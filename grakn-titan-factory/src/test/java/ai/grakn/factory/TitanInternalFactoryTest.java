@@ -81,12 +81,19 @@ public class TitanInternalFactoryTest extends TitanTestBase{
         TitanManagement management = sharedGraph.openManagement();
 
         //Test Composite Indices
-        assertEquals("byId", management.getGraphIndex("byId").toString());
-        assertEquals("byIndex", management.getGraphIndex("byIndex").toString());
-        assertEquals("byValueString", management.getGraphIndex("byValueString").toString());
-        assertEquals("byValueLong", management.getGraphIndex("byValueLong").toString());
-        assertEquals("byValueDouble", management.getGraphIndex("byValueDouble").toString());
-        assertEquals("byValueBoolean", management.getGraphIndex("byValueBoolean").toString());
+        String byId = "by" + Schema.ConceptProperty.ID.name();
+        String byIndex = "by" + Schema.ConceptProperty.INDEX.name();
+        String byValueString = "by" + Schema.ConceptProperty.VALUE_STRING.name();
+        String byValueLong = "by" + Schema.ConceptProperty.VALUE_LONG.name();
+        String byValueDouble = "by" + Schema.ConceptProperty.VALUE_DOUBLE.name();
+        String byValueBoolean = "by" + Schema.ConceptProperty.VALUE_BOOLEAN.name();
+
+        assertEquals(byId, management.getGraphIndex(byId).toString());
+        assertEquals(byIndex, management.getGraphIndex(byIndex).toString());
+        assertEquals(byValueString, management.getGraphIndex(byValueString).toString());
+        assertEquals(byValueLong, management.getGraphIndex(byValueLong).toString());
+        assertEquals(byValueDouble, management.getGraphIndex(byValueDouble).toString());
+        assertEquals(byValueBoolean, management.getGraphIndex(byValueBoolean).toString());
 
         //Text Edge Indices
         ResourceBundle keys = ResourceBundle.getBundle("indices-edges");

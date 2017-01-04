@@ -182,14 +182,13 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     private static void makeIndicesComposite(TitanManagement management){
         ResourceBundle keys = ResourceBundle.getBundle("indices-composite");
         Set<String> keyString = keys.keySet();
-        for(String indexLabel : keyString){
+        for(String propertyKeyLabel : keyString){
+            String indexLabel = "by" + propertyKeyLabel;
             TitanIndex index = management.getGraphIndex(indexLabel);
-            if(index == null) {
-                String[] indexComponents = keys.getString(indexLabel).split(",");
-                String propertyKey = indexComponents[0];
-                boolean isUnique = Boolean.parseBoolean(indexComponents[1]);
 
-                PropertyKey key = management.getPropertyKey(propertyKey);
+            if(index == null) {
+                boolean isUnique = Boolean.parseBoolean(keys.getString(propertyKeyLabel));
+                PropertyKey key = management.getPropertyKey(propertyKeyLabel);
                 TitanManagement.IndexBuilder indexBuilder = management.buildIndex(indexLabel, Vertex.class).addKey(key);
                 if (isUnique)
                     indexBuilder.unique();
