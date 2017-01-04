@@ -256,16 +256,14 @@ public class GenealogyTest extends AbstractEngineTest{
 
     @Test
     public void testMarriage2(){
-        String queryString = "match ($r: $x) isa marriage; $r type-name 'wife';";
+        String queryString = "match ($r: $x) isa marriage; $r type-name 'wife';select $x;";
         String queryString2 = "match (wife: $x) isa marriage;";
-        String queryString3 = "match (wife: $x) isa marriage; $r type-name 'wife';";
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
-        MatchQuery query3 = new Query(queryString3, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        QueryAnswers answers3 = new QueryAnswers(reasoner.resolve(query3, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
+        assertEquals(answers, answers2);
     }
 
 
