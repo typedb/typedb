@@ -5,7 +5,6 @@ import ai.grakn.util.ErrorMessage;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -41,11 +40,6 @@ public abstract class TitanTestBase {
         }
 
         titanGraphFactory = new TitanInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
-    }
-
-    @AfterClass
-    public static void takeDownMain(){
-        EmbeddedCassandraServerHelper.stopEmbeddedCassandra();
     }
 
     private static void hideLogs() {

@@ -31,7 +31,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.migration.export.GraphWriter;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.migration.AbstractGraknMigratorTest;
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 
@@ -41,8 +40,8 @@ import java.util.Objects;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
@@ -139,8 +138,8 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
     public void assertRuleCopied(Rule rule1, GraknGraph two){
         Rule rule2 = getInstanceUniqueByResourcesFromGraph(two, rule1).asRule();
 
-        Assert.assertEquals(Graql.and(rule1.getLHS()), rule2.getLHS());
-        Assert.assertEquals(Graql.and(rule1.getRHS()), rule2.getRHS());
+        assertEquals(Graql.and(rule1.getLHS()), rule2.getLHS());
+        assertEquals(Graql.and(rule1.getRHS()), rule2.getRHS());
     }
 
     public void assertOntologiesEqual(GraknGraph one, GraknGraph two){
