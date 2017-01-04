@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.loader;
 
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import javafx.util.Pair;
@@ -69,7 +69,7 @@ public class LoaderImpl implements Loader {
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
 
-        this.manager = InMemoryTaskManager.getInstance();
+        this.manager = StandaloneTaskManager.getInstance();
         this.storage = manager.storage();
 
         setBatchSize(properties.getPropertyAsInt(BATCH_SIZE_PROPERTY));

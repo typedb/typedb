@@ -24,7 +24,7 @@ import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
@@ -43,15 +43,16 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class AtomicQueryTest extends AbstractEngineTest{
+public class AtomicQueryTest extends AbstractGraknTest {
     private static GraknGraph graph;
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws Exception {
         assumeTrue(usingTinker());
         graph = SNBGraph.getGraph();
+        qb = graph.graql();
     }
 
     @Test
@@ -71,6 +72,14 @@ public class AtomicQueryTest extends AbstractEngineTest{
     }
 
     @Test
+    public void testPatternNotVar(){
+        exception.expect(IllegalArgumentException.class);
+        Conjunction<PatternAdmin> pattern = qb.<MatchQuery>parse("match $x isa person;").admin().getPattern();
+        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
+        Atomic atom = AtomicFactory.create(pattern);
+    }
+
+    @Test
     public void testMaterialize(){
         QueryBuilder qb = graph.graql().infer(false);
         assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
@@ -78,7 +87,7 @@ public class AtomicQueryTest extends AbstractEngineTest{
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", getConcept("Bob"))
-                , new IdPredicate("y", getConcept("Colour of Magic"))));
+                                                , new IdPredicate("y", getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
     }
 

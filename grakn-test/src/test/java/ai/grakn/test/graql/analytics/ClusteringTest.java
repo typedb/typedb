@@ -17,6 +17,7 @@
  */
 
 package ai.grakn.test.graql.analytics;
+import static ai.grakn.test.GraknTestEnv.*;
 
 import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;

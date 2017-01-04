@@ -28,6 +28,44 @@ export GRAKN_INCLUDE="${GRAKN_HOME}/bin/grakn.in.sh"
 
 SLEEP_INTERVAL_S=2
 
+clean_grakn() {
+    echo -n "Are you sure you want to delete all stored data and logs? [y/N] " >&2
+    read response
+    if [ "$response" != "y" -a "$response" != "Y" ]; then
+        echo "Response \"$response\" did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
+        return 0
+    fi
+
+    if cd "${GRAKN_HOME}/db"; then
+        rm -rf cassandra es
+        mkdir -p cassandra/data cassandra/commitlog cassandra/saved_caches es
+        echo "Deleted data in `pwd`" >&2
+        cd - >/dev/null
+    else
+        echo 'Data directory does not exist.' >&2
+    fi
+
+    if cd "${GRAKN_HOME}/logs"; then
+        rm -f *.log
+        echo "Deleted logs in `pwd`" >&2
+        cd - >/dev/null
+    fi
+
+    local DEFAULT_KAFKA_LOGS=/tmp/grakn-kafka-logs/
+    if [ -e "${DEFAULT_KAFKA_LOGS}" ]; then
+        rm -rf "${DEFAULT_KAFKA_LOGS}"
+        echo "Deleted logs in ${DEFAULT_KAFKA_LOGS}" >&2
+    fi
+
+    local DEFAULT_ZOOKEEPER_LOGS=/tmp/grakn-zookeeper/
+    if [ -e "${DEFAULT_ZOOKEEPER_LOGS}" ]; then
+        rm -rf "${DEFAULT_ZOOKEEPER_LOGS}"
+        echo "Deleted logs in ${DEFAULT_ZOOKEEPER_LOGS}" >&2
+    fi
+}
+
+
+
 case "$1" in
 
 start)
@@ -35,12 +73,16 @@ start)
     if [ $USE_CASSANDRA ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
     fi
+    "${GRAKN_HOME}/bin/zookeeper-server-start.sh" -daemon "${GRAKN_HOME}/conf/kafka/zookeeper.properties"
+    "${GRAKN_HOME}/bin/kafka-server-start.sh" -daemon "${GRAKN_HOME}/conf/kafka/kafka.properties"
     "${GRAKN_HOME}/bin/grakn-engine.sh" start
     ;;
 
 stop)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
+    "${GRAKN_HOME}/bin/kafka-server-stop.sh"
+    "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
     if [ $USE_CASSANDRA ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
     fi
@@ -49,15 +91,19 @@ stop)
 clean)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
+    "${GRAKN_HOME}/bin/kafka-server-stop.sh"
+    "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
     if [ $USE_CASSANDRA ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
-        "${GRAKN_HOME}/bin/grakn-cassandra.sh" clean
+        clean_grakn
     fi
     ;;
 
 status)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
+    "${GRAKN_HOME}/bin/kafka-server-stop.sh"
+    "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
     if [ $USE_CASSANDRA ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" status
     fi

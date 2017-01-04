@@ -18,9 +18,18 @@
 package ai.grakn.engine;
 
 
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
-import ai.grakn.engine.controller.*;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.controller.AuthController;
+import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.controller.UserController;
+import ai.grakn.engine.controller.CommitLogController;
+import ai.grakn.engine.controller.GraphFactoryController;
+import ai.grakn.engine.controller.ImportController;
+import ai.grakn.engine.controller.StatusController;
+import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
@@ -49,9 +58,7 @@ import static spark.Spark.*;
  */
 
 public class GraknEngineServer {
-
     private static ConfigProperties prop = ConfigProperties.getInstance();
-    private static InMemoryTaskManager manager = InMemoryTaskManager.getInstance();
     private static Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -63,11 +70,12 @@ public class GraknEngineServer {
     public static final boolean isPasswordProtected = prop.getPropertyAsBool(ConfigProperties.PASSWORD_PROTECTED_PROPERTY);
 
     public static void main(String[] args) {
-        start();
+        startHTTP();
+        startCluster();
+        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
-    public static void start() {
-
+    public static void startHTTP() {
         // Set host name
         ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
 
@@ -94,7 +102,6 @@ public class GraknEngineServer {
         //Register filter to check authentication token in each request
         before(GraknEngineServer::checkAuthorization);
 
-
         //Register Exception Handler
         exception(GraknEngineServerException.class, (e, request, response) -> {
             response.status(((GraknEngineServerException) e).getStatus());
@@ -103,18 +110,33 @@ public class GraknEngineServer {
 
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
-
-        // Submit a recurring post processing task
-        manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE), new JSONObject());
-
-        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
-    public static void stop() {
-        manager.shutdown();
+    public static void startCluster() {
+        // Start background task cluster.
+        ClusterManager.getInstance().start();
+
+        // Submit a recurring post processing task
+        //FIXME: other things open and close this too
+        DistributedTaskManager manager = DistributedTaskManager.getInstance();
+        manager.open();
+        manager.scheduleTask(new PostProcessingTask(),
+                             GraknEngineServer.class.getName(),
+                             new Date(),
+                             prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
+                             new JSONObject());
+
+    }
+
+    public static void stopHTTP() {
         Spark.stop();
     }
 
+    public static void stopCluster() {
+        DistributedTaskManager.getInstance().close();
+        PostProcessing.getInstance().stop();
+        ClusterManager.getInstance().stop();
+    }
 
     /**
      * Check if Grakn Engine has been started
@@ -143,7 +165,6 @@ public class GraknEngineServer {
 
 
     private static void checkAuthorization(Request request, Response response) {
-
         if(!isPasswordProtected) return;
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones

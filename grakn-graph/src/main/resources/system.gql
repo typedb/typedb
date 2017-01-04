@@ -9,7 +9,7 @@ status-change-time sub resource, datatype long;
 status-change-by sub resource, datatype string;
 task-class-name sub resource, datatype string;
 created-by sub resource, datatype string;
-executing-hostname sub resource, datatype string;
+engine-id sub resource, datatype string;
 run-at sub resource, datatype long;
 recurring sub resource, datatype boolean;
 recur-interval sub resource, datatype long;
@@ -24,13 +24,13 @@ scheduled-task has-resource status,
                has-resource status-change-by,
                has-resource task-class-name,
                has-resource created-by,
-               has-resource executing-hostname,
+               has-resource engine-id,
                has-resource run-at,
                has-resource recurring,
                has-resource recur-interval,
                has-resource stack-trace,
                has-resource task-exception,
-               has-resource task-checkpoint
+               has-resource task-checkpoint,
                has-resource task-configuration;
 
 # Keep track of all keyspaces in system.

@@ -2,7 +2,6 @@ package ai.grakn.engine.user;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.factory.SystemKeyspace;
 import mjson.Json;
 import org.junit.After;
@@ -18,7 +17,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class UserHandlerTest extends GraknEngineTestBase {
+public class UserHandlerTest {
     private static UsersHandler users;
     private static String userName = "geralt";
     private static String password = "witcher";

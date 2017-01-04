@@ -33,6 +33,7 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.graql.Graql.name;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class QueryErrorTest extends AbstractMovieGraphTest {
     @Rule

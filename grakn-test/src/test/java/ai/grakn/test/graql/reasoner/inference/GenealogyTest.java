@@ -25,7 +25,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
 import java.util.List;
@@ -42,14 +42,14 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GenealogyTest extends AbstractEngineTest{
+public class GenealogyTest extends AbstractGraknTest {
 
     private static GraknGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws Exception {
         GenealogyGraph genealogyGraph = new GenealogyGraph();
         reasoner = new Reasoner(genealogyGraph.graph());
         graph = genealogyGraph.graph();

@@ -21,14 +21,16 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import static ai.grakn.test.GraknTestEnv.*;
 
 /**
  * Abstract test class that provides an empty graph, automatically rolling back after every test to a fresh empty graph.
  * Do not commit to this graph, because it is shared between all tests for performance!
  */
-public abstract class AbstractRollbackGraphTest extends AbstractEngineTest {
-
+public abstract class AbstractRollbackGraphTest extends AbstractGraknTest {
     protected static GraknGraphFactory factory;
     protected static GraknGraph graph;
 

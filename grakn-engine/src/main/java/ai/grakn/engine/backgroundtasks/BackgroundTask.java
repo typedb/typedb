@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 public interface BackgroundTask {
     /**
      * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
-     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
+     * @param saveCheckpoint Consumer<String> which can be called at any time to save a taskstorage checkpoint that would allow
      *                       the task to resume from this point should it crash.
      */
     void start(Consumer<String> saveCheckpoint, JSONObject configuration);
@@ -49,8 +49,8 @@ public interface BackgroundTask {
     void pause();
 
     /**
-     * This method may be called when resuming from a paused state or recovering from a crash or failure of any kind.
-     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
+     * This method may be called when resuming from a paused taskstorage or recovering from a crash or failure of any kind.
+     * @param saveCheckpoint Consumer<String> which can be called at any time to save a taskstorage checkpoint that would allow
      *                       the task to resume from this point should it crash.
      * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
      */

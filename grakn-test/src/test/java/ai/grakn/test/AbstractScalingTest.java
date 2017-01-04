@@ -39,7 +39,8 @@ public abstract class AbstractScalingTest {
 
     protected static GraknGraphFactory factoryWithNewKeyspace() {
         String keyspace;
-        keyspace = UUID.randomUUID().toString().replaceAll("-", "");
+        // Embedded Casandra has problems dropping keyspaces that start with a number
+        keyspace = "a"+UUID.randomUUID().toString().replaceAll("-", "");
         return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
     }
 

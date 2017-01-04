@@ -32,7 +32,6 @@ import static java.util.stream.Collectors.toList;
  * Methods that will be used by all of the controllers.
  */
 public abstract class Utilities {
-
     private final static ConfigProperties properties = ConfigProperties.getInstance();
     private static final String defaultKeyspace = properties.getProperty(DEFAULT_KEYSPACE_PROPERTY);
 

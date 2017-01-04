@@ -21,7 +21,7 @@ package ai.grakn.migration.base.io;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.engine.loader.client.LoaderClient;
@@ -167,7 +167,7 @@ public class MigrationCLI {
 
     public static void initiateShutdown(){
         System.out.println("Initiating shutdown...");
-        InMemoryTaskManager.getInstance().shutdown();
+        StandaloneTaskManager.getInstance().close();
     }
 
     public static String fileAsString(File file){
