@@ -1,5 +1,7 @@
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -9,6 +11,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
@@ -18,6 +21,10 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -263,5 +270,53 @@ public class GraknGraphTest extends GraphTestBase {
         assertEquals(1, resourceType.playsRoles().size());
         assertEquals(2, graknGraph.getMetaRelationType().subTypes().size());
         assertEquals(3, graknGraph.getMetaRoleType().subTypes().size());
+    }
+
+    @Test
+    public void testGraphIsClosed() throws ExecutionException, InterruptedException {
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+
+        final boolean[] errorThrown = {false};
+        final boolean[] errorNotThrown = {false};
+
+        Future future = pool.submit(() -> {
+            try{
+                graph.putEntityType("A Thing");
+            } catch (GraphRuntimeException e){
+                if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))){
+                    errorThrown[0] = true;
+                }
+            }
+
+            graph.open();
+            graph.putEntityType("A Thing");
+            errorNotThrown[0] = true;
+        });
+
+        future.get();
+
+        assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
+        assertTrue("Error thrown even after opening graph", errorNotThrown[0]);
+    }
+
+    @Test
+    public void testCloseAndReOpenGraph(){
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+        graph.close();
+
+        boolean errorThrown = false;
+        try{
+            graph.putEntityType("A Thing");
+        } catch (GraphRuntimeException e){
+            if(e.getMessage().equals(ErrorMessage.CLOSED_USER.getMessage())){
+                errorThrown = true;
+            }
+        }
+        assertTrue("Graph not correctly closed", errorThrown);
+
+        graph.open();
+
+        graph.putEntityType("A Thing");
     }
 }
