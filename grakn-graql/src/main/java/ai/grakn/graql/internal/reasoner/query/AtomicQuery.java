@@ -34,16 +34,16 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import javafx.util.Pair;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 /**
  *
@@ -156,7 +156,7 @@ public class AtomicQuery extends Query{
         boolean dataPresent = atom.requiresMaterialisation()? getMatchQuery().ask().execute() : false;
         if(!dataPresent){
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
-            Set<Concept> insertedConcepts = insert.stream().collect(Collectors.toSet());
+            Set<Concept> insertedConcepts = insert.stream().flatMap(result -> result.values().stream()).collect(Collectors.toSet());
             if (atom.isUserDefinedName()) {
                 insertedConcepts.stream()
                         .filter(c -> c.isResource() || c.isRelation())

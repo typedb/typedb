@@ -23,7 +23,13 @@ import ai.grakn.graql.macro.Macro;
 import java.util.List;
 
 /**
- * Macro that will convert the given value to a quoted string
+ * <p>
+ * Convert the given value into a quoted string. Only accepts one argument.
+ *
+ * Usage:
+ *      @string(<value>)
+ * </p>
+ * @author alexandraorth
  */
 public class StringMacro implements Macro<String> {
 

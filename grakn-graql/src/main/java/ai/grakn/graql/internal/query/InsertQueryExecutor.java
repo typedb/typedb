@@ -47,7 +47,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
@@ -73,6 +72,7 @@ public class InsertQueryExecutor {
     private final GraknGraph graph;
     private final Collection<VarAdmin> vars;
     private final Map<String, Concept> concepts = new HashMap<>();
+    private Map<String, Concept> namedConcepts;
     private final Stack<String> visitedVars = new Stack<>();
     private final ImmutableMap<String, List<VarAdmin>> varsByVarName;
     private final ImmutableMap<String, List<VarAdmin>> varsByTypeName;
@@ -109,7 +109,7 @@ public class InsertQueryExecutor {
     /**
      * Insert all the Vars
      */
-    Stream<Concept> insertAll() {
+    Map<String, Concept> insertAll() {
         return insertAll(new HashMap<>());
     }
 
@@ -117,19 +117,20 @@ public class InsertQueryExecutor {
      * Insert all the Vars
      * @param results the result of a match query
      */
-    Stream<Concept> insertAll(Map<String, Concept> results) {
+    Map<String, Concept> insertAll(Map<String, Concept> results) {
         concepts.clear();
-        concepts.putAll(new HashMap<>(results));
-        return vars.stream().map(this::insertVar);
+        concepts.putAll(results);
+        namedConcepts = new HashMap<>(results);
+        vars.forEach(this::insertVar);
+        return namedConcepts;
     }
 
     /**
      * @param var the Var to insert into the graph
      */
-    private Concept insertVar(VarAdmin var) {
+    private void insertVar(VarAdmin var) {
         Concept concept = getConcept(var);
         var.getProperties().forEach(property -> ((VarPropertyInternal) property).insert(this, concept));
-        return concept;
     }
 
     public GraknGraph getGraph() {
@@ -148,8 +149,9 @@ public class InsertQueryExecutor {
 
         visitedVars.push(name);
         Concept concept = concepts.computeIfAbsent(name, n -> addConcept(var));
-        visitedVars.pop();
         assert concept != null : var ;
+        if (var.isUserDefinedName()) namedConcepts.put(name, concept);
+        visitedVars.pop();
         return concept;
     }
 

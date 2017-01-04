@@ -22,6 +22,16 @@ import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
+/**
+ * <p>
+ * Convert the given value into an unescaped. Only accepts one argument.
+ *
+ * Usage:
+ *      @noescp(<value>)
+ * </p>
+ *
+ * @author alexandraorth
+ */
 public class NoescpMacro implements Macro<UnescapedString> {
 
     private static final int numberArguments = 1;

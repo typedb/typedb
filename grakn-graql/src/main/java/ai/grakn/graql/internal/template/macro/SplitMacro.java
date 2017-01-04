@@ -24,7 +24,16 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Macro that splits the given value based on the given character
+ * <p>
+ * Templating function that splits the given value based on the given character. Accepts exactly two arguments.
+ *
+ * Usage:
+ *      @split(<value>, ",")
+ *      @split(<value>, "-")
+ *      @split(<value>, "and")
+ * </p>
+ *
+ * @author alexandraorth
  */
 public class SplitMacro implements Macro<List<String>> {
 

@@ -22,6 +22,17 @@ import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
+/**
+ * <p>
+ * Convert the given value into a boolean (true/false). Only accepts one argument.
+ *
+ * Usage:
+ *      @boolean(<value>)
+ *      @boolean("true")
+ * </p>
+ *
+ * @author alexandraorth
+ */
 public class DoubleMacro implements Macro<Double> {
 
     private static final int numberArguments = 1;

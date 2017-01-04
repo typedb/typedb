@@ -24,6 +24,15 @@ import java.util.List;
 
 import static java.util.stream.Collectors.joining;
 
+/**
+ * <p>
+ * Concatenate all of the given values to a string. Accepts at least two arguments.
+ *
+ * Usage:
+ *      @concat(<value1>, <value2>)
+ * </p>
+ * @author alexandraorth
+ */
 public class ConcatMacro implements Macro<String> {
 
     @Override
@@ -37,7 +46,7 @@ public class ConcatMacro implements Macro<String> {
 
     @Override
     public String name() {
-        return "split";
+        return "concat";
     }
 
     public String toString(Object object){
