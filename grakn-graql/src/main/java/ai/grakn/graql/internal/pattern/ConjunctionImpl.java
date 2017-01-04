@@ -77,7 +77,7 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
     }
 
     @Override
-    public PatternAdmin clone() {
+    public PatternAdmin cloneMe() {
         return new ConjunctionImpl<>(this);
     }
 

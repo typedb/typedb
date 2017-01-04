@@ -49,7 +49,7 @@ public class Patterns {
     // These clone methods will always return the right type
     @SuppressWarnings("unchecked")
     public static <T extends PatternAdmin> T copyOf(T pattern) {
-        return (T) pattern.clone();
+        return (T) pattern.cloneMe();
     }
 
     public static VarAdmin mergeVars(Collection<VarAdmin> vars) {

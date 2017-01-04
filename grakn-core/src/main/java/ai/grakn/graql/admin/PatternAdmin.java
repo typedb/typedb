@@ -27,7 +27,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Admin class for inspecting and manipulating a Pattern
  */
-public interface PatternAdmin extends Pattern, Cloneable {
+public interface PatternAdmin extends Pattern {
     /**
      * Get the disjunctive normal form of this pattern group.
      * This means the pattern group will be transformed into a number of conjunctive patterns, where each is disjunct.
@@ -91,5 +91,5 @@ public interface PatternAdmin extends Pattern, Cloneable {
                 .collect(toSet());
     }
 
-    PatternAdmin clone();
+    PatternAdmin cloneMe();
 }

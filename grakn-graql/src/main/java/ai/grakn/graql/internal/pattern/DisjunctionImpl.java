@@ -66,8 +66,8 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
     }
 
     @Override
-    public PatternAdmin clone() {
-        return new DisjunctionImpl(this);
+    public PatternAdmin cloneMe() {
+        return new DisjunctionImpl<>(this);
     }
 
     @Override

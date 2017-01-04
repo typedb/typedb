@@ -482,7 +482,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public PatternAdmin clone() {
+    public PatternAdmin cloneMe() {
         return new VarImpl(this);
     }
 
