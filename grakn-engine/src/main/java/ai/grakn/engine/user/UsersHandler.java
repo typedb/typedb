@@ -9,13 +9,14 @@ public class UsersHandler {
 	public static final String USER_ENTITY = "user";
 	public static final String USER_NAME = "user-name";
 	public static final String USER_PASSWORD = "user-password";
+	public static final String USER_SALT = "user-password-salt";
 	public static final String USER_FIRST_NAME = "user-first-name";
 	public static final String USER_LAST_NAME = "user-last-name";
 	public static final String USER_EMAIL = "user-email";
 	public static final String USER_IS_ADMIN = "user-is-admin";
 
 	private static UsersHandler instance = null;
-	private Map<String, Json> usersMap = new HashMap<>();;
+	private Map<String, Json> usersMap = new HashMap<>();
 
 	public synchronized static UsersHandler getInstance() {
 		if (instance == null)

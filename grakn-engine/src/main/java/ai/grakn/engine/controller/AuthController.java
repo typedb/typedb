@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
@@ -75,7 +73,7 @@ public class AuthController {
             throw new GraknEngineServerException(400, e);
         }
 
-        if (usersHandler.validateUser(user, hashPassword(password))) {
+        if (usersHandler.validateUser(user, password)) {
             return JWTHandler.signJWT(user);
         } else {
             throw new GraknEngineServerException(401,"Wrong authentication parameters have been provided.");
@@ -91,10 +89,4 @@ public class AuthController {
     private String isPasswordProtected(Request req, Response res) {
         return ConfigProperties.getInstance().getProperty(ConfigProperties.PASSWORD_PROTECTED_PROPERTY);
     }
-
-    private String hashPassword(String password) {
-        //add encryption
-        return password;
-    }
-
 }
