@@ -21,14 +21,12 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collection;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
+import static ai.grakn.util.ErrorMessage.ID_ALREADY_TAKEN;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -64,9 +62,7 @@ public class RelationTypeTest extends GraphTestBase{
         RoleType original = graknGraph.putRoleType("Role Type");
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_ALREADY_TAKEN.getMessage(original.getName(), original.toString()))
-        ));
+        expectedException.expectMessage(ID_ALREADY_TAKEN.getMessage(original.getName(), original.toString()));
 
         graknGraph.putRelationType(original.getName());
     }

@@ -19,14 +19,13 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
-import ai.grakn.concept.EntityType;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -50,7 +49,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     @Test
     public void owlMainCannotOpenFileTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage(containsString("Cannot find file:"));
+        exception.expectMessage("Cannot find file:");
         run("owl", "-input", "grah/?*", "-keyspace", graph.getKeyspace());
     }
 

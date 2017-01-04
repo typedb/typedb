@@ -27,8 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.graql.Graql.var;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -65,9 +63,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void testReadOnlyTraversal(){
         expectedException.expect(VerificationException.class);
-        expectedException.expectMessage(allOf(
-                containsString("not read only")
-        ));
+        expectedException.expectMessage("not read only");
         graknGraph.getTinkerTraversal().drop().iterate();
     }
 
@@ -87,7 +83,7 @@ public class GraknGraphTest extends GraphTestBase {
         makeArtificialCasting(role, rolePlayer, relation);
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(containsString(ErrorMessage.TOO_MANY_CASTINGS.getMessage(role, rolePlayer))));
+        expectedException.expectMessage(ErrorMessage.TOO_MANY_CASTINGS.getMessage(role, rolePlayer));
 
         graknGraph.putCasting(role, rolePlayer, relation);
     }

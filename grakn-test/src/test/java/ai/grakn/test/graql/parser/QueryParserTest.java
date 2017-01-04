@@ -605,14 +605,14 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     @Test
     public void testMissingColon() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("':'"));
+        exception.expectMessage("':'");
         qb.parse("match (actor $x, $y) isa has-cast;");
     }
 
     @Test
     public void testMissingComma() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("','"));
+        exception.expectMessage("','");
         qb.parse("match ($x $y) isa has-cast;");
     }
 
@@ -630,7 +630,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     @Test
     public void testLimitMistake() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("limit1"));
+        exception.expectMessage("limit1");
         qb.parse("match ($x, $y); limit1;");
     }
 

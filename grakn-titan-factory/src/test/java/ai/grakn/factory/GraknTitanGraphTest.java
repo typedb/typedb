@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
-import ai.grakn.util.ErrorMessage;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.junit.After;
 import org.junit.Before;
@@ -37,9 +36,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
+import static ai.grakn.util.ErrorMessage.GRAPH_PERMANENTLY_CLOSED;
 import static junit.framework.TestCase.assertNotNull;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -135,9 +134,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CLOSED_CLEAR.getMessage())
-        ));
+        expectedException.expectMessage(CLOSED_CLEAR.getMessage());
         graph.getEntityType("thing");
     }
 
@@ -153,9 +150,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))
-        ));
+        expectedException.expectMessage(GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
 
         graph.open();
     }
