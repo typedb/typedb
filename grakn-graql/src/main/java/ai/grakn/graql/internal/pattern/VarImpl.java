@@ -107,6 +107,16 @@ class VarImpl implements VarAdmin {
         }
     }
 
+    /**
+     * Create a variable by cloning an existing variable
+     * @param var a variable to clone
+     */
+    VarImpl(VarAdmin var) {
+        this.name = var.getVarName();
+        this.userDefinedName = var.isUserDefinedName();
+        var.getProperties().forEach(this::addProperty);
+    }
+
     @Override
     public Var id(String id) {
         return addProperty(new IdProperty(id));

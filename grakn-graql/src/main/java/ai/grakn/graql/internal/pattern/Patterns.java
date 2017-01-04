@@ -46,6 +46,20 @@ public class Patterns {
         return new VarImpl(name);
     }
 
+    // These clone methods will always return the right type
+    @SuppressWarnings("unchecked")
+    public static <T extends PatternAdmin> T copyOf(T pattern) {
+        if (pattern instanceof VarAdmin) {
+            return (T) new VarImpl((VarAdmin) pattern);
+        } else if (pattern instanceof Disjunction) {
+            return (T) new DisjunctionImpl<>((Disjunction<?>) pattern);
+        } else if (pattern instanceof Conjunction) {
+            return (T) new ConjunctionImpl<>((Conjunction<?>) pattern);
+        } else {
+            throw new RuntimeException("Unrecognized Pattern instance " + pattern);
+        }
+    }
+
     public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
         return new VarImpl(vars);
     }
