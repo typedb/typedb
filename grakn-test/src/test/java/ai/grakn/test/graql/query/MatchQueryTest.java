@@ -656,6 +656,18 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testMatchAllResourcesUsingResourceName() {
+        MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", var("x")));
+
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
+        Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
+
+        Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
+
+        assertEquals(expected, results);
+    }
+
+    @Test
     public void testNoInstancesOfRoleType() {
         MatchQuery query = qb.match(var("x").isa(var("y")), var("y").name("actor"));
         assertEquals(0, query.stream().count());

@@ -84,13 +84,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
-        Optional<String> hasResource = resourceType.map(Schema.Resource.HAS_RESOURCE::getName);
-        Optional<String> hasResourceOwner = resourceType.map(Schema.Resource.HAS_RESOURCE_OWNER::getName);
-        Optional<String> hasResourceValue = resourceType.map(Schema.Resource.HAS_RESOURCE_VALUE::getName);
-
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.shortcut(hasResource, hasResourceOwner, hasResourceValue, start, resource.getVarName()),
-                Fragments.shortcut(hasResource, hasResourceValue, hasResourceOwner, resource.getVarName(), start)
+                Fragments.shortcut(Optional.empty(), Optional.empty(), Optional.empty(), start, resource.getVarName()),
+                Fragments.shortcut(Optional.empty(), Optional.empty(), Optional.empty(), resource.getVarName(), start)
         ));
     }
 
