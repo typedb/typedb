@@ -98,16 +98,19 @@ public class GraknOrientDBGraphFactoryTest {
 
     @Test
     public void testVertexIndices(){
-        GraknOrientDBGraph graknOrientDBGraph = orientGraphFactory.getGraph(false);
-        for (Schema.BaseType baseType : Schema.BaseType.values()) {
-            assertEquals(6, graknOrientDBGraph.getTinkerPopGraph().getVertexIndexedKeys(baseType.name()).size());
-        }
+        OrientGraph graknOrientDBGraph = orientGraphFactory.getGraph(false).getTinkerPopGraph();
 
-        assertNotNull(graknOrientDBGraph.getMetaEntityType());
-        assertNotNull(graknOrientDBGraph.getMetaRelationType());
-        assertNotNull(graknOrientDBGraph.getMetaConcept());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RELATION_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RESOURCE_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ROLE_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RULE_TYPE.name()).size());
+
+        assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RELATION.name()).size());
+        assertEquals(6, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RESOURCE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.CASTING.name()).size());
+        assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RULE.name()).size());
     }
-
-
-
 }
