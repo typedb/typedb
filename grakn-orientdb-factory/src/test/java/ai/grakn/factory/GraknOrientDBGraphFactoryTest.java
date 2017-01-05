@@ -53,7 +53,6 @@ public class GraknOrientDBGraphFactoryTest {
         graph.clear();
     }
 
-    @Ignore
     @Test
     public void testBuildSimpleGraph() throws Exception {
         AbstractGraknGraph graknGraph = orientGraphFactory.getGraph(false);
@@ -61,7 +60,6 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
-    @Ignore
     @Test
     public void testBuildSingletonGraphs(){
         AbstractGraknGraph<OrientGraph> graknGraph1 = orientGraphFactory.getGraph(false);
@@ -98,7 +96,6 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(15, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
-    @Ignore
     @Test
     public void testVertexIndices(){
         GraknOrientDBGraph graknOrientDBGraph = orientGraphFactory.getGraph(false);

@@ -41,7 +41,6 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     private final Map<String, OrientGraphFactory> openFactories;
     private static final String KEY_TYPE = "keytype";
     private static final String UNIQUE = "type";
-    private static final String SPECIAL_IN_MEMORY = "memory";
 
 
     public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties) {
@@ -56,10 +55,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
     @Override
     GraknOrientDBGraph buildGraknGraphFromTinker(OrientGraph graph, boolean batchLoading) {
-        String engineUrl = super.engineUrl;
-        if(engineUrl.equals(SPECIAL_IN_MEMORY))
-            engineUrl = null;
-        return new GraknOrientDBGraph(graph, super.keyspace, engineUrl, batchLoading);
+        return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override
@@ -70,8 +66,6 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
     private OrientGraph configureGraph(String name, String address){
         boolean schemaDefinitionRequired = false;
-        if (Grakn.IN_MEMORY.equals(address))
-        	address = "memory";
         OrientGraphFactory factory = getFactory(name, address);
         OrientGraph graph = factory.getNoTx();
 
@@ -147,8 +141,9 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
     }
 
     private OrientGraphFactory getFactory(String name, String address){
-        if(SPECIAL_IN_MEMORY.equals(name)){
-            address = SPECIAL_IN_MEMORY; //Secret way of creating in-memory graphs.
+        if (Grakn.IN_MEMORY.equals(address)){
+            address = "plocal";
+            name = "/tmp/" + name;
         }
 
         String key = name + address;
