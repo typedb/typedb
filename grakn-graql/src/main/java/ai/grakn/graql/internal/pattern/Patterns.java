@@ -46,6 +46,12 @@ public class Patterns {
         return new VarImpl(name);
     }
 
+    // These clone methods will always return the right type
+    @SuppressWarnings("unchecked")
+    public static <T extends PatternAdmin> T copyOf(T pattern) {
+        return (T) pattern.cloneMe();
+    }
+
     public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
         return new VarImpl(vars);
     }
