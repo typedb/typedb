@@ -21,7 +21,7 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -32,11 +32,12 @@ import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 
-public class AdmissionsInferenceTest extends AbstractEngineTest{
+public class AdmissionsInferenceTest extends AbstractGraknTest {
 
     @BeforeClass
     public static void onStartup(){

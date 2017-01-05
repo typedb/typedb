@@ -401,7 +401,6 @@ public class SNBInferenceTest extends AbstractGraknTest {
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;" +
                         "$z isa person;$z has name 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y;";
         MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query));
 
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";

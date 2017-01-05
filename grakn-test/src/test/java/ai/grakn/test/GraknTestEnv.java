@@ -59,7 +59,7 @@ public interface GraknTestEnv {
         if(HTTP_RUNNING.compareAndSet(false, true)) {
             GraknEngineServer.startHTTP();
             Properties properties = GraphFactory.getInstance().configurationProperties();           
-            new SystemKeyspace(null, properties).loadSystemOntology();
+            new SystemKeyspace(Grakn.DEFAULT_URI, properties).loadSystemOntology();
         }
     }
 

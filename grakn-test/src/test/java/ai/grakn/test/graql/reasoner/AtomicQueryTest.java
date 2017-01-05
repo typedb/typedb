@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -49,10 +50,9 @@ public class AtomicQueryTest extends AbstractGraknTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
+    public static void setUpClass() {
         assumeTrue(usingTinker());
         graph = SNBGraph.getGraph();
-        qb = graph.graql();
     }
 
     @Test
@@ -72,14 +72,6 @@ public class AtomicQueryTest extends AbstractGraknTest {
     }
 
     @Test
-    public void testPatternNotVar(){
-        exception.expect(IllegalArgumentException.class);
-        Conjunction<PatternAdmin> pattern = qb.<MatchQuery>parse("match $x isa person;").admin().getPattern();
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-        Atomic atom = AtomicFactory.create(pattern);
-    }
-
-    @Test
     public void testMaterialize(){
         QueryBuilder qb = graph.graql().infer(false);
         assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
@@ -87,7 +79,7 @@ public class AtomicQueryTest extends AbstractGraknTest {
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", getConcept("Bob"))
-                                                , new IdPredicate("y", getConcept("Colour of Magic"))));
+                , new IdPredicate("y", getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
     }
 

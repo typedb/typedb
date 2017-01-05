@@ -72,7 +72,7 @@
 
     <!--ASCII TEXT-->
     <logger name="org.apache" level="ERROR">
-        <appender-ref ref="ROLLING"/>
+        <appender-ref ref="MAIN"/>
     </logger>
 
     <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">

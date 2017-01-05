@@ -1,8 +1,29 @@
-package ai.grakn.engine.user;
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2017  Grakn Labs Ltd
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.test.engine.user;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.user.Password;
+import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.test.EngineTestBase;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Before;
@@ -17,7 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class UserHandlerTest {
+public class UserHandlerTest extends EngineTestBase {
     private static UsersHandler users;
     private static String userName = "geralt";
     private static String password = "witcher";

@@ -29,8 +29,6 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -38,8 +36,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import javafx.util.Pair;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -76,10 +72,7 @@ public class GraknStateStorage implements StateStorage {
 
         Optional<String> result = attemptCommitToSystemGraph((graph) -> {
             InsertQuery query = graph.graql().insert(state);
-            String id = query.stream()
-            		.filter(concept -> concept.isEntity())
-                    .filter(concept -> concept.asInstance().type().getName().equals(SCHEDULED_TASK))
-                    .findFirst().get().getId();
+            String id = query.stream().findFirst().get().get(TASK_VAR).getId();
 
             LOG.debug("Created " + graph.getConcept(id));
 

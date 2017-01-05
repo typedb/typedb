@@ -19,7 +19,6 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
-import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.test.EngineTestBase;
 import ai.grakn.test.engine.backgroundtasks.LongRunningTask;

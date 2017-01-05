@@ -1,7 +1,5 @@
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
 
@@ -32,7 +30,7 @@ public class AuthControllerTest extends EngineTestBase {
 
     @Test
     public void newSessionWithWrongPasswordAndUser() {
-        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco", 
+        UsersHandler.getInstance().addUser(Json.object(UsersHandler.USER_NAME, "marco",
         											   UsersHandler.USER_PASSWORD, "ciao", 
         											   UsersHandler.USER_IS_ADMIN, true));
 

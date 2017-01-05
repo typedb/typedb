@@ -64,8 +64,8 @@ public class DistributedTaskManager implements TaskManager{
     public TaskManager open() {
         if(OPENED.compareAndSet(false, true)) {
             try {
-                producer = ConfigHelper.kafkaProducer();
-                stateStorage = new GraknStateStorage();
+                noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");
+                noThrow(() -> stateStorage = new GraknStateStorage(), "Could not instantiate grakn state storage");
                 zkStorage = SynchronizedStateStorage.getInstance();
             }
             catch (Exception e) {
