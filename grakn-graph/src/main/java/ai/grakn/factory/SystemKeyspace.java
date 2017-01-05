@@ -62,7 +62,11 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	private Properties properties;
 	private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<String, Boolean>();
 	private InternalFactory<M, T> factory;
-	
+
+    public SystemKeyspace(InternalFactory<M, T> factory){
+        this.factory = factory;
+    }
+
 	public SystemKeyspace(String engineUrl, Properties properties) {
 		this.engineUrl = engineUrl;
 		this.properties = properties;
