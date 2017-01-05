@@ -118,7 +118,9 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
                 OType orientDataType = getOrientDataType(property);
                 BaseConfiguration indexConfig = new BaseConfiguration();
                 indexConfig.setProperty("keytype", orientDataType);
+                //TODO: Figure out why this is not working when the Orient Guys say it should
                 //indexConfig.setProperty("metadata.ignoreNullValues", true);
+
                 if(isUnique){
                     indexConfig.setProperty("type", "UNIQUE");
                 }

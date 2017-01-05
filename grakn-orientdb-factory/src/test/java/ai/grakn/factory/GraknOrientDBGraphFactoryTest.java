@@ -18,17 +18,16 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.Grakn;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -74,7 +73,6 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(8, graknGraph3.getTinkerPopGraph().traversal().V().toList().size());
     }
 
-    @Ignore// Null index does not work on orientDB
     @Test
     public void testBuildGraph() throws GraknValidationException {
         GraknOrientDBGraph graknGraph = orientGraphFactory.getGraph(false);
