@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
@@ -41,7 +42,7 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     }
 
     @Override
-    public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
+    public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         try {
             return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
         } catch (NumberFormatException e){

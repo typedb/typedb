@@ -20,13 +20,12 @@ package ai.grakn.example;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,10 +36,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.ErrorMessage.CANNOT_LOAD_EXAMPLE;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class PokemonGraphFactoryTest {
     private GraknGraph graknGraph;
@@ -60,9 +58,7 @@ public class PokemonGraphFactoryTest {
         graknGraph.putRoleType("fake");
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage())
-        ));
+        expectedException.expectMessage(CANNOT_LOAD_EXAMPLE.getMessage());
 
         PokemonGraphFactory.loadGraph(graknGraph);
     }

@@ -72,15 +72,15 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Types  ----------------------------------------------------
     private TypeImpl buildType(Vertex v, Optional<Type> type, Optional<Boolean> isImplicit){
-        return new TypeImpl(graknGraph, v, type, isImplicit);
+        return new TypeImpl<>(graknGraph, v, type, isImplicit);
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType type, ResourceType.DataType<V> dataType, Boolean isUnique){
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
         return buildResourceType(v, Optional.of(type), Optional.of(dataType), Optional.of(isUnique));
     }
-    private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
-        return new ResourceTypeImpl(graknGraph, v, type, dataType, isUnique);
+    private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType<V>> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
+        return new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique);
     }
 
     // ------------------------------------------ Building Resources

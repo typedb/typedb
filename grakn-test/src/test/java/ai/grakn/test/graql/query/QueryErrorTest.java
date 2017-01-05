@@ -115,7 +115,7 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
     @Test
     public void testExceptionWhenNoSelectVariablesProvided() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("select"));
+        exception.expectMessage("select");
         qb.match(Graql.var("x").isa("movie")).select();
     }
 

@@ -88,7 +88,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
     }
 
     @Override
-    public GraknVertexProgram clone() {
+    public GraknVertexProgram<T> clone() {
         try {
             return (GraknVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {

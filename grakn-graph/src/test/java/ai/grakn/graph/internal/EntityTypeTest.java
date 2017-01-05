@@ -30,7 +30,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,9 +38,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
+import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -362,9 +361,7 @@ public class EntityTypeTest extends GraphTestBase{
         Type meta = graknGraph.getMetaRuleType();
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(meta.getName()))
-        ));
+        expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getName()));
 
         meta.setAbstract(true);
     }
@@ -375,9 +372,7 @@ public class EntityTypeTest extends GraphTestBase{
         RoleType roleType = graknGraph.putRoleType("A Role");
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(meta.getName()))
-        ));
+        expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getName()));
 
         meta.playsRole(roleType);
     }
@@ -545,9 +540,7 @@ public class EntityTypeTest extends GraphTestBase{
         assertNull(graknGraph.getEntityType("entityTypeA"));
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_DELETE.getMessage(entityTypeB.getName()))
-        ));
+        expectedException.expectMessage(CANNOT_DELETE.getMessage(entityTypeB.getName()));
 
         entityTypeB.delete();
     }

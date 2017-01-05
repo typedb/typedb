@@ -39,7 +39,6 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -87,10 +86,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             if (((Map) computeResult).isEmpty())
                 return Stream.of("There are no instances of the selected type(s).");
             if (((Map) computeResult).values().iterator().next() instanceof Set) {
-                Map<Serializable, Set<String>> map = (Map<Serializable, Set<String>>) computeResult;
+                Map<?, ?> map = (Map) computeResult;
                 return map.entrySet().stream().map(entry -> {
                     StringBuilder stringBuilder = new StringBuilder();
-                    for (String s : entry.getValue()) {
+                    for (Object s : (Iterable) entry.getValue()) {
                         stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
                     }
                     return stringBuilder.toString();
@@ -161,7 +160,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return true;
     }
 
-    void mutateResourceOntology(String resourceTypeName, ResourceType.DataType resourceDataType) {
+    void mutateResourceOntology(String resourceTypeName, ResourceType.DataType<?> resourceDataType) {
         GraknGraph theGraph = this.graph.get();
 
         ResourceType resource = theGraph.putResourceType(resourceTypeName, resourceDataType);
