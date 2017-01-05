@@ -23,15 +23,14 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
+import static ai.grakn.util.ErrorMessage.NULL_VALUE;
+import static ai.grakn.util.Schema.ConceptProperty.RULE_LHS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -63,9 +62,7 @@ public class RuleTest extends GraphTestBase{
         assertEquals(rhs, rule.getRHS());
 
         expectedException.expect(InvalidConceptValueException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS))
-        ));
+        expectedException.expectMessage(NULL_VALUE.getMessage(RULE_LHS));
 
         conceptType.addRule(null, null);
     }

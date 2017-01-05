@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
-import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
@@ -31,10 +30,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -102,9 +100,7 @@ public class GraknTinkerGraphFactoryTest {
     @Test
     public void testGetNullKeySpace(){
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.NULL_VALUE.getMessage("keyspace"))
-        ));
+        expectedException.expectMessage(NULL_VALUE.getMessage("keyspace"));
 
         tinkerGraphFactory = new TinkerInternalFactory(null, null, null);
         tinkerGraphFactory.getGraph(false);

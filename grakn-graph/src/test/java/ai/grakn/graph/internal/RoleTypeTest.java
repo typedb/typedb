@@ -29,8 +29,6 @@ import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -51,9 +49,7 @@ public class RoleTypeTest extends GraphTestBase {
         RelationType relationType = graknGraph.putRelationType("original");
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_ALREADY_TAKEN.getMessage("original", relationType.toString()))
-        ));
+        expectedException.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage("original", relationType.toString()));
 
 
         graknGraph.putRoleType("original");
@@ -79,9 +75,7 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testRoleTypeCannotPlayItself(){
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()))
-        ));
+        expectedException.expectMessage(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()));
 
         roleType.playsRole(roleType);
     }
@@ -151,9 +145,7 @@ public class RoleTypeTest extends GraphTestBase {
         graknGraph.putEntityType("Entity Type").playsRole(roleType);
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getName()))
-        ));
+        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getName()));
 
         roleType.delete();
     }
@@ -164,9 +156,7 @@ public class RoleTypeTest extends GraphTestBase {
         graknGraph.putRelationType("Thing").hasRole(roleType2).hasRole(roleType);
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getName()))
-        ));
+        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getName()));
 
         roleType2.delete();
     }
@@ -186,9 +176,7 @@ public class RoleTypeTest extends GraphTestBase {
                 putRolePlayer(roleB, b);
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getName()))
-        ));
+        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getName()));
 
         roleA.delete();
     }

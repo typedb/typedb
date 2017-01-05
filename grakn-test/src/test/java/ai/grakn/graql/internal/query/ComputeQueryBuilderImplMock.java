@@ -11,16 +11,18 @@ import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
+import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  *
@@ -52,8 +54,8 @@ public class ComputeQueryBuilderImplMock extends ComputeQueryBuilderImpl {
     }
 
     @Override
-    public DegreeQuery degree() {
-        return new DegreeQueryImplMock(graph,numWorkers);
+    public DegreeQuery<Map<Long, Set<String>>> degree() {
+        return new DegreeQueryImplMock<>(graph,numWorkers);
     }
 
     @Override
