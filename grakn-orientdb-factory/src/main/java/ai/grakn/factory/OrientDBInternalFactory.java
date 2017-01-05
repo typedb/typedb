@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -35,6 +36,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
+
+import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 
 public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrientDBGraph, OrientGraph> {
     private final Logger LOG = LoggerFactory.getLogger(OrientDBInternalFactory.class);
@@ -105,34 +108,25 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
     private OrientGraph createIndicesVertex(OrientGraph graph){
         ResourceBundle keys = ResourceBundle.getBundle("indices-vertices");
-        Set<String> keyString = keys.keySet();
+        Set<String> labels = keys.keySet();
 
-        for(String conceptProperty : keyString){
-            String[] configs = keys.getString(conceptProperty).split(",");
+        for (String label : labels) {
+            String [] configs = keys.getString(label).split(",");
 
-            BaseConfiguration indexConfig = new BaseConfiguration();
-            OType otype = OType.STRING;
-            switch (configs[0]){
-                case "Long":
-                    otype = OType.LONG;
-                    break;
-                case "Double":
-                    otype = OType.DOUBLE;
-                    break;
-                case "Boolean":
-                    otype = OType.BOOLEAN;
-                    break;
-            }
+            for (String propertyConfig : configs) {
+                String[] propertyConfigs = propertyConfig.split(":");
+                Schema.ConceptProperty property = Schema.ConceptProperty.valueOf(propertyConfigs[0]);
+                boolean isUnique = Boolean.parseBoolean(propertyConfigs[1]);
 
-            indexConfig.setProperty(KEY_TYPE, otype);
+                OType orientDataType = getOrientDataType(property);
+                BaseConfiguration indexConfig = new BaseConfiguration();
+                indexConfig.setProperty(KEY_TYPE, orientDataType);
+                if(isUnique){
+                    indexConfig.setProperty(UNIQUE, "UNIQUE");
+                }
 
-            if(Boolean.valueOf(configs[1])){
-                indexConfig.setProperty(UNIQUE, "UNIQUE");
-            }
-
-            for (Schema.BaseType baseType : Schema.BaseType.values()) {
-                if(!graph.getVertexIndexedKeys(baseType.name()).contains(conceptProperty)) {
-                    graph.createVertexIndex(conceptProperty, baseType.name(), indexConfig);
+                if(!graph.getVertexIndexedKeys(label).contains(property.name())) {
+                    graph.createVertexIndex(property.name(), label, indexConfig);
                 }
             }
         }
@@ -140,10 +134,28 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
         return graph;
     }
 
+    private OType getOrientDataType(Schema.ConceptProperty property){
+        Class propertyDataType = property.getDataType();
+
+        if(propertyDataType.equals(String.class)){
+            return OType.STRING;
+        } else if(propertyDataType.equals(Long.class)){
+            return OType.LONG;
+        } else if(propertyDataType.equals(Double.class)){
+            return OType.DOUBLE;
+        } else if(propertyDataType.equals(Boolean.class)){
+            return OType.BOOLEAN;
+        } else {
+            String options = String.class.getName() + ", " + Long.class.getName() + ", " +
+                    Double.class.getName() + ", or " + Boolean.class.getName();
+            throw new GraphRuntimeException(INVALID_DATATYPE.getMessage(propertyDataType.getName(), options));
+        }
+    }
+
     private OrientGraphFactory getFactory(String name, String address){
         if (Grakn.IN_MEMORY.equals(address)){
-            address = "plocal";
-            name = "/tmp/" + name;
+            address = "memory";
+            //name = "/tmp/" + name;
         }
 
         String key = name + address;
