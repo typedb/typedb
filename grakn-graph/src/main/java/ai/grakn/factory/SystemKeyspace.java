@@ -1,6 +1,5 @@
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -13,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -58,23 +56,12 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     
-	private String engineUrl;
-	private Properties properties;
 	private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<String, Boolean>();
 	private InternalFactory<M, T> factory;
 
     public SystemKeyspace(InternalFactory<M, T> factory){
         this.factory = factory;
     }
-
-	public SystemKeyspace(String engineUrl, Properties properties) {
-		this.engineUrl = engineUrl;
-		this.properties = properties;
-		if (properties != null)
-			this.factory = FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, properties);
-		else
-			this.factory = 	FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, Grakn.IN_MEMORY, properties);
-	}
 
 	/**
 	 * Notify that we just opened a keyspace with the same engineUrl & config.
@@ -104,7 +91,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
 	 * multiple times.
 	 */
 	public void loadSystemOntology() {
-		try (GraknGraph graph = FactoryBuilder.getFactory(SYSTEM_GRAPH_NAME, engineUrl, properties).getGraph(false)) {
+		try (GraknGraph graph = factory.getGraph(false)) {
 			if (graph.getEntityType(KEYSPACE_ENTITY) != null)
 				return;
 			ClassLoader loader = this.getClass().getClassLoader();
