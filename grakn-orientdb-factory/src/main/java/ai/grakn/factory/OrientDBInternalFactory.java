@@ -42,9 +42,6 @@ import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrientDBGraph, OrientGraph> {
     private final Logger LOG = LoggerFactory.getLogger(OrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;
-    private static final String KEY_TYPE = "keytype";
-    private static final String UNIQUE = "type";
-
 
     public OrientDBInternalFactory(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
@@ -120,9 +117,10 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
 
                 OType orientDataType = getOrientDataType(property);
                 BaseConfiguration indexConfig = new BaseConfiguration();
-                indexConfig.setProperty(KEY_TYPE, orientDataType);
+                indexConfig.setProperty("keytype", orientDataType);
+                //indexConfig.setProperty("metadata.ignoreNullValues", true);
                 if(isUnique){
-                    indexConfig.setProperty(UNIQUE, "UNIQUE");
+                    indexConfig.setProperty("type", "UNIQUE");
                 }
 
                 if(!graph.getVertexIndexedKeys(label).contains(property.name())) {
