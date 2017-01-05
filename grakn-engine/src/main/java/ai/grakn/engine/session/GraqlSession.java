@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -180,16 +181,16 @@ class GraqlSession {
         queryExecutor.submit(() -> {
 
             String errorMessage = null;
-            Query<?> query = null;
+            List<Query<?>> queries = null;
 
             try {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                query = graph.graql().infer(infer).materialise(materialise).parse(queryString);
+                queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString);
 
                 // Return results unless query is cancelled
-                query.resultsString(printer).forEach(result -> {
+                queries.stream().flatMap(query -> query.resultsString(printer)).forEach(result -> {
                     if (queryCancelled) return;
                     sendQueryResult(result);
                 });
@@ -206,7 +207,7 @@ class GraqlSession {
                 attemptRefresh();
 
                 if (errorMessage != null) {
-                    if (query != null && !query.isReadOnly()) {
+                    if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
                         attemptRollback();
                     }
                     sendQueryError(errorMessage);
