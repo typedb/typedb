@@ -177,14 +177,14 @@ public class AtomicTest extends AbstractEngineTest{
 
         Map<VarName, VarName> unifiers = specialisedAtom.getUnifiers(atom);
         Map<VarName, VarName> unifiers2 = specialisedAtom2.getUnifiers(atom);
-        Map<String, String> correctUnifiers = new HashMap<>();
-        correctUnifiers.put("p", "y");
-        correctUnifiers.put("c", "x");
-        Map<String, String> correctUnifiers2 = new HashMap<>();
-        correctUnifiers2.put("p", "x");
-        correctUnifiers2.put("c", "y");
-        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
-        assertTrue(unifiers2.entrySet().containsAll(correctUnifiers2.entrySet()));
+        Map<VarName, VarName> correctUnifiers = new HashMap<>();
+        correctUnifiers.put(varName("p"), varName("y"));
+        correctUnifiers.put(varName("c"), varName("x"));
+        Map<VarName, VarName> correctUnifiers2 = new HashMap<>();
+        correctUnifiers2.put(varName("p"), varName("x"));
+        correctUnifiers2.put(varName("c"), varName("y"));
+        assertTrue(unifiers.toString(), unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+        assertTrue(unifiers2.toString(), unifiers2.entrySet().containsAll(correctUnifiers2.entrySet()));
     }
 
     @Test
@@ -219,7 +219,7 @@ public class AtomicTest extends AbstractEngineTest{
         correctVars.add(varName("a"));
         correctVars.add(varName("x"));
         assertTrue(!vars.contains(varName("")));
-        assertTrue(vars.containsAll(correctVars));
+        assertTrue(vars.toString(), vars.containsAll(correctVars));
     }
 
 

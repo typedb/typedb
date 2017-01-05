@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -69,14 +70,14 @@ public class AdminTest extends AbstractMovieGraphTest {
     public void testDefaultGetSelectedNamesInQuery() {
         MatchQuery query = qb.match(var("x").isa(var("y")));
 
-        assertEquals(Sets.newHashSet("x", "y"), query.admin().getSelectedNames());
+        assertEquals(Sets.newHashSet(varName("x"), varName("y")), query.admin().getSelectedNames());
     }
 
     @Test
     public void testExplicitGetSelectedNamesInQuery() {
         MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
 
-        assertEquals(Sets.newHashSet("x"), query.admin().getSelectedNames());
+        assertEquals(Sets.newHashSet(varName("x")), query.admin().getSelectedNames());
     }
 
     @Test

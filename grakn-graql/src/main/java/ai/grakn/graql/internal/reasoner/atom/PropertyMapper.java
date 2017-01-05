@@ -134,7 +134,7 @@ public class PropertyMapper {
         if (isaProp != null) {
             VarAdmin isaVar = isaProp.getType();
             String typeName = isaVar.getTypeName().orElse("");
-            VarName typeVariable = typeName.isEmpty()? isaVar.getVarName() : Patterns.varName().rename(name -> "rel-" + name);
+            VarName typeVariable = typeName.isEmpty()? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
             relVar.isa(Graql.var(typeVariable));
             if (!typeName.isEmpty()) {
                 VarAdmin idVar = Graql.var(typeVariable)

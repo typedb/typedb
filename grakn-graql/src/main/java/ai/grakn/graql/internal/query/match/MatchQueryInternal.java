@@ -119,7 +119,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
     }
 
     @Override
-    default <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
+    default <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 

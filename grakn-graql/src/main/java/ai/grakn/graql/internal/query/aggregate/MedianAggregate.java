@@ -31,7 +31,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a match query.
  */
-class MedianAggregate extends AbstractAggregate<Map<String, Concept>, Optional<Number>> {
+class MedianAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Number>> {
 
     private final VarName varName;
 
@@ -40,9 +40,9 @@ class MedianAggregate extends AbstractAggregate<Map<String, Concept>, Optional<N
     }
 
     @Override
-    public Optional<Number> apply(Stream<? extends Map<String, Concept>> stream) {
+    public Optional<Number> apply(Stream<? extends Map<VarName, Concept>> stream) {
         List<Number> results = stream
-                .map(result -> ((Number) result.get(varName.getValue()).asResource().getValue()))
+                .map(result -> ((Number) result.get(varName).asResource().getValue()))
                 .sorted()
                 .collect(toList());
 

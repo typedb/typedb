@@ -169,7 +169,7 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param <S> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
-    <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate);
+    <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

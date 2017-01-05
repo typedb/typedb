@@ -8,27 +8,19 @@ import java.util.function.Function;
 
 class VarNameImpl implements VarName {
 
-    private final boolean userDefined;
     private final String value;
 
     VarNameImpl() {
         this.value = UUID.randomUUID().toString();
-        this.userDefined = false;
     }
 
     VarNameImpl(String value) {
         this.value = value;
-        this.userDefined = true;
     }
 
     @Override
     public String getValue() {
         return value;
-    }
-
-    @Override
-    public boolean isUserDefined() {
-        return userDefined;
     }
 
     @Override
@@ -52,14 +44,11 @@ class VarNameImpl implements VarName {
 
         VarNameImpl varName = (VarNameImpl) o;
 
-        if (userDefined != varName.userDefined) return false;
         return value.equals(varName.value);
     }
 
     @Override
     public int hashCode() {
-        int result = (userDefined ? 1 : 0);
-        result = 31 * result + value.hashCode();
-        return result;
+        return value.hashCode();
     }
 }

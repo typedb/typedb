@@ -35,7 +35,7 @@ public class Aggregates {
     /**
      * Aggregate that finds average (mean) of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Optional<Double>> average(VarName varName) {
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> average(VarName varName) {
         return new AverageAggregate(varName);
     }
 
@@ -47,11 +47,19 @@ public class Aggregates {
     }
 
     /**
+     * Aggregate that groups results of a match query by variable name
+     * @param varName the variable name to group results by
+     */
+    public static Aggregate<Map<VarName, Concept>, Map<Concept, List<Map<VarName, Concept>>>> group(VarName varName) {
+        return group(varName, list());
+    }
+
+    /**
      * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
      * @param <T> the type of each group
      */
-    public static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(
-            VarName varName, Aggregate<? super Map<String, Concept>, T> innerAggregate
+    public static <T> Aggregate<Map<VarName, Concept>, Map<Concept, T>> group(
+            VarName varName, Aggregate<? super Map<VarName, Concept>, T> innerAggregate
     ) {
         return new GroupAggregate<>(varName, innerAggregate);
     }
@@ -67,21 +75,21 @@ public class Aggregates {
     /**
      * Aggregate that finds maximum of a match query.
      */
-    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> max(VarName varName) {
+    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> max(VarName varName) {
         return new MaxAggregate<>(varName);
     }
 
     /**
      * Aggregate that finds median of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Optional<Number>> median(VarName varName) {
+    public static Aggregate<Map<VarName, Concept>, Optional<Number>> median(VarName varName) {
         return new MedianAggregate(varName);
     }
 
     /**
      * Aggregate that finds minimum of a match query.
      */
-    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> min(VarName varName) {
+    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> min(VarName varName) {
         return new MinAggregate<>(varName);
     }
 
@@ -99,7 +107,7 @@ public class Aggregates {
     /**
      * Aggregate that sums results of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Number> sum(VarName varName) {
+    public static Aggregate<Map<VarName, Concept>, Number> sum(VarName varName) {
         return new SumAggregate(varName);
     }
 }

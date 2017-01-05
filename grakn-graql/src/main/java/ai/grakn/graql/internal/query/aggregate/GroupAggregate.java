@@ -34,22 +34,22 @@ import static java.util.stream.Collectors.toList;
  * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
-class GroupAggregate<T> extends AbstractAggregate<Map<String, Concept>, Map<Concept, T>> {
+class GroupAggregate<T> extends AbstractAggregate<Map<VarName, Concept>, Map<Concept, T>> {
 
     private final VarName varName;
-    private final Aggregate<? super Map<String, Concept>, T> innerAggregate;
+    private final Aggregate<? super Map<VarName, Concept>, T> innerAggregate;
 
-    GroupAggregate(VarName varName, Aggregate<? super Map<String, Concept>, T> innerAggregate) {
+    GroupAggregate(VarName varName, Aggregate<? super Map<VarName, Concept>, T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }
 
     @Override
-    public Map<Concept, T> apply(Stream<? extends Map<String, Concept>> stream) {
-        Collector<Map<String, Concept>, ?, T> applyAggregate =
+    public Map<Concept, T> apply(Stream<? extends Map<VarName, Concept>> stream) {
+        Collector<Map<VarName, Concept>, ?, T> applyAggregate =
                 collectingAndThen(toList(), list -> innerAggregate.apply(list.stream()));
 
-        return stream.collect(groupingBy(result -> result.get(varName.getValue()), applyAggregate));
+        return stream.collect(groupingBy(result -> result.get(varName), applyAggregate));
     }
 
     @Override

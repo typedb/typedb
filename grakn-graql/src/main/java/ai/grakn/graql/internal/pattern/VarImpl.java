@@ -72,12 +72,14 @@ class VarImpl implements VarAdmin {
     private final Set<VarProperty> properties = new HashSet<>();
 
     private VarName name;
+    private final boolean userDefinedName;
 
     /**
      * Create a variable with a random variable name
      */
     VarImpl() {
         this.name = new VarNameImpl();
+        this.userDefinedName = false;
     }
 
     /**
@@ -85,6 +87,7 @@ class VarImpl implements VarAdmin {
      */
     VarImpl(VarName name) {
         this.name = name;
+        this.userDefinedName = true;
     }
 
     /**
@@ -94,6 +97,7 @@ class VarImpl implements VarAdmin {
     VarImpl(Collection<VarAdmin> vars) {
         VarAdmin first = vars.iterator().next();
         this.name = first.getVarName();
+        this.userDefinedName = first.isUserDefinedName();
 
         for (VarAdmin var : vars) {
             if (var.isUserDefinedName()) {
@@ -110,6 +114,7 @@ class VarImpl implements VarAdmin {
      */
     private VarImpl(VarAdmin var) {
         this.name = var.getVarName();
+        this.userDefinedName = var.isUserDefinedName();
         var.getProperties().forEach(this::addProperty);
     }
 
@@ -300,7 +305,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public boolean isUserDefinedName() {
-        return name.isUserDefined();
+        return userDefinedName;
     }
 
     @Override
@@ -320,16 +325,13 @@ class VarImpl implements VarAdmin {
 
     @Override
     public void setVarName(VarName name) {
-        if (!name.isUserDefined() || !this.name.isUserDefined()) {
-            throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
-        }
-
+        if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
         this.name = name;
     }
 
     @Override
     public String getPrintableName() {
-        if (name.isUserDefined()) {
+        if (userDefinedName) {
             return name.toString();
         } else {
             return getTypeName().map(StringConverter::idToString).orElse("'" + toString() + "'");
@@ -491,21 +493,21 @@ class VarImpl implements VarAdmin {
 
         VarImpl var = (VarImpl) o;
 
-        if (isUserDefinedName() != var.isUserDefinedName()) return false;
+        if (userDefinedName != var.userDefinedName) return false;
 
         // "simplifying" this makes it harder to read
         //noinspection SimplifiableIfStatement
         if (!properties.equals(var.properties)) return false;
 
-        return !isUserDefinedName() || name.equals(var.name);
+        return !userDefinedName || name.equals(var.name);
 
     }
 
     @Override
     public int hashCode() {
         int result = properties.hashCode();
-        if (isUserDefinedName()) result = 31 * result + name.hashCode();
-        result = 31 * result + (isUserDefinedName() ? 1 : 0);
+        if (userDefinedName) result = 31 * result + name.hashCode();
+        result = 31 * result + (userDefinedName ? 1 : 0);
         return result;
     }
 

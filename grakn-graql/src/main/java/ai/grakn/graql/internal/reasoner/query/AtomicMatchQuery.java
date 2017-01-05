@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,9 +73,6 @@ public class AtomicMatchQuery extends AtomicQuery{
         answers = new QueryAnswers(ans);
         newAnswers = new QueryAnswers();
     }
-
-    @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {return answers.stream();}
 
     @Override
     public QueryAnswers getAnswers(){ return answers;}

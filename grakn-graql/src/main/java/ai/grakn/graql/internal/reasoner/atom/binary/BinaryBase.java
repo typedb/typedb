@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarName;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -177,7 +176,7 @@ public abstract class BinaryBase extends Atom {
         if (unifiers.containsKey(var))
             setValueVariable(unifiers.get(var));
         else if (unifiers.containsValue(var))
-            setValueVariable(Patterns.varName("captured->" + var.getValue()));
+            setValueVariable(var.rename(name -> "captured->" + name));
     }
 
     @Override

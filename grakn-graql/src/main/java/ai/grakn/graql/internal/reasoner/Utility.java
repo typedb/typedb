@@ -43,9 +43,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.toSet;
 
 
 /**
@@ -92,13 +92,13 @@ public class Utility {
     }
 
     public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
-            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(Collectors.toSet());
+            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(toSet());
 
     public static final Function<Type, Set<RelationType>> typeToRelationTypes =
             type -> type.playsRoles().stream()
                     .flatMap(roleType -> roleType.relationTypes().stream())
                     .filter(rt -> !rt.isImplicit())
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
 
     public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
         Set<RelationType> compatibleTypes = new HashSet<>();
@@ -146,8 +146,9 @@ public class Utility {
      * @return fresh variables
      */
     public static VarName createFreshVariable(Set<VarName> vars, VarName var) {
+        Set<String> names = vars.stream().map(VarName::getValue).collect(toSet());
         String fresh = var.getValue();
-        while (vars.contains(Patterns.varName(fresh))) {
+        while (names.contains(fresh)) {
             String valFree = fresh.replaceAll("[^0-9]", "");
             int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
             fresh = fresh.replaceAll("\\d+", "") + (++value);

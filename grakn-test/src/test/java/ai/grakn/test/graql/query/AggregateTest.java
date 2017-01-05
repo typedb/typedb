@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,6 +41,7 @@ import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 
 public class AggregateTest extends AbstractMovieGraphTest {
@@ -62,17 +64,17 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
     @Test
     public void testGroup() {
-        AggregateQuery<Map<Concept, List<Map<String, Concept>>>> groupQuery =
+        AggregateQuery<Map<Concept, List<Map<VarName, Concept>>>> groupQuery =
                 qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(group("x"));
 
-        Map<Concept, List<Map<String, Concept>>> groups = groupQuery.execute();
+        Map<Concept, List<Map<VarName, Concept>>> groups = groupQuery.execute();
 
         Assert.assertEquals(QueryUtil.movies.length, groups.size());
 
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
-                assertEquals(movie, result.get("x"));
-                assertEquals(graph.getEntityType("person"), result.get("y").asInstance().type());
+                assertEquals(movie, result.get(varName("x")));
+                assertEquals(graph.getEntityType("person"), result.get(varName("y")).asInstance().type());
             });
         });
     }
