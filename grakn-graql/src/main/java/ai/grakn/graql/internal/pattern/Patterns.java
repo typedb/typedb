@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 
 import java.util.Collection;
 import java.util.Set;
@@ -42,7 +43,7 @@ public class Patterns {
         return new VarImpl();
     }
 
-    public static VarAdmin var(String name) {
+    public static VarAdmin var(VarName name) {
         return new VarImpl(name);
     }
 
@@ -54,5 +55,13 @@ public class Patterns {
 
     public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
         return new VarImpl(vars);
+    }
+
+    public static VarName varName() {
+        return new VarNameImpl();
+    }
+
+    public static VarName varName(String name) {
+        return new VarNameImpl(name);
     }
 }

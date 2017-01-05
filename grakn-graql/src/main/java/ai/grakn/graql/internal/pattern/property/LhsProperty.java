@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.util.ErrorMessage;
 
@@ -64,7 +65,7 @@ public class LhsProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(String start) {
+    public Collection<EquivalentFragmentSet> match(VarName start) {
         throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
     }
 }

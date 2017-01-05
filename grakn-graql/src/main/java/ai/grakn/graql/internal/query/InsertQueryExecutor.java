@@ -24,6 +24,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
@@ -71,10 +72,10 @@ public class InsertQueryExecutor {
 
     private final GraknGraph graph;
     private final Collection<VarAdmin> vars;
-    private final Map<String, Concept> concepts = new HashMap<>();
-    private Map<String, Concept> namedConcepts;
-    private final Stack<String> visitedVars = new Stack<>();
-    private final ImmutableMap<String, List<VarAdmin>> varsByVarName;
+    private final Map<VarName, Concept> concepts = new HashMap<>();
+    private Map<VarName, Concept> namedConcepts;
+    private final Stack<VarName> visitedVars = new Stack<>();
+    private final ImmutableMap<VarName, List<VarAdmin>> varsByVarName;
     private final ImmutableMap<String, List<VarAdmin>> varsByTypeName;
     private final ImmutableMap<String, List<VarAdmin>> varsById;
 
@@ -109,7 +110,7 @@ public class InsertQueryExecutor {
     /**
      * Insert all the Vars
      */
-    Map<String, Concept> insertAll() {
+    Map<VarName, Concept> insertAll() {
         return insertAll(new HashMap<>());
     }
 
@@ -117,7 +118,7 @@ public class InsertQueryExecutor {
      * Insert all the Vars
      * @param results the result of a match query
      */
-    Map<String, Concept> insertAll(Map<String, Concept> results) {
+    Map<VarName, Concept> insertAll(Map<VarName, Concept> results) {
         concepts.clear();
         concepts.putAll(results);
         namedConcepts = new HashMap<>(results);
@@ -142,7 +143,7 @@ public class InsertQueryExecutor {
      * @return the same as addConcept, but using an internal map to remember previous calls
      */
     public Concept getConcept(VarAdmin var) {
-        String name = var.getVarName();
+        VarName name = var.getVarName();
         if (visitedVars.contains(name)) {
             throw new IllegalStateException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
         }

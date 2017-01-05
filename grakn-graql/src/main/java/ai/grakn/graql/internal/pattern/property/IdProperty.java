@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -46,7 +47,7 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
     }
 
     @Override
-    public Fragment getFragment(String start) {
+    public Fragment getFragment(VarName start) {
         return Fragments.id(start, id);
     }
 

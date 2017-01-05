@@ -41,12 +41,12 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the variable name of this variable
      */
-    String getVarName();
+    VarName getVarName();
 
     /**
      * @param name the new variable name of this variable
      */
-    void setVarName(String name);
+    void setVarName(VarName name);
 
     /**
      * @return whether the user specified a name for this variable

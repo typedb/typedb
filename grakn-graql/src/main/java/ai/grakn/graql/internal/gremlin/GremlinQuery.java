@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
@@ -55,14 +56,14 @@ public class GremlinQuery {
 
     private final GraknGraph graph;
     private final Collection<ConjunctionQuery> innerQueries;
-    private final ImmutableSet<String> names;
+    private final ImmutableSet<VarName> names;
 
     /**
      * @param graph the graph to execute the query on
      * @param pattern a pattern to find in the graph
      * @param names the variable names to select
      */
-    public GremlinQuery(GraknGraph graph, PatternAdmin pattern, ImmutableSet<String> names) {
+    public GremlinQuery(GraknGraph graph, PatternAdmin pattern, ImmutableSet<VarName> names) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (graph == null) {

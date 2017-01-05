@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;
@@ -42,7 +43,7 @@ class MatchQueryInfer extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph) {
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );

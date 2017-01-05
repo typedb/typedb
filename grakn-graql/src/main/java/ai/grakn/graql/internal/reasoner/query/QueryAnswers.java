@@ -18,16 +18,17 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,13 +48,13 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class QueryAnswers extends HashSet<Map<String, Concept>> {
+public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
 
     public QueryAnswers(){super();}
-    public QueryAnswers(Collection<? extends Map<String, Concept>> ans){ super(ans);}
+    public QueryAnswers(Collection<? extends Map<VarName, Concept>> ans){ super(ans);}
 
-    public Set<String> getVars(){
-        Optional<Map<String, Concept>> map = this.stream().findFirst();
+    public Set<VarName> getVars(){
+        Optional<Map<VarName, Concept>> map = this.stream().findFirst();
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
 
@@ -62,11 +63,11 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      * @param vars set of variable names
      * @return filtered answers
      */
-    public QueryAnswers filterVars(Set<String> vars) {
+    public QueryAnswers filterVars(Set<VarName> vars) {
         QueryAnswers results = new QueryAnswers();
         if (this.isEmpty()) return results;
         this.forEach(answer -> {
-            Map<String, Concept> map = new HashMap<>();
+            Map<VarName, Concept> map = new HashMap<>();
             answer.forEach((var, concept) -> {
                 if (vars.contains(var))
                     map.put(var, concept);
@@ -90,9 +91,9 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         QueryAnswers results = new QueryAnswers();
         this.forEach(answer ->{
             boolean isKnown = false;
-            Iterator<Map<String, Concept>> it = known.iterator();
+            Iterator<Map<VarName, Concept>> it = known.iterator();
             while(it.hasNext() && !isKnown) {
-                Map<String, Concept> knownAnswer = it.next();
+                Map<VarName, Concept> knownAnswer = it.next();
                 isKnown = knownAnswer.entrySet().containsAll(answer.entrySet());
             }
             if (!isKnown) results.add(answer);
@@ -105,7 +106,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      * @param vars variable set considered complete
      * @return filtered answers
      */
-    public QueryAnswers filterIncomplete(Set<String> vars) {
+    public QueryAnswers filterIncomplete(Set<VarName> vars) {
         return new QueryAnswers(this.stream()
                 .filter(answer -> answer.keySet().containsAll(vars))
                 .collect(Collectors.toSet()));
@@ -132,20 +133,20 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      * @param varTypeMap map of variable name - corresponding type pairs
      * @return filtered vars
      */
-    public QueryAnswers filterByTypes(Map<String, Type> varTypeMap){
+    public QueryAnswers filterByTypes(Map<VarName, Type> varTypeMap){
         QueryAnswers results = new QueryAnswers();
         if(this.isEmpty()) return results;
-        Set<String> vars = getVars();
-        Map<String, Type> filteredMap = new HashMap<>();
+        Set<VarName> vars = getVars();
+        Map<VarName, Type> filteredMap = new HashMap<>();
         varTypeMap.forEach( (v, t) -> {
             if(vars.contains(v)) filteredMap.put(v, t);
         });
         if (filteredMap.isEmpty()) return this;
         this.forEach(answer -> {
             boolean isCompatible = true;
-            Iterator<Map.Entry<String, Type>> it = filteredMap.entrySet().iterator();
+            Iterator<Map.Entry<VarName, Type>> it = filteredMap.entrySet().iterator();
             while( it.hasNext() && isCompatible){
-                Map.Entry<String, Type> entry = it.next();
+                Map.Entry<VarName, Type> entry = it.next();
                 isCompatible = answer.get(entry.getKey()).asInstance().type().equals(entry.getValue());
             }
             if (isCompatible) results.add(answer);
@@ -163,20 +164,20 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             return new QueryAnswers();
 
         QueryAnswers join = new QueryAnswers();
-        for( Map<String, Concept> lanswer : localTuples){
-            for (Map<String, Concept> answer : this){
+        for( Map<VarName, Concept> lanswer : localTuples){
+            for (Map<VarName, Concept> answer : this){
                 boolean isCompatible = true;
-                Iterator<Map.Entry<String, Concept>> it = lanswer.entrySet().iterator();
+                Iterator<Map.Entry<VarName, Concept>> it = lanswer.entrySet().iterator();
                 while(it.hasNext() && isCompatible) {
-                    Map.Entry<String, Concept> entry = it.next();
-                    String var = entry.getKey();
+                    Map.Entry<VarName, Concept> entry = it.next();
+                    VarName var = entry.getKey();
                     Concept concept = entry.getValue();
                     if(answer.containsKey(var) && !concept.equals(answer.get(var)))
                         isCompatible = false;
                 }
 
                 if (isCompatible) {
-                    Map<String, Concept> merged = new HashMap<>();
+                    Map<VarName, Concept> merged = new HashMap<>();
                     merged.putAll(lanswer);
                     merged.putAll(answer);
                     join.add(merged);
@@ -191,20 +192,20 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      * @param unifiers
      * @return unified query answers
      */
-    public QueryAnswers unify(Map<String, String> unifiers){
+    public QueryAnswers unify(Map<VarName, VarName> unifiers){
         return unify(unifiers, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
-    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars,
-                               Map<String, Concept> valueConstraints, Map<String, String> typeConstraints){
+    private QueryAnswers unify(Map<VarName, VarName> unifiers, Map<VarName, Concept> subVars,
+                               Map<VarName, Concept> valueConstraints, Map<VarName, String> typeConstraints){
         if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(entry -> {
-            Map<String, Concept> answer = new HashMap<>(subVars);
+            Map<VarName, Concept> answer = new HashMap<>(subVars);
             boolean isCompatible = true;
-            Iterator<String> it = entry.keySet().iterator();
+            Iterator<VarName> it = entry.keySet().iterator();
             while (it.hasNext() && isCompatible) {
-                String var = it.next();
+                VarName var = it.next();
                 Concept con = entry.get(var);
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
@@ -231,12 +232,12 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
 
         //identify extra subs contribute to/constraining answers
-        Map<String, Concept> subVars = new HashMap<>();
-        Map<String, Concept> valueConstraints = new HashMap<>();
-        Map<String, String> typeConstraints = new HashMap<>();
+        Map<VarName, Concept> subVars = new HashMap<>();
+        Map<VarName, Concept> valueConstraints = new HashMap<>();
+        Map<VarName, String> typeConstraints = new HashMap<>();
 
         //find extra type constraints
         Set<Atom> extraTypes =  Utility.subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
@@ -251,7 +252,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             //get |child - parent| set difference
             Set<Predicate> extraSubs = Utility.subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
             extraSubs.forEach( sub -> {
-                String var = sub.getVarName();
+                VarName var = sub.getVarName();
                 Concept con = graph.getConcept(sub.getPredicateValue());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())

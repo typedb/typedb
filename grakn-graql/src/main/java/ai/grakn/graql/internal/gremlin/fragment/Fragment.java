@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -71,22 +72,22 @@ public interface Fragment {
     /**
      * @return the variable name that this fragment starts from in the query
      */
-    String getStart();
+    VarName getStart();
 
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
-    Optional<String> getEnd();
+    Optional<VarName> getEnd();
 
     /**
      * @return the variable names that this fragment requires to have already been visited
      */
-    Set<String> getDependencies();
+    Set<VarName> getDependencies();
 
     /**
      * Get all variable names in the fragment - the start and end (if present)
      */
-    Stream<String> getVariableNames();
+    Stream<VarName> getVariableNames();
 
     /**
      * A starting fragment is a fragment that can start a traversal.

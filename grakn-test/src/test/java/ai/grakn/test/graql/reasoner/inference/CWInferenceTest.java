@@ -20,18 +20,20 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.admin.VarName;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
@@ -59,7 +61,7 @@ public class CWInferenceTest extends AbstractEngineTest{
                 "{$x isa weapon;} or {" +
                 "{{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};} or {$x isa rocket;$x has propulsion 'gsp';};" +
                 "};";
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -67,7 +69,7 @@ public class CWInferenceTest extends AbstractEngineTest{
         String queryString = "match $z isa country;$z has alignment 'hostile';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $z isa country, has name 'Nono';";
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -91,7 +93,7 @@ public class CWInferenceTest extends AbstractEngineTest{
                 "($z, $y) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -114,7 +116,7 @@ public class CWInferenceTest extends AbstractEngineTest{
                 "($z, $y) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -139,7 +141,7 @@ public class CWInferenceTest extends AbstractEngineTest{
                 "$z isa country;" +
                 "}; select $x;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -165,7 +167,7 @@ public class CWInferenceTest extends AbstractEngineTest{
             "$x isa person;" +
             "$z isa country;};} or {$x has nationality 'American';$x isa person;}; select $x;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -190,7 +192,7 @@ public class CWInferenceTest extends AbstractEngineTest{
                 "($yy, $yyy) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -215,7 +217,7 @@ public class CWInferenceTest extends AbstractEngineTest{
                 "($z, $x) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -254,10 +256,10 @@ public class CWInferenceTest extends AbstractEngineTest{
                 "};" +
                 "}; select $x;";
 
-        assertQueriesEqual(localReasoner.resolve(query, false), lqb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(localReasoner.resolve(query, false), lqb.parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
     }
 }

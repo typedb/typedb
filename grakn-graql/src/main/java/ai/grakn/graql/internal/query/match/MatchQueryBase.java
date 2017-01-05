@@ -25,7 +25,9 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.GremlinQuery;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -37,6 +39,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,7 +69,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> optionalGraph) {
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalGraph.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
@@ -93,7 +96,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     @Override
-    public ImmutableSet<String> getSelectedNames() {
+    public ImmutableSet<VarName> getSelectedNames() {
         // Default selected names are all user defined variable names shared between disjunctions.
         // For example, in a query of the form
         // {..$x..$y..} or {..$x..}
@@ -103,11 +106,11 @@ public class MatchQueryBase implements MatchQueryInternal {
         Set<Conjunction<VarAdmin>> conjunctions = pattern.getDisjunctiveNormalForm().getPatterns();
 
         // Get all selected names from each conjunction
-        Stream<Set<String>> vars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
+        Stream<Set<VarName>> vars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
 
         // Get the intersection of all conjunctions to find any variables shared between them
         // This will fail if there are no conjunctions (so the query is empty)
-        Set<String> names = vars.reduce(Sets::intersection).orElseThrow(
+        Set<VarName> names = vars.reduce(Sets::intersection).orElseThrow(
                 () -> new RuntimeException(ErrorMessage.MATCH_NO_PATTERNS.getMessage())
         );
         
@@ -137,7 +140,7 @@ public class MatchQueryBase implements MatchQueryInternal {
      * @param conjunction a conjunction containing variables
      * @return all user-defined variable names in the given conjunction
      */
-    private Set<String> getDefinedNamesFromConjunction(Conjunction<VarAdmin> conjunction) {
+    private Set<VarName> getDefinedNamesFromConjunction(Conjunction<VarAdmin> conjunction) {
         return conjunction.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
                 .filter(VarAdmin::isUserDefinedName)
@@ -166,17 +169,17 @@ public class MatchQueryBase implements MatchQueryInternal {
      * @param vertices a map of vertices where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<String, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
+    private Map<VarName, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
         return getSelectedNames().stream().collect(Collectors.toMap(
-                name -> name,
-                name -> graph.admin().buildConcept(vertices.get(name))
+                Function.identity(),
+                name -> graph.admin().buildConcept(vertices.get(name.getValue()))
         ));
     }
 
     /**
      * Only show results if all concepts in them should be shown
      */
-    private boolean shouldShowResult(GraknGraph graph, Map<String, Concept> result) {
+    private boolean shouldShowResult(GraknGraph graph, Map<VarName, Concept> result) {
         return result.values().stream().allMatch(concept -> shouldShowConcept(graph, concept));
     }
 

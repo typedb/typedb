@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.admin.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -25,7 +26,7 @@ import static ai.grakn.util.Schema.EdgeLabel.ROLE_PLAYER;
 
 class OutRolePlayerFragment extends AbstractFragment {
 
-    OutRolePlayerFragment(String start, String end) {
+    OutRolePlayerFragment(VarName start, VarName end) {
         super(start, end);
     }
 

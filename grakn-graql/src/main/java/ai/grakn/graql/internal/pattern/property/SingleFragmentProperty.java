@@ -18,18 +18,19 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import com.google.common.collect.Sets;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 
 interface SingleFragmentProperty extends VarPropertyInternal {
 
-    Fragment getFragment(String start);
+    Fragment getFragment(VarName start);
 
     @Override
-    default Collection<EquivalentFragmentSet> match(String start) {
+    default Collection<EquivalentFragmentSet> match(VarName start) {
         Fragment fragment = getFragment(start);
         EquivalentFragmentSet equivalentFragmentSet = EquivalentFragmentSet.create(fragment);
         return Sets.newHashSet(equivalentFragmentSet);

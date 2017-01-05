@@ -23,12 +23,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -37,7 +38,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -157,8 +160,8 @@ public class GenealogyTest extends AbstractEngineTest{
         "$rel2 has event-role 'newborn';select $c, $p;";
         MatchQuery query = graph.graql().infer(true).parse(queryString);
         MatchQuery query2 = graph.graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(query.execute());
-        QueryAnswers answers2 = new QueryAnswers(query2.execute());
+        QueryAnswers answers = new QueryAnswers(query.admin().results());
+        QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertEquals(76, answers.size());
@@ -226,7 +229,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $rel ($x, $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        QueryAnswers answers2 = new QueryAnswers(qb.<MatchQueryAdmin>parse(queryString).results());
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
@@ -238,7 +241,7 @@ public class GenealogyTest extends AbstractEngineTest{
         String queryString = "match $rel (spouse1: $x, spouse2: $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        QueryAnswers answers2 = new QueryAnswers(qb.<MatchQueryAdmin>parse(queryString).results());
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
@@ -542,9 +545,9 @@ public class GenealogyTest extends AbstractEngineTest{
 
     private boolean checkResource(QueryAnswers answers, String var, String value){
         boolean isOk = true;
-        Iterator<Map<String, Concept>> it =  answers.iterator();
+        Iterator<Map<VarName, Concept>> it =  answers.iterator();
         while (it.hasNext() && isOk){
-            Concept c = it.next().get(var);
+            Concept c = it.next().get(varName(var));
             isOk = c.asResource().getValue().equals(value);
         }
         return isOk;
@@ -552,9 +555,9 @@ public class GenealogyTest extends AbstractEngineTest{
 
     private boolean hasDuplicates(QueryAnswers answers){
         boolean hasDuplicates = false;
-        Iterator<Map<String, Concept>> it = answers.iterator();
+        Iterator<Map<VarName, Concept>> it = answers.iterator();
         while(it.hasNext() && !hasDuplicates){
-            Map<String, Concept> answer = it.next();
+            Map<VarName, Concept> answer = it.next();
             Set<Concept> existing = new HashSet<>();
             hasDuplicates = answer.entrySet()
                     .stream()

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
 
@@ -42,16 +43,16 @@ abstract class AbstractFragment implements Fragment{
     static final long NUM_ROLES_PER_RELATION = 2;
     static final long NUM_RESOURCES_PER_VALUE = 2;
 
-    private final String start;
-    private final Optional<String> end;
+    private final VarName start;
+    private final Optional<VarName> end;
     private EquivalentFragmentSet equivalentFragmentSet;
 
-    AbstractFragment(String start) {
+    AbstractFragment(VarName start) {
         this.start = start;
         this.end = Optional.empty();
     }
 
-    AbstractFragment(String start, String end) {
+    AbstractFragment(VarName start, VarName end) {
         this.start = start;
         this.end = Optional.of(end);
     }
@@ -67,28 +68,28 @@ abstract class AbstractFragment implements Fragment{
     }
 
     @Override
-    public final String getStart() {
+    public final VarName getStart() {
         return start;
     }
 
     @Override
-    public final Optional<String> getEnd() {
+    public final Optional<VarName> getEnd() {
         return end;
     }
 
     @Override
-    public Set<String> getDependencies() {
+    public Set<VarName> getDependencies() {
         return ImmutableSet.of();
     }
 
     @Override
-    public Stream<String> getVariableNames() {
+    public Stream<VarName> getVariableNames() {
         return Stream.concat(Stream.of(start), optionalToStream(end));
     }
 
     @Override
     public String toString() {
-        return "$" + start + getName() + end.map(e -> "$" + e).orElse("");
+        return start + getName() + end.map(Object::toString).orElse("");
     }
 
     @Override

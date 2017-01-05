@@ -20,9 +20,11 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -38,11 +40,11 @@ import java.util.stream.Stream;
  */
 public class NotEquals extends AtomBase {
 
-    private String refVarName;
+    private VarName refVarName;
 
-    public NotEquals(String varName, NeqProperty prop, Query parent){
+    public NotEquals(VarName varName, NeqProperty prop, Query parent){
         super(Graql.var(varName).neq(Graql.var(prop.getProperty().replace("$",""))).admin(), parent);
-        this.refVarName = prop.getProperty().replace("$","");
+        this.refVarName = prop.getVar().getVarName();
     }
     public NotEquals(NotEquals a){
         super(a);
@@ -74,41 +76,41 @@ public class NotEquals extends AtomBase {
     @Override
     public Atomic clone() { return new NotEquals(this);}
 
-    private void setRefVarName(String var){
+    private void setRefVarName(VarName var){
         refVarName = var;
         atomPattern = Graql.var(varName).neq(Graql.var(var)).admin();
     }
 
     @Override
-    public void unify(String from, String to) {
+    public void unify(VarName from, VarName to) {
         super.unify(from, to);
-        String var = getReferenceVarName();
+        VarName var = getReferenceVarName();
         if (var.equals(from)) {
             setRefVarName(to);
         } else if (var.equals(to)) {
-            setRefVarName("captured->" + var);
+            setRefVarName(var.rename(name -> "captured->" + name));
         }
     }
 
     @Override
-    public void unify(Map<String, String> unifiers){
+    public void unify(Map<VarName, VarName> unifiers){
         super.unify(unifiers);
-        String var = getReferenceVarName();
+        VarName var = getReferenceVarName();
         if (unifiers.containsKey(var)) {
             setRefVarName(unifiers.get(var));
         }
         else if (unifiers.containsValue(var)) {
-            setRefVarName("captured->" + var);
+            setRefVarName(var.rename(name -> "captured->" + name));
         }
     }
 
-    public String getReferenceVarName(){ return refVarName;}
+    public VarName getReferenceVarName(){ return refVarName;}
 
-    public static boolean notEqualsOperator(Map<String, Concept> answer, NotEquals atom) {
+    public static boolean notEqualsOperator(Map<VarName, Concept> answer, NotEquals atom) {
         return answer.get(atom.varName).equals(answer.get(atom.refVarName));
     }
 
-    public static BiFunction<Map<String, Concept>, NotEquals, Stream<Map<String, Concept>>> notEqualsFunction =
+    public static BiFunction<Map<VarName, Concept>, NotEquals, Stream<Map<VarName, Concept>>> notEqualsFunction =
             (a, atom) -> notEqualsOperator(a, atom)? Stream.empty(): Stream.of(a);
 
     /**

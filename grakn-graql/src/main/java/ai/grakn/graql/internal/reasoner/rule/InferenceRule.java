@@ -20,13 +20,14 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import java.util.UUID;
 import javafx.util.Pair;
 
 import java.util.HashSet;
@@ -99,8 +100,8 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, head);
-        Map<String, String> rewriteUnifiers = rewrite.getValue();
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, head);
+        Map<VarName, VarName> rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
             head.removeAtom(childAtom);
@@ -108,14 +109,14 @@ public class InferenceRule {
             unify(rewriteUnifiers);
 
             //resolve captures
-            Set<String> varIntersection = body.getVarSet();
+            Set<VarName> varIntersection = body.getVarSet();
             varIntersection.retainAll(parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
-            varIntersection.forEach(var -> body.unify(var, UUID.randomUUID().toString()));
+            varIntersection.forEach(var -> body.unify(var, Patterns.varName()));
         }
     }
 
-    private void unify(Map<String, String> unifiers){
+    private void unify(Map<VarName, VarName> unifiers){
         //do alpha-conversion
         head.unify(unifiers);
         body.unify(unifiers);
@@ -123,7 +124,7 @@ public class InferenceRule {
 
     private void unifyViaAtom(Atom parentAtom) {
         Atomic childAtom = getRuleConclusionAtom();
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         unify(unifiers);
     }
 

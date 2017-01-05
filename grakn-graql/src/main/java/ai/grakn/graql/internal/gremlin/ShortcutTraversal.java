@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 import java.util.ArrayList;
@@ -40,7 +41,7 @@ import java.util.Optional;
 public class ShortcutTraversal {
 
     private final List<Optional<String>> roletypes = new ArrayList<>();
-    private final List<String> roleplayers = new ArrayList<>();
+    private final List<VarName> roleplayers = new ArrayList<>();
     private boolean valid = true;
     private Optional<String> type = Optional.empty();
     private EquivalentFragmentSet equivalentFragmentSet = null;
@@ -72,9 +73,9 @@ public class ShortcutTraversal {
      */
     private void makeEquivalentFragmentSet() {
         Optional<String> roleA = roletypes.get(0);
-        String playerA = roleplayers.get(0);
+        VarName playerA = roleplayers.get(0);
         Optional<String> roleB = roletypes.get(1);
-        String playerB = roleplayers.get(1);
+        VarName playerB = roleplayers.get(1);
 
         equivalentFragmentSet = EquivalentFragmentSet.create(
                 Fragments.shortcut(type, roleA, roleB, playerA, playerB),
@@ -96,7 +97,7 @@ public class ShortcutTraversal {
     /**
      * @param roleplayer a roleplayer of the relation that this ShortcutTraversal represents
      */
-    public void addRel(String roleplayer) {
+    public void addRel(VarName roleplayer) {
         roletypes.add(Optional.empty());
         roleplayers.add(roleplayer);
     }
@@ -105,7 +106,7 @@ public class ShortcutTraversal {
      * @param roletype the role type of the given roleplayer
      * @param roleplayer a roleplayer of the relation that this ShortcutTraversal represents
      */
-    public void addRel(String roletype, String roleplayer) {
+    public void addRel(String roletype, VarName roleplayer) {
         roletypes.add(Optional.of(roletype));
         roleplayers.add(roleplayer);
     }

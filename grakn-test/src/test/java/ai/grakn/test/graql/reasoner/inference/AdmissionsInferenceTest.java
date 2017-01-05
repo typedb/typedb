@@ -20,17 +20,19 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.test.AbstractEngineTest;
-import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -53,8 +55,8 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
         Query query = new Query(queryString, graph);
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -67,8 +69,8 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Alice';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -81,8 +83,8 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Denis';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -95,8 +97,8 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Frank';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -109,8 +111,8 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name $name;{$name value 'Charlie';} or {$name value 'Eva';};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -121,10 +123,10 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
         Query query = new Query(queryString, graph);
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(queryString).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(queryString));
     }
 
-    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
     }
 }

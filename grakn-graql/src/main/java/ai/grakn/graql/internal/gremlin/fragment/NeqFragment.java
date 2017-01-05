@@ -1,5 +1,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.admin.VarName;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -7,16 +8,16 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 class NeqFragment extends AbstractFragment {
 
-    private final String other;
+    private final VarName other;
 
-    NeqFragment(String start, String other) {
+    NeqFragment(VarName start, VarName other) {
         super(start);
         this.other = other;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.where(P.neq(other));
+        traversal.where(P.neq(other.getValue()));
     }
 
     @Override
@@ -30,7 +31,7 @@ class NeqFragment extends AbstractFragment {
     }
 
     @Override
-    public ImmutableSet<String> getDependencies() {
+    public ImmutableSet<VarName> getDependencies() {
         return ImmutableSet.of(other);
     }
 }

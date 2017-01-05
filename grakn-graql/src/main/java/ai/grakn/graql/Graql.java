@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
@@ -132,6 +133,14 @@ public class Graql {
      * @return a new query variable
      */
     public static Var var(String name) {
+        return var(Patterns.varName(name));
+    }
+
+    /**
+     * @param name the name of the variable
+     * @return a new query variable
+     */
+    public static Var var(VarName name) {
         return Patterns.var(Objects.requireNonNull(name));
     }
 

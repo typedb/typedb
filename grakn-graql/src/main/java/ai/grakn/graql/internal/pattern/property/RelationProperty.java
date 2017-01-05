@@ -28,8 +28,10 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -41,7 +43,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
@@ -93,12 +94,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(String start) {
-        Collection<String> castingNames = new HashSet<>();
+    public Collection<EquivalentFragmentSet> match(VarName start) {
+        Collection<VarName> castingNames = new HashSet<>();
 
         ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers.stream().flatMap(relationPlayer -> {
 
-            String castingName = UUID.randomUUID().toString();
+            VarName castingName = Patterns.varName();
             castingNames.add(castingName);
 
             return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
@@ -129,7 +130,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         });
     }
 
-    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(String start, String castingName, RelationPlayer relationPlayer) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(VarName start, VarName castingName, RelationPlayer relationPlayer) {
         Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
         if (roleType.isPresent()) {
@@ -143,8 +144,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(String start, String casting, VarAdmin rolePlayer) {
-        String other = rolePlayer.getVarName();
+    private Stream<EquivalentFragmentSet> addRelatesPattern(VarName start, VarName casting, VarAdmin rolePlayer) {
+        VarName other = rolePlayer.getVarName();
 
         return Stream.of(
                 // Pattern between relation and casting
@@ -159,9 +160,9 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param roleType a variable that is the roletype of the given roleplayer
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<EquivalentFragmentSet> addRelatesPattern(String start, String casting, VarAdmin roleType, VarAdmin rolePlayer) {
-        String roletypeName = roleType.getVarName();
-        String roleplayerName = rolePlayer.getVarName();
+    private Stream<EquivalentFragmentSet> addRelatesPattern(VarName start, VarName casting, VarAdmin roleType, VarAdmin rolePlayer) {
+        VarName roletypeName = roleType.getVarName();
+        VarName roleplayerName = rolePlayer.getVarName();
 
         return Stream.of(
                 // Pattern between relation and casting
@@ -185,7 +186,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param otherCastingId a different casting variable name
      * @return a EquivalentFragmentSet that indicates two castings are unique
      */
-    private EquivalentFragmentSet makeDistinctCastingPattern(String casting, String otherCastingId) {
+    private EquivalentFragmentSet makeDistinctCastingPattern(VarName casting, VarName otherCastingId) {
         return EquivalentFragmentSet.create(
                 distinctCasting(casting, otherCastingId),
                 distinctCasting(otherCastingId, casting)

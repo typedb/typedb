@@ -18,10 +18,11 @@
 
 package ai.grakn.graql.internal.query.match;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.VarName;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import ai.grakn.concept.Concept;
-import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;
 import java.util.Set;
@@ -34,9 +35,9 @@ import static java.util.stream.Collectors.joining;
  */
 class MatchQuerySelect extends MatchQueryModifier {
 
-    private final ImmutableSet<String> names;
+    private final ImmutableSet<VarName> names;
 
-    MatchQuerySelect(MatchQueryInternal inner, ImmutableSet<String> names) {
+    MatchQuerySelect(MatchQueryInternal inner, ImmutableSet<VarName> names) {
         super(inner);
 
         if (names.isEmpty()) {
@@ -47,17 +48,17 @@ class MatchQuerySelect extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+    public Stream<Map<VarName, Concept>> transformStream(Stream<Map<VarName, Concept>> stream) {
         return stream.map(result -> Maps.filterKeys(result, names::contains));
     }
 
     @Override
     protected String modifierString() {
-        return "select " + names.stream().map(s -> "$" + s).collect(joining(", "));
+        return "select " + names.stream().map(Object::toString).collect(joining(", "));
     }
 
     @Override
-    public Set<String> getSelectedNames() {
+    public Set<VarName> getSelectedNames() {
         return names;
     }
 }

@@ -28,6 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -76,7 +77,7 @@ public class AtomicQuery extends Query{
         children.addAll(q.getChildren());
     }
 
-    public AtomicQuery(Atom at, Set<String> vars) {
+    public AtomicQuery(Atom at, Set<VarName> vars) {
         super(at, vars);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
@@ -159,13 +160,13 @@ public class AtomicQuery extends Query{
                 insertedConcepts.stream()
                         .filter(c -> c.isResource() || c.isRelation())
                         .forEach(c -> {
-                            Map<String, Concept> answer = new HashMap<>();
+                            Map<VarName, Concept> answer = new HashMap<>();
                             if (c.isResource()) {
                                 answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicateValue()));
                                 answer.put(atom.getValueVariable(), c);
                             } else if (c.isRelation()) {
                                 answer.put(atom.getVarName(), c);
-                                Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
+                                Map<RoleType, Pair<VarName, Type>> roleMap = atom.getRoleVarTypeMap();
                                 Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers()
                                         .entrySet().stream()
                                         .filter(entry -> entry.getValue() != null)
@@ -201,11 +202,11 @@ public class AtomicQuery extends Query{
         Atom at = queryToMaterialise.getAtom();
         if(at.isRelation()){
             Relation relAtom = (Relation) at;
-            Set<String> rolePlayers = relAtom.getRolePlayers();
+            Set<VarName> rolePlayers = relAtom.getRolePlayers();
             if (relAtom.getRoleVarTypeMap().size() != rolePlayers.size()) {
                 RelationType relType = (RelationType) atom.getType();
                 Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
-                Set<Map<String, String>> roleMaps = new HashSet<>();
+                Set<Map<VarName, String>> roleMaps = new HashSet<>();
                 Utility.computeRoleCombinations(rolePlayers , roles, new HashMap<>(), roleMaps);
 
                 queryToMaterialise.removeAtom(relAtom);
@@ -226,7 +227,7 @@ public class AtomicQuery extends Query{
     }
 
     @Override
-    public void unify(Map<String, String> unifiers) {
+    public void unify(Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         atom = selectAtoms().iterator().next();
     }

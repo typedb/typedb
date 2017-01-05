@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -30,7 +31,7 @@ class IdFragment extends AbstractFragment {
 
     private final String id;
 
-    IdFragment(String start, String id) {
+    IdFragment(VarName start, String id) {
         super(start);
         this.id = id;
     }

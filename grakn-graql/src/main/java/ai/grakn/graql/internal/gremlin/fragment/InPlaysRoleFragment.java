@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -28,7 +29,7 @@ class InPlaysRoleFragment extends AbstractFragment {
 
     private final boolean required;
 
-    InPlaysRoleFragment(String start, String end, boolean required) {
+    InPlaysRoleFragment(VarName start, VarName end, boolean required) {
         super(start, end);
         this.required = required;
     }

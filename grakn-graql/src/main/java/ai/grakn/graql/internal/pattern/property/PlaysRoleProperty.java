@@ -18,14 +18,15 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.RoleType;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import com.google.common.collect.Sets;
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.RoleType;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -55,7 +56,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(String start) {
+    public Collection<EquivalentFragmentSet> match(VarName start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
                 Fragments.outPlaysRole(start, role.getVarName(), required),
                 Fragments.inPlaysRole(role.getVarName(), start, required)

@@ -1,10 +1,11 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
+
 import java.util.Map;
 
 /**
@@ -60,17 +61,17 @@ public abstract class Binary extends BinaryBase {
 
     @Override
     public boolean isValueUserDefinedName() {
-        return predicate == null && !getValueVariable().isEmpty();
+        return predicate == null && !getValueVariable().getValue().isEmpty();
     }
 
     @Override
-    public void unify(String from, String to) {
+    public void unify(VarName from, VarName to) {
         super.unify(from, to);
         if (predicate != null) predicate.unify(from, to);
     }
 
     @Override
-    public void unify (Map<String, String> unifiers) {
+    public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         if (predicate != null) predicate.unify(unifiers);
     }

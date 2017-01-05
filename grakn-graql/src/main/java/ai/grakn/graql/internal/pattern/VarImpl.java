@@ -28,6 +28,7 @@ import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -58,7 +59,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -71,23 +71,20 @@ class VarImpl implements VarAdmin {
 
     private final Set<VarProperty> properties = new HashSet<>();
 
-    private String name;
-    private final boolean userDefinedName;
+    private VarName name;
 
     /**
      * Create a variable with a random variable name
      */
     VarImpl() {
-        this.name = UUID.randomUUID().toString();
-        this.userDefinedName = false;
+        this.name = new VarNameImpl();
     }
 
     /**
      * @param name the variable name of the variable
      */
-    VarImpl(String name) {
+    VarImpl(VarName name) {
         this.name = name;
-        this.userDefinedName = true;
     }
 
     /**
@@ -97,7 +94,6 @@ class VarImpl implements VarAdmin {
     VarImpl(Collection<VarAdmin> vars) {
         VarAdmin first = vars.iterator().next();
         this.name = first.getVarName();
-        this.userDefinedName = first.isUserDefinedName();
 
         for (VarAdmin var : vars) {
             if (var.isUserDefinedName()) {
@@ -114,7 +110,6 @@ class VarImpl implements VarAdmin {
      */
     private VarImpl(VarAdmin var) {
         this.name = var.getVarName();
-        this.userDefinedName = var.isUserDefinedName();
         var.getProperties().forEach(this::addProperty);
     }
 
@@ -305,7 +300,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public boolean isUserDefinedName() {
-        return userDefinedName;
+        return name.isUserDefined();
     }
 
     @Override
@@ -319,20 +314,23 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public String getVarName() {
+    public VarName getVarName() {
         return name;
     }
 
     @Override
-    public void setVarName(String name) {
-        if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
+    public void setVarName(VarName name) {
+        if (!name.isUserDefined() || !this.name.isUserDefined()) {
+            throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
+        }
+
         this.name = name;
     }
 
     @Override
     public String getPrintableName() {
-        if (userDefinedName) {
-            return "$" + name;
+        if (name.isUserDefined()) {
+            return name.toString();
         } else {
             return getTypeName().map(StringConverter::idToString).orElse("'" + toString() + "'");
         }
@@ -493,21 +491,21 @@ class VarImpl implements VarAdmin {
 
         VarImpl var = (VarImpl) o;
 
-        if (userDefinedName != var.userDefinedName) return false;
+        if (isUserDefinedName() != var.isUserDefinedName()) return false;
 
         // "simplifying" this makes it harder to read
         //noinspection SimplifiableIfStatement
         if (!properties.equals(var.properties)) return false;
 
-        return !userDefinedName || name.equals(var.name);
+        return !isUserDefinedName() || name.equals(var.name);
 
     }
 
     @Override
     public int hashCode() {
         int result = properties.hashCode();
-        if (userDefinedName) result = 31 * result + name.hashCode();
-        result = 31 * result + (userDefinedName ? 1 : 0);
+        if (isUserDefinedName()) result = 31 * result + name.hashCode();
+        result = 31 * result + (isUserDefinedName() ? 1 : 0);
         return result;
     }
 

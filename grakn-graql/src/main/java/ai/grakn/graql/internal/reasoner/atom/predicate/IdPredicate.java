@@ -21,9 +21,10 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
 /**
@@ -43,21 +44,21 @@ public class IdPredicate extends Predicate<String>{
     public IdPredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-    public IdPredicate(String varName, IdProperty prop, Query par){
+    public IdPredicate(VarName varName, IdProperty prop, Query par){
         this(createIdVar(varName, prop.getId()), par);
     }
 
-    public IdPredicate(String varName, NameProperty prop, Query par){
+    public IdPredicate(VarName varName, NameProperty prop, Query par){
         this(createIdVar(varName, par.graph().getType(prop.getNameValue()).getId()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}
 
-    public IdPredicate(String varName, Concept con) {
+    public IdPredicate(VarName varName, Concept con) {
         super(createIdVar(varName, con.getId()));
         this.predicate = con.getId();
     }
 
-    public static VarAdmin createIdVar(String varName, String typeId){
+    public static VarAdmin createIdVar(VarName varName, String typeId){
         return Graql.var(varName).id(typeId).admin();
     }
 
