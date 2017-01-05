@@ -9,6 +9,8 @@ jdk:
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
 install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -Dmaven.wagon.http.ssl.allowall=true -B -V
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 script:
     - mvn test verify jacoco:report coveralls:report -Dmaven.wagon.http.ssl.allowall=true
 before_install:
