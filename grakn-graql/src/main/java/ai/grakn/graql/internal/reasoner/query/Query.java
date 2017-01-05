@@ -50,6 +50,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+
 /**
  *
  * <p>
@@ -390,11 +392,11 @@ public class Query implements MatchQueryInternal {
         //find captures
         Set<String> captures = new HashSet<>();
         getVarSet().forEach(v -> {
-            if (v.contains("capture")) captures.add(v);
+            if (v.contains(CAPTURE_MARK)) captures.add(v);
         });
 
         captures.forEach(cap -> {
-            String old = cap.replace("captured->", "");
+            String old = cap.replace(CAPTURE_MARK, "");
             String fresh = Utility.createFreshVariable(getVarSet(), old);
             unify(cap, fresh);
             newMappings.put(old, fresh);

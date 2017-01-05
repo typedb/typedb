@@ -18,15 +18,19 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Sets;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+
+import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
 
 
 /**
@@ -81,6 +85,12 @@ public abstract class AtomBase implements Atomic{
         return vars;
     }
 
+    public void resetNames(){
+        Map<String, String> unifiers = new HashMap<>();
+        getVarNames().forEach(var -> unifiers.put(var, UUID.randomUUID().toString()));
+        unify(unifiers);
+    }
+
     /**
      * @return true if the value variable is user defined
      */
@@ -116,7 +126,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(String from, String to) {
         String var = getVarName();
         if (var.equals(from)) setVarName(to);
-        else if (var.equals(to)) setVarName("captured->" + var);
+        else if (var.equals(to)) setVarName(CAPTURE_MARK + var);
     }
 
     /**
@@ -126,7 +136,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(Map<String, String> unifiers){
         String var = getVarName();
         if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var)) setVarName("captured->" + var);
+        else if (unifiers.containsValue(var)) setVarName(CAPTURE_MARK + var);
     }
 
     /**

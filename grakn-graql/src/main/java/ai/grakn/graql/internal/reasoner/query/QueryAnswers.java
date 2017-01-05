@@ -188,7 +188,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
 
     /**
      * unify the answers by applying unifiers to variable set
-     * @param unifiers
+     * @param unifiers map of [key: from/value: to] unifiers
      * @return unified query answers
      */
     public QueryAnswers unify(Map<String, String> unifiers){

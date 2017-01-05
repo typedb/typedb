@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+
 /**
  *
  * <p>
@@ -164,7 +166,7 @@ public abstract class BinaryBase extends Atom {
         if (var.equals(from))
             setValueVariable(to);
         else if (var.equals(to))
-            setValueVariable("captured->" + var);
+            setValueVariable(CAPTURE_MARK + var);
     }
 
     @Override
@@ -174,7 +176,7 @@ public abstract class BinaryBase extends Atom {
         if (unifiers.containsKey(var))
             setValueVariable(unifiers.get(var));
         else if (unifiers.containsValue(var))
-            setValueVariable("captured->" + var);
+            setValueVariable(CAPTURE_MARK + var);
     }
 
     @Override

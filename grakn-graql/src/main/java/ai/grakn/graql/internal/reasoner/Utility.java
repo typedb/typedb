@@ -24,7 +24,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -34,14 +33,11 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.*;
-
 
 /**
  *
@@ -53,6 +49,8 @@ import java.util.*;
  *
  */
 public class Utility {
+
+    public static final String CAPTURE_MARK = "captured-";
 
     /**
      * Provides more readable answer output.
@@ -112,8 +110,8 @@ public class Utility {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, String> roleMap,
-                                        Set<Map<String, String>> roleMaps){
+    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, VarAdmin> roleMap,
+                                        Set<Map<String, Var>> roleMaps){
         Set<String> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
         String var = vars.iterator().next();
@@ -121,7 +119,7 @@ public class Utility {
         roles.forEach(role -> {
             tempVars.remove(var);
             tempRoles.remove(role);
-            roleMap.put(var, role.getName());
+            roleMap.put(var, Graql.var().name(role.getName()).admin());
             if (!tempVars.isEmpty() && !tempRoles.isEmpty())
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
             else {
