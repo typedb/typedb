@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.VarName;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -28,15 +29,15 @@ import java.util.stream.Stream;
  */
 class SumAggregate extends AbstractAggregate<Map<String, Concept>, Number> {
 
-    private final String varName;
+    private final VarName varName;
 
-    SumAggregate(String varName) {
+    SumAggregate(VarName varName) {
         this.varName = varName;
     }
 
     @Override
     public Number apply(Stream<? extends Map<String, Concept>> stream) {
-        return stream.map(result -> (Number) result.get(varName).asResource().getValue()).reduce(0, this::add);
+        return stream.map(result -> (Number) result.get(varName.getValue()).asResource().getValue()).reduce(0, this::add);
     }
 
     private Number add(Number x, Number y) {
@@ -50,6 +51,6 @@ class SumAggregate extends AbstractAggregate<Map<String, Concept>, Number> {
 
     @Override
     public String toString() {
-        return "sum $" + varName;
+        return "sum " + varName;
     }
 }

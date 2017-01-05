@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.VarName;
 
 import java.util.List;
 import java.util.Map;
@@ -33,11 +34,11 @@ import static java.util.stream.Collectors.toList;
  */
 class AverageAggregate extends AbstractAggregate<Map<String, Concept>, Optional<Double>> {
 
-    private final String varName;
+    private final VarName varName;
     private final CountAggregate countAggregate;
     private final Aggregate<Map<String, Concept>, Number> sumAggregate;
 
-    AverageAggregate(String varName) {
+    AverageAggregate(VarName varName) {
         this.varName = varName;
         countAggregate = new CountAggregate();
         sumAggregate = Aggregates.sum(varName);
@@ -59,6 +60,6 @@ class AverageAggregate extends AbstractAggregate<Map<String, Concept>, Optional<
 
     @Override
     public String toString() {
-        return "average $" + varName;
+        return "average " + varName;
     }
 }

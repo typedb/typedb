@@ -73,7 +73,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
 
     @Override
     default Stream<String> resultsString(Printer printer) {
-        return stream().map(printer::graqlString);
+        return streamWithVarNames().map(printer::graqlString);
     }
 
     @Override

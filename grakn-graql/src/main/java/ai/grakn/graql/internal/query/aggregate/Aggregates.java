@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.admin.VarName;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -34,7 +35,7 @@ public class Aggregates {
     /**
      * Aggregate that finds average (mean) of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Optional<Double>> average(String varName) {
+    public static Aggregate<Map<String, Concept>, Optional<Double>> average(VarName varName) {
         return new AverageAggregate(varName);
     }
 
@@ -50,7 +51,7 @@ public class Aggregates {
      * @param <T> the type of each group
      */
     public static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(
-            String varName, Aggregate<? super Map<String, Concept>, T> innerAggregate
+            VarName varName, Aggregate<? super Map<String, Concept>, T> innerAggregate
     ) {
         return new GroupAggregate<>(varName, innerAggregate);
     }
@@ -66,21 +67,21 @@ public class Aggregates {
     /**
      * Aggregate that finds maximum of a match query.
      */
-    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> max(String varName) {
+    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> max(VarName varName) {
         return new MaxAggregate<>(varName);
     }
 
     /**
      * Aggregate that finds median of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Optional<Number>> median(String varName) {
+    public static Aggregate<Map<String, Concept>, Optional<Number>> median(VarName varName) {
         return new MedianAggregate(varName);
     }
 
     /**
      * Aggregate that finds minimum of a match query.
      */
-    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> min(String varName) {
+    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> min(VarName varName) {
         return new MinAggregate<>(varName);
     }
 
@@ -98,7 +99,7 @@ public class Aggregates {
     /**
      * Aggregate that sums results of a match query.
      */
-    public static Aggregate<Map<String, Concept>, Number> sum(String varName) {
+    public static Aggregate<Map<String, Concept>, Number> sum(VarName varName) {
         return new SumAggregate(varName);
     }
 }

@@ -47,7 +47,7 @@ class DistinctCastingFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        return "[distinct-casting:$" + otherCastingName + "]";
+        return "[distinct-casting:" + otherCastingName.shortName() + "]";
     }
 
     @Override

@@ -20,12 +20,15 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.admin.VarName;
 
 import java.util.Map;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
@@ -33,10 +36,10 @@ import static java.util.stream.Collectors.*;
  */
 class GroupAggregate<T> extends AbstractAggregate<Map<String, Concept>, Map<Concept, T>> {
 
-    private final String varName;
+    private final VarName varName;
     private final Aggregate<? super Map<String, Concept>, T> innerAggregate;
 
-    GroupAggregate(String varName, Aggregate<? super Map<String, Concept>, T> innerAggregate) {
+    GroupAggregate(VarName varName, Aggregate<? super Map<String, Concept>, T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }
@@ -46,15 +49,15 @@ class GroupAggregate<T> extends AbstractAggregate<Map<String, Concept>, Map<Conc
         Collector<Map<String, Concept>, ?, T> applyAggregate =
                 collectingAndThen(toList(), list -> innerAggregate.apply(list.stream()));
 
-        return stream.collect(groupingBy(result -> result.get(varName), applyAggregate));
+        return stream.collect(groupingBy(result -> result.get(varName.getValue()), applyAggregate));
     }
 
     @Override
     public String toString() {
         if (innerAggregate instanceof ListAggregate) {
-            return "group $" + varName;
+            return "group " + varName;
         } else {
-            return "group $" + varName + " " + innerAggregate.toString();
+            return "group " + varName + " " + innerAggregate.toString();
         }
     }
 }

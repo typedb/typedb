@@ -22,7 +22,7 @@ class NeqFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        return "[neq:$" + other + "]";
+        return "[neq:" + other.shortName() + "]";
     }
 
     @Override

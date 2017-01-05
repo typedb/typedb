@@ -43,7 +43,7 @@ public class NotEquals extends AtomBase {
     private VarName refVarName;
 
     public NotEquals(VarName varName, NeqProperty prop, Query parent){
-        super(Graql.var(varName).neq(Graql.var(prop.getProperty().replace("$",""))).admin(), parent);
+        super(Graql.var(varName).neq(prop.getVar()).admin(), parent);
         this.refVarName = prop.getVar().getVarName();
     }
     public NotEquals(NotEquals a){

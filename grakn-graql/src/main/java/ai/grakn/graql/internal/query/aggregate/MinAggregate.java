@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.VarName;
 
 import java.util.Map;
 import java.util.Optional;
@@ -31,9 +32,9 @@ import static java.util.Comparator.naturalOrder;
  */
 class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<String, Concept>, Optional<T>> {
 
-    private final String varName;
+    private final VarName varName;
 
-    MinAggregate(String varName) {
+    MinAggregate(VarName varName) {
         this.varName = varName;
     }
 
@@ -44,10 +45,10 @@ class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<String
 
     @Override
     public String toString() {
-        return "min $" + varName;
+        return "min " + varName;
     }
 
     private T getValue(Map<String, Concept> result) {
-        return result.get(varName).<T>asResource().getValue();
+        return result.get(varName.getValue()).<T>asResource().getValue();
     }
 }

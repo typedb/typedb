@@ -57,6 +57,6 @@ class MatchOrderImpl implements MatchOrder {
 
     @Override
     public String toString() {
-        return "order by $" + var + " ";
+        return "order by " + var + " ";
     }
 }

@@ -24,6 +24,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.admin.VarName;
 import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.graql.internal.util.CommonUtil;
 
@@ -154,10 +155,10 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             Map.Entry<?, ?> entry = map.entrySet().iterator().next();
 
             // If this looks like a graql result, assume the key is a variable name
-            if (entry.getKey() instanceof String && entry.getValue() instanceof Concept) {
+            if (entry.getKey() instanceof VarName && entry.getValue() instanceof Concept) {
                 return sb -> {
                     map.forEach((name, concept) ->
-                            sb.append("$").append(name).append(" ").append(graqlString(concept)).append("; ")
+                            sb.append(name).append(" ").append(graqlString(concept)).append("; ")
                     );
                     return sb;
                 };

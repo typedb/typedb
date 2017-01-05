@@ -96,7 +96,7 @@ public class GremlinQuery {
         //noinspection unchecked
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal();
 
-        String[] namesArray = names.toArray(new String[names.size()]);
+        String[] namesArray = names.stream().map(VarName::getValue).toArray(String[]::new);
 
         // Must provide three arguments in order to pass an array to .select
         // If ordering, select the variable to order by as well
