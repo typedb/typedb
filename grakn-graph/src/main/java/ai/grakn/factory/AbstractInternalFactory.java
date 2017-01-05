@@ -71,7 +71,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             systemKeyspace = new SystemKeyspace<M, G>(getSystemFactory());
     }
 
-    private InternalFactory<M, G> getSystemFactory(){
+    InternalFactory<M, G> getSystemFactory(){
         //noinspection unchecked
         return FactoryBuilder.getGraknGraphFactory(this.getClass().getName(), SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, properties);
     }
