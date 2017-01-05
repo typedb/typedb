@@ -173,6 +173,11 @@ public class QueryBuilderImpl implements QueryBuilder {
         return queryParser.parseQuery(queryString);
     }
 
+    @Override
+    public List<Query<?>> parseList(String queryString) {
+        return queryParser.parseList(queryString);
+    }
+
     /**
      * @param template a string representing a templated graql query
      * @param data     data to use in template

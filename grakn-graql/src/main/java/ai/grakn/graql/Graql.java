@@ -114,6 +114,14 @@ public class Graql {
         return withoutGraph().parse(queryString);
     }
 
+    /**
+     * @param queryString a string representing several queries
+     * @return a list of queries
+     */
+    public static List<Query<?>> parseList(String queryString) {
+        return withoutGraph().parseList(queryString);
+    }
+
     // TEMPLATING
 
     /**
