@@ -133,7 +133,7 @@ public class LoaderImpl implements Loader {
         }
 
         String taskId = manager.scheduleTask(new LoaderTask(), keyspace, new Date(), 0, getConfiguration(batch));
-        CompletableFuture completableFuture = manager.completableFuture(taskId);
+        CompletableFuture<?> completableFuture = manager.completableFuture(taskId);
         completableFuture.thenAccept(i -> releaseSemaphore());
         completableFuture.exceptionally(i -> {
             releaseSemaphore();

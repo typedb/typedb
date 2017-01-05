@@ -26,7 +26,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.Schema;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -48,7 +47,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
     private MatchQuery kurtz;
-    private MatchQuery alPacino;
+    private MatchQuery marlonBrando;
     private MatchQuery apocalypseNow;
     private MatchQuery kurtzCastRelation;
 
@@ -57,7 +56,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
         qb = graph.graql();
 
         kurtz = qb.match(var("x").has("name", "Colonel Walter E. Kurtz"));
-        alPacino = qb.match(var("x").has("name", "Al Pacino"));
+        marlonBrando = qb.match(var("x").has("name", "Marlon Brando"));
         apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now"));
         kurtzCastRelation =
                 qb.match(var("a").rel("character-being-played", var().has("name", "Colonel Walter E. Kurtz")));
@@ -169,48 +168,47 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testDeleteRelation() {
         assertTrue(exists(kurtz));
-        assertTrue(exists(alPacino));
+        assertTrue(exists(marlonBrando));
         assertTrue(exists(apocalypseNow));
         assertTrue(exists(kurtzCastRelation));
 
         kurtzCastRelation.delete("a").execute();
 
         assertTrue(exists(kurtz));
-        assertTrue(exists(alPacino));
+        assertTrue(exists(marlonBrando));
         assertTrue(exists(apocalypseNow));
         assertFalse(exists(kurtzCastRelation));
     }
 
     // TODO: Fix this scenario (test is fine, implementation is wrong!)
-    @Ignore
     @Test
     public void testDeleteAllRolePlayers() {
         String id = kurtzCastRelation.get("a").findFirst().get().getId();
         MatchQuery relation = qb.match(var().id(id));
 
         assertTrue(exists(kurtz));
-        assertTrue(exists(alPacino));
+        assertTrue(exists(marlonBrando));
         assertTrue(exists(apocalypseNow));
         assertTrue(exists(relation));
 
         kurtz.delete("x").execute();
 
         assertFalse(exists(kurtz));
-        assertTrue(exists(alPacino));
+        assertTrue(exists(marlonBrando));
         assertTrue(exists(apocalypseNow));
         assertTrue(exists(relation));
 
-        alPacino.delete("x").execute();
+        marlonBrando.delete("x").execute();
 
         assertFalse(exists(kurtz));
-        assertFalse(exists(alPacino));
+        assertFalse(exists(marlonBrando));
         assertTrue(exists(apocalypseNow));
         assertTrue(exists(relation));
 
         apocalypseNow.delete("x").execute();
 
         assertFalse(exists(kurtz));
-        assertFalse(exists(alPacino));
+        assertFalse(exists(marlonBrando));
         assertFalse(exists(apocalypseNow));
         assertFalse(exists(relation));
     }
@@ -290,8 +288,6 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
         productionType.delete("x").execute();
     }
 
-    // TODO: Fix this scenario (test is fine, implementation is wrong!)
-    @Ignore
     @Test
     public void testErrorWhenDeleteRoleTypeWithPlayers() {
         MatchQuery actor = qb.match(var("x").name("actor"));

@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -34,8 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
+import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -60,9 +58,10 @@ public class GraknTinkerGraphTest extends GraphTestBase{
 
             }
         });
-        assertEquals(108, ((AbstractGraknGraph<Graph>) graknGraph).getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(108, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
+        graknGraph.open();
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
             graknGraph.commit();
@@ -75,13 +74,14 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        AbstractGraknGraph transcation = (AbstractGraknGraph) graknGraph;
+        AbstractGraknGraph transcation = graknGraph;
         transcation.putEntityType(UUID.randomUUID().toString());
         assertEquals(9, transcation.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
                 GraknGraph innerTranscation = graknGraph;
+                innerTranscation.open();
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }
@@ -121,9 +121,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CLOSED_USER.getMessage())
-        ));
+        expectedException.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
         graph.putEntityType("thing");
     }
@@ -139,9 +137,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         AbstractGraknGraph graphNormal2 = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CLOSED_FACTORY.getMessage())
-        ));
+        expectedException.expectMessage(ErrorMessage.CLOSED_FACTORY.getMessage());
 
         graphNormal.getEntityType("thing");
     }
@@ -151,9 +147,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
         graphNormal.clear();
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CLOSED_CLEAR.getMessage())
-        ));
+        expectedException.expectMessage(CLOSED_CLEAR.getMessage());
         graphNormal.getEntityType("thing");
     }
 

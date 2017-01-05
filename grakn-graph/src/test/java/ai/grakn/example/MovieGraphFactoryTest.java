@@ -20,13 +20,12 @@ package ai.grakn.example;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -39,8 +38,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
+import static ai.grakn.util.ErrorMessage.CANNOT_LOAD_EXAMPLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -66,9 +64,7 @@ public class MovieGraphFactoryTest {
         graknGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage())
-        ));
+        expectedException.expectMessage(CANNOT_LOAD_EXAMPLE.getMessage());
 
         MovieGraphFactory.loadGraph(graknGraph);
     }

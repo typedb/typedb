@@ -199,10 +199,10 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
     @Test
     public void validateIsAbstractHasNoIncomingIsaEdges() {
-        TypeImpl x1 = (TypeImpl) graknGraph.putEntityType("x1");
-        TypeImpl x2 = (TypeImpl) graknGraph.putEntityType("x2'");
-        TypeImpl x3 = (TypeImpl) graknGraph.putEntityType("x3");
-        TypeImpl x4 = (TypeImpl) graknGraph.putEntityType("x4'");
+        EntityTypeImpl x1 = (EntityTypeImpl) graknGraph.putEntityType("x1");
+        EntityTypeImpl x2 = (EntityTypeImpl) graknGraph.putEntityType("x2'");
+        EntityTypeImpl x3 = (EntityTypeImpl) graknGraph.putEntityType("x3");
+        EntityTypeImpl x4 = (EntityTypeImpl) graknGraph.putEntityType("x4'");
 
         assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1).isPresent());
         assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x2).isPresent());

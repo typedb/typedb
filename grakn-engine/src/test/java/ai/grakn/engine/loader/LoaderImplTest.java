@@ -33,7 +33,7 @@ import org.junit.Test;
 import java.util.Collection;
 
 import static ai.grakn.graql.Graql.parse;
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class LoaderImplTest extends GraknEngineTestBase {

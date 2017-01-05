@@ -29,7 +29,13 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.MaxQuery;
+import ai.grakn.graql.analytics.MeanQuery;
+import ai.grakn.graql.analytics.MedianQuery;
+import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
@@ -100,7 +106,7 @@ public class GraqlTest extends AbstractGraphTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        Map<Long, Set<String>> degrees = ((Map<Long, Set<String>>) qb.parse("compute degrees;").execute());
+        Map<Long, Set<String>> degrees = qb.<DegreeQuery<Map<Long, Set<String>>>>parse("compute degrees;").execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entityId1, 1L);
@@ -182,16 +188,17 @@ public class GraqlTest extends AbstractGraphTest {
         graph.commit();
 
         // use graql to compute various statistics
-        Optional<Number> result = (Optional<Number>) qb.parse("compute sum of my-resource;").execute();
-        assertEquals(6L, (long) result.orElse(0L));
-        result = (Optional<Number>) qb.parse("compute min of my-resource;").execute();
-        assertEquals(1L, (long) result.orElse(0L));
-        result = (Optional<Number>) qb.parse("compute max of my-resource;").execute();
-        assertEquals(3L, (long) result.orElse(0L));
-        result = (Optional<Number>) qb.parse("compute mean of my-resource;").execute();
-        assertEquals(2.0, (double) result.orElse(0L), 0.1);
-        result = (Optional<Number>) qb.parse("compute median of my-resource;").execute();
-        assertEquals(2L, (long) result.orElse(0L));
+        Optional<? extends Number> result = qb.<SumQuery>parse("compute sum of my-resource;").execute();
+        assertEquals(Optional.of(6L), result);
+        result = qb.<MinQuery>parse("compute min of my-resource;").execute();
+        assertEquals(Optional.of(1L), result);
+        result = qb.<MaxQuery>parse("compute max of my-resource;").execute();
+        assertEquals(Optional.of(3L), result);
+        result = qb.<MeanQuery>parse("compute mean of my-resource;").execute();
+        assert result.isPresent();
+        assertEquals(2.0, (Double) result.get(), 0.1);
+        result = qb.<MedianQuery>parse("compute median of my-resource;").execute();
+        assertEquals(Optional.of(2L), result);
     }
 
     @Test
@@ -219,7 +226,9 @@ public class GraqlTest extends AbstractGraphTest {
 
         PathQuery query = qb.parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
-        List<String> result = query.execute().get().stream().map(Concept::getId).collect(Collectors.toList());
+        Optional<List<Concept>> path = query.execute();
+        assert path.isPresent();
+        List<String> result = path.get().stream().map(Concept::getId).collect(Collectors.toList());
 
         List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 

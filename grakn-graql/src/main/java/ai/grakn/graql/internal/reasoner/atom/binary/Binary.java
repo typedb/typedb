@@ -60,7 +60,7 @@ public abstract class Binary extends BinaryBase {
 
     @Override
     public boolean isValueUserDefinedName() {
-        return predicate == null;
+        return predicate == null && !getValueVariable().isEmpty();
     }
 
     @Override

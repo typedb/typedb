@@ -19,7 +19,6 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Pattern;
 
 import java.util.Set;
 
@@ -91,4 +90,6 @@ public interface PatternAdmin extends Pattern {
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());
     }
+
+    PatternAdmin cloneMe();
 }

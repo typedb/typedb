@@ -23,7 +23,14 @@ import ai.grakn.graql.macro.Macro;
 import java.util.List;
 
 /**
- * Macro that will convert the given value to lower case
+ * <p>
+ * Convert the given value into an lower case string. Only accepts one argument.
+ *
+ * Usage:
+ *      @lower(<value>)
+ * </p>
+ *
+ * @author alexandraorth
  */
 public class LowerMacro implements Macro<String> {
 

@@ -23,7 +23,14 @@ import ai.grakn.graql.macro.Macro;
 import java.util.List;
 
 /**
- * Macro that will convert the given value to upper case
+ * <p>
+ * Convert the given value into an upper case string. Only accepts one argument.
+ *
+ * Usage:
+ *      @upper(<value)
+ * </p>
+ * 
+ * @author alexandraorth
  */
 public class UpperMacro implements Macro<String> {
 

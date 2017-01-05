@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
-import ai.grakn.util.ErrorMessage;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.junit.After;
 import org.junit.Before;
@@ -37,9 +36,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
+import static ai.grakn.util.ErrorMessage.GRAPH_PERMANENTLY_CLOSED;
 import static junit.framework.TestCase.assertNotNull;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -53,7 +52,8 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @After
     public void cleanup(){
-        graknGraph.clear();
+        if(!graknGraph.isClosed())
+            graknGraph.clear();
     }
 
     @Test
@@ -76,6 +76,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
+        graknGraph.open();
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
             graknGraph.commit();
@@ -133,10 +134,25 @@ public class GraknTitanGraphTest extends TitanTestBase{
         GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.CLOSED_CLEAR.getMessage())
-        ));
+        expectedException.expectMessage(CLOSED_CLEAR.getMessage());
         graph.getEntityType("thing");
+    }
+
+    @Test
+    public void testPermanentlyClosedGraph(){
+        GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
+
+        String entityTypeName = "Hello";
+
+        graph.putEntityType(entityTypeName);
+        assertNotNull(graph.getEntityType(entityTypeName));
+
+        graph.close();
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
+
+        graph.open();
     }
 
     @Test

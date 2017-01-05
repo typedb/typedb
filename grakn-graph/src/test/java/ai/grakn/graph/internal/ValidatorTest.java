@@ -32,8 +32,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -371,8 +369,8 @@ public class ValidatorTest extends GraphTestBase{
         parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_CASTING.getMessage(man.getName(), x.getId(), parent.getName()))));
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_CASTING.getMessage(man.getName(), x.getId(), parent.getName()));
 
         graknGraph.commit();
     }
@@ -391,8 +389,8 @@ public class ValidatorTest extends GraphTestBase{
         parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()));
 
         graknGraph.commit();
     }
@@ -411,8 +409,8 @@ public class ValidatorTest extends GraphTestBase{
         parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()))));
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()));
 
         graknGraph.commit();
     }
@@ -502,8 +500,8 @@ public class ValidatorTest extends GraphTestBase{
         RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild).hasRole(inContext);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), "super", "super", parenthood.getName()))));
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), "super", "super", parenthood.getName()));
 
         graknGraph.commit();
     }
@@ -522,8 +520,8 @@ public class ValidatorTest extends GraphTestBase{
         RelationType fatherhood = graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(containsString(
-                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), parenthood.getName(), "sub", "sub", fatherhood.getName()))));
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), parenthood.getName(), "sub", "sub", fatherhood.getName()));
 
         graknGraph.commit();
     }

@@ -51,7 +51,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     protected AtomBase(AtomBase a) {
-        this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
+        this.atomPattern = Patterns.copyOf(a.atomPattern.asVar());
         this.varName = atomPattern.asVar().getVarName();
     }
 

@@ -35,12 +35,10 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNull;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class EntityTest extends GraphTestBase{
@@ -60,7 +58,7 @@ public class EntityTest extends GraphTestBase{
     public void testGetCastings(){
         RelationType relationType = graknGraph.putRelationType("rel type");
         EntityType entityType = graknGraph.putEntityType("entity type");
-        InstanceImpl rolePlayer1 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) entityType.addEntity();
         assertEquals(0, rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.CASTING).size());
 
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role");
@@ -190,8 +188,8 @@ public class EntityTest extends GraphTestBase{
     @Test
     public void testResources(){
         EntityType randomThing = graknGraph.putEntityType("A Thing");
-        ResourceType resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
-        ResourceType resourceType2 = graknGraph.putResourceType("A Resource Thing 2", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType2 = graknGraph.putResourceType("A Resource Thing 2", ResourceType.DataType.STRING);
 
         RelationType hasResource = graknGraph.putRelationType("Has Resource");
 
@@ -235,7 +233,7 @@ public class EntityTest extends GraphTestBase{
     public void testHasResource(){
         String resourceTypeId = "A Resource Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
         entityType.hasResource(resourceType);
 
         Entity entity = entityType.addEntity();
@@ -259,15 +257,15 @@ public class EntityTest extends GraphTestBase{
     @Test
     public void testHasResourceWithNoSchema(){
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
 
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(entityType.getName(), resourceType.getName()))
-        ));
+        expectedException.expectMessage(
+                ErrorMessage.HAS_RESOURCE_INVALID.getMessage(entityType.getName(), resourceType.getName())
+        );
 
         entity.hasResource(resource);
     }

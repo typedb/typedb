@@ -30,7 +30,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -49,6 +48,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.ErrorMessage.ROLE_IS_NULL;
+import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.Schema.EdgeProperty.FROM_ID;
 import static ai.grakn.util.Schema.EdgeProperty.FROM_TYPE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_ID;
@@ -56,8 +57,6 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ID;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_TYPE_NAME;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -255,7 +254,7 @@ public class RelationTest extends GraphTestBase{
     @Test
     public void testDeleteShortcuts() {
         EntityType type = graknGraph.putEntityType("A thing");
-        ResourceType resourceType = graknGraph.putResourceType("A resource thing", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("A resource thing", ResourceType.DataType.STRING);
         EntityImpl instance1 = (EntityImpl) type.addEntity();
         EntityImpl instance2 = (EntityImpl) type.addEntity();
         EntityImpl instance3 = (EntityImpl) type.addEntity();
@@ -335,9 +334,7 @@ public class RelationTest extends GraphTestBase{
         relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()))
-        ));
+        expectedException.expectMessage(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()));
 
         graknGraph.commit();
     }
@@ -464,9 +461,7 @@ public class RelationTest extends GraphTestBase{
     @Test
     public void testAddRelationshipWithNullRole(){
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ROLE_IS_NULL.getMessage(rolePlayer1))
-        ));
+        expectedException.expectMessage(ROLE_IS_NULL.getMessage(rolePlayer1));
 
         relationType.addRelation().putRolePlayer(null, rolePlayer1);
     }

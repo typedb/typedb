@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
@@ -33,7 +32,6 @@ import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -49,10 +47,20 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
+import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
+import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
+import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
+import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
+import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
+import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_LHS;
+import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_RHS;
+import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_NAME;
+import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
+import static ai.grakn.util.ErrorMessage.INSERT_WITHOUT_TYPE;
+import static ai.grakn.util.ErrorMessage.NAME_NOT_FOUND;
 
 /**
  * A class for executing insert queries.
@@ -64,6 +72,7 @@ public class InsertQueryExecutor {
     private final GraknGraph graph;
     private final Collection<VarAdmin> vars;
     private final Map<String, Concept> concepts = new HashMap<>();
+    private Map<String, Concept> namedConcepts;
     private final Stack<String> visitedVars = new Stack<>();
     private final ImmutableMap<String, List<VarAdmin>> varsByVarName;
     private final ImmutableMap<String, List<VarAdmin>> varsByTypeName;
@@ -100,7 +109,7 @@ public class InsertQueryExecutor {
     /**
      * Insert all the Vars
      */
-    Stream<Concept> insertAll() {
+    Map<String, Concept> insertAll() {
         return insertAll(new HashMap<>());
     }
 
@@ -108,19 +117,20 @@ public class InsertQueryExecutor {
      * Insert all the Vars
      * @param results the result of a match query
      */
-    Stream<Concept> insertAll(Map<String, Concept> results) {
+    Map<String, Concept> insertAll(Map<String, Concept> results) {
         concepts.clear();
-        concepts.putAll(new HashMap<>(results));
-        return vars.stream().map(this::insertVar);
+        concepts.putAll(results);
+        namedConcepts = new HashMap<>(results);
+        vars.forEach(this::insertVar);
+        return namedConcepts;
     }
 
     /**
      * @param var the Var to insert into the graph
      */
-    private Concept insertVar(VarAdmin var) {
+    private void insertVar(VarAdmin var) {
         Concept concept = getConcept(var);
         var.getProperties().forEach(property -> ((VarPropertyInternal) property).insert(this, concept));
-        return concept;
     }
 
     public GraknGraph getGraph() {
@@ -134,13 +144,14 @@ public class InsertQueryExecutor {
     public Concept getConcept(VarAdmin var) {
         String name = var.getVarName();
         if (visitedVars.contains(name)) {
-            throw new IllegalStateException(ErrorMessage.INSERT_RECURSIVE.getMessage(var.getPrintableName()));
+            throw new IllegalStateException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
         }
 
         visitedVars.push(name);
         Concept concept = concepts.computeIfAbsent(name, n -> addConcept(var));
-        visitedVars.pop();
         assert concept != null : var ;
+        if (var.isUserDefinedName()) namedConcepts.put(name, concept);
+        visitedVars.pop();
         return concept;
     }
 
@@ -156,7 +167,7 @@ public class InsertQueryExecutor {
 
         if (type.isPresent() && sub.isPresent()) {
             String printableName = var.getPrintableName();
-            throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_SUB.getMessage(printableName));
+            throw new IllegalStateException(INSERT_ISA_AND_SUB.getMessage(printableName));
         }
 
         Optional<String> typeName = var.getTypeName();
@@ -175,12 +186,14 @@ public class InsertQueryExecutor {
             return putInstance(id, var, type.get());
         } else if (id.isPresent()) {
             Concept concept = graph.getConcept(id.get());
-            if (concept == null) throw new IllegalStateException(ErrorMessage.INSERT_WITHOUT_TYPE.getMessage(id.get()));
+            if (concept == null) throw new IllegalStateException(INSERT_WITHOUT_TYPE.getMessage(id.get()));
             return concept;
         } else if (typeName.isPresent()) {
-            return graph.getType(typeName.get());
+            Concept concept = graph.getType(typeName.get());
+            if (concept == null) throw new IllegalStateException(NAME_NOT_FOUND.getMessage(typeName.get()));
+            return concept;
         } else {
-            throw new IllegalStateException(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
+            throw new IllegalStateException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
         }
     }
 
@@ -237,9 +250,11 @@ public class InsertQueryExecutor {
             );
         } else if (type.isRuleType()) {
             return addOrGetInstance(id, () -> {
-                Pattern lhs = var.getProperty(LhsProperty.class).get().getLhs();
-                Pattern rhs = var.getProperty(RhsProperty.class).get().getRhs();
-                return type.asRuleType().addRule(lhs, rhs);
+                LhsProperty lhs = var.getProperty(LhsProperty.class)
+                        .orElseThrow(() -> new IllegalStateException(INSERT_RULE_WITHOUT_LHS.getMessage(var)));
+                RhsProperty rhs = var.getProperty(RhsProperty.class)
+                        .orElseThrow(() -> new IllegalStateException(INSERT_RULE_WITHOUT_RHS.getMessage(var)));
+                return type.asRuleType().addRule(lhs.getLhs(), rhs.getRhs());
             });
         } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
             throw new IllegalStateException(var + " cannot be an instance of meta-type " + type.getName());
@@ -292,7 +307,7 @@ public class InsertQueryExecutor {
      * @throws IllegalStateException if the name was not present
      */
     private String getTypeNameOrThrow(Optional<String> name) throws IllegalStateException {
-        return name.orElseThrow(() -> new IllegalStateException(ErrorMessage.INSERT_TYPE_WITHOUT_NAME.getMessage()));
+        return name.orElseThrow(() -> new IllegalStateException(INSERT_TYPE_WITHOUT_NAME.getMessage()));
     }
 
     private Object getValue(VarAdmin var) {
@@ -304,14 +319,14 @@ public class InsertQueryExecutor {
             Object value = properties.next().getPredicate().equalsValue().get();
 
             if (properties.hasNext()) {
-                throw new IllegalStateException(ErrorMessage.INSERT_MULTIPLE_VALUES.getMessage(
+                throw new IllegalStateException(INSERT_MULTIPLE_VALUES.getMessage(
                         value, properties.next().getPredicate())
                 );
             }
 
             return value;
         } else {
-            throw new IllegalStateException(ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE.getMessage());
+            throw new IllegalStateException(INSERT_RESOURCE_WITHOUT_VALUE.getMessage());
         }
     }
 
@@ -329,7 +344,7 @@ public class InsertQueryExecutor {
         Optional<ResourceType.DataType<?>> dataType = optionalOr(directDataType, indirectDataType);
 
         return dataType.orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
+                () -> new IllegalStateException(INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
         );
     }
 

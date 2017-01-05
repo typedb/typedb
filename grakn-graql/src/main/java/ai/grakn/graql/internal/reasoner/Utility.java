@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -33,6 +34,10 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -79,6 +84,25 @@ public class Utility {
         Collection<RoleType> relRoles = ((RelationType) relType).hasRoles();
         relRoles.stream().filter(typeRoles::contains).forEach(cRoles::add);
         return cRoles;
+    }
+
+    public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
+            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(Collectors.toSet());
+
+    public static final Function<Type, Set<RelationType>> typeToRelationTypes =
+            type -> type.playsRoles().stream()
+                    .flatMap(roleType -> roleType.relationTypes().stream())
+                    .filter(rt -> !rt.isImplicit())
+                    .collect(Collectors.toSet());
+
+    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
+        Set<RelationType> compatibleTypes = new HashSet<>();
+        if (types.isEmpty()) return compatibleTypes;
+        Iterator<T> it = types.iterator();
+        compatibleTypes.addAll(typeMapper.apply(it.next()));
+        while(it.hasNext() && compatibleTypes.size() > 1)
+            compatibleTypes.retainAll(typeMapper.apply(it.next()));
+        return compatibleTypes;
     }
 
     /**

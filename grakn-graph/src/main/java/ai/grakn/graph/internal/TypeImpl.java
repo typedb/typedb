@@ -163,7 +163,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
      */
     private Collection<TypeImpl<Type, Instance>> getSubConceptTypes(){
         Collection<TypeImpl<Type, Instance>> subSet = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(concept -> subSet.add((TypeImpl<Type, Instance>) concept));
+        this.<TypeImpl<Type, Instance>>getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(subSet::add);
         return subSet;
     }
 

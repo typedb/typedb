@@ -19,7 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -28,12 +27,12 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.graql.Pattern;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -43,8 +42,11 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
+import static ai.grakn.util.ErrorMessage.ID_RESERVED;
+import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
+import static ai.grakn.util.ErrorMessage.LOOP_DETECTED;
+import static ai.grakn.util.Schema.EdgeLabel.ISA;
+import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -174,9 +176,7 @@ public class ConceptTest extends GraphTestBase{
         TypeImpl c1 = (TypeImpl) graknGraph.putEntityType("c1");
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()))
-        ));
+        expectedException.expectMessage(LOOP_DETECTED.getMessage(c1.toString(), SUB.getLabel() + " " + ISA.getLabel()));
 
         TypeImpl c2 = (TypeImpl) graknGraph.putEntityType("c2");
         TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3");
@@ -197,7 +197,7 @@ public class ConceptTest extends GraphTestBase{
     @Test
     public void testGetEdgesIncomingOfType(){
         EntityType entityType = graknGraph.putEntityType("entity type");
-        InstanceImpl conceptInstance1 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl<?, ?> conceptInstance1 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance2 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance3 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance4 = (InstanceImpl) entityType.addEntity();
@@ -281,7 +281,7 @@ public class ConceptTest extends GraphTestBase{
 
     @Test
     public void  testAsResource() {
-        ResourceType type = graknGraph.putResourceType("a type", ResourceType.DataType.STRING);
+        ResourceType<String> type = graknGraph.putResourceType("a type", ResourceType.DataType.STRING);
         Concept concept = type.putResource("Test");
         assertTrue(concept.isResource());
         Resource concept2 = concept.asResource();
@@ -324,9 +324,7 @@ public class ConceptTest extends GraphTestBase{
         Entity thing = thingType.addEntity();
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(thing, Type.class))
-        ));
+        expectedException.expectMessage(INVALID_OBJECT_TYPE.getMessage(thing, Type.class));
 
         thing.asType();
     }
@@ -334,9 +332,7 @@ public class ConceptTest extends GraphTestBase{
     @Test
     public void reservedTest(){
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_RESERVED.getMessage("concept"))
-        ));
+        expectedException.expectMessage(ID_RESERVED.getMessage("concept"));
         graknGraph.putEntityType("concept");
     }
 

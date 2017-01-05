@@ -177,8 +177,8 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         assertTrue("expected titles not found: " + expectedQueue, expectedQueue.isEmpty());
     }
 
-    private void assertResultsOrderedByValue(MatchQuery query, String var, boolean asc) {
-        Stream values = query.stream().map(result -> result.get(var).asResource().getValue());
+    private <T extends Comparable<T>> void assertResultsOrderedByValue(MatchQuery query, String var, boolean asc) {
+        Stream<T> values = query.stream().map(result -> result.get(var).<T>asResource().getValue());
         assertResultsOrdered(values, asc);
     }
 

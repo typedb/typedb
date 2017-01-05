@@ -29,7 +29,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.test.AbstractMovieGraphTest;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -61,11 +60,11 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
@@ -441,9 +440,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         MatchQuery query = qb.match(var("x").lhs(qb.parsePattern("$x id 'expect-lhs'")).rhs(qb.parsePattern("$x id 'expect-rhs'")));
 
         expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.MATCH_INVALID.getMessage(LhsProperty.class.getName()))
-        ));
+        expectedException.expectMessage(MATCH_INVALID.getMessage(LhsProperty.class.getName()));
 
         query.forEach(r -> {});
     }
@@ -646,6 +643,18 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testMatchAllResources() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has(var("x")));
+
+        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
+        Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
+
+        Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
+
+        assertEquals(expected, results);
+    }
+
+    @Test
+    public void testMatchAllResourcesUsingResourceName() {
+        MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", var("x")));
 
         Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
         Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());

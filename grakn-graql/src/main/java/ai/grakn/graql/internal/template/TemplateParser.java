@@ -42,31 +42,41 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class for parsing Graql templates and associated data into Graql statements.
+ *
+ * @author alexandraorth
+ */
 public class TemplateParser {
 
     private final Map<String, Macro<?>> macros = new HashMap<>();
 
     /**
-     * Create a template parser
+     * Create a template parser.
      */
     private TemplateParser(){
         registerDefaultMacros();
     }
 
     /**
-     * Create a template parser
-     * @return a template parser
+     * Create a template parser.
+     * @return the created template parser
      */
     public static TemplateParser create(){
         return new TemplateParser();
     }
 
+    /**
+     * Register a macro that can be used in any template parsed by this class.
+     * @param name identifier of the macro that will be used in templates
+     * @param macro macro that can be called in templates
+     */
     public void registerMacro(String name, Macro macro){
         macros.put(name, macro);
     }
 
     /**
-     * Parse and resolve a graql template
+     * Parse and resolve a graql template.
      * @param templateString a string representing a graql template
      * @param data data to use in template
      * @return resolved graql query string

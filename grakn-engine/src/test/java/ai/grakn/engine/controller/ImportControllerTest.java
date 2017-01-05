@@ -36,7 +36,7 @@ import static com.jayway.restassured.RestAssured.given;
 import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static com.jayway.restassured.RestAssured.post;
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ImportControllerTest extends GraknEngineTestBase {

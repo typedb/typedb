@@ -26,8 +26,17 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Macro that will parse the given value (arg1) using the format (arg2) into another format (arg3)
- * or epoch time if no arg3 is provided. Returns a String with the value.
+ * <p>
+ * Parse the given value (arg1) using the format (arg2) into another format (arg3).
+ * If no second format (arg3) is provided, converts the given value (arg1) into epoch time.
+ * Returns a String with the value.
+ *
+ * Usage:
+ *      @date("01/30/2017", "mm/dd/yyyy", "dd/mm/yyyy")
+ *      @date("01/30/2017", "mm/dd/yyyy")
+ * </p>
+ *
+ * @author alexandraorth
  */
 public class DateMacro implements Macro<String> {
 

@@ -19,7 +19,8 @@
 package ai.grakn.graql.internal.template.macro;
 
 /**
- * Unescaped string object to hold values from the NoEscape macro
+ * Class representing a String that should not be escaped by the templator.
+ * @author alexandraorth
  */
 public class UnescapedString {
 

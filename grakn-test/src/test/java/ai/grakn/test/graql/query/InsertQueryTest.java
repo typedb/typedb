@@ -19,8 +19,8 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.example.MovieGraphFactory;
@@ -32,7 +32,9 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,6 +42,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,8 +53,11 @@ import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -290,18 +298,46 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 var("z").has("name", "xyz").isa("language")
         );
 
-        Set<Object> addedValues = insert.stream()
-                .filter(Concept::isResource).map(Concept::asResource).map(Resource::getValue)
-                .collect(Collectors.toSet());
-        Set<String> expectedIds = Sets.newHashSet("123", "xyz");
+        Set<Map<String, Concept>> results = insert.stream().collect(Collectors.toSet());
+        assertEquals(1, results.size());
+        Map<String, Concept> result = results.iterator().next();
+        assertEquals(ImmutableSet.of("x", "z"), result.keySet());
+        assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
+    }
 
-        assertEquals(expectedIds, addedValues);
+    @Test
+    public void testIterateMatchInsertResults() {
+        Var language1 = var().isa("language").has("name", "123");
+        Var language2 = var().isa("language").has("name", "456");
+
+        qb.insert(language1, language2).execute();
+        assertTrue(qb.match(language1).ask().execute());
+        assertTrue(qb.match(language2).ask().execute());
+
+        InsertQuery query = qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
+        Iterator<Map<String, Concept>> results = query.iterator();
+
+        assertFalse(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
+        assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
+
+        Map<String, Concept> result1 = results.next();
+        assertEquals(ImmutableSet.of("x"), result1.keySet());
+        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
+        assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
+
+        Map<String, Concept> result2 = results.next();
+        assertEquals(ImmutableSet.of("x"), result1.keySet());
+        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
+        assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
+        assertFalse(results.hasNext());
+
+        assertNotEquals(result1.get("x"), result2.get("x"));
     }
 
     @Test
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(containsString("predicate"));
+        exception.expectMessage("predicate");
         qb.insert(var().id("123").value(gt(3))).execute();
     }
 
@@ -529,6 +565,18 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testInsertExecuteResult() {
+        InsertQuery query = qb.insert(var("x").isa("movie"));
+
+        List<Map<String, Concept>> results = query.execute();
+        assertEquals(1, results.size());
+        Map<String, Concept> result = results.get(0);
+        assertEquals(Sets.newHashSet("x"), result.keySet());
+        Entity x = result.get("x").asEntity();
+        assertEquals("movie", x.type().getName());
+    }
+
+    @Test
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
@@ -640,6 +688,27 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("123"), containsString("isa")));
         qb.insert(var().id("123").has("name", "Bob")).execute();
+    }
+
+    @Test
+    public void testInsertRuleWithoutLhs() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("lhs")));
+        qb.insert(var().isa("inference-rule").rhs(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void testInsertRuleWithoutRhs() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
+        qb.insert(var().isa("inference-rule").lhs(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void testErrorWhenNonExistentResource() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("nothing");
+        qb.insert(name("blah this").sub("entity").hasResource("nothing")).execute();
     }
 
     private void assertInsert(Var... vars) {
