@@ -26,7 +26,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;

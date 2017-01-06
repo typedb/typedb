@@ -23,7 +23,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;

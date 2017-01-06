@@ -24,7 +24,7 @@ import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 
 import java.util.Map;
 import java.util.stream.Stream;

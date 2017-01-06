@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;

@@ -21,7 +21,6 @@ package ai.grakn.graql;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarName;
 
 import java.util.Arrays;
 import java.util.Collection;

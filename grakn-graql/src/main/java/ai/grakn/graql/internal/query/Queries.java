@@ -27,7 +27,7 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;

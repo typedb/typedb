@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 
 import java.util.List;
 import java.util.Map;

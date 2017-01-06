@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;

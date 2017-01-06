@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Order;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 
 import java.util.Comparator;
 import java.util.Map;

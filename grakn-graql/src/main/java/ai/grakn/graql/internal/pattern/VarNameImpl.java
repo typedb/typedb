@@ -1,6 +1,6 @@
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.UUID;

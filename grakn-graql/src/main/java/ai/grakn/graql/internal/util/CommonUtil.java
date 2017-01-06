@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.util;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;

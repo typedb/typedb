@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;

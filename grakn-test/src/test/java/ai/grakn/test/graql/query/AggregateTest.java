@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Assert;
 import org.junit.Before;

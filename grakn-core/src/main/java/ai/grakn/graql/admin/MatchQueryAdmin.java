@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 
 import java.util.List;
 import java.util.Map;

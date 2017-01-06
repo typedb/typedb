@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;

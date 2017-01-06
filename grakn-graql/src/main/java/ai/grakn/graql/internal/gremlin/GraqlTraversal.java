@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableList;

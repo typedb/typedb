@@ -1,4 +1,4 @@
-package ai.grakn.graql.admin;
+package ai.grakn.graql;
 
 import java.util.function.Function;
 

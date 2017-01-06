@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.graql.admin.VarName;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 import java.util.ArrayList;
