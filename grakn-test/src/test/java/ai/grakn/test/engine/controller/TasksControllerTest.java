@@ -175,7 +175,7 @@ public class TasksControllerTest extends EngineTestBase {
                 .then().statusCode(200)
                 .and().contentType("text/html");
 
-        // Check taskstorage
+        // Check state
         get("/tasks/"+id)
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)

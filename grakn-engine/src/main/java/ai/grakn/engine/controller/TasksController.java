@@ -23,7 +23,6 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
@@ -31,7 +30,6 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import javafx.util.Pair;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -47,23 +45,22 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.Request.LIMIT_PARAM;
+import static ai.grakn.util.REST.Request.OFFSET_PARAM;
+import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_STOP;
+import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_URI;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.get;
-import static spark.Spark.put;
 import static spark.Spark.post;
-
-import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_STOP;
-import static ai.grakn.util.REST.Request.OFFSET_PARAM;
-import static ai.grakn.util.REST.Request.LIMIT_PARAM;
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
+import static spark.Spark.put;
 
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
@@ -130,7 +127,7 @@ public class TasksController {
 
     @GET
     @Path("/:uuid")
-    @ApiOperation(value = "Get the taskstorage of a specific task by its ID.", produces = "application/json")
+    @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
         try {
