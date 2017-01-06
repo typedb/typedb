@@ -10,7 +10,7 @@ notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
 install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -Dmaven.wagon.http.ssl.allowall=true -B -V
 script:
-    - mvn test jacoco:report coveralls:report -Dmaven.wagon.http.ssl.allowall=true
+    - mvn test verify jacoco:report coveralls:report -Dmaven.wagon.http.ssl.allowall=true
 before_install:
   - sudo apt-get -y install npm
   - npm install -g npm
