@@ -32,6 +32,8 @@
     "babel-preset-es2015": "^6.13.2",
     "babelify": "^7.3.0",
     "browserify": "^13.1.0",
+    "coveralls": "^2.11.15",
+    "nyc": "^10.0.0",
     "vueify": "^9.0",
     "watchify": "^3.7.0"
   },
@@ -42,10 +44,11 @@
     ]
   },
   "scripts": {
-    "browserify":"browserify -e src/main.js -o static/dashboard.js",
+    "browserify": "browserify -e src/main.js -o static/dashboard.js",
     "watchify": "watchify src/main.js -o static/dashboard.js",
     "preinstall": "npm install browserify vueify babelify",
-    "test": "ava"
+    "test": "nyc ava",
+    "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "ava": {
     "files": [
