@@ -24,7 +24,7 @@ class VarNameImpl implements VarName {
     }
 
     @Override
-    public VarName rename(Function<String, String> mapper) {
+    public VarName map(Function<String, String> mapper) {
         return new VarNameImpl(mapper.apply(value));
     }
 

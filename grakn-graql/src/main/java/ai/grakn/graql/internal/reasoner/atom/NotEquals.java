@@ -89,7 +89,7 @@ public class NotEquals extends AtomBase {
         if (var.equals(from)) {
             setRefVarName(to);
         } else if (var.equals(to)) {
-            setRefVarName(var.rename(name -> "captured->" + name));
+            setRefVarName(var.map(name -> "captured->" + name));
         }
     }
 
@@ -101,7 +101,7 @@ public class NotEquals extends AtomBase {
             setRefVarName(unifiers.get(var));
         }
         else if (unifiers.containsValue(var)) {
-            setRefVarName(var.rename(name -> "captured->" + name));
+            setRefVarName(var.map(name -> "captured->" + name));
         }
     }
 

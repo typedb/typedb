@@ -413,7 +413,7 @@ public class Relation extends TypeAtom {
                 c.getRolePlayer().setVarName(to);
             }
             else if (var.equals(to)) {
-                c.getRolePlayer().setVarName(var.rename(name -> "captured->" + name));
+                c.getRolePlayer().setVarName(var.map(name -> "captured->" + name));
             }
         });
     }
@@ -428,7 +428,7 @@ public class Relation extends TypeAtom {
                 c.getRolePlayer().setVarName(target);
             }
             else if (mappings.containsValue(var)) {
-                c.getRolePlayer().setVarName(var.rename(name -> "captured->" + name));
+                c.getRolePlayer().setVarName(var.map(name -> "captured->" + name));
             }
         });
     }

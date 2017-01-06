@@ -166,7 +166,7 @@ public abstract class BinaryBase extends Atom {
         if (var.equals(from))
             setValueVariable(to);
         else if (var.equals(to))
-            setValueVariable(var.rename(name -> "captured->" + name));
+            setValueVariable(var.map(name -> "captured->" + name));
     }
 
     @Override
@@ -176,7 +176,7 @@ public abstract class BinaryBase extends Atom {
         if (unifiers.containsKey(var))
             setValueVariable(unifiers.get(var));
         else if (unifiers.containsValue(var))
-            setValueVariable(var.rename(name -> "captured->" + name));
+            setValueVariable(var.map(name -> "captured->" + name));
     }
 
     @Override

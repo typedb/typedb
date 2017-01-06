@@ -396,7 +396,7 @@ public class Query implements MatchQueryInternal {
         });
 
         captures.forEach(cap -> {
-            VarName old = cap.rename(name -> name.replace("captured->", ""));
+            VarName old = cap.map(name -> name.replace("captured->", ""));
             VarName fresh = Utility.createFreshVariable(getVarSet(), old);
             unify(cap, fresh);
             newMappings.put(old, fresh);

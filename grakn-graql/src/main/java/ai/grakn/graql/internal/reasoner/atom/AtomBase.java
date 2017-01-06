@@ -118,7 +118,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(VarName from, VarName to) {
         VarName var = getVarName();
         if (var.equals(from)) setVarName(to);
-        else if (var.equals(to)) setVarName(var.rename(name -> "captured->" + name));
+        else if (var.equals(to)) setVarName(var.map(name -> "captured->" + name));
     }
 
     /**
@@ -128,7 +128,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(Map<VarName, VarName> unifiers){
         VarName var = getVarName();
         if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var)) setVarName(var.rename(name -> "captured->" + name));
+        else if (unifiers.containsValue(var)) setVarName(var.map(name -> "captured->" + name));
     }
 
     /**

@@ -183,7 +183,7 @@ public class PropertyMapper {
         VarName varName = var.getVarName();
         VarAdmin typeVar = prop.getSuperType();
         VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.rename(name -> name + "-sub-" + UUID.randomUUID().toString());
+                typeVar.getVarName() : varName.map(name -> name + "-sub-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
@@ -197,7 +197,7 @@ public class PropertyMapper {
         VarName varName = var.getVarName();
         VarAdmin typeVar = prop.getRole();
         VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.rename(name -> name + "-plays-role-" + UUID.randomUUID().toString());
+                typeVar.getVarName() : varName.map(name -> name + "-plays-role-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
@@ -238,7 +238,7 @@ public class PropertyMapper {
         VarName varName = var.getVarName();
         VarAdmin scopeVar = prop.getScope();
         VarName scopeVariable = scopeVar.isUserDefinedName() ?
-                scopeVar.getVarName() : varName.rename(name -> name + "-scope-" + UUID.randomUUID().toString());
+                scopeVar.getVarName() : varName.map(name -> name + "-scope-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent, graph);
 
         //isa part
@@ -256,7 +256,7 @@ public class PropertyMapper {
         VarName varName = var.getVarName();
         VarAdmin typeVar = prop.getType();
         VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.rename(name -> name + "-type-" + UUID.randomUUID().toString());
+                typeVar.getVarName() : varName.map(name -> name + "-type-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         //isa part
@@ -272,7 +272,7 @@ public class PropertyMapper {
         Optional<String> type = prop.getType();
         VarAdmin valueVar = prop.getResource();
         VarName valueVariable = valueVar.isUserDefinedName() ?
-                valueVar.getVarName() : varName.rename(name -> name + "-" + type.orElse("") + "-" + UUID.randomUUID().toString());
+                valueVar.getVarName() : varName.map(name -> name + "-" + type.orElse("") + "-" + UUID.randomUUID().toString());
         Set<Predicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent, graph);
         atoms.addAll(predicates);
 
