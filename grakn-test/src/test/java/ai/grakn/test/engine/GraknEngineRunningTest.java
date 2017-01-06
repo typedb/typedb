@@ -24,6 +24,7 @@ import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.EngineTestBase;
 import ch.qos.logback.classic.Level;
@@ -49,7 +50,7 @@ public class GraknEngineRunningTest extends AbstractGraknTest {
         assertTrue(running);
 
         // Check that we've loaded the ontology
-        GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
     }
     
