@@ -32,7 +32,7 @@ class MatchQueryOrder extends MatchQueryModifier {
 
     private final MatchOrderImpl order;
 
-    MatchQueryOrder(MatchQueryInternal inner, MatchOrderImpl order) {
+    MatchQueryOrder(AbstractMatchQuery inner, MatchOrderImpl order) {
         super(inner);
         this.order = order;
     }

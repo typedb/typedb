@@ -33,8 +33,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.query.match.MatchQueryInternal.colorKeyword;
-import static ai.grakn.graql.internal.query.match.MatchQueryInternal.colorType;
+import static ai.grakn.graql.internal.query.match.AbstractMatchQuery.colorKeyword;
+import static ai.grakn.graql.internal.query.match.AbstractMatchQuery.colorType;
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 

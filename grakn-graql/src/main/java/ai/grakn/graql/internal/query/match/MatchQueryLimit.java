@@ -30,7 +30,7 @@ class MatchQueryLimit extends MatchQueryModifier {
 
     private final long limit;
 
-    MatchQueryLimit(MatchQueryInternal inner, long limit) {
+    MatchQueryLimit(AbstractMatchQuery inner, long limit) {
         super(inner);
         this.limit = limit;
     }

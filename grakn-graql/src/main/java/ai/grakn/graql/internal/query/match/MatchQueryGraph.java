@@ -35,7 +35,7 @@ class MatchQueryGraph extends MatchQueryModifier {
 
     private final GraknGraph graph;
 
-    MatchQueryGraph(GraknGraph graph, MatchQueryInternal inner) {
+    MatchQueryGraph(GraknGraph graph, AbstractMatchQuery inner) {
         super(inner);
         this.graph = graph;
     }

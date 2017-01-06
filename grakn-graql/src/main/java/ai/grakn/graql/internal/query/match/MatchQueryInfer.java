@@ -36,7 +36,7 @@ class MatchQueryInfer extends MatchQueryModifier {
 
     private final boolean materialise;
 
-    MatchQueryInfer(MatchQueryInternal inner, boolean materialise) {
+    MatchQueryInfer(AbstractMatchQuery inner, boolean materialise) {
         super(inner);
         this.materialise = materialise;
     }

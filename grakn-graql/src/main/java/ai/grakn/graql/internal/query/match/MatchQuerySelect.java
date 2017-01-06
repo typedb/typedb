@@ -36,7 +36,7 @@ class MatchQuerySelect extends MatchQueryModifier {
 
     private final ImmutableSet<String> names;
 
-    MatchQuerySelect(MatchQueryInternal inner, ImmutableSet<String> names) {
+    MatchQuerySelect(AbstractMatchQuery inner, ImmutableSet<String> names) {
         super(inner);
 
         if (names.isEmpty()) {

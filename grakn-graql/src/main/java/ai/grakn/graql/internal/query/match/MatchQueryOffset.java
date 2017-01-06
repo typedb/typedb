@@ -30,7 +30,7 @@ class MatchQueryOffset extends MatchQueryModifier {
 
     private final long offset;
 
-    MatchQueryOffset(MatchQueryInternal inner, long offset) {
+    MatchQueryOffset(AbstractMatchQuery inner, long offset) {
         super(inner);
         this.offset = offset;
     }

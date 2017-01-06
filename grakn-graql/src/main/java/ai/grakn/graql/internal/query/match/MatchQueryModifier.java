@@ -36,11 +36,11 @@ import java.util.stream.Stream;
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-abstract class MatchQueryModifier extends MatchQueryInternal {
+abstract class MatchQueryModifier extends AbstractMatchQuery {
 
-    final MatchQueryInternal inner;
+    final AbstractMatchQuery inner;
 
-    MatchQueryModifier(MatchQueryInternal inner) {
+    MatchQueryModifier(AbstractMatchQuery inner) {
         this.inner = inner;
     }
 

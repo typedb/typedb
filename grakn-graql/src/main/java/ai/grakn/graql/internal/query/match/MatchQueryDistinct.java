@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 class MatchQueryDistinct extends MatchQueryModifier {
 
-    MatchQueryDistinct(MatchQueryInternal inner) {
+    MatchQueryDistinct(AbstractMatchQuery inner) {
         super(inner);
     }
 
