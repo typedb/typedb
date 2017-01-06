@@ -26,16 +26,16 @@ import static ai.grakn.graql.Graql.var;
  *
  */
 public interface GraknTestEnv {
-    static final String CONFIG = System.getProperty("grakn.test-profile");
-    static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
-    static AtomicBoolean HTTP_RUNNING = new AtomicBoolean(false);
+    String CONFIG = System.getProperty("grakn.test-profile");
+    AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
+    AtomicBoolean HTTP_RUNNING = new AtomicBoolean(false);
     
-    public static void hideLogs() {
+    static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
     }
 
-    public static void ensureEngineRunning() throws Exception {
+    static void ensureEngineRunning() throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -58,7 +58,7 @@ public interface GraknTestEnv {
         }
     }
 
-    public static void clearGraphs() {
+    static void clearGraphs() {
         // Drop all keyspaces
         GraphFactory graphFactory = GraphFactory.getInstance();
 
@@ -77,7 +77,7 @@ public interface GraknTestEnv {
         graphFactory.refershConnections();
     }
     
-    public static void shutdownEngine()  {
+    static void shutdownEngine()  {
         if(HTTP_RUNNING.compareAndSet(true, false)) {
             GraknEngineServer.stopHTTP();
             // The Spark framework we are using kicks off a shutdown process in a separate
@@ -88,7 +88,7 @@ public interface GraknTestEnv {
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
-    public static GraknGraphFactory factoryWithNewKeyspace() {
+    static GraknGraphFactory factoryWithNewKeyspace() {
         String keyspace;
         if (usingOrientDB()) {
             keyspace = "memory";
@@ -99,7 +99,7 @@ public interface GraknTestEnv {
         return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
     }
 
-    public static void startEmbeddedCassandra() {
+    static void startEmbeddedCassandra() {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
             Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
@@ -114,15 +114,15 @@ public interface GraknTestEnv {
         }
     }
 
-    public static boolean usingTinker() {
+    static boolean usingTinker() {
         return "tinker".equals(CONFIG);
     }
 
-    public static boolean usingTitan() {
+    static boolean usingTitan() {
         return "titan".equals(CONFIG);
     }
 
-    public static boolean usingOrientDB() {
+    static boolean usingOrientDB() {
         return "orientdb".equals(CONFIG);
     }
 }
