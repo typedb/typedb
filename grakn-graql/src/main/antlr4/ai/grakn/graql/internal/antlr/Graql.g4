@@ -1,7 +1,18 @@
 grammar Graql;
 
+queryList : queryElems ;
+
+// These rules exist to parse match-insert queries unambiguously
+queryElems     : matchQuery (queryNotInsert queryElems)?  # queryElemsNotInsert
+               | queryNotMatch queryElems                 # queryElemsNotMatch
+               | EOF                                      # queryElemsEOF
+               ;
+queryNotMatch  : insertQuery | simpleQuery ;
+queryNotInsert : matchInsert | matchQuery | simpleQuery ;
+
 queryEOF       : query EOF ;
-query          : matchQuery | askQuery | insertQuery | deleteQuery | aggregateQuery | computeQuery ;
+query          : matchQuery | insertQuery | simpleQuery ;
+simpleQuery    : askQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchEOF       : matchQuery EOF ;
 askEOF         : askQuery EOF ;
@@ -19,7 +30,9 @@ matchQuery     : 'match' patterns                                 # matchBase
                ;
 
 askQuery       : matchQuery 'ask' ';' ;
-insertQuery    : matchQuery? insert varPatterns ;
+insertQuery    : matchInsert | insertOnly ;
+insertOnly     : insert varPatterns ;
+matchInsert    : matchQuery insert varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;

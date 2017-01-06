@@ -82,8 +82,45 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public List<Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
+        return visitQueryElems(ctx.queryElems()).collect(toList());
+    }
+
+    @Override
+    public Stream<Query<?>> visitQueryElemsNotMatch(GraqlParser.QueryElemsNotMatchContext ctx) {
+        Query<?> query = visitQueryNotMatch(ctx.queryNotMatch());
+        return Stream.concat(Stream.of(query), visitQueryElems(ctx.queryElems()));
+    }
+
+    @Override
+    public Stream<Query<?>> visitQueryElemsNotInsert(GraqlParser.QueryElemsNotInsertContext ctx) {
+        MatchQuery query = visitMatchQuery(ctx.matchQuery());
+        if (ctx.queryNotInsert() != null) {
+            Query<?> nextQuery = visitQueryNotInsert(ctx.queryNotInsert());
+            return Stream.concat(Stream.of(query, nextQuery), visitQueryElems(ctx.queryElems()));
+        } else {
+            return Stream.of(query);
+        }
+    }
+
+    @Override
+    public Stream<Query<?>> visitQueryElemsEOF(GraqlParser.QueryElemsEOFContext ctx) {
+        return Stream.empty();
+    }
+
+    @Override
+    public Query<?> visitQueryNotMatch(GraqlParser.QueryNotMatchContext ctx) {
+        return (Query<?>) super.visitQueryNotMatch(ctx);
+    }
+
+    @Override
+    public Query<?> visitQueryNotInsert(GraqlParser.QueryNotInsertContext ctx) {
+        return (Query<?>) super.visitQueryNotInsert(ctx);
+    }
+
+    @Override
     public Query<?> visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
-        return (Query<?>) visitQuery(ctx.query());
+        return visitQuery(ctx.query());
     }
 
     @Override
@@ -109,6 +146,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public ComputeQuery visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
         return visitComputeQuery(ctx.computeQuery());
+    }
+
+    @Override
+    public Query<?> visitQuery(GraqlParser.QueryContext ctx) {
+        return (Query<?>) super.visitQuery(ctx);
     }
 
     @Override
@@ -163,14 +205,19 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
+        return (InsertQuery) super.visitInsertQuery(ctx);
+    }
+
+    @Override
+    public Object visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
         Collection<Var> vars = visitVarPatterns(ctx.varPatterns());
+        return queryBuilder.insert(vars);
+    }
 
-        if (ctx.matchQuery() != null) {
-            return visitMatchQuery(ctx.matchQuery()).insert(vars);
-        } else {
-            return queryBuilder.insert(vars);
-        }
-
+    @Override
+    public Object visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
+        Collection<Var> vars = visitVarPatterns(ctx.varPatterns());
+        return visitMatchQuery(ctx.matchQuery()).insert(vars);
     }
 
     @Override
@@ -643,6 +690,10 @@ class QueryVisitor extends GraqlBaseVisitor {
         } else {
             return ctx.getText();
         }
+    }
+
+    private Stream<Query<?>> visitQueryElems(GraqlParser.QueryElemsContext ctx) {
+        return (Stream<Query<?>>) visit(ctx);
     }
 
     private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {

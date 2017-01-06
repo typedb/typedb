@@ -92,8 +92,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<String> resultsString(Printer printer) {
-        execute();
-        return Stream.empty();
+        return stream().map(printer::graqlString);
     }
 
     @Override

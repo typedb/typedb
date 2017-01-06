@@ -38,6 +38,7 @@ import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -346,6 +347,19 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
         // Confirm there is a result, plus a resource value
         assertThat(result, allOf(containsString("id"), containsString("\"foo\"")));
+    }
+
+    @Test
+    public void testExecuteMultipleQueries() throws Exception {
+        String result = testShell("insert X sub entity; $x isa X; match $y isa X; match $y isa X; aggregate count;\n");
+
+        String[] lines = result.split("\n");
+
+        // Make sure we see results from all three queries
+        assertThat(lines[lines.length-2], is("1"));
+        assertThat(lines[lines.length-3], containsString("$y"));
+        assertThat(lines[lines.length-4], containsString("$x"));
+        assertThat(lines[lines.length-5], containsString(">>> insert X sub entity"));
     }
 
     private static String randomString(int length) {
