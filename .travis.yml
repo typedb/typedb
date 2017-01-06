@@ -3,14 +3,17 @@ dist: trusty
 language: java
 jdk:
   - oraclejdk8
--cache:
-   -  directories:
-   -  - $HOME/.m2
+
+cache:
+   directories:
+   - $HOME/.m2
+   - grakn-dashboard/node_modules
+
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
 install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -Dmaven.wagon.http.ssl.allowall=true -B -V
 script:
     - mvn test jacoco:report coveralls:report -Dmaven.wagon.http.ssl.allowall=true
+    - bash <(curl -s https://codecov.io/bash)
 before_install:
-  - sudo apt-get -y install npm
   - npm install -g npm
