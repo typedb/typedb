@@ -196,13 +196,13 @@ public class AtomicTest extends AbstractGraknTest {
         Atom parentAtom = new AtomicQuery(parentString, graph).getAtom();
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
-        Map<String, String> correctUnifiers = new HashMap<>();
-        correctUnifiers.put("5b7a70db-2256-4d03-8fa4-2621a354899e", "x");
+        Map<VarName, VarName> correctUnifiers = new HashMap<>();
+        correctUnifiers.put(varName("5b7a70db-2256-4d03-8fa4-2621a354899e"), varName("x"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
 
         Map<VarName, VarName> reverseUnifiers = parentAtom.getUnifiers(childAtom);
-        Map<String, String> correctReverseUnifiers = new HashMap<>();
-        correctReverseUnifiers.put("x", "5b7a70db-2256-4d03-8fa4-2621a354899e");
+        Map<VarName, VarName> correctReverseUnifiers = new HashMap<>();
+        correctReverseUnifiers.put(varName("x"), varName("5b7a70db-2256-4d03-8fa4-2621a354899e"));
         assertTrue(reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet()));
     }
 
@@ -235,7 +235,7 @@ public class AtomicTest extends AbstractGraknTest {
         Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, childQuery);
         Atom rewrittenAtom = rewrite.getKey();
         Map<VarName, VarName> unifiers = rewrite.getValue();
-        Set<String> unifiedVariables = Sets.newHashSet("x1", "x2");
+        Set<VarName> unifiedVariables = Sets.newHashSet(varName("x1"), varName("x2"));
         assertTrue(rewrittenAtom.isUserDefinedName());
         assertTrue(unifiedVariables.containsAll(unifiers.keySet()));
     }
