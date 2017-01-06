@@ -30,7 +30,6 @@ import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
 import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
-import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 
 /**
  * Main program to migrate a JSON schema and data into a Grakn graph. For use from a command line.
@@ -68,7 +67,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(jsonMigrator.migrate());
             } else {
-                MigrationLoader.load(getLoader(options), options.getBatch(), jsonMigrator);
+                MigrationLoader.load(options.getKeyspace(), options.getBatch(), jsonMigrator);
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable){

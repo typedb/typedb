@@ -44,6 +44,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import ai.grakn.engine.loader.Loader;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
@@ -57,7 +58,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.loader.client.LoaderClient;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
@@ -437,7 +437,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         // create the ontology
         simpleOntology(keyspace);
 
-        LoaderClient loaderClient = new LoaderClient(keyspace, Arrays.asList(HOST_NAME));
+        Loader loader = new Loader(keyspace);
 
         for (int g=1; g<totalSteps+1; g++) {
             LOGGER.info("starting step: " + g);
@@ -445,12 +445,12 @@ public class ScalingTestIT extends AbstractScalingTest {
             // load data
             LOGGER.info("start loading data");
             for (int m=1; m<nodesPerStep+1; m++) {
-                loaderClient.add(insert(var().isa("thing").has("degree", v_m)));
-                loaderClient.add(insert(var().isa("thing").has("degree", V_m)));
+                loader.add(insert(var().isa("thing").has("degree", v_m)));
+                loader.add(insert(var().isa("thing").has("degree", V_m)));
                 v_m--;
                 V_m+=2;
             }
-            loaderClient.waitToFinish();
+            loader.waitToFinish();
             LOGGER.info("stop loading data");
             LOGGER.info("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
 
@@ -542,15 +542,14 @@ public class ScalingTestIT extends AbstractScalingTest {
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
+        Loader loader = new Loader(keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
-            loaderClient.add(insert(var().isa("thing").has("node-id", nodeId)));
+            loader.add(insert(var().isa("thing").has("node-id", nodeId)));
         }
 
-        loaderClient.waitToFinish();
+        loader.waitToFinish();
     }
 
     private void simpleOntology(String keyspace) throws GraknValidationException {
@@ -586,28 +585,26 @@ public class ScalingTestIT extends AbstractScalingTest {
             throw new RuntimeException("sorry graphsize has to be even");
         }
 
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
+        Loader loader = new Loader(keyspace);
 
         int startNode = 0;
         while (startNode<graphSize) {
 
             String nodeId1 = "node-" + startNode;
             String nodeId2 = "node-" + ++startNode;
-            loaderClient.add(match(var("node1").has("node-id",nodeId1),var("node2").has("node-id",nodeId2))
+            loader.add(match(var("node1").has("node-id",nodeId1),var("node2").has("node-id",nodeId2))
                     .insert(var().isa("related")
                             .rel("relation1", var("node1"))
                             .rel("relation2", var("node2"))));
 
             startNode++;
         }
-        loaderClient.waitToFinish();
+        loader.waitToFinish();
     }
 
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
+        Loader loader = new Loader(keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<Var> insertQuery = new ArrayList<>();
@@ -618,10 +615,10 @@ public class ScalingTestIT extends AbstractScalingTest {
                         .rel("relation1", "node"+String.valueOf(nodeIndex))
                         .rel("relation2", supernodeId));
             }
-            loaderClient.add(insert(insertQuery));
+            loader.add(insert(insertQuery));
         }
 
-        loaderClient.waitToFinish();
+        loader.waitToFinish();
     }
 
     private DegreeQueryImplMock getDegreeQuery(String uri, String keyspace, int numWorkers) {
