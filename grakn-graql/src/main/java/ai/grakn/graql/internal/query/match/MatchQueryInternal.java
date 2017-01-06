@@ -49,13 +49,13 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-public interface MatchQueryInternal extends MatchQueryAdmin {
+public abstract class MatchQueryInternal implements MatchQueryAdmin {
 
     /**
      * @param keyword a keyword to color-code using ANSI colors
      * @return the keyword, color-coded
      */
-    static String colorKeyword(String keyword) {
+    public static String colorKeyword(String keyword) {
         return ANSI.color(keyword, ANSI.BLUE);
     }
 
@@ -63,17 +63,17 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
      * @param type a type to color-code using ANSI colors
      * @return the type, color-coded
      */
-    static String colorType(String type) {
+    public static String colorType(String type) {
         return ANSI.color(type, ANSI.PURPLE);
     }
 
     @Override
-    default Stream<String> resultsString(Printer printer) {
+    public Stream<String> resultsString(Printer printer) {
         return stream().map(printer::graqlString);
     }
 
     @Override
-    default boolean isReadOnly() {
+    public boolean isReadOnly() {
         return true;
     }
 
@@ -82,72 +82,72 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
      * @param graph the graph to use to execute the query
      * @return a stream of results
      */
-    Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph);
+    public abstract Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph);
 
     @Override
-    default Stream<Map<String, Concept>> stream() {
+    public Stream<Map<String, Concept>> stream() {
         return stream(Optional.empty());
     }
 
     @Override
-    default MatchQuery withGraph(GraknGraph graph) {
+    public MatchQuery withGraph(GraknGraph graph) {
         return new MatchQueryGraph(graph, this);
     }
 
     @Override
-    default MatchQuery limit(long limit) {
+    public MatchQuery limit(long limit) {
         return new MatchQueryLimit(this, limit);
     }
 
     @Override
-    default MatchQuery offset(long offset) {
+    public MatchQuery offset(long offset) {
         return new MatchQueryOffset(this, offset);
     }
 
     @Override
-    default MatchQuery distinct() {
+    public MatchQuery distinct() {
         return new MatchQueryDistinct(this);
     }
 
     @Override
-    default <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
+    public <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 
     @Override
-    default MatchQuery select(Set<String> names) {
+    public MatchQuery select(Set<String> names) {
         return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
     }
 
     @Override
-    default Stream<Concept> get(String name) {
+    public Stream<Concept> get(String name) {
         return stream().map(result -> result.get(name));
     }
 
     @Override
-    default AskQuery ask() {
+    public AskQuery ask() {
         return Queries.ask(this);
     }
 
     @Override
-    default InsertQuery insert(Collection<? extends Var> vars) {
+    public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableMultiset<VarAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
     }
 
     @Override
-    default DeleteQuery delete(String... names) {
+    public DeleteQuery delete(String... names) {
         List<Var> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
         return delete(deleters);
     }
 
     @Override
-    default DeleteQuery delete(Collection<? extends Var> deleters) {
+    public DeleteQuery delete(Collection<? extends Var> deleters) {
         return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
     }
 
     @Override
-    default MatchQuery orderBy(String varName, Order order) {
+    public MatchQuery orderBy(String varName, Order order) {
         return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
     }
 }
