@@ -18,17 +18,16 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.Grakn;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -53,7 +52,6 @@ public class GraknOrientDBGraphFactoryTest {
         graph.clear();
     }
 
-    @Ignore
     @Test
     public void testBuildSimpleGraph() throws Exception {
         AbstractGraknGraph graknGraph = orientGraphFactory.getGraph(false);
@@ -61,7 +59,6 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
-    @Ignore
     @Test
     public void testBuildSingletonGraphs(){
         AbstractGraknGraph<OrientGraph> graknGraph1 = orientGraphFactory.getGraph(false);
@@ -76,7 +73,6 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(8, graknGraph3.getTinkerPopGraph().traversal().V().toList().size());
     }
 
-    @Ignore// Null index does not work on orientDB
     @Test
     public void testBuildGraph() throws GraknValidationException {
         GraknOrientDBGraph graknGraph = orientGraphFactory.getGraph(false);
@@ -98,19 +94,21 @@ public class GraknOrientDBGraphFactoryTest {
         assertEquals(15, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
-    @Ignore
     @Test
     public void testVertexIndices(){
-        GraknOrientDBGraph graknOrientDBGraph = orientGraphFactory.getGraph(false);
-        for (Schema.BaseType baseType : Schema.BaseType.values()) {
-            assertEquals(6, graknOrientDBGraph.getTinkerPopGraph().getVertexIndexedKeys(baseType.name()).size());
-        }
+        OrientGraph graknOrientDBGraph = orientGraphFactory.getGraph(false).getTinkerPopGraph();
 
-        assertNotNull(graknOrientDBGraph.getMetaEntityType());
-        assertNotNull(graknOrientDBGraph.getMetaRelationType());
-        assertNotNull(graknOrientDBGraph.getMetaConcept());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RELATION_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RESOURCE_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ROLE_TYPE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RULE_TYPE.name()).size());
+
+        assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RELATION.name()).size());
+        assertEquals(6, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RESOURCE.name()).size());
+        assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.CASTING.name()).size());
+        assertEquals(1, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.RULE.name()).size());
     }
-
-
-
 }
