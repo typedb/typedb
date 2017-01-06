@@ -15,5 +15,3 @@ install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -Dmaven.wagon.ht
 script:
     - mvn test jacoco:report -Dmaven.wagon.http.ssl.allowall=true
     - bash <(curl -s https://codecov.io/bash)
-before_install:
-  - npm install -g npm
