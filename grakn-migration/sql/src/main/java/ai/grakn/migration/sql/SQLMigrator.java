@@ -22,8 +22,6 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.base.AbstractMigrator;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.migration.base.AbstractMigrator;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
@@ -50,12 +48,10 @@ public class SQLMigrator extends AbstractMigrator {
      * @param connection JDBC connection to the SQL database
      */
     public SQLMigrator(String query, String template, Connection connection){
-        System.out.println("created");
         this.template = template;
 
         DSLContext create = DSL.using(connection);
         records = create.fetchStream(query);
-        System.out.println("sql query fetched");
     }
 
     /**
@@ -64,7 +60,6 @@ public class SQLMigrator extends AbstractMigrator {
      */
     @Override
     public Stream<InsertQuery> migrate() {
-        System.out.println("migrating");
         return records.map(Record::intoMap)
                 .map(this::convertToValidValues)
                 .map(r -> template(template, r))
