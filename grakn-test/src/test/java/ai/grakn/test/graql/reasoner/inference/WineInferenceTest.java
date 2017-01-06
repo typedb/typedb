@@ -25,7 +25,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
-import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;

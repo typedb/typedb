@@ -25,7 +25,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;

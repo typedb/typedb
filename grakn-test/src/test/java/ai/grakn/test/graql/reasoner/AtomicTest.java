@@ -19,34 +19,22 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,10 +46,10 @@ import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class AtomicTest extends AbstractGraknTest {
 
@@ -207,12 +195,12 @@ public class AtomicTest extends AbstractGraknTest {
         Atom childAtom = new AtomicQuery(childString, graph).getAtom();
         Atom parentAtom = new AtomicQuery(parentString, graph).getAtom();
 
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<String, String> correctUnifiers = new HashMap<>();
         correctUnifiers.put("5b7a70db-2256-4d03-8fa4-2621a354899e", "x");
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
 
-        Map<String, String> reverseUnifiers = parentAtom.getUnifiers(childAtom);
+        Map<VarName, VarName> reverseUnifiers = parentAtom.getUnifiers(childAtom);
         Map<String, String> correctReverseUnifiers = new HashMap<>();
         correctReverseUnifiers.put("x", "5b7a70db-2256-4d03-8fa4-2621a354899e");
         assertTrue(reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet()));
@@ -231,8 +219,8 @@ public class AtomicTest extends AbstractGraknTest {
                 graph);
         testRule.unify(parentAtom);
         Atom headAtom = testRule.getHead().getAtom();
-        Map<String, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
-        assertTrue(varTypeRoleMap.get("x").getValue().equals(graph.getRoleType("wife")));
+        Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
+        assertTrue(varTypeRoleMap.get(varName("x")).getValue().equals(graph.getRoleType("wife")));
     }
 
     @Test
@@ -244,9 +232,9 @@ public class AtomicTest extends AbstractGraknTest {
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
 
-        Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, childQuery);
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, childQuery);
         Atom rewrittenAtom = rewrite.getKey();
-        Map<String, String> unifiers = rewrite.getValue();
+        Map<VarName, VarName> unifiers = rewrite.getValue();
         Set<String> unifiedVariables = Sets.newHashSet("x1", "x2");
         assertTrue(rewrittenAtom.isUserDefinedName());
         assertTrue(unifiedVariables.containsAll(unifiers.keySet()));
@@ -260,12 +248,12 @@ public class AtomicTest extends AbstractGraknTest {
         Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
         Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
 
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
-        Map<String, String> correctUnifiers = new HashMap<>();
-        correctUnifiers.put("x1", "x");
-        correctUnifiers.put("x2", "y");
-        correctUnifiers.put("r1", "R1");
-        correctUnifiers.put("r2", "R2");
+        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<VarName, VarName> correctUnifiers = new HashMap<>();
+        correctUnifiers.put(varName("x1"), varName("x"));
+        correctUnifiers.put(varName("x2"), varName("y"));
+        correctUnifiers.put(varName("r1"), varName("R1"));
+        correctUnifiers.put(varName("r2"), varName("R2"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 
@@ -277,12 +265,12 @@ public class AtomicTest extends AbstractGraknTest {
 
         Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
         Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
-        Map<String, String> correctUnifiers = new HashMap<>();
-        correctUnifiers.put("x1", "x");
-        correctUnifiers.put("x2", "y");
-        correctUnifiers.put("r1", "R1");
-        correctUnifiers.put("r2", "R2");
+        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<VarName, VarName> correctUnifiers = new HashMap<>();
+        correctUnifiers.put(varName("x1"), varName("x"));
+        correctUnifiers.put(varName("x2"), varName("y"));
+        correctUnifiers.put(varName("r1"), varName("R1"));
+        correctUnifiers.put(varName("r2"), varName("R2"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 

@@ -19,17 +19,13 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.graql.reasoner.graphs.PathGraph;
-import ai.grakn.test.graql.reasoner.graphs.PathGraphII;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.MatrixGraph;
 import ai.grakn.test.graql.reasoner.graphs.MatrixGraphII;
 import ai.grakn.test.graql.reasoner.graphs.NguyenGraph;
@@ -46,9 +42,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class RecursiveInferenceTest extends AbstractGraknTest {
     @BeforeClass
