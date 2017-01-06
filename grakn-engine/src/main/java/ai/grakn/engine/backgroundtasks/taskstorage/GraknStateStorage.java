@@ -30,6 +30,7 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -40,7 +41,6 @@ import org.json.JSONObject;
 import java.util.*;
 import java.util.function.Function;
 
-import static ai.grakn.engine.util.ConfigProperties.SYSTEM_GRAPH_NAME;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.util.SystemOntologyElements.*;
 import static ai.grakn.graql.Graql.var;
@@ -283,7 +283,7 @@ public class GraknStateStorage implements StateStorage {
             LOG.debug("Attempting "  + (commit ? "commit" : "query") + " on system graph @ t"+Thread.currentThread().getId());
             long time = System.currentTimeMillis();
 
-            try (GraknGraph graph = GraphFactory.getInstance().getGraph(SYSTEM_GRAPH_NAME)) {
+            try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
                 T result = function.apply(graph);
                 if (commit) {
                     graph.commit();

@@ -52,7 +52,6 @@ public class ConfigProperties {
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
     public static final String PASSWORD_PROTECTED_PROPERTY="password.protected";
 
-
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
 
@@ -82,8 +81,6 @@ public class ConfigProperties {
     public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
-
-    public static final String SYSTEM_GRAPH_NAME = "graknSystem";
 
     public static final String KAFKA_BOOTSTRAP_SERVERS = "tasks.kafka.bootstrap-servers";
     public static final String KAFKA_SESSION_TIMEOUT = "tasks.kafka.consumer.session-timeout";

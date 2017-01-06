@@ -6,6 +6,7 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.SystemKeyspace;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import jline.internal.Log;
@@ -62,7 +63,7 @@ public interface GraknTestEnv {
         // Drop all keyspaces
         GraphFactory graphFactory = GraphFactory.getInstance();
 
-        GraknGraph systemGraph = graphFactory.getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
+        GraknGraph systemGraph = graphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         systemGraph.graql().match(var("x").isa("keyspace-name"))
                 .execute()
                 .forEach(x -> x.values().forEach(y -> {
