@@ -20,7 +20,7 @@ package ai.grakn.engine.backgroundtasks;
 
 public enum TaskStatus {
     /**
-     * Save task in the graph, but not plans to run it yet - initial taskstorage.
+     * Save task in the graph, but not plans to run it yet - initial state.
      */
     CREATED,
     /**

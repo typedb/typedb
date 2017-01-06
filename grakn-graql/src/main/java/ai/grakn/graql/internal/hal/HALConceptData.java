@@ -33,7 +33,6 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -212,7 +211,7 @@ class HALConceptData {
         }
     }
 
-    // ================================ resources as HAL taskstorage properties ========================= //
+    // ================================ resources as HAL state properties ========================= //
 
     private void generateResources(Representation resource, Collection<Resource<?>> resourcesCollection) {
         resourcesCollection.forEach(currentResource -> {

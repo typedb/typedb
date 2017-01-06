@@ -23,7 +23,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -51,6 +50,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -59,9 +59,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class InsertQueryTest extends AbstractMovieGraphTest {
@@ -72,13 +70,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        // TODO: Fix delete queries in titan
-//        assumeFalse(usingTitan());
-//
-//        graph = factoryWithNewKeyspace().getGraph();
         graph.showImplicitConcepts(true);
-//        MovieGraphFactory.loadGraph(graph);
-
         qb = graph.graql();
     }
 

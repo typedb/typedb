@@ -88,7 +88,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        if ((Boolean)memory.get(FOUND_PATH)) return Collections.emptySet();
+        if (memory.get(FOUND_PATH)) return Collections.emptySet();
         return messageScopeSet;
     }
 
@@ -155,7 +155,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 }
                 break;
             default:
-                if ((Boolean)memory.get(FOUND_PATH)) {
+                if (memory.get(FOUND_PATH)) {
                     //This will likely have to change as we support more and more vendors.
                     String id = vertex.id().toString();
                     if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
@@ -311,7 +311,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() == 0) return false;
 
-        if ((Boolean)memory.get(FOUND_PATH)) {
+        if (memory.get(FOUND_PATH)) {
             if (!memory.get(PREDECESSORS).equals("")) {
                 String[] predecessors = ((String) memory.get(PREDECESSORS)).split(DIVIDER);
                 memory.set(PREDECESSORS, "");
