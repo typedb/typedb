@@ -1,21 +1,18 @@
 package ai.grakn.test;
 
-import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import ai.grakn.GraknGraph;
-import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
-import ai.grakn.factory.SystemKeyspace;
-import org.slf4j.LoggerFactory;
-
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.factory.GraphFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import jline.internal.Log;
+import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.graql.Graql.var;
 
@@ -58,8 +55,6 @@ public interface GraknTestEnv {
         
         if(HTTP_RUNNING.compareAndSet(false, true)) {
             GraknEngineServer.startHTTP();
-            Properties properties = GraphFactory.getInstance().configurationProperties();           
-            new SystemKeyspace(Grakn.DEFAULT_URI, properties).loadSystemOntology();
         }
     }
 
