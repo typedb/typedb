@@ -68,12 +68,12 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public Stream<String> resultsString(Printer printer) {
+    public final Stream<String> resultsString(Printer printer) {
         return stream().map(printer::graqlString);
     }
 
     @Override
-    public boolean isReadOnly() {
+    public final boolean isReadOnly() {
         return true;
     }
 
@@ -85,69 +85,69 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     public abstract Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph);
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
+    public final Stream<Map<String, Concept>> stream() {
         return stream(Optional.empty());
     }
 
     @Override
-    public MatchQuery withGraph(GraknGraph graph) {
+    public final MatchQuery withGraph(GraknGraph graph) {
         return new MatchQueryGraph(graph, this);
     }
 
     @Override
-    public MatchQuery limit(long limit) {
+    public final MatchQuery limit(long limit) {
         return new MatchQueryLimit(this, limit);
     }
 
     @Override
-    public MatchQuery offset(long offset) {
+    public final MatchQuery offset(long offset) {
         return new MatchQueryOffset(this, offset);
     }
 
     @Override
-    public MatchQuery distinct() {
+    public final MatchQuery distinct() {
         return new MatchQueryDistinct(this);
     }
 
     @Override
-    public <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
+    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 
     @Override
-    public MatchQuery select(Set<String> names) {
+    public final MatchQuery select(Set<String> names) {
         return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
     }
 
     @Override
-    public Stream<Concept> get(String name) {
+    public final Stream<Concept> get(String name) {
         return stream().map(result -> result.get(name));
     }
 
     @Override
-    public AskQuery ask() {
+    public final AskQuery ask() {
         return Queries.ask(this);
     }
 
     @Override
-    public InsertQuery insert(Collection<? extends Var> vars) {
+    public final InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableMultiset<VarAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
     }
 
     @Override
-    public DeleteQuery delete(String... names) {
+    public final DeleteQuery delete(String... names) {
         List<Var> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
         return delete(deleters);
     }
 
     @Override
-    public DeleteQuery delete(Collection<? extends Var> deleters) {
+    public final DeleteQuery delete(Collection<? extends Var> deleters) {
         return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
     }
 
     @Override
-    public MatchQuery orderBy(String varName, Order order) {
+    public final MatchQuery orderBy(String varName, Order order) {
         return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
     }
 }
