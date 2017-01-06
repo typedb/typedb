@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+import static ai.grakn.graql.internal.reasoner.Utility.capture;
 
 /**
  *
@@ -168,7 +168,7 @@ public abstract class BinaryBase extends Atom {
         if (var.equals(from))
             setValueVariable(to);
         else if (var.equals(to))
-            setValueVariable(var.map(name -> CAPTURE_MARK + name));
+            setValueVariable(capture(var));
     }
 
     @Override
@@ -178,7 +178,7 @@ public abstract class BinaryBase extends Atom {
         if (unifiers.containsKey(var))
             setValueVariable(unifiers.get(var));
         else if (unifiers.containsValue(var))
-            setValueVariable(var.map(name -> CAPTURE_MARK + name));
+            setValueVariable(capture(var));
     }
 
     @Override

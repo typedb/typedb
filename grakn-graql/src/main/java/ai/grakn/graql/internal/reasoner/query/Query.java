@@ -22,9 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.match.MatchQueryInternal;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -51,7 +51,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+import static ai.grakn.graql.internal.reasoner.Utility.isCaptured;
+import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 
 /**
  *
@@ -394,11 +395,11 @@ public class Query implements MatchQueryInternal {
         Set<VarName> captures = new HashSet<>();
         getVarSet().forEach(v -> {
             // TODO: This could cause bugs if a user has a variable including the word "capture"
-            if (v.getValue().contains(CAPTURE_MARK)) captures.add(v);
+            if (isCaptured(v)) captures.add(v);
         });
 
         captures.forEach(cap -> {
-            VarName old = cap.map(name -> name.replace(CAPTURE_MARK, ""));
+            VarName old = uncapture(cap);
             VarName fresh = Utility.createFreshVariable(getVarSet(), old);
             unify(cap, fresh);
             newMappings.put(old, fresh);

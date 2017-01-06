@@ -57,7 +57,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+import static ai.grakn.graql.internal.reasoner.Utility.capture;
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRelationTypes;
 import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
@@ -407,7 +407,7 @@ public class Relation extends TypeAtom {
             if (var.equals(from)) {
                 c.getRolePlayer().setVarName(to);
             } else if (var.equals(to)) {
-                c.getRolePlayer().setVarName(var.map(name -> CAPTURE_MARK + name));
+                c.getRolePlayer().setVarName(capture(var));
             }
         });
     }
@@ -422,7 +422,7 @@ public class Relation extends TypeAtom {
                 c.getRolePlayer().setVarName(target);
             }
             else if (mappings.containsValue(var)) {
-                c.getRolePlayer().setVarName(var.map(name -> CAPTURE_MARK + name));
+                c.getRolePlayer().setVarName(capture(var));
             }
         });
     }

@@ -24,21 +24,16 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.util.Schema;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -64,7 +59,36 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Utility {
 
-    public static final String CAPTURE_MARK = "captured-";
+    private static final String CAPTURE_MARK = "captured-";
+
+    /**
+     * Capture a variable name, by prepending a constant to the name
+     * @param var the variable name to capture
+     * @return the captured variable
+     */
+    public static VarName capture(VarName var) {
+        return var.map(CAPTURE_MARK::concat);
+    }
+
+    /**
+     * Uncapture a variable name, by removing a prepended constant
+     * @param var the variable name to uncapture
+     * @return the uncaptured variable
+     */
+    public static VarName uncapture(VarName var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.map(name -> name.replace(CAPTURE_MARK, ""));
+    }
+
+    /**
+     * Check if a variable has been captured
+     * @param var the variable to check
+     * @return if the variable has been captured
+     */
+    public static boolean isCaptured(VarName var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.getValue().contains(CAPTURE_MARK);
+    }
 
     /**
      * Provides more readable answer output.

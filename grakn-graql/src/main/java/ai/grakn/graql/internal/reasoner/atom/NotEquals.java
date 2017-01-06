@@ -29,8 +29,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-
-import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+import static ai.grakn.graql.internal.reasoner.Utility.capture;
 
 /**
  *
@@ -91,7 +90,7 @@ public class NotEquals extends AtomBase {
         if (var.equals(from)) {
             setRefVarName(to);
         } else if (var.equals(to)) {
-            setRefVarName(var.map(name -> CAPTURE_MARK + name));
+            setRefVarName(capture(var));
         }
     }
 
@@ -103,7 +102,7 @@ public class NotEquals extends AtomBase {
             setRefVarName(unifiers.get(var));
         }
         else if (unifiers.containsValue(var)) {
-            setRefVarName(var.map(name -> CAPTURE_MARK + name));
+            setRefVarName(capture(var));
         }
     }
 
