@@ -97,4 +97,11 @@ class FactoryBuilder {
             return internalFactory;
     	}
     }
+
+    /**
+     * Clears all connections.
+     */
+    static void refresh(){
+        openFactories.clear();
+    }
 }

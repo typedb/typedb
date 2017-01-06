@@ -52,12 +52,12 @@ public class GraphFactory {
         }
     }
 
-    public Properties configurationProperties() {
-    	return this.properties;
-    }
-    
     public synchronized GraknGraph getGraph(String keyspace) {
         return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
+    }
+
+    public synchronized void refershConnections(){
+        FactoryBuilder.refresh();
     }
 }
 

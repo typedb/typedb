@@ -60,17 +60,21 @@ public interface GraknTestEnv {
 
     public static void clearGraphs() {
         // Drop all keyspaces
-        GraknGraph systemGraph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
+        GraphFactory graphFactory = GraphFactory.getInstance();
+
+        GraknGraph systemGraph = graphFactory.getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
         systemGraph.graql().match(var("x").isa("keyspace-name"))
                 .execute()
                 .forEach(x -> x.values().forEach(y -> {
                     String name = y.asResource().getValue().toString();
-                    GraknGraph graph = GraphFactory.getInstance().getGraph(name);
+                    GraknGraph graph = graphFactory.getGraph(name);
                     graph.clear();
                 }));
 
         // Drop the system keyspaces too
-        systemGraph.clear();  	
+        systemGraph.clear();
+
+        graphFactory.refershConnections();
     }
     
     public static void shutdownEngine()  {
