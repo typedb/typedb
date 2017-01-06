@@ -72,8 +72,6 @@ public class AtomicMatchQuery extends AtomicQuery{
         newAnswers = new QueryAnswers();
     }
 
-    public Stream<Map<String, Concept>> stream() {return answers.stream();}
-
     @Override
     public QueryAnswers getAnswers(){ return answers;}
     @Override
@@ -91,7 +89,7 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public void DBlookup() {
-        QueryAnswers lookup = new QueryAnswers(execute());
+        QueryAnswers lookup = new QueryAnswers(getMatchQuery().execute());
         lookup.removeAll(answers);
         answers.addAll(lookup);
         newAnswers.addAll(lookup);

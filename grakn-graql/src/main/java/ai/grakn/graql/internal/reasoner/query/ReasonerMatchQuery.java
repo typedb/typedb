@@ -54,10 +54,6 @@ public class ReasonerMatchQuery extends Query{
         answers = new QueryAnswers(ans);
     }
 
-    public Stream<Map<String, Concept>> stream() {
-        return answers.stream();
-    }
-
     @Override
     public Stream<Map<String, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())

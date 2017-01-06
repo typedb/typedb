@@ -40,9 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -78,7 +76,7 @@ public class Query {
     }
 
     public Query(Query q) {
-        this.graph = q.getGraph().orElse(null);
+        this.graph = q.graph;
         this.selectVars = q.getSelectedNames();
         q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
         inferTypes();
@@ -87,7 +85,7 @@ public class Query {
     protected Query(Atom atom, Set<String> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        this.graph = atom.getParentQuery().getGraph().orElse(null);
+        this.graph = atom.getParentQuery().graph;
         this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
         addAtom(AtomicFactory.create(atom, this));
@@ -123,16 +121,7 @@ public class Query {
                 .forEach(Atom::inferTypes);
     }
 
-    public Set<Type> getTypes(GraknGraph graph){ return getMatchQuery().admin().getTypes(graph);}
-
-    public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
-
     public Set<String> getSelectedNames() { return Sets.newHashSet(selectVars);}
-
-    public void select(Set<String> vars){
-        selectVars.clear();
-        selectVars.addAll(vars);
-    }
 
     /**
      * append to select variables
@@ -143,11 +132,6 @@ public class Query {
         selectVars.addAll(vars);
     }
 
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
-        return getMatchQuery().stream();
-    }
-
-    public Optional<GraknGraph> getGraph(){ return Optional.of(graph);}
     public GraknGraph graph(){ return graph;}
 
     public Conjunction<PatternAdmin> getPattern() {
@@ -155,8 +139,6 @@ public class Query {
         atomSet.stream().map(Atomic::getPattern).forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
-
-    public List<Map<String, Concept>> execute() { return getMatchQuery().execute();}
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule
