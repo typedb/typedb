@@ -20,12 +20,27 @@ package ai.grakn.engine.backgroundtasks;
 
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.Date;
 
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_TIME;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_BY;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
+import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
+import static ai.grakn.engine.util.SystemOntologyElements.ENGINE_ID;
+import static ai.grakn.engine.util.SystemOntologyElements.RUN_AT;
+import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
+import static ai.grakn.engine.util.SystemOntologyElements.RECUR_INTERVAL;
+import static ai.grakn.engine.util.SystemOntologyElements.STACK_TRACE;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
+
 /**
- * Internal task state model used to keep track of scheduled tasks.
+ * Internal task taskstorage model used to keep track of scheduled tasks.
  */
-public class TaskState implements Cloneable {
+public class TaskState implements Cloneable, Serializable {
     /**
      * Task status, @see TaskStatus.
      */
@@ -49,7 +64,7 @@ public class TaskState implements Cloneable {
     /**
      * String identifying which engine instance is executing this task, set when task is scheduled.
      */
-    private String executingHostname;
+    private String engineID;
     /**
      * When this task should be executed.
      */
@@ -76,7 +91,7 @@ public class TaskState implements Cloneable {
      */
     private JSONObject configuration;
     
-    TaskState(String taskClassName) {
+    public TaskState(String taskClassName) {
         status = TaskStatus.CREATED;
         this.taskClassName = taskClassName;
     }
@@ -121,13 +136,13 @@ public class TaskState implements Cloneable {
         return creator;
     }
 
-    public TaskState executingHostname(String hostname) {
-        executingHostname = hostname;
+    public TaskState engineID(String engineID) {
+        this.engineID = engineID;
         return this;
     }
 
-    public String executingHostname() {
-        return executingHostname;
+    public String engineID() {
+        return engineID;
     }
 
     public TaskState runAt(Date runAt) {
@@ -145,7 +160,7 @@ public class TaskState implements Cloneable {
     }
 
     public Boolean isRecurring() {
-        return recurring;
+        return recurring != null ? recurring : false;
     }
 
     public TaskState interval(long interval) {
@@ -200,7 +215,7 @@ public class TaskState implements Cloneable {
              .statusChangeTime(statusChangeTime)
              .statusChangedBy(statusChangedBy)
              .creator(creator)
-             .executingHostname(executingHostname)
+             .engineID(engineID)
              .runAt(runAt)
              .isRecurring(recurring)
              .interval(interval)
@@ -210,5 +225,24 @@ public class TaskState implements Cloneable {
              .configuration(new JSONObject(configuration.toString()));
 
         return state;
+    }
+
+    @Override
+    public String toString() {
+        return "TaskState{" +
+                "status=" + status +
+                ", statusChangeTime=" + statusChangeTime +
+                ", statusChangedBy='" + statusChangedBy + '\'' +
+                ", taskClassName='" + taskClassName + '\'' +
+                ", creator='" + creator + '\'' +
+                ", engineID='" + engineID + '\'' +
+                ", runAt=" + runAt +
+                ", recurring=" + recurring +
+                ", interval=" + interval +
+                ", stackTrace='" + stackTrace + '\'' +
+                ", exception='" + exception + '\'' +
+                ", taskCheckpoint='" + taskCheckpoint + '\'' +
+                ", configuration=" + configuration +
+                '}';
     }
 }

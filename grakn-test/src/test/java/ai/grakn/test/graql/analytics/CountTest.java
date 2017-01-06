@@ -32,6 +32,7 @@ import org.junit.Test;
 import java.util.Collections;
 
 import static org.junit.Assume.assumeFalse;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class CountTest extends AbstractGraphTest {
 

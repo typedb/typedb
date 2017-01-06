@@ -29,7 +29,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.migration.export.GraphWriter;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +42,10 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
@@ -50,7 +54,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
     @Before
     public void createWriter(){
-        copy = AbstractEngineTest.factoryWithNewKeyspace().getGraph();
+        copy = factoryWithNewKeyspace().getGraph();
         writer = new GraphWriter(graph);
     }
 

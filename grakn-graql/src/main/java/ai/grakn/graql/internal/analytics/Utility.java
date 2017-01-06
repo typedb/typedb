@@ -43,7 +43,7 @@ public class Utility {
     }
 
     /**
-     * The state of the vertex in the database. This may detect ghost nodes and allow them to be excluded from
+     * The taskstorage of the vertex in the database. This may detect ghost nodes and allow them to be excluded from
      * computations. If the vertex is alive it is likely to be a valid Grakn concept.
      *
      * @return if the vertex is alive

@@ -45,11 +45,17 @@ public class GraphFactory {
 
         try(FileInputStream input = new FileInputStream(pathToConfig)){
             properties.load(input);
+            System.out.println("path to graph config is: " + pathToConfig);
+            System.out.println("Porperties are: " + properties);
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
         }
     }
 
+    public Properties configurationProperties() {
+    	return this.properties;
+    }
+    
     public synchronized GraknGraph getGraph(String keyspace) {
         return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
     }

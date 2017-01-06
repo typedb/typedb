@@ -19,17 +19,19 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import javafx.util.Pair;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -41,8 +43,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.get;
 import static spark.Spark.put;
 import static spark.Spark.post;
@@ -68,7 +73,18 @@ public class TasksController {
     private StateStorage stateStorage;
 
     public TasksController() {
-        taskManager = InMemoryTaskManager.getInstance();
+        String mgr = ConfigProperties.getInstance().getProperty(TASK_MANAGER_INSTANCE, "ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager");
+
+        try {
+            Class cl = Class.forName(mgr);
+            taskManager = (TaskManager) cl.getMethod("getInstance").invoke(null);
+            taskManager.open();
+        }
+        catch(ClassNotFoundException|IllegalAccessException|NoSuchMethodException|InvocationTargetException e) {
+            LOG.error("Could not start TasksController due to exception (possibly bad configuration) - "+ getFullStackTrace(e));
+            throw new RuntimeException(e);
+        }
+
         stateStorage = taskManager.storage();
 
         get(ALL_TASKS_URI, this::getTasks);
@@ -100,9 +116,8 @@ public class TasksController {
         if(request.queryParams(OFFSET_PARAM) != null)
             offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
 
-        if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
+        if(request.queryParams(TASK_STATUS_PARAMETER) != null)
             status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
-        }
 
         JSONArray result = new JSONArray();
         for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
@@ -115,7 +130,7 @@ public class TasksController {
 
     @GET
     @Path("/:uuid")
-    @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
+    @ApiOperation(value = "Get the taskstorage of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
         try {
@@ -123,7 +138,6 @@ public class TasksController {
             JSONObject result = serialiseStateFull(id, stateStorage.getState(id));
             response.type("application/json");
 
-            System.out.println("get one response: "+result.toString());
             return result.toString();
         } catch(Exception e) {
             throw new GraknEngineServerException(500, e);
@@ -139,7 +153,8 @@ public class TasksController {
             String id = request.params(ID_PARAMETER);
             taskManager.stopTask(id, this.getClass().getName());
             return "";
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -165,13 +180,13 @@ public class TasksController {
 
         if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null)
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
-        if(request.body() != null)
-            configuration = new JSONObject(request.body());
-
         if(className == null || createdBy == null || runAt == null)
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
 
         try {
+            if(request.body() != null && (!request.body().isEmpty()))
+                configuration = new JSONObject(request.body());
+
             Date runAtDate = new Date(Long.valueOf(runAt));
 
             Class<?> clazz = Class.forName(className);
@@ -192,6 +207,7 @@ public class TasksController {
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
         }
         catch (Exception e) {
+            LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -211,7 +227,7 @@ public class TasksController {
                        .put("interval", state.interval())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
-                       .put("executingHostname", state.executingHostname())
+                       .put("engineID", state.engineID())
                        .put("configuration", state.configuration());
     }
 }

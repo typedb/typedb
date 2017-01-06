@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
-public interface TaskManager {
+public interface TaskManager extends AutoCloseable {
     /**
      * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds. All parameters must not be
      * null unless stated otherwise.
@@ -59,4 +59,6 @@ public interface TaskManager {
      * @return A StateStorage instance.
      */
     StateStorage storage();
+
+    TaskManager open();
 }

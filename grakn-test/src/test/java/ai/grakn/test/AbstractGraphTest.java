@@ -21,13 +21,15 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import static ai.grakn.test.GraknTestEnv.*;
 
 /**
  * Abstract test class that provides a new empty graph every test that can be committed to.
  */
-public abstract class AbstractGraphTest extends AbstractEngineTest {
-
+public abstract class AbstractGraphTest extends AbstractGraknTest {
     protected GraknGraphFactory factory;
     protected GraknGraph graph;
 
@@ -40,6 +42,7 @@ public abstract class AbstractGraphTest extends AbstractEngineTest {
 
     @After
     public void closeGraph() throws Exception {
+        graph.clear();
         graph.close();
     }
 }

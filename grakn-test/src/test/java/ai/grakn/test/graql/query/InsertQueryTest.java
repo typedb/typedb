@@ -61,6 +61,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static ai.grakn.test.GraknTestEnv.*;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class InsertQueryTest extends AbstractMovieGraphTest {
@@ -72,11 +73,11 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Before
     public void setUp() {
         // TODO: Fix delete queries in titan
-        assumeFalse(usingTitan());
-
-        graph = factoryWithNewKeyspace().getGraph();
+//        assumeFalse(usingTitan());
+//
+//        graph = factoryWithNewKeyspace().getGraph();
         graph.showImplicitConcepts(true);
-        MovieGraphFactory.loadGraph(graph);
+//        MovieGraphFactory.loadGraph(graph);
 
         qb = graph.graql();
     }

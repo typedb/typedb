@@ -61,6 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class GraqlTest extends AbstractGraphTest {
 

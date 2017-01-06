@@ -79,6 +79,7 @@ public class PostProcessing {
     public void stop() {
         if(isRunning.get()) {
             LOG.warn("Shutting down running tasks");
+            System.out.println("Shutting down running tasks");
             futures.forEach(f -> f.cancel(true));
             postpool.shutdownNow();
             statDump.shutdownNow();

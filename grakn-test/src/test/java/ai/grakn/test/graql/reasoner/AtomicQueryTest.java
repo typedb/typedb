@@ -24,7 +24,7 @@ import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
@@ -40,10 +40,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class AtomicQueryTest extends AbstractEngineTest{
+public class AtomicQueryTest extends AbstractGraknTest {
     private static GraknGraph graph;
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
