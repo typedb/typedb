@@ -28,7 +28,7 @@ import java.util.Objects;
 
 import static org.junit.Assert.assertNotEquals;
 
-public class ClusterManagerTest extends EngineTestBase {
+public class ClusterManagerTest { //extends EngineTestBase {
     private final ClusterManager clusterManager = ClusterManager.getInstance();
 
     // There is a strange issue that only shows up when running these tests on Travis; as such this test is being ignored
@@ -37,7 +37,7 @@ public class ClusterManagerTest extends EngineTestBase {
     @Test
     public void testSchedulerRestartsAfterKilled() throws Exception {
         synchronized (clusterManager.getScheduler()) {
-            waitForScheduler(clusterManager, Objects::nonNull);
+//            waitForScheduler(clusterManager, Objects::nonNull);
             System.out.println("c scheduler not null");
             Scheduler scheduler1 = clusterManager.getScheduler();
 
@@ -45,10 +45,10 @@ public class ClusterManagerTest extends EngineTestBase {
             scheduler1.close();
             System.out.println("c closed scheduler");
 
-            waitForScheduler(clusterManager, Objects::isNull);
+//            waitForScheduler(clusterManager, Objects::isNull);
             System.out.println("c scheduler is null");
 
-            waitForScheduler(clusterManager, Objects::nonNull);
+//            waitForScheduler(clusterManager, Objects::nonNull);
             System.out.println("c scheduler not null again");
 
             Scheduler scheduler2 = clusterManager.getScheduler();

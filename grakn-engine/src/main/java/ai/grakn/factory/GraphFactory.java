@@ -45,8 +45,8 @@ public class GraphFactory {
 
         try(FileInputStream input = new FileInputStream(pathToConfig)){
             properties.load(input);
-            System.out.println("path to graph config is: " + pathToConfig);
-            System.out.println("Porperties are: " + properties);
+            System.out.println("Path to graph config is: " + pathToConfig);
+            System.out.println("Properties are: " + properties);
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
         }
