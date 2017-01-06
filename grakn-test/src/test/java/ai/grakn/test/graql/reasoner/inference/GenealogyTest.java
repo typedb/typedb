@@ -26,6 +26,7 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.EngineTestBase;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
 import java.util.List;
@@ -42,7 +43,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GenealogyTest extends AbstractGraknTest {
+public class GenealogyTest extends EngineTestBase {
 
     private static GraknGraph graph;
     private static Reasoner reasoner;
