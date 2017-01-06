@@ -30,6 +30,8 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 
+import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+
 /**
  *
  * <p>
@@ -89,7 +91,7 @@ public class NotEquals extends AtomBase {
         if (var.equals(from)) {
             setRefVarName(to);
         } else if (var.equals(to)) {
-            setRefVarName(var.map(name -> "captured->" + name));
+            setRefVarName(var.map(name -> CAPTURE_MARK + name));
         }
     }
 
@@ -101,7 +103,7 @@ public class NotEquals extends AtomBase {
             setRefVarName(unifiers.get(var));
         }
         else if (unifiers.containsValue(var)) {
-            setRefVarName(var.map(name -> "captured->" + name));
+            setRefVarName(var.map(name -> CAPTURE_MARK + name));
         }
     }
 

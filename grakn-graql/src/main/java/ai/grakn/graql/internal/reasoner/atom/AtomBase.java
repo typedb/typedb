@@ -29,6 +29,9 @@ import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+
+import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
 
 
 /**
@@ -83,6 +86,12 @@ public abstract class AtomBase implements Atomic{
         return vars;
     }
 
+    public void resetNames(){
+        Map<VarName, VarName> unifiers = new HashMap<>();
+        getVarNames().forEach(var -> unifiers.put(var, Patterns.varName()));
+        unify(unifiers);
+    }
+
     /**
      * @return true if the value variable is user defined
      */
@@ -118,7 +127,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(VarName from, VarName to) {
         VarName var = getVarName();
         if (var.equals(from)) setVarName(to);
-        else if (var.equals(to)) setVarName(var.map(name -> "captured->" + name));
+        else if (var.equals(to)) setVarName(var.map(name -> CAPTURE_MARK + name));
     }
 
     /**
@@ -128,7 +137,7 @@ public abstract class AtomBase implements Atomic{
     public void unify(Map<VarName, VarName> unifiers){
         VarName var = getVarName();
         if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var)) setVarName(var.map(name -> "captured->" + name));
+        else if (unifiers.containsValue(var)) setVarName(var.map(name -> CAPTURE_MARK + name));
     }
 
     /**

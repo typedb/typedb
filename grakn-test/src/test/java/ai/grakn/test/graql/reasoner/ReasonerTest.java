@@ -28,15 +28,18 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -53,11 +56,11 @@ import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static ai.grakn.test.GraknTestEnv.*;
 
-public class ReasonerTest extends AbstractEngineTest{
-
+public class ReasonerTest extends AbstractGraknTest {
     @BeforeClass
-    public static void onStartup(){
+    public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
     }
 

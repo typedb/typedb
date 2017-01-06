@@ -27,9 +27,11 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,14 +46,14 @@ import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GenealogyTest extends AbstractEngineTest{
+public class GenealogyTest extends AbstractGraknTest {
 
     private static GraknGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws Exception {
         GenealogyGraph genealogyGraph = new GenealogyGraph();
         reasoner = new Reasoner(genealogyGraph.graph());
         graph = genealogyGraph.graph();
@@ -257,12 +259,34 @@ public class GenealogyTest extends AbstractEngineTest{
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
-    @Ignore
     @Test
-    public void testMarriage2(){
-        String queryString = "match ($r: $x) isa marriage; $r isa wife;";
+    public void testWife(){
+        String queryString = "match $r (wife: $x) isa marriage;";
+        MatchQuery query = new Query(queryString, graph);
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        List<Map<String, Concept>> answerList = qb.<MatchQuery>parse(queryString).execute();
+        answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        List<Map<String, Concept>> answerList2 = qb.<MatchQuery>parse(queryString).execute();
+        assertEquals(answerList, answerList2);
+
     }
 
+    //TODO
+    @Ignore
+    @Test
+    public void testWife2(){
+        String queryString = "match ($r: $x) isa marriage;$r type-name 'wife';select $x;";
+        String queryString2 = "match (wife: $x) isa marriage;";
+        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query2 = new Query(queryString2, graph);
+        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        assertEquals(answers2, new QueryAnswers(qb.<MatchQuery>parse(queryString2).execute()));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        assertTrue(!answers.isEmpty());
+        System.out.println("answers size: " + answers.size());
+        System.out.println("answers2 size: " + answers2.size());
+        assertEquals(answers, answers2);
+    }
 
     /*
     test for the second rule file:
@@ -319,8 +343,8 @@ public class GenealogyTest extends AbstractEngineTest{
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
 
-        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.size() == answers2.size());
     }
 

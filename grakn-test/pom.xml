@@ -46,6 +46,16 @@
                         <grakn.conf>../conf/test/${grakn.test-profile}/grakn-engine.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
                     </systemPropertyVariables>
+                    <!-- uncomment the following to be able to run only specific packages with
+                        for example -DtestGroup=ai/grakn/test/migration/sql 
+					<includes>
+                    	<include>**/${testGroup}/*Test.java</include>
+                	</includes>
+                -->
+                    <!-- This is important for otherwise surefire reports or the console 
+                    don't contain stack traces! -->
+                    <trimStackTrace>false</trimStackTrace>
+                    <argLine>-XX:+HeapDumpOnOutOfMemoryError</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -96,6 +106,11 @@
                     <groupId>org.cassandraunit</groupId>
                     <artifactId>cassandra-unit</artifactId>
                     <version>${cassandra-unit.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.datastax.cassandra</groupId>
+                    <artifactId>cassandra-driver-core</artifactId>
+                    <version>3.1.2</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -248,5 +263,55 @@
             <version>${systen-rules.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <scope>test</scope>
+            <version>2.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.10</artifactId>
+            <version>0.10.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>info.batey.kafka</groupId>
+            <artifactId>kafka-unit</artifactId>
+            <version>0.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+
+                <dependency>
+                    <groupId>ai.grakn</groupId>
+                    <artifactId>grakn-titan-factory</artifactId>
+                    <version>${project.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-log4j12</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.cassandraunit</groupId>
+                    <artifactId>cassandra-unit</artifactId>
+                    <version>${cassandra-unit.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.datastax.cassandra</groupId>
+                    <artifactId>cassandra-driver-core</artifactId>
+                    <version>3.1.2</version>
+                </dependency>
+
     </dependencies>
 </project>

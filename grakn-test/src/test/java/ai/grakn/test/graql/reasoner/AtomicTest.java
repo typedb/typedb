@@ -19,6 +19,12 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Rule;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Reasoner;
@@ -34,6 +40,13 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
+import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Sets;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,14 +61,15 @@ import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static ai.grakn.test.GraknTestEnv.*;
 
-public class AtomicTest extends AbstractEngineTest{
+public class AtomicTest extends AbstractGraknTest {
 
     private static GraknGraph snbGraph;
     private static GraknGraph cwGraph;
 
     @BeforeClass
-    public static void onStartup(){
+    public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
         snbGraph = SNBGraph.getGraph();
         cwGraph = CWGraph.getGraph();
@@ -133,7 +147,6 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testRoleInference3(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
-
         Relation relation = (Relation) new AtomicQuery("match ($p, son: $gc) isa parentship;", graph).getAtom();
         Relation correctFullRelation = (Relation) new AtomicQuery("match (parent: $p, son: $gc) isa parentship;", graph).getAtom();
         Relation relation2 = (Relation) new AtomicQuery("match (father: $gp, $p) isa parentship;", graph).getAtom();
@@ -166,7 +179,6 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testUnification(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
-
         String relation = "match (parent: $y, child: $x);";
         String specialisedRelation = "match (father: $p, daughter: $c);";
         String specialisedRelation2 = "match (daughter: $p, father: $c);";
@@ -188,6 +200,93 @@ public class AtomicTest extends AbstractEngineTest{
     }
 
     @Test
+    public void testUnification2() {
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childString = "match (wife: $5b7a70db-2256-4d03-8fa4-2621a354899e, husband: $0f93f968-873a-43fa-b42f-f674c224ac04) isa marriage;";
+        String parentString = "match (wife: $x) isa marriage;";
+        Atom childAtom = new AtomicQuery(childString, graph).getAtom();
+        Atom parentAtom = new AtomicQuery(parentString, graph).getAtom();
+
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("5b7a70db-2256-4d03-8fa4-2621a354899e", "x");
+        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+
+        Map<String, String> reverseUnifiers = parentAtom.getUnifiers(childAtom);
+        Map<String, String> correctReverseUnifiers = new HashMap<>();
+        correctReverseUnifiers.put("x", "5b7a70db-2256-4d03-8fa4-2621a354899e");
+        assertTrue(reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet()));
+    }
+
+    @Test
+    public void testRewriteAndUnification(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String parentString = "match $r (wife: $x) isa marriage;";
+        Atom parentAtom = new AtomicQuery(parentString, graph).getAtom();
+
+        String childPatternString = "(wife: $x, husband: $y) isa marriage";
+        InferenceRule testRule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(
+                graph.graql().parsePattern(childPatternString),
+                graph.graql().parsePattern(childPatternString)),
+                graph);
+        testRule.unify(parentAtom);
+        Atom headAtom = testRule.getHead().getAtom();
+        Map<String, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
+        assertTrue(varTypeRoleMap.get("x").getValue().equals(graph.getRoleType("wife")));
+    }
+
+    @Test
+    public void testRewrite(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childRelation = "match (father: $x1, daughter: $x2) isa parentship;";
+        String parentRelation = "match $r (father: $x, daughter: $y) isa parentship;";
+        AtomicQuery childQuery = new AtomicQuery(childRelation, graph);
+        Atom childAtom = childQuery.getAtom();
+        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
+
+        Pair<Atom, Map<String, String>> rewrite = childAtom.rewrite(parentAtom, childQuery);
+        Atom rewrittenAtom = rewrite.getKey();
+        Map<String, String> unifiers = rewrite.getValue();
+        Set<String> unifiedVariables = Sets.newHashSet("x1", "x2");
+        assertTrue(rewrittenAtom.isUserDefinedName());
+        assertTrue(unifiedVariables.containsAll(unifiers.keySet()));
+    }
+
+    @Test
+    public void testIndirectRoleUnification(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childRelation = "match ($r1: $x1, $r2: $x2) isa parentship;$r1 type-name 'father';$r2 type-name 'daughter';";
+        String parentRelation = "match ($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';";
+        Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
+        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
+
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("x1", "x");
+        correctUnifiers.put("x2", "y");
+        correctUnifiers.put("r1", "R1");
+        correctUnifiers.put("r2", "R2");
+        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+    }
+
+    @Test
+    public void testIndirectRoleUnification2(){
+        GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
+        String childRelation = "match ($r1: $x1, $r2: $x2);$r1 type-name 'father';$r2 type-name 'daughter';";
+        String parentRelation = "match ($R1: $x, $R2: $y);$R1 type-name 'father';$R2 type-name 'daughter';";
+
+        Atom childAtom = new AtomicQuery(childRelation, graph).getAtom();
+        Atom parentAtom = new AtomicQuery(parentRelation, graph).getAtom();
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("x1", "x");
+        correctUnifiers.put("x2", "y");
+        correctUnifiers.put("r1", "R1");
+        correctUnifiers.put("r2", "R2");
+        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+    }
+
+    @Test
     public void testMatchAllUnification(){
         GraknGraph graph = snbGraph;
         Relation relation = (Relation) new AtomicQuery("match ($z, $b) isa recommendation;", graph).getAtom();
@@ -201,7 +300,6 @@ public class AtomicTest extends AbstractEngineTest{
         correctVars.add(varName("x"));
         assertTrue(!vars.contains(varName("")));
         assertTrue(vars.containsAll(correctVars));
-
     }
 
     @Test
@@ -221,7 +319,6 @@ public class AtomicTest extends AbstractEngineTest{
         assertTrue(!vars.contains(varName("")));
         assertTrue(vars.toString(), vars.containsAll(correctVars));
     }
-
 
     @Test
     public void testValuePredicateComparison(){

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class ShortestPathTest extends AbstractGraphTest {
     private static final String thing = "thing";

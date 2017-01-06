@@ -29,6 +29,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -206,7 +207,7 @@ public class AtomicQuery extends Query{
             if (relAtom.getRoleVarTypeMap().size() != rolePlayers.size()) {
                 RelationType relType = (RelationType) atom.getType();
                 Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
-                Set<Map<VarName, String>> roleMaps = new HashSet<>();
+                Set<Map<VarName, Var>> roleMaps = new HashSet<>();
                 Utility.computeRoleCombinations(rolePlayers , roles, new HashMap<>(), roleMaps);
 
                 queryToMaterialise.removeAtom(relAtom);

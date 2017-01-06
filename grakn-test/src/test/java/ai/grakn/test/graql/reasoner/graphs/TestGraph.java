@@ -50,14 +50,16 @@ public class TestGraph {
     protected static ResourceType<String> key;
 
     public TestGraph(){
-        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        // EmbeddedCassandra has issues dropping keyspaces that start with numbers
+        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, "a"+UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         graknGraph.showImplicitConcepts(true);
         buildGraph();
         commit();
     }
 
     public TestGraph(String primaryKeyId, String... files) {
-        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        // EmbeddedCassandra has issues dropping keyspaces that start with numbers
+        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, "a"+UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         graknGraph.showImplicitConcepts(true);
         if (primaryKeyId != null) addPrimaryKey(primaryKeyId);
         for( String graqlFile : files) loadGraqlFile(graqlFile);

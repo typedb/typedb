@@ -71,6 +71,10 @@
     </logger>
 
     <!--ASCII TEXT-->
+    <logger name="org.apache" level="ERROR">
+        <appender-ref ref="MAIN"/>
+    </logger>
+
     <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>

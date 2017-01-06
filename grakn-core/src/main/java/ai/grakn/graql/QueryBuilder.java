@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -82,6 +81,12 @@ public interface QueryBuilder {
      * @return a query, the type will depend on the type of query.
      */
     <T extends Query<?>> T parse(String queryString);
+
+    /**
+     * @param queryString a string representing several queries
+     * @return a list of queries
+     */
+     List<Query<?>> parseList(String queryString);
 
     /**
      * @param template a string representing a templated graql query

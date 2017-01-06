@@ -206,6 +206,7 @@ public class VisualiserControllerTest extends AbstractGraphTest {
                 .get(REST.WebPath.CONCEPT_BY_ID_URI +graph.getType("person").getId())
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
+        System.out.println(message);
 
         //TODO:maybe change person to proper id? and add  _nameType property
         assertEquals(message.at("_id").asString(),"person");

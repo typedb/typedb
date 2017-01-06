@@ -38,7 +38,7 @@ import java.util.Set;
  *
  */
 public abstract class MultiPredicateBinary extends BinaryBase {
-    private Set<Predicate> multiPredicate = new HashSet<>();
+    private final  Set<Predicate> multiPredicate = new HashSet<>();
 
     protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, Query par) {
         super(pattern, par);

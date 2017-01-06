@@ -26,6 +26,7 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -38,13 +39,12 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 
 
-public class AbstractInferenceTest extends AbstractEngineTest {
-
+public class AbstractInferenceTest extends AbstractGraknTest {
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws Exception {
         GraknGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql().infer(false);
@@ -90,4 +90,5 @@ public class AbstractInferenceTest extends AbstractEngineTest {
     private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, Stream<Map<String, Concept>> s2) {
         assertEquals(s1.map(CommonUtil::resultVarNameToString).collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }
+
 }

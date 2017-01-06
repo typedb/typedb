@@ -54,17 +54,17 @@ public interface StateStorage {
      * @param id ID of task to update, this must not be null.
      * @param status New status of task, may be null.
      * @param statusChangeBy String identifying caller, may be null.
-     * @param executingHostname String hostname of engine instance scheduling/executing this task. May be null.
+     * @param engineID String ID of engine instance scheduling/executing this task. May be null.
      * @param failure Throwable to store any exceptions that occurred during executing. May be null.
      * @param checkpoint String to store task checkpoint, may be null.
      */
-    void updateState(String id,
-                     TaskStatus status,
-                     String statusChangeBy,
-                     String executingHostname,
-                     Throwable failure,
-                     String checkpoint,
-                     JSONObject configuration);
+    Boolean updateState(String id,
+                        TaskStatus status,
+                        String statusChangeBy,
+                        String engineID,
+                        Throwable failure,
+                        String checkpoint,
+                        JSONObject configuration);
 
     /**
      * This is a copy of the internal TaskState object. It is guaranteed to be correct at the time of call, however the actual

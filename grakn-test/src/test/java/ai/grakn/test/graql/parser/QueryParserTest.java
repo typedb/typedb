@@ -27,6 +27,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
@@ -43,6 +44,7 @@ import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -71,6 +73,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class QueryParserTest extends AbstractMovieGraphTest {
 
@@ -595,6 +598,84 @@ public class QueryParserTest extends AbstractMovieGraphTest {
     @Test
     public void testParseKey() {
         assertEquals("match $x has-key name;", parse("match $x has-key name;").toString());
+    }
+
+    @Test
+    public void testParseListEmpty() {
+        List<Query<?>> queries = qb.parseList("");
+        assertEquals(0, queries.size());
+    }
+
+    @Test
+    public void testParseListOneMatch() {
+        String matchString = "match $y isa movie; limit 1;";
+
+        List<Query<?>> queries = qb.parseList(matchString);
+
+        assertEquals(1, queries.size());
+
+        Query<?> match = queries.get(0);
+        assertEquals(matchString, match.toString());
+    }
+
+    @Test
+    public void testParseListOneInsert() {
+        String insertString = "insert $x isa movie;";
+
+        List<Query<?>> queries = qb.parseList(insertString);
+
+        assertEquals(1, queries.size());
+
+        Query<?> insert = queries.get(0);
+        assertEquals(insertString, insert.toString());
+    }
+
+    @Test
+    public void testParseList() {
+        String insertString = "insert $x isa movie;";
+        String matchString = "match $y isa movie; limit 1;";
+
+        List<Query<?>> queries = qb.parseList(insertString + matchString);
+
+        assertEquals(2, queries.size());
+
+        Query<?> insert = queries.get(0);
+        assertEquals(insertString, insert.toString());
+
+        Query<?> match = queries.get(1);
+        assertEquals(matchString, match.toString());
+    }
+
+    @Test
+    public void testParseListMatchInsert() {
+        String matchString = "match $y isa movie; limit 1;";
+        String insertString = "insert $x isa movie;";
+
+        List<Query<?>> queries = qb.parseList(matchString + insertString);
+
+        assertEquals(1, queries.size());
+
+        Query<?> insert = queries.get(0);
+        assertEquals(matchString + "\n" + insertString, insert.toString());
+    }
+
+    @Test
+    public void testParseMatchInsertBeforeAndAfter() {
+        String matchString = "match $y isa movie; limit 1;";
+        String insertString = "insert $x isa movie;";
+        String matchInsert = matchString + insertString;
+
+        List<String> options = Lists.newArrayList(
+                matchString + matchInsert,
+                insertString + matchInsert,
+                matchInsert + matchString,
+                matchInsert + insertString
+        );
+
+        options.forEach(option -> {
+            List<Query<?>> queries = Graql.parseList(option);
+            assertEquals(option, 2, queries.size());
+        });
     }
 
     @Test(expected = IllegalArgumentException.class)

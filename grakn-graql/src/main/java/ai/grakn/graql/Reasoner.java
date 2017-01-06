@@ -157,10 +157,10 @@ public class Reasoner {
             return inputQuery.admin().streamWithVarNames();
         Set<VarName> selectVars = inputQuery.admin().getSelectedNames();
         Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        Stream<Map<VarName, Concept>> answerStream = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph)
-                .resolve(materialise);
+        Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
+        Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
         while(conjIt.hasNext()) {
-            Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
+            conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
             answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
         }
         return answerStream;

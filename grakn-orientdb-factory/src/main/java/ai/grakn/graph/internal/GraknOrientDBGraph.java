@@ -30,6 +30,8 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
         super(graph, name, engineUrl, batchLoading);
     }
 
+
+
     @Override
     protected void commitTx(){
         getTinkerPopGraph().commit();

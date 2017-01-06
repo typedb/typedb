@@ -32,7 +32,6 @@ import java.util.Properties;
 /**
  * Singleton class used to read config file and make all the settings available to the Grakn Engine classes.
  */
-
 public class ConfigProperties {
 
     //Test Configs
@@ -52,7 +51,6 @@ public class ConfigProperties {
     public static final String POLLING_FREQUENCY_PROPERTY = "loader.polling-frequency";
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
     public static final String PASSWORD_PROTECTED_PROPERTY="password.protected";
-
 
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
@@ -84,7 +82,22 @@ public class ConfigProperties {
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
-    public static final String SYSTEM_GRAPH_NAME = "graknSystem";
+    public static final String KAFKA_BOOTSTRAP_SERVERS = "tasks.kafka.bootstrap-servers";
+    public static final String KAFKA_SESSION_TIMEOUT = "tasks.kafka.consumer.session-timeout";
+    public static final String KAFKA_RETRIES = "tasks.kafka.producer.retries";
+    public static final String KAFKA_BATCH_SIZE = "tasks.kafka.producer.batch-size";
+    public static final String KAFKA_LINGER_MS = "tasks.kafka.producer.linger-ms";
+    public static final String KAFKA_BUFFER_MEM = "tasks.kafka.producer.buffer-mem";
+
+    public static final String ZK_SERVERS = "tasks.zookeeper.servers";
+    public static final String ZK_SESSION_TIMEOUT = "tasks.zookeeper.session_timeout_ms";
+    public static final String ZK_CONNECTION_TIMEOUT = "tasks.zookeeper.connection_timeout_ms";
+    public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";
+    public static final String ZK_BACKOFF_MAX_RETRIES = "tasks.zookeeper.backoff.max_retries";
+
+    public static final String SCHEDULER_POLLING_FREQ = "tasks.scheduler.polling-frequency";
+    public static final String TASKRUNNER_POLLING_FREQ = "tasks.runner.polling-frequency";
+    public static final String TASK_MANAGER_INSTANCE = "tasks.task-manager";
 
     private Logger LOG;
 
@@ -113,6 +126,10 @@ public class ConfigProperties {
         LOG.info("Project directory in use: [" + getProjectPath() + "]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
         LOG.info("Number of threads set to [" + numOfThreads + "]");
+    }
+
+    public void setConfigProperty(String key, String value){
+        prop.setProperty(key,value);
     }
 
     /**
@@ -234,6 +251,14 @@ public class ConfigProperties {
 
     public String getProperty(String property) {
         return prop.getProperty(property);
+    }
+
+    public String getProperty(String property, String defaultValue) {
+        String res = prop.getProperty(property);
+        if(res != null)
+            return res;
+
+        return defaultValue;
     }
 
     public int getPropertyAsInt(String property) {

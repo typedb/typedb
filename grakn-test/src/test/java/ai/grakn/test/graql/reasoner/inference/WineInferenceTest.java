@@ -20,6 +20,7 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
@@ -36,9 +37,9 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
+import static ai.grakn.test.GraknTestEnv.*;
 
-public class WineInferenceTest extends AbstractEngineTest{
-
+public class WineInferenceTest extends AbstractGraknTest {
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 

@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.factory.OrientDBInternalFactory;
 import org.junit.After;
@@ -39,7 +40,7 @@ import static org.junit.Assert.assertNull;
 
 public class GraknOrientDBGraphTest {
     private static final String TEST_NAME = "grakntest";
-    private static final String TEST_URI = "memory";
+    private final static String TEST_URI = Grakn.IN_MEMORY;
     private static final boolean TEST_BATCH_LOADING = false;
     private GraknGraph graknGraph;
 
@@ -53,7 +54,7 @@ public class GraknOrientDBGraphTest {
         graknGraph.clear();
     }
 
-    @Ignore
+    @Ignore // Failing remotely only
     @Test
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);

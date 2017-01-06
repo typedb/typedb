@@ -98,6 +98,14 @@ public class QueryParser {
     }
 
     /**
+     * @param queryString a string representing several queries
+     * @return a list of queries
+     */
+    public List<Query<?>> parseList(String queryString) {
+        return parseQueryFragment(GraqlParser::queryList, QueryVisitor::visitQueryList, queryString);
+    }
+
+    /**
      * @param patternsString a string representing a list of patterns
      * @return a list of patterns
      */

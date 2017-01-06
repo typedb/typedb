@@ -22,8 +22,6 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.base.AbstractMigrator;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.migration.base.AbstractMigrator;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.impl.DSL;

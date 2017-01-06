@@ -24,6 +24,10 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
@@ -33,6 +37,8 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -47,7 +53,6 @@ import java.util.function.Function;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
-
 /**
  *
  * <p>
@@ -58,6 +63,8 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 public class Utility {
+
+    public static final String CAPTURE_MARK = "captured-";
 
     /**
      * Provides more readable answer output.
@@ -117,8 +124,8 @@ public class Utility {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, String> roleMap,
-                                        Set<Map<VarName, String>> roleMaps){
+    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, VarAdmin> roleMap,
+                                        Set<Map<VarName, Var>> roleMaps){
         Set<VarName> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
         VarName var = vars.iterator().next();
@@ -126,7 +133,7 @@ public class Utility {
         roles.forEach(role -> {
             tempVars.remove(var);
             tempRoles.remove(role);
-            roleMap.put(var, role.getName());
+            roleMap.put(var, Graql.var().name(role.getName()).admin());
             if (!tempVars.isEmpty() && !tempRoles.isEmpty())
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
             else {
