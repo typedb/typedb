@@ -18,15 +18,13 @@
 
 package ai.grakn.test.migration.owl;
 
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
-import java.util.stream.Stream;
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -46,6 +44,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
@@ -128,7 +127,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'ewalter_whitfield_1863';} or" +
                 "{$y has owl-iri 'ewilliam_whitfield_1852';} or" +
                 "{$y has owl-iri 'egeorge_whitfield_1865';};";
-        assertEquals(graknReasoner.resolve(new Query(queryString2, graph), false), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)).stream());
+        assertEquals(graknReasoner.resolve(qb.parse(queryString2), false), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)).stream());
 
         String queryString3 = "match (owl-subject-op-hasGreatAunt: $x, owl-object-op-hasGreatAunt: $y) isa op-hasGreatAunt;" +
                 "$x has owl-iri 'emary_kate_green_1865'; select $y;";
@@ -137,7 +136,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'esarah_ingelby_1821';} or {$y has owl-iri 'eann_pickard_1809';} or" +
                 "{$y has owl-iri 'esusanna_pickard_1803';} or {$y has owl-iri 'emary_green_1803';} or" +
                 "{$y has owl-iri 'erebecca_green_1800';} or {$y has owl-iri 'eann_green_1806';};";
-        assertEquals(graknReasoner.resolve(new Query(queryString3, graph), false), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)).stream());
+        assertEquals(graknReasoner.resolve(qb.parse(queryString3), false), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)).stream());
 
         IRI hasAncestor = baseIri.resolve("#hasAncestor");
         String hasAncestorId = "op-hasAncestor";

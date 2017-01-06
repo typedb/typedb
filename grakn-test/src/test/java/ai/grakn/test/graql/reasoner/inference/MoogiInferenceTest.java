@@ -21,16 +21,16 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import ai.grakn.graql.QueryBuilder;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import ai.grakn.graql.Reasoner;
+import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -91,7 +91,7 @@ public class MoogiInferenceTest {
     public void testActorDirector(){
         String queryString = "match $x has status 'actor-director';";
         String explicitQuery = "match (actor: $x) isa has-cast;(director: $x) isa production-crew;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
         assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }

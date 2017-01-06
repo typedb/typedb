@@ -54,7 +54,6 @@ public class ReasonerMatchQuery extends Query{
         answers = new QueryAnswers(ans);
     }
 
-    @Override
     public Stream<Map<String, Concept>> stream() {
         return answers.stream();
     }

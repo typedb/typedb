@@ -25,7 +25,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.match.MatchQueryInternal;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -61,7 +60,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
  * @author Kasper Piskorski
  *
  */
-public class Query implements MatchQueryInternal {
+public class Query {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
@@ -124,20 +123,15 @@ public class Query implements MatchQueryInternal {
                 .forEach(Atom::inferTypes);
     }
 
-    @Override
     public Set<Type> getTypes(GraknGraph graph){ return getMatchQuery().admin().getTypes(graph);}
 
-    @Override
     public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
 
-    @Override
     public Set<String> getSelectedNames() { return Sets.newHashSet(selectVars);}
 
-    @Override
-    public MatchQuery select(Set<String> vars){
+    public void select(Set<String> vars){
         selectVars.clear();
         selectVars.addAll(vars);
-        return this;
     }
 
     /**
@@ -145,28 +139,23 @@ public class Query implements MatchQueryInternal {
      * @param vars variables to append
      * @return appended query
      */
-    public MatchQuery selectAppend(Set<String> vars){
+    public void selectAppend(Set<String> vars){
         selectVars.addAll(vars);
-        return this;
     }
 
-    @Override
     public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
         return getMatchQuery().stream();
     }
 
-    @Override
     public Optional<GraknGraph> getGraph(){ return Optional.of(graph);}
     public GraknGraph graph(){ return graph;}
 
-    @Override
     public Conjunction<PatternAdmin> getPattern() {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream().map(Atomic::getPattern).forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
 
-    @Override
     public List<Map<String, Concept>> execute() { return getMatchQuery().execute();}
 
     /**
