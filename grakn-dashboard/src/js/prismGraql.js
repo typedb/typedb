@@ -19,38 +19,38 @@
 /**
  * Contains the Graql syntax highlighter for Prism.
  */
-export const graql = {
-    comment: {
-        pattern: /#.*/,
-        alias: 'comment'
-    },
-    string: {
-        pattern: /".*?"/,
-        alias: 'string'
-    },
-    keyword: {
-        pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(match|ask|insert|delete|select|isa|sub|plays-role|has-role|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|aggregate)(?![-a-zA-Z_0-9])/,
-        alias: 'keyword',
-        lookbehind: true
-    },
+export default {
+  comment: {
+    pattern: /#.*/,
+    alias: 'comment',
+  },
+  string: {
+    pattern: /".*?"/,
+    alias: 'string',
+  },
+  keyword: {
+    pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(match|ask|insert|delete|select|isa|sub|plays-role|has-role|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|aggregate)(?![-a-zA-Z_0-9])/, // eslint-disable-line max-len
+    alias: 'keyword',
+    lookbehind: true,
+  },
 
-    special: {
-        pattern: /graql>|results>|\.\.\./
-    },
-    variable: {
-        pattern: /\$[-a-zA-Z_0-9]+/,
-        alias: 'variable'
-    },
-    type: {
-        pattern: /[-a-zA-Z_][-a-zA-Z_0-9]*/,
-        alias: 'function'
-    },
-    number: {
-        pattern: /[0-9]+(\.[0-9][0-9]*)?/,
-        alias: 'number'
-    },
-    operator: {
-        pattern: /=|!=|>|<|>=|<=|contains|regex/,
-        alias: 'operator'
-    }
+  special: {
+    pattern: /graql>|results>|\.\.\./,
+  },
+  variable: {
+    pattern: /\$[-a-zA-Z_0-9]+/,
+    alias: 'variable',
+  },
+  type: {
+    pattern: /[-a-zA-Z_][-a-zA-Z_0-9]*/,
+    alias: 'function',
+  },
+  number: {
+    pattern: /[0-9]+(\.[0-9][0-9]*)?/,
+    alias: 'number',
+  },
+  operator: {
+    pattern: /=|!=|>|<|>=|<=|contains|regex/,
+    alias: 'operator',
+  },
 };

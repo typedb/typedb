@@ -101,7 +101,7 @@ import User from '../js/User.js'
 var GraqlEditor = require('./graqlEditor.vue')
 
 export default {
-    name: "ConsoleView",
+    name: "ConsolePage",
     components: {
         GraqlEditor
     },

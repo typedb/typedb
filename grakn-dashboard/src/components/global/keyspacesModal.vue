@@ -47,8 +47,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 </style>
 <script>
-import User from '../js/User.js'
-import EngineClient from '../js/EngineClient.js';
+import User from '../../js/User.js'
+import EngineClient from '../../js/EngineClient.js';
 
 
 export default {
