@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-public abstract class AbstractMatchQuery implements MatchQueryAdmin {
+abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     /**
      * @param keyword a keyword to color-code using ANSI colors
