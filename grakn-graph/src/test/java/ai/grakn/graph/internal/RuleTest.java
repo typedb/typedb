@@ -137,4 +137,10 @@ public class RuleTest extends GraphTestBase{
         assertTrue(rule.getConclusionTypes().contains(ct2));
     }
 
+    @Test
+    public void testSettingSuperType(){
+        graknGraph.putRuleType("inheritance").superType(graknGraph.admin().getMetaRuleInference());
+        assertEquals(graknGraph.getRuleType("inheritance").superType(), graknGraph.admin().getMetaRuleInference());
+    }
+
 }

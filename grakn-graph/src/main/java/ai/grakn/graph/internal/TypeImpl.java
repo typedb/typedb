@@ -241,7 +241,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         checkTypeMutation();
 
         Type currentSuperType = superType();
-        if(currentSuperType == null || (!currentSuperType.equals(superType) && !Schema.MetaSchema.isMetaName(superType.getName()))) {
+        if(currentSuperType == null || !currentSuperType.equals(superType)) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
             putEdge(superType, Schema.EdgeLabel.SUB);
