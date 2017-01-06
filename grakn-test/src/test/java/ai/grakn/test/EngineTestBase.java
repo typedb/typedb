@@ -58,7 +58,7 @@ import static ai.grakn.test.GraknTestEnv.*;
 public class EngineTestBase {
     private static final Properties properties = ConfigProperties.getInstance().getProperties();
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
-    private static KafkaUnit kafkaUnit;
+    private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
     private static Path tempDirectory;
 
     @BeforeClass
@@ -81,8 +81,6 @@ public class EngineTestBase {
     }
 
     private static void startEngineImpl() throws Exception {
-        kafkaUnit = new KafkaUnit(2181, 9092);
-        
         tempDirectory = Files.createTempDirectory("graknKafkaUnit " + UUID.randomUUID());
         kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
         kafkaUnit.startup();
@@ -99,7 +97,7 @@ public class EngineTestBase {
         if(ENGINE_ON.compareAndSet(true, false)) {
             System.out.println("STOPPING ENGINE...");
 
-            noThrow(GraknEngineServer::stopCluster, "Problem while shutting down Zookeeper cluster.");            
+            noThrow(GraknEngineServer::stopCluster, "Problem while shutting down Zookeeper cluster.");
             noThrow(kafkaUnit::shutdown, "Problem while shutting down Kafka Unit.");
             noThrow(GraknTestEnv::clearGraphs, "Problem while clearing graphs.");
             noThrow(GraknTestEnv::shutdownEngine, "Problem while shutting down Engine");
