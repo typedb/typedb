@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -28,9 +29,8 @@ import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
-import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+import static ai.grakn.graql.internal.reasoner.Utility.capture;
 
 
 /**
@@ -44,7 +44,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
  */
 public abstract class AtomBase implements Atomic{
 
-    protected String varName = null;
+    protected VarName varName = null;
     protected PatternAdmin atomPattern = null;
     private Query parent = null;
 
@@ -66,28 +66,28 @@ public abstract class AtomBase implements Atomic{
     public String toString(){ return atomPattern.toString(); }
 
     @Override
-    public boolean containsVar(String name){ return getVarNames().contains(name);}
+    public boolean containsVar(VarName name){ return getVarNames().contains(name);}
 
     @Override
     public boolean isUserDefinedName(){ return atomPattern.asVar().isUserDefinedName();}
 
     @Override
-    public String getVarName(){ return varName;}
+    public VarName getVarName(){ return varName;}
 
     @Override
-    public Set<String> getVarNames(){
+    public Set<VarName> getVarNames(){
         return Sets.newHashSet(varName);
     }
 
-    public Set<String> getSelectedNames(){
-         Set<String> vars = getParentQuery().getSelectedNames();
+    public Set<VarName> getSelectedNames(){
+         Set<VarName> vars = getParentQuery().getSelectedNames();
         vars.retainAll(getVarNames());
         return vars;
     }
 
     public void resetNames(){
-        Map<String, String> unifiers = new HashMap<>();
-        getVarNames().forEach(var -> unifiers.put(var, UUID.randomUUID().toString()));
+        Map<VarName, VarName> unifiers = new HashMap<>();
+        getVarNames().forEach(var -> unifiers.put(var, Patterns.varName()));
         unify(unifiers);
     }
 
@@ -113,7 +113,7 @@ public abstract class AtomBase implements Atomic{
      */
     public void setParentQuery(Query q){ parent = q;}
 
-    private void setVarName(String var){
+    private void setVarName(VarName var){
         varName = var;
         atomPattern.asVar().setVarName(var);
     }
@@ -123,20 +123,20 @@ public abstract class AtomBase implements Atomic{
      * @param from variable name to be changed
      * @param to new variable name
      */
-    public void unify(String from, String to) {
-        String var = getVarName();
+    public void unify(VarName from, VarName to) {
+        VarName var = getVarName();
         if (var.equals(from)) setVarName(to);
-        else if (var.equals(to)) setVarName(CAPTURE_MARK + var);
+        else if (var.equals(to)) setVarName(capture(var));
     }
 
     /**
      * perform unification on the atom by applying unifiers
      * @param unifiers contain variable mappings to be applied
      */
-    public void unify(Map<String, String> unifiers){
-        String var = getVarName();
+    public void unify(Map<VarName, VarName> unifiers){
+        VarName var = getVarName();
         if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var)) setVarName(CAPTURE_MARK + var);
+        else if (unifiers.containsValue(var)) setVarName(capture(var));
     }
 
     /**
@@ -144,10 +144,10 @@ public abstract class AtomBase implements Atomic{
      * @param parentAtom atom defining variable names
      * @return map of unifiers
      */
-    public Map<String, String> getUnifiers(Atomic parentAtom) {
+    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
         if (parentAtom.getClass() != this.getClass())
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        Map<String, String> map = new HashMap<>();
+        Map<VarName, VarName> map = new HashMap<>();
         if (!this.getVarName().equals(parentAtom.getVarName()))
             map.put(this.getVarName(), parentAtom.getVarName());
         return map;

@@ -20,6 +20,7 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GremlinQuery;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
@@ -32,9 +33,22 @@ import org.junit.Test;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.graql.Graql.*;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.*;
+import static ai.grakn.graql.Graql.eq;
+import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.id;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inHasRole;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outHasRole;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.value;
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -42,13 +56,16 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalTest extends AbstractRollbackGraphTest {
 
-    private static final Fragment xId = id("x", "Titanic");
-    private static final Fragment xValue = value("x", eq("hello").admin());
-    private static final Fragment yId = id("y", "movie");
-    private static final Fragment xIsaY = outIsa("x", "y");
-    private static final Fragment yTypeOfX = inIsa("y", "x");
-    private static final Fragment xShortcutY = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), "x", "y");
-    private static final Fragment yShortcutX = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), "y", "x");
+    private static final VarName x = varName("x");
+    private static final VarName y = varName("y");
+    private static final VarName z = varName("z");
+    private static final Fragment xId = id(x, "Titanic");
+    private static final Fragment xValue = value(x, eq("hello").admin());
+    private static final Fragment yId = id(y, "movie");
+    private static final Fragment xIsaY = outIsa(x, y);
+    private static final Fragment yTypeOfX = inIsa(y, x);
+    private static final Fragment xShortcutY = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), x, y);
+    private static final Fragment yShortcutX = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, x);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
 
@@ -66,8 +83,8 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
 
     @Test
     public void testComplexityConnectedVsDisconnected() {
-        GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa("y", "z"));
-        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa("z", "y"));
+        GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa(y, z));
+        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(z, y));
         assertFaster(connectedDoubleIsa, disconnectedDoubleIsa);
     }
 
@@ -80,27 +97,31 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
 
     @Test
     public void testHasRoleFasterFromRoleType() {
-        GraqlTraversal hasRoleFromRelationType = traversal(yId, outHasRole("y", "x"), xId);
-        GraqlTraversal hasRoleFromRoleType = traversal(xId, inHasRole("x", "y"), yId);
+        GraqlTraversal hasRoleFromRelationType = traversal(yId, outHasRole(y, x), xId);
+        GraqlTraversal hasRoleFromRoleType = traversal(xId, inHasRole(x, y), yId);
         assertFaster(hasRoleFromRoleType, hasRoleFromRelationType);
     }
 
     @Test
     public void testResourceWithTypeFasterFromType() {
         GraqlTraversal fromInstance =
-                traversal(outIsa("x", "X"), id("X", "_"), makeShortcut("x", "y"), outIsa("y", "Y"), id("Y", "_"));
+                traversal(outIsa(x, x), id(x, "_"), makeShortcut(x, y), outIsa(y, y), id(y, "_"));
         GraqlTraversal fromType =
-                traversal(id("X", "_"), inIsa("X", "x"), makeShortcut("x", "y"), outIsa("y", "Y"), id("Y", "_"));
+                traversal(id(x, "_"), inIsa(x, x), makeShortcut(x, y), outIsa(y, y), id(y, "_"));
         assertFaster(fromType, fromInstance);
     }
 
     @Test
     public void testCheckDistinctCastingEarlyFaster() {
-        Fragment distinctCasting = distinctCasting("c2", "c1");
-        Fragment inRolePlayer = inRolePlayer("x", "c1");
-        Fragment inCasting = inCasting("c1", "r");
-        Fragment outCasting = outCasting("r", "c2");
-        Fragment outRolePlayer = outRolePlayer("c2", "y");
+        VarName c1 = varName("c1");
+        VarName c2 = varName("c2");
+        VarName r = varName("r");
+
+        Fragment distinctCasting = distinctCasting(c2, c1);
+        Fragment inRolePlayer = inRolePlayer(x, c1);
+        Fragment inCasting = inCasting(c1, r);
+        Fragment outCasting = outCasting(r, c2);
+        Fragment outRolePlayer = outRolePlayer(c2, y);
 
         GraqlTraversal distinctEarly =
                 traversal(xId, inRolePlayer, inCasting, outCasting, distinctCasting, outRolePlayer);
@@ -112,8 +133,8 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        Var pattern = Patterns.var("x").id("Titanic").isa(Patterns.var("y").id("movie"));
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"));
+        Var pattern = Patterns.var(x).id("Titanic").isa(Patterns.var(y).id("movie"));
+        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
 
         Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
@@ -139,8 +160,8 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
 
     @Test
     public void testAllTraversalsDisjunction() {
-        Pattern pattern = or(Patterns.var("x").id("Titanic").value("hello"), Patterns.var().rel("x").rel("y"));
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"));
+        Pattern pattern = or(Patterns.var(x).id("Titanic").value("hello"), Patterns.var().rel("x").rel("y"));
+        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
 
         Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
@@ -157,24 +178,24 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
 
     @Test
     public void testOptimalShortQuery() {
-        assertNearlyOptimal(var("x").isa(var("y").id("movie")));
+        assertNearlyOptimal(var(x).isa(var(y).id("movie")));
     }
 
     @Test
     public void testOptimalBothId() {
-        assertNearlyOptimal(var("x").id("Titanic").isa(var("y").id("movie")));
+        assertNearlyOptimal(var(x).id("Titanic").isa(var(y).id("movie")));
     }
 
     @Test
     public void testOptimalByValue() {
-        assertNearlyOptimal(var("x").value("hello").isa(var("y").id("movie")));
+        assertNearlyOptimal(var(x).value("hello").isa(var(y).id("movie")));
     }
 
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
-                .rel(var("x").isa(var("y").id("movie")))
-                .rel(var("z").value("Titanic").isa(var("a").id("title"))));
+                .rel(var(x).isa(var(y).id("movie")))
+                .rel(var(z).value("Titanic").isa(var("a").id("title"))));
     }
 
     private static GraqlTraversal optimalTraversal(Pattern pattern) {
@@ -191,12 +212,12 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
         return GraqlTraversal.create(graph, fragmentsSet);
     }
 
-    private static Fragment makeShortcut(String x, String y) {
+    private static Fragment makeShortcut(VarName x, VarName y) {
         return shortcut(Optional.empty(), Optional.empty(), Optional.empty(), x, y);
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"));
+        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
 
         GraqlTraversal traversal = optimalTraversal(pattern);
 

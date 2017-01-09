@@ -26,19 +26,24 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
 class DeleteQueryImpl implements DeleteQueryAdmin {
-    private final ImmutableMap<String, VarAdmin> deleters;
+    private final ImmutableMap<VarName, VarAdmin> deleters;
     private final MatchQueryAdmin matchQuery;
 
     /**
@@ -52,7 +57,8 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public Void execute() {
-        matchQuery.execute().forEach(results -> results.forEach(this::deleteResult));
+        List<Map<VarName, Concept>> results = matchQuery.streamWithVarNames().collect(toList());
+        results.forEach(result -> result.forEach(this::deleteResult));
         return null;
     }
 
@@ -83,7 +89,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
      * @param name the variable name to delete
      * @param result the concept that matches the variable in the graph
      */
-    private void deleteResult(String name, Concept result) {
+    private void deleteResult(VarName name, Concept result) {
         VarAdmin deleter = deleters.get(name);
 
         // Check if this has been requested to be deleted

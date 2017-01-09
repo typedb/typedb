@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -25,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 class NotCastingFragment extends AbstractFragment {
 
-    NotCastingFragment(String start) {
+    NotCastingFragment(VarName start) {
         super(start);
     }
 

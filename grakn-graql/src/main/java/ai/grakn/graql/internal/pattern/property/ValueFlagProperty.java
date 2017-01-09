@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -30,7 +31,7 @@ public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarP
     }
 
     @Override
-    public Fragment getFragment(String start) {
+    public Fragment getFragment(VarName start) {
         return Fragments.value(start);
     }
 

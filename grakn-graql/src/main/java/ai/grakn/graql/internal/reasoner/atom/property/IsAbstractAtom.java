@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -26,7 +27,7 @@ import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class IsAbstractAtom extends AtomBase {
 
-    public IsAbstractAtom(String varName, IsAbstractProperty prop, Query parent){
+    public IsAbstractAtom(VarName varName, IsAbstractProperty prop, Query parent){
         super(Graql.var(varName).isAbstract().admin(), parent);
     }
 

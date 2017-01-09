@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -50,7 +51,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+import static ai.grakn.graql.internal.reasoner.Utility.isCaptured;
+import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 
 /**
  *
@@ -65,7 +67,7 @@ public class Query implements MatchQueryInternal {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
-    private final Set<String> selectVars;
+    private final Set<VarName> selectVars;
 
     public Query(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
@@ -85,7 +87,7 @@ public class Query implements MatchQueryInternal {
         inferTypes();
     }
 
-    protected Query(Atom atom, Set<String> vars) {
+    protected Query(Atom atom, Set<VarName> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph().orElse(null);
@@ -131,10 +133,10 @@ public class Query implements MatchQueryInternal {
     public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
 
     @Override
-    public Set<String> getSelectedNames() { return Sets.newHashSet(selectVars);}
+    public Set<VarName> getSelectedNames() { return Sets.newHashSet(selectVars);}
 
     @Override
-    public MatchQuery select(Set<String> vars){
+    public MatchQuery select(Set<VarName> vars){
         selectVars.clear();
         selectVars.addAll(vars);
         return this;
@@ -145,14 +147,14 @@ public class Query implements MatchQueryInternal {
      * @param vars variables to append
      * @return appended query
      */
-    public MatchQuery selectAppend(Set<String> vars){
+    public MatchQuery selectAppend(Set<VarName> vars){
         selectVars.addAll(vars);
         return this;
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
-        return getMatchQuery().stream();
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
+        return getMatchQuery().admin().streamWithVarNames();
     }
 
     @Override
@@ -272,8 +274,8 @@ public class Query implements MatchQueryInternal {
     /**
      * @return set of variables appearing in this query
      */
-    public Set<String> getVarSet() {
-        Set<String> vars = new HashSet<>();
+    public Set<VarName> getVarSet() {
+        Set<VarName> vars = new HashSet<>();
         atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
         return vars;
     }
@@ -298,9 +300,9 @@ public class Query implements MatchQueryInternal {
         return isContained;
     }
 
-    private void updateSelectedVars(Map<String, String> mappings) {
-        Set<String> toRemove = new HashSet<>();
-        Set<String> toAdd = new HashSet<>();
+    private void updateSelectedVars(Map<VarName, VarName> mappings) {
+        Set<VarName> toRemove = new HashSet<>();
+        Set<VarName> toAdd = new HashSet<>();
         mappings.forEach( (from, to) -> {
                     if (selectVars.contains(from)) {
                         toRemove.add(from);
@@ -311,10 +313,10 @@ public class Query implements MatchQueryInternal {
         toAdd.forEach(selectVars::add);
     }
 
-    private void exchangeRelVarNames(String from, String to){
-        unify(to, "temp");
+    private void exchangeRelVarNames(VarName from, VarName to){
+        unify(to, Patterns.varName("temp"));
         unify(from, to);
-        unify("temp", from);
+        unify(Patterns.varName("temp"), from);
     }
 
     /**
@@ -322,7 +324,7 @@ public class Query implements MatchQueryInternal {
      * @param from variable name to be changed
      * @param to new variable name
      */
-    public void unify(String from, String to) {
+    public void unify(VarName from, VarName to) {
         Set<Atomic> toRemove = new HashSet<>();
         Set<Atomic> toAdd = new HashSet<>();
 
@@ -332,7 +334,7 @@ public class Query implements MatchQueryInternal {
         toAdd.forEach(atom -> atom.unify(from, to));
         toAdd.forEach(this::addAtom);
 
-        Map<String, String> mapping = new HashMap<>();
+        Map<VarName, VarName> mapping = new HashMap<>();
         mapping.put(from, to);
         updateSelectedVars(mapping);
     }
@@ -341,14 +343,14 @@ public class Query implements MatchQueryInternal {
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * @param unifiers contain unifiers (variable mappings) to be applied
      */
-    public void unify(Map<String, String> unifiers) {
+    public void unify(Map<VarName, VarName> unifiers) {
         if (unifiers.size() == 0) return;
-        Map<String, String> mappings = new HashMap<>(unifiers);
-        Map<String, String> appliedMappings = new HashMap<>();
+        Map<VarName, VarName> mappings = new HashMap<>(unifiers);
+        Map<VarName, VarName> appliedMappings = new HashMap<>();
         //do bidirectional mappings if any
-        for (Map.Entry<String, String> mapping: mappings.entrySet()) {
-            String varToReplace = mapping.getKey();
-            String replacementVar = mapping.getValue();
+        for (Map.Entry<VarName, VarName> mapping: mappings.entrySet()) {
+            VarName varToReplace = mapping.getKey();
+            VarName replacementVar = mapping.getValue();
 
             if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
                 //bidirectional mapping
@@ -367,8 +369,8 @@ public class Query implements MatchQueryInternal {
 
         atomSet.stream()
                 .filter(atom -> {
-                    Set<String> keyIntersection = atom.getVarNames();
-                    Set<String> valIntersection = atom.getVarNames();
+                    Set<VarName> keyIntersection = atom.getVarNames();
+                    Set<VarName> valIntersection = atom.getVarNames();
                     keyIntersection.retainAll(mappings.keySet());
                     valIntersection.retainAll(mappings.values());
                     return (!keyIntersection.isEmpty() || !valIntersection.isEmpty());
@@ -387,17 +389,18 @@ public class Query implements MatchQueryInternal {
      * finds captured variable occurrences in a query and replaces them with fresh variables
      * @return new mappings resulting from capture resolution
      */
-    private Map<String, String> resolveCaptures() {
-        Map<String, String> newMappings = new HashMap<>();
+    private Map<VarName, VarName> resolveCaptures() {
+        Map<VarName, VarName> newMappings = new HashMap<>();
         //find captures
-        Set<String> captures = new HashSet<>();
+        Set<VarName> captures = new HashSet<>();
         getVarSet().forEach(v -> {
-            if (v.contains(CAPTURE_MARK)) captures.add(v);
+            // TODO: This could cause bugs if a user has a variable including the word "capture"
+            if (isCaptured(v)) captures.add(v);
         });
 
         captures.forEach(cap -> {
-            String old = cap.replace(CAPTURE_MARK, "");
-            String fresh = Utility.createFreshVariable(getVarSet(), old);
+            VarName old = uncapture(cap);
+            VarName fresh = Utility.createFreshVariable(getVarSet(), old);
             unify(cap, fresh);
             newMappings.put(old, fresh);
         });
@@ -417,8 +420,8 @@ public class Query implements MatchQueryInternal {
     /**
      * @return map of variable name - type pairs
      */
-    public Map<String, Type> getVarTypeMap() {
-        Map<String, Type> map = new HashMap<>();
+    public Map<VarName, Type> getVarTypeMap() {
+        Map<VarName, Type> map = new HashMap<>();
         getTypeConstraints().forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
         return map;
     }
@@ -427,7 +430,7 @@ public class Query implements MatchQueryInternal {
      * @param var variable name
      * @return id predicate for the specified var name if any
      */
-    public Predicate getIdPredicate(String var) {
+    public Predicate getIdPredicate(VarName var) {
         //direct
         Set<Predicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
@@ -530,7 +533,7 @@ public class Query implements MatchQueryInternal {
      * @param materialise materialisation flag
      * @return stream of answers
      */
-    public Stream<Map<String, Concept>> resolve(boolean materialise) {
+    public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 }

@@ -20,30 +20,33 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.VarName;
 
 import java.util.Map;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
-class GroupAggregate<T> extends AbstractAggregate<Map<String, Concept>, Map<Concept, T>> {
+class GroupAggregate<T> extends AbstractAggregate<Map<VarName, Concept>, Map<Concept, T>> {
 
-    private final String varName;
-    private final Aggregate<? super Map<String, Concept>, T> innerAggregate;
+    private final VarName varName;
+    private final Aggregate<? super Map<VarName, Concept>, T> innerAggregate;
 
-    GroupAggregate(String varName, Aggregate<? super Map<String, Concept>, T> innerAggregate) {
+    GroupAggregate(VarName varName, Aggregate<? super Map<VarName, Concept>, T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }
 
     @Override
-    public Map<Concept, T> apply(Stream<? extends Map<String, Concept>> stream) {
-        Collector<Map<String, Concept>, ?, T> applyAggregate =
+    public Map<Concept, T> apply(Stream<? extends Map<VarName, Concept>> stream) {
+        Collector<Map<VarName, Concept>, ?, T> applyAggregate =
                 collectingAndThen(toList(), list -> innerAggregate.apply(list.stream()));
 
         return stream.collect(groupingBy(result -> result.get(varName), applyAggregate));
@@ -52,9 +55,9 @@ class GroupAggregate<T> extends AbstractAggregate<Map<String, Concept>, Map<Conc
     @Override
     public String toString() {
         if (innerAggregate instanceof ListAggregate) {
-            return "group $" + varName;
+            return "group " + varName;
         } else {
-            return "group $" + varName + " " + innerAggregate.toString();
+            return "group " + varName + " " + innerAggregate.toString();
         }
     }
 }

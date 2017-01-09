@@ -19,6 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 
 import java.util.Optional;
 import java.util.Set;
@@ -41,12 +42,12 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the variable name of this variable
      */
-    String getVarName();
+    VarName getVarName();
 
     /**
      * @param name the new variable name of this variable
      */
-    void setVarName(String name);
+    void setVarName(VarName name);
 
     /**
      * @return whether the user specified a name for this variable

@@ -33,7 +33,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 
@@ -152,13 +152,13 @@ public class Reasoner {
      * @param materialise materialisation flag
      * @return stream of answers
      */
-    public Stream<Map<String, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
+    public Stream<Map<VarName, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
         if (!Reasoner.hasRules(graph))
-            return inputQuery.stream();
-        Set<String> selectVars = inputQuery.admin().getSelectedNames();
+            return inputQuery.admin().streamWithVarNames();
+        Set<VarName> selectVars = inputQuery.admin().getSelectedNames();
         Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
-        Stream<Map<String, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
+        Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
         while(conjIt.hasNext()) {
             conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
             answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));

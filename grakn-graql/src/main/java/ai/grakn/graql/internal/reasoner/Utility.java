@@ -24,20 +24,29 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.util.Schema;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.function.Function;
+
+import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -50,7 +59,36 @@ import java.util.*;
  */
 public class Utility {
 
-    public static final String CAPTURE_MARK = "captured-";
+    private static final String CAPTURE_MARK = "captured-";
+
+    /**
+     * Capture a variable name, by prepending a constant to the name
+     * @param var the variable name to capture
+     * @return the captured variable
+     */
+    public static VarName capture(VarName var) {
+        return var.map(CAPTURE_MARK::concat);
+    }
+
+    /**
+     * Uncapture a variable name, by removing a prepended constant
+     * @param var the variable name to uncapture
+     * @return the uncaptured variable
+     */
+    public static VarName uncapture(VarName var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.map(name -> name.replace(CAPTURE_MARK, ""));
+    }
+
+    /**
+     * Check if a variable has been captured
+     * @param var the variable to check
+     * @return if the variable has been captured
+     */
+    public static boolean isCaptured(VarName var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.getValue().contains(CAPTURE_MARK);
+    }
 
     /**
      * Provides more readable answer output.
@@ -85,13 +123,13 @@ public class Utility {
     }
 
     public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
-            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(Collectors.toSet());
+            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(toSet());
 
     public static final Function<Type, Set<RelationType>> typeToRelationTypes =
             type -> type.playsRoles().stream()
                     .flatMap(roleType -> roleType.relationTypes().stream())
                     .filter(rt -> !rt.isImplicit())
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
 
     public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
         Set<RelationType> compatibleTypes = new HashSet<>();
@@ -110,11 +148,11 @@ public class Utility {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, VarAdmin> roleMap,
-                                        Set<Map<String, Var>> roleMaps){
-        Set<String> tempVars = Sets.newHashSet(vars);
+    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, VarAdmin> roleMap,
+                                        Set<Map<VarName, Var>> roleMaps){
+        Set<VarName> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
-        String var = vars.iterator().next();
+        VarName var = vars.iterator().next();
 
         roles.forEach(role -> {
             tempVars.remove(var);
@@ -138,14 +176,15 @@ public class Utility {
      * @param var variable to be generated a fresh replacement
      * @return fresh variables
      */
-    public static String createFreshVariable(Set<String> vars, String var) {
-        String fresh = var;
-        while (vars.contains(fresh)) {
+    public static VarName createFreshVariable(Set<VarName> vars, VarName var) {
+        Set<String> names = vars.stream().map(VarName::getValue).collect(toSet());
+        String fresh = var.getValue();
+        while (names.contains(fresh)) {
             String valFree = fresh.replaceAll("[^0-9]", "");
             int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
             fresh = fresh.replaceAll("\\d+", "") + (++value);
         }
-        return fresh;
+        return Patterns.varName(fresh);
     }
 
     /**
@@ -161,9 +200,9 @@ public class Utility {
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        VarAdmin startVar = Graql.var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "z").admin();
-        VarAdmin endVar = Graql.var().isa(relType.getName()).rel(fromRoleName, "z").rel(toRoleName, "y").admin();
-        VarAdmin headVar = Graql.var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "y").admin();
+        VarAdmin startVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "z").admin();
+        VarAdmin endVar = var().isa(relType.getName()).rel(fromRoleName, "z").rel(toRoleName, "y").admin();
+        VarAdmin headVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
         return graph.admin().getMetaRuleInference().addRule(body, headVar);
     }
@@ -179,8 +218,8 @@ public class Utility {
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var body = Graql.var().isa(relType.getName()).rel("x").rel("y");
-        Var head = Graql.var().isa(relType.getName()).rel("x").rel("x");
+        Var body = var().isa(relType.getName()).rel("x").rel("y");
+        Var head = var().isa(relType.getName()).rel("x").rel("x");
         return graph.admin().getMetaRuleInference().addRule(body, head);
     }
 
@@ -198,14 +237,14 @@ public class Utility {
         final int childArity = child.hasRoles().size();
         if (parentArity != childArity || parentArity != roleMappings.size())
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
-        Var parentVar = Graql.var().isa(parent.getName());
-        Var childVar = Graql.var().isa(child.getName());
-        Set<String> vars = new HashSet<>();
+        Var parentVar = var().isa(parent.getName());
+        Var childVar = var().isa(child.getName());
+        Set<VarName> vars = new HashSet<>();
 
         roleMappings.forEach( (parentRoleName, childRoleName) -> {
-            String varName = createFreshVariable(vars, "x");
-            parentVar.rel(parentRoleName, varName);
-            childVar.rel(childRoleName, varName);
+            VarName varName = createFreshVariable(vars, Patterns.varName("x"));
+            parentVar.rel(parentRoleName, var(varName));
+            childVar.rel(childRoleName, var(varName));
             vars.add(varName);
         });
         return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
@@ -222,19 +261,19 @@ public class Utility {
      */
     public static Rule createPropertyChainRule(RelationType relation, String fromRoleName, String toRoleName,
                                              LinkedHashMap<RelationType, Pair<String, String>> chain, GraknGraph graph){
-        Stack<String> varNames = new Stack<>();
-        varNames.push("x");
+        Stack<VarName> varNames = new Stack<>();
+        varNames.push(Patterns.varName("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            String varName = createFreshVariable(Sets.newHashSet(varNames), "x");
-            VarAdmin var = Graql.var().isa(relType.getName())
-                    .rel(rolePair.getKey(), varNames.peek())
-                    .rel(rolePair.getValue(), varName).admin();
+            VarName varName = createFreshVariable(Sets.newHashSet(varNames), Patterns.varName("x"));
+            VarAdmin var = var().isa(relType.getName())
+                    .rel(rolePair.getKey(), var(varNames.peek()))
+                    .rel(rolePair.getValue(), var(varName)).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        Var headVar = Graql.var().isa(relation.getName()).rel(fromRoleName, "x").rel(toRoleName, varNames.peek());
+        Var headVar = var().isa(relation.getName()).rel(fromRoleName, "x").rel(toRoleName, var(varNames.peek()));
         return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
 

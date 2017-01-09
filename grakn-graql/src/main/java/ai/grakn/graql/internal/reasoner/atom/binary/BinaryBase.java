@@ -18,20 +18,22 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
+import static ai.grakn.graql.internal.reasoner.Utility.capture;
 
 /**
  *
@@ -44,7 +46,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.CAPTURE_MARK;
  *
  */
 public abstract class BinaryBase extends Atom {
-    private String valueVariable;
+    private VarName valueVariable;
 
     protected BinaryBase(VarAdmin pattern,  Query par) {
         super(pattern, par);
@@ -57,13 +59,13 @@ public abstract class BinaryBase extends Atom {
         this.valueVariable = a.getValueVariable();
     }
 
-    protected abstract String extractValueVariableName(VarAdmin var);
+    protected abstract VarName extractValueVariableName(VarAdmin var);
     protected abstract boolean predicatesEquivalent(BinaryBase atom);
 
-    public String getValueVariable() {
+    public VarName getValueVariable() {
         return valueVariable;
     }
-    protected void setValueVariable(String var) {
+    protected void setValueVariable(VarName var) {
         valueVariable = var;
     }
 
@@ -144,57 +146,57 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public Set<String> getVarNames() {
-        Set<String> vars = new HashSet<>();
+    public Set<VarName> getVarNames() {
+        Set<VarName> vars = new HashSet<>();
         if (isUserDefinedName()) vars.add(getVarName());
-        if (!valueVariable.isEmpty()) vars.add(valueVariable);
+        if (!valueVariable.getValue().isEmpty()) vars.add(valueVariable);
         return vars;
     }
 
     @Override
-    public Set<String> getSelectedNames(){
-        Set<String> vars = super.getSelectedNames();
+    public Set<VarName> getSelectedNames(){
+        Set<VarName> vars = super.getSelectedNames();
         if(isUserDefinedName()) vars.add(getVarName());
         if(isValueUserDefinedName()) vars.add(getValueVariable());
         return vars;
     }
 
     @Override
-    public void unify(String from, String to) {
+    public void unify(VarName from, VarName to) {
         super.unify(from, to);
-        String var = valueVariable;
+        VarName var = valueVariable;
         if (var.equals(from))
             setValueVariable(to);
         else if (var.equals(to))
-            setValueVariable(CAPTURE_MARK + var);
+            setValueVariable(capture(var));
     }
 
     @Override
-    public void unify (Map<String, String> unifiers) {
+    public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
-        String var = valueVariable;
+        VarName var = valueVariable;
         if (unifiers.containsKey(var))
             setValueVariable(unifiers.get(var));
         else if (unifiers.containsValue(var))
-            setValueVariable(CAPTURE_MARK + var);
+            setValueVariable(capture(var));
     }
 
     @Override
-    public Map<String, String> getUnifiers(Atomic parentAtom) {
+    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
         if (!(parentAtom instanceof BinaryBase))
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
 
-        Map<String, String> unifiers = new HashMap<>();
-        String childValVarName = this.getValueVariable();
-        String parentValVarName = ((BinaryBase) parentAtom).getValueVariable();
+        Map<VarName, VarName> unifiers = new HashMap<>();
+        VarName childValVarName = this.getValueVariable();
+        VarName parentValVarName = ((BinaryBase) parentAtom).getValueVariable();
 
         if (parentAtom.isUserDefinedName()){
-            String childVarName = this.getVarName();
-            String parentVarName = parentAtom.getVarName();
+            VarName childVarName = this.getVarName();
+            VarName parentVarName = parentAtom.getVarName();
             if (!childVarName.equals(parentVarName))
                 unifiers.put(childVarName, parentVarName);
         }
-        if (!parentValVarName.isEmpty()
+        if (!parentValVarName.getValue().isEmpty()
                 && !childValVarName.equals(parentValVarName))
             unifiers.put(childValVarName, parentValVarName);
         return unifiers;

@@ -21,21 +21,23 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
-import com.google.common.collect.Sets;
-import ai.grakn.graql.QueryBuilder;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -143,13 +145,13 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$x has name 'Gary';$y has name 'Pink Floyd';};";
 
         long startTime = System.nanoTime();
-        QueryAnswers limitedAnswers = new QueryAnswers(limitedQuery.execute());
+        QueryAnswers limitedAnswers = new QueryAnswers(limitedQuery.admin().results());
         System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
 
         startTime = System.nanoTime();
-        QueryAnswers answers = new QueryAnswers(query.execute());
+        QueryAnswers answers = new QueryAnswers(query.admin().results());
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(answers.stream(), qb.<MatchQuery>parse(explicitQuery).stream());
         assertTrue(answers.containsAll(limitedAnswers));
     }
 
@@ -405,8 +407,8 @@ public class SNBInferenceTest extends AbstractGraknTest {
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
         MatchQuery query2 = qb.parse(queryString2);
-        Map<String, String> unifiers = new HashMap<>();
-        unifiers.put("z", "y");
+        Map<VarName, VarName> unifiers = new HashMap<>();
+        unifiers.put(varName("z"), varName("y"));
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, false).collect(Collectors.toSet()))
@@ -485,7 +487,7 @@ public class SNBInferenceTest extends AbstractGraknTest {
         assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
-    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, Stream<Map<String, Concept>> s2) {
+        assertEquals(s1.map(CommonUtil::resultVarNameToString).collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }
 }

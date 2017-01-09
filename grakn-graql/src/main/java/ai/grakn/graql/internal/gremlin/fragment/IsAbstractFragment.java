@@ -18,13 +18,14 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 class IsAbstractFragment extends AbstractFragment {
 
-    IsAbstractFragment(String start) {
+    IsAbstractFragment(VarName start) {
         super(start);
     }
 

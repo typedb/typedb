@@ -26,6 +26,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
@@ -37,8 +38,6 @@ import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import com.google.common.collect.Sets;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javafx.util.Pair;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,8 +48,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -187,7 +189,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Pattern head = and(graph.graql().parsePatterns("$x has firstname 'Bob';"));
         graph.admin().getMetaRuleInference().addRule(body, head);
 
-        QueryAnswers answers = new QueryAnswers(query.execute());
+        QueryAnswers answers = new QueryAnswers(query.admin().results());
         assertTrue(!answers.isEmpty());
     }
 
@@ -291,7 +293,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Reasoner reasoner = new Reasoner(lgraph);
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Test
@@ -314,7 +316,7 @@ public class ReasonerTest extends AbstractGraknTest {
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Test
@@ -329,7 +331,7 @@ public class ReasonerTest extends AbstractGraknTest {
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Test
@@ -365,7 +367,7 @@ public class ReasonerTest extends AbstractGraknTest {
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     //TODO BUG: getRulesOfConclusion on geo-entity returns a rule!
@@ -392,7 +394,7 @@ public class ReasonerTest extends AbstractGraknTest {
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     //TODO loses type variable as non-core types are not unified in rules
@@ -441,7 +443,7 @@ public class ReasonerTest extends AbstractGraknTest {
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
 
         Reasoner reasoner = new Reasoner(lgraph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Test
@@ -490,7 +492,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Query query = new Query(queryString, graph);
         MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
         Reasoner reasoner = new Reasoner(graph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Ignore
@@ -504,7 +506,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Query query = new Query(queryString, graph);
         MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
         Reasoner reasoner = new Reasoner(graph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Ignore
@@ -521,7 +523,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Reasoner reasoner = new Reasoner(graph);
         Query query = new Query(queryString, graph);
         MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Test
@@ -627,7 +629,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Reasoner reasoner = new Reasoner(lgraph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, false).collect(Collectors.toSet()));
-        assertEquals(answers.filterVars(Sets.newHashSet("x")), answers2);
+        assertEquals(answers.filterVars(Sets.newHashSet(varName("x"))), answers2);
     }
 
     @Test
@@ -638,8 +640,8 @@ public class ReasonerTest extends AbstractGraknTest {
         MatchQuery limitQuery = lgraph.graql().parse(limitQueryString);
         MatchQuery query = lgraph.graql().parse(queryString);
 
-        QueryAnswers limitedAnswers = new QueryAnswers(limitQuery.execute());
-        QueryAnswers answers = new QueryAnswers(query.execute());
+        QueryAnswers limitedAnswers = queryAnswers(limitQuery);
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(answers.size() > limitedAnswers.size());
         assertTrue(answers.containsAll(limitedAnswers));
     }
@@ -673,8 +675,8 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $x is-abstract;";
         Query query = new Query(queryString, lgraph);
-        QueryAnswers answers = new QueryAnswers(query.execute());
-        QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers expAnswers= queryAnswers(lgraph.graql().<MatchQuery>parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
@@ -683,8 +685,8 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = " match $x sub resource, regex /name/;";
         Query query = new Query(queryString, lgraph);
-        QueryAnswers answers = new QueryAnswers(query.execute());
-        QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers expAnswers= queryAnswers(lgraph.graql().<MatchQuery>parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
@@ -693,8 +695,8 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = " match $x sub resource, datatype string;";
         Query query = new Query(queryString, lgraph);
-        QueryAnswers answers = new QueryAnswers(query.execute());
-        QueryAnswers expAnswers= new QueryAnswers(Sets.newHashSet(lgraph.graql().<MatchQuery>parse(queryString)));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers expAnswers= queryAnswers(lgraph.graql().<MatchQuery>parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
@@ -732,7 +734,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Reasoner reasoner = new Reasoner(lgraph);
         Query query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Test
@@ -748,7 +750,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Query query = new Query(queryString, lgraph);
         MatchQuery query2 = lgraph.graql().infer(false).parse(explicitQuery);
         Reasoner reasoner = new Reasoner(lgraph);
-        assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
+        assertQueriesEqual(reasoner.resolve(query, false), query2);
     }
 
     @Test
@@ -835,8 +837,16 @@ public class ReasonerTest extends AbstractGraknTest {
         assertEquals(answers, answers2);
     }
 
-    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().results());
+    }
+
+    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, Stream<Map<VarName, Concept>> s2) {
         assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    }
+
+    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
     }
 }
 

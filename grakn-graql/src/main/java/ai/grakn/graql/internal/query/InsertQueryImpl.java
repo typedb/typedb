@@ -27,6 +27,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -92,7 +93,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<String> resultsString(Printer printer) {
-        return stream().map(printer::graqlString);
+        return streamWithVarNames().map(printer::graqlString);
     }
 
     @Override
@@ -102,13 +103,18 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<Map<String, Concept>> stream() {
+        return streamWithVarNames().map(CommonUtil::resultVarNameToString);
+    }
+
+    @Override
+    public Stream<Map<VarName, Concept>> streamWithVarNames() {
         GraknGraph theGraph =
                 getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theGraph);
 
         return matchQuery.map(
-                query -> query.stream().map(executor::insertAll)
+                query -> query.streamWithVarNames().map(executor::insertAll)
         ).orElseGet(
                 () -> Stream.of(executor.insertAll())
         );

@@ -28,6 +28,7 @@ import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -58,7 +59,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -71,21 +71,21 @@ class VarImpl implements VarAdmin {
 
     private final Set<VarProperty> properties = new HashSet<>();
 
-    private String name;
+    private VarName name;
     private final boolean userDefinedName;
 
     /**
      * Create a variable with a random variable name
      */
     VarImpl() {
-        this.name = UUID.randomUUID().toString();
+        this.name = new VarNameImpl();
         this.userDefinedName = false;
     }
 
     /**
      * @param name the variable name of the variable
      */
-    VarImpl(String name) {
+    VarImpl(VarName name) {
         this.name = name;
         this.userDefinedName = true;
     }
@@ -319,12 +319,12 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public String getVarName() {
+    public VarName getVarName() {
         return name;
     }
 
     @Override
-    public void setVarName(String name) {
+    public void setVarName(VarName name) {
         if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
         this.name = name;
     }
@@ -332,7 +332,7 @@ class VarImpl implements VarAdmin {
     @Override
     public String getPrintableName() {
         if (userDefinedName) {
-            return "$" + name;
+            return name.toString();
         } else {
             return getTypeName().map(StringConverter::idToString).orElse("'" + toString() + "'");
         }

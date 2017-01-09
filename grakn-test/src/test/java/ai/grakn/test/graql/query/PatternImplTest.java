@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -36,12 +37,12 @@ import static org.junit.Assert.assertNotSame;
 @SuppressWarnings("unchecked")
 public class PatternImplTest {
 
-    private final VarAdmin x = Patterns.var("x").admin();
-    private final VarAdmin y = Patterns.var("y").admin();
-    private final VarAdmin z = Patterns.var("z").admin();
-    private final VarAdmin a = Patterns.var("a").admin();
-    private final VarAdmin b = Patterns.var("b").admin();
-    private final VarAdmin c = Patterns.var("c").admin();
+    private final VarAdmin x = Graql.var("x").admin();
+    private final VarAdmin y = Graql.var("y").admin();
+    private final VarAdmin z = Graql.var("z").admin();
+    private final VarAdmin a = Graql.var("a").admin();
+    private final VarAdmin b = Graql.var("b").admin();
+    private final VarAdmin c = Graql.var("c").admin();
 
     @Test
     public void testVarDNF() {
@@ -108,7 +109,7 @@ public class PatternImplTest {
 
     @Test
     public void testCloneVar() {
-        VarAdmin var1 = Patterns.var("x").isa("person").admin();
+        VarAdmin var1 = Graql.var("x").isa("person").admin();
         VarAdmin var2 = Patterns.copyOf(var1);
 
         assertEquals(var1, var2);
@@ -117,7 +118,7 @@ public class PatternImplTest {
 
     @Test
     public void testCloneDisjunction() {
-        VarAdmin inner = Patterns.var("abc");
+        VarAdmin inner = Graql.var("abc").admin();
 
         Disjunction dis1 = disjunction(x, x, y, conjunction(z, x, inner));
         Disjunction dis2 = Patterns.copyOf(dis1);
@@ -133,7 +134,7 @@ public class PatternImplTest {
 
     @Test
     public void testCloneConjunction() {
-        VarAdmin inner = Patterns.var("abc");
+        VarAdmin inner = Graql.var("abc").admin();
 
         Conjunction con1 = conjunction(x, x, conjunction(y, y), disjunction(z, inner));
         Conjunction con2 = Patterns.copyOf(con1);
@@ -149,7 +150,7 @@ public class PatternImplTest {
 
     @Test
     public void testClonePattern() {
-        VarAdmin inner = Patterns.var("abc");
+        VarAdmin inner = Graql.var("abc").admin();
 
         PatternAdmin con1 = conjunction(x, x, inner, conjunction(y, y), disjunction(z));
         PatternAdmin con2 = Patterns.copyOf(con1);

@@ -23,6 +23,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -138,7 +139,7 @@ public abstract class Atom extends AtomBase {
     /**
      * @return value variable name
      */
-    public String getValueVariable() {
+    public VarName getValueVariable() {
         throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
     }
 
@@ -176,11 +177,11 @@ public abstract class Atom extends AtomBase {
     /**
      * @return map of varName-(var type, var role type) pairs
      */
-    public Map<String, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
-        Map<String, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
+    public Map<VarName, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
+        Map<VarName, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
-        Set<String> vars = getVarNames();
-        Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        Set<VarName> vars = getVarNames();
+        Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
         vars.forEach(var -> {
             Type type = varTypeMap.get(var);
@@ -192,7 +193,7 @@ public abstract class Atom extends AtomBase {
     /**
      * @return map of role type- (var name, var type) pairs
      */
-    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
+    public Map<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() { return new HashMap<>();}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible
@@ -205,5 +206,5 @@ public abstract class Atom extends AtomBase {
      * @param q query the rewritten atom should belong to
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Pair<Atom, Map<String, String>> rewrite(Atom parent, Query q){ return new Pair<>(this, new HashMap<>());}
+    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parent, Query q){ return new Pair<>(this, new HashMap<>());}
 }

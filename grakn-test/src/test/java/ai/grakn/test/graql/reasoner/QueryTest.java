@@ -18,27 +18,26 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.test.AbstractGraknTest;
-import com.google.common.collect.Sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import org.junit.AfterClass;
+import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Map;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class QueryTest extends AbstractGraknTest {
 
@@ -153,7 +152,7 @@ public class QueryTest extends AbstractGraknTest {
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
 
         AtomicQuery childCopy = new AtomicQuery(childQuery.toString(), graph);
         childCopy.unify(unifiers);

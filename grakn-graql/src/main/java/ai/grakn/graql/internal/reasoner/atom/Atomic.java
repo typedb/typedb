@@ -19,7 +19,9 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.Query;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -70,7 +72,7 @@ public interface Atomic extends Cloneable{
      * @param name variable name
      * @return true if atom contains an occurrence of the variable name
      */
-    default boolean containsVar(String name){ return false;}
+    default boolean containsVar(VarName name){ return false;}
 
     /**
      * @return the corresponding pattern
@@ -87,7 +89,7 @@ public interface Atomic extends Cloneable{
      */
     void setParentQuery(Query q);
 
-    Map<String, String> getUnifiers(Atomic parentAtom);
+    Map<VarName, VarName> getUnifiers(Atomic parentAtom);
 
     /**
      * change each variable occurrence in the atom (apply unifier [from/to])
@@ -95,19 +97,19 @@ public interface Atomic extends Cloneable{
      * @param from variable name to be changed
      * @param to new variable name
      */
-    void unify (String from, String to);
+    void unify (VarName from, VarName to);
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
      * @param unifiers contain variable mappings to be applied
      */
-    void unify(Map<String, String> unifiers);
+    void unify(Map<VarName, VarName> unifiers);
 
-    String getVarName();
+    VarName getVarName();
 
     /**
      * @return all addressable variable names in the atom
      */
-    Set<String> getVarNames();
+    Set<VarName> getVarNames();
 }
