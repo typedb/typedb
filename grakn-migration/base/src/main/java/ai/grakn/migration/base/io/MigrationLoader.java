@@ -18,16 +18,9 @@
 
 package ai.grakn.migration.base.io;
 
-import ai.grakn.Grakn;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
-import ai.grakn.engine.loader.client.LoaderClient;
+import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.Migrator;
-import ai.grakn.GraknGraph;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
 
 /**
  * Iterate over a migrator adding each result into the loader
@@ -35,29 +28,19 @@ import java.util.Collections;
  */
 public class MigrationLoader {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MigrationLoader.class);
-
-    public static Loader getLoader(MigrationOptions options){
-        return options.getUri().equals(Grakn.DEFAULT_URI)
-                ? new LoaderImpl(options.getKeyspace())
-                : new LoaderClient(options.getKeyspace(), Collections.singleton(options.getUri()));
-    }
-
-    public static void load(GraknGraph graph, Migrator migrator){
-        load(new LoaderImpl(graph.getKeyspace()), migrator);
-    }
-
-    public static void load(Loader loader, int batchSize, Migrator migrator){
+    public static void load(String keyspace, int batchSize, Migrator migrator){
+        Loader loader = new Loader(keyspace);
         loader.setBatchSize(batchSize);
-        load(loader, migrator);
-    }
 
-    public static void load(Loader loader, Migrator migrator) {
         try{
             migrator.migrate().forEach(loader::add);
         } finally {
             loader.waitToFinish();
-            LOG.info("Loading finished with status: " + loader.getLoaderState());
+            loader.printLoaderState();
         }
+    }
+
+    public static void load(String keyspace, Migrator migrator) {
+        load(keyspace, AbstractMigrator.BATCH_SIZE, migrator);
     }
 }

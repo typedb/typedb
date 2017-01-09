@@ -38,6 +38,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
+
 public class Graql {
 
     private Graql() {}
@@ -140,6 +142,14 @@ public class Graql {
      * @return a new query variable
      */
     public static Var var(String name) {
+        return var(varName(name));
+    }
+
+    /**
+     * @param name the name of the variable
+     * @return a new query variable
+     */
+    public static Var var(VarName name) {
         return Patterns.var(Objects.requireNonNull(name));
     }
 
@@ -205,47 +215,47 @@ public class Graql {
     /**
      * Create an aggregate that will sum the values of a variable.
      */
-    public static Aggregate<Map<String, Concept>, Number> sum(String varName) {
-        return Aggregates.sum(varName);
+    public static Aggregate<Map<VarName, Concept>, Number> sum(String name) {
+        return Aggregates.sum(varName(name));
     }
 
     /**
      * Create an aggregate that will find the maximum of a variable's values.
-     * @param varName the variable to find the maximum of
+     * @param name the variable to find the maximum of
      */
-    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> max(String varName) {
-        return Aggregates.max(varName);
+    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> max(String name) {
+        return Aggregates.max(varName(name));
     }
 
     /**
      * Create an aggregate that will find the minimum of a variable's values.
-     * @param varName the variable to find the maximum of
+     * @param name the variable to find the maximum of
      */
-    public static <T extends Comparable<T>> Aggregate<Map<String, Concept>, Optional<T>> min(String varName) {
-        return Aggregates.min(varName);
+    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> min(String name) {
+        return Aggregates.min(varName(name));
     }
 
     /**
      * Create an aggregate that will find the mean of a variable's values.
-     * @param varName the variable to find the mean of
+     * @param name the variable to find the mean of
      */
-    public static Aggregate<Map<String, Concept>, Optional<Double>> average(String varName) {
-        return Aggregates.average(varName);
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> average(String name) {
+        return Aggregates.average(varName(name));
     }
 
     /**
      * Create an aggregate that will find the median of a variable's values.
-     * @param varName the variable to find the median of
+     * @param name the variable to find the median of
      */
-    public static Aggregate<Map<String, Concept>, Optional<Number>> median(String varName) {
-        return Aggregates.median(varName);
+    public static Aggregate<Map<VarName, Concept>, Optional<Number>> median(String name) {
+        return Aggregates.median(varName(name));
     }
 
     /**
      * Create an aggregate that will group a query by a variable name.
      * @param varName the variable name to group results by
      */
-    public static Aggregate<Map<String, Concept>, Map<Concept, List<Map<String, Concept>>>> group(String varName) {
+    public static Aggregate<Map<VarName, Concept>, Map<Concept, List<Map<VarName, Concept>>>> group(String varName) {
         return group(varName, Aggregates.list());
     }
 
@@ -255,9 +265,9 @@ public class Graql {
      * @param aggregate the aggregate to apply to each group
      * @param <T> the type the aggregate returns
      */
-    public static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(
-            String varName, Aggregate<? super Map<String, Concept>, T> aggregate) {
-        return Aggregates.group(varName, aggregate);
+    public static <T> Aggregate<Map<VarName, Concept>, Map<Concept, T>> group(
+            String varName, Aggregate<? super Map<VarName, Concept>, T> aggregate) {
+        return Aggregates.group(varName(varName), aggregate);
     }
 
     /**

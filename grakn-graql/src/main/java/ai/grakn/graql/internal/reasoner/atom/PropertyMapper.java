@@ -19,38 +19,40 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.RelationPlayer;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
+import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
 import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
+import ai.grakn.graql.internal.pattern.property.RegexProperty;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
-import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
-import ai.grakn.graql.internal.pattern.property.NeqProperty;
-import ai.grakn.graql.internal.pattern.property.RegexProperty;
-import ai.grakn.graql.internal.pattern.property.NameProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.HasRole;
-import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
-import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
+import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.HashSet;
@@ -132,7 +134,7 @@ public class PropertyMapper {
         if (isaProp != null) {
             VarAdmin isaVar = isaProp.getType();
             String typeName = isaVar.getTypeName().orElse("");
-            String typeVariable = typeName.isEmpty()? isaVar.getVarName() : "rel-" + UUID.randomUUID().toString();
+            VarName typeVariable = typeName.isEmpty()? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
             relVar.isa(Graql.var(typeVariable));
             if (!typeName.isEmpty()) {
                 VarAdmin idVar = Graql.var(typeVariable)
@@ -178,10 +180,10 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(SubProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getVarName();
+        VarName varName = var.getVarName();
         VarAdmin typeVar = prop.getSuperType();
-        String typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName + "-sub-" + UUID.randomUUID().toString();
+        VarName typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getVarName() : varName.map(name -> name + "-sub-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
@@ -192,10 +194,10 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(PlaysRoleProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getVarName();
+        VarName varName = var.getVarName();
         VarAdmin typeVar = prop.getRole();
-        String typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName + "-plays-role-" + UUID.randomUUID().toString();
+        VarName typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getVarName() : varName.map(name -> name + "-plays-role-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
@@ -206,9 +208,9 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(HasRoleProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getVarName();
+        VarName varName = var.getVarName();
         VarAdmin roleVar = prop.getRole();
-        String roleVariable = roleVar.getVarName();
+        VarName roleVariable = roleVar.getVarName();
         IdPredicate relPredicate = getIdPredicate(varName, var, vars, parent, graph);
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent, graph);
 
@@ -221,7 +223,7 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(HasResourceTypeProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getVarName();
+        VarName varName = var.getVarName();
         String typeName = prop.getResourceType().getTypeName().orElse("");
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
 
@@ -233,10 +235,10 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(HasScopeProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getVarName();
+        VarName varName = var.getVarName();
         VarAdmin scopeVar = prop.getScope();
-        String scopeVariable = scopeVar.isUserDefinedName() ?
-                scopeVar.getVarName() : varName + "-scope-" + UUID.randomUUID().toString();
+        VarName scopeVariable = scopeVar.isUserDefinedName() ?
+                scopeVar.getVarName() : varName.map(name -> name + "-scope-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent, graph);
 
         //isa part
@@ -251,10 +253,10 @@ public class PropertyMapper {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return atoms;
 
-        String varName = var.getVarName();
+        VarName varName = var.getVarName();
         VarAdmin typeVar = prop.getType();
-        String typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName + "-type-" + UUID.randomUUID().toString();
+        VarName typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getVarName() : varName.map(name -> name + "-type-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent, graph);
 
         //isa part
@@ -266,11 +268,11 @@ public class PropertyMapper {
 
     private static Set<Atomic> map(HasResourceProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
         Set<Atomic> atoms = new HashSet<>();
-        String varName = var.getVarName();
+        VarName varName = var.getVarName();
         Optional<String> type = prop.getType();
         VarAdmin valueVar = prop.getResource();
-        String valueVariable = valueVar.isUserDefinedName() ?
-                valueVar.getVarName() : varName + "-" + type.orElse("") + "-" + UUID.randomUUID().toString();
+        VarName valueVariable = valueVar.isUserDefinedName() ?
+                valueVar.getVarName() : varName.map(name -> name + "-" + type.orElse("") + "-" + UUID.randomUUID().toString());
         Set<Predicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent, graph);
         atoms.addAll(predicates);
 
@@ -283,7 +285,7 @@ public class PropertyMapper {
         return atoms;
     }
 
-    private static IdPredicate getUserDefinedIdPredicate(String typeVariable, Set<VarAdmin> vars, Query parent){
+    private static IdPredicate getUserDefinedIdPredicate(VarName typeVariable, Set<VarAdmin> vars, Query parent){
         return  vars.stream()
                 .filter(v -> v.getVarName().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(NameProperty.class)?
@@ -292,7 +294,7 @@ public class PropertyMapper {
                 .findFirst().orElse(null);
     }
 
-    private static IdPredicate getIdPredicate(String typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, Query parent, GraknGraph graph){
+    private static IdPredicate getIdPredicate(VarName typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, Query parent, GraknGraph graph){
         IdPredicate predicate = null;
         //look for id predicate among vars
         if(typeVar.isUserDefinedName())
@@ -305,7 +307,7 @@ public class PropertyMapper {
         return predicate;
     }
 
-    private static Set<Predicate> getValuePredicates(String valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, Query parent, GraknGraph graph){
+    private static Set<Predicate> getValuePredicates(VarName valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, Query parent, GraknGraph graph){
         Set<Predicate> predicates = new HashSet<>();
         if(valueVar.isUserDefinedName()){
             vars.stream()

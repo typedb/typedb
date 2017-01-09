@@ -18,12 +18,15 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -70,14 +73,14 @@ public class Resource extends MultiPredicateBinary{
     }
 
     @Override
-    protected String extractValueVariableName(VarAdmin var){
+    protected VarName extractValueVariableName(VarAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getVarName() : "";
+        return resVar.isUserDefinedName()? resVar.getVarName() : Patterns.varName("");
     }
 
     @Override
-    protected void setValueVariable(String var) {
+    protected void setValueVariable(VarName var) {
         super.setValueVariable(var);
         atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setVarName(var));
     }
@@ -101,8 +104,8 @@ public class Resource extends MultiPredicateBinary{
     }
 
     @Override
-    public Set<String> getSelectedNames(){
-        Set<String> vars = super.getSelectedNames();
+    public Set<VarName> getSelectedNames(){
+        Set<VarName> vars = super.getSelectedNames();
         getMultiPredicate().forEach(pred -> vars.addAll(pred.getSelectedNames()));
         return vars;
     }

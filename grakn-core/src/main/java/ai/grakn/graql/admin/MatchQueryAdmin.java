@@ -19,16 +19,29 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Admin class for inspecting and manipulating a MatchQuery
  */
 public interface MatchQueryAdmin extends MatchQuery {
+
+    default List<Map<VarName, Concept>> results() {
+        return streamWithVarNames().collect(toList());
+    }
+
+    Stream<Map<VarName, Concept>> streamWithVarNames();
 
     @Override
     default MatchQueryAdmin admin() {
@@ -59,5 +72,5 @@ public interface MatchQueryAdmin extends MatchQuery {
     /**
      * @return all selected variable names in the query
      */
-    Set<String> getSelectedNames();
+    Set<VarName> getSelectedNames();
 }

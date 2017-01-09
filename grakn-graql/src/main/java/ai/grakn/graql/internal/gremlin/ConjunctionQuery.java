@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
@@ -71,19 +72,19 @@ class ConjunctionQuery {
                 vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         // Get all variable names mentioned in non-starting fragments
-        Set<String> names = fragmentSets.stream()
+        Set<VarName> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::getFragments)
                 .filter(fragment -> !fragment.isStartingFragment())
                 .flatMap(Fragment::getVariableNames)
                 .collect(toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
-        Set<String> dependencies = fragmentSets.stream()
+        Set<VarName> dependencies = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::getFragments)
                 .flatMap(fragment -> fragment.getDependencies().stream())
                 .collect(toImmutableSet());
 
-        Set<String> validNames = Sets.difference(names, dependencies);
+        Set<VarName> validNames = Sets.difference(names, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         this.equivalentFragmentSets = fragmentSets.stream()
@@ -137,7 +138,7 @@ class ConjunctionQuery {
             shortcutTraversal.setInvalid();
         }
 
-        String start = var.getVarName();
+        VarName start = var.getVarName();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

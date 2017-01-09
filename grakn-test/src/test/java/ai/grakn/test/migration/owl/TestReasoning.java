@@ -18,15 +18,15 @@
 
 package ai.grakn.test.migration.owl;
 
-import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
-import java.util.stream.Stream;
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -46,8 +46,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 
 public class TestReasoning extends TestOwlGraknBase {
@@ -80,10 +82,10 @@ public class TestReasoning extends TestOwlGraknBase {
         Set<OWLNamedIndividual> owlResult = reasoner.getInstances(expr).entities().collect(Collectors.toSet());
         long owlTime = System.currentTimeMillis() - owlStartTime;
 
-        Set<Map<String, Concept>> OWLanswers = new HashSet<>();
+        Set<Map<VarName, Concept>> OWLanswers = new HashSet<>();
         owlResult.forEach(result -> {
-            Map<String, Concept> resultMap = new HashMap<>();
-            resultMap.put("x", migrator.entity(result));
+            Map<VarName, Concept> resultMap = new HashMap<>();
+            resultMap.put(varName("x"), migrator.entity(result));
             OWLanswers.add(resultMap);
         });
 

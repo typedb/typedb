@@ -21,10 +21,12 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
-
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -55,20 +57,20 @@ public class ReasonerMatchQuery extends Query{
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
         return answers.stream();
     }
 
     @Override
-    public Stream<Map<String, Concept>> resolve(boolean materialise) {
+    public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())
-            return this.getMatchQuery().stream();
+            return this.getMatchQuery().admin().streamWithVarNames();
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-        Stream<Map<String, Concept>> answerStream = atomicQuery.resolve(materialise);
+        Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);
         while (atIt.hasNext()) {
             atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
-            Stream<Map<String, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
+            Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
             answerStream = join(answerStream, subAnswerStream);
         }
         return answerStream

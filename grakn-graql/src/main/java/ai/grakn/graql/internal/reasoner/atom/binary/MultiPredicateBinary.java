@@ -19,8 +19,10 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -93,13 +95,13 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     public boolean isValueUserDefinedName() { return multiPredicate.isEmpty();}
 
     @Override
-    public void unify(String from, String to) {
+    public void unify(VarName from, VarName to) {
         super.unify(from, to);
         multiPredicate.forEach(predicate -> predicate.unify(from, to));
     }
 
     @Override
-    public void unify (Map<String, String> unifiers) {
+    public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         multiPredicate.forEach(predicate -> predicate.unify(unifiers));
     }

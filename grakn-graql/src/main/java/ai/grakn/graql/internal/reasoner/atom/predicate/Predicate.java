@@ -18,10 +18,12 @@
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -99,10 +101,10 @@ public abstract class Predicate<T> extends AtomBase {
     public boolean isRuleResolvable(){ return false;}
 
     @Override
-    public Map<String, String> getUnifiers(Atomic parentAtom) {
+    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
         if (!(parentAtom instanceof Predicate))
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
-        Map<String, String> map = new HashMap<>();
+        Map<VarName, VarName> map = new HashMap<>();
         if (!this.getVarName().equals(parentAtom.getVarName()))
             map.put(this.getVarName(), parentAtom.getVarName());
         return map;

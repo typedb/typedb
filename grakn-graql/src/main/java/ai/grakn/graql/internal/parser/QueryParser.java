@@ -23,8 +23,10 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenFactory;
@@ -291,9 +293,9 @@ public class QueryParser {
 
         registerAggregate("group", args -> {
             if (args.size() < 2) {
-                return Graql.group((String) args.get(0));
+                return Aggregates.group((VarName) args.get(0));
             } else {
-                return Graql.group((String) args.get(0), (Aggregate) args.get(1));
+                return Aggregates.group((VarName) args.get(0), (Aggregate) args.get(1));
             }
         });
     }

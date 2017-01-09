@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -25,7 +26,7 @@ import static ai.grakn.util.Schema.EdgeLabel.HAS_SCOPE;
 
 class OutHasScopeFragment extends AbstractFragment {
 
-    OutHasScopeFragment(String start, String end) {
+    OutHasScopeFragment(VarName start, VarName end) {
         super(start, end);
     }
 

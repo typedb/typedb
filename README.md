@@ -2,7 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
 [![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
-[![Coverage Status](https://coveralls.io/repos/github/graknlabs/grakn/badge.svg?branch=master)](https://coveralls.io/github/graknlabs/grakn?branch=master)
+[![Coverage Status](https://codecov.io/gh/graknlabs/grakn/branch/master/graph/badge.svg)](https://codecov.io/gh/graknlabs/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
 [![Download count](https://img.shields.io/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
 [![Code Triagers Badge](https://www.codetriage.com/graknlabs/grakn/badges/users.svg)](https://www.codetriage.com/graknlabs/grakn)

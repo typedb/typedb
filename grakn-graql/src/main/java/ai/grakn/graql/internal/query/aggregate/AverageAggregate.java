@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.VarName;
 
 import java.util.List;
 import java.util.Map;
@@ -31,21 +32,21 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds average (mean) of a match query.
  */
-class AverageAggregate extends AbstractAggregate<Map<String, Concept>, Optional<Double>> {
+class AverageAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Double>> {
 
-    private final String varName;
+    private final VarName varName;
     private final CountAggregate countAggregate;
-    private final Aggregate<Map<String, Concept>, Number> sumAggregate;
+    private final Aggregate<Map<VarName, Concept>, Number> sumAggregate;
 
-    AverageAggregate(String varName) {
+    AverageAggregate(VarName varName) {
         this.varName = varName;
         countAggregate = new CountAggregate();
         sumAggregate = Aggregates.sum(varName);
     }
 
     @Override
-    public Optional<Double> apply(Stream<? extends Map<String, Concept>> stream) {
-        List<? extends Map<String, Concept>> list = stream.collect(toList());
+    public Optional<Double> apply(Stream<? extends Map<VarName, Concept>> stream) {
+        List<? extends Map<VarName, Concept>> list = stream.collect(toList());
 
         long count = countAggregate.apply(list.stream());
 
@@ -59,6 +60,6 @@ class AverageAggregate extends AbstractAggregate<Map<String, Concept>, Optional<
 
     @Override
     public String toString() {
-        return "average $" + varName;
+        return "average " + varName;
     }
 }

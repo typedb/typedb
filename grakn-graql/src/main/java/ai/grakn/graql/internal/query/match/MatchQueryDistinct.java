@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.VarName;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -33,7 +34,7 @@ class MatchQueryDistinct extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+    public Stream<Map<VarName, Concept>> transformStream(Stream<Map<VarName, Concept>> stream) {
         return stream.distinct();
     }
 

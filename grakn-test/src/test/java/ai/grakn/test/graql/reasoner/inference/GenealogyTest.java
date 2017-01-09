@@ -23,26 +23,30 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.EngineTestBase;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GenealogyTest extends AbstractGraknTest {
+public class GenealogyTest extends EngineTestBase {
 
     private static GraknGraph graph;
     private static Reasoner reasoner;
@@ -117,7 +121,7 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -126,7 +130,7 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x isa person, has firstname $n;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -135,7 +139,7 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x has identifier $i has middlename $mn;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -144,7 +148,7 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x isa person has surname $srn;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -158,8 +162,8 @@ public class GenealogyTest extends AbstractGraknTest {
         "$rel2 has event-role 'newborn';select $c, $p;";
         MatchQuery query = graph.graql().infer(true).parse(queryString);
         MatchQuery query2 = graph.graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(query.execute());
-        QueryAnswers answers2 = new QueryAnswers(query2.execute());
+        QueryAnswers answers = new QueryAnswers(query.admin().results());
+        QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertEquals(76, answers.size());
@@ -178,7 +182,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -227,7 +231,7 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $rel ($x, $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
@@ -239,7 +243,7 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $rel (spouse1: $x, spouse2: $y) isa marriage;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
@@ -252,7 +256,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -276,7 +280,7 @@ public class GenealogyTest extends AbstractGraknTest {
         MatchQuery query = new Query(queryString, graph);
         MatchQuery query2 = new Query(queryString2, graph);
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        assertEquals(answers2, new QueryAnswers(qb.<MatchQuery>parse(queryString2).execute()));
+        assertEquals(answers2, new QueryAnswers(qb.<MatchQueryAdmin>parse(queryString2).results()));
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         System.out.println("answers size: " + answers.size());
@@ -297,7 +301,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -307,7 +311,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -318,7 +322,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -352,7 +356,7 @@ public class GenealogyTest extends AbstractGraknTest {
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -366,7 +370,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -381,7 +385,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -396,7 +400,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -411,7 +415,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -433,7 +437,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(checkResource(answers, "g", "male"));
         assertTrue(!answers.isEmpty());
     }
@@ -449,7 +453,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(checkResource(answers, "g", "female"));
         assertTrue(!answers.isEmpty());
     }
@@ -465,7 +469,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -480,7 +484,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -506,7 +510,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -521,7 +525,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
 
     @Test
@@ -537,7 +541,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -549,7 +553,7 @@ public class GenealogyTest extends AbstractGraknTest {
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
     }
 
@@ -565,9 +569,9 @@ public class GenealogyTest extends AbstractGraknTest {
 
     private boolean checkResource(QueryAnswers answers, String var, String value){
         boolean isOk = true;
-        Iterator<Map<String, Concept>> it =  answers.iterator();
+        Iterator<Map<VarName, Concept>> it =  answers.iterator();
         while (it.hasNext() && isOk){
-            Concept c = it.next().get(var);
+            Concept c = it.next().get(varName(var));
             isOk = c.asResource().getValue().equals(value);
         }
         return isOk;
@@ -575,9 +579,9 @@ public class GenealogyTest extends AbstractGraknTest {
 
     private boolean hasDuplicates(QueryAnswers answers){
         boolean hasDuplicates = false;
-        Iterator<Map<String, Concept>> it = answers.iterator();
+        Iterator<Map<VarName, Concept>> it = answers.iterator();
         while(it.hasNext() && !hasDuplicates){
-            Map<String, Concept> answer = it.next();
+            Map<VarName, Concept> answer = it.next();
             Set<Concept> existing = new HashSet<>();
             hasDuplicates = answer.entrySet()
                     .stream()

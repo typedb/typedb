@@ -34,6 +34,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -46,6 +47,7 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -161,7 +163,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        Set<String> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+        Set<VarName> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
         return visitMatchQuery(ctx.matchQuery()).select(names);
     }
 
@@ -175,7 +177,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery());
 
         // decide which ordering method to use
-        String var = getVariable(ctx.VARIABLE());
+        VarName var = getVariable(ctx.VARIABLE());
         if (ctx.ORDER() != null) {
             return matchQuery.orderBy(var, getOrder(ctx.ORDER()));
         } else {
@@ -414,7 +416,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public String visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
+    public VarName visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
         return getVariable(ctx.VARIABLE());
     }
 
@@ -716,9 +718,9 @@ class QueryVisitor extends GraqlBaseVisitor {
         return visit(ctx);
     }
 
-    private String getVariable(TerminalNode variable) {
+    private VarName getVariable(TerminalNode variable) {
         // Remove '$' prefix
-        return variable.getText().substring(1);
+        return Patterns.varName(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {

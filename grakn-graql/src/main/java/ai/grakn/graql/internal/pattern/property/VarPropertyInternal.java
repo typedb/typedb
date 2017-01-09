@@ -19,12 +19,13 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -49,7 +50,7 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
      */
-    Collection<EquivalentFragmentSet> match(String start);
+    Collection<EquivalentFragmentSet> match(VarName start);
 
     /**
      * Insert the given property into the graph, if possible.

@@ -30,7 +30,7 @@ public interface Resource<D> extends Instance{
     /**
      * Retrieves the value of the Resource.
      *
-     * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
+     * @param D The data type of this resource. Supported Types include: String, Long, Double, and Boolean
      * @return The Resource itself
      */
     D getValue();

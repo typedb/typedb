@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Order;
+import ai.grakn.graql.VarName;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -27,35 +28,35 @@ import java.util.stream.Stream;
 
 class MatchOrderImpl implements MatchOrder {
 
-    private final String var;
+    private final VarName var;
 
-    private final Comparator<Map<String, Concept>> comparator;
+    private final Comparator<Map<VarName, Concept>> comparator;
 
-    MatchOrderImpl(String var, Order order) {
+    MatchOrderImpl(VarName var, Order order) {
         this.var = var;
 
-        Comparator<Map<String, Concept>> comparator = Comparator.comparing(this::getOrderValue);
+        Comparator<Map<VarName, Concept>> comparator = Comparator.comparing(this::getOrderValue);
 
         this.comparator = (order == Order.desc) ? comparator.reversed() : comparator;
     }
 
     @Override
-    public String getVar() {
+    public VarName getVar() {
         return var;
     }
 
     @Override
-    public Stream<Map<String, Concept>> orderStream(Stream<Map<String, Concept>> stream) {
+    public Stream<Map<VarName, Concept>> orderStream(Stream<Map<VarName, Concept>> stream) {
         return stream.sorted(comparator);
     }
 
-    private Comparable<? super Comparable> getOrderValue(Map<String, Concept> result) {
+    private Comparable<? super Comparable> getOrderValue(Map<VarName, Concept> result) {
         //noinspection unchecked
         return (Comparable<? super Comparable>) result.get(var).asResource().getValue();
     }
 
     @Override
     public String toString() {
-        return "order by $" + var + " ";
+        return "order by " + var + " ";
     }
 }
