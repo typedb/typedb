@@ -187,26 +187,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @SuppressWarnings("unchecked")
     public V type() {
-        HashSet<Concept> visitedConcepts = new HashSet<>();
-        ConceptImpl currentConcept = this;
-        visitedConcepts.add(currentConcept);
-        Type type = null;
-        boolean notFound = true;
-
-        while(notFound && currentConcept != null){
-            ConceptImpl concept = currentConcept.getParentIsa();
-            if(concept != null){
-                notFound = false;
-                type = concept.asType();
-            } else {
-                currentConcept = (ConceptImpl) currentConcept.superType();
-                if(visitedConcepts.contains(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
-                }
-                visitedConcepts.add(currentConcept);
-            }
-        }
-        return (V) type;
+        return (V) getParentIsa();
     }
 
     /**

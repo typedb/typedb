@@ -245,7 +245,17 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
             putEdge(superType, Schema.EdgeLabel.SUB);
-            type(); //Check if there is a circular sub loop
+
+            //Check For Loop
+            HashSet<Type> foundTypes = new HashSet<>();
+            currentSuperType = superType();
+            while (currentSuperType != null){
+                foundTypes.add(currentSuperType);
+                currentSuperType = currentSuperType.superType();
+                if(foundTypes.contains(currentSuperType)){
+                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
+                }
+            }
 
             //Track any existing data if there is some
             instances().forEach(concept -> {
