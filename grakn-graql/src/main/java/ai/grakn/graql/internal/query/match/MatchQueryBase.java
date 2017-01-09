@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base MatchQuery implementation that executes the gremlin traversal
  */
-public class MatchQueryBase implements MatchQueryInternal {
+public class MatchQueryBase extends AbstractMatchQuery {
 
     private final Conjunction<PatternAdmin> pattern;
     private final ImmutableSet<String> typeNames;

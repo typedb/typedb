@@ -34,9 +34,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class GeoInferenceTest extends AbstractGraknTest {
     @BeforeClass
@@ -52,7 +52,7 @@ public class GeoInferenceTest extends AbstractGraknTest {
         String queryString = "match $x isa city;$x has name $name;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";

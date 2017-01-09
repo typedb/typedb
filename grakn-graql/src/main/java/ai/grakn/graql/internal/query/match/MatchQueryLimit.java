@@ -18,10 +18,12 @@
 
 package ai.grakn.graql.internal.query.match;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -31,18 +33,18 @@ class MatchQueryLimit extends MatchQueryModifier {
 
     private final long limit;
 
-    MatchQueryLimit(MatchQueryInternal inner, long limit) {
+    MatchQueryLimit(AbstractMatchQuery inner, long limit) {
         super(inner);
         this.limit = limit;
     }
 
     @Override
-    protected Stream<Map<VarName, Concept>> transformStream(Stream<Map<VarName, Concept>> stream) {
-        return stream.limit(limit);
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
+        return inner.stream(graph).limit(limit);
     }
 
     @Override
     protected String modifierString() {
-        return "limit " + limit;
+        return " limit " + limit + ";";
     }
 }

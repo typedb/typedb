@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.util.ErrorMessage;
@@ -25,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -37,7 +39,7 @@ class MatchQuerySelect extends MatchQueryModifier {
 
     private final ImmutableSet<VarName> names;
 
-    MatchQuerySelect(MatchQueryInternal inner, ImmutableSet<VarName> names) {
+    MatchQuerySelect(AbstractMatchQuery inner, ImmutableSet<VarName> names) {
         super(inner);
 
         if (names.isEmpty()) {
@@ -48,13 +50,13 @@ class MatchQuerySelect extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> transformStream(Stream<Map<VarName, Concept>> stream) {
-        return stream.map(result -> Maps.filterKeys(result, names::contains));
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
+        return inner.stream(graph).map(result -> Maps.filterKeys(result, names::contains));
     }
 
     @Override
     protected String modifierString() {
-        return "select " + names.stream().map(Object::toString).collect(joining(", "));
+        return " select " + names.stream().map(Object::toString).collect(joining(", ")) + ";";
     }
 
     @Override

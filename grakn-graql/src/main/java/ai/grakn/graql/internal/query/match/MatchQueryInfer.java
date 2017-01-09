@@ -37,7 +37,7 @@ class MatchQueryInfer extends MatchQueryModifier {
 
     private final boolean materialise;
 
-    MatchQueryInfer(MatchQueryInternal inner, boolean materialise) {
+    MatchQueryInfer(AbstractMatchQuery inner, boolean materialise) {
         super(inner);
         this.materialise = materialise;
     }
@@ -53,11 +53,6 @@ class MatchQueryInfer extends MatchQueryModifier {
 
     @Override
     protected String modifierString() {
-        throw new RuntimeException("modifierString should never be called");
-    }
-
-    @Override
-    public String toString() {
-        return inner.toString();
+        return "";
     }
 }

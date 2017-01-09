@@ -30,23 +30,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-
 /**
  * Admin class for inspecting and manipulating a MatchQuery
  */
 public interface MatchQueryAdmin extends MatchQuery {
 
-    default List<Map<VarName, Concept>> results() {
-        return streamWithVarNames().collect(toList());
-    }
+    List<Map<VarName, Concept>> results();
 
     Stream<Map<VarName, Concept>> streamWithVarNames();
 
-    @Override
-    default MatchQueryAdmin admin() {
-        return this;
-    }
+    MatchQueryAdmin admin();
 
     /**
      * @param graph the graph to use to get types from

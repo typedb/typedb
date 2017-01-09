@@ -82,7 +82,7 @@ public abstract class Atom extends AtomBase {
 
     public Set<Rule> getApplicableRules() {
         Set<Rule> children = new HashSet<>();
-        GraknGraph graph = getParentQuery().getGraph().orElse(null);
+        GraknGraph graph = getParentQuery().graph();
         Collection<Rule> rulesFromType = getType() != null? getType().getRulesOfConclusion() : Reasoner.getRules(graph);
         rulesFromType.forEach(rule -> {
             InferenceRule child = new InferenceRule(rule, graph);
@@ -127,7 +127,7 @@ public abstract class Atom extends AtomBase {
      */
     public Type getType(){
         if (type == null)
-            type = getParentQuery().getGraph().orElse(null).getType(typeId);
+            type = getParentQuery().graph().getType(typeId);
         return type;
     }
 

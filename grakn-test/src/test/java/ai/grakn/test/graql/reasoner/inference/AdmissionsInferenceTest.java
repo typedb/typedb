@@ -23,6 +23,14 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.AbstractGraknTest;
@@ -53,7 +61,7 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
 
         assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
@@ -123,7 +131,7 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(queryString));
     }
 

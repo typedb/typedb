@@ -57,11 +57,6 @@ public class ReasonerMatchQuery extends Query{
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return answers.stream();
-    }
-
-    @Override
     public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
         if (!this.isRuleResolvable())
             return this.getMatchQuery().admin().streamWithVarNames();

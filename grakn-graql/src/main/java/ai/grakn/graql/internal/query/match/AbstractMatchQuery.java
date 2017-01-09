@@ -30,12 +30,11 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.Queries;
-import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.graql.internal.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
@@ -49,36 +48,36 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.graql.Order.asc;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 @SuppressWarnings("UnusedReturnValue")
-public interface MatchQueryInternal extends MatchQueryAdmin {
+abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
-    /**
-     * @param keyword a keyword to color-code using ANSI colors
-     * @return the keyword, color-coded
-     */
-    static String colorKeyword(String keyword) {
-        return ANSI.color(keyword, ANSI.BLUE);
-    }
-
-    /**
-     * @param type a type to color-code using ANSI colors
-     * @return the type, color-coded
-     */
-    static String colorType(String type) {
-        return ANSI.color(type, ANSI.PURPLE);
+    @Override
+    public final Stream<String> resultsString(Printer printer) {
+        return stream().map(printer::graqlString);
     }
 
     @Override
-    default Stream<String> resultsString(Printer printer) {
-        return streamWithVarNames().map(printer::graqlString);
-    }
-
-    @Override
-    default boolean isReadOnly() {
+    public final boolean isReadOnly() {
         return true;
+    }
+
+    @Override
+    public final MatchQueryAdmin admin() {
+        return this;
+    }
+
+    @Override
+    public final List<Map<String, Concept>> execute() {
+        return stream().collect(toList());
+    }
+
+    @Override
+    public final List<Map<VarName, Concept>> results() {
+        return streamWithVarNames().collect(toList());
     }
 
     /**
@@ -86,87 +85,107 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
      * @param graph the graph to use to execute the query
      * @return a stream of results
      */
-    Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph);
+    public abstract Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph);
 
     @Override
-    default Stream<Map<VarName, Concept>> streamWithVarNames() {
+    public final Stream<Map<VarName, Concept>> streamWithVarNames() {
         return stream(Optional.empty());
     }
 
     @Override
-    default Stream<Map<String, Concept>> stream() {
+    public final Stream<Map<String, Concept>> stream() {
         return streamWithVarNames().map(CommonUtil::resultVarNameToString);
     }
 
     @Override
-    default MatchQuery withGraph(GraknGraph graph) {
+    public final MatchQuery withGraph(GraknGraph graph) {
         return new MatchQueryGraph(graph, this);
     }
 
     @Override
-    default MatchQuery limit(long limit) {
+    public final MatchQuery limit(long limit) {
         return new MatchQueryLimit(this, limit);
     }
 
     @Override
-    default MatchQuery offset(long offset) {
+    public final MatchQuery offset(long offset) {
         return new MatchQueryOffset(this, offset);
     }
 
     @Override
-    default MatchQuery distinct() {
+    public final MatchQuery distinct() {
         return new MatchQueryDistinct(this);
     }
 
     @Override
-    default <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate) {
+    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 
     @Override
-    default MatchQuery select(String... names) {
-        return select(Stream.of(names).map(Patterns::varName).collect(toImmutableSet()));
+    public final MatchQuery select(String... names) {
+        return select(Stream.of(names).map(Patterns::varName).collect(toSet()));
     }
 
     @Override
-    default MatchQuery select(Set<VarName> names) {
+    public final MatchQuery select(Set<VarName> names) {
         return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
     }
 
     @Override
-    default Stream<Concept> get(String name) {
+    public final Stream<Concept> get(String name) {
         return stream().map(result -> result.get(name));
     }
 
     @Override
-    default AskQuery ask() {
+    public final AskQuery ask() {
         return Queries.ask(this);
     }
 
     @Override
-    default InsertQuery insert(Collection<? extends Var> vars) {
+    public final InsertQuery insert(Var... vars) {
+        return insert(Arrays.asList(vars));
+    }
+
+    @Override
+    public final InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableMultiset<VarAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
     }
 
     @Override
-    default DeleteQuery delete(String... names) {
+    public final DeleteQuery delete(Var... deleters) {
+        return delete(Arrays.asList(deleters));
+    }
+
+    @Override
+    public final DeleteQuery delete(String... names) {
         List<Var> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
         return delete(deleters);
     }
 
     @Override
-    default DeleteQuery delete(Collection<? extends Var> deleters) {
+    public final DeleteQuery delete(Collection<? extends Var> deleters) {
         return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
     }
 
     @Override
-    default MatchQuery orderBy(String varName, Order order) {
+    public final MatchQuery orderBy(String varName) {
+        return orderBy(varName, asc);
+    }
+
+    @Override
+    public final MatchQuery orderBy(VarName varName) {
+        return orderBy(varName, asc);
+    }
+
+    @Override
+    public final MatchQuery orderBy(String varName, Order order) {
         return orderBy(Patterns.varName(varName), order);
     }
 
     @Override
-    default MatchQuery orderBy(VarName varName, Order order) {
+    public final MatchQuery orderBy(VarName varName, Order order) {
         return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
     }
 }

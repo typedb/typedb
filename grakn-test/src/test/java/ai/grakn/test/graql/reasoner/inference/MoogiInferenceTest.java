@@ -93,7 +93,7 @@ public class MoogiInferenceTest {
     public void testActorDirector(){
         String queryString = "match $x has status 'actor-director';";
         String explicitQuery = "match (actor: $x) isa has-cast;(director: $x) isa production-crew;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
         assertQueriesEqual(reasoner.resolve(query, true), qb.parse(explicitQuery));
     }

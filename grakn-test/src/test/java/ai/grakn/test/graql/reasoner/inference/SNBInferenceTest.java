@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,11 +38,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class SNBInferenceTest extends AbstractGraknTest {
     @BeforeClass
@@ -385,7 +386,7 @@ public class SNBInferenceTest extends AbstractGraknTest {
         QueryBuilder qb = graph.graql().infer(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$pr isa product, has name 'Nocturnes';($x, $pr) isa recommendation; select $x;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = graph.graql().parse(queryString);
 
         String explicitQuery = "match {$x has name 'Frank';} or {$x has name 'Karl Fischer';};";
         assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());

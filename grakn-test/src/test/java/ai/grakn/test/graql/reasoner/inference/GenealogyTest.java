@@ -78,7 +78,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testMatchAll(){
         String queryString = "match $x isa document; ($x, $y);";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
@@ -86,7 +86,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testMatchAll2(){
         String queryString = "match $x isa document; ($x, $y); $y isa entity;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
@@ -100,7 +100,7 @@ public class GenealogyTest extends EngineTestBase {
                 "$rel2 (happening: $w, protagonist: $s2) isa event-protagonist;" +
                 "$rel2 has event-role 'spouse';" +
                 "$s1 != $s2;select $s1, $s2;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
     }
@@ -111,7 +111,7 @@ public class GenealogyTest extends EngineTestBase {
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assert(answers.size() == 1);
     }
@@ -119,7 +119,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testGender() {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
@@ -128,7 +128,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testName() {
         String queryString = "match $x isa person, has firstname $n;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
@@ -137,7 +137,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testMiddleName() {
         String queryString = "match $x has identifier $i has middlename $mn;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
@@ -146,7 +146,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testSurName() {
         String queryString = "match $x isa person has surname $srn;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
@@ -176,8 +176,8 @@ public class GenealogyTest extends EngineTestBase {
     public void testParentship2() {
         String queryString = "match (child: $x, $y) isa parentship;select $x;";
         String queryString2 = "match (child: $x) isa parentship;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
@@ -188,7 +188,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testParentship3(){
         String queryString = "match ($x, son: $y) isa parentship;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
@@ -197,7 +197,7 @@ public class GenealogyTest extends EngineTestBase {
     public void testComplexQuery(){
         String queryString = "match $a has firstname 'Ann' has surname 'Niesz';" +
                     "(wife: $a, husband: $w); (husband: $w, wife: $b) isa marriage;$a != $b;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
         assertTrue(answers.size() == 1);
@@ -206,7 +206,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testMarriageNotEquals(){
         String queryString = "match ($x, $y) isa marriage; ($y, $z) isa marriage;$x != $z;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
         assertTrue(answers.size() == 4);
@@ -216,8 +216,8 @@ public class GenealogyTest extends EngineTestBase {
     public void testMarriageType() {
         String queryString = "match $x isa marriage;";
         String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
@@ -229,7 +229,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
@@ -241,7 +241,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testMarriageMaterialisation2() {
         String queryString = "match $rel (spouse1: $x, spouse2: $y) isa marriage;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(!answers.isEmpty());
@@ -252,7 +252,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testMarriage() {
         String queryString = "match (spouse1: $x, spouse2: $y) isa marriage;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
@@ -262,7 +262,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testWife(){
         String queryString = "match $r (wife: $x) isa marriage;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         List<Map<String, Concept>> answerList = qb.<MatchQuery>parse(queryString).execute();
         answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
@@ -277,8 +277,8 @@ public class GenealogyTest extends EngineTestBase {
     public void testWife2(){
         String queryString = "match ($r: $x) isa marriage;$r type-name 'wife';select $x;";
         String queryString2 = "match (wife: $x) isa marriage;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers2, new QueryAnswers(qb.<MatchQueryAdmin>parse(queryString2).results()));
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
@@ -297,7 +297,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
@@ -307,7 +307,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testCousins() {
         String queryString = "match ($x, $y) isa cousins;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
@@ -317,7 +317,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testInLaws() {
         String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$y has gender 'male';";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
@@ -328,7 +328,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testInLaws2() {
         String queryString = "match $x isa in-laws;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
@@ -340,8 +340,8 @@ public class GenealogyTest extends EngineTestBase {
     public void testInLaws3() {
         String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;";
         String queryString2 = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
@@ -352,7 +352,7 @@ public class GenealogyTest extends EngineTestBase {
     public void testMotherInLaw() {
         String queryString = "match (parent-in-law: $x) isa in-laws;" +
                 "$x has gender $g;$g value 'female';$x has identifier $id;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(checkResource(answers, "g", "female"));
@@ -364,8 +364,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (mother-in-law: $x);$x has identifier $id;$x has gender $g;";
         String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
                 "$x has gender $g;$g value 'female';$x has identifier $id; select $x, $g, $id;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -379,8 +379,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (father-in-law: $x); $x has identifier $id;";
         String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
                 "$x has gender 'male';$x has identifier $id; select $x, $id;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -394,8 +394,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (son-in-law: $x);$x has gender $g;";
         String queryString2 = "match (child-in-law: $x, $y) isa in-laws;" +
                 "$x has gender $g;$g value 'male';select $x, $g;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -409,8 +409,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (daughter-in-law: $x); $x has identifier $id;";
         String queryString2 = "match (child-in-law: $x, $y) isa in-laws;" +
                 "$x has gender 'female';$x has identifier $id; select $x, $id;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -431,8 +431,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (son: $x);$x has gender $g;";
         String queryString2 = "match (child: $x, $y) isa parentship;" +
                 "$x has gender $g;$g value 'male'; select $x, $g;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -447,8 +447,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (daughter: $x);$x has gender $g;";
         String queryString2 = "match (child: $x, $y) isa parentship;" +
                 "$x has gender $g;$g value 'female'; select $x, $g;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -463,8 +463,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (father: $x);";
         String queryString2 = "match (parent: $x, $y) isa parentship;" +
                 "$x has gender 'male'; select $x;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -478,8 +478,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match (mother: $x);";
         String queryString2 = "match (parent: $x, $y) isa parentship;" +
                 "$x has gender 'female';select $x;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -491,7 +491,7 @@ public class GenealogyTest extends EngineTestBase {
     @Test
     public void testFemaleFather() {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g value 'female';";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
     }
@@ -504,8 +504,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString2 = "match (grandparent: $x, $y) isa grandparentship;" +
                 "$x has gender 'female';" +
                 "$x has identifier $pidX; select $pidX;";
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -519,8 +519,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString2 = "match (grandparent: $x, $y) isa grandparentship;" +
                 "$x has gender $g;$g value 'female';select $x, $g;";
 
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -534,8 +534,8 @@ public class GenealogyTest extends EngineTestBase {
         String queryString2 = "match (grandchild: $x, $y) isa grandparentship;" +
                 "$x has gender $g;$g value 'female';select $x, $g;";
 
-        MatchQuery query = new Query(queryString, graph);
-        MatchQuery query2 = new Query(queryString2, graph);
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, true).collect(Collectors.toSet()));
@@ -549,7 +549,7 @@ public class GenealogyTest extends EngineTestBase {
     public void testGrandParentship(){
         String queryString = "match "+
                 "(grandchild: $x); (granddaughter: $x);$x has gender $g;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
 
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(checkResource(answers, "g", "female"));

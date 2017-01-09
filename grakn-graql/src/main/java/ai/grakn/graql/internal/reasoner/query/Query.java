@@ -26,7 +26,6 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.match.MatchQueryInternal;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
@@ -42,9 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -63,7 +60,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
  * @author Kasper Piskorski
  *
  */
-public class Query implements MatchQueryInternal {
+public class Query {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
@@ -81,7 +78,7 @@ public class Query implements MatchQueryInternal {
     }
 
     public Query(Query q) {
-        this.graph = q.getGraph().orElse(null);
+        this.graph = q.graph;
         this.selectVars = q.getSelectedNames();
         q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
         inferTypes();
@@ -90,7 +87,7 @@ public class Query implements MatchQueryInternal {
     protected Query(Atom atom, Set<VarName> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        this.graph = atom.getParentQuery().getGraph().orElse(null);
+        this.graph = atom.getParentQuery().graph;
         this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
         addAtom(AtomicFactory.create(atom, this));
@@ -126,50 +123,24 @@ public class Query implements MatchQueryInternal {
                 .forEach(Atom::inferTypes);
     }
 
-    @Override
-    public Set<Type> getTypes(GraknGraph graph){ return getMatchQuery().admin().getTypes(graph);}
-
-    @Override
-    public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
-
-    @Override
     public Set<VarName> getSelectedNames() { return Sets.newHashSet(selectVars);}
-
-    @Override
-    public MatchQuery select(Set<VarName> vars){
-        selectVars.clear();
-        selectVars.addAll(vars);
-        return this;
-    }
 
     /**
      * append to select variables
      * @param vars variables to append
      * @return appended query
      */
-    public MatchQuery selectAppend(Set<VarName> vars){
+    public void selectAppend(Set<VarName> vars){
         selectVars.addAll(vars);
-        return this;
     }
 
-    @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return getMatchQuery().admin().streamWithVarNames();
-    }
-
-    @Override
-    public Optional<GraknGraph> getGraph(){ return Optional.of(graph);}
     public GraknGraph graph(){ return graph;}
 
-    @Override
     public Conjunction<PatternAdmin> getPattern() {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream().map(Atomic::getPattern).forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
-
-    @Override
-    public List<Map<String, Concept>> execute() { return getMatchQuery().execute();}
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule
