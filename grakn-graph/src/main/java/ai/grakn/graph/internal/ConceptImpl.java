@@ -89,16 +89,14 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     protected T type(V type) {
         if(type != null && type() == null){
-            TypeImpl currentIsa = getParentIsa();
+            V currentIsa = type();
             if(currentIsa == null){
                 setType(String.valueOf(type.getName()));
                 putEdge(type, Schema.EdgeLabel.ISA);
             } else if(!currentIsa.equals(type)){
                 throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
             }
-
         }
-
         return getThis();
     }
 
@@ -431,14 +429,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     public boolean isCasting(){
         return this instanceof CastingImpl;
-    }
-
-    /**
-     *
-     * @return The result of following one outgoing isa edge to a Type.
-     */
-    public TypeImpl getParentIsa(){
-       return (TypeImpl) type();
     }
 
     /**

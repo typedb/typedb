@@ -55,7 +55,7 @@ class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
      * @return The {@link RoleType} this casting is linked with
      */
     public RoleType getRole() {
-        Concept concept = getParentIsa();
+        Concept concept = type();
         if(concept != null)
             return concept.asRoleType();
         else
