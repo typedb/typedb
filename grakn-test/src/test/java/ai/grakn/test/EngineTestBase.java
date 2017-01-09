@@ -19,14 +19,10 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
-
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
-import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
@@ -39,6 +35,7 @@ import info.batey.kafka.unit.KafkaUnit;
 import org.apache.commons.io.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -52,9 +49,10 @@ import java.util.function.Predicate;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static ai.grakn.test.GraknTestEnv.ensureEngineRunning;
 import static java.lang.Thread.sleep;
-import static ai.grakn.test.GraknTestEnv.*;
 
+@Ignore
 public class EngineTestBase {
     private static final Properties properties = ConfigProperties.getInstance().getProperties();
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
