@@ -87,6 +87,8 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         return GraphComputer.Persist.NOTHING;
     }
 
+    // super.clone() will always return something of the correct type
+    @SuppressWarnings("unchecked")
     @Override
     public GraknVertexProgram<T> clone() {
         try {

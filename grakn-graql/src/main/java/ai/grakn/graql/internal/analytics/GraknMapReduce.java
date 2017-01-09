@@ -67,6 +67,8 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         return MAP_REDUCE_MEMORY_KEY;
     }
 
+    // super.clone() will always return something of the correct type
+    @SuppressWarnings("unchecked")
     @Override
     public MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> clone() {
         try {

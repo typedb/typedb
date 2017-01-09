@@ -109,13 +109,13 @@ public class ResourceTest extends GraphTestBase{
         assertEquals(1, graknGraph.getResourcesByValue(true).size());
     }
 
+    // this is deliberately an incorrect type for the test
+    @SuppressWarnings("unchecked")
     @Test
     public void setInvalidResourceTest (){
         ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()));
-        // this is deliberately an incorrect type for the test
-        //noinspection unchecked
         longResourceType.putResource("Invalid Thing");
     }
 
@@ -133,13 +133,13 @@ public class ResourceTest extends GraphTestBase{
         assertTrue(concept2.toString().contains("Value"));
     }
 
+    // this is deliberately an incorrect type for the test
+    @SuppressWarnings("unchecked")
     @Test
     public void testInvalidDataType(){
         ResourceType stringResourceType = graknGraph.putResourceType("Strung", ResourceType.DataType.STRING);
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(INVALID_DATATYPE.getMessage("1", String.class.getName()));
-        // this is deliberately an incorrect type for the test
-        //noinspection unchecked
         stringResourceType.putResource(1L);
     }
 

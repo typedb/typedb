@@ -73,7 +73,7 @@ public class TasksController {
         String mgr = ConfigProperties.getInstance().getProperty(TASK_MANAGER_INSTANCE, "ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager");
 
         try {
-            Class cl = Class.forName(mgr);
+            Class<?> cl = Class.forName(mgr);
             taskManager = (TaskManager) cl.getMethod("getInstance").invoke(null);
             taskManager.open();
         }

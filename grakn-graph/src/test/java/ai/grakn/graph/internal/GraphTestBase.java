@@ -27,7 +27,7 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class GraphTestBase {
-    protected AbstractGraknGraph graknGraphBatch;
+    protected AbstractGraknGraph<?> graknGraphBatch;
     protected AbstractGraknGraph<?> graknGraph;
 
     @Rule

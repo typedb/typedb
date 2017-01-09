@@ -192,13 +192,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return This type's super type
      */
-    @SuppressWarnings("unchecked")
     public T superType() {
-        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
+        T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
         if(concept == null)
             return null;
         else
-            return (T) concept;
+            return concept;
     }
 
     /**

@@ -444,8 +444,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testParseAggregate() {
-        //noinspection unchecked
-        AggregateQuery<Map<String, Object>> query = (AggregateQuery<Map<String, Object>>)
+        AggregateQuery<Map<String, Object>> query =
                 qb.parse("match $x isa movie; aggregate (count as c, group $x as g);");
 
         Map<String, Object> result = query.execute();

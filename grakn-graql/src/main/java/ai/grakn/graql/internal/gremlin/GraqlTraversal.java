@@ -186,12 +186,12 @@ public class GraqlTraversal {
     /**
      * Get the {@code GraphTraversal} that this {@code GraqlTraversal} represents.
      */
+    // Because 'union' accepts an array, we can't use generics
+    @SuppressWarnings("unchecked")
     GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal() {
         Traversal[] traversals =
                 fragments.stream().map(this::getConjunctionTraversal).toArray(Traversal[]::new);
 
-        // Because 'union' accepts an array, we can't use generics...
-        //noinspection unchecked
         return graph.admin().getTinkerTraversal().limit(1).union(traversals);
     }
 
