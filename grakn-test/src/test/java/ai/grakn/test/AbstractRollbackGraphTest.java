@@ -21,10 +21,9 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import static ai.grakn.test.GraknTestEnv.*;
+
+import static ai.grakn.test.GraknTestEnv.factoryWithNewKeyspace;
 
 /**
  * Abstract test class that provides an empty graph, automatically rolling back after every test to a fresh empty graph.
@@ -44,18 +43,11 @@ public abstract class AbstractRollbackGraphTest extends AbstractGraknTest {
 
     @After
     public final void rollbackGraph() {
-        if (usingTinker()) {
-            // If using tinker, make a fresh graph
-            factory = null;
-            graph = null;
-        } else {
-            try {
-                graph.rollback();
-            } catch (UnsupportedOperationException e) {
-                // If operation unsupported, make a fresh graph
-                factory = null;
-                graph = null;
-            }
+        if(!graph.isClosed()){
+            graph.close();
         }
+
+        factory = null;
+        graph = null;
     }
 }
