@@ -32,7 +32,6 @@ import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
 import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
-import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 
 /**
  * Main program to migrate an SQL database to a Grakn graph.
@@ -66,7 +65,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(sqlMigrator.migrate());
             } else {
-                MigrationLoader.load(getLoader(options), options.getBatch(), sqlMigrator);
+                MigrationLoader.load(options.getKeyspace(), options.getBatch(), sqlMigrator);
                 printWholeCompletionMessage(options);
             }
 

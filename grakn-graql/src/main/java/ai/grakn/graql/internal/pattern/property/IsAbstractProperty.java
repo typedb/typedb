@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -32,7 +33,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public Fragment getFragment(String start) {
+    public Fragment getFragment(VarName start) {
         return Fragments.isAbstract(start);
     }
 

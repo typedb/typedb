@@ -19,10 +19,14 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.MatchQueryAdmin;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
@@ -47,15 +51,13 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param names an array of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    default MatchQuery select(String... names) {
-        return select(new HashSet<>(Arrays.asList(names)));
-    }
+    MatchQuery select(String... names);
 
     /**
      * @param names a set of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    MatchQuery select(Set<String> names);
+    MatchQuery select(Set<VarName> names);
 
     /**
      * @param name a variable name to get
@@ -112,12 +114,29 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
     }
 
     /**
+     * Order the results by degree in ascending order
+     * @param varName the variable name to order the results by
+     * @return a new MatchQuery with the given ordering
+     */
+    default MatchQuery orderBy(VarName varName) {
+        return orderBy(varName, asc);
+    }
+
+    /**
      * Order the results by degree
      * @param varName the variable name to order the results by
      * @param order the ordering to use
      * @return a new MatchQuery with the given ordering
      */
     MatchQuery orderBy(String varName, Order order);
+
+    /**
+     * Order the results by degree
+     * @param varName the variable name to order the results by
+     * @param order the ordering to use
+     * @return a new MatchQuery with the given ordering
+     */
+    MatchQuery orderBy(VarName varName, Order order);
 
     /**
      * @param graph the graph to execute the query on
@@ -149,7 +168,7 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param <S> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
-    <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate);
+    <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

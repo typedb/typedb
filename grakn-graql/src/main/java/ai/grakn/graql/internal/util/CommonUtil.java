@@ -18,11 +18,14 @@
 
 package ai.grakn.graql.internal.util;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.VarName;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -31,6 +34,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toMap;
 
 public class CommonUtil {
 
@@ -60,6 +65,10 @@ public class CommonUtil {
     @SafeVarargs
     public static <T> Optional<T> optionalOr(Optional<T>... options) {
         return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
+    }
+
+    public static Map<String, Concept> resultVarNameToString(Map<VarName, Concept> result) {
+        return result.entrySet().stream().collect(toMap(entry -> entry.getKey().getValue(), Map.Entry::getValue));
     }
 
     public static <T> Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>> toImmutableSet() {

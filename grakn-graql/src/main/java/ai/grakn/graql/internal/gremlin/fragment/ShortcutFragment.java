@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -38,7 +39,7 @@ class ShortcutFragment extends AbstractFragment {
 
     ShortcutFragment(
             Optional<String> relationType, Optional<String> roleStart, Optional<String> roleEnd,
-            String start, String end
+            VarName start, VarName end
     ) {
         super(start, end);
         this.relationType = relationType;

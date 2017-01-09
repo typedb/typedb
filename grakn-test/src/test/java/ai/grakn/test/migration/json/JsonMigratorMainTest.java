@@ -33,7 +33,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
 
-    private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();;
+    private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
 
     @Before

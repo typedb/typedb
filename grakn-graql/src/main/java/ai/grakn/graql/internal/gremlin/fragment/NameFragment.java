@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -28,7 +29,7 @@ class NameFragment extends AbstractFragment {
 
     private final String name;
 
-    NameFragment(String start, String name) {
+    NameFragment(VarName start, String name) {
         super(start);
         this.name = name;
     }

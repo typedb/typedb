@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.VarName;
 
 import java.util.List;
 import java.util.Map;
@@ -30,16 +31,16 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a match query.
  */
-class MedianAggregate extends AbstractAggregate<Map<String, Concept>, Optional<Number>> {
+class MedianAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Number>> {
 
-    private final String varName;
+    private final VarName varName;
 
-    MedianAggregate(String varName) {
+    MedianAggregate(VarName varName) {
         this.varName = varName;
     }
 
     @Override
-    public Optional<Number> apply(Stream<? extends Map<String, Concept>> stream) {
+    public Optional<Number> apply(Stream<? extends Map<VarName, Concept>> stream) {
         List<Number> results = stream
                 .map(result -> ((Number) result.get(varName).asResource().getValue()))
                 .sorted()
@@ -62,6 +63,6 @@ class MedianAggregate extends AbstractAggregate<Map<String, Concept>, Optional<N
 
     @Override
     public String toString() {
-        return "median $" + varName;
+        return "median " + varName;
     }
 }

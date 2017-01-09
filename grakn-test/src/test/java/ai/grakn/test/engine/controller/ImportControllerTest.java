@@ -40,10 +40,6 @@ import static org.junit.Assert.assertNotNull;
 
 public class ImportControllerTest extends EngineTestBase {
     private String KEYSPACE = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
-//    @Before
-//    public void setUp() {
-//        assumeFalse(usingTinker());
-//    }
 
     @Test
     public void testLoadOntologyAndData() {

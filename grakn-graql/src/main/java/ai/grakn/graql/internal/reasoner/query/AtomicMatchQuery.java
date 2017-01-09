@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -54,7 +55,7 @@ public class AtomicMatchQuery extends AtomicQuery{
     final private QueryAnswers newAnswers;
     private static final Logger LOG = LoggerFactory.getLogger(AtomicQuery.class);
 
-    public AtomicMatchQuery(Atom atom, Set<String> vars){
+    public AtomicMatchQuery(Atom atom, Set<VarName> vars){
         super(atom, vars);
         answers = new QueryAnswers();
         newAnswers = new QueryAnswers();
@@ -89,7 +90,7 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public void DBlookup() {
-        QueryAnswers lookup = new QueryAnswers(getMatchQuery().execute());
+        QueryAnswers lookup = new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
         lookup.removeAll(answers);
         answers.addAll(lookup);
         newAnswers.addAll(lookup);
@@ -135,8 +136,8 @@ public class AtomicMatchQuery extends AtomicQuery{
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
-        Set<String> queryVars = getSelectedNames();
-        Set<String> headVars = ruleHead.getSelectedNames();
+        Set<VarName> queryVars = getSelectedNames();
+        Set<VarName> headVars = ruleHead.getSelectedNames();
         Set<Predicate> extraSubs = new HashSet<>();
         if(queryVars.size() > headVars.size()){
             extraSubs.addAll(ruleHead.getIdPredicates()
@@ -145,7 +146,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         }
 
         answers.forEach( map -> {
-            Map<String, Concept> newAns = new HashMap<>(map);
+            Map<VarName, Concept> newAns = new HashMap<>(map);
             extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicateValue())) );
             newAnswers.add(newAns);
         });
@@ -209,14 +210,14 @@ public class AtomicMatchQuery extends AtomicQuery{
     }
 
     @Override
-    public Stream<Map<String, Concept>> resolve(boolean materialise) {
+    public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
         if (!this.getAtom().isRuleResolvable())
-            return this.getMatchQuery().stream();
+            return this.getMatchQuery().admin().streamWithVarNames();
         else
             return new QueryAnswerIterator(materialise).hasStream();
     }
 
-    private class QueryAnswerIterator implements Iterator<Map<String, Concept>> {
+    private class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
 
         private int dAns = 0;
         private int iter = 0;
@@ -224,7 +225,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         private final QueryCache cache = new QueryCache();
         private final Set<AtomicQuery> subGoals = new HashSet<>();
         private final Set<Rule> rules;
-        private Iterator<Map<String, Concept>> answerIterator = Collections.emptyIterator();
+        private Iterator<Map<VarName, Concept>> answerIterator = Collections.emptyIterator();
         private Iterator<Rule> ruleIterator = Collections.emptyIterator();
 
         public QueryAnswerIterator(boolean materialise){
@@ -237,8 +238,8 @@ public class AtomicMatchQuery extends AtomicQuery{
         /**
          * @return stream constructed out of the answer iterator
          */
-        public Stream<Map<String, Concept>> hasStream(){
-            Iterable<Map<String, Concept>> iterable = () -> this;
+        public Stream<Map<VarName, Concept>> hasStream(){
+            Iterable<Map<VarName, Concept>> iterable = () -> this;
             return StreamSupport.stream(iterable.spliterator(), false);
         }
 
@@ -286,7 +287,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         /**
          * @return single answer to the query
          */
-        public Map<String, Concept> next() { return answerIterator.next();}
+        public Map<VarName, Concept> next() { return answerIterator.next();}
         private AtomicMatchQuery outer(){ return AtomicMatchQuery.this;}
         private int size(){ return outer().getAnswers().size();}
     }

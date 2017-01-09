@@ -320,6 +320,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Vertex v = putVertex(itemIdentifier, Schema.BaseType.ROLE_TYPE);
         return elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.TRUE);
     }
+    @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType) {
         return elementFactory.buildResourceType(
@@ -329,6 +330,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 false);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType){
         return elementFactory.buildResourceType(
@@ -741,7 +743,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
 
-        Set<CastingImpl> castings = castingVertices.stream().map( vertex -> {CastingImpl c = elementFactory.buildConcept(vertex); return c;}).collect(Collectors.toSet());
+        Set<CastingImpl> castings = castingVertices.stream().map( vertex -> {
+            return elementFactory.<CastingImpl>buildConcept(vertex);}).collect(Collectors.toSet());
 
         if(castings.size() < 2){
             return false;

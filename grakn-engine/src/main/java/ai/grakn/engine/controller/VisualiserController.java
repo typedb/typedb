@@ -29,6 +29,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.ErrorMessage;
@@ -252,7 +253,7 @@ public class VisualiserController {
      * @return HAL representation
      */
     private String formatAsHAL(MatchQuery query, String keyspace) {
-        Collection<Map<String, Concept>> results = query.stream().collect(toList());
+        Collection<Map<VarName, Concept>> results = query.admin().streamWithVarNames().collect(toList());
         Json resultobj = renderHALArrayData(query, results, keyspace);
         return resultobj.toString();
     }

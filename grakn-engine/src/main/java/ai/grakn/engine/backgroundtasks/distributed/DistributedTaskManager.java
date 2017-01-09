@@ -61,7 +61,7 @@ public class DistributedTaskManager implements TaskManager{
         return instance;
     }
 
-    public TaskManager open() {
+    public DistributedTaskManager open() {
         if(OPENED.compareAndSet(false, true)) {
             try {
                 noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");

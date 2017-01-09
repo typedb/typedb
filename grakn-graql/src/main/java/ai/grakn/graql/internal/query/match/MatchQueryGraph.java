@@ -19,9 +19,10 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Type;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.VarName;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +42,7 @@ class MatchQueryGraph extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph) {
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
         if (graph.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_GRAPH.getMessage());
         }

@@ -90,7 +90,7 @@ public class TestGraph {
         try {
             String hsaMatureTemplate = getResourceAsString(templatePath);
             File hsaMatureFile = new File(dataPath);
-            MigrationLoader.load(graph(), new CSVMigrator(hsaMatureTemplate, hsaMatureFile).setSeparator(separator));
+            MigrationLoader.load(graph().getKeyspace(), new CSVMigrator(hsaMatureTemplate, hsaMatureFile).setSeparator(separator));
         } catch (IOException e){
             throw new RuntimeException(e);
         }

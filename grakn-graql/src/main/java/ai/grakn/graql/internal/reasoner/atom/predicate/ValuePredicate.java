@@ -21,13 +21,14 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
-import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  *
@@ -46,11 +47,11 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public ValuePredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-    public ValuePredicate(String varName, ValueProperty prop, Query par){
+    public ValuePredicate(VarName varName, ValueProperty prop, Query par){
         this(createValueVar(varName, prop.getPredicate()), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
-    public static VarAdmin createValueVar(String name, ValuePredicateAdmin pred) {
+    public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
         return Graql.var(name).value(pred).admin();
     }
 
@@ -111,16 +112,16 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
-    public Set<String> getVarNames(){
-        Set<String> vars = super.getVarNames();
+    public Set<VarName> getVarNames(){
+        Set<VarName> vars = super.getVarNames();
         VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;
     }
 
     @Override
-    public Set<String> getSelectedNames(){
-        Set<String> vars = super.getSelectedNames();
+    public Set<VarName> getSelectedNames(){
+        Set<VarName> vars = super.getSelectedNames();
         VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;

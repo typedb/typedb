@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.VarName;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -36,7 +37,7 @@ class MatchQueryLimit extends MatchQueryModifier {
     }
 
     @Override
-    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+    protected Stream<Map<VarName, Concept>> transformStream(Stream<Map<VarName, Concept>> stream) {
         return stream.limit(limit);
     }
 

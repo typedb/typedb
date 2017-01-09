@@ -21,6 +21,8 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
@@ -29,7 +31,6 @@ import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import com.google.common.collect.Sets;
-import ai.grakn.graql.QueryBuilder;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -78,8 +80,8 @@ public class AtomicQueryTest extends AbstractGraknTest {
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", getConcept("Bob"))
-                , new IdPredicate("y", getConcept("Colour of Magic"))));
+        atomicQuery.materialise(Sets.newHashSet(new IdPredicate(varName("x"), getConcept("Bob"))
+                , new IdPredicate(varName("y"), getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
     }
 
@@ -93,9 +95,9 @@ public class AtomicQueryTest extends AbstractGraknTest {
 
         Atomic parentAtom = parentQuery.getAtom();
         Atomic childAtom = childQuery.getAtom();
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
-        Map<String, String> correctUnifiers = new HashMap<>();
-        correctUnifiers.put("X", "z");
+        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<VarName, VarName> correctUnifiers = new HashMap<>();
+        correctUnifiers.put(varName("X"), varName("z"));
         assertTrue(unifiers.equals(correctUnifiers));
     }
 

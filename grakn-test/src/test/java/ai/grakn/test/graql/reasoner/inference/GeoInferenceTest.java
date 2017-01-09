@@ -23,6 +23,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import org.junit.BeforeClass;
@@ -55,8 +57,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -72,8 +74,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -89,8 +91,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
@@ -105,11 +107,11 @@ public class GeoInferenceTest extends AbstractGraknTest {
         String explicitQuery = "match " +
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
+        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
     }
 }

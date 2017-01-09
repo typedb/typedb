@@ -1,6 +1,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.Sets;
@@ -16,6 +17,10 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
         this.var = var;
     }
 
+    public VarAdmin getVar() {
+        return var;
+    }
+
     @Override
     public String getName() {
         return "!=";
@@ -27,7 +32,7 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(String start) {
+    public Collection<EquivalentFragmentSet> match(VarName start) {
         return Sets.newHashSet(
                 EquivalentFragmentSet.create(Fragments.notCasting(start)),
                 EquivalentFragmentSet.create(Fragments.notCasting(var.getVarName())),

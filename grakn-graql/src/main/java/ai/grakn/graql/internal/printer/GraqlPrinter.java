@@ -24,6 +24,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.graql.internal.util.CommonUtil;
 
@@ -33,8 +34,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.query.match.AbstractMatchQuery.colorKeyword;
-import static ai.grakn.graql.internal.query.match.AbstractMatchQuery.colorType;
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
@@ -42,6 +41,22 @@ import static ai.grakn.graql.internal.util.StringConverter.valueToString;
  * Default printer that prints results in Graql syntax
  */
 class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
+
+    /**
+     * @param keyword a keyword to color-code using ANSI colors
+     * @return the keyword, color-coded
+     */
+    private static String colorKeyword(String keyword) {
+        return ANSI.color(keyword, ANSI.BLUE);
+    }
+
+    /**
+     * @param type a type to color-code using ANSI colors
+     * @return the type, color-coded
+     */
+    private static String colorType(String type) {
+        return ANSI.color(type, ANSI.PURPLE);
+    }
 
     private final ResourceType[] resourceTypes;
 
@@ -154,10 +169,10 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             Map.Entry<?, ?> entry = map.entrySet().iterator().next();
 
             // If this looks like a graql result, assume the key is a variable name
-            if (entry.getKey() instanceof String && entry.getValue() instanceof Concept) {
+            if (entry.getKey() instanceof VarName && entry.getValue() instanceof Concept) {
                 return sb -> {
                     map.forEach((name, concept) ->
-                            sb.append("$").append(name).append(" ").append(graqlString(concept)).append("; ")
+                            sb.append(name).append(" ").append(graqlString(concept)).append("; ")
                     );
                     return sb;
                 };

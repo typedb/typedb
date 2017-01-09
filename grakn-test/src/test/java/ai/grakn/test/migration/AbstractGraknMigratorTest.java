@@ -18,28 +18,27 @@
 
 package ai.grakn.test.migration;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.ResourceType.DataType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Type;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
-import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.test.EngineTestBase;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
@@ -51,27 +50,27 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.test.GraknTestEnv.factoryWithNewKeyspace;
 import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class AbstractGraknMigratorTest extends AbstractGraphTest {
+public class AbstractGraknMigratorTest extends EngineTestBase {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @BeforeClass
-    public static void setLogLevel() throws Exception {
+    //TODO REMOVE THIS WITH TEST FRAMEWORK REFACTOR
+    protected GraknGraphFactory factory;
+    protected GraknGraph graph;
+
+    @Before
+    public void setLogLevel() throws Exception {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(Loader.class);
         logger.setLevel(Level.DEBUG);
 
-        // We will be submitting tasks to Engine, and checking if they have completed.
-        EngineTestBase.startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        EngineTestBase.stopTestEngine();
+        factory = factoryWithNewKeyspace();
+        graph = factory.getGraph();
     }
 
     protected static String getFileAsString(String component, String fileName){
@@ -87,7 +86,7 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
     }
 
     protected void migrate(Migrator migrator){
-        MigrationLoader.load(new LoaderImpl(graph.getKeyspace()), migrator);
+        MigrationLoader.load(graph.getKeyspace(), migrator);
     }
 
     protected void load(File ontology) {
@@ -100,31 +99,6 @@ public class AbstractGraknMigratorTest extends AbstractGraphTest {
         } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }
-    }
-
-    protected ResourceType assertResourceTypeExists(String name, DataType datatype) {
-        ResourceType resourceType = graph.getResourceType(name);
-        assertNotNull(resourceType);
-        assertEquals(datatype.getName(), resourceType.getDataType().getName());
-        return resourceType;
-    }
-
-    protected void assertResourceTypeRelationExists(String name, DataType datatype, Type owner){
-        ResourceType resource = assertResourceTypeExists(name, datatype);
-
-        RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(name));
-        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
-        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
-
-        assertNotNull(relationType);
-        assertNotNull(roleOwner);
-        assertNotNull(roleOther);
-
-        assertEquals(relationType, roleOwner.relationTypes());
-        assertEquals(relationType, roleOther.relationTypes());
-
-        assertTrue(owner.playsRoles().contains(roleOwner));
-        assertTrue(resource.playsRoles().contains(roleOther));
     }
 
     protected void assertResourceEntityRelationExists(String resourceName, Object resourceValue, Entity owner){

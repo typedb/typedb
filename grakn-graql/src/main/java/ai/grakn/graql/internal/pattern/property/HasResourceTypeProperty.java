@@ -23,6 +23,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
@@ -79,7 +80,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(String start) {
+    public Collection<EquivalentFragmentSet> match(VarName start) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
         traversals.addAll(ownerPlaysRole.match(start));

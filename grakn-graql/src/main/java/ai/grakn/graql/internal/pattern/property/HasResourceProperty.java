@@ -26,6 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -83,7 +84,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public Collection<EquivalentFragmentSet> match(String start) {
+    public Collection<EquivalentFragmentSet> match(VarName start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
                 Fragments.shortcut(Optional.empty(), Optional.empty(), Optional.empty(), start, resource.getVarName()),
                 Fragments.shortcut(Optional.empty(), Optional.empty(), Optional.empty(), resource.getVarName(), start)

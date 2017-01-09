@@ -18,13 +18,14 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 class InRolePlayerFragment extends AbstractFragment {
 
-    InRolePlayerFragment(String start, String end) {
+    InRolePlayerFragment(VarName start, VarName end) {
         super(start, end);
     }
 

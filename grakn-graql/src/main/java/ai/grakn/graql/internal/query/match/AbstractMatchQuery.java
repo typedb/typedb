@@ -30,11 +30,13 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.Queries;
-import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.graql.internal.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
@@ -47,25 +49,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 @SuppressWarnings("UnusedReturnValue")
 abstract class AbstractMatchQuery implements MatchQueryAdmin {
-
-    /**
-     * @param keyword a keyword to color-code using ANSI colors
-     * @return the keyword, color-coded
-     */
-    public static String colorKeyword(String keyword) {
-        return ANSI.color(keyword, ANSI.BLUE);
-    }
-
-    /**
-     * @param type a type to color-code using ANSI colors
-     * @return the type, color-coded
-     */
-    public static String colorType(String type) {
-        return ANSI.color(type, ANSI.PURPLE);
-    }
 
     @Override
     public final Stream<String> resultsString(Printer printer) {
@@ -82,11 +69,16 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
      * @param graph the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph);
+    public abstract Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph);
+
+    @Override
+    public final Stream<Map<VarName, Concept>> streamWithVarNames() {
+        return stream(Optional.empty());
+    }
 
     @Override
     public final Stream<Map<String, Concept>> stream() {
-        return stream(Optional.empty());
+        return streamWithVarNames().map(CommonUtil::resultVarNameToString);
     }
 
     @Override
@@ -110,12 +102,17 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
+    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 
     @Override
-    public final MatchQuery select(Set<String> names) {
+    public final MatchQuery select(String... names) {
+        return select(Stream.of(names).map(Patterns::varName).collect(toSet()));
+    }
+
+    @Override
+    public final MatchQuery select(Set<VarName> names) {
         return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
     }
 
@@ -148,6 +145,11 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery orderBy(String varName, Order order) {
+        return orderBy(Patterns.varName(varName), order);
+    }
+
+    @Override
+    public final MatchQuery orderBy(VarName varName, Order order) {
         return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
     }
 }

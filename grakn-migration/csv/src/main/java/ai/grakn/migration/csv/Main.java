@@ -30,7 +30,6 @@ import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
 import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
-import static ai.grakn.migration.base.io.MigrationLoader.getLoader;
 
 /**
  * Main program to migrate CSV files into a Grakn graph. For use from a command line.
@@ -74,7 +73,7 @@ public class Main {
             if (options.isNo()) {
                 writeToSout(csvMigrator.migrate());
             } else {
-                MigrationLoader.load(getLoader(options), options.getBatch(), csvMigrator);
+                MigrationLoader.load(options.getKeyspace(), options.getBatch(), csvMigrator);
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable) {
