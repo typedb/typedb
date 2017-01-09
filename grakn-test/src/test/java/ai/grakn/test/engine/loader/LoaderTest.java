@@ -18,23 +18,22 @@
 
 package ai.grakn.test.engine.loader;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.test.EngineTestBase;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,13 +41,13 @@ import org.junit.Test;
 import java.util.Collection;
 
 import static ai.grakn.graql.Graql.parse;
+import static ai.grakn.test.GraknTestEnv.factoryWithNewKeyspace;
 import static org.junit.Assert.assertEquals;
-import static ai.grakn.test.EngineTestBase.loadOntology;
-import static ai.grakn.test.EngineTestBase.readFileAsString;
 import static org.junit.Assert.assertNotNull;
 
-public class LoaderTest extends AbstractGraphTest {
+public class LoaderTest extends EngineTestBase {
     private Loader loader;
+    private GraknGraph graph;
 
     @BeforeClass
     public static void startup() throws Exception {
@@ -58,18 +57,14 @@ public class LoaderTest extends AbstractGraphTest {
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(ClusterManager.class)).setLevel(Level.DEBUG);
-
-        EngineTestBase.startTestEngine();
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
-        EngineTestBase.stopTestEngine();
-    }
-
+    //TODO remove this declaration of graph
     @Before
     public void setup() {
-        loader = new LoaderImpl(graph.getKeyspace());
+        // this is temporary- will be removed when we do test structure refactor
+        graph = factoryWithNewKeyspace().getGraph();
+        loader = new Loader(graph.getKeyspace());
     }
 
     @Test

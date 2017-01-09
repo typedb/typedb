@@ -27,6 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.migration.export.GraphWriter;
 import ai.grakn.test.AbstractGraknTest;
@@ -60,6 +61,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
     @After
     public void clear(){
+        copy.clear();
         copy.close();
     }
 
