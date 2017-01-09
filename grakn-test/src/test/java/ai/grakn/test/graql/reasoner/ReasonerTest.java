@@ -153,7 +153,7 @@ public class ReasonerTest extends AbstractGraknTest {
         String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x value 'Bob';$x has age <21;";
         MatchQuery query = graph.graql().parse(queryString);
         MatchQuery query2 = graph.graql().parse(queryString2);
-        assertTrue(query.equals(query2));
+        assertEquals(query.execute(), query2.execute());
     }
 
     @Test
@@ -163,7 +163,7 @@ public class ReasonerTest extends AbstractGraknTest {
         String queryString2 = "match $x isa person;$x value <21;$x value >18;";
         MatchQuery query = graph.graql().parse(queryString);
         MatchQuery query2 = graph.graql().parse(queryString2);
-        assertTrue(query.equals(query2));
+        assertEquals(query.execute(), query2.execute());
     }
 
     @Test
