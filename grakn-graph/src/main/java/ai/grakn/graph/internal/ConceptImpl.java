@@ -187,7 +187,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @SuppressWarnings("unchecked")
     public V type() {
-        return (V) getParentIsa();
+        return getOutgoingNeighbour(Schema.EdgeLabel.ISA);
     }
 
     /**
@@ -438,12 +438,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The result of following one outgoing isa edge to a Type.
      */
     public TypeImpl getParentIsa(){
-        Concept isaParent = getOutgoingNeighbour(Schema.EdgeLabel.ISA);
-        if(isaParent != null){
-            return (TypeImpl) isaParent;
-        } else {
-            return null;
-        }
+       return (TypeImpl) type();
     }
 
     /**
