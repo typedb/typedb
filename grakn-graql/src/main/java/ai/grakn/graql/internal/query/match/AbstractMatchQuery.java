@@ -48,6 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Order.asc;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -62,6 +63,21 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     @Override
     public final boolean isReadOnly() {
         return true;
+    }
+
+    @Override
+    public final MatchQueryAdmin admin() {
+        return this;
+    }
+
+    @Override
+    public final List<Map<String, Concept>> execute() {
+        return stream().collect(toList());
+    }
+
+    @Override
+    public final List<Map<VarName, Concept>> results() {
+        return streamWithVarNames().collect(toList());
     }
 
     /**
@@ -127,9 +143,19 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
+    public final InsertQuery insert(Var... vars) {
+        return insert(Arrays.asList(vars));
+    }
+
+    @Override
     public final InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableMultiset<VarAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
+    }
+
+    @Override
+    public final DeleteQuery delete(Var... deleters) {
+        return delete(Arrays.asList(deleters));
     }
 
     @Override
@@ -141,6 +167,16 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     @Override
     public final DeleteQuery delete(Collection<? extends Var> deleters) {
         return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
+    }
+
+    @Override
+    public final MatchQuery orderBy(String varName) {
+        return orderBy(varName, asc);
+    }
+
+    @Override
+    public final MatchQuery orderBy(VarName varName) {
+        return orderBy(varName, asc);
     }
 
     @Override

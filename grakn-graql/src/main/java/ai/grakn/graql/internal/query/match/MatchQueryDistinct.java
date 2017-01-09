@@ -18,10 +18,12 @@
 
 package ai.grakn.graql.internal.query.match;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -34,12 +36,12 @@ class MatchQueryDistinct extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> transformStream(Stream<Map<VarName, Concept>> stream) {
-        return stream.distinct();
+    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
+        return inner.stream(graph).distinct();
     }
 
     @Override
     protected String modifierString() {
-        return "distinct";
+        return " distinct;";
     }
 }

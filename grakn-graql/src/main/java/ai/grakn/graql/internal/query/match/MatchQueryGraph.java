@@ -62,11 +62,6 @@ class MatchQueryGraph extends MatchQueryModifier {
 
     @Override
     protected String modifierString() {
-        throw new RuntimeException("modifierString should never be called");
-    }
-
-    @Override
-    public String toString() {
-        return inner.toString();
+        return "";
     }
 }

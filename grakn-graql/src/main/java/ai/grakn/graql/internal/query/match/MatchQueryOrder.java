@@ -45,6 +45,6 @@ class MatchQueryOrder extends MatchQueryModifier {
 
     @Override
     protected String modifierString() {
-        return order.toString();
+        return " " + order.toString() + ";";
     }
 }

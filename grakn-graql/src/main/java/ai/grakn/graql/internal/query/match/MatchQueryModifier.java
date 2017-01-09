@@ -19,16 +19,13 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.VarName;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * A MatchQuery implementation, which contains an 'inner' MatchQuery.
@@ -43,11 +40,6 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
 
     MatchQueryModifier(AbstractMatchQuery inner) {
         this.inner = inner;
-    }
-
-    @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return transformStream(inner.stream(graph));
     }
 
     @Override
@@ -76,22 +68,12 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     /**
-     * Transform the given stream. This should be overridden in subclasses to perform modifier behaviour.
-     * The default implementation returns the stream unmodified.
-     * @param stream the stream to transform
-     * @return the transformed stream
-     */
-    protected Stream<Map<VarName, Concept>> transformStream(Stream<Map<VarName, Concept>> stream) {
-        return stream;
-    }
-
-    /**
      * @return a string representation of this modifier
      */
     protected abstract String modifierString();
 
     @Override
-    public String toString() {
-        return inner.toString() + " " + modifierString() + ";";
+    public final String toString() {
+        return inner.toString() + modifierString();
     }
 }

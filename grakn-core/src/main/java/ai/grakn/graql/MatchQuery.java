@@ -22,15 +22,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.Order.asc;
-import static java.util.stream.Collectors.toList;
 
 /**
  * a query used for finding data in a graph that matches the given patterns.
@@ -41,11 +37,6 @@ import static java.util.stream.Collectors.toList;
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
 public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
-
-    @Override
-    default List<Map<String, Concept>> execute() {
-        return stream().collect(toList());
-    }
 
     /**
      * @param names an array of variable names to select
@@ -74,9 +65,7 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param vars an array of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
-    default InsertQuery insert(Var... vars) {
-        return insert(Arrays.asList(vars));
-    }
+    InsertQuery insert(Var... vars);
 
     /**
      * @param vars a collection of variables to insert for each result of this match query
@@ -94,9 +83,7 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param deleters an array of variables stating what properties to delete for each result of this match query
      * @return a delete query that will delete the given properties for each result of this match query
      */
-    default DeleteQuery delete(Var... deleters) {
-        return delete(Arrays.asList(deleters));
-    }
+    DeleteQuery delete(Var... deleters);
 
     /**
      * @param deleters a collection of variables stating what properties to delete for each result of this match query
@@ -109,18 +96,14 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param varName the variable name to order the results by
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQuery orderBy(String varName) {
-        return orderBy(varName, asc);
-    }
+    MatchQuery orderBy(String varName);
 
     /**
      * Order the results by degree in ascending order
      * @param varName the variable name to order the results by
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQuery orderBy(VarName varName) {
-        return orderBy(varName, asc);
-    }
+    MatchQuery orderBy(VarName varName);
 
     /**
      * Order the results by degree
