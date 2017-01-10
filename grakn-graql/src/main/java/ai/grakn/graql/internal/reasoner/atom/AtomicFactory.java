@@ -58,7 +58,8 @@ public class AtomicFactory {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()
                 .flatMap(var -> var.getProperties()
-                        .flatMap(prop -> PropertyMapper.map(prop, var, pattern.getVars(), parent, graph).stream()))
+                        .map(prop -> PropertyMapper.map(prop, var, pattern.getVars(), parent, graph))
+                        .filter(at -> at != null))
                 .forEach(atoms::add);
         return atoms;
     }

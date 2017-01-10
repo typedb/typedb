@@ -143,7 +143,7 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person, has name 'Bob';";
         Query query = new Query(queryString, graph);
-        assertTrue(query.getAtoms().size() == 4);
+        assertTrue(query.getAtoms().size() == 2);
     }
 
     @Test

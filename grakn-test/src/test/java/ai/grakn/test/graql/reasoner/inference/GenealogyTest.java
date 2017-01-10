@@ -117,12 +117,21 @@ public class GenealogyTest extends EngineTestBase {
     }
 
     @Test
+    public void testFemale() {
+        String queryString = "match $x isa person has identifier $id has gender 'female';";
+        MatchQuery query = qb.parse(queryString);
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertTrue(answers.size() == 32);
+    }
+
+    @Test
     public void testGender() {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
-        assertTrue(!answers.isEmpty());
+        assertTrue(answers.size() == qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }
 
     @Test

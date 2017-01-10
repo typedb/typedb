@@ -78,6 +78,7 @@ public interface Atomic extends Cloneable{
      * @return the corresponding pattern
      * */
     PatternAdmin getPattern();
+    PatternAdmin getCombinedPattern();
 
     /**
      * @return the query this atom belongs to

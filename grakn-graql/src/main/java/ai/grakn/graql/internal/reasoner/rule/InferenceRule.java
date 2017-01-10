@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -81,14 +82,9 @@ public class InferenceRule {
             Set<Atom> types = parentAtom.getTypeConstraints().stream()
                     .filter(type -> !body.containsEquivalentAtom(type))
                     .collect(Collectors.toSet());
-            Set<Predicate> predicates = new HashSet<>();
-            //predicates obtained from types
-            types.stream().map(type -> (Binary) type)
-                    .filter(type -> type.getPredicate() != null)
-                    .map(Binary::getPredicate)
-                    .forEach(predicates::add);
-            //direct predicates
-            predicates.addAll(parentAtom.getPredicates());
+            Set<Predicate> predicates = parentAtom.getPredicates();
+            if(parentAtom.isResource())
+                    predicates.addAll(((Resource) parentAtom).getMultiPredicate());
 
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);
