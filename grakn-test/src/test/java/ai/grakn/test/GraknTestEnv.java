@@ -74,9 +74,9 @@ public abstract class GraknTestEnv {
     	// we end up wanting to use the TitanFactory but without starting Cassandra first.
 
         if(ENGINE_RUNNING.compareAndSet(false, true)) {
-            ensureCassandraRunning();
-
             System.out.println("STARTING ENGINE...");
+
+            ensureCassandraRunning();
 
             tempDirectory = Files.createTempDirectory("graknKafkaUnit " + UUID.randomUUID());
             kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
