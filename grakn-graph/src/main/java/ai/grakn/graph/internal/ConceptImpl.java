@@ -436,21 +436,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @param edgeLabel The edge label to traverse
-     * @return The neighbouring concept found by traversing one incoming edge of a specific type
-     */
-    <X extends Concept> X getIncomingNeighbour(Schema.EdgeLabel edgeLabel){
-        Set<X> concepts = getIncomingNeighbours(edgeLabel);
-        if(concepts.size() == 1){
-            return concepts.iterator().next();
-        } else if(concepts.isEmpty()){
-            return null;
-        } else {
-            throw new MoreThanOneEdgeException(this, edgeLabel);
-        }
-    }
-    /**
-     *
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
