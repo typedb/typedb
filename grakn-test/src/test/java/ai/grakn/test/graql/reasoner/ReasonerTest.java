@@ -563,6 +563,8 @@ public class ReasonerTest extends AbstractGraknTest {
         answers2.forEach(answer -> {
             assert(answer.size() == 3);
         });
+        System.out.println("answers: " + answers.size());
+        System.out.println("answers2: " + answers2.size());
         assertTrue(answers.size() == answers2.size());
     }
 
@@ -580,6 +582,8 @@ public class ReasonerTest extends AbstractGraknTest {
         answers2.forEach(answer -> {
             assert(answer.size() == 3);
         });
+        System.out.println("answers: " + answers.size());
+        System.out.println("answers2: " + answers2.size());
         assertTrue(answers.size() == answers2.size());
     }
 
