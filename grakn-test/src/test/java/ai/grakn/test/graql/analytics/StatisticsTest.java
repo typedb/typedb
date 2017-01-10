@@ -36,6 +36,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -80,13 +81,18 @@ public class StatisticsTest extends AbstractEngineTest {
         // TODO: Fix tests in orientdb
         assumeFalse(usingOrientDB());
 
-        graph = Grakn.factory(Grakn.DEFAULT_URI, StatisticsTest.class.getName()).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, "test").getGraph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
+    }
+
+    @After
+    public void takedown(){
+        graph.clear();
     }
 
     @Test
