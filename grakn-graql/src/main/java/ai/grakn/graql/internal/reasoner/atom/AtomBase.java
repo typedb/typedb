@@ -119,17 +119,6 @@ public abstract class AtomBase implements Atomic{
     }
 
     /**
-     * perform unification on the atom by applying unifier [from/to]
-     * @param from variable name to be changed
-     * @param to new variable name
-     */
-    public void unify(VarName from, VarName to) {
-        VarName var = getVarName();
-        if (var.equals(from)) setVarName(to);
-        else if (var.equals(to)) setVarName(capture(var));
-    }
-
-    /**
      * perform unification on the atom by applying unifiers
      * @param unifiers contain variable mappings to be applied
      */
