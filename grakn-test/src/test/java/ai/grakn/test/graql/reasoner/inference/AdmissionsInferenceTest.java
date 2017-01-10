@@ -22,21 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -58,81 +50,75 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
     public void testConditionalAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
     public void testDeniedAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Alice';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
     public void testProvisionalAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Denis';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
     public void testWaitForTranscriptAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Frank';";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
     public void testFullStatusAdmission() {
         GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has name $name;$x has admissionStatus 'full';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name $name;{$name value 'Charlie';} or {$name value 'Eva';};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
     }
 
     @Test
     public void testAdmissions() {
         GraknGraph graph = AdmissionsGraph.getGraph();
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
         MatchQuery query = qb.parse(queryString);
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(queryString));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(queryString));
     }
 
     private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {

@@ -81,7 +81,7 @@ public class AtomicQueryTest extends AbstractGraknTest {
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialise(Sets.newHashSet(new IdPredicate(varName("x"), getConcept("Bob"))
-                , new IdPredicate(varName("y"), getConcept("Colour of Magic"))));
+        , new IdPredicate(varName("y"), getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
     }
 
@@ -104,11 +104,11 @@ public class AtomicQueryTest extends AbstractGraknTest {
     @Test
     public void testResourceEquivalence(){
         String queryString = "match" + "" +
-                "$x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777 value 'c';" +
-                "$x has firstname $x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777;";
+        "$x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777 value 'c';" +
+        "$x has firstname $x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777;";
         String queryString2 = "match" +
-                "$x has firstname $x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581;" +
-                "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
+        "$x has firstname $x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581;" +
+        "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
         AtomicQuery parentQuery = new AtomicQuery(queryString, graph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, graph);
         assertTrue(parentQuery.equals(childQuery));
@@ -119,14 +119,14 @@ public class AtomicQueryTest extends AbstractGraknTest {
     public void testResourceEquivalence2() {
         GraknGraph lgraph = AdmissionsGraph.getGraph();
         String queryString = "match $x isa $x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680;" +
-                "$x has GRE $x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45;" +
-                "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 type-name 'applicant';" +
-                "$x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45 value > 1099;";
+        "$x has GRE $x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45;" +
+        "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 type-name 'applicant';" +
+        "$x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45 value > 1099;";
 
         String queryString2 = "match $x isa $x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6;" +
-                "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
-                "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 type-name 'applicant';" +
-                "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
+        "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
+        "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 type-name 'applicant';" +
+        "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
         AtomicQuery parentQuery = new AtomicQuery(queryString, lgraph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, lgraph);
         assertTrue(parentQuery.equals(childQuery));
@@ -135,7 +135,7 @@ public class AtomicQueryTest extends AbstractGraknTest {
 
     private static Concept getConcept(String id){
         Set<Concept> instances = graph.getResourcesByValue(id)
-                .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
+        .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
         return instances.iterator().next();

@@ -168,6 +168,7 @@ public enum ErrorMessage {
 
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
+    GRAPH_MISSING("Provided query does not have an associated graph"),
     NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
     PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
