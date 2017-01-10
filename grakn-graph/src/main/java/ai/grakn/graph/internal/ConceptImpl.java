@@ -183,7 +183,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The type of the concept casted to the correct interface
      */
-    @SuppressWarnings("unchecked")
     public V type() {
         return getOutgoingNeighbour(Schema.EdgeLabel.ISA);
     }
@@ -207,7 +206,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The concept itself casted to the defined interface
      * @throws InvalidConceptTypeException when casting a concept incorrectly
      */
-    private <E> E castConcept(Class<E> type){
+    private <E extends Concept> E castConcept(Class<E> type){
         try {
             return type.cast(this);
         } catch(ClassCastException e){
@@ -509,11 +508,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
-    @SuppressWarnings("unchecked")
-    public <X extends Object> X getProperty(Schema.ConceptProperty key){
-        VertexProperty property = vertex.property(key.name());
+    public <X> X getProperty(Schema.ConceptProperty key){
+        VertexProperty<X> property = vertex.property(key.name());
         if(property != null && property.isPresent())
-            return (X) property.value();
+            return property.value();
         return null;
     }
     public Boolean getPropertyBoolean(Schema.ConceptProperty key){
