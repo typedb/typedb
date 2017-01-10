@@ -180,12 +180,12 @@ public class AtomicMatchQuery extends AtomicQuery{
                 .filterVars(ruleHead.getSelectedNames())
                 .filterKnown(this.getAnswers());
 
-        QueryAnswers newAnswers = new QueryAnswers();
-        if (materialise || ruleHead.getAtom().requiresMaterialisation())
-            newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
-        if (!newAnswers.isEmpty()){
-            if (materialise) answers = newAnswers;
-            else answers = answers.join(newAnswers);
+        if (materialise || ruleHead.getAtom().requiresMaterialisation()){
+            QueryAnswers newAnswers = new AtomicMatchQuery(ruleHead, answers).materialise();
+            if (!newAnswers.isEmpty()) {
+                if (materialise) answers = newAnswers;
+                else answers = answers.join(newAnswers);
+            }
         }
 
         //TODO do all combinations if roles missing
@@ -266,7 +266,6 @@ public class AtomicMatchQuery extends AtomicQuery{
             LOG.debug("Resolving rule: " + rule.getId() + " answers: " + size());
             outer().resolveViaRule(rule, subGoals, cache, materialise);
             if (!hasNextRule()) completeIteration();
-
             answerIterator = outer().newAnswers.iterator();
         }
 

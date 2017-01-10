@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *
  * @author fppt
  */
-class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
+class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
 
     CastingImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type) {
         super(graknGraph, v, type);

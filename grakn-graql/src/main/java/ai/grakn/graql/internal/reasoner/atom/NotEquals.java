@@ -84,26 +84,13 @@ public class NotEquals extends AtomBase {
     }
 
     @Override
-    public void unify(VarName from, VarName to) {
-        super.unify(from, to);
-        VarName var = getReferenceVarName();
-        if (var.equals(from)) {
-            setRefVarName(to);
-        } else if (var.equals(to)) {
-            setRefVarName(capture(var));
-        }
-    }
-
-    @Override
     public void unify(Map<VarName, VarName> unifiers){
         super.unify(unifiers);
         VarName var = getReferenceVarName();
-        if (unifiers.containsKey(var)) {
+        if (unifiers.containsKey(var))
             setRefVarName(unifiers.get(var));
-        }
-        else if (unifiers.containsValue(var)) {
+        else if (unifiers.containsValue(var))
             setRefVarName(capture(var));
-        }
     }
 
     public VarName getReferenceVarName(){ return refVarName;}

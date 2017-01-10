@@ -55,14 +55,6 @@ public class GenealogyTest extends EngineTestBase {
         GenealogyGraph genealogyGraph = new GenealogyGraph();
         graph = genealogyGraph.graph();
         qb = graph.graql().infer(false);
-
-        /*
-        //prerunning analytics
-        graph.graql().parse("compute degreesAndPersist in event, conclusion-evidence;").execute();
-        System.out.println("degree persisted...");
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-        System.out.println("Graph reopened...");
-        */
     }
 
     /*
@@ -265,7 +257,6 @@ public class GenealogyTest extends EngineTestBase {
         answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         List<Map<String, Concept>> answerList2 = qb.<MatchQuery>parse(queryString).execute();
         assertEquals(answerList, answerList2);
-
     }
 
     //TODO
@@ -313,36 +304,35 @@ public class GenealogyTest extends EngineTestBase {
 
     @Test
     public void testInLaws() {
-        String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$y has gender 'male';";
+        String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
         MatchQuery query = qb.parse(queryString);
 
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
-        assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertTrue(answers.size() == requeriedAnswers.size());
     }
 
     @Test
     public void testInLaws2() {
-        String queryString = "match $x isa in-laws;";
-        MatchQuery query = qb.parse(queryString);
-
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertTrue(!answers.isEmpty());
-    }
-
-    //TODO that is new and seems to pass locally and fail remotely
-    @Ignore
-    @Test
-    public void testInLaws3() {
-        String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;";
-        String queryString2 = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
+        String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$y has gender 'male';";
+        String queryString2 = "match $x isa in-laws;";
+        String queryString3 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;";
+        String queryString4 = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
-
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        MatchQuery query3 = qb.parse(queryString3);
+        MatchQuery query4 = qb.parse(queryString4);
+        
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertTrue(answers.size() == answers2.size());
+        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers4 = new QueryAnswers(Reasoner.resolve(query4, true).collect(Collectors.toSet()));
+        QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
+
+        assertTrue(answers.size() == 22);
+        assertTrue(answers2.size() == 92);
+        assertTrue(answers3.size() == 50);
+        assertTrue(answers3.size() == answers4.size());
     }
 
     @Test

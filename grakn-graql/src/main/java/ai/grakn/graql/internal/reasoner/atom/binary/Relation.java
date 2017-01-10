@@ -400,19 +400,6 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public void unify(VarName from, VarName to) {
-        super.unify(from, to);
-        relationPlayers.forEach(c -> {
-            VarName var = c.getRolePlayer().getVarName();
-            if (var.equals(from)) {
-                c.getRolePlayer().setVarName(to);
-            } else if (var.equals(to)) {
-                c.getRolePlayer().setVarName(capture(var));
-            }
-        });
-    }
-
-    @Override
     public void unify (Map<VarName, VarName> mappings) {
         super.unify(mappings);
         relationPlayers.forEach(c -> {
