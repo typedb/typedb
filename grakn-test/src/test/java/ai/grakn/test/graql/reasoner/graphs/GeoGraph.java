@@ -136,19 +136,21 @@ public class GeoGraph extends TestGraph{
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Silesia)
                 .putRolePlayer(entityLocation, Poland);
+
+
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Poland)
                 .putRolePlayer(entityLocation, Europe);
-
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, London)
                 .putRolePlayer(entityLocation, GreaterLondon);
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, GreaterLondon)
                 .putRolePlayer(entityLocation, England);
+
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, England)
-                .putRolePlayer(entityLocation, Europe);
+               .putRolePlayer(entityLocation, Europe);
 
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, Munich)
@@ -179,6 +181,7 @@ public class GeoGraph extends TestGraph{
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, France)
                 .putRolePlayer(entityLocation, Europe);
+
     }
 
     @Override

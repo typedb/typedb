@@ -27,6 +27,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -566,6 +567,8 @@ public class ReasonerTest extends AbstractGraknTest {
         assertTrue(answers.size() == answers2.size());
     }
 
+    //TODO need answer extrapolation
+    @Ignore
     @Test
     public void testRelationVariable2(){
         GraknGraph lgraph = GeoGraph.getGraph();
@@ -577,6 +580,7 @@ public class ReasonerTest extends AbstractGraknTest {
         Reasoner reasoner = new Reasoner(lgraph);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, false).collect(Collectors.toSet()));
+
         answers2.forEach(answer -> {
             assert(answer.size() == 3);
         });
@@ -751,35 +755,57 @@ public class ReasonerTest extends AbstractGraknTest {
     }
 
     @Test
-    public void testTypeRelationUnification(){
-        GraknGraph graph = GeoGraph.getGraph();
-        String queryString = "match $x isa is-located-in;";
-        String queryString2 = "match $x(geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
-        MatchQuery query = graph.graql().parse(queryString);
-        MatchQuery query2 = graph.graql().parse(queryString2);
-        Reasoner reasoner = new Reasoner(graph);
-        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, false).collect(Collectors.toSet()));
-        assertEquals(answers, answers2);
-    }
-
-    @Test
-    public void testTypeRelationUnification2(){
+    public void testTypeRelation(){
         GraknGraph graph = GeoGraph.getGraph();
         GraknGraph graph2 = GeoGraph.getGraph();
+        GraknGraph graph3 = GeoGraph.getGraph();
         String queryString = "match $x isa is-located-in;";
-        String queryString2 = "match $x($x1, $x2) isa is-located-in; select $x;";
+        String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
+        String queryString3 = "match $x ($x1, $x2) isa is-located-in; select $x;";
         MatchQuery query = graph.graql().parse(queryString);
         MatchQuery query2 = graph2.graql().parse(queryString2);
+        MatchQuery query3 = graph3.graql().parse(queryString3);
         Reasoner reasoner = new Reasoner(graph);
         Reasoner reasoner2 = new Reasoner(graph2);
-        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(reasoner2.resolve(query2, true).collect(Collectors.toSet()));
-        assertTrue(answers.size() == answers2.size());
+        Reasoner reasoner3 = new Reasoner(graph3);
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner2.resolve(query2, false).collect(Collectors.toSet()));
+        QueryAnswers answers3 = new QueryAnswers(reasoner3.resolve(query3, false).collect(Collectors.toSet()));
+        assertEquals(answers, answers2);
+        assertEquals(answers2, answers3);
     }
 
     @Test
-    public void testTypeRelationUnification3(){
+    public void testTypeRelationWithMaterialisation(){
+        GraknGraph graph = GeoGraph.getGraph();
+        GraknGraph graph2 = GeoGraph.getGraph();
+        GraknGraph graph3 = GeoGraph.getGraph();
+        String queryString = "match $x isa is-located-in;";
+        String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
+        String queryString3 = "match $x ($x1, $x2) isa is-located-in; select $x;";
+        MatchQuery query = graph.graql().parse(queryString);
+        MatchQuery query2 = graph2.graql().parse(queryString2);
+        MatchQuery query3 = graph3.graql().parse(queryString3);
+        Reasoner reasoner = new Reasoner(graph);
+        Reasoner reasoner2 = new Reasoner(graph2);
+        Reasoner reasoner3 = new Reasoner(graph3);
+
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(reasoner2.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers2 = new QueryAnswers(reasoner2.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers3 = new QueryAnswers(reasoner3.resolve(query3, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers3 = new QueryAnswers(reasoner3.resolve(query3, true).collect(Collectors.toSet()));
+
+        assertTrue(answers.size() == answers2.size());
+        assertTrue(answers2.size() == answers3.size());
+        assertTrue(requeriedAnswers.size() == answers.size());
+        assertTrue(requeriedAnswers.size() == requeriedAnswers2.size());
+        assertTrue(requeriedAnswers2.size() == requeriedAnswers3.size());
+    }
+
+    @Test
+    public void testTypeRelation2(){
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa recommendation;";
         String queryString2 = "match $x($x1, $x2) isa recommendation;select $x;";
@@ -789,21 +815,37 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner.resolve(query2, false).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
+        QueryAnswers requeriedAnswers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
+        assertTrue(requeriedAnswers.size() == answers.size());
     }
 
     @Test
-    public void testTypeRelationUnification4(){
+    public void testTypeRelationWithMaterialisation2(){
         GraknGraph graph = SNBGraph.getGraph();
         GraknGraph graph2 = SNBGraph.getGraph();
+        GraknGraph graph3 = SNBGraph.getGraph();
         String queryString = "match $x isa recommendation;";
-        String queryString2 = "match $x($x1, $x2) isa recommendation;select $x;";
+        String queryString2 = "match $x(recommended-product: $x1, recommended-customer: $x2) isa recommendation; select $x;";
+        String queryString3 = "match $x($x1, $x2) isa recommendation; select $x;";
         MatchQuery query = graph.graql().parse(queryString);
         MatchQuery query2 = graph2.graql().parse(queryString2);
+        MatchQuery query3 = graph3.graql().parse(queryString3);
         Reasoner reasoner = new Reasoner(graph);
         Reasoner reasoner2 = new Reasoner(graph2);
+        Reasoner reasoner3 = new Reasoner(graph3);
+
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(reasoner2.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers2 = new QueryAnswers(reasoner2.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers3 = new QueryAnswers(reasoner3.resolve(query3, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers3 = new QueryAnswers(reasoner3.resolve(query3, true).collect(Collectors.toSet()));
+
         assertTrue(answers.size() == answers2.size());
+        assertTrue(answers2.size() == answers3.size());
+        assertTrue(requeriedAnswers.size() == answers.size());
+        assertTrue(requeriedAnswers.size() == requeriedAnswers2.size());
+        assertTrue(requeriedAnswers2.size() == requeriedAnswers3.size());
     }
 
     @Test
