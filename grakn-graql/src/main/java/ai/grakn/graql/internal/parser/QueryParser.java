@@ -84,6 +84,7 @@ public class QueryParser {
      * @return
      * a query, the type will depend on the type of query.
      */
+    @SuppressWarnings("unchecked")
     public <T extends Query<?>> T parseQuery(String queryString) {
         // We can't be sure the returned query type is correct - even at runtime(!) because Java erases generics.
         //
@@ -92,8 +93,6 @@ public class QueryParser {
         // The above will work at compile time AND runtime - it will only fail when the query is executed:
         // >> Boolean bool = q.execute();
         // java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.Boolean
-        //
-        //noinspection unchecked
         return (T) parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString);
     }
 
@@ -283,6 +282,9 @@ public class QueryParser {
         return new QueryVisitor(immutableAggregates, queryBuilder);
     }
 
+    // Aggregate methods that include other aggregates, such as group are not necessarily safe at runtime.
+    // This is unavoidable in the parser.
+    @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", args -> Graql.count());
         registerAggregate("sum", args -> Graql.sum((String) args.get(0)));

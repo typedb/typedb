@@ -50,8 +50,9 @@ class MatchOrderImpl implements MatchOrder {
         return stream.sorted(comparator);
     }
 
+    // All data types are comparable, so this is safe
+    @SuppressWarnings("unchecked")
     private Comparable<? super Comparable> getOrderValue(Map<VarName, Concept> result) {
-        //noinspection unchecked
         return (Comparable<? super Comparable>) result.get(var).asResource().getValue();
     }
 

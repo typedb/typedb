@@ -70,6 +70,8 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
         );
     }
 
+    // allOf accepts an array with generics
+    @SuppressWarnings("unchecked")
     @Test
     public void testResourceOutputWithResource() {
         Printer printer = Printers.graql(
@@ -80,7 +82,6 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
 
         String repr = printer.graqlString(godfather);
 
-        //noinspection unchecked
         assertThat(repr, allOf(
                 containsString("movie"), containsString("has"), containsString("title"), containsString("\"Godfather\""),
                 containsString("tmdb-vote-count"), containsString("1000"), not(containsString("name"))

@@ -604,8 +604,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertTrue(String.valueOf(results.size()), results.size() > 10);
 
         results.forEach(result -> {
-            //noinspection unchecked
-            Comparable<Comparable<?>> x = (Comparable<Comparable<?>>) result.get("x").asResource().getValue();
+            Resource<Comparable<Comparable<?>>> resource = result.get("x").asResource();
+            Comparable<Comparable<?>> x = resource.getValue();
             Comparable<?> y = (Comparable<?>) result.get("y").asResource().getValue();
             assertTrue(x.toString() + " <= " + y.toString(), x.compareTo(y) > 0);
         });
@@ -633,8 +633,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertTrue(String.valueOf(results.size()), results.size() > 5);
 
         results.forEach(result -> {
-            //noinspection unchecked
-            Comparable<Comparable<?>> x = (Comparable<Comparable<?>>) result.get("x").asResource().getValue();
+            Resource<Comparable<Comparable<?>>> resource = result.get("x").asResource();
+            Comparable<Comparable<?>> x = resource.getValue();
             Comparable<?> y = (Comparable<?>) result.get("y").asResource().getValue();
             assertTrue(x.toString() + " > " + y.toString(), x.compareTo(y) <= 0);
         });
@@ -768,11 +768,12 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(types, typesAgain);
     }
 
+    // hamcrest matcher generics are weird
+    @SuppressWarnings("unchecked")
     @Test
     public void testQueryNoVariables() {
         MatchQuery query = qb.match(var().isa("movie"));
         List<Map<String, Concept>> results = query.execute();
-        //noinspection unchecked
         assertThat(results, allOf(
                 (Matcher) everyItem(not(hasKey(anything()))),
                 hasSize(QueryUtil.movies.length)

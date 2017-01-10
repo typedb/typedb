@@ -139,7 +139,7 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingResourcesSimple(){
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Create fake resources
         Set<Object> resourceIds = new HashSet<>();
@@ -224,7 +224,7 @@ public class PostprocessingTest extends GraphTestBase{
     }
 
 
-    private ResourceImpl createFakeResource(ResourceType type, String value){
+    private ResourceImpl<String> createFakeResource(ResourceType<String> type, String value){
         String index = ResourceImpl.generateResourceIndex(type, value);
         Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
@@ -233,7 +233,6 @@ public class PostprocessingTest extends GraphTestBase{
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
-        //noinspection unchecked
-        return new ResourceImpl(graknGraph, resourceVertex, Optional.of(type), Optional.empty());
+        return new ResourceImpl<>(graknGraph, resourceVertex, Optional.of(type), Optional.empty());
     }
 }
