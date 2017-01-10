@@ -15,19 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-
-"use strict";
-import * as API from './HAL/APITerms';
-import User from './User.js';
-
+import User from './User';
 
 /*
  * REST API client for Grakn Engine.
  */
 export default {
-
-    // can use queue of pending requests here..
-
     /**
      * Make an AJAX request with @requestData parameters.
      * Required attributes of @requestData are:
@@ -42,148 +35,150 @@ export default {
      *  - cache
      * @param requestData
      */
-    request(requestData) {
-        $.ajax({
-                type: requestData.requestType || 'GET',
-                contentType: requestData.contentType || 'application/json; charset=utf-8',
-                dataType: requestData.dataType || 'json',
-                cache: requestData.cache || false,
-                accepts: requestData.accepts || {
-                    json: "application/hal+json"
-                },
-                data: requestData.data,
-                url: requestData.url,
-                beforeSend: this.setHeaders
-            }).done(function(r) {
-                //sometimes we might not have a callback function
-                if (typeof requestData.callback == 'function')
-                    requestData.callback(r, null)
-            })
-            .fail(function(errObj) {
-                if (typeof requestData.callback == 'function')
-                    requestData.callback(null, errObj.responseText);
-            });
-    },
+  request(requestData) {
+    $.ajax({
+      type: requestData.requestType || 'GET',
+      contentType: requestData.contentType || 'application/json; charset=utf-8',
+      dataType: requestData.dataType || 'json',
+      cache: requestData.cache || false,
+      accepts: requestData.accepts || {
+        json: 'application/hal+json',
+      },
+      data: requestData.data,
+      url: requestData.url,
+      beforeSend: this.setHeaders,
+    }).done((response) => {
+      // sometimes we might not have a callback function
+      if (typeof requestData.callback === 'function') {
+        requestData.callback(response, null);
+      }
+    })
+    .fail((errObj) => {
+      if (typeof requestData.callback === 'function') {
+        requestData.callback(null, errObj.responseText);
+      }
+    });
+  },
 
-    sendInvite(credentials, callbackFn) {
-        $.ajax({
-            type: 'POST',
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json',
-            cache: false,
-            data: JSON.stringify({
-                'name': credentials.name,
-                'surname': credentials.surname,
-                'email': credentials.email
-            }),
-            url: 'https://grakn-community-inviter.herokuapp.com/invite'
-        }).always(function(r) {
-            callbackFn(r);
-        })
-    },
+  sendInvite(credentials, callbackFn) {
+    $.ajax({
+      type: 'POST',
+      contentType: 'application/json; charset=utf-8',
+      dataType: 'json',
+      cache: false,
+      data: JSON.stringify({
+        name: credentials.name,
+        surname: credentials.surname,
+        email: credentials.email,
+      }),
+      url: 'https://grakn-community-inviter.herokuapp.com/invite',
+    }).always((r) => {
+      callbackFn(r);
+    });
+  },
 
-    setHeaders(xhr) {
-        let token = localStorage.getItem('id_token');
-        if (token != null)
-            xhr.setRequestHeader("Authorization", "Bearer " + token);
+  setHeaders(xhr) {
+    const token = localStorage.getItem('id_token');
+    if (token != null) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
 
-        return true;
-    },
+    return true;
+  },
 
-    fetchKeyspaces(fn) {
-        this.request({
-            url: "/keyspaces",
-            callback: fn,
-            dataType: "text"
-        });
-    },
+  fetchKeyspaces(fn) {
+    this.request({
+      url: '/keyspaces',
+      callback: fn,
+      dataType: 'text',
+    });
+  },
 
-    newSession(creds, fn) {
-        this.request({
-            url: "/auth/session/",
-            callback: fn,
-            data: JSON.stringify({
-                'username': creds.username,
-                'password': creds.password
-            }),
-            dataType: "text",
-            requestType: 'POST'
-        });
-    },
+  newSession(creds, fn) {
+    this.request({
+      url: '/auth/session/',
+      callback: fn,
+      data: JSON.stringify({
+        username: creds.username,
+        password: creds.password,
+      }),
+      dataType: 'text',
+      requestType: 'POST',
+    });
+  },
     /**
      * Pre materialise
      */
-    preMaterialiseAll(fn) {
-        this.request({
-            url: "/graph/preMaterialiseAll?keyspace=" + User.getCurrentKeySpace(),
-            callback: fn,
-            dataType: "text",
-            contentType: "application/text"
-        });
-    },
+  preMaterialiseAll(fn) {
+    this.request({
+      url: `/graph/preMaterialiseAll?keyspace=${User.getCurrentKeySpace()}`,
+      callback: fn,
+      dataType: 'text',
+      contentType: 'application/text',
+    });
+  },
 
     /**
      * Query Engine for concepts by type.
      */
-    conceptsByType(type, fn) {
-        this.request({
-            url: "/graph/concept/" + type + "?keyspace=" + User.getCurrentKeySpace(),
-            callback: fn
-        });
-    },
+  conceptsByType(type, fn) {
+    this.request({
+      url: `/graph/concept/${type}?keyspace=${User.getCurrentKeySpace()}`,
+      callback: fn,
+    });
+  },
 
     /**
      * Send graql shell command to engine. Returns a string representing shell output.
      */
-    graqlShell(query, fn, useReasoner, materialise) {
-        this.request({
-            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query+ "&reasoner=" + useReasoner+"&materialise=" + materialise,
-            callback: fn,
-            dataType: "text",
-            contentType: "application/text",
-            accepts: {
-                text: "application/graql"
-            }
-        });
-    },
+  graqlShell(query, fn) {
+    this.request({
+      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${query}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      callback: fn,
+      dataType: 'text',
+      contentType: 'application/text',
+      accepts: {
+        text: 'application/graql',
+      },
+    });
+  },
 
     /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
-    graqlHAL(query, fn, useReasoner,materialise) {
-        this.request({
-            url: "/graph/match?keyspace=" + User.getCurrentKeySpace() + "&query=" + query + "&reasoner=" + useReasoner+"&materialise=" + materialise,
-            callback: fn
-        });
-    },
+  graqlHAL(query, fn) {
+    this.request({
+      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${query}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      callback: fn,
+    });
+  },
 
     /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
-    graqlAnalytics(query, fn) {
-        this.request({
-            url: "/graph/analytics?keyspace=" + User.getCurrentKeySpace() + "&query=" + query,
-            callback: fn
-        });
-    },
-
+  graqlAnalytics(query, fn) {
+    this.request({
+      url: `/graph/analytics?keyspace=${User.getCurrentKeySpace()}&query=${query}`,
+      callback: fn,
+    });
+  },
     /**
      * Get current engine configuration.
      */
-    getConfig(fn) {
-        this.request({
-            url: "/status/config",
-            callback: fn
-        });
-    },
+  getConfig(fn) {
+    this.request({
+      url: '/status/config',
+      callback: fn,
+    });
+  },
 
     /**
      * Get meta ontology type instances.
      */
-    getMetaTypes(fn) {
-        this.request({
-            url: "/graph/ontology?keyspace=" + User.getCurrentKeySpace(),
-            callback: fn
-        });
-    }
+  getMetaTypes(fn) {
+    this.request({
+      url: `/graph/ontology?keyspace=${User.getCurrentKeySpace()}`,
+      callback: fn,
+    });
+  },
 };

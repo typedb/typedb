@@ -20,27 +20,27 @@
  * Keys used in HAL API JSON Objects
  */
 
-export const RELATION_TYPE = "RELATION";
-export const TYPE_TYPE = "TYPE";
-export const RULE_TYPE = "RULE";
-export const RESOURCE_TYPE = "RESOURCE";
-export const ROLE_TYPE = "ROLE";
-export const ENTITY_TYPE = "ENTITY";
-export const GENERATED_RELATION_TYPE = "generated-relation";
+export const RELATION_TYPE = 'RELATION';
+export const TYPE_TYPE = 'TYPE';
+export const RULE_TYPE = 'RULE';
+export const RESOURCE_TYPE = 'RESOURCE';
+export const ROLE_TYPE = 'ROLE';
+export const ENTITY_TYPE = 'ENTITY';
+export const GENERATED_RELATION_TYPE = 'generated-relation';
 
-export const ROOT_CONCEPT="concept";
+export const ROOT_CONCEPT = 'concept';
 
-export const KEY_EMPTY_ROLE_NAME = "EMPTY-GRAKN-ROLE";
-export const KEY_ID = "_id";
-export const KEY_EMBEDDED = "_embedded";
-export const KEY_TYPE = "_type";
-export const KEY_BASE_TYPE = "_baseType";
-export const KEY_VALUE = "value";
-export const KEY_ONTOLOGY = "ontology";
-export const KEY_SELF = "self";
-export const KEY_LINKS = "_links";
-export const KEY_HREF = "href";
-export const KEY_DIRECTION = "_direction";
+export const KEY_EMPTY_ROLE_NAME = 'EMPTY-GRAKN-ROLE';
+export const KEY_ID = '_id';
+export const KEY_EMBEDDED = '_embedded';
+export const KEY_TYPE = '_type';
+export const KEY_BASE_TYPE = '_baseType';
+export const KEY_VALUE = 'value';
+export const KEY_ONTOLOGY = 'ontology';
+export const KEY_SELF = 'self';
+export const KEY_LINKS = '_links';
+export const KEY_HREF = 'href';
+export const KEY_DIRECTION = '_direction';
 
-export const SHELL_REQUEST = "shell";
-export const HAL_REQUEST = "hal";
+export const SHELL_REQUEST = 'shell';
+export const HAL_REQUEST = 'hal';

@@ -151,7 +151,7 @@ div>span {
 <script>
 import FavQueries from '../js/FavQueries.js'
 import Prism from 'prismjs';
-import * as PLang from '../js/prismGraql.js';
+import * as PGraqlLang from '../js/prismGraql.js';
 
 
 export default {
@@ -184,7 +184,7 @@ export default {
         showToolTipFn() {
             if (!this.showToolTip) {
                 if (this.currentQuery === "") return;
-                this.highlightedQuery = Prism.highlight(this.currentQuery, PLang.graql);
+                this.highlightedQuery = Prism.highlight(this.currentQuery, PGraqlLang.default);
             }
             this.showToolTip = !this.showToolTip;
         },
