@@ -159,18 +159,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     }
 
     /**
-     *
-     * @return This type's super type
-     */
-    public T superType() {
-        T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(concept == null)
-            return null;
-        else
-            return concept;
-    }
-
-    /**
      * Helper method to cast a concept to it's correct type
      * @param type The type to cast to
      * @param <E> The type of the interface we are casting to.

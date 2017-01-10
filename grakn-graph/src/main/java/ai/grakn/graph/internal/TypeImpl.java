@@ -111,6 +111,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
 
     /**
      *
+     * @return This type's super type
+     */
+    public T superType() {
+        T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
+        if(concept == null)
+            return null;
+        else
+            return concept;
+    }
+
+    /**
+     *
      * @return All outgoing sub parents including itself
      */
     Set<T> getSuperSet() {
