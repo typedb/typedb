@@ -77,7 +77,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
         this.vertex = v;
         this.graknGraph = graknGraph;
-        graknGraph.getConceptLog().putConcept(this);
     }
 
     /**
