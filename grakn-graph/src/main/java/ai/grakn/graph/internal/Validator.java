@@ -64,7 +64,7 @@ class Validator {
         Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getConceptLog().getModifiedConcepts());
         for(ConceptImpl nextToValidate: validationList){
             if(nextToValidate.isAlive()) {
-                if (nextToValidate.isInstance()) {
+                if (nextToValidate.isInstance() && !nextToValidate.isCasting()) {
                     validateInstance((InstanceImpl) nextToValidate);
                     if (nextToValidate.isRelation()) {
                         validateRelation((RelationImpl) nextToValidate);
