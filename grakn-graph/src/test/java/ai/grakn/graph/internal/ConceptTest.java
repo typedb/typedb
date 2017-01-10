@@ -44,9 +44,6 @@ import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.ID_RESERVED;
 import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
-import static ai.grakn.util.ErrorMessage.LOOP_DETECTED;
-import static ai.grakn.util.Schema.EdgeLabel.ISA;
-import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -169,29 +166,6 @@ public class ConceptTest extends GraphTestBase{
         EntityType c1 = graknGraph.putEntityType("c1");
         Entity c2 = c1.addEntity();
         assertEquals(c1, c2.type());
-    }
-
-    @Test
-    public void testGetConceptTypeFailCycleFoundSimple(){
-        TypeImpl c1 = (TypeImpl) graknGraph.putEntityType("c1");
-
-        expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(LOOP_DETECTED.getMessage(c1.toString(), SUB.getLabel() + " " + ISA.getLabel()));
-
-        TypeImpl c2 = (TypeImpl) graknGraph.putEntityType("c2");
-        TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3");
-        Vertex c1_Vertex = graknGraph.getTinkerPopGraph().traversal().V(c1.getBaseIdentifier()).next();
-        Vertex c2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(c2.getBaseIdentifier()).next();
-        Vertex c3_Vertex = graknGraph.getTinkerPopGraph().traversal().V(c3.getBaseIdentifier()).next();
-
-        c1_Vertex.edges(Direction.BOTH).next().remove();
-        c2_Vertex.edges(Direction.BOTH).next().remove();
-        c3_Vertex.edges(Direction.BOTH).next().remove();
-
-        c1_Vertex.addEdge(Schema.EdgeLabel.SUB.getLabel(), c2_Vertex);
-        c2_Vertex.addEdge(Schema.EdgeLabel.SUB.getLabel(), c3_Vertex);
-        c3_Vertex.addEdge(Schema.EdgeLabel.SUB.getLabel(), c1_Vertex);
-        c1.type();
     }
 
     @Test

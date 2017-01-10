@@ -108,8 +108,8 @@ public class PostprocessingTest extends GraphTestBase{
             edge.setProperty(Schema.EdgeProperty.TO_ID, toInstance.getId());
         edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
 
-        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.getParentIsa().getName());
-        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.getParentIsa().getName());
+        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.type().getName());
+        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.type().getName());
     }
 
     @Test

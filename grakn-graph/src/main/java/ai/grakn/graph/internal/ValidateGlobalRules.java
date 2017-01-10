@@ -87,7 +87,7 @@ class ValidateGlobalRules {
      */
     static Optional<String> validatePlaysRoleStructure(CastingImpl casting) {
         InstanceImpl<?, ?> rolePlayer = casting.getRolePlayer();
-        TypeImpl<?, ?> currentConcept = rolePlayer.getParentIsa();
+        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
         RoleType roleType = casting.getRole();
 
         boolean satisfiesPlaysRole = false;

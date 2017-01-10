@@ -129,20 +129,6 @@ public class EntityTypeTest extends GraphTestBase{
         assertTrue(c1.getSuperSet().contains(c2));
         assertTrue(c1.getSuperSet().contains(c3));
         assertFalse(c1.getSuperSet().contains(c4));
-
-        graknGraph.getTinkerPopGraph().traversal().V().
-                hasId(c3.getId()).
-                outE(Schema.EdgeLabel.SUB.getLabel()).next().remove();
-        c3.superType(c4);
-        boolean correctExceptionThrown = false;
-        try{
-            c4.superType(c2);
-            c1.getSuperSet();
-        } catch(RuntimeException e){
-            correctExceptionThrown = e.getMessage().contains("loop");
-        }
-        assertTrue(correctExceptionThrown);
-
     }
 
     @Test

@@ -538,8 +538,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId());
             edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
 
-            edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.getParentIsa().getName());
-            edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toRolePlayer.getParentIsa().getName());
+            edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName());
+            edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toRolePlayer.type().getName());
             edge.setProperty(Schema.EdgeProperty.SHORTCUT_HASH, hash);
         }
     }

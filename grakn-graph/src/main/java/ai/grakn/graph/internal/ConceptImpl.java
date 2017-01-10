@@ -89,16 +89,14 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     protected T type(V type) {
         if(type != null && type() == null){
-            TypeImpl currentIsa = getParentIsa();
+            V currentIsa = type();
             if(currentIsa == null){
                 setType(String.valueOf(type.getName()));
                 putEdge(type, Schema.EdgeLabel.ISA);
             } else if(!currentIsa.equals(type)){
                 throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
             }
-
         }
-
         return getThis();
     }
 
@@ -187,26 +185,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @SuppressWarnings("unchecked")
     public V type() {
-        HashSet<Concept> visitedConcepts = new HashSet<>();
-        ConceptImpl currentConcept = this;
-        visitedConcepts.add(currentConcept);
-        Type type = null;
-        boolean notFound = true;
-
-        while(notFound && currentConcept != null){
-            ConceptImpl concept = currentConcept.getParentIsa();
-            if(concept != null){
-                notFound = false;
-                type = concept.asType();
-            } else {
-                currentConcept = (ConceptImpl) currentConcept.superType();
-                if(visitedConcepts.contains(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
-                }
-                visitedConcepts.add(currentConcept);
-            }
-        }
-        return (V) type;
+        return getOutgoingNeighbour(Schema.EdgeLabel.ISA);
     }
 
     /**
@@ -450,19 +429,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     public boolean isCasting(){
         return this instanceof CastingImpl;
-    }
-
-    /**
-     *
-     * @return The result of following one outgoing isa edge to a Type.
-     */
-    public TypeImpl getParentIsa(){
-        Concept isaParent = getOutgoingNeighbour(Schema.EdgeLabel.ISA);
-        if(isaParent != null){
-            return (TypeImpl) isaParent;
-        } else {
-            return null;
-        }
     }
 
     /**
