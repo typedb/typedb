@@ -214,9 +214,9 @@ public class AtomicTest extends AbstractGraknTest {
 
         String childPatternString = "(wife: $x, husband: $y) isa marriage";
         InferenceRule testRule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(
-        graph.graql().parsePattern(childPatternString),
-        graph.graql().parsePattern(childPatternString)),
-        graph);
+                graph.graql().parsePattern(childPatternString),
+                graph.graql().parsePattern(childPatternString)),
+                graph);
         testRule.unify(parentAtom);
         Atom headAtom = testRule.getHead().getAtom();
         Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();

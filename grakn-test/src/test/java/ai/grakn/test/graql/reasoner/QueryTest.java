@@ -81,8 +81,8 @@ public class QueryTest extends AbstractGraknTest {
             "$y isa product;$y value 'Michelangelo  The Last Judgement'; select $x, $y;";
 
         String queryString2 = "match $x isa person;$y isa tag;$y value 'Michelangelo';" +
-        "($x, $y) isa tagging;" +
-        "$pr isa product;$pr value 'Michelangelo  The Last Judgement'; select $x, $pr;";
+                "($x, $y) isa tagging;" +
+                "$pr isa product;$pr value 'Michelangelo  The Last Judgement'; select $x, $pr;";
 
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);
