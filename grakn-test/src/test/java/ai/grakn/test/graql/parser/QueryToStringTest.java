@@ -19,12 +19,13 @@
 package ai.grakn.test.graql.parser;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,12 +38,13 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
-public class QueryToStringTest extends AbstractMovieGraphTest {
+public class QueryToStringTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
 

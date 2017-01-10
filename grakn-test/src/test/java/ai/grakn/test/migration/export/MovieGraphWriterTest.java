@@ -17,15 +17,34 @@
  */
 package ai.grakn.test.migration.export;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.example.MovieGraphFactory;
+import ai.grakn.migration.export.GraphWriter;
+import ai.grakn.test.AbstractGraphTest;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MovieGraphWriterTest extends GraphWriterTestBase {
+import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertDataEqual;
+import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertOntologiesEqual;
+import static ai.grakn.test.migration.export.GraphWriterTestUtil.insert;
+
+public class MovieGraphWriterTest extends AbstractGraphTest {
+
+    private GraknGraph copy;
+    private GraphWriter writer;
 
     @Before
     public void setup() {
         MovieGraphFactory.loadGraph(graph);
+
+        writer = new GraphWriter(graph);
+        copy = factory.getGraph("copy");
+    }
+
+    @After
+    public void takedown(){
+        copy.clear();
     }
 
     @Test

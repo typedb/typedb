@@ -18,23 +18,41 @@
 
 package ai.grakn.test.migration.sql;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.migration.sql.Main;
+import ai.grakn.test.AbstractEngineTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class SQLMigratorMainTest extends SQLMigratorTestBase {
+import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.DRIVER;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
+
+public class SQLMigratorMainTest extends AbstractEngineTest {
 
     private final String templateFile = getFile("sql", "pets/template.gql").getAbsolutePath();
     private final String query = "SELECT * FROM pet";
     private Connection connection;
+    private GraknGraph graph;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setup() throws SQLException {
-        connection = setupExample("pets");
+        graph = factoryWithNewKeyspace().getGraph();
+        connection = setupExample(graph, "pets");
     }
 
     @After
@@ -96,7 +114,7 @@ public class SQLMigratorMainTest extends SQLMigratorTestBase {
     @Test
     public void sqlMainPropertiesTest() throws SQLException {
         connection.close();
-        connection = setupExample("pokemon");
+        connection = setupExample(graph, "pokemon");
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
 
@@ -104,7 +122,7 @@ public class SQLMigratorMainTest extends SQLMigratorTestBase {
                 "-pass", PASS, "-user", USER, "-k", graph.getKeyspace(),
                 "-c", configurationFile);
 
-        assertPokemonGraphCorrect();
+        assertPokemonGraphCorrect(graph);
     }
 
     private void run(String... args){
@@ -113,7 +131,7 @@ public class SQLMigratorMainTest extends SQLMigratorTestBase {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        assertPetGraphCorrect();
+        assertPetGraphCorrect(graph);
     }
 
 }

@@ -21,6 +21,7 @@ package ai.grakn.test.graql.parser;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
@@ -33,7 +34,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -75,7 +76,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class QueryParserTest extends AbstractMovieGraphTest {
+public class QueryParserTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
     @Rule
@@ -83,6 +84,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
 

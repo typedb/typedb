@@ -18,30 +18,77 @@
 
 package ai.grakn.test;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
-import org.junit.After;
-import org.junit.Before;
+import static ai.grakn.test.GraknTestEnv.clearGraphs;
+import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
+import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 
-import static ai.grakn.test.GraknTestEnv.*;
+import ai.grakn.GraknGraph;
+
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.factory.GraphFactory;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+
+import java.util.UUID;
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
+
 
 /**
- * Abstract test class that provides a new empty graph every test that can be committed to.
+ * <p>
+ * Abstract test class that automatically starts the relevant graph database and provides a method to get a graph factory
+ * </p>
  */
-public abstract class AbstractGraphTest extends AbstractGraknTest {
-    protected GraknGraphFactory factory;
+public abstract class AbstractGraphTest {
+
+    protected GraphFactory factory;
     protected GraknGraph graph;
 
-    @Before
-    public void createGraph() {
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
-        graph.showImplicitConcepts(true);
+    @BeforeClass
+    public static void initializeGraknTests() {
+    	try {
+
+            //TODO remove when Bug #12029 fixed
+            ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, StandaloneTaskManager.class.getName());
+
+            ensureCassandraRunning();
+            ensureHTTPRunning();
+    	}
+    	catch (Exception e) {
+    		e.printStackTrace(System.err);
+    		throw new RuntimeException(e);
+    	}
     }
+
+	@Before
+	public void createGraph() {
+        factory = GraphFactory.getInstance();
+		graph = graphWithNewKeyspace();
+	}
 
     @After
     public void closeGraph() throws Exception {
         graph.clear();
         graph.close();
+    }
+
+    @AfterClass
+    public static void cleanupGraknTests() {
+        clearGraphs();
+    }
+
+    protected GraknGraph graphWithNewKeyspace() {
+        String keyspace;
+        if (usingOrientDB()) {
+            keyspace = "memory";
+        } else {
+            // Embedded Casandra has problems dropping keyspaces that start with a number
+            keyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+        }
+
+         return GraphFactory.getInstance().getGraph(keyspace);
     }
 }

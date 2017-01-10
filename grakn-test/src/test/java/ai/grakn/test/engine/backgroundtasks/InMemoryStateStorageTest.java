@@ -21,7 +21,7 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.InMemoryStateStorage;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import javafx.util.Pair;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +34,7 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static org.junit.Assert.*;
 
-public class InMemoryStateStorageTest extends EngineTestBase {
+public class InMemoryStateStorageTest extends AbstractEngineTest {
     private StateStorage stateStorage;
 
     @Before

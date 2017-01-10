@@ -24,9 +24,9 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class AtomicQueryTest extends AbstractGraknTest {
+public class AtomicQueryTest extends AbstractGraphTest {
     private static GraknGraph graph;
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();

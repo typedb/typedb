@@ -2,11 +2,13 @@ package ai.grakn.test.graph;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.test.AbstractEngineTest;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -19,7 +21,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-public class GraphTest extends AbstractRollbackGraphTest {
+public class GraphTest extends AbstractEngineTest {
+
+    private GraknGraphFactory factory;
+    private GraknGraph graph;
+
+    @Before
+    public void setup(){
+        this.factory = factoryWithNewKeyspace();
+        this.graph = factory.getGraph();
+    }
 
     @Test
     public void testSwitchingBetweenNormalAndBatchGraphCleanly() throws Exception {

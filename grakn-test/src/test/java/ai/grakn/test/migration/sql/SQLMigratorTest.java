@@ -18,42 +18,61 @@
 
 package ai.grakn.test.migration.sql;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
+import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.migration.sql.SQLMigrator;
 import org.jooq.exception.DataAccessException;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.migrate;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
-public class SQLMigratorTest extends SQLMigratorTestBase {
+public class SQLMigratorTest extends AbstractEngineTest {
+
+    private GraknGraph graph;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    @Before
+    public void setup(){
+        graph = factoryWithNewKeyspace().getGraph();
+    }
 
     @Test
     public void singleTableTest() throws SQLException {
-        String template = AbstractGraknMigratorTest.getFileAsString("sql", "pets/template.gql");
+        String template = MigratorTestUtils.getFileAsString("sql", "pets/template.gql");
         String query = "SELECT * FROM pet";
 
-        try(Connection connection = setupExample("pets")){
-            migrate(new SQLMigrator(query, template, connection));
+        try(Connection connection = setupExample(graph, "pets")){
+            migrate(graph, new SQLMigrator(query, template, connection));
 
-            assertPetGraphCorrect();
+            assertPetGraphCorrect(graph);
         }
     }
 
     @Test
     public void multipleTableTest() throws SQLException {
-        try(Connection connection = setupExample("pokemon")){
+        try(Connection connection = setupExample(graph, "pokemon")){
             String query = "SELECT * FROM type";
             String template =  "" +
                     "insert $x isa pokemon-type          " +
                     "   has type-id <ID>                 " +
                     "   has description <IDENTIFIER>;    ";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
             query = "SELECT * FROM pokemon";
             template = "" +
@@ -63,7 +82,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
                     "    has height <HEIGHT>                                       \n" +
                     "    has weight <WEIGHT>;                                      \n";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
             query = "SELECT * from pokemon";
             template = "" +
@@ -72,15 +91,15 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
                     "   $pokemon isa pokemon has description <IDENTIFIER> ;" +
                     "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
-            assertPokemonGraphCorrect();
+            assertPokemonGraphCorrect(graph);
         }
     }
 
     @Test
     public void migrateOverJoinTest() throws SQLException {
-        try(Connection connection = setupExample("pokemon")){
+        try(Connection connection = setupExample(graph, "pokemon")){
 
             String query = "SELECT * FROM type";
             String template =  "" +
@@ -88,7 +107,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
                     "   has type-id <ID>                 " +
                     "   has description <IDENTIFIER>;    ";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
 
             query = "SELECT * FROM pokemon";
@@ -99,7 +118,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
                     "    has height <HEIGHT>             \n" +
                     "    has weight <WEIGHT>;            \n";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
             query = "SELECT pokemon.identifier AS species, type.identifier AS type " +
                     "FROM pokemon, type WHERE pokemon.type1=type.id OR pokemon.type2=type.id";
@@ -109,21 +128,21 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
                     "      $pokemon isa pokemon has description   <SPECIES>; \n" +
                     "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
-            assertPokemonGraphCorrect();
+            assertPokemonGraphCorrect(graph);
         }
     }
 
     @Test
     public void migrateWithSQLFunctionTest() throws SQLException {
-        try(Connection connection = setupExample("pets")){
+        try(Connection connection = setupExample(graph, "pets")){
             String template = "insert $x isa count value <COUNT>;";
             String query = "SELECT count(*) AS count FROM pet";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
-            graph = factory.getGraph();
+//            graph = factory.getGraph();
             Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));
@@ -134,7 +153,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
     public void incorrectSQLStatementTest() throws SQLException {
         exception.expect(DataAccessException.class);
 
-        try(Connection connection = setupExample("pokemon")) {
+        try(Connection connection = setupExample(graph, "pokemon")) {
 
             String query = "SELECT * FROM nonexistant";
             String template = "" +
@@ -142,7 +161,7 @@ public class SQLMigratorTest extends SQLMigratorTestBase {
                     "   has type-id <ID>                 " +
                     "   has description <IDENTIFIER>;    ";
 
-            migrate(new SQLMigrator(query, template, connection));
+            migrate(graph, new SQLMigrator(query, template, connection));
 
         }
     }

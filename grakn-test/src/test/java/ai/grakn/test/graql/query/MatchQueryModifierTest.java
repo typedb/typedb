@@ -20,9 +20,10 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,12 +45,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class MatchQueryModifierTest extends AbstractMovieGraphTest {
+public class MatchQueryModifierTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
 

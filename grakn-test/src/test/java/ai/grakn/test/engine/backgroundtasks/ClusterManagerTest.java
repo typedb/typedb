@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;
 
-public class ClusterManagerTest { //extends EngineTestBase {
+public class ClusterManagerTest { //extends AbstractEngineTest {
     private final ClusterManager clusterManager = ClusterManager.getInstance();
 
     // There is a strange issue that only shows up when running these tests on Travis; as such this test is being ignored

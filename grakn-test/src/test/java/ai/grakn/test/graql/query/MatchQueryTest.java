@@ -26,11 +26,13 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -81,7 +83,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class MatchQueryTest extends AbstractMovieGraphTest {
+public class MatchQueryTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 
@@ -92,13 +94,14 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
-
-    @After
-    public void tearDown() {
-        if (graph != null) graph.showImplicitConcepts(false);
-    }
+//
+//    @After
+//    public void tearDown() {
+//        if (graph != null) graph.showImplicitConcepts(false);
+//    }
 
     @Test
     public void testMovieQuery() {
@@ -457,9 +460,6 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testSubRelationType() {
-        // Work with a fresh graph for this test
-        rollbackGraph();
-
         qb.insert(
                 name("ownership").sub("relation").hasRole("owner").hasRole("possession"),
                 name("organization-with-shares").sub("possession"),

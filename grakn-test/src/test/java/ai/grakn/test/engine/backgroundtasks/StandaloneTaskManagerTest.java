@@ -24,7 +24,7 @@ import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.json.JSONObject;
@@ -42,7 +42,7 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.*;
 
-public class StandaloneTaskManagerTest extends EngineTestBase {
+public class StandaloneTaskManagerTest extends AbstractEngineTest {
     private TaskManager taskManager;
 
     @Before

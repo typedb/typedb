@@ -40,7 +40,7 @@ import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
-import ai.grakn.test.AbstractScalingTest;
+import ai.grakn.test.AbstractEngineTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
@@ -80,7 +80,7 @@ import static org.junit.Assert.assertFalse;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
-public class ScalingTestIT extends AbstractScalingTest {
+public class ScalingTestIT extends AbstractEngineTest {
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};

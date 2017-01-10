@@ -58,7 +58,7 @@ public class CountTest extends AbstractGraphTest {
 
         // create 3 instances
         System.out.println("Creating 3 instances");
-        graph = factory.getGraph();
+//        graph = factory.getGraph();
         String nameThing = "thing";
         String nameAnotherThing = "another";
         EntityType thing = graph.putEntityType(nameThing);

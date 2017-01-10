@@ -18,27 +18,23 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Properties;
 
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
@@ -51,29 +47,25 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class VisualiserControllerTest extends AbstractGraphTest {
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void setEngineUrl(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
-        Properties prop = ConfigProperties.getInstance().getProperties();
-        RestAssured.baseURI = "http://" + prop.getProperty("server.host") + ":" + prop.getProperty("server.port");
-    }
+public class VisualiserControllerTest extends AbstractEngineTest {
+    private GraknGraph graph;
 
     @Before
     public void setUp() throws Exception{
+        graph = factoryWithNewKeyspace().getGraph();
+
         load(getFile("genealogy/ontology.gql"));
         load(getFile("genealogy/data.gql"));
     }
 
+    @After
+    public void takeDown(){
+        graph.close();
+    }
 
     protected static File getFile(String fileName){
         return new File(VisualiserControllerTest.class.getResource(fileName).getPath());
     }
-
 
     private void load(File file) {
         try {
@@ -186,16 +178,11 @@ public class VisualiserControllerTest extends AbstractGraphTest {
         assertEquals(true,graql.contains("isa person"));
     }
 
-
-
-
     @Test
     public void syntacticallyWrongMatchQuery() {
         Response response = get(REST.WebPath.GRAPH_MATCH_QUERY_URI+"?keyspace="+graph.getKeyspace()+"&query=match ersouiuiwne is ieeui;").then().statusCode(500).extract().response().andReturn();
         assertEquals(true,response.getBody().asString().contains("syntax error at line 1"));
     }
-
-
 
     @Test
     public void getTypeByID() {
@@ -204,7 +191,6 @@ public class VisualiserControllerTest extends AbstractGraphTest {
                 .get(REST.WebPath.CONCEPT_BY_ID_URI +graph.getType("person").getId())
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
-        System.out.println(message);
 
         //TODO:maybe change person to proper id? and add  _nameType property
         assertEquals(message.at("_id").asString(),"person");
@@ -212,6 +198,4 @@ public class VisualiserControllerTest extends AbstractGraphTest {
         assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId()+"?keyspace="+graph.getKeyspace());
         assertEquals(2,message.at("_embedded").at("isa").asJsonList().size());
     }
-
-
 }

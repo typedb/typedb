@@ -30,7 +30,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
@@ -51,7 +51,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class AtomicTest extends AbstractGraknTest {
+public class AtomicTest extends AbstractGraphTest {
 
     private static GraknGraph snbGraph;
     private static GraknGraph cwGraph;

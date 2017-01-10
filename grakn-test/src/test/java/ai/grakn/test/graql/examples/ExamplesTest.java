@@ -21,7 +21,7 @@ package ai.grakn.test.graql.examples;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
-public class ExamplesTest extends AbstractRollbackGraphTest {
+public class ExamplesTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 

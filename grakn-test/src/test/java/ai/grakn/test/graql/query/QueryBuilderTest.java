@@ -19,11 +19,13 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,10 +36,15 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class QueryBuilderTest extends AbstractMovieGraphTest {
+public class QueryBuilderTest extends AbstractGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
+    @Before
+    public void setup(){
+        MovieGraphFactory.loadGraph(graph);
+    }
 
     @Test
     public void testBuildQueryGraphFirst() {

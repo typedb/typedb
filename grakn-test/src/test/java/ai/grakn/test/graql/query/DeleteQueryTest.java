@@ -19,12 +19,13 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class DeleteQueryTest extends AbstractMovieGraphTest {
+public class DeleteQueryTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
     @Rule
@@ -54,6 +55,8 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
+
         qb = graph.graql();
 
         kurtz = qb.match(var("x").has("name", "Colonel Walter E. Kurtz"));

@@ -32,7 +32,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import com.google.common.collect.Sets;
@@ -55,7 +55,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class ReasonerTest extends AbstractGraknTest {
+public class ReasonerTest extends AbstractGraphTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());

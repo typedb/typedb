@@ -32,7 +32,7 @@ import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -45,11 +45,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class PostProcessingTest extends EngineTestBase {
+public class PostProcessingTest extends AbstractEngineTest {
     private PostProcessing postProcessing;
-    private GraknGraph graknGraph;
     private Cache cache;
-    private String keyspace;
+
+    private GraknGraph graph;
 
     @BeforeClass
     public static void startEngine() throws Exception{
@@ -59,30 +59,31 @@ public class PostProcessingTest extends EngineTestBase {
     @Before
     public void setUp() throws Exception {
         cache = Cache.getInstance();
-        keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         postProcessing = PostProcessing.getInstance();
-        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+
+        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
     @After
     public void takeDown() throws InterruptedException {
-        cache.getCastingJobs(keyspace).clear();
-        cache.getResourceJobs(keyspace).clear();
+        cache.getCastingJobs(graph.getKeyspace()).clear();
+        cache.getResourceJobs(graph.getKeyspace()).clear();
     }
 
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
-        RoleType roleType1 = graknGraph.putRoleType("role 1");
-        RoleType roleType2 = graknGraph.putRoleType("role 2");
-        graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        RoleType roleType1 = graph.putRoleType("role 1");
+        RoleType roleType2 = graph.putRoleType("role 2");
+        graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
-        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
-        roleType1 = graknGraph.getRoleType("role 1");
-        roleType2 = graknGraph.getRoleType("role 2");
-        RelationType relationType = graknGraph.getRelationType("rel type");
-        EntityType thing = graknGraph.getEntityType("thing");
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraphBatchLoading();
+        roleType1 = graph.getRoleType("role 1");
+        roleType2 = graph.getRoleType("role 2");
+        RelationType relationType = graph.getRelationType("rel type");
+        EntityType thing = graph.getEntityType("thing");
 
         Instance instance1 = thing.addEntity();
         Instance instance2 = thing.addEntity();
@@ -99,37 +100,37 @@ public class PostProcessingTest extends EngineTestBase {
         ConceptId otherInstanceId3 = instance3.getId();
         ConceptId otherInstanceId4 = instance4.getId();
 
-        graknGraph.commit();
+        graph.commit();
 
         //Check Number of castings is as expected
-        Assert.assertEquals(2, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
-        waitForCache(true, keyspace, 4);
+        waitForCache(true, graph.getKeyspace(), 4);
         //Now fix everything
         postProcessing.run();
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
     }
 
     private void buildDuplicateCasting(ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
         //Get Needed Grakn Objects
-        RelationType relationType = graknGraph.getConcept(relationTypeId);
-        Instance otherInstance = graknGraph.getConcept(otherInstanceId);
-        RoleType otherRoleType = graknGraph.getConcept(otherRoleTypeId);
+        RelationType relationType = graph.getConcept(relationTypeId);
+        Instance otherInstance = graph.getConcept(otherInstanceId);
+        RoleType otherRoleType = graph.getConcept(otherRoleTypeId);
         Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
         ConceptId relationId = relation.getId();
 
-        graknGraph.commit();
+        graph.commit();
 
-        Graph rawGraph = ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph();
+        Graph rawGraph = ((AbstractGraknGraph) this.graph).getTinkerPopGraph();
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().

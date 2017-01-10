@@ -25,7 +25,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 
 
-public class AbstractInferenceTest extends AbstractGraknTest {
+public class AbstractInferenceTest extends AbstractGraphTest {
     private static QueryBuilder qb;
 
     @BeforeClass
