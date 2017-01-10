@@ -43,8 +43,6 @@ public abstract class Binary extends BinaryBase {
         Set<VarAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
         if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
         return Patterns.conjunction(vars);
-        //else
-          //  return Patterns.conjunction(, getPredicate().getPattern().asVar()));
     }
 
     @Override
