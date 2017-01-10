@@ -21,25 +21,27 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import com.jayway.restassured.response.Response;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.REST;
 import mjson.Json;
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.Date;
 
+import static ai.grakn.test.engine.loader.LoaderTest.loadOntology;
 import static com.jayway.restassured.RestAssured.given;
-import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static com.jayway.restassured.RestAssured.post;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class ImportControllerTest extends EngineTestBase {
-    private String KEYSPACE = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
+public class ImportControllerTest extends AbstractEngineTest {
+    private String KEYSPACE = ImportControllerTest.class.getName();
 
     @Test
     public void testLoadOntologyAndData() {
@@ -58,7 +60,7 @@ public class ImportControllerTest extends EngineTestBase {
     }
 
     private void runAndAssertCorrect(Json body, String keyspace){
-        loadOntology("dblp-ontology.gql", keyspace);
+        loadOntology(keyspace);
 
         Response dataResponse = given().
                 contentType("application/json").
@@ -100,6 +102,21 @@ public class ImportControllerTest extends EngineTestBase {
             catch(Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    protected static String getPath(String file) {
+        return ImportControllerTest.class.getResource("/"+file).getPath();
+    }
+
+    public static String readFileAsString(String file) {
+        InputStream stream = ImportControllerTest.class.getResourceAsStream("/"+file);
+
+        try {
+            return IOUtils.toString(stream);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

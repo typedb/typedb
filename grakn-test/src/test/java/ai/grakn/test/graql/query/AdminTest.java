@@ -19,13 +19,14 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Type;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,12 +43,13 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class AdminTest extends AbstractMovieGraphTest {
+public class AdminTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
 

@@ -2,9 +2,10 @@ package ai.grakn.test.graql.printer;
 
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Type;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -22,12 +23,13 @@ import static mjson.Json.object;
 import static mjson.Json.read;
 import static org.junit.Assert.assertEquals;
 
-public class HALPrinterTest extends AbstractMovieGraphTest {
+public class HALPrinterTest extends AbstractGraphTest {
 
     private Printer printer;
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         printer = Printers.hal();
     }
 

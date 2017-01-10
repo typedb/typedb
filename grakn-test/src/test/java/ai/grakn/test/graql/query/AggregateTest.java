@@ -20,10 +20,11 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,12 +45,13 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 
-public class AggregateTest extends AbstractMovieGraphTest {
+public class AggregateTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
 

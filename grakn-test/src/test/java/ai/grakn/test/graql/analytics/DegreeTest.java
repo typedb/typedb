@@ -241,7 +241,7 @@ public class DegreeTest extends AbstractGraphTest {
         correctDegrees.put(entity3, 1L);
 
         // assert persisted degrees are correct
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         checkDegrees(correctDegrees);
         checkNoDegree(Schema.Analytics.DEGREE.getName(), id1, id2, id3, entity4);
 
@@ -252,7 +252,7 @@ public class DegreeTest extends AbstractGraphTest {
         correctDegrees.put(id3, 1L);
 
         // assert persisted degrees are correct
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         checkDegrees(correctDegrees);
         checkNoDegree(Schema.Analytics.DEGREE.getName(), entity4);
 
@@ -260,7 +260,7 @@ public class DegreeTest extends AbstractGraphTest {
         long numVertices = 0;
         for (int i = 0; i < 2; i++) {
             graph.graql().compute().degree().in("thing", "related").persist().execute();
-            graph = factory.getGraph();
+            graph = factory.getGraph(graph.getKeyspace());
             checkDegrees(correctDegrees);
 
             // assert the number of vertices remain the same
@@ -276,7 +276,7 @@ public class DegreeTest extends AbstractGraphTest {
         correctDegrees.put(id3, 2L);
         for (int i = 0; i < 2; i++) {
             graph.graql().compute().degree().persist().execute();
-            graph = factory.getGraph();
+            graph = factory.getGraph(graph.getKeyspace());
             checkDegrees(correctDegrees);
 
             // assert the number of vertices remain the same
@@ -332,7 +332,7 @@ public class DegreeTest extends AbstractGraphTest {
         Graql.compute().degree().in("thing", "related").persist(label).withGraph(graph).execute();
 
         // assert persisted degrees are correct
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         checkDegrees(correctDegrees, label);
         checkNoDegree(label, entity4);
 
@@ -512,7 +512,7 @@ public class DegreeTest extends AbstractGraphTest {
         graph.graql().compute().degree().persist().execute();
 
         // check degrees are correct
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         GraknGraph finalGraph = graph;
         referenceDegrees.entrySet().forEach(entry -> {
             Instance instance = finalGraph.getConcept(entry.getKey());
@@ -536,7 +536,7 @@ public class DegreeTest extends AbstractGraphTest {
         graph.graql().compute().degree().persist().execute();
 
         // check only expected resources exist
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         rt = graph.getResourceType(Schema.Analytics.DEGREE.getName());
         degrees = rt.instances();
         degrees.forEach(i -> i.ownerInstances().iterator()
@@ -600,7 +600,7 @@ public class DegreeTest extends AbstractGraphTest {
         // compute and persist degrees
         HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
         graph.graql().compute().degree().persist().in(ct).execute();
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         ResourceType<Long> degreeResource = graph.getResourceType(Schema.Analytics.DEGREE.getName());
 
         // check degrees are correct
@@ -747,7 +747,7 @@ public class DegreeTest extends AbstractGraphTest {
         graph.commit();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         assertTrue(degrees.get(3L).contains(relationId));
         assertTrue(degrees.get(1L).contains(marlonId));
     }
@@ -909,15 +909,15 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(3L, graph.graql().compute().count().execute().longValue());
 
         graph.graql().compute().degree().persist().execute();
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         assertEquals(3L, graph.graql().compute().count().execute().longValue());
 
         graph.graql().compute().degree().persist().execute();
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         assertEquals(3L, graph.graql().compute().count().execute().longValue());
 
         graph.graql().compute().degree().persist().execute();
-        graph = factory.getGraph();
+        graph = factory.getGraph(graph.getKeyspace());
         assertEquals(3L, graph.graql().compute().count().execute().longValue());
     }
 

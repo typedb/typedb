@@ -110,7 +110,7 @@ public class KafkaLogger {
     }
 
     private void sendMsg(String level, String caller, String msg) {
-    	System.out.println("LOG from " + caller + ": " + msg);
+//    	System.out.println("LOG from " + caller + ": " + msg);
 //        ProducerRecord record = new ProducerRecord(LOG_TOPIC, level + " - " + caller + " - " + msg);
 //        producer.send(record);
     }

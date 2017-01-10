@@ -21,11 +21,13 @@ package ai.grakn.test.graql.printer;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import com.google.common.collect.Maps;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Map;
@@ -37,7 +39,12 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class GraqlPrinterTest extends AbstractMovieGraphTest {
+public class GraqlPrinterTest extends AbstractGraphTest {
+
+    @Before
+    public void setup(){
+        MovieGraphFactory.loadGraph(graph);
+    }
 
     @Test
     public void testRelationOutput() {

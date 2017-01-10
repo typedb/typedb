@@ -18,20 +18,33 @@
 
 package ai.grakn.test.migration.csv;
 
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
+import ai.grakn.GraknGraph;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.migration.csv.Main;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
+import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
+
+public class CSVMigratorMainTest extends AbstractEngineTest {
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
 
+    private GraknGraph graph;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     @Before
     public void setup(){
-        load(getFile("csv", "pets/schema.gql"));
+        graph = factoryWithNewKeyspace().getGraph();
+        load(graph, getFile("csv", "pets/schema.gql"));
     }
 
     @Test
@@ -75,10 +88,10 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
 
     @Test
     public void csvMainPropertiesTest(){
-        load(getFile("csv", "multi-file/schema.gql"));
+        load(graph, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
         run("csv", "-config", configurationFile, "-keyspace", graph.getKeyspace());
-        assertPokemonGraphCorrect();
+        assertPokemonGraphCorrect(graph);
     }
 
     @Test
@@ -118,6 +131,6 @@ public class CSVMigratorMainTest extends AbstractGraknMigratorTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        assertPetGraphCorrect();
+        assertPetGraphCorrect(graph);
     }
 }
