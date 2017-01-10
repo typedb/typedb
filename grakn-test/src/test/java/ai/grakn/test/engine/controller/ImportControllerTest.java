@@ -41,13 +41,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ImportControllerTest extends AbstractEngineTest {
-    private String KEYSPACE = ImportControllerTest.class.getName();
 
     @Test
     public void testLoadOntologyAndData() {
         String dataPath = getPath("smaller_nametags.gql");
         Json body = Json.object("path", dataPath);
-        runAndAssertCorrect(body, KEYSPACE);
+        runAndAssertCorrect(body, "test");
     }
 
     @Test
