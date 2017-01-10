@@ -76,12 +76,6 @@ public abstract class Binary extends BinaryBase {
     }
 
     @Override
-    public void unify(VarName from, VarName to) {
-        super.unify(from, to);
-        if (predicate != null) predicate.unify(from, to);
-    }
-
-    @Override
     public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         if (predicate != null) predicate.unify(unifiers);

@@ -97,14 +97,6 @@ public interface Atomic extends Cloneable{
     Map<VarName, VarName> getUnifiers(Atomic parentAtom);
 
     /**
-     * change each variable occurrence in the atom (apply unifier [from/to])
-     * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
-     * @param from variable name to be changed
-     * @param to new variable name
-     */
-    void unify (VarName from, VarName to);
-
-    /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
      * @param unifiers contain variable mappings to be applied

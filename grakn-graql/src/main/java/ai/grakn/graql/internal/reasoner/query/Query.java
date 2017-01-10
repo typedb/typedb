@@ -35,6 +35,8 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import java.util.HashMap;
@@ -302,7 +304,7 @@ public class Query {
         atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
         toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.unify(from, to));
+        toAdd.forEach(atom -> atom.unify(ImmutableMap.of(from, to)));
         toAdd.forEach(this::addAtom);
 
         Map<VarName, VarName> mapping = new HashMap<>();
@@ -322,7 +324,6 @@ public class Query {
         for (Map.Entry<VarName, VarName> mapping: mappings.entrySet()) {
             VarName varToReplace = mapping.getKey();
             VarName replacementVar = mapping.getValue();
-
             if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
                 //bidirectional mapping
                 if (mappings.containsKey(replacementVar) && mappings.get(replacementVar).equals(varToReplace)) {

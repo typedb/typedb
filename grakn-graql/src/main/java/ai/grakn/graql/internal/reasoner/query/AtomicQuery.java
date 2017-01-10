@@ -151,12 +151,12 @@ public class AtomicQuery extends Query{
      * materialise the query provided all variables are mapped
      */
     private QueryAnswers materialiseComplete() {
-        Atom atom = getAtom();
-        QueryAnswers insertAnswers = new QueryAnswers();
-        boolean dataPresent = atom.requiresMaterialisation()? getMatchQuery().ask().execute() : false;
-        if(!dataPresent){
+        QueryAnswers insertAnswers = new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
+        if(insertAnswers.isEmpty()){
+            Atom atom = getAtom();
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
             Set<Concept> insertedConcepts = insert.stream().flatMap(result -> result.values().stream()).collect(Collectors.toSet());
+            //extract resource/relation id if needed
             if (atom.isUserDefinedName()) {
                 insertedConcepts.stream()
                         .filter(c -> c.isResource() || c.isRelation())

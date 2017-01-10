@@ -67,12 +67,12 @@ final class ElementFactory {
         return buildCasting(v, Optional.of(type));
     }
     private CastingImpl buildCasting(Vertex v, Optional<RoleType> type){
-        return new CastingImpl(graknGraph, v, type);
+        return trackConcept(new CastingImpl(graknGraph, v, type));
     }
 
     // -------------------------------------------- Building Types  ----------------------------------------------------
     private TypeImpl buildType(Vertex v, Optional<Type> type, Optional<Boolean> isImplicit){
-        return new TypeImpl<>(graknGraph, v, type, isImplicit);
+        return trackConcept(new TypeImpl<>(graknGraph, v, type, isImplicit));
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
@@ -80,7 +80,7 @@ final class ElementFactory {
         return buildResourceType(v, Optional.of(type), Optional.of(dataType), Optional.of(isUnique));
     }
     private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType<V>> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
-        return new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique);
+        return trackConcept(new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
     }
 
     // ------------------------------------------ Building Resources
@@ -88,7 +88,7 @@ final class ElementFactory {
         return buildResource(v, Optional.of(type), Optional.of(value));
     }
     private <V> ResourceImpl <V> buildResource(Vertex v, Optional<ResourceType<V>> type, Optional<V> value){
-        return new ResourceImpl<>(graknGraph, v, type, value);
+        return trackConcept(new ResourceImpl<>(graknGraph, v, type, value));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
@@ -96,7 +96,7 @@ final class ElementFactory {
         return buildRelationType(v, Optional.of(type), Optional.of(isImplicit));
     }
     private RelationTypeImpl buildRelationType(Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit){
-        return new RelationTypeImpl(graknGraph, v, type, isImplicit);
+        return trackConcept(new RelationTypeImpl(graknGraph, v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
@@ -104,12 +104,12 @@ final class ElementFactory {
         return buildRelation(v, Optional.of(type));
     }
     private RelationImpl buildRelation(Vertex v, Optional<RelationType> type){
-        return new RelationImpl(graknGraph, v, type);
+        return trackConcept(new RelationImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
     private EntityTypeImpl buildEntityType(Vertex v, Optional<EntityType> type){
-        return new EntityTypeImpl(graknGraph, v, type);
+        return trackConcept(new EntityTypeImpl(graknGraph, v, type));
     }
 
     // ------------------------------------------- Building Entities
@@ -117,12 +117,12 @@ final class ElementFactory {
         return buildEntity(v, Optional.of(type));
     }
     private EntityImpl buildEntity(Vertex v, Optional<EntityType> type){
-        return  new EntityImpl(graknGraph, v, type);
+        return trackConcept(new EntityImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
     private RuleTypeImpl buildRuleType(Vertex v, Optional<RuleType> type){
-        return new RuleTypeImpl(graknGraph, v, type);
+        return trackConcept(new RuleTypeImpl(graknGraph, v, type));
     }
 
     // -------------------------------------------- Building Rules
@@ -133,10 +133,10 @@ final class ElementFactory {
         if(rhs == null)
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
 
-        return buildRule(v, Optional.of(type), Optional.of(lhs), Optional.of(rhs));
+        return trackConcept(buildRule(v, Optional.of(type), Optional.of(lhs), Optional.of(rhs)));
     }
     private RuleImpl buildRule(Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs){
-        return new RuleImpl(graknGraph, v, type, lhs, rhs);
+        return trackConcept(new RuleImpl(graknGraph, v, type, lhs, rhs));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
@@ -144,7 +144,7 @@ final class ElementFactory {
         return buildRoleType(v, Optional.of(type), Optional.of(isImplicit));
     }
     private RoleTypeImpl buildRoleType(Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit){
-        return new RoleTypeImpl(graknGraph, v, type, isImplicit);
+        return trackConcept(new RoleTypeImpl(graknGraph, v, type, isImplicit));
     }
 
     /**
@@ -228,5 +228,10 @@ final class ElementFactory {
 
     public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
         return new EdgeImpl(edge, graknGraph);
+    }
+
+    private <X extends ConceptImpl> X trackConcept(X concept){
+        graknGraph.getConceptLog().putConcept(concept);
+        return concept;
     }
 }
