@@ -45,7 +45,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -75,29 +74,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     private final AbstractGraknGraph graknGraph;
     private Vertex vertex;
 
-    ConceptImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type){
+    ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
         this.vertex = v;
         this.graknGraph = graknGraph;
-        type.ifPresent(this::type);
-        graknGraph.getConceptLog().putConcept(this);
-    }
-
-    /**
-     *
-     * @param type The type of this concept
-     * @return The concept itself casted to the correct interface
-     */
-    protected T type(V type) {
-        if(type != null && type() == null){
-            V currentIsa = type();
-            if(currentIsa == null){
-                setType(String.valueOf(type.getName()));
-                putEdge(type, Schema.EdgeLabel.ISA);
-            } else if(!currentIsa.equals(type)){
-                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
-            }
-        }
-        return getThis();
     }
 
     /**
@@ -177,26 +156,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         // delete node
         vertex.remove();
         vertex = null;
-    }
-
-    /**
-     *
-     * @return The type of the concept casted to the correct interface
-     */
-    public V type() {
-        return getOutgoingNeighbour(Schema.EdgeLabel.ISA);
-    }
-
-    /**
-     *
-     * @return This type's super type
-     */
-    public T superType() {
-        T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(concept == null)
-            return null;
-        else
-            return concept;
     }
 
     /**
@@ -462,21 +421,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return outgoingNeighbours;
     }
 
-    /**
-     *
-     * @param edgeLabel The edge label to traverse
-     * @return The neighbouring concept found by traversing one incoming edge of a specific type
-     */
-    <X extends Concept> X getIncomingNeighbour(Schema.EdgeLabel edgeLabel){
-        Set<X> concepts = getIncomingNeighbours(edgeLabel);
-        if(concepts.size() == 1){
-            return concepts.iterator().next();
-        } else if(concepts.isEmpty()){
-            return null;
-        } else {
-            throw new MoreThanOneEdgeException(this, edgeLabel);
-        }
-    }
     /**
      *
      * @param edgeType The edge label to traverse

@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
-        super(graknGraph, v, Optional.empty());
+        super(graknGraph, v);
         superType.ifPresent(this::superType);
         isImplicit.ifPresent(i -> setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, i, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity()));
     }
@@ -107,6 +107,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         } else {
             deleteNode();
         }
+    }
+
+    /**
+     *
+     * @return This type's super type
+     */
+    public T superType() {
+        T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
+        if(concept == null)
+            return null;
+        else
+            return concept;
     }
 
     /**
