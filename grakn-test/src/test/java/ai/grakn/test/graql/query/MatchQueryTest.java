@@ -709,6 +709,25 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testPlaysQuery() {
+        List<Map<String, Concept>> queryWithRelation = qb.match(var().rel("actor", "x")).distinct().execute();
+        List<Map<String, Concept>> queryWithPlays = qb.match(var("x").plays("actor")).execute();
+
+        assertEquals(queryWithRelation, queryWithPlays);
+    }
+
+    @Test
+    public void testPlaysQueryVariable() {
+        MatchQuery query = qb.match(var().has("title", "Godfather").plays(var("x")));
+        Set<String> roles = query.get("x").map(concept -> concept.asType().getName()).collect(toSet());
+
+        assertEquals(
+                Sets.newHashSet("production-with-cast", "production-with-genre", "production-with-cluster", "concept", "role"),
+                roles
+        );
+    }
+
+    @Test
     public void testMatchHasResource() {
         MatchQuery query = qb.match(var("x").hasResource("name"));
 
