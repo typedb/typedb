@@ -18,39 +18,6 @@
 
 package ai.grakn.test.graql.analytics;
 
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.var;
-import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import ai.grakn.engine.loader.Loader;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
@@ -58,12 +25,11 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.engine.loader.Loader;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
 import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
@@ -71,7 +37,6 @@ import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 import ai.grakn.test.AbstractScalingTest;
@@ -86,7 +51,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -187,7 +151,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
             LOGGER.info("current scale - super " + NUM_SUPER_NODES + " - nodes " + graphSize);
-            Long conceptCount = Long.valueOf(NUM_SUPER_NODES * (graphSize + 1) + graphSize);
+            Long conceptCount = (long) (NUM_SUPER_NODES * (graphSize + 1) + graphSize);
             printer.print(String.valueOf(conceptCount));
 
             LOGGER.info("start generate graph " + System.currentTimeMillis() / 1000L + "s");
@@ -195,7 +159,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             previousGraphSize = graphSize;
             LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
 
-            Long gremlinCount = Long.valueOf(NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
+            Long gremlinCount = (long) (NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
             LOGGER.info("gremlin count is: " +
                     Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().admin().getTinkerTraversal().count().next());
             gremlinCount += emptyCount;
@@ -236,7 +200,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         CSVPrinter printerMutate = createCSVPrinter("persistConstantIncreasingLoadITMutate.txt");
 
         for (int graphSize : graphSizes) {
-            Long conceptCount = Long.valueOf(graphSize) * 3 / 2;
+            Long conceptCount = (long) graphSize * 3 / 2;
             printerWrite.print(String.valueOf(conceptCount));
             printerMutate.print(String.valueOf(conceptCount));
             for (int workerNumber : workerNumbers) {
@@ -461,9 +425,9 @@ public class ScalingTestIT extends AbstractScalingTest {
                     LOGGER.info("starting with: " + workerNumber + " threads");
 
                     // configure assertions
-                    final long currentG = Long.valueOf(g);
-                    final long N = Long.valueOf(nodesPerStep);
-                    final long S = Long.valueOf(totalSteps);
+                    final long currentG = (long) g;
+                    final long N = (long) nodesPerStep;
+                    final long S = (long) totalSteps;
                     statisticsAssertions.put(methods.get(0), number -> {
                         Number sum = currentG * N * (1L + currentG * N + 6L * S * N + 2L) / 2L;
                         assertEquals(sum.doubleValue(),
