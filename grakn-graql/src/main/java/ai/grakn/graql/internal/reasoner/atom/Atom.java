@@ -106,7 +106,7 @@ public abstract class Atom extends AtomBase {
         boolean atomRecursive = false;
 
         String typeId = getTypeName();
-        if (typeId == null) return false;
+        if (typeId.isEmpty()) return false;
         Type type = getType();
         Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
         Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();

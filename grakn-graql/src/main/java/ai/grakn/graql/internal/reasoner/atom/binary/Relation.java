@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -316,13 +317,13 @@ public class Relation extends TypeAtom {
     private void addType(Type type) {
         typeName = type.getName();
         VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
-        addPredicate(new IdPredicate(Graql.var(typeVariable).name(typeName).admin()));
+        addPredicate(new IdPredicate(Graql.var(typeVariable).id(ConceptId.of(typeName)).admin()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
     }
 
     private void inferTypeFromRoles() {
-        if (getParentQuery() != null && !isValueUserDefinedName() && getTypeName() == null) {
+        if (getParentQuery() != null && !isValueUserDefinedName() && getTypeName().isEmpty()) {
             //look at available roles
             RelationType type = null;
             Set<RelationType> compatibleTypes = getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes);

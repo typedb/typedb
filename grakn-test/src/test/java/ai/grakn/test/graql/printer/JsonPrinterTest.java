@@ -79,13 +79,13 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
     @Test
     public void testJsonMetaType() {
         ConceptId id = graph.admin().getMetaEntityType().getId();
-        assertJsonEquals(Json.object("id", id, "name", "entity", "sub", "concept"), graph.admin().getMetaEntityType());
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", "concept"), graph.admin().getMetaEntityType());
     }
 
     @Test
     public void testJsonEntityType() {
         ConceptId id = graph.getEntityType("movie").getId();
-        assertJsonEquals(Json.object("id", id, "name", "movie", "sub", "production"), graph.getEntityType("movie"));
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), graph.getEntityType("movie"));
     }
 
     @Test
@@ -94,7 +94,7 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
         Resource<String> resource = resourceType.getResource("The Muppets");
 
         assertJsonEquals(
-                Json.object("id", resource.getId(), "isa", "title", "value", "The Muppets"),
+                Json.object("id", resource.getId().getValue(), "isa", "title", "value", "The Muppets"),
                 resource
         );
     }
@@ -103,7 +103,7 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
     public void testJsonRule() {
         Rule rule = graph.getResourceType("name").getResource("expectation-rule").owner().asRule();
         assertJsonEquals(
-                Json.object("id", rule.getId(), "isa", "a-rule-type", "lhs", rule.getLHS().toString(), "rhs", rule.getRHS().toString()),
+                Json.object("id", rule.getId().getValue(), "isa", "a-rule-type", "lhs", rule.getLHS().toString(), "rhs", rule.getRHS().toString()),
                 rule
         );
     }
