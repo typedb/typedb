@@ -16,13 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.gremlin.GraqlTraversal;
-import ai.grakn.graql.internal.gremlin.GremlinQuery;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.ImmutableList;
