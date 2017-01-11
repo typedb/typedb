@@ -78,7 +78,7 @@ public class InsertQueryExecutor {
     private final Stack<VarName> visitedVars = new Stack<>();
     private final ImmutableMap<VarName, List<VarAdmin>> varsByVarName;
     private final ImmutableMap<String, List<VarAdmin>> varsByTypeName;
-    private final ImmutableMap<String, List<VarAdmin>> varsById;
+    private final ImmutableMap<ConceptId, List<VarAdmin>> varsById;
 
     InsertQueryExecutor(Collection<VarAdmin> vars, GraknGraph graph) {
         this.vars = vars;
@@ -95,7 +95,7 @@ public class InsertQueryExecutor {
         varsById = ImmutableMap.copyOf(
                 vars.stream()
                         .filter(var -> var.getId().isPresent())
-                        .collect(Collectors.groupingBy(var -> var.getId().get().getValue()))
+                        .collect(Collectors.groupingBy(var -> var.getId().get()))
         );
 
         // Group variables by type name (if they have one defined)
