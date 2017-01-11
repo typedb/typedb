@@ -127,7 +127,6 @@ public class Query {
     /**
      * append to select variables
      * @param vars variables to append
-     * @return appended query
      */
     public void selectAppend(Set<VarName> vars){
         selectVars.addAll(vars);

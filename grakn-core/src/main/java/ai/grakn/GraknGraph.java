@@ -37,9 +37,6 @@ import java.util.Map;
 /**
  * A GraknGraph instance which connects to a specific graph keyspace.
  * Through this object, transactions are automatically opened, which enable the graph to be queried and mutated.
- *
- *
- * @version
  */
 
 public interface GraknGraph extends AutoCloseable{
