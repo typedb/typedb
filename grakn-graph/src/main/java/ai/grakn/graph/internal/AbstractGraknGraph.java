@@ -772,7 +772,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             relation.rolePlayers().values().forEach(instance -> {
                 if(instance != null) {
                     List<Edge> edges = getTinkerTraversal().
-                            hasId(instance.getId()).
+                            hasId(instance.getId().getValue()).
                             bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                             has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
 
