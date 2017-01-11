@@ -64,11 +64,11 @@ public class TaskManagerTest extends EngineTestBase {
         }
     }
 
-    @Test
     /**
      * Run end to end test and assert that the state
      * is correct in zookeeper.
      */
+    @Test
     public void endToEndTest(){
         Collection<String> ids = new HashSet<>();
         final int startCount = TestTask.startedCounter.get();
