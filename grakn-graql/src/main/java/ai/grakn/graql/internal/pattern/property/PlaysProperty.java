@@ -20,12 +20,11 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public String getName() {
-        return "lolo";
+        return "plays";
     }
 
-    @Override
-    public String getProperty() {
-        return "lalal";
+    @Override public String getProperty() {
+        return role.getPrintableName();
     }
 
     @Override
