@@ -20,8 +20,6 @@ package ai.grakn.migration.base;
 
 import ai.grakn.graql.InsertQuery;
 
-import java.io.File;
-import java.io.Reader;
 import java.util.stream.Stream;
 
 public interface Migrator extends AutoCloseable {
@@ -29,5 +27,5 @@ public interface Migrator extends AutoCloseable {
     /**
      * Migrate all the data in the given file based on the given template.
      */
-    public Stream<InsertQuery> migrate();
+    Stream<InsertQuery> migrate();
 }
