@@ -28,6 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
@@ -66,6 +67,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
@@ -701,6 +703,15 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         MatchQuery query = qb.match(var().id(id).has("title", var("x")));
 
         assertEquals("Godfather", query.get("x").findAny().get().asResource().getValue());
+    }
+
+    @Test
+    public void testResultsString() {
+        qb.match(var("x").isa("movie")).resultsString(Printers.graql()).forEach(result -> {
+            assertThat(result, allOf(
+                    containsString("$x"), containsString("movie"), containsString(";")
+            ));
+        });
     }
 
     @Test
