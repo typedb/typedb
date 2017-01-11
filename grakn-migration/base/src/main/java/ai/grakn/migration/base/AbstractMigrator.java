@@ -58,7 +58,7 @@ public abstract class AbstractMigrator implements Migrator {
      */
     protected Optional<InsertQuery> template(String template, Map<String, Object> data){
         try {
-            return Optional.of((InsertQuery) queryBuilder.parseTemplate(template, data));
+            return Optional.of(queryBuilder.parseTemplate(template, data));
         } catch (GraqlTemplateParsingException e){
             LOG.warn("Query was not sent to loader- " + e.getMessage());
             LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces: " + properties.getLogFilePath());

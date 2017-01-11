@@ -55,8 +55,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
     }
 
     @Test
@@ -71,8 +71,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
     }
 
     @Test
@@ -87,8 +87,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
     }
 
     @Test
@@ -102,8 +102,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
         String explicitQuery = "match " +
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
     }
 
     private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {

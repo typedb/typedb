@@ -650,7 +650,7 @@ public class ReasonerTest extends AbstractGraknTest {
         String queryString = "match $x is-abstract;";
         MatchQuery query = lgraph.graql().parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        QueryAnswers expAnswers= queryAnswers(lgraph.graql().<MatchQuery>parse(queryString));
+        QueryAnswers expAnswers= queryAnswers(lgraph.graql().parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
@@ -660,7 +660,7 @@ public class ReasonerTest extends AbstractGraknTest {
         String queryString = " match $x sub resource, regex /name/;";
         MatchQuery query = lgraph.graql().parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        QueryAnswers expAnswers= queryAnswers(lgraph.graql().<MatchQuery>parse(queryString));
+        QueryAnswers expAnswers= queryAnswers(lgraph.graql().parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
@@ -670,7 +670,7 @@ public class ReasonerTest extends AbstractGraknTest {
         String queryString = " match $x sub resource, datatype string;";
         MatchQuery query = lgraph.graql().parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        QueryAnswers expAnswers= queryAnswers(lgraph.graql().<MatchQuery>parse(queryString));
+        QueryAnswers expAnswers= queryAnswers(lgraph.graql().parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
