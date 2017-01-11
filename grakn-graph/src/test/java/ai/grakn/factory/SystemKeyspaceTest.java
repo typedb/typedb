@@ -17,9 +17,9 @@ import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
 
-	private String space1 = "SystemKeyspaceTest.space1".toLowerCase();
-	private String space2 = "SystemKeyspaceTest.space2";
-	private String space3 = "SystemKeyspaceTest.space3";
+	private final String space1 = "SystemKeyspaceTest.space1".toLowerCase();
+	private final String space2 = "SystemKeyspaceTest.space2";
+	private final String space3 = "SystemKeyspaceTest.space3";
 	
     @Test
     public void testCollectKeyspaces() { 

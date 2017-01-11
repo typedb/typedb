@@ -35,7 +35,7 @@ import java.util.Set;
 import static ai.grakn.graql.Graql.var;
 
 public class TestSubProperties extends TestOwlGraknBase {
-	private IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
+	private final IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
 	private OWLOntology shakespeare = null;
 
 	@Ignore //TODO: Fix this test. Not sure why it is not working remotely

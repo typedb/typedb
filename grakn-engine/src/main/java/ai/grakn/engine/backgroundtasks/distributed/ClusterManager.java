@@ -46,7 +46,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private TaskRunner taskRunner;
     private Thread taskRunnerThread;
     private SynchronizedStateStorage zookeeperStorage;
-    private CountDownLatch leaderInitLatch = new CountDownLatch(1);
+    private final CountDownLatch leaderInitLatch = new CountDownLatch(1);
     
     public static synchronized ClusterManager getInstance() {
         if(instance == null)

@@ -77,7 +77,7 @@ import java.util.stream.Collectors;
  *
  */
 public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWLEntityVisitorEx<Concept> {
-    private OWLMigrator migrator;
+    private final OWLMigrator migrator;
 
     public OwlGraknGraphStoringVisitor(OWLMigrator migrator) {
         this.migrator = migrator;

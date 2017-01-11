@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class GraphFactory {
-    private Properties properties;
+    private final Properties properties;
     private static GraphFactory instance = null;
 
 

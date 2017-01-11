@@ -89,12 +89,12 @@ public class ScalingTestIT extends AbstractScalingTest {
     Logger LOGGER;
 
     // test parameters
-    int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 24; // the maximum number of non super nodes to add to the test graph
-    int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
-    int REPEAT = 3; // the number of times to repeat at each size for average runtimes
-    int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
-    int WORKER_DIVS = 4; // the number of divisions of MAX_WORKERS to use for testing
+    final int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
+    final int MAX_SIZE = 24; // the maximum number of non super nodes to add to the test graph
+    final int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
+    final int REPEAT = 3; // the number of times to repeat at each size for average runtimes
+    final int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
+    final int WORKER_DIVS = 4; // the number of divisions of MAX_WORKERS to use for testing
 
     // test variables
     int STEP_SIZE;

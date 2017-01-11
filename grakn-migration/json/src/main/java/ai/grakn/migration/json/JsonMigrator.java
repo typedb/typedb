@@ -138,5 +138,5 @@ public class JsonMigrator extends AbstractMigrator {
     /**
      * Filter that will only accept JSON files with the .json extension
      */
-    private FilenameFilter jsonFiles = (dir, name) -> name.toLowerCase().endsWith(".json");
+    private final FilenameFilter jsonFiles = (dir, name) -> name.toLowerCase().endsWith(".json");
 }

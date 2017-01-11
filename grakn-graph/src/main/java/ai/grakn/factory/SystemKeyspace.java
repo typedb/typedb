@@ -57,7 +57,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     
 	private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-	private InternalFactory<M, T> factory;
+	private final InternalFactory<M, T> factory;
 
     public SystemKeyspace(InternalFactory<M, T> factory){
         this.factory = factory;

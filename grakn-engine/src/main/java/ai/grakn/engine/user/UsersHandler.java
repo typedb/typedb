@@ -16,7 +16,7 @@ public class UsersHandler {
 	public static final String USER_IS_ADMIN = "user-is-admin";
 
 	private static UsersHandler instance = null;
-	private Map<String, Json> usersMap = new HashMap<>();
+	private final Map<String, Json> usersMap = new HashMap<>();
 
 	public synchronized static UsersHandler getInstance() {
 		if (instance == null)

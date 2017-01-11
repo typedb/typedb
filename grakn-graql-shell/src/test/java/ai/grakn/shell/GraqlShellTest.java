@@ -53,7 +53,7 @@ public class GraqlShellTest {
     private PrintStream trueErr;
 
     private GraqlClientMock client;
-    private String expectedVersion = "graql-9.9.9";
+    private final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
     @Before
