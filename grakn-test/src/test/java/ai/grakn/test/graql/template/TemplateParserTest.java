@@ -342,7 +342,7 @@ public class TemplateParserTest {
 
         Map<String, Object> address = new HashMap<>();
         address.put("street", "Collins Ave");
-        address.put("number", 01);
+        address.put("number", 1);
 
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Phil Collins");
