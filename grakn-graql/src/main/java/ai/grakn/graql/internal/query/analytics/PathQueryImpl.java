@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
@@ -42,8 +43,8 @@ import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
 class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
 
-    private String sourceId = null;
-    private String destinationId = null;
+    private ConceptId sourceId = null;
+    private ConceptId destinationId = null;
 
     PathQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
@@ -74,11 +75,11 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         String middlePoint = result.memory().get(ShortestPathVertexProgram.MIDDLE);
         if (!middlePoint.equals("")) map.put(0, Collections.singleton(middlePoint));
 
-        List<String> path = new ArrayList<>();
+        List<ConceptId> path = new ArrayList<>();
         path.add(sourceId);
         path.addAll(map.entrySet().stream()
                 .sorted(Comparator.comparingInt(Map.Entry::getKey))
-                .map(pair -> pair.getValue().iterator().next())
+                .map(pair -> ConceptId.of(pair.getValue().iterator().next()))
                 .collect(Collectors.toList()));
         path.add(destinationId);
         LOGGER.debug("The path found is: " + path);
@@ -87,13 +88,13 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery from(String sourceId) {
+    public PathQuery from(ConceptId sourceId) {
         this.sourceId = sourceId;
         return this;
     }
 
     @Override
-    public PathQuery to(String destinationId) {
+    public PathQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
     }
@@ -115,7 +116,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
 
     @Override
     String graqlString() {
-        return "path from " + idToString(sourceId) + " to " + idToString(destinationId) + subtypeString();
+        return "path from " + idToString(sourceId.getValue()) + " to " + idToString(destinationId.getValue()) + subtypeString();
     }
 
     @Override

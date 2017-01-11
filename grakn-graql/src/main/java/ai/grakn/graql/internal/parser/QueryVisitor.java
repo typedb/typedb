@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
@@ -316,7 +317,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public PathQuery visitPath(GraqlParser.PathContext ctx) {
-        PathQuery path = queryBuilder.compute().path().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
+        PathQuery path = queryBuilder.compute().path().from(ConceptId.of(visitId(ctx.id(0)))).to(ConceptId.of(visitId(ctx.id(1))));
 
         if (ctx.inList() != null) {
             path = path.in(visitInList(ctx.inList()));
@@ -466,7 +467,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropId(GraqlParser.PropIdContext ctx) {
-        return var -> var.id(visitId(ctx.id()));
+        return var -> var.id(ConceptId.of(visitId(ctx.id())));
     }
 
     @Override

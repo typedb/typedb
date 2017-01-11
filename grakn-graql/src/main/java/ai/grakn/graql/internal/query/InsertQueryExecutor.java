@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
@@ -94,7 +95,7 @@ public class InsertQueryExecutor {
         varsById = ImmutableMap.copyOf(
                 vars.stream()
                         .filter(var -> var.getId().isPresent())
-                        .collect(Collectors.groupingBy(var -> var.getId().get()))
+                        .collect(Collectors.groupingBy(var -> var.getId().get().getValue()))
         );
 
         // Group variables by type name (if they have one defined)
@@ -172,7 +173,7 @@ public class InsertQueryExecutor {
         }
 
         Optional<String> typeName = var.getTypeName();
-        Optional<String> id = var.getId();
+        Optional<ConceptId> id = var.getId();
 
         typeName.ifPresent(name -> {
             if (type.isPresent()) {
@@ -238,7 +239,7 @@ public class InsertQueryExecutor {
      * @param isa the type property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Instance putInstance(Optional<String> id, VarAdmin var, IsaProperty isa) {
+    private Instance putInstance(Optional<ConceptId> id, VarAdmin var, IsaProperty isa) {
         Type type = getConcept(isa.getType()).asType();
 
         if (type.isEntityType()) {
@@ -296,7 +297,7 @@ public class InsertQueryExecutor {
      * @param <S> the class of the instance, e.g. Entity
      * @return an instance of the specified type, with the given ID if one was specified
      */
-    private <T extends Type, S extends Instance> S addOrGetInstance(Optional<String> id, Supplier<S> addInstance) {
+    private <T extends Type, S extends Instance> S addOrGetInstance(Optional<ConceptId> id, Supplier<S> addInstance) {
         return id.map(graph::<S>getConcept).orElseGet(addInstance);
     }
 

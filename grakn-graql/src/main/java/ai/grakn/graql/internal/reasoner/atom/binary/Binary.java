@@ -3,8 +3,10 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
@@ -22,18 +24,18 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends BinaryBase {
-    private Predicate predicate = null;
+    private IdPredicate predicate = null;
 
-    protected Binary(VarAdmin pattern, Predicate p, Query par) {
+    protected Binary(VarAdmin pattern, IdPredicate p, Query par) {
         super(pattern, par);
         this.predicate = p;
-        this.typeId = extractTypeId(atomPattern.asVar());
+        this.typeName = extractTypeId(atomPattern.asVar());
     }
 
     protected Binary(Binary a) {
         super(a);
-        this.predicate = a.getPredicate() != null ? (Predicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
-        this.typeId = extractTypeId(atomPattern.asVar());
+        this.predicate = a.getPredicate() != null ? (IdPredicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
+        this.typeName = extractTypeId(atomPattern.asVar());
     }
 
     protected abstract String extractTypeId(VarAdmin var);
@@ -51,8 +53,8 @@ public abstract class Binary extends BinaryBase {
         if (predicate != null) predicate.setParentQuery(q);
     }
 
-    public Predicate getPredicate() { return predicate;}
-    protected void setPredicate(Predicate p) { predicate = p;}
+    public IdPredicate getPredicate() { return predicate;}
+    protected void setPredicate(IdPredicate p) { predicate = p;}
 
     @Override
     protected boolean predicatesEquivalent(BinaryBase atom) {
@@ -65,7 +67,7 @@ public abstract class Binary extends BinaryBase {
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.typeName.hashCode();
         hashCode = hashCode * 37 + (predicate != null ? predicate.equivalenceHashCode() : 0);
         return hashCode;
     }

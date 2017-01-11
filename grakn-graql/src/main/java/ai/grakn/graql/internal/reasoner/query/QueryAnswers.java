@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import java.util.Collection;
@@ -250,10 +251,10 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         //find extra subs
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
             //get |child - parent| set difference
-            Set<Predicate> extraSubs = Utility.subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
+            Set<IdPredicate> extraSubs = Utility.subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
             extraSubs.forEach( sub -> {
                 VarName var = sub.getVarName();
-                Concept con = graph.getConcept(sub.getPredicateValue());
+                Concept con = graph.getConcept(sub.getPredicate());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())
                     valueConstraints.put(var, con);

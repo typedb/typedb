@@ -33,10 +33,10 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import java.util.HashMap;
@@ -193,11 +193,12 @@ public class Query {
     /**
      * @return set of id predicates contained in this query
      */
-    public Set<Predicate> getIdPredicates(){
+    public Set<IdPredicate> getIdPredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
                 .filter(Predicate::isIdPredicate)
+                .map(predicate -> (IdPredicate) predicate)
                 .collect(Collectors.toSet());
     }
 
@@ -402,15 +403,16 @@ public class Query {
      * @param var variable name
      * @return id predicate for the specified var name if any
      */
-    public Predicate getIdPredicate(VarName var) {
+    public IdPredicate getIdPredicate(VarName var) {
         //direct
-        Set<Predicate> relevantSubs = getIdPredicates().stream()
+        Set<IdPredicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
         //indirect
         getTypeConstraints().stream()
                 .filter(type -> type.getVarName().equals(var))
-                .forEach(type -> type.getPredicates().stream().findFirst().ifPresent(relevantSubs::add));
+                .forEach(type -> type.getPredicates().stream().findFirst().
+                        ifPresent(predicate -> relevantSubs.add((IdPredicate) predicate)));
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 

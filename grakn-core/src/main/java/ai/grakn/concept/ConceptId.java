@@ -15,7 +15,7 @@ import java.util.Map;
  *
  * @author fppt
  */
-public class ConceptId {
+public class ConceptId implements Comparable<ConceptId> {
     private static Map<String, ConceptId> conceptIds = new HashMap();
 
     private String conceptId;
@@ -31,6 +31,11 @@ public class ConceptId {
     @Override
     public boolean equals(Object object) {
         return object instanceof ConceptId && ((ConceptId) object).getValue().equals(conceptId);
+    }
+
+    @Override
+    public int compareTo(ConceptId o) {
+        return getValue().compareTo(o.getValue());
     }
 
     @Override

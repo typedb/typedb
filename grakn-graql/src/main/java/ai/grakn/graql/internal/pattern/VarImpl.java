@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -119,7 +120,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var id(String id) {
+    public Var id(ConceptId id) {
         return addProperty(new IdProperty(id));
     }
 
@@ -309,7 +310,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Optional<String> getId() {
+    public Optional<ConceptId> getId() {
         return getProperty(IdProperty.class).map(IdProperty::getId);
     }
 

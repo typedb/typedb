@@ -92,7 +92,7 @@ public class AtomicQuery extends Query{
     }
 
     private void addChild(AtomicQuery q){
-        if (!this.isEquivalent(q) && atom.getTypeId().equals(q.getAtom().getTypeId())){
+        if (!this.isEquivalent(q) && atom.getTypeName().equals(q.getAtom().getTypeName())){
             children.add(q);
             q.setParent(this);
         }
@@ -111,7 +111,7 @@ public class AtomicQuery extends Query{
      */
     public void establishRelation(AtomicQuery aq){
         Atom aqAtom = aq.getAtom();
-        if(atom.getTypeId().equals(aqAtom.getTypeId())) {
+        if(atom.getTypeName().equals(aqAtom.getTypeName())) {
             if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size())
                 aq.addChild(this);
             else
@@ -163,7 +163,7 @@ public class AtomicQuery extends Query{
                         .forEach(c -> {
                             Map<VarName, Concept> answer = new HashMap<>();
                             if (c.isResource()) {
-                                answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicateValue()));
+                                answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicate()));
                                 answer.put(atom.getValueVariable(), c);
                             } else if (c.isRelation()) {
                                 answer.put(atom.getVarName(), c);

@@ -75,13 +75,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
-        String hash = "RelationType_" + relationType.getId().replace("_", "\\_") + "_Relation";
+        String hash = "RelationType_" + relationType.getId().getValue().replace("_", "\\_") + "_Relation";
 
         for(RoleType role: sortedRoleIds){
-            hash = hash + "_" + role.getId().replace("_", "\\_") ;
+            hash = hash + "_" + role.getId().getValue().replace("_", "\\_") ;
             Instance instance = roleMap.get(role);
             if(instance != null){
-                hash = hash + "_" + instance.getId().replace("_", "\\_") ;
+                hash = hash + "_" + instance.getId().getValue().replace("_", "\\_") ;
             }
         }
         return hash;

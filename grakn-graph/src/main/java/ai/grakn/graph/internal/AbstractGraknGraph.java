@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknAdmin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -363,8 +364,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends Concept> T getConcept(String id) {
-        return getConcept(Schema.ConceptProperty.ID, id);
+    public <T extends Concept> T getConcept(ConceptId id) {
+        return getConcept(Schema.ConceptProperty.ID, id.getValue());
     }
     private <T extends Type> T getTypeByName(String name){
         return getConcept(Schema.ConceptProperty.NAME, name);
@@ -546,12 +547,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private String calculateShortcutHash(Relation relation, RelationType relationType, RoleType fromRole, Instance fromRolePlayer, RoleType toRole, Instance toRolePlayer){
         String hash = "";
-        String relationIdValue = relationType.getId();
-        String fromIdValue = fromRolePlayer.getId();
-        String fromRoleValue = fromRole.getId();
-        String toIdValue = toRolePlayer.getId();
-        String toRoleValue = toRole.getId();
-        String assertionIdValue = relation.getId();
+        String relationIdValue = relationType.getId().getValue();
+        String fromIdValue = fromRolePlayer.getId().getValue();
+        String fromRoleValue = fromRole.getId().getValue();
+        String toIdValue = toRolePlayer.getId().getValue();
+        String toRoleValue = toRole.getId().getValue();
+        String assertionIdValue = relation.getId().getValue();
 
         if(relationIdValue != null)
             hash += relationIdValue;
@@ -743,8 +744,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
 
-        Set<CastingImpl> castings = castingVertices.stream().map( vertex -> {
-            return elementFactory.<CastingImpl>buildConcept(vertex);}).collect(Collectors.toSet());
+        Set<CastingImpl> castings = castingVertices.stream().map(elementFactory::<CastingImpl>buildConcept).collect(Collectors.toSet());
 
         if(castings.size() < 2){
             return false;
@@ -766,7 +766,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void deleteRelations(Set<RelationImpl> relations){
         for (RelationImpl relation : relations) {
-            String relationID = relation.getId();
+            String relationID = relation.getId().getValue();
 
             //Kill Shortcut Edges
             relation.rolePlayers().values().forEach(instance -> {

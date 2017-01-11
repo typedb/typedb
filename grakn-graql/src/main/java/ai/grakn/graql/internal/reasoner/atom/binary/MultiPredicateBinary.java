@@ -48,13 +48,13 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, Query par) {
         super(pattern, par);
         this.multiPredicate.addAll(preds);
-        this.typeId = extractTypeId(atomPattern.asVar());
+        this.typeName = extractTypeId(atomPattern.asVar());
     }
 
     protected MultiPredicateBinary(MultiPredicateBinary a) {
         super(a);
         a.getMultiPredicate().forEach(multiPredicate::add);
-        this.typeId = extractTypeId(atomPattern.asVar());
+        this.typeName = extractTypeId(atomPattern.asVar());
     }
 
     protected abstract String extractTypeId(VarAdmin var);
@@ -101,7 +101,7 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.typeName.hashCode();
         hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
         return hashCode;
     }

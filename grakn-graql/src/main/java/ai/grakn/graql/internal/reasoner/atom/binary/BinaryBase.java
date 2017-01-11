@@ -89,7 +89,7 @@ public abstract class BinaryBase extends Atom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
-        return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
+        return this.typeName.equals(a2.getTypeName()) && this.varName.equals(a2.getVarName())
                 && this.valueVariable.equals(a2.getValueVariable());
     }
 
@@ -98,14 +98,14 @@ public abstract class BinaryBase extends Atom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
-        return this.typeId.equals(a2.getTypeId())
+        return this.typeName.equals(a2.getTypeName())
                 && predicatesEquivalent(a2);
     }
 
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.typeName.hashCode();
         hashCode = hashCode * 37 + this.varName.hashCode();
         hashCode = hashCode * 37 + this.valueVariable.hashCode();
         return hashCode;

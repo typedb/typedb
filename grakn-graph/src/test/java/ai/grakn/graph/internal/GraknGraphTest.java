@@ -3,6 +3,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -94,7 +95,7 @@ public class GraknGraphTest extends GraphTestBase {
         vertex.property(Schema.ConceptProperty.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
         vertex.property(Schema.ConceptProperty.ID.name(), id);
 
-        CastingImpl casting = graknGraph.getConcept(id);
+        CastingImpl casting = graknGraph.getConcept(ConceptId.of(id));
         EdgeImpl edge = casting.addEdge(role, Schema.EdgeLabel.ISA); // Casting to Role
         edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
         edge = casting.addEdge(rolePlayer, Schema.EdgeLabel.ROLE_PLAYER);// Casting to Roleplayer

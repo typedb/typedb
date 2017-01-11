@@ -21,9 +21,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -48,14 +48,14 @@ import java.util.Set;
 public abstract class Atom extends AtomBase {
 
     protected Type type = null;
-    protected String typeId = null;
+    protected String typeName = null;
 
     protected Atom(VarAdmin pattern) { this(pattern, null);}
     protected Atom(VarAdmin pattern, Query par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
-        this.typeId = a.typeId;
+        this.typeName = a.typeName;
     }
 
     @Override
@@ -105,8 +105,8 @@ public abstract class Atom extends AtomBase {
         if (isResource()) return false;
         boolean atomRecursive = false;
 
-        String typeId = getTypeId();
-        if (typeId.isEmpty()) return false;
+        String typeId = getTypeName();
+        if (typeId == null) return false;
         Type type = getType();
         Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
         Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
@@ -127,14 +127,14 @@ public abstract class Atom extends AtomBase {
      */
     public Type getType(){
         if (type == null)
-            type = getParentQuery().graph().getType(typeId);
+            type = getParentQuery().graph().getType(typeName);
         return type;
     }
 
     /**
      * @return type id of the corresponding type if any
      */
-    public String getTypeId(){ return typeId;}
+    public String getTypeName(){ return typeName;}
 
     /**
      * @return value variable name

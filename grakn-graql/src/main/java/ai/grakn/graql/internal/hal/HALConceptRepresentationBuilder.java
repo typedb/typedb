@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
@@ -116,10 +117,10 @@ public class HALConceptRepresentationBuilder {
     }
 
     private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, String relationType, String keyspace) {
-        String currentID = currentVar.getId();
+        ConceptId currentID = currentVar.getId();
 
-        String firstID;
-        String secondID;
+        ConceptId firstID;
+        ConceptId secondID;
         String firstRole;
         String secondRole;
 
