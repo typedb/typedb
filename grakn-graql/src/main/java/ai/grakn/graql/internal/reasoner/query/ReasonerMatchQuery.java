@@ -26,7 +26,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;

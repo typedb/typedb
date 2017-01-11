@@ -18,16 +18,10 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.util.ConfigProperties;
-
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.LOG_TOPIC;
 
 public class KafkaLogger {
     private final static Logger LOG = LoggerFactory.getLogger(KafkaLogger.class);

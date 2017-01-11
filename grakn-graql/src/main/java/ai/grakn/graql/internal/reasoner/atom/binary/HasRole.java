@@ -27,7 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import com.google.common.collect.Sets;
-import java.util.HashSet;
+
 import java.util.Set;
 
 /**

@@ -21,9 +21,8 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+
 import static ai.grakn.test.GraknTestEnv.*;
 
 /**

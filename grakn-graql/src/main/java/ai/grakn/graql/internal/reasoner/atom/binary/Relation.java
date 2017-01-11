@@ -26,7 +26,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
