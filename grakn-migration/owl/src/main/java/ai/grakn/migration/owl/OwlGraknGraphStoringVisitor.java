@@ -127,7 +127,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
     @Override
     public Concept visit(OWLSubClassOfAxiom axiom) {
         OWLClassExpression subclass = axiom.getSubClass();
-        EntityType subtype = null;
+        EntityType subtype;
         if (subclass.isOWLClass())
             subtype = migrator.entityType(subclass.asOWLClass());
         else {
@@ -136,7 +136,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         OWLClassExpression superclass = axiom.getSuperClass();
-        EntityType supertype = null;
+        EntityType supertype;
         if (superclass.isOWLClass())
             supertype = migrator.entityType(superclass.asOWLClass());
         else {
