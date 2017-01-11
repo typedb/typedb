@@ -25,7 +25,6 @@ import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GremlinQuery;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.test.AbstractRollbackGraphTest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
@@ -54,7 +53,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GraqlTraversalTest extends AbstractRollbackGraphTest {
+public class GraqlTraversalTest {
 
     private static final VarName x = varName("x");
     private static final VarName y = varName("y");
@@ -134,7 +133,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     @Test
     public void testAllTraversalsSimpleQuery() {
         Var pattern = Patterns.var(x).id("Titanic").isa(Patterns.var(y).id("movie"));
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
+        GremlinQuery query = new GremlinQuery(pattern.admin(), ImmutableSet.of(x));
 
         Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
@@ -161,7 +160,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     @Test
     public void testAllTraversalsDisjunction() {
         Pattern pattern = or(Patterns.var(x).id("Titanic").value("hello"), Patterns.var().rel("x").rel("y"));
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
+        GremlinQuery query = new GremlinQuery(pattern.admin(), ImmutableSet.of(x));
 
         Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
@@ -199,7 +198,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     private static GraqlTraversal optimalTraversal(Pattern pattern) {
-        return new GremlinQuery(graph, pattern.admin(), ImmutableSet.of()).optimalTraversal();
+        return new GremlinQuery(pattern.admin(), ImmutableSet.of()).optimalTraversal();
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -209,7 +208,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     @SafeVarargs
     private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
         ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversal.create(graph, fragmentsSet);
+        return GraqlTraversal.create(fragmentsSet);
     }
 
     private static Fragment makeShortcut(VarName x, VarName y) {
@@ -217,7 +216,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
+        GremlinQuery query = new GremlinQuery(pattern.admin(), ImmutableSet.of(x));
 
         GraqlTraversal traversal = optimalTraversal(pattern);
 

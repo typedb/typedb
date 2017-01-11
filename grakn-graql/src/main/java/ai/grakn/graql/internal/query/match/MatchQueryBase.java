@@ -76,7 +76,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         for (VarAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph).getTraversal();
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery().getTraversal(graph);
         return traversal.toStream()
                 .map(vertices -> makeResults(graph, vertices))
                 .filter(result -> shouldShowResult(graph, result))
@@ -85,7 +85,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Set<Type> getTypes(GraknGraph graph) {
-        GremlinQuery gremlinQuery = getQuery(graph);
+        GremlinQuery gremlinQuery = getQuery();
         return gremlinQuery.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
     }
 
@@ -156,11 +156,10 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     /**
-     * @param graph the graph to execute the query on
      * @return the query that will match the specified patterns
      */
-    private GremlinQuery getQuery(GraknGraph graph) {
-        return new GremlinQuery(graph, this.pattern, getSelectedNames());
+    private GremlinQuery getQuery() {
+        return new GremlinQuery(this.pattern, getSelectedNames());
     }
 
     /**
