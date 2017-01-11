@@ -77,6 +77,15 @@ public class MatchQueryBase extends AbstractMatchQuery {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery().getTraversal(graph);
+
+        String[] selectedNames = getSelectedNames().stream().map(VarName::getValue).toArray(String[]::new);
+
+        // Must provide three arguments in order to pass an array to .select
+        // If ordering, select the variable to order by as well
+        if (selectedNames.length != 0) {
+            traversal.select(selectedNames[0], selectedNames[0], selectedNames);
+        }
+
         return traversal.toStream()
                 .map(vertices -> makeResults(graph, vertices))
                 .filter(result -> shouldShowResult(graph, result))
@@ -159,7 +168,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
      * @return the query that will match the specified patterns
      */
     private GremlinQuery getQuery() {
-        return new GremlinQuery(this.pattern, getSelectedNames());
+        return new GremlinQuery(this.pattern);
     }
 
     /**

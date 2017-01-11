@@ -131,7 +131,7 @@ public class GraqlTraversalTest {
     @Test
     public void testAllTraversalsSimpleQuery() {
         Var pattern = Patterns.var(x).id("Titanic").isa(Patterns.var(y).id("movie"));
-        GremlinQuery query = new GremlinQuery(pattern.admin(), ImmutableSet.of(x));
+        GremlinQuery query = new GremlinQuery(pattern.admin());
 
         Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
@@ -158,7 +158,7 @@ public class GraqlTraversalTest {
     @Test
     public void testAllTraversalsDisjunction() {
         Pattern pattern = or(Patterns.var(x).id("Titanic").value("hello"), Patterns.var().rel("x").rel("y"));
-        GremlinQuery query = new GremlinQuery(pattern.admin(), ImmutableSet.of(x));
+        GremlinQuery query = new GremlinQuery(pattern.admin());
 
         Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
 
@@ -196,7 +196,7 @@ public class GraqlTraversalTest {
     }
 
     private static GraqlTraversal optimalTraversal(Pattern pattern) {
-        return new GremlinQuery(pattern.admin(), ImmutableSet.of()).optimalTraversal();
+        return new GremlinQuery(pattern.admin()).optimalTraversal();
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -214,7 +214,7 @@ public class GraqlTraversalTest {
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
-        GremlinQuery query = new GremlinQuery(pattern.admin(), ImmutableSet.of(x));
+        GremlinQuery query = new GremlinQuery(pattern.admin());
 
         GraqlTraversal traversal = optimalTraversal(pattern);
 
