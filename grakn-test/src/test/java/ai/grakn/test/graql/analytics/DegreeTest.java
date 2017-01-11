@@ -125,8 +125,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(3, degrees.size());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -136,8 +136,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(degrees.size(), degrees2.size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -147,8 +147,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees2.get(3L).size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -159,8 +159,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees2.get(3L).size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -171,8 +171,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees2.get(3L).size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -182,8 +182,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertTrue(!degrees3.isEmpty());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -193,8 +193,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees3.get(3L).size());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -455,8 +455,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(subGraphReferenceDegrees.containsKey(id));
-                    assertEquals(subGraphReferenceDegrees.get(id), entry.getKey());
+                    assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(subGraphReferenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -466,8 +466,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(almostFullReferenceDegrees.containsKey(id));
-                    assertEquals(almostFullReferenceDegrees.get(id), entry.getKey());
+                    assertTrue(almostFullReferenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(almostFullReferenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -476,8 +476,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -696,8 +696,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertTrue(!degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees1.containsKey(id));
-                    assertEquals(referenceDegrees1.get(id), entry.getKey());
+                    assertTrue(referenceDegrees1.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees1.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -790,8 +790,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -831,8 +831,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -879,8 +879,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
