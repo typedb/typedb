@@ -164,7 +164,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Entity item1 = getEntity("eItem1");
             // Item1 name data property is "First Name"
             assertTrue(item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item")));
-            item1.resources().stream().forEach(System.out::println);
+            item1.resources().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
             RoleType subjectRole = migrator.graph().getRoleType(migrator.namer().subjectRole("op-related"));
             RoleType objectRole = migrator.graph().getRoleType(migrator.namer().objectRole("op-related"));
