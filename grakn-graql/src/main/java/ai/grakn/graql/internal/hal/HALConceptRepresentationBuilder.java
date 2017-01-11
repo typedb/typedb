@@ -81,7 +81,7 @@ public class HALConceptRepresentationBuilder {
 
             if (current.getValue().isType() && current.getValue().asType().isImplicit()) return;
 
-            LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
+            LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId().getValue());
             Representation currentHal = new HALConceptData(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
                     typesAskedInQuery, keyspace).getRepresentation();
             attachGeneratedRelations(currentHal, current, linkedNodes, resultLine, roleTypes, keyspace);
