@@ -19,32 +19,28 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
 
 public class AbstractInferenceTest extends AbstractGraknTest {
     private static QueryBuilder qb;
+    private static QueryBuilder iqb;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         GraknGraph graph = AbstractGraph.getGraph();
         qb = graph.graql().infer(false);
+        iqb = graph.graql().infer(true).materialise(false);
     }
 
     /**silently allows multiple isas*/
@@ -52,8 +48,6 @@ public class AbstractInferenceTest extends AbstractGraknTest {
     @Ignore
     public void testQuery() {
         String queryString = "match $x isa Q;";
-        MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                 "{$x isa Q} or {\n" +
                 "{$y isa q} or {$y isa t};\n" +
@@ -61,7 +55,7 @@ public class AbstractInferenceTest extends AbstractGraknTest {
                 "($x, $y) isa rel\n" +
                 "}; select $x";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**silently allows multiple isas*/
@@ -70,8 +64,6 @@ public class AbstractInferenceTest extends AbstractGraknTest {
     public void testQuery2() {
         String queryString = "match " +
                         "$yy isa Q;$y isa P;($y, $yy) isa REL; select $yy";
-        MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                                 "{$yy isa Q} or {" +
                                 "{$yyy isa q} or {$yyy isa t};\n" +
@@ -81,11 +73,10 @@ public class AbstractInferenceTest extends AbstractGraknTest {
                                 "$y isa P;\n" +
                                 "($y, $yy) isa REL; select $yy";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, Stream<Map<String, Concept>> s2) {
-        assertEquals(s1.map(CommonUtil::resultVarNameToString).collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }
-
 }

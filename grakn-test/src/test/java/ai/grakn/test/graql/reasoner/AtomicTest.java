@@ -70,20 +70,18 @@ public class AtomicTest extends AbstractGraknTest {
 
     @Test
     public void testRecursive(){
-        GraknGraph graph = snbGraph;
         String recRelString = "match ($x, $y) isa resides;";
         String nrecRelString = "match ($x, $y) isa recommendation;";
 
-        AtomicQuery recQuery = new AtomicQuery(recRelString, graph);
-        AtomicQuery nrecQuery = new AtomicQuery(nrecRelString, graph);
+        AtomicQuery recQuery = new AtomicQuery(recRelString, snbGraph);
+        AtomicQuery nrecQuery = new AtomicQuery(nrecRelString, snbGraph);
 
-        assert(recQuery.getAtom().isRecursive());
-        assert(!nrecQuery.getAtom().isRecursive());
+        assertTrue(recQuery.getAtom().isRecursive());
+        assertTrue(!nrecQuery.getAtom().isRecursive());
     }
 
     @Test
     public void testFactory(){
-        GraknGraph graph = snbGraph;
         String atomString = "match $x isa person;";
         String relString = "match ($x, $y) isa recommendation;";
         String resString = "match $x has gender 'male';";
@@ -92,9 +90,9 @@ public class AtomicTest extends AbstractGraknTest {
         Atom relation = new AtomicQuery(relString, snbGraph).getAtom();
         Atom res = new AtomicQuery(resString, snbGraph).getAtom();
 
-        assert(atom.isType());
-        assert(relation.isRelation());
-        assert(res.isResource());
+        assertTrue(atom.isType());
+        assertTrue(relation.isRelation());
+        assertTrue(res.isResource());
     }
 
     @Test

@@ -19,19 +19,14 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.VarName;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -52,7 +47,7 @@ public class WineInferenceTest extends AbstractGraknTest {
     public void testRecommendation() {
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;";
         QueryBuilder qb = graph.graql().infer(false);
-        MatchQuery query = qb.parse(queryString);
+        QueryBuilder iqb = graph.graql().infer(true);
 
         String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
                             "{$nameP value 'Bob';$nameW value 'White Champagne';} or" +
@@ -62,11 +57,11 @@ public class WineInferenceTest extends AbstractGraknTest {
                         "{$nameP value 'Eva';$nameW value 'Tamaioasa Romaneasca';} or" +
                         "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }
 }
