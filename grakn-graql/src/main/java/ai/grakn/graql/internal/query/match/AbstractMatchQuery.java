@@ -57,7 +57,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<String> resultsString(Printer printer) {
-        return stream().map(printer::graqlString);
+        return streamWithVarNames().map(printer::graqlString);
     }
 
     @Override
