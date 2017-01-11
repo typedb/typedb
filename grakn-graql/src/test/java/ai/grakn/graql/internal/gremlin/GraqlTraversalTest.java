@@ -21,14 +21,20 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.or;
@@ -47,6 +53,7 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.value;
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -131,9 +138,7 @@ public class GraqlTraversalTest {
     @Test
     public void testAllTraversalsSimpleQuery() {
         Var pattern = Patterns.var(x).id("Titanic").isa(Patterns.var(y).id("movie"));
-        GremlinQuery query = new GremlinQuery(pattern.admin());
-
-        Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
+        Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
 
@@ -158,9 +163,7 @@ public class GraqlTraversalTest {
     @Test
     public void testAllTraversalsDisjunction() {
         Pattern pattern = or(Patterns.var(x).id("Titanic").value("hello"), Patterns.var().rel("x").rel("y"));
-        GremlinQuery query = new GremlinQuery(pattern.admin());
-
-        Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
+        Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         // Expect all combinations of both disjunctions
         Set<GraqlTraversal> expected = ImmutableSet.of(
@@ -195,8 +198,8 @@ public class GraqlTraversalTest {
                 .rel(var(z).value("Titanic").isa(var("a").id("title"))));
     }
 
-    private static GraqlTraversal optimalTraversal(Pattern pattern) {
-        return new GremlinQuery(pattern.admin()).optimalTraversal();
+    private static GraqlTraversal semiOptimal(Pattern pattern) {
+        return GraqlTraversal.semiOptimal(pattern.admin());
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -209,17 +212,28 @@ public class GraqlTraversalTest {
         return GraqlTraversal.create(fragmentsSet);
     }
 
+    private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
+        Collection<Conjunction<VarAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
+
+        List<Set<List<Fragment>>> collect = patterns.stream()
+                .map(ConjunctionQuery::new)
+                .map(ConjunctionQuery::allFragmentOrders)
+                .collect(toList());
+
+        Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
+
+        return lists.stream().map(list -> GraqlTraversal.create(Sets.newHashSet(list)));
+    }
+
     private static Fragment makeShortcut(VarName x, VarName y) {
         return shortcut(Optional.empty(), Optional.empty(), Optional.empty(), x, y);
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
-        GremlinQuery query = new GremlinQuery(pattern.admin());
-
-        GraqlTraversal traversal = optimalTraversal(pattern);
+        GraqlTraversal traversal = semiOptimal(pattern);
 
         //noinspection OptionalGetWithoutIsPresent
-        GraqlTraversal globalOptimum = query.allGraqlTraversals().min(comparing(GraqlTraversal::getComplexity)).get();
+        GraqlTraversal globalOptimum = allGraqlTraversals(pattern).min(comparing(GraqlTraversal::getComplexity)).get();
 
         double globalComplexity = globalOptimum.getComplexity();
         double complexity = traversal.getComplexity();

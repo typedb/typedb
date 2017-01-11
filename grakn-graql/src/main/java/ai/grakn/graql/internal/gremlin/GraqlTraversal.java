@@ -20,6 +20,9 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableList;
@@ -77,13 +80,16 @@ public class GraqlTraversal {
 
     /**
      * Create a semi-optimal traversal plan using a greedy approach
-     * @param innerQueries a collection of inner queries that the traversal must execute
+     * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    static GraqlTraversal semiOptimal(Collection<ConjunctionQuery> innerQueries) {
+    public static GraqlTraversal semiOptimal(PatternAdmin pattern) {
+
+        Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         // Find a semi-optimal way to execute each conjunction
-        Set<? extends List<Fragment>> fragments = innerQueries.stream()
+        Set<? extends List<Fragment>> fragments = patterns.stream()
+                .map(ConjunctionQuery::new)
                 .map(GraqlTraversal::semiOptimalConjunction)
                 .collect(toImmutableSet());
 
@@ -185,7 +191,7 @@ public class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(GraknGraph graph) {
+    public GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(GraknGraph graph) {
         Traversal[] traversals =
                 fragments.stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
