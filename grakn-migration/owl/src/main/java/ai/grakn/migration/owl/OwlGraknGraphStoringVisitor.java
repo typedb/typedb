@@ -56,7 +56,6 @@ import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.SWRLRule;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -216,12 +215,11 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         if (properties.size() != axiom.getAxiomWithoutAnnotations().properties().count())
             return null;
 
-        Iterator<OWLObjectPropertyExpression> it = properties.iterator();
-        while(it.hasNext()){
-            RelationType relation = migrator.relation(it.next().asOWLObjectProperty());
+        for (OWLObjectPropertyExpression property : properties) {
+            RelationType relation = migrator.relation(property.asOWLObjectProperty());
             properties.forEach(prop -> {
                 RelationType eqRelation = migrator.relation(prop.asOWLObjectProperty());
-                if (!relation.equals(eqRelation)){
+                if (!relation.equals(eqRelation)) {
                     Map<String, String> roleMap = new HashMap<>();
                     roleMap.put(migrator.namer().subjectRole(relation.getName()),
                             migrator.namer().subjectRole(eqRelation.getName()));
