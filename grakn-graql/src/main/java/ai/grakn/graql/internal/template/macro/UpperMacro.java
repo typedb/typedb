@@ -27,7 +27,7 @@ import java.util.List;
  * Convert the given value into an upper case string. Only accepts one argument.
  *
  * Usage:
- *      @upper(<value)
+ *      {@literal @}upper(<value)
  * </p>
  * 
  * @author alexandraorth
