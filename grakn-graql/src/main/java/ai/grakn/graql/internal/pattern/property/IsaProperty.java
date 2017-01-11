@@ -57,9 +57,9 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        Optional<String> id = type.getId();
-        if (id.isPresent()){
-            shortcutTraversal.setType(id.get());
+        Optional<String> typeName = type.getTypeName();
+        if (typeName.isPresent()) {
+            shortcutTraversal.setType(typeName.get());
         } else {
             shortcutTraversal.setInvalid();
         }

@@ -45,6 +45,7 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inHasRole;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.name;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outHasRole;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
@@ -55,7 +56,10 @@ import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalTest {
@@ -196,6 +200,62 @@ public class GraqlTraversalTest {
         assertNearlyOptimal(var()
                 .rel(var(x).isa(var(y).id("movie")))
                 .rel(var(z).value("Titanic").isa(var("a").id("title"))));
+    }
+
+    @Test
+    public void testShortcutOptimisationPlain() {
+        Pattern rel = var().rel("x").rel("y");
+
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
+
+        assertThat(graqlTraversal, anyOf(
+                is(traversal(xShortcutY)),
+                is(traversal(yShortcutX))
+        ));
+    }
+
+    @Test
+    public void testShortcutOptimisationWithType() {
+        VarName marriageName = Patterns.varName("m");
+
+        Var marriage = var(marriageName).name("marriage");
+
+        Var rel = var().rel("x").rel("y").isa(marriage);
+
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
+
+        Fragment xMarriesY = shortcut(Optional.of("marriage"), Optional.empty(), Optional.empty(), x, y);
+        Fragment yMarriesX = shortcut(Optional.of("marriage"), Optional.empty(), Optional.empty(), y, x);
+        Fragment marriageFragment = name(marriageName, "marriage");
+
+        assertThat(graqlTraversal, anyOf(
+                is(traversal(xMarriesY, marriageFragment)),
+                is(traversal(yMarriesX, marriageFragment)),
+                is(traversal(marriageFragment, xMarriesY)),
+                is(traversal(marriageFragment, yMarriesX))
+        ));
+    }
+
+    @Test
+    public void testShortcutOptimisationWithRoles() {
+        VarName wifeName = Patterns.varName("w");
+
+        Var wife = var(wifeName).name("wife");
+
+        Var rel = var().rel("x").rel(wife, "y");
+
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
+
+        Fragment xMarriesY = shortcut(Optional.empty(), Optional.empty(), Optional.of("wife"), x, y);
+        Fragment yMarriesX = shortcut(Optional.empty(), Optional.of("wife"), Optional.empty(), y, x);
+        Fragment wifeFragment = name(wifeName, "wife");
+
+        assertThat(graqlTraversal, anyOf(
+                is(traversal(xMarriesY, wifeFragment)),
+                is(traversal(yMarriesX, wifeFragment)),
+                is(traversal(wifeFragment, xMarriesY)),
+                is(traversal(wifeFragment, yMarriesX))
+        ));
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
