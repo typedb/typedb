@@ -22,13 +22,14 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class RegexAtom extends AtomBase {
 
     private final String regex;
 
+    public RegexAtom(VarName varName, RegexProperty prop){ this(varName, prop, null);}
     public RegexAtom(VarName varName, RegexProperty prop, Query parent){
         super(Graql.var(varName).regex(prop.getRegex()).admin(), parent);
         this.regex = prop.getRegex();

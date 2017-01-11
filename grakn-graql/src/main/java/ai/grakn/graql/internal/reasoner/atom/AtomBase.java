@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -42,7 +43,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.capture;
  * @author Kasper Piskorski
  *
  */
-public abstract class AtomBase implements Atomic{
+public abstract class AtomBase implements Atomic {
 
     protected VarName varName = null;
     protected PatternAdmin atomPattern = null;

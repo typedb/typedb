@@ -16,15 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.admin;
 
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  *
@@ -83,16 +80,6 @@ public interface Atomic extends Cloneable{
      * @return the base pattern combined with possible predicate patterns
      */
     PatternAdmin getCombinedPattern();
-
-    /**
-     * @return the query this atom belongs to
-     * */
-    Query getParentQuery();
-
-    /**
-     * @param q query this atom is supposed to belong to
-     */
-    void setParentQuery(Query q);
 
     Map<VarName, VarName> getUnifiers(Atomic parentAtom);
 

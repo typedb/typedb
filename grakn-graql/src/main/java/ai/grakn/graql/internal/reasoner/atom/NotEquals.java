@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -44,6 +45,7 @@ public class NotEquals extends AtomBase {
 
     private VarName refVarName;
 
+    public NotEquals(VarName varName, NeqProperty prop){ this(varName, prop, null);}
     public NotEquals(VarName varName, NeqProperty prop, Query parent){
         super(var(varName).neq(var(prop.getVar().getVarName())).admin(), parent);
         this.refVarName = prop.getVar().getVarName();

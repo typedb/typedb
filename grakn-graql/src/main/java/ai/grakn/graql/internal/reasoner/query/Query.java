@@ -25,18 +25,17 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import java.util.HashMap;
@@ -62,7 +61,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
  * @author Kasper Piskorski
  *
  */
-public class Query {
+public class Query implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
@@ -122,7 +121,9 @@ public class Query {
     private void inferTypes(){
         getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .forEach(Atom::inferTypes);
+                .forEach(at -> {
+                    at.inferTypes();
+                });
     }
 
     public Set<VarName> getSelectedNames() { return Sets.newHashSet(selectVars);}
@@ -420,7 +421,7 @@ public class Query {
      */
     public boolean addAtom(Atomic atom) {
         if(atomSet.add(atom)) {
-            atom.setParentQuery(this);
+            ((AtomBase)atom).setParentQuery(this);
             return true;
         }
         else return false;

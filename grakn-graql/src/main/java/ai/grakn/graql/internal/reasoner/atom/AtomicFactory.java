@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -45,7 +46,7 @@ public class AtomicFactory {
      */
     public static Atomic create(Atomic atom, Query parent) {
         Atomic copy = atom.clone();
-        copy.setParentQuery(parent);
+        ((AtomBase)copy).setParentQuery(parent);
         return copy;
     }
 
@@ -59,9 +60,10 @@ public class AtomicFactory {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()
                 .flatMap(var -> var.getProperties()
-                        .map(prop -> PropertyMapper.map(prop, var, pattern.getVars(), parent, graph))
+                        .map(prop -> PropertyMapper.map(prop, var, pattern.getVars()))
                         .filter(Objects::nonNull))
                 .forEach(atoms::add);
+        atoms.forEach(at -> ((AtomBase) at).setParentQuery(parent));
         return atoms;
     }
 }

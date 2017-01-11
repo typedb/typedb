@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
 /**
@@ -44,12 +44,9 @@ public class IdPredicate extends Predicate<String>{
     public IdPredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
+    public IdPredicate(VarName varName, IdProperty prop){ this(varName, prop, null);}
     public IdPredicate(VarName varName, IdProperty prop, Query par){
         this(createIdVar(varName, prop.getId()), par);
-    }
-
-    public IdPredicate(VarName varName, NameProperty prop, Query par){
-        this(createIdVar(varName, par.graph().getType(prop.getNameValue()).getId()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}
 

@@ -22,12 +22,11 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import com.google.common.collect.Sets;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -42,6 +41,7 @@ import java.util.Set;
 public class HasRole extends TypeAtom {
     private Predicate relationPredicate = null;
 
+    public HasRole(VarAdmin pattern, Predicate relPredicate, Predicate predicate) { this(pattern, relPredicate, predicate, null);}
     public HasRole(VarAdmin pattern, Predicate relPredicate, Predicate predicate, Query par) {
         super(pattern, predicate, par);
         this.relationPredicate = relPredicate;

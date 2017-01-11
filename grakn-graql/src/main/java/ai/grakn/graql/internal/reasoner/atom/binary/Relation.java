@@ -26,7 +26,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -34,7 +33,7 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
@@ -87,6 +86,7 @@ public class Relation extends TypeAtom {
     public Relation(VarAdmin pattern, Query par) {
         this(pattern, null, par);
     }
+    public Relation(VarAdmin pattern, Predicate predicate) { this(pattern, predicate, null);}
     public Relation(VarAdmin pattern, Predicate predicate, Query par) {
         super(pattern, predicate, par);
         this.relationPlayers = getRelationPlayers(pattern);

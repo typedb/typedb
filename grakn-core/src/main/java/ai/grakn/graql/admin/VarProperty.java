@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.GraknGraph;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -62,4 +64,6 @@ public interface VarProperty {
     default boolean isUnique() {
         return false;
     }
+
+    default Atomic map(String varName, Set<VarAdmin> vars, ReasonerQuery query){ return null;}
 }

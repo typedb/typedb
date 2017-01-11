@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -51,7 +51,6 @@ public abstract class BinaryBase extends Atom {
     protected BinaryBase(VarAdmin pattern,  Query par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
-
     }
 
     protected BinaryBase(BinaryBase a) {

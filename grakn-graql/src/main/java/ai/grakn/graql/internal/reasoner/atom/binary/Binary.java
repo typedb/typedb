@@ -24,19 +24,25 @@ import java.util.Set;
 public abstract class Binary extends BinaryBase {
     private Predicate predicate = null;
 
+    protected Binary(VarAdmin pattern, Predicate p) { this(pattern, p, null);}
     protected Binary(VarAdmin pattern, Predicate p, Query par) {
         super(pattern, par);
         this.predicate = p;
-        this.typeId = extractTypeId(atomPattern.asVar());
+        //this.typeId = extractTypeId(atomPattern.asVar());
     }
 
     protected Binary(Binary a) {
         super(a);
         this.predicate = a.getPredicate() != null ? (Predicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
-        this.typeId = extractTypeId(atomPattern.asVar());
+        //this.typeId = extractTypeId(atomPattern.asVar());
     }
 
     protected abstract String extractTypeId(VarAdmin var);
+
+    @Override
+    public void inferTypes(){
+        typeId = extractTypeId(atomPattern.asVar());
+    }
 
     @Override
     public PatternAdmin getCombinedPattern() {
