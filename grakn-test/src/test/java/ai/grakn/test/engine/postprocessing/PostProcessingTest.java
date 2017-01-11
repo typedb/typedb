@@ -133,13 +133,13 @@ public class PostProcessingTest extends EngineTestBase {
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().
-                hasId(mainRoleTypeId).next();
+                hasId(mainRoleTypeId.getValue()).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
-                hasId(relationId).next();
+                hasId(relationId.getValue()).next();
 
         Vertex mainInstanceVertex = rawGraph.traversal().V().
-                hasId(mainInstanceId).next();
+                hasId(mainInstanceId.getValue()).next();
 
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
@@ -188,9 +188,9 @@ public class PostProcessingTest extends EngineTestBase {
     private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
         AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;
         Vertex originalResource = (Vertex) graph.getTinkerTraversal()
-                .hasId(resource.getId()).next();
+                .hasId(resource.getId().getValue()).next();
         Vertex vertexResourceType = (Vertex) graph.getTinkerTraversal()
-                .hasId(resourceType.getId()).next();
+                .hasId(resourceType.getId().getValue()).next();
 
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
