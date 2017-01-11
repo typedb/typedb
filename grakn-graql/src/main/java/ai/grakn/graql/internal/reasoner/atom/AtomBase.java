@@ -100,6 +100,7 @@ public abstract class AtomBase implements Atomic{
      * @return pattern corresponding to this atom
      */
     public PatternAdmin getPattern(){ return atomPattern;}
+    public PatternAdmin getCombinedPattern(){ return getPattern();}
 
     /**
      * @return the query the atom is contained in

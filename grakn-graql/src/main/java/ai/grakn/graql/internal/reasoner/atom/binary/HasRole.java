@@ -19,11 +19,16 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
+import com.google.common.collect.Sets;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -53,6 +58,14 @@ public class HasRole extends TypeAtom {
         Predicate objPredicate = atom.getRelationPredicate();
         return (pred == null && objPredicate == null)
                 || ((pred != null && objPredicate != null) && pred.isEquivalent(objPredicate));
+    }
+
+    @Override
+    public PatternAdmin getCombinedPattern() {
+        Set<VarAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
+        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
+        if (getRelationPredicate() != null) vars.add(getRelationPredicate().getPattern().asVar());
+        return Patterns.conjunction(vars);
     }
 
     @Override

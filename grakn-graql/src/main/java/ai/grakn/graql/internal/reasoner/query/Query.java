@@ -140,7 +140,7 @@ public class Query {
 
     public Conjunction<PatternAdmin> getPattern() {
         Set<PatternAdmin> patterns = new HashSet<>();
-        atomSet.stream().map(Atomic::getPattern).forEach(patterns::add);
+        atomSet.stream().map(Atomic::getCombinedPattern).forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
 
@@ -440,12 +440,6 @@ public class Query {
                 .filter(at -> !at.isRuleResolvable())
                 .collect(Collectors.toSet());
         addAtomConstraints(types);
-        //id predicates from types
-        addAtomConstraints(types.stream()
-                .map(type -> (TypeAtom) type)
-                .filter(type -> type.getPredicate() != null)
-                .map(Binary::getPredicate)
-                .collect(Collectors.toSet()));
     }
 
     /**

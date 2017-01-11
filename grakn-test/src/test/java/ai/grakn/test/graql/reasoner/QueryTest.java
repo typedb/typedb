@@ -154,7 +154,7 @@ public class QueryTest extends AbstractGraknTest {
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
 
-        AtomicQuery childCopy = new AtomicQuery(childQuery.toString(), graph);
+        AtomicQuery childCopy = new AtomicQuery(childQuery.toString(), lgraph);
         childCopy.unify(unifiers);
         Atomic childAtomCopy = childCopy.getAtom();
 

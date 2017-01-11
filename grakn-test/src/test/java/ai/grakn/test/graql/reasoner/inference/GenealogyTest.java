@@ -102,7 +102,16 @@ public class GenealogyTest extends EngineTestBase {
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
         MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assert(answers.size() == 1);
+        assertEquals(answers.size(), 1);
+    }
+
+    @Test
+    public void testFemale() {
+        String queryString = "match $x isa person has identifier $id has gender 'female';";
+        MatchQuery query = qb.parse(queryString);
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers.size(), 32);
     }
 
     @Test
@@ -111,7 +120,7 @@ public class GenealogyTest extends EngineTestBase {
         MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
-        assertTrue(!answers.isEmpty());
+        assertEquals(answers.size(), qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }
 
     @Test
@@ -154,7 +163,7 @@ public class GenealogyTest extends EngineTestBase {
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
         assertTrue(!hasDuplicates(answers));
-        answers.forEach(answer -> assertTrue(answer.size() == 2));
+        answers.forEach(answer -> assertEquals(answer.size(), 2));
         assertEquals(76, answers.size());
         assertEquals(answers, answers2);
     }
@@ -169,7 +178,7 @@ public class GenealogyTest extends EngineTestBase {
         MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        answers.forEach(answer -> assertTrue(answer.size() == 2));
+        answers.forEach(answer -> assertEquals(answer.size(), 2));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
@@ -189,7 +198,7 @@ public class GenealogyTest extends EngineTestBase {
         MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
-        assertTrue(answers.size() == 1);
+        assertEquals(answers.size(), 1);
     }
 
     @Test
@@ -198,7 +207,7 @@ public class GenealogyTest extends EngineTestBase {
         MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!hasDuplicates(answers));
-        assertTrue(answers.size() == 4);
+        assertEquals(answers.size(), 4);
     }
 
     @Test
@@ -310,7 +319,7 @@ public class GenealogyTest extends EngineTestBase {
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers requeriedAnswers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(!answers.isEmpty());
-        assertTrue(answers.size() == requeriedAnswers.size());
+        assertEquals(answers.size(), requeriedAnswers.size());
     }
 
     @Test
@@ -329,10 +338,10 @@ public class GenealogyTest extends EngineTestBase {
         QueryAnswers answers4 = new QueryAnswers(Reasoner.resolve(query4, true).collect(Collectors.toSet()));
         QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
 
-        assertTrue(answers.size() == 22);
-        assertTrue(answers2.size() == 92);
-        assertTrue(answers3.size() == 50);
-        assertTrue(answers3.size() == answers4.size());
+        assertEquals(answers.size(), 22);
+        assertEquals(answers2.size(), 92);
+        assertEquals(answers3.size(), 50);
+        assertEquals(answers3.size(), answers4.size());
     }
 
     @Test

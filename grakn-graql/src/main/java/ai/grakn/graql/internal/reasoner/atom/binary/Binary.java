@@ -1,12 +1,16 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
+import com.google.common.collect.Sets;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -33,6 +37,13 @@ public abstract class Binary extends BinaryBase {
     }
 
     protected abstract String extractTypeId(VarAdmin var);
+
+    @Override
+    public PatternAdmin getCombinedPattern() {
+        Set<VarAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
+        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
+        return Patterns.conjunction(vars);
+    }
 
     @Override
     public void setParentQuery(Query q) {

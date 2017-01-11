@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -69,8 +70,8 @@ public class AtomicQueryTest extends AbstractGraknTest {
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         AtomicQuery copy = new AtomicQuery(atomicQuery);
-        assert(atomicQuery.equals(copy));
-        assert(atomicQuery.hashCode() == copy.hashCode());
+        assertEquals(atomicQuery, copy);
+        assertEquals(atomicQuery.hashCode(), copy.hashCode());
     }
 
     @Test
@@ -111,8 +112,8 @@ public class AtomicQueryTest extends AbstractGraknTest {
                 "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
         AtomicQuery parentQuery = new AtomicQuery(queryString, graph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, graph);
-        assertTrue(parentQuery.equals(childQuery));
-        assertTrue(parentQuery.hashCode() == childQuery.hashCode());
+        assertEquals(parentQuery, childQuery);
+        assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
     @Test
@@ -129,8 +130,8 @@ public class AtomicQueryTest extends AbstractGraknTest {
                 "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
         AtomicQuery parentQuery = new AtomicQuery(queryString, lgraph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, lgraph);
-        assertTrue(parentQuery.equals(childQuery));
-        assertTrue(parentQuery.hashCode() == childQuery.hashCode());
+        assertEquals(parentQuery, childQuery);
+        assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
     private static Concept getConcept(String id){

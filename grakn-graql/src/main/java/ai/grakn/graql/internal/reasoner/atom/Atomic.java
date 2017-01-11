@@ -75,9 +75,14 @@ public interface Atomic extends Cloneable{
     default boolean containsVar(VarName name){ return false;}
 
     /**
-     * @return the corresponding pattern
+     * @return the corresponding base pattern
      * */
     PatternAdmin getPattern();
+
+    /**
+     * @return the base pattern combined with possible predicate patterns
+     */
+    PatternAdmin getCombinedPattern();
 
     /**
      * @return the query this atom belongs to
