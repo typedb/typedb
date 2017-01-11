@@ -317,7 +317,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public PathQuery visitPath(GraqlParser.PathContext ctx) {
-        PathQuery path = queryBuilder.compute().path().from(ConceptId.of(visitId(ctx.id(0)))).to(ConceptId.of(visitId(ctx.id(1))));
+        PathQuery path = queryBuilder.compute().path().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
 
         if (ctx.inList() != null) {
             path = path.in(visitInList(ctx.inList()));
@@ -334,7 +334,8 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.PERSIST() != null) {
             if (ctx.id() != null) {
-                cluster = cluster.persist(visitId(ctx.id()));
+                //TODO: Possible a bug that this is asking for the Type name but we extracting the ID. Temporary workaround using getValue()
+                cluster = cluster.persist(visitId(ctx.id()).getValue());
             } else {
                 cluster = cluster.persist();
             }
@@ -355,7 +356,8 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.PERSIST() != null) {
             if (ctx.id() != null) {
-                degree = degree.persist(visitId(ctx.id()));
+                //TODO: Possible a bug that this is asking for the Type name but we extracting the ID. Temporary workaround using getValue()
+                degree = degree.persist(visitId(ctx.id()).getValue());
             } else {
                 degree = degree.persist();
             }
@@ -467,7 +469,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropId(GraqlParser.PropIdContext ctx) {
-        return var -> var.id(ConceptId.of(visitId(ctx.id())));
+        return var -> var.id(visitId(ctx.id()));
     }
 
     @Override
@@ -592,8 +594,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public String visitId(GraqlParser.IdContext ctx) {
-        return visitIdentifier(ctx.identifier());
+    public ConceptId visitId(GraqlParser.IdContext ctx) {
+        return ConceptId.of(visitIdentifier(ctx.identifier()));
     }
 
     @Override

@@ -710,8 +710,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees2.containsKey(id));
-                    assertEquals(referenceDegrees2.get(id), entry.getKey());
+                    assertTrue(referenceDegrees2.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees2.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
