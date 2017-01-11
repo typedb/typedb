@@ -18,7 +18,6 @@
 
 package ai.grakn.test;
 
-import static ai.grakn.test.GraknTestEnv.clearGraphs;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
@@ -29,7 +28,6 @@ import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -73,11 +71,6 @@ public abstract class AbstractGraphTest {
     public void closeGraph() throws Exception {
         graph.clear();
         graph.close();
-    }
-
-    @AfterClass
-    public static void cleanupGraknTests() {
-        clearGraphs();
     }
 
     protected GraknGraph graphWithNewKeyspace() {
