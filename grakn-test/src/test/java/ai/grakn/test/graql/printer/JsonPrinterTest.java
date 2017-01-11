@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.printer;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
@@ -77,13 +78,13 @@ public class JsonPrinterTest extends AbstractMovieGraphTest {
 
     @Test
     public void testJsonMetaType() {
-        String id = graph.admin().getMetaEntityType().getId();
+        ConceptId id = graph.admin().getMetaEntityType().getId();
         assertJsonEquals(Json.object("id", id, "name", "entity", "sub", "concept"), graph.admin().getMetaEntityType());
     }
 
     @Test
     public void testJsonEntityType() {
-        String id = graph.getEntityType("movie").getId();
+        ConceptId id = graph.getEntityType("movie").getId();
         assertJsonEquals(Json.object("id", id, "name", "movie", "sub", "production"), graph.getEntityType("movie"));
     }
 

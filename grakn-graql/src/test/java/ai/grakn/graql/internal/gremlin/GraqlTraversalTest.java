@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -67,9 +68,9 @@ public class GraqlTraversalTest {
     private static final VarName x = varName("x");
     private static final VarName y = varName("y");
     private static final VarName z = varName("z");
-    private static final Fragment xId = id(x, "Titanic");
+    private static final Fragment xId = id(x, ConceptId.of("Titanic"));
     private static final Fragment xValue = value(x, eq("hello").admin());
-    private static final Fragment yId = id(y, "movie");
+    private static final Fragment yId = id(y, ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(x, y);
     private static final Fragment yTypeOfX = inIsa(y, x);
     private static final Fragment xShortcutY = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), x, y);
@@ -113,9 +114,9 @@ public class GraqlTraversalTest {
     @Test
     public void testResourceWithTypeFasterFromType() {
         GraqlTraversal fromInstance =
-                traversal(outIsa(x, x), id(x, "_"), makeShortcut(x, y), outIsa(y, y), id(y, "_"));
+                traversal(outIsa(x, x), id(x, ConceptId.of("_")), makeShortcut(x, y), outIsa(y, y), id(y, ConceptId.of("_")));
         GraqlTraversal fromType =
-                traversal(id(x, "_"), inIsa(x, x), makeShortcut(x, y), outIsa(y, y), id(y, "_"));
+                traversal(id(x, ConceptId.of("_")), inIsa(x, x), makeShortcut(x, y), outIsa(y, y), id(y, ConceptId.of("_")));
         assertFaster(fromType, fromInstance);
     }
 
@@ -182,24 +183,24 @@ public class GraqlTraversalTest {
 
     @Test
     public void testOptimalShortQuery() {
-        assertNearlyOptimal(var(x).isa(var(y).id("movie")));
+        assertNearlyOptimal(var(x).isa(var(y).id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalBothId() {
-        assertNearlyOptimal(var(x).id("Titanic").isa(var(y).id("movie")));
+        assertNearlyOptimal(var(x).id(ConceptId.of("Titanic")).isa(var(y).id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalByValue() {
-        assertNearlyOptimal(var(x).value("hello").isa(var(y).id("movie")));
+        assertNearlyOptimal(var(x).value("hello").isa(var(y).id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
-                .rel(var(x).isa(var(y).id("movie")))
-                .rel(var(z).value("Titanic").isa(var("a").id("title"))));
+                .rel(var(x).isa(var(y).id(ConceptId.of("movie"))))
+                .rel(var(z).value("Titanic").isa(var("a").id(ConceptId.of("title")))));
     }
 
     @Test
