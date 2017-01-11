@@ -493,10 +493,6 @@ public class RelationTest extends GraphTestBase{
         RelationImpl assertion = (RelationImpl) cast.addRelation().
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
-        Map<RoleType, Instance> roleMap = new HashMap<>();
-        roleMap.clear();
-        roleMap.put(movieOfGenre, godfather);
-        roleMap.put(movieGenre, crime);
         movieHasGenre.addRelation().
                 putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 

@@ -477,7 +477,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var().rel("organization-with-shares", "apple").rel("shareholder", "bob").isa("share-ownership")
         ).execute();
 
-        // This should work despite subs
+        // This method should work despite subs
+        //noinspection ResultOfMethodCallIgnored
         qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
     }
 

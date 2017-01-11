@@ -33,6 +33,7 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
@@ -81,7 +82,7 @@ public class TaskManagerTest extends EngineTestBase {
         }
 
         ids.forEach(this::waitToFinish);
-        ids.stream().map(manager::getState).allMatch(s -> s == COMPLETED);
+        assertTrue(ids.stream().map(manager::getState).allMatch(s -> s == COMPLETED));
         assertEquals(20, TestTask.startedCounter.get()-startCount);
     }
 }
