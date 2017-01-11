@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -71,7 +70,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public ShortestPathVertexProgram() {
     }
 
-    public ShortestPathVertexProgram(Set<String> selectedTypes, ConceptId sourceId, ConceptId destinationId) {
+    public ShortestPathVertexProgram(Set<String> selectedTypes, String sourceId, String destinationId) {
         this.selectedTypes = selectedTypes;
         this.persistentProperties.put(SOURCE, sourceId);
         this.persistentProperties.put(DESTINATION, destinationId);
