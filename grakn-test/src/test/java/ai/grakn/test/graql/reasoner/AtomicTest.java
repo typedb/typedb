@@ -281,7 +281,7 @@ public class AtomicTest extends AbstractGraknTest {
         Relation parentRelation = (Relation) new AtomicQuery("match ($a, $x);", graph).getAtom();
         Map<VarName, VarName> unifiers = relation.getUnifiers(parentRelation);
         relation.unify(unifiers);
-        assertTrue(unifiers.size() == 2);
+        assertEquals(unifiers.size(), 2);
         Set<VarName> vars = relation.getVarNames();
         Set<VarName> correctVars = new HashSet<>();
         correctVars.add(varName("a"));

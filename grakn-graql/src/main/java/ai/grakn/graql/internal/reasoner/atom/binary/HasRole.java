@@ -59,7 +59,7 @@ public class HasRole extends TypeAtom {
         return (pred == null && objPredicate == null)
                 || ((pred != null && objPredicate != null) && pred.isEquivalent(objPredicate));
     }
-    
+
     @Override
     public PatternAdmin getCombinedPattern() {
         Set<VarAdmin> vars = Sets.newHashSet(super.getPattern().asVar());

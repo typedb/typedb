@@ -27,7 +27,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -144,7 +143,7 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person, has name 'Bob';";
         Query query = new Query(queryString, graph);
-        assertTrue(query.getAtoms().size() == 2);
+        assertEquals(query.getAtoms().size(), 2);
     }
 
     @Test
@@ -541,9 +540,9 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
         answers2.forEach(answer -> {
-            assert(answer.size() == 3);
+            assertEquals(answer.size(), 3);
         });
-        assertTrue(answers.size() == answers2.size());
+        assertEquals(answers.size(), answers2.size());
     }
 
     //TODO need answer extrapolation
@@ -560,9 +559,9 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
 
         answers2.forEach(answer -> {
-            assert(answer.size() == 3);
+            assertEquals(answer.size(), 3);
         });
-        assertTrue(answers.size() == answers2.size());
+        assertEquals(answers.size(), answers2.size());
     }
 
     @Test
@@ -641,7 +640,7 @@ public class ReasonerTest extends AbstractGraknTest {
 
         List<Map<String, Concept>> fullAnswers = fullQuery.execute();
         List<Map<String, Concept>> answers = query.execute();
-        assertTrue(fullAnswers.size() == answers.size() + 3);
+        assertEquals(fullAnswers.size(), answers.size() + 3);
         assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("23"));
     }
 
@@ -762,11 +761,11 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
         QueryAnswers requeriedAnswers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
 
-        assertTrue(answers.size() == answers2.size());
-        assertTrue(answers2.size() == answers3.size());
-        assertTrue(requeriedAnswers.size() == answers.size());
-        assertTrue(requeriedAnswers.size() == requeriedAnswers2.size());
-        assertTrue(requeriedAnswers2.size() == requeriedAnswers3.size());
+        assertEquals(answers.size(), answers2.size());
+        assertEquals(answers2.size(), answers3.size());
+        assertEquals(requeriedAnswers.size(), answers.size());
+        assertEquals(requeriedAnswers.size(), requeriedAnswers2.size());
+        assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
     }
 
     @Test
@@ -780,7 +779,7 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
         QueryAnswers requeriedAnswers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
-        assertTrue(requeriedAnswers.size() == answers.size());
+        assertEquals(requeriedAnswers.size(), answers.size());
     }
 
     @Test
@@ -802,11 +801,11 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
         QueryAnswers requeriedAnswers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
 
-        assertTrue(answers.size() == answers2.size());
-        assertTrue(answers2.size() == answers3.size());
-        assertTrue(requeriedAnswers.size() == answers.size());
-        assertTrue(requeriedAnswers.size() == requeriedAnswers2.size());
-        assertTrue(requeriedAnswers2.size() == requeriedAnswers3.size());
+        assertEquals(answers.size(), answers2.size());
+        assertEquals(answers2.size(), answers3.size());
+        assertEquals(requeriedAnswers.size(), answers.size());
+        assertEquals(requeriedAnswers.size(), requeriedAnswers2.size());
+        assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
     }
 
     @Test
