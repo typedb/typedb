@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
@@ -106,7 +107,7 @@ public class VisualiserController {
         String keyspace = getKeyspace(req);
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-            Concept concept = graph.getConcept(req.params(ID_PARAMETER));
+            Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
             if(concept==null)
                 throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER),keyspace));
@@ -130,7 +131,7 @@ public class VisualiserController {
         String keyspace = getKeyspace(req);
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-            Concept concept = graph.getConcept(req.params(ID_PARAMETER));
+            Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
             return renderHALConceptOntology(concept, keyspace);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
