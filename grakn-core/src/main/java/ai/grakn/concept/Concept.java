@@ -30,9 +30,9 @@ public interface Concept extends Comparable<Concept>{
     /**
      * Get the unique ID associated with the Concept.
      *
-     * @return A string representing the concept's unique id.
+     * @return A value the concept's unique id.
      */
-    String getId();
+    ConceptId getId();
 
     //------------------------------------- Other ---------------------------------
 
