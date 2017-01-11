@@ -16,13 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
@@ -32,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,14 +60,7 @@ import static ai.grakn.graql.Graql.var;
  */
 public class Reasoner {
 
-    private final GraknGraph graph;
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
-
-    public Reasoner(GraknGraph graph) {
-        this.graph = graph;
-        linkConceptTypes(graph);
-    }
-
     private static void commitGraph(GraknGraph graph) {
         try {
             graph.commit();
@@ -100,7 +97,7 @@ public class Reasoner {
      * @param graph to be checked against
      * @return true if at least one inference rule is present in the graph
      */
-    public static boolean hasRules(GraknGraph graph) {
+    private static boolean hasRules(GraknGraph graph) {
         String inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
         return graph.graql().infer(false).match(var("x").isa(inferenceRule)).ask().execute();
     }
@@ -114,7 +111,7 @@ public class Reasoner {
         LOG.debug(rules.size() + " rules initialized...");
         Set<Rule> linkedRules = new HashSet<>();
         rules.stream()
-                .filter(rule -> rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty())
+                .filter(rule -> rule.getConclusionTypes().isEmpty() && rule.getHypothesisTypes().isEmpty())
                 .forEach(rule -> {
                     linkConceptTypes(graph, rule);
                     linkedRules.add(rule);
@@ -126,7 +123,8 @@ public class Reasoner {
     /**
      * materialise all possible inferences
      */
-    public void precomputeInferences(){
+    public static void precomputeInferences(GraknGraph graph){
+        linkConceptTypes(graph);
         QueryCache cache = new QueryCache();
         Set<AtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
@@ -152,7 +150,12 @@ public class Reasoner {
      * @param materialise materialisation flag
      * @return stream of answers
      */
-    public Stream<Map<VarName, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
+    public static Stream<Map<VarName, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
+        GraknGraph graph = inputQuery.admin().getGraph().orElse(null);
+        if (graph == null)
+            throw new IllegalArgumentException(ErrorMessage.NO_GRAPH.getMessage());
+
+        linkConceptTypes(graph);
         if (!Reasoner.hasRules(graph))
             return inputQuery.admin().streamWithVarNames();
         Set<VarName> selectVars = inputQuery.admin().getSelectedNames();
