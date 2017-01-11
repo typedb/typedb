@@ -16,22 +16,25 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.gremlin.GraqlTraversal;
-import ai.grakn.graql.internal.gremlin.GremlinQuery;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.test.AbstractRollbackGraphTest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.or;
@@ -42,6 +45,7 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inHasRole;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.name;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outHasRole;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
@@ -50,11 +54,15 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.value;
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraqlTraversalTest extends AbstractRollbackGraphTest {
+public class GraqlTraversalTest {
 
     private static final VarName x = varName("x");
     private static final VarName y = varName("y");
@@ -134,9 +142,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     @Test
     public void testAllTraversalsSimpleQuery() {
         Var pattern = Patterns.var(x).id("Titanic").isa(Patterns.var(y).id("movie"));
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
-
-        Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
+        Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
 
@@ -161,9 +167,7 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     @Test
     public void testAllTraversalsDisjunction() {
         Pattern pattern = or(Patterns.var(x).id("Titanic").value("hello"), Patterns.var().rel("x").rel("y"));
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
-
-        Set<GraqlTraversal> traversals = query.allGraqlTraversals().collect(toSet());
+        Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         // Expect all combinations of both disjunctions
         Set<GraqlTraversal> expected = ImmutableSet.of(
@@ -198,8 +202,64 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
                 .rel(var(z).value("Titanic").isa(var("a").id("title"))));
     }
 
-    private static GraqlTraversal optimalTraversal(Pattern pattern) {
-        return new GremlinQuery(graph, pattern.admin(), ImmutableSet.of()).optimalTraversal();
+    @Test
+    public void testShortcutOptimisationPlain() {
+        Pattern rel = var().rel("x").rel("y");
+
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
+
+        assertThat(graqlTraversal, anyOf(
+                is(traversal(xShortcutY)),
+                is(traversal(yShortcutX))
+        ));
+    }
+
+    @Test
+    public void testShortcutOptimisationWithType() {
+        VarName marriageName = Patterns.varName("m");
+
+        Var marriage = var(marriageName).name("marriage");
+
+        Var rel = var().rel("x").rel("y").isa(marriage);
+
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
+
+        Fragment xMarriesY = shortcut(Optional.of("marriage"), Optional.empty(), Optional.empty(), x, y);
+        Fragment yMarriesX = shortcut(Optional.of("marriage"), Optional.empty(), Optional.empty(), y, x);
+        Fragment marriageFragment = name(marriageName, "marriage");
+
+        assertThat(graqlTraversal, anyOf(
+                is(traversal(xMarriesY, marriageFragment)),
+                is(traversal(yMarriesX, marriageFragment)),
+                is(traversal(marriageFragment, xMarriesY)),
+                is(traversal(marriageFragment, yMarriesX))
+        ));
+    }
+
+    @Test
+    public void testShortcutOptimisationWithRoles() {
+        VarName wifeName = Patterns.varName("w");
+
+        Var wife = var(wifeName).name("wife");
+
+        Var rel = var().rel("x").rel(wife, "y");
+
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
+
+        Fragment xMarriesY = shortcut(Optional.empty(), Optional.empty(), Optional.of("wife"), x, y);
+        Fragment yMarriesX = shortcut(Optional.empty(), Optional.of("wife"), Optional.empty(), y, x);
+        Fragment wifeFragment = name(wifeName, "wife");
+
+        assertThat(graqlTraversal, anyOf(
+                is(traversal(xMarriesY, wifeFragment)),
+                is(traversal(yMarriesX, wifeFragment)),
+                is(traversal(wifeFragment, xMarriesY)),
+                is(traversal(wifeFragment, yMarriesX))
+        ));
+    }
+
+    private static GraqlTraversal semiOptimal(Pattern pattern) {
+        return GraqlTraversal.semiOptimal(pattern.admin());
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -209,7 +269,20 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     @SafeVarargs
     private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
         ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversal.create(graph, fragmentsSet);
+        return GraqlTraversal.create(fragmentsSet);
+    }
+
+    private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
+        Collection<Conjunction<VarAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
+
+        List<Set<List<Fragment>>> collect = patterns.stream()
+                .map(ConjunctionQuery::new)
+                .map(ConjunctionQuery::allFragmentOrders)
+                .collect(toList());
+
+        Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
+
+        return lists.stream().map(list -> GraqlTraversal.create(Sets.newHashSet(list)));
     }
 
     private static Fragment makeShortcut(VarName x, VarName y) {
@@ -217,12 +290,10 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
-        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of(x));
-
-        GraqlTraversal traversal = optimalTraversal(pattern);
+        GraqlTraversal traversal = semiOptimal(pattern);
 
         //noinspection OptionalGetWithoutIsPresent
-        GraqlTraversal globalOptimum = query.allGraqlTraversals().min(comparing(GraqlTraversal::getComplexity)).get();
+        GraqlTraversal globalOptimum = allGraqlTraversals(pattern).min(comparing(GraqlTraversal::getComplexity)).get();
 
         double globalComplexity = globalOptimum.getComplexity();
         double complexity = traversal.getComplexity();

@@ -20,6 +20,9 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableList;
@@ -60,7 +63,6 @@ public class GraqlTraversal {
     //             |            |
     //             V            V
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
-    private final GraknGraph graph;
 
     // TODO: Find a better way to represent these values
     // Just a pretend big number
@@ -68,29 +70,30 @@ public class GraqlTraversal {
 
     private static final long MAX_TRAVERSAL_ATTEMPTS = 1_000;
 
-    private GraqlTraversal(GraknGraph graph, Set<? extends List<Fragment>> fragments) {
-        this.graph = graph;
+    private GraqlTraversal(Set<? extends List<Fragment>> fragments) {
         this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
     }
 
-    public static GraqlTraversal create(GraknGraph graph, Set<? extends List<Fragment>> fragments) {
-        return new GraqlTraversal(graph, fragments);
+    public static GraqlTraversal create(Set<? extends List<Fragment>> fragments) {
+        return new GraqlTraversal(fragments);
     }
 
     /**
      * Create a semi-optimal traversal plan using a greedy approach
-     * @param graph the graph to use
-     * @param innerQueries a collection of inner queries that the traversal must execute
+     * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    static GraqlTraversal semiOptimal(GraknGraph graph, Collection<ConjunctionQuery> innerQueries) {
+    public static GraqlTraversal semiOptimal(PatternAdmin pattern) {
+
+        Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         // Find a semi-optimal way to execute each conjunction
-        Set<? extends List<Fragment>> fragments = innerQueries.stream()
+        Set<? extends List<Fragment>> fragments = patterns.stream()
+                .map(ConjunctionQuery::new)
                 .map(GraqlTraversal::semiOptimalConjunction)
                 .collect(toImmutableSet());
 
-        return GraqlTraversal.create(graph, fragments);
+        return GraqlTraversal.create(fragments);
     }
 
     /**
@@ -188,9 +191,9 @@ public class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal() {
+    public GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(GraknGraph graph) {
         Traversal[] traversals =
-                fragments.stream().map(this::getConjunctionTraversal).toArray(Traversal[]::new);
+                fragments.stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
         return graph.admin().getTinkerTraversal().limit(1).union(traversals);
     }
@@ -198,7 +201,9 @@ public class GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(ImmutableList<Fragment> fragmentList) {
+    private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(
+            GraknGraph graph, ImmutableList<Fragment> fragmentList
+    ) {
         GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal();
 
         Set<VarName> foundNames = new HashSet<>();
@@ -334,17 +339,11 @@ public class GraqlTraversal {
 
         GraqlTraversal that = (GraqlTraversal) o;
 
-        // "simplifying" this makes it harder to read
-        //noinspection SimplifiableIfStatement
-        if (fragments != null ? !fragments.equals(that.fragments) : that.fragments != null) return false;
-        return graph != null ? graph.equals(that.graph) : that.graph == null;
-
+        return fragments.equals(that.fragments);
     }
 
     @Override
     public int hashCode() {
-        int result = fragments != null ? fragments.hashCode() : 0;
-        result = 31 * result + (graph != null ? graph.hashCode() : 0);
-        return result;
+        return fragments.hashCode();
     }
 }
