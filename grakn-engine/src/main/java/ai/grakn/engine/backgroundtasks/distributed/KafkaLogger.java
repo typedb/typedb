@@ -90,15 +90,6 @@ public class KafkaLogger {
         LOG.error(msg);
     }
 
-    void open() {
-//        producer = ConfigHelper.kafkaProducer();
-    }
-
-    void close() {
-//        producer.flush();
-//        producer.close();
-    }
-
     private KafkaLogger() {
         logLevel = LogLevel.DEBUG;//LogLevel.valueOf(ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_LEVEL));
     }

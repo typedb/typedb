@@ -61,7 +61,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
     public void start() {
         try {
-            LOG.open();
             LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
 
             zookeeperStorage = SynchronizedStateStorage.getInstance();
@@ -112,8 +111,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
         noThrow(zookeeperStorage::close, "Could not close ZK storage.");
         zookeeperStorage = null;
-
-        noThrow(LOG::close, "Could not close KafkaLogger");
     }
 
     /**
