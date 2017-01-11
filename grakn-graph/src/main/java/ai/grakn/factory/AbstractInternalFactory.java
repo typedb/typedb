@@ -68,7 +68,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.properties = properties;
 
         if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME))
-            systemKeyspace = new SystemKeyspace<M, G>(getSystemFactory());
+            systemKeyspace = new SystemKeyspace<>(getSystemFactory());
     }
 
     InternalFactory<M, G> getSystemFactory(){

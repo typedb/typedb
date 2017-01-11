@@ -92,7 +92,7 @@ public class GraknStateStorage implements StateStorage {
             return false;
 
         // Existing resource relations to remove
-        final Set<String> resourcesToDettach = new HashSet<String>();
+        final Set<String> resourcesToDettach = new HashSet<>();
         
         // New resources to add
         Var resources = var(TASK_VAR).id(id);
