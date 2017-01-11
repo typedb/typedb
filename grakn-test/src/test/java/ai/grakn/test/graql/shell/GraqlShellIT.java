@@ -20,7 +20,7 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import mjson.Json;
@@ -49,7 +49,7 @@ import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
 @Ignore
-public class GraqlShellIT extends AbstractRollbackGraphTest {
+public class GraqlShellIT extends AbstractGraphTest {
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;

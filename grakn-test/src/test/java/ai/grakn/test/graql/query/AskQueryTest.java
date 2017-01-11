@@ -18,8 +18,9 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +31,7 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AskQueryTest extends AbstractMovieGraphTest {
+public class AskQueryTest extends AbstractGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -38,6 +39,7 @@ public class AskQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
 

@@ -22,8 +22,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 
-public class AdmissionsInferenceTest extends AbstractGraknTest {
+public class AdmissionsInferenceTest extends AbstractGraphTest {
 
     @BeforeClass
     public static void onStartup(){

@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.Before;
@@ -28,7 +28,7 @@ import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
-public class UserControllerTest extends EngineTestBase {
+public class UserControllerTest extends AbstractEngineTest {
     private UsersHandler users;
 
     @Before

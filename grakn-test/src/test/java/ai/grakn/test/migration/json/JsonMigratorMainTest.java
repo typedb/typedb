@@ -18,27 +18,41 @@
 
 package ai.grakn.test.migration.json;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.migration.json.Main;
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
+import ai.grakn.test.AbstractEngineTest;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
+import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
+import static ai.grakn.test.migration.MigratorTestUtils.getResource;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
 import static junit.framework.TestCase.assertEquals;
 
-public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
+public class JsonMigratorMainTest extends AbstractEngineTest {
 
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
 
+    private GraknGraph graph;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     @Before
-    public void setup(){
-        load(getFile("json", "simple-schema/schema.gql"));
+    public void setup() {
+        graph = factoryWithNewKeyspace().getGraph();
+        load(graph, getFile("json", "simple-schema/schema.gql"));
     }
 
     @Test
@@ -99,19 +113,19 @@ public class JsonMigratorMainTest extends AbstractGraknMigratorTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.getGraph();
+//        graph = factory.getGraph();
 
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
         Entity person = personType.instances().iterator().next();
-        Entity address = getProperty(person, "has-address").asEntity();
-        Entity streetAddress = getProperty(address, "address-has-street").asEntity();
+        Entity address = getProperty(graph, person, "has-address").asEntity();
+        Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-        Resource number = getResource(streetAddress, "number").asResource();
+        Resource number = getResource(graph, streetAddress, "number").asResource();
         assertEquals(21L, number.getValue());
 
-        Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
+        Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");
         assertEquals(2, phoneNumbers.size());
     }
 }

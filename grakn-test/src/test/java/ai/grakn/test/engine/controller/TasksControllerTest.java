@@ -20,7 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.engine.backgroundtasks.LongRunningTask;
 import ai.grakn.test.engine.backgroundtasks.TestTask;
 import ch.qos.logback.classic.Level;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class TasksControllerTest extends EngineTestBase {
+public class TasksControllerTest extends AbstractEngineTest {
     private String singleTask;
 
     @BeforeClass

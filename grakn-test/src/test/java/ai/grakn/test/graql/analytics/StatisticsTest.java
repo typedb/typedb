@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -28,12 +29,14 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,7 +53,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class StatisticsTest extends AbstractGraphTest {
+// TODO We can extend AbstractGraphTest instead when we remove persisting in analytics
+public class StatisticsTest extends AbstractEngineTest {
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";
@@ -70,20 +74,25 @@ public class StatisticsTest extends AbstractGraphTest {
     private String entityId3;
     private String entityId4;
 
-    private String keyspace;
+    private GraknGraph graph;
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
         assumeFalse(usingOrientDB());
 
-        keyspace = graph.getKeyspace();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, "test").getGraph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
+    }
+
+    @After
+    public void takedown(){
+        graph.clear();
     }
 
     @Test
@@ -547,11 +556,11 @@ public class StatisticsTest extends AbstractGraphTest {
                 .playsRole(resourceValue7));
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 
     private void addResourcesInstances() throws GraknValidationException {
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
         graph.getResourceType(resourceType1).putResource(1.2);
         graph.getResourceType(resourceType1).putResource(1.5);
@@ -574,11 +583,11 @@ public class StatisticsTest extends AbstractGraphTest {
         graph.getResourceType(resourceType4).putResource("c");
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 
     private void addResourceRelations() throws GraknValidationException {
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
         Entity entity1 = graph.getConcept(entityId1);
         Entity entity2 = graph.getConcept(entityId2);
@@ -652,6 +661,6 @@ public class StatisticsTest extends AbstractGraphTest {
         graph.getResourceType(resourceType6).putResource(0.8);
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 }

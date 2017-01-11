@@ -21,12 +21,10 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraphTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;
@@ -37,7 +35,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class GraknEngineRunningTest extends AbstractGraknTest {
+public class GraknEngineRunningTest extends AbstractEngineTest {
 
     @Before
     public void resetLogs() {

@@ -25,7 +25,7 @@ import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import javafx.util.Pair;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -44,7 +44,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class TaskRunnerTest extends EngineTestBase {
+public class TaskRunnerTest extends AbstractEngineTest {
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
     private SynchronizedStateStorage zkStorage;

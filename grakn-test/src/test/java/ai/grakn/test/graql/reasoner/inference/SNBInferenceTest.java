@@ -26,7 +26,7 @@ import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class SNBInferenceTest extends AbstractGraknTest {
+public class SNBInferenceTest extends AbstractGraphTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());

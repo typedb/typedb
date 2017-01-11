@@ -27,7 +27,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -45,7 +45,7 @@ import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GenealogyTest extends EngineTestBase {
+public class GenealogyTest extends AbstractEngineTest {
 
     private static GraknGraph graph;
     private static QueryBuilder qb;

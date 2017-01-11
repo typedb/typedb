@@ -23,13 +23,14 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -63,7 +64,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class InsertQueryTest extends AbstractMovieGraphTest {
+public class InsertQueryTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
     @Rule
@@ -71,6 +72,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         graph.showImplicitConcepts(true);
         qb = graph.graql();
     }

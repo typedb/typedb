@@ -20,11 +20,12 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,15 +34,15 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.graql.Graql.name;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
-import static ai.grakn.test.GraknTestEnv.*;
 
-public class QueryErrorTest extends AbstractMovieGraphTest {
+public class QueryErrorTest extends AbstractGraphTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
+        MovieGraphFactory.loadGraph(graph);
         qb = graph.graql();
     }
 
@@ -136,7 +137,7 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() throws GraknValidationException {
         // Create a fresh graph, with no has-resource between person and name
-        GraknGraph empty = factoryWithNewKeyspace().getGraph();
+        GraknGraph empty = graphWithNewKeyspace();
 
         QueryBuilder emptyQb = empty.graql();
         emptyQb.insert(
@@ -150,6 +151,9 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
                 containsString("name")
         ));
         emptyQb.insert(Graql.var().isa("person").has("name", "Bob")).execute();
+
+        empty.clear();
+        empty.close();
     }
 
     @Test
