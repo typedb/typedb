@@ -85,6 +85,8 @@ public abstract class GraknTestEnv {
             ensureHTTPRunning();
             GraknEngineServer.startCluster();
 
+            try {Thread.sleep(5000);} catch(InterruptedException ex) { Log.info("Thread sleep interrupted."); }
+            
             System.out.println("ENGINE STARTED.");
         }
     }
