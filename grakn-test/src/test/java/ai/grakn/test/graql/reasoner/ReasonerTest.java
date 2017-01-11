@@ -575,7 +575,7 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertEquals(query, query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -586,7 +586,7 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertEquals(query, query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -597,7 +597,7 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertEquals(query, query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -688,7 +688,7 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertEquals(query, query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -822,7 +822,7 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(true);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertEquals(query, query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -835,7 +835,7 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(true);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertEquals(query, query2);
+        assertQueriesEqual(query, query2);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
@@ -843,7 +843,7 @@ public class ReasonerTest extends AbstractGraknTest {
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
+        assertEquals(queryAnswers(q1), queryAnswers(q2));
     }
 }
 

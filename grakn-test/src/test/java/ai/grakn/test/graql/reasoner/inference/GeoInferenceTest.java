@@ -23,8 +23,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
+import junit.framework.TestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -107,7 +109,11 @@ public class GeoInferenceTest extends AbstractGraknTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().results());
+    }
+
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        assertEquals(queryAnswers(q1), queryAnswers(q2));
     }
 }
