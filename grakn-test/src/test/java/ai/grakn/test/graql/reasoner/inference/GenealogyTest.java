@@ -109,7 +109,7 @@ public class GenealogyTest extends EngineTestBase {
     public void testFemale() {
         String queryString = "match $x isa person has identifier $id has gender 'female';";
         MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertTrue(answers.size() == 32);
     }
