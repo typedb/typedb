@@ -112,6 +112,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <tarLongFileMode>gnu</tarLongFileMode>
                     <descriptors>
                         <descriptor>${project.basedir}/src/dist.xml</descriptor>
                     </descriptors>
