@@ -18,9 +18,6 @@
 
 package ai.grakn.concept;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * <p>
  *     A Concept Id
@@ -34,8 +31,6 @@ import java.util.Map;
  * @author fppt
  */
 public class ConceptId implements Comparable<ConceptId> {
-    private static Map<String, ConceptId> conceptIds = new HashMap();
-
     private String conceptId;
 
     private ConceptId(String conceptId){
@@ -61,12 +56,17 @@ public class ConceptId implements Comparable<ConceptId> {
         return conceptId;
     }
 
+    @Override
+    public int hashCode(){
+        return conceptId.hashCode();
+    }
+
     /**
      *
      * @param value The string which potentially represents a Concept
      * @return The matching concept ID
      */
     public static ConceptId of(String value){
-        return conceptIds.computeIfAbsent(value, ConceptId::new);
+        return new ConceptId(value);
     }
 }
