@@ -22,7 +22,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -104,7 +104,6 @@ public class TestSamplesImport extends TestOwlGraknBase {
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
             assertRelationBetweenInstancesExists(work, author, "op-wrote");
-            Reasoner reasoner = new Reasoner(migrator.graph());
             Assert.assertTrue(!Reasoner.getRules(graph).isEmpty());
         }
         catch (Throwable t) {
@@ -220,7 +219,6 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertTrue(bloodRelation.subTypes().contains(isAuntOf));
             Assert.assertTrue(bloodRelation.subTypes().contains(isUncleOf));
 
-            Reasoner reasoner = new Reasoner(migrator.graph());
             Assert.assertTrue(!Reasoner.getRules(graph).isEmpty());
         }
         catch (Throwable t) {

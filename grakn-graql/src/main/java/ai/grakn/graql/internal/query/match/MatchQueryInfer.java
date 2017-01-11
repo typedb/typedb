@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.util.ErrorMessage;
 
@@ -48,7 +48,7 @@ class MatchQueryInfer extends MatchQueryModifier {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        return new Reasoner(graph).resolve(inner.withGraph(graph), materialise);
+        return Reasoner.resolve(inner.withGraph(graph), materialise);
     }
 
     @Override

@@ -28,7 +28,7 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
@@ -239,7 +239,7 @@ public class VisualiserController {
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String preMaterialiseAll(Request req, Response res) {
         try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
-            new Reasoner(graph).precomputeInferences();
+            Reasoner.precomputeInferences(graph);
             return "Done.";
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
