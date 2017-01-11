@@ -142,7 +142,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        Var pattern = Patterns.var(x).id("Titanic").isa(Patterns.var(y).id("movie"));
+        Var pattern = Patterns.var(x).id(ConceptId.of("Titanic")).isa(Patterns.var(y).id(ConceptId.of("movie")));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
@@ -167,7 +167,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsDisjunction() {
-        Pattern pattern = or(Patterns.var(x).id("Titanic").value("hello"), Patterns.var().rel("x").rel("y"));
+        Pattern pattern = or(Patterns.var(x).id(ConceptId.of("Titanic")).value("hello"), Patterns.var().rel("x").rel("y"));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         // Expect all combinations of both disjunctions
