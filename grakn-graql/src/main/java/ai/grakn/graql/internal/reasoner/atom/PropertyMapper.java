@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -54,7 +53,6 @@ import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 
 import java.util.HashSet;
 import java.util.Optional;

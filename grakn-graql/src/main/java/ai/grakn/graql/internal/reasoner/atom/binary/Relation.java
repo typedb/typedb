@@ -18,7 +18,6 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -27,7 +26,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -47,6 +45,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
@@ -159,7 +158,7 @@ public class Relation extends TypeAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
-        return this.getTypeName().equals(a2.getTypeName())
+        return Objects.equals(this.typeId, a2.getTypeId())
                 && this.getVarNames().equals(a2.getVarNames())
                 && relationPlayers.equals(a2.relationPlayers);
     }
@@ -167,7 +166,7 @@ public class Relation extends TypeAtom {
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + getTypeName().hashCode();
+        hashCode = hashCode * 37 + (getTypeId() != null? getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + getVarNames().hashCode();
         return hashCode;
     }
@@ -179,13 +178,14 @@ public class Relation extends TypeAtom {
         Relation a2 = (Relation) obj;
         Map<RoleType, String> map = getRoleConceptIdMap();
         Map<RoleType, String> map2 = a2.getRoleConceptIdMap();
-        return this.getTypeName().equals(a2.getTypeName()) && map.equals(map2);
+        return Objects.equals(this.typeId, a2.getTypeId())
+                && map.equals(map2);
     }
 
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeName.hashCode();
+        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
         hashCode = hashCode * 37 + this.getRoleConceptIdMap().hashCode();
         return hashCode;
     }
@@ -315,15 +315,15 @@ public class Relation extends TypeAtom {
     }
 
     private void addType(Type type) {
-        typeName = type.getName();
+        typeId = type.getId();
         VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
-        addPredicate(new IdPredicate(Graql.var(typeVariable).id(ConceptId.of(typeName)).admin()));
+        addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
     }
 
     private void inferTypeFromRoles() {
-        if (getParentQuery() != null && !isValueUserDefinedName() && getTypeName().isEmpty()) {
+        if (getParentQuery() != null && !isValueUserDefinedName() && getTypeId() == null) {
             //look at available roles
             RelationType type = null;
             Set<RelationType> compatibleTypes = getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes);

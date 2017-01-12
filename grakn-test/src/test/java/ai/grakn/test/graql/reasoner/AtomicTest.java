@@ -151,7 +151,7 @@ public class AtomicTest extends AbstractGraknTest {
         String queryString = "match ($x, $y); $x isa person; $y isa product;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeName().equals(typeId));
+        assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
 
     @Test
@@ -161,7 +161,7 @@ public class AtomicTest extends AbstractGraknTest {
         String queryString = "match ($z, $y, $x);$z isa country;$x isa rocket;$y isa person;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeName().equals(typeId));
+        assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
 
     @Test

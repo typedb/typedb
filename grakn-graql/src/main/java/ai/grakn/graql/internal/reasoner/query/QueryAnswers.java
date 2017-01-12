@@ -210,7 +210,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
                 Concept con = entry.get(var);
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
-                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId()) ) )
+                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId().getValue()) ) )
                     isCompatible = false;
                 else
                     answer.put(var, con);

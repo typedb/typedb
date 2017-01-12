@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.HashMap;
@@ -92,7 +93,7 @@ public class AtomicQuery extends Query{
     }
 
     private void addChild(AtomicQuery q){
-        if (!this.isEquivalent(q) && atom.getTypeName().equals(q.getAtom().getTypeName())){
+        if (!this.isEquivalent(q) && Objects.equals(atom.getTypeId(), q.getAtom().getTypeId())){
             children.add(q);
             q.setParent(this);
         }
@@ -111,7 +112,7 @@ public class AtomicQuery extends Query{
      */
     public void establishRelation(AtomicQuery aq){
         Atom aqAtom = aq.getAtom();
-        if(atom.getTypeName().equals(aqAtom.getTypeName())) {
+        if(Objects.equals(atom.getTypeId(), aq.getAtom().getTypeId())) {
             if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size())
                 aq.addChild(this);
             else
