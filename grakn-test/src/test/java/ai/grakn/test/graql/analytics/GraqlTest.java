@@ -20,6 +20,7 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -57,11 +58,12 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class GraqlTest extends AbstractGraphTest {
 
@@ -146,7 +148,7 @@ public class GraqlTest extends AbstractGraphTest {
 
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
-                    graph.getConcept(entry.getKey()).asInstance()
+                    graph.getConcept(ConceptId.of(entry.getKey())).asInstance()
                             .resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
             assertEquals(1, resources.size());
             assertEquals(entry.getValue(), resources.iterator().next().getValue());
@@ -229,7 +231,7 @@ public class GraqlTest extends AbstractGraphTest {
 
         Optional<List<Concept>> path = query.execute();
         assert path.isPresent();
-        List<String> result = path.get().stream().map(Concept::getId).collect(Collectors.toList());
+        List<String> result = path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
 
         List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
@@ -286,10 +288,10 @@ public class GraqlTest extends AbstractGraphTest {
         Entity entity3 = entityType1.addEntity();
         Entity entity4 = entityType2.addEntity();
 
-        entityId1 = entity1.getId();
-        entityId2 = entity2.getId();
-        entityId3 = entity3.getId();
-        entityId4 = entity4.getId();
+        entityId1 = entity1.getId().getValue();
+        entityId2 = entity2.getId().getValue();
+        entityId3 = entity3.getId().getValue();
+        entityId4 = entity4.getId().getValue();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -299,10 +301,10 @@ public class GraqlTest extends AbstractGraphTest {
 
         relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
-                .putRolePlayer(role2, entity2).getId();
+                .putRolePlayer(role2, entity2).getId().getValue();
         relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
-                .putRolePlayer(role2, entity4).getId();
+                .putRolePlayer(role2, entity4).getId().getValue();
 
         graph.commit();
         graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();

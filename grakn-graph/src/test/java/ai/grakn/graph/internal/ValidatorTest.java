@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -237,8 +238,8 @@ public class ValidatorTest extends GraphTestBase{
         // now try to delete all assertions and then the movie
         godfather = graknGraph.getEntityType("movie").instances().iterator().next();
         Collection<Relation> assertions = godfather.relations();
-        Set<String> assertionIds = new HashSet<>();
-        Set<String> castingIds = new HashSet<>();
+        Set<ConceptId> assertionIds = new HashSet<>();
+        Set<ConceptId> castingIds = new HashSet<>();
         for (Relation a : assertions) {
             assertionIds.add(a.getId());
             ((RelationImpl) a).getMappingCasting().forEach(c -> castingIds.add(c.getId()));

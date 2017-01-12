@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknAdmin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -366,8 +367,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends Concept> T getConcept(String id) {
-        return getConcept(Schema.ConceptProperty.ID, id);
+    public <T extends Concept> T getConcept(ConceptId id) {
+        return getConcept(Schema.ConceptProperty.ID, id.getValue());
     }
     private <T extends Type> T getTypeByName(String name){
         return getConcept(Schema.ConceptProperty.NAME, name);
@@ -464,7 +465,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
         }
         return casting;
     }
@@ -479,7 +480,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         EdgeImpl assertionToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);// Relation To Casting
-        assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+        assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
 
         putShortcutEdges(relation, relation.type());
 
@@ -532,15 +533,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if (!exists) {
             EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName());
-            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId());
+            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
 
             if (fromRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId());
+                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
             }
             edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName());
 
             if (toRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId());
+                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
             }
             edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
 
@@ -552,12 +553,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private String calculateShortcutHash(Relation relation, RelationType relationType, RoleType fromRole, Instance fromRolePlayer, RoleType toRole, Instance toRolePlayer){
         String hash = "";
-        String relationIdValue = relationType.getId();
-        String fromIdValue = fromRolePlayer.getId();
-        String fromRoleValue = fromRole.getId();
-        String toIdValue = toRolePlayer.getId();
-        String toRoleValue = toRole.getId();
-        String assertionIdValue = relation.getId();
+        String relationIdValue = relationType.getId().getValue();
+        String fromIdValue = fromRolePlayer.getId().getValue();
+        String fromRoleValue = fromRole.getId().getValue();
+        String toIdValue = toRolePlayer.getId().getValue();
+        String toRoleValue = toRole.getId().getValue();
+        String assertionIdValue = relation.getId().getValue();
 
         if(relationIdValue != null) hash += relationIdValue;
         if(fromIdValue != null) hash += fromIdValue;
@@ -751,8 +752,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
 
-        Set<CastingImpl> castings = castingVertices.stream().map( vertex -> {
-            return elementFactory.<CastingImpl>buildConcept(vertex);}).collect(Collectors.toSet());
+        Set<CastingImpl> castings = castingVertices.stream().map(elementFactory::<CastingImpl>buildConcept).collect(Collectors.toSet());
 
         if(castings.size() < 2){
             return false;
@@ -774,13 +774,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void deleteRelations(Set<RelationImpl> relations){
         for (RelationImpl relation : relations) {
-            String relationID = relation.getId();
+            String relationID = relation.getId().getValue();
 
             //Kill Shortcut Edges
             relation.rolePlayers().values().forEach(instance -> {
                 if(instance != null) {
                     List<Edge> edges = getTinkerTraversal().
-                            hasId(instance.getId()).
+                            hasId(instance.getId().getValue()).
                             bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                             has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
 
@@ -820,7 +820,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //Perform the transfer
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
                 }
             }
 

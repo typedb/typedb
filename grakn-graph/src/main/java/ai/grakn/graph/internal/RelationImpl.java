@@ -82,13 +82,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
-        String hash = "RelationType_" + relationType.getId().replace("_", "\\_") + "_Relation";
+        String hash = "RelationType_" + relationType.getId().getValue().replace("_", "\\_") + "_Relation";
 
         for(RoleType role: sortedRoleIds){
-            hash = hash + "_" + role.getId().replace("_", "\\_") ;
+            hash = hash + "_" + role.getId().getValue().replace("_", "\\_") ;
             Instance instance = roleMap.get(role);
             if(instance != null){
-                hash = hash + "_" + instance.getId().replace("_", "\\_") ;
+                hash = hash + "_" + instance.getId().getValue().replace("_", "\\_") ;
             }
         }
         return hash;
@@ -152,7 +152,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             if(resource.type().isUnique()) {
 
                 GraphTraversal traversal = getGraknGraph().getTinkerTraversal().
-                        hasId(resource.getId()).
+                        hasId(resource.getId().getValue()).
                         out(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
@@ -227,7 +227,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             InstanceImpl<?, ?> instance = casting.getRolePlayer();
             if(instance != null) {
                 for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT)) {
-                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId())){
+                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId().getValue())){
                         edge.delete();
                     }
                 }

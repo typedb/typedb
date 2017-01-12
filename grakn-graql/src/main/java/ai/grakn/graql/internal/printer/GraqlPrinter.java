@@ -85,7 +85,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     sb.append(colorKeyword(" sub ")).append(colorType(idToString(superType.getName())));
                 }
             } else {
-                sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
+                sb.append(colorKeyword("id ")).append(idToString(concept.getId().getValue()));
             }
 
             if (concept.isRelation()) {
@@ -94,7 +94,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     Instance rolePlayer = entry.getValue();
 
                     if (rolePlayer != null) {
-                        String s = colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId());
+                        String s = colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId().getValue());
                         return Optional.of(s);
                     } else {
                         return Optional.<String>empty();

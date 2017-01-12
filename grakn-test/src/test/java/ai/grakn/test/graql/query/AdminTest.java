@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
@@ -103,19 +104,19 @@ public class AdminTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertQueryMatchPatternEmpty() {
-        InsertQuery query = qb.insert(var().id("123").isa("movie"));
+        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"));
         assertFalse(query.admin().getMatchQuery().isPresent());
     }
 
     @Test
     public void testInsertQueryWithMatchQuery() {
-        InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
+        InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
         assertEquals(Optional.of("match $x isa movie;"), query.admin().getMatchQuery().map(Object::toString));
     }
 
     @Test
     public void testInsertQueryGetVars() {
-        InsertQuery query = qb.insert(var().id("123").isa("movie"), var().id("123").value("Hi"));
+        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).value("Hi"));
         // Should not merge variables
         assertEquals(2, query.admin().getVars().size());
     }

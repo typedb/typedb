@@ -2,6 +2,7 @@ package ai.grakn.test.graph;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.factory.GraphFactory;
@@ -40,11 +41,11 @@ public class GraphTest extends AbstractRollbackGraphTest {
         assertNotNull(graph.getRoleType(related2));
         assertNotNull(graph.getRelationType(related));
 
-        String e1 = graph.getEntityType(thing).addEntity().getId();
+        ConceptId e1 = graph.getEntityType(thing).addEntity().getId();
         graph.commit();
 
         graph = factory.getGraphBatchLoading();
-        String e2 = graph.getEntityType(thing).addEntity().getId();
+        ConceptId e2 = graph.getEntityType(thing).addEntity().getId();
         graph.commit();
 
         graph = factory.getGraph();
@@ -52,7 +53,7 @@ public class GraphTest extends AbstractRollbackGraphTest {
         graph.commit();
 
         graph = factory.getGraphBatchLoading();
-        String r1 = graph.getRelationType(related).addRelation()
+        ConceptId r1 = graph.getRelationType(related).addRelation()
                 .putRolePlayer(graph.getRoleType(related1),graph.getConcept(e1))
                 .putRolePlayer(graph.getRoleType(related2),graph.getConcept(e2)).getId();
         graph.commit();

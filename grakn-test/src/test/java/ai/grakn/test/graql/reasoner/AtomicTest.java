@@ -147,21 +147,21 @@ public class AtomicTest extends AbstractGraknTest {
     @Test
     public void testTypeInference(){
         GraknGraph graph = snbGraph;
-        String typeId = graph.getType("recommendation").getId();
+        String typeId = graph.getType("recommendation").getId().getValue();
         String queryString = "match ($x, $y); $x isa person; $y isa product;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().equals(typeId));
+        assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
 
     @Test
     public void testTypeInference2(){
         GraknGraph graph = cwGraph;
-        String typeId = graph.getType("transaction").getId();
+        String typeId = graph.getType("transaction").getId().getValue();
         String queryString = "match ($z, $y, $x);$z isa country;$x isa rocket;$y isa person;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().equals(typeId));
+        assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
 
     @Test

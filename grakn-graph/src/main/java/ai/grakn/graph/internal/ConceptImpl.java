@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -506,8 +507,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return A string representing the concept's unique id.
      */
     @Override
-    public String getId(){
-        return getProperty(Schema.ConceptProperty.ID);
+    public ConceptId getId(){
+        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
     }
 
     /**

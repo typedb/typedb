@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -62,7 +63,7 @@ public class BulkResourceMutate<T> {
     private int currentNumberOfVertices = 0;
     private final String resourceTypeName;
     private final String keyspace;
-    private final Map<String, T> resourcesToPersist = new HashMap<>();
+    private final Map<ConceptId, T> resourcesToPersist = new HashMap<>();
 
     private ResourceType<T> resourceType;
     private RoleType resourceOwner;
@@ -86,7 +87,7 @@ public class BulkResourceMutate<T> {
         LOGGER.debug("Considering vertex: " + vertex);
         vertex.properties().forEachRemaining(p -> LOGGER.debug("Vertex property: " + p.toString()));
 
-        resourcesToPersist.put(vertex.id().toString(), value);
+        resourcesToPersist.put(ConceptId.of(vertex.id().toString()), value);
 
         if (currentNumberOfVertices >= batchSize) flush();
     }

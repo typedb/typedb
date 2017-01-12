@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
@@ -80,7 +81,7 @@ public class HALConceptRepresentationBuilder {
 
             if (current.getValue().isType() && current.getValue().asType().isImplicit()) return;
 
-            LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
+            LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId().getValue());
             Representation currentHal = new HALConceptData(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
                     typesAskedInQuery, keyspace).getRepresentation();
             attachGeneratedRelations(currentHal, current, linkedNodes, resultLine, roleTypes, keyspace);
@@ -116,10 +117,10 @@ public class HALConceptRepresentationBuilder {
     }
 
     private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, String relationType, String keyspace) {
-        String currentID = currentVar.getId();
+        ConceptId currentID = currentVar.getId();
 
-        String firstID;
-        String secondID;
+        ConceptId firstID;
+        ConceptId secondID;
         String firstRole;
         String secondRole;
 

@@ -19,8 +19,9 @@
 package ai.grakn.test.graql.reasoner.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 
 public class NguyenGraph extends TestGraph{
@@ -53,12 +54,12 @@ public class NguyenGraph extends TestGraph{
         RelationType P = graknGraph.getRelationType("P");
         RelationType Q = graknGraph.getRelationType("Q");
 
-        String cId = putEntity("c", entity).getId();
-        String dId = putEntity("d", entity).getId();
-        String eId = putEntity("e", entity).getId();
+        ConceptId cId = putEntity("c", entity).getId();
+        ConceptId dId = putEntity("d", entity).getId();
+        ConceptId eId = putEntity("e", entity).getId();
 
-        String[] aInstancesIds = new String[n+2];
-        String[] bInstancesIds = new String[n+2];
+        ConceptId[] aInstancesIds = new ConceptId[n+2];
+        ConceptId[] bInstancesIds = new ConceptId[n+2];
 
         aInstancesIds[n+1] = putEntity("a" + (n+1), aEntity).getId();
         for(int i = 0 ; i <= n ;i++) {

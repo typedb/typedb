@@ -37,7 +37,7 @@ class JsonPrinter implements Printer<Json> {
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
-        Json json = Json.object("id", concept.getId());
+        Json json = Json.object("id", concept.getId().getValue());
 
         if (concept.isType()) {
             json.set("name", concept.asType().getName());
