@@ -149,7 +149,7 @@ export default {
          */
         shellResponse(resp, err) {
             if (resp != null)
-                this.graqlResponse = Prism.highlight(resp, PLang.graql);
+                this.graqlResponse = Prism.highlight(resp, PLang.default);
             else
                 this.showError(err);
         },
