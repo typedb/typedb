@@ -17,11 +17,13 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
@@ -38,16 +40,15 @@ import java.util.Set;
  */
 public class TypeAtom extends Binary{
 
-    public TypeAtom(VarAdmin pattern) { this(pattern, null);}
     public TypeAtom(VarAdmin pattern, Query par) {
         this(pattern, null, par);
     }
-    public TypeAtom(VarAdmin pattern, Predicate p, Query par) { super(pattern, p, par);}
+    public TypeAtom(VarAdmin pattern, IdPredicate p, Query par) { super(pattern, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
-    protected String extractTypeId(VarAdmin var) {
-        return getPredicate() != null? getPredicate().getPredicateValue() : "";
+    protected ConceptId extractTypeId(VarAdmin var) {
+        return getPredicate() != null? getPredicate().getPredicate() : null;
     }
 
     @Override
@@ -72,7 +73,7 @@ public class TypeAtom extends Binary{
     @Override
     public Type getType() {
         return getPredicate() != null ?
-                getParentQuery().graph().getConcept(getPredicate().getPredicateValue()) : null;
+                getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }
 
     @Override

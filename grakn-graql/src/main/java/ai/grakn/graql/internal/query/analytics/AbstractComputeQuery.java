@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -152,8 +153,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
     }
 
-    boolean verticesExistInSubgraph(String... ids) {
-        for (String id : ids) {
+    boolean verticesExistInSubgraph(ConceptId... ids) {
+        for (ConceptId id : ids) {
             Instance instance = this.graph.get().getConcept(id);
             if (instance == null || !subTypeNames.contains(instance.type().getName())) return false;
         }

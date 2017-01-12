@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
@@ -26,13 +27,13 @@ import ai.grakn.graql.internal.util.StringConverter;
 
 public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
-    private final String id;
+    private final ConceptId id;
 
-    public IdProperty(String id) {
+    public IdProperty(ConceptId id) {
         this.id = id;
     }
 
-    public String getId() {
+    public ConceptId getId() {
         return id;
     }
 
@@ -43,7 +44,7 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
 
     @Override
     public String getProperty() {
-        return StringConverter.idToString(id);
+        return StringConverter.idToString(id.getValue());
     }
 
     @Override

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 
@@ -84,7 +85,7 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
      */
-    Optional<String> getId();
+    Optional<ConceptId> getId();
 
     /**
      * @return the name this variable represents, if it represents something with a specific name

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
@@ -57,9 +58,9 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        Optional<String> id = type.getId();
-        if (id.isPresent()){
-            shortcutTraversal.setType(id.get());
+        Optional<String> typeName = type.getTypeName();
+        if (typeName.isPresent()) {
+            shortcutTraversal.setType(typeName.get());
         } else {
             shortcutTraversal.setInvalid();
         }

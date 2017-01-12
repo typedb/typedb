@@ -17,9 +17,8 @@
  */
 
 package ai.grakn.test.graql.analytics;
-import static ai.grakn.test.GraknTestEnv.*;
-
 import ai.grakn.Grakn;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -49,6 +48,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -67,11 +68,11 @@ public class ClusteringTest extends AbstractGraphTest {
     private static final String resourceType6 = "resourceType6";
     private static final String resourceType7 = "resourceType7";
 
-    private String entityId1;
-    private String entityId2;
-    private String entityId3;
-    private String entityId4;
-    private List<String> instanceIds;
+    private ConceptId entityId1;
+    private ConceptId entityId2;
+    private ConceptId entityId3;
+    private ConceptId entityId4;
+    private List<ConceptId> instanceIds;
 
     private String keyspace;
 
@@ -146,7 +147,7 @@ public class ClusteringTest extends AbstractGraphTest {
             assertEquals(5, sizeMapPersist.size());
             memberMap.values().stream()
                     .flatMap(Collection::stream)
-                    .forEach(id -> checkConnectedComponent(id, id));
+                    .forEach(id -> checkConnectedComponent(ConceptId.of(id), id));
         }
 
         for (int i = 0; i < 2; i++) {
@@ -156,7 +157,7 @@ public class ClusteringTest extends AbstractGraphTest {
             assertEquals(5, memberMapPersist.size());
             memberMapPersist.values().stream()
                     .flatMap(Collection::stream)
-                    .forEach(id -> checkConnectedComponent(id, id));
+                    .forEach(id -> checkConnectedComponent(ConceptId.of(id), id));
         }
     }
 
@@ -175,7 +176,7 @@ public class ClusteringTest extends AbstractGraphTest {
         graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
         memberMap.values().stream()
                 .flatMap(Collection::stream)
-                .forEach(id -> checkConnectedComponent(id, id, label));
+                .forEach(id -> checkConnectedComponent(ConceptId.of(id), id, label));
 
         assertEquals(null, graph.getType(Schema.Analytics.CLUSTER.getName()));
         assertNotEquals(null, graph.getType(label));
@@ -287,7 +288,7 @@ public class ClusteringTest extends AbstractGraphTest {
             memberMap.values().stream()
                     .filter(set -> set.size() != 1)
                     .flatMap(Collection::stream)
-                    .forEach(id -> checkConnectedComponent(id, finalClusterLabel));
+                    .forEach(id -> checkConnectedComponent(ConceptId.of(id), finalClusterLabel));
             assertEquals(count, graph.graql().compute().count().execute().longValue());
         }
 
@@ -310,28 +311,28 @@ public class ClusteringTest extends AbstractGraphTest {
             assertTrue(sizes.contains(2L));
             assertTrue(sizes.contains(10L));
 
-            String id;
+            ConceptId id;
             id = graph.getResourceType(resourceType1).putResource(2.8).asInstance().getId();
-            checkConnectedComponent(id, id);
+            checkConnectedComponent(id, id.getValue());
             id = graph.getResourceType(resourceType2).putResource(-5L).asInstance().getId();
-            checkConnectedComponent(id, id);
+            checkConnectedComponent(id, id.getValue());
             id = graph.getResourceType(resourceType3).putResource(100L).asInstance().getId();
-            checkConnectedComponent(id, id);
+            checkConnectedComponent(id, id.getValue());
             id = graph.getResourceType(resourceType5).putResource(10L).asInstance().getId();
-            checkConnectedComponent(id, id);
+            checkConnectedComponent(id, id.getValue());
             id = graph.getResourceType(resourceType6).putResource(0.8).asInstance().getId();
-            checkConnectedComponent(id, id);
+            checkConnectedComponent(id, id.getValue());
         }
     }
 
-    private void checkConnectedComponent(String id, String expectedClusterLabel) {
+    private void checkConnectedComponent(ConceptId id, String expectedClusterLabel) {
         Collection<Resource<?>> resources = graph.getConcept(id).asInstance()
                 .resources(graph.getResourceType(Schema.Analytics.CLUSTER.getName()));
         assertEquals(1, resources.size());
         assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
     }
 
-    private void checkConnectedComponent(String id, String expectedClusterLabel, String resourceTypeName) {
+    private void checkConnectedComponent(ConceptId id, String expectedClusterLabel, String resourceTypeName) {
         Collection<Resource<?>> resources = graph.getConcept(id).asInstance()
                 .resources(graph.getResourceType(resourceTypeName));
         assertEquals(1, resources.size());
@@ -357,13 +358,13 @@ public class ClusteringTest extends AbstractGraphTest {
         entityType2.playsRole(role1).playsRole(role2);
         RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
-        String relationId12 = relationType.addRelation()
+        ConceptId relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
                 .putRolePlayer(role2, entity2).getId();
-        String relationId23 = relationType.addRelation()
+        ConceptId relationId23 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity3).getId();
-        String relationId24 = relationType.addRelation()
+        ConceptId relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity4).getId();
         instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,

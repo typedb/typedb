@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
@@ -183,7 +184,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     // TODO: Fix this scenario (test is fine, implementation is wrong!)
     @Test
     public void testDeleteAllRolePlayers() {
-        String id = kurtzCastRelation.get("a").findFirst().get().getId();
+        ConceptId id = kurtzCastRelation.get("a").findFirst().get().getId();
         MatchQuery relation = qb.match(var().id(id));
 
         assertTrue(exists(kurtz));
@@ -216,7 +217,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testDeleteResource() {
         MatchQuery godfather = qb.match(var().has("title", "Godfather"));
-        String id = qb.match(
+        ConceptId id = qb.match(
                 var("x").has("title", "Godfather"),
                 var("a").rel("x").rel("y").isa("has-tmdb-vote-count")
         ).get("a").findFirst().get().getId();

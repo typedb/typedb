@@ -18,6 +18,7 @@
 
 package ai.grakn.test.migration.csv;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.InsertQuery;
@@ -113,10 +114,10 @@ public class CSVMigratorTest extends AbstractGraknMigratorTest {
         // test empty value not created
         ResourceType description = graph.getResourceType("description");
 
-        Entity venture = graph.getConcept("Venture");
+        Entity venture = graph.getConcept(ConceptId.of("Venture"));
         assertEquals(1, venture.resources(description).size());
 
-        Entity ventureLarge = graph.getConcept("Venture Large");
+        Entity ventureLarge = graph.getConcept(ConceptId.of("Venture Large"));
         assertEquals(0, ventureLarge.resources(description).size());
     }
 

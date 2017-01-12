@@ -136,7 +136,7 @@ class HALConceptData {
         Representation RHS = factory.newRepresentation(resourceLinkPrefix + "RHS-" + rule.getId() + this.keyspace)
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
-                .withProperty(ID_PROPERTY, "RHS-" + rule.getId())
+                .withProperty(ID_PROPERTY, "RHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "RHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
                 .withProperty(VALUE_PROPERTY, rule.getRHS().admin().toString());
@@ -147,7 +147,7 @@ class HALConceptData {
         Representation LHS = factory.newRepresentation(resourceLinkPrefix + "LHS-" + rule.getId() + this.keyspace)
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
-                .withProperty(ID_PROPERTY, "LHS-" + rule.getId())
+                .withProperty(ID_PROPERTY, "LHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "LHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
                 .withProperty(VALUE_PROPERTY, rule.getLHS().admin().toString());
@@ -188,7 +188,7 @@ class HALConceptData {
         //State
         if (concept.isInstance()) {
             Instance instance = concept.asInstance();
-            resource.withProperty(ID_PROPERTY, instance.getId())
+            resource.withProperty(ID_PROPERTY, instance.getId().getValue())
                     .withProperty(TYPE_PROPERTY, instance.type().getName())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else { // temp fix until a new behaviour is defined

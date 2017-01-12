@@ -20,6 +20,7 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -50,12 +51,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class DegreeTest extends AbstractGraphTest {
 
@@ -83,10 +85,10 @@ public class DegreeTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
-        String entity1 = thing.addEntity().getId();
-        String entity2 = thing.addEntity().getId();
-        String entity3 = thing.addEntity().getId();
-        String entity4 = anotherThing.addEntity().getId();
+        ConceptId entity1 = thing.addEntity().getId();
+        ConceptId entity2 = thing.addEntity().getId();
+        ConceptId entity3 = thing.addEntity().getId();
+        ConceptId entity4 = anotherThing.addEntity().getId();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -95,21 +97,21 @@ public class DegreeTest extends AbstractGraphTest {
         RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = related.addRelation()
+        ConceptId id1 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity1))
                 .putRolePlayer(role2, graph.getConcept(entity2))
                 .getId();
-        String id2 = related.addRelation()
+        ConceptId id2 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity3))
                 .getId();
-        String id3 = related.addRelation()
+        ConceptId id3 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
         graph.commit();
 
-        Map<String, Long> correctDegrees = new HashMap<>();
+        Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
         correctDegrees.put(entity2, 3L);
         correctDegrees.put(entity3, 1L);
@@ -123,8 +125,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(3, degrees.size());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -134,8 +136,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(degrees.size(), degrees2.size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -145,8 +147,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees2.get(3L).size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -157,8 +159,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees2.get(3L).size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -169,8 +171,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees2.get(3L).size());
         degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -180,8 +182,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertTrue(!degrees3.isEmpty());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -191,8 +193,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertEquals(1, degrees3.get(3L).size());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(correctDegrees.containsKey(id));
-                    assertEquals(correctDegrees.get(id), entry.getKey());
+                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -206,10 +208,10 @@ public class DegreeTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
-        String entity1 = thing.addEntity().getId();
-        String entity2 = thing.addEntity().getId();
-        String entity3 = thing.addEntity().getId();
-        String entity4 = anotherThing.addEntity().getId();
+        ConceptId entity1 = thing.addEntity().getId();
+        ConceptId entity2 = thing.addEntity().getId();
+        ConceptId entity3 = thing.addEntity().getId();
+        ConceptId entity4 = anotherThing.addEntity().getId();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -218,15 +220,15 @@ public class DegreeTest extends AbstractGraphTest {
         RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = related.addRelation()
+        ConceptId id1 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity1))
                 .putRolePlayer(role2, graph.getConcept(entity2))
                 .getId();
-        String id2 = related.addRelation()
+        ConceptId id2 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity3))
                 .getId();
-        String id3 = related.addRelation()
+        ConceptId id3 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
@@ -235,7 +237,7 @@ public class DegreeTest extends AbstractGraphTest {
         // compute degrees on subgraph
         Graql.compute().degree().of("thing").in("thing", "related").persist().withGraph(graph).execute();
 
-        Map<String, Long> correctDegrees = new HashMap<>();
+        Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
         correctDegrees.put(entity2, 3L);
         correctDegrees.put(entity3, 1L);
@@ -293,10 +295,10 @@ public class DegreeTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
-        String entity1 = thing.addEntity().getId();
-        String entity2 = thing.addEntity().getId();
-        String entity3 = thing.addEntity().getId();
-        String entity4 = anotherThing.addEntity().getId();
+        ConceptId entity1 = thing.addEntity().getId();
+        ConceptId entity2 = thing.addEntity().getId();
+        ConceptId entity3 = thing.addEntity().getId();
+        ConceptId entity4 = anotherThing.addEntity().getId();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -305,21 +307,21 @@ public class DegreeTest extends AbstractGraphTest {
         RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = related.addRelation()
+        ConceptId id1 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity1))
                 .putRolePlayer(role2, graph.getConcept(entity2))
                 .getId();
-        String id2 = related.addRelation()
+        ConceptId id2 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity3))
                 .getId();
-        String id3 = related.addRelation()
+        ConceptId id3 = related.addRelation()
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
         graph.commit();
 
-        Map<String, Long> correctDegrees = new HashMap<>();
+        Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
         correctDegrees.put(entity2, 3L);
         correctDegrees.put(entity3, 1L);
@@ -340,7 +342,7 @@ public class DegreeTest extends AbstractGraphTest {
         assertNotEquals(null, graph.getType(label));
     }
 
-    private void checkDegrees(Map<String, Long> correctDegrees) {
+    private void checkDegrees(Map<ConceptId, Long> correctDegrees) {
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
                     graph.<Instance>getConcept(entry.getKey())
@@ -350,7 +352,7 @@ public class DegreeTest extends AbstractGraphTest {
         });
     }
 
-    private void checkDegrees(Map<String, Long> correctDegrees, String resourceTypeName) {
+    private void checkDegrees(Map<ConceptId, Long> correctDegrees, String resourceTypeName) {
         correctDegrees.entrySet().forEach(entry -> {
             Collection<Resource<?>> resources =
                     graph.<Instance>getConcept(entry.getKey())
@@ -360,7 +362,7 @@ public class DegreeTest extends AbstractGraphTest {
         });
     }
 
-    private void checkNoDegree(String resourceTypeName, String... ids) {
+    private void checkNoDegree(String resourceTypeName, ConceptId... ids) {
         Sets.newHashSet(ids).forEach(id -> {
             Collection<Resource<?>> resources =
                     graph.<Instance>getConcept(id).resources(graph.getResourceType(resourceTypeName));
@@ -380,7 +382,7 @@ public class DegreeTest extends AbstractGraphTest {
         graph.putEntityType("person").playsRole(owner);
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
         EntityType dog = graph.putEntityType("dog").superType(animal);
-        String foofoo = dog.addEntity().getId();
+        ConceptId foofoo = dog.addEntity().getId();
         graph.commit();
 
         // set subgraph
@@ -421,13 +423,13 @@ public class DegreeTest extends AbstractGraphTest {
         Relation cocoAltName = hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, stinky);
 
         // manually compute the degree for small graph
-        Map<String, Long> subGraphReferenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> subGraphReferenceDegrees = new HashMap<>();
         subGraphReferenceDegrees.put(coco.getId(), 1L);
         subGraphReferenceDegrees.put(dave.getId(), 1L);
         subGraphReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
 
         // manually compute degree for almost full graph
-        Map<String, Long> almostFullReferenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> almostFullReferenceDegrees = new HashMap<>();
         almostFullReferenceDegrees.put(coco.getId(), 3L);
         almostFullReferenceDegrees.put(dave.getId(), 1L);
         almostFullReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
@@ -436,7 +438,7 @@ public class DegreeTest extends AbstractGraphTest {
         almostFullReferenceDegrees.put(coconut.getId(), 1L);
 
         // manually compute degrees
-        Map<String, Long> referenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
         referenceDegrees.put(coco.getId(), 3L);
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(coconut.getId(), 1L);
@@ -453,8 +455,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(subGraphReferenceDegrees.containsKey(id));
-                    assertEquals(subGraphReferenceDegrees.get(id), entry.getKey());
+                    assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(subGraphReferenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -464,8 +466,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(almostFullReferenceDegrees.containsKey(id));
-                    assertEquals(almostFullReferenceDegrees.get(id), entry.getKey());
+                    assertTrue(almostFullReferenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(almostFullReferenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -474,8 +476,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -501,7 +503,7 @@ public class DegreeTest extends AbstractGraphTest {
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
         // manual degrees
-        Map<String, Long> referenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
         referenceDegrees.put(coco.getId(), 1L);
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
@@ -520,7 +522,7 @@ public class DegreeTest extends AbstractGraphTest {
         });
 
         // check only expected resources exist
-        Collection<String> allConcepts = new ArrayList<>();
+        Collection<ConceptId> allConcepts = new ArrayList<>();
         ResourceType<Long> rt = graph.getResourceType(Schema.Analytics.DEGREE.getName());
         Collection<Resource<Long>> degrees = rt.instances();
         Map<Instance, Long> currentDegrees = new HashMap<>();
@@ -582,7 +584,7 @@ public class DegreeTest extends AbstractGraphTest {
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
         // manual degrees
-        Map<String, Long> referenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
         referenceDegrees.put(coco.getId(), 1L);
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
@@ -605,7 +607,7 @@ public class DegreeTest extends AbstractGraphTest {
 
         // check degrees are correct
         boolean isSeen = false;
-        for (Map.Entry<String, Long> entry : referenceDegrees.entrySet()) {
+        for (Map.Entry<ConceptId, Long> entry : referenceDegrees.entrySet()) {
             Instance instance = graph.getConcept(entry.getKey());
             if (instance.isEntity()) {
                 for (Resource<?> resource : instance.asEntity().resources()) {
@@ -672,7 +674,7 @@ public class DegreeTest extends AbstractGraphTest {
                 .putRolePlayer(ownershipResource, sd).putRolePlayer(ownership, daveOwnsCoco);
 
         // manually compute the degree
-        Map<String, Long> referenceDegrees1 = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees1 = new HashMap<>();
         referenceDegrees1.put(coco.getId(), 1L);
         referenceDegrees1.put(dave.getId(), 1L);
         referenceDegrees1.put(daveOwnsCoco.getId(), 3L);
@@ -680,7 +682,7 @@ public class DegreeTest extends AbstractGraphTest {
         referenceDegrees1.put(ownsFrom.getId(), 2L);
 
         // manually compute degrees
-        Map<String, Long> referenceDegrees2 = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees2 = new HashMap<>();
         referenceDegrees2.put(coco.getId(), 1L);
         referenceDegrees2.put(dave.getId(), 1L);
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
@@ -694,8 +696,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertTrue(!degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees1.containsKey(id));
-                    assertEquals(referenceDegrees1.get(id), entry.getKey());
+                    assertTrue(referenceDegrees1.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees1.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
 
@@ -708,8 +710,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees2.containsKey(id));
-                    assertEquals(referenceDegrees2.get(id), entry.getKey());
+                    assertTrue(referenceDegrees2.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees2.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -735,21 +737,21 @@ public class DegreeTest extends AbstractGraphTest {
 
         Entity godfather = movie.addEntity();
         Entity marlonBrando = person.addEntity();
-        String marlonId = marlonBrando.getId();
+        ConceptId marlonId = marlonBrando.getId();
         Entity donVitoCorleone = character.addEntity();
 
         Relation relation = hasCast.addRelation()
                 .putRolePlayer(productionWithCast, godfather)
                 .putRolePlayer(actor, marlonBrando)
                 .putRolePlayer(characterBeingPlayed, donVitoCorleone);
-        String relationId = relation.getId();
+        ConceptId relationId = relation.getId();
 
         graph.commit();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         graph = factory.getGraph();
-        assertTrue(degrees.get(3L).contains(relationId));
-        assertTrue(degrees.get(1L).contains(marlonId));
+        assertTrue(degrees.get(3L).contains(relationId.getValue()));
+        assertTrue(degrees.get(1L).contains(marlonId.getValue()));
     }
 
     @Test
@@ -777,7 +779,7 @@ public class DegreeTest extends AbstractGraphTest {
                 .putRolePlayer(breeder, dave);
 
         // manual degrees
-        Map<String, Long> referenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
         referenceDegrees.put(coco.getId(), 1L);
         referenceDegrees.put(dave.getId(), 2L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
@@ -788,8 +790,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -817,7 +819,7 @@ public class DegreeTest extends AbstractGraphTest {
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
         // manual degrees
-        Map<String, Long> referenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
         referenceDegrees.put(coco.getId(), 1L);
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
@@ -829,8 +831,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }
@@ -861,7 +863,7 @@ public class DegreeTest extends AbstractGraphTest {
                 .putRolePlayer(owner, dave).putRolePlayer(breeder, dave).putRolePlayer(pet, beast);
 
         // manual degrees
-        Map<String, Long> referenceDegrees = new HashMap<>();
+        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
         referenceDegrees.put(coco.getId(), 1L);
         referenceDegrees.put(dave.getId(), 4L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
@@ -877,8 +879,8 @@ public class DegreeTest extends AbstractGraphTest {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
-                    assertTrue(referenceDegrees.containsKey(id));
-                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
+                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
     }

@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -97,7 +98,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return All the {@link Resource} that this Instance is linked with
      */
     public Collection<Resource<?>> resources(ResourceType... resourceTypes) {
-        Set<String> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
+        Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
 
         Set<Resource<?>> resources = new HashSet<>();
         this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {

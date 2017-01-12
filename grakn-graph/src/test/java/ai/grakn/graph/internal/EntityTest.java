@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -99,7 +100,7 @@ public class EntityTest extends GraphTestBase{
         assertEquals(20, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
         assertEquals(34, graknGraph.getTinkerPopGraph().traversal().E().toList().size());
 
-        String idOfDeleted = rolePlayer1.getId();
+        ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
 
         assertNull(graknGraph.getConcept(idOfDeleted));
@@ -129,7 +130,7 @@ public class EntityTest extends GraphTestBase{
         value = graknGraph.getTinkerPopGraph().traversal().E().count().next();
         assertEquals(20, value);
 
-        String idOfDeleted = rolePlayer1.getId();
+        ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
 
         assertNull(graknGraph.getConcept(idOfDeleted));

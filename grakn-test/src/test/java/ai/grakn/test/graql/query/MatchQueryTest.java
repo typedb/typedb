@@ -21,6 +21,7 @@ package ai.grakn.test.graql.query;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -28,6 +29,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.AbstractMovieGraphTest;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
@@ -66,6 +68,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
@@ -388,7 +391,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testAllowedToReferToNonExistentRoleplayer() {
-        long count = qb.match(var().rel("actor", var().id("999999999999999999"))).stream().count();
+        long count = qb.match(var().rel("actor", var().id(ConceptId.of("999999999999999999")))).stream().count();
         assertEquals(0, count);
     }
 
@@ -588,7 +591,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         // Make sure there are no castings in results
         assertFalse(pairs.stream()
                 .flatMap(result -> result.values().stream())
-                .anyMatch(concept -> concept.getId().startsWith("CASTING-"))
+                .anyMatch(concept -> concept.getId().getValue().startsWith("CASTING-"))
         );
 
         // We expect there to be a result for every distinct pair of concepts
@@ -690,17 +693,26 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         String castingId = graph.admin().getTinkerTraversal()
                 .hasLabel(Schema.BaseType.CASTING.name()).id().next().toString();
 
-        MatchQuery query = qb.match(var("x").id(castingId));
+        MatchQuery query = qb.match(var("x").id(ConceptId.of(castingId)));
         assertEquals(0, query.stream().count());
     }
 
     @Test
     public void testLookupResourcesOnId() {
         Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
-        String id = godfather.getId();
+        ConceptId id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", var("x")));
 
         assertEquals("Godfather", query.get("x").findAny().get().asResource().getValue());
+    }
+
+    @Test
+    public void testResultsString() {
+        qb.match(var("x").isa("movie")).resultsString(Printers.graql()).forEach(result -> {
+            assertThat(result, allOf(
+                    containsString("$x"), containsString("movie"), containsString(";")
+            ));
+        });
     }
 
     @Test
