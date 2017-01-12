@@ -31,7 +31,7 @@ public class Cache {
     private final AtomicBoolean saveInProgress;
 
     private static Cache instance=null;
-    private AtomicLong lastTimeModified;
+    private final AtomicLong lastTimeModified;
 
     public static synchronized Cache getInstance(){
         if(instance==null) instance=new Cache();

@@ -35,8 +35,8 @@ public class KafkaLogger {
         WARN("WARN", 2),
         ERROR("ERROR", 3);
 
-        private int level;
-        private String value;
+        private final int level;
+        private final String value;
         LogLevel(String value, int level) {
             this.value = value;
             this.level = level;
@@ -94,15 +94,6 @@ public class KafkaLogger {
                     msg + "\n" + ExceptionUtils.getFullStackTrace(ex));
         }
         LOG.error(msg);
-    }
-
-    void open() {
-//        producer = ConfigHelper.kafkaProducer();
-    }
-
-    void close() {
-//        producer.flush();
-//        producer.close();
     }
 
     private KafkaLogger() {

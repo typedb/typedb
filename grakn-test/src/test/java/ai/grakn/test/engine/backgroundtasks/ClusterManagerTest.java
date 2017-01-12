@@ -20,11 +20,8 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
-import ai.grakn.test.EngineTestBase;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Objects;
 
 import static org.junit.Assert.assertNotEquals;
 

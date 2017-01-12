@@ -18,14 +18,10 @@
 
 package ai.grakn.test.migration.export;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.example.PokemonGraphFactory;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.EngineTestBase;
 import ai.grakn.test.GraknTestEnv;
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 

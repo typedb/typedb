@@ -102,7 +102,7 @@ public class ConfigProperties {
     private Logger LOG;
 
     private final int MAX_NUMBER_OF_THREADS = 120;
-    private Properties prop;
+    private final Properties prop;
     private static ConfigProperties instance = null;
     private String configFilePath = null;
     private int numOfThreads = -1;

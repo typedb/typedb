@@ -44,7 +44,7 @@ public class SynchronizedStateStorage {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private static SynchronizedStateStorage instance = null;
 
-    private CuratorFramework zookeeperConnection;
+    private final CuratorFramework zookeeperConnection;
 
     private SynchronizedStateStorage() throws Exception {
         zookeeperConnection = ConfigHelper.client();

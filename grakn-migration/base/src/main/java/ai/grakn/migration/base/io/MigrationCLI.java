@@ -67,7 +67,7 @@ public class MigrationCLI {
         // if there is configuration, create multiple options objects from the config
         if(baseOptions.getConfiguration() != null){
             return extractOptionsFromConfiguration(baseOptions.getConfiguration(), args).stream()
-                    .map(constructor::apply)
+                    .map(constructor)
                     .map(MigrationCLI::validate)
                     .collect(toList());
         }

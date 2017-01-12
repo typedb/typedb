@@ -29,7 +29,7 @@ import static java.util.stream.Collectors.joining;
  * Concatenate all of the given values to a string. Accepts at least two arguments.
  *
  * Usage:
- *      @concat(<value1>, <value2>)
+ *      {@literal @}concat(<value1>, <value2>)
  * </p>
  * @author alexandraorth
  */

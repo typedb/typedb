@@ -41,9 +41,9 @@ import java.util.stream.Collectors;
  */
 public class ConceptLog {
     private Set<ConceptImpl> modifiedConcepts;
-    private Set<CastingImpl> modifiedCastings;
-    private Set<ResourceImpl> modifiedResources;
-    private Map<String, RelationImpl> modifiedRelations;
+    private final Set<CastingImpl> modifiedCastings;
+    private final Set<ResourceImpl> modifiedResources;
+    private final Map<String, RelationImpl> modifiedRelations;
 
 
     ConceptLog() {

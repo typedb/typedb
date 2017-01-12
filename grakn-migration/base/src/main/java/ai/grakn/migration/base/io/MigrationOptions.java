@@ -42,7 +42,7 @@ public class MigrationOptions {
     private static final String uri = Grakn.DEFAULT_URI;
     private int numberOptions;
 
-    protected Options options = new Options();
+    protected final Options options = new Options();
     protected CommandLine command;
 
     public MigrationOptions(String[] args){

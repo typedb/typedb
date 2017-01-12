@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  */
 public class MeanQueryImplMock extends MeanQueryImpl{
-    int numberOfWorkers;
+    final int numberOfWorkers;
 
     public MeanQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);
