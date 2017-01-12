@@ -46,7 +46,7 @@ public class GeoInferenceTest extends AbstractGraknTest {
     @Test
     public void testQuery() {
         GraknGraph graph = GeoGraph.getGraph();
-                QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = graph.graql().infer(false);
         String queryString = "match $x isa city;$x has name $name;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";

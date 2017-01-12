@@ -55,7 +55,7 @@ class QueryUtil {
             Concept result = results.get(var);
             assertNotNull(result);
 
-            String resourceValue = result.getId();
+            String resourceValue = result.getId().getValue();
 
             if (result.isType()) resourceValue = result.asType().getName();
 

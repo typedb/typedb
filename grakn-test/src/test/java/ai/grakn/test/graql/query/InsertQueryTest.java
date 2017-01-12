@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
@@ -333,14 +334,14 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("predicate");
-        qb.insert(var().id("123").value(gt(3))).execute();
+        qb.insert(var().id(ConceptId.of("123")).value(gt(3))).execute();
     }
 
     @Test
     public void testErrorWhenInsertWithMultipleIds() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("123"), containsString("456")));
-        qb.insert(var().id("123").id("456").isa("movie")).execute();
+        qb.insert(var().id(ConceptId.of("123")).id(ConceptId.of("456")).isa("movie")).execute();
     }
 
     @Test
@@ -356,8 +357,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         exception.expectMessage(allOf(containsString("isa"), containsString("relation")));
         qb.insert(
                 var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
-                var("x").id("Godfather").isa("movie"),
-                var("y").id("comedy").isa("genre")
+                var("x").id(ConceptId.of("Godfather")).isa("movie"),
+                var("y").id(ConceptId.of("comedy")).isa("genre")
         ).execute();
     }
 
@@ -644,7 +645,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertResourceOnExistingId() {
-        String apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
 
         assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -653,7 +654,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertResourceOnExistingIdWithType() {
-        String apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
 
         assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
         qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -662,7 +663,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertResourceOnExistingResourceId() {
-        String apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
 
         assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -671,7 +672,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertResourceOnExistingResourceIdWithType() {
-        String apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
 
         assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
         qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -682,7 +683,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testInsertInstanceWithoutType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("123"), containsString("isa")));
-        qb.insert(var().id("123").has("name", "Bob")).execute();
+        qb.insert(var().id(ConceptId.of("123")).has("name", "Bob")).execute();
     }
 
     @Test

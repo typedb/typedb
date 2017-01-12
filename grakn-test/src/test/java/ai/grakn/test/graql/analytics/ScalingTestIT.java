@@ -21,6 +21,7 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -536,7 +537,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
-            superNodes.add(thing.addEntity().getId());
+            superNodes.add(thing.addEntity().getId().getValue());
         }
         graph.commit();
         graph.close();
@@ -574,7 +575,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             List<Var> insertQuery = new ArrayList<>();
             insertQuery.add(var("node"+String.valueOf(nodeIndex)).isa("thing"));
             for (String supernodeId : superNodes) {
-                insertQuery.add(var(supernodeId).id(supernodeId));
+                insertQuery.add(var(supernodeId).id(ConceptId.of(supernodeId)));
                 insertQuery.add(var().isa("related")
                         .rel("relation1", "node"+String.valueOf(nodeIndex))
                         .rel("relation2", supernodeId));
