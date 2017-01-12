@@ -33,7 +33,7 @@ public enum OwlModel {
     IRI("owl-iri")
     ;
     
-    private String name;
+    private final String name;
     
     OwlModel(String name) {
         this.name = name;

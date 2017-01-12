@@ -24,9 +24,6 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
-import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
@@ -57,8 +54,8 @@ import static ai.grakn.test.GraknTestEnv.*;
 
 public class EngineTestBase {
     private static final Properties properties = ConfigProperties.getInstance().getProperties();
-    private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
-    private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
+    private static final AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
+    private static final KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
     private static Path tempDirectory;
 
     @BeforeClass

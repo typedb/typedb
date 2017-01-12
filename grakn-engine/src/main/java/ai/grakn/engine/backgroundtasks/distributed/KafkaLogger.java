@@ -18,16 +18,10 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.util.ConfigProperties;
-
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.LOG_TOPIC;
 
 public class KafkaLogger {
     private final static Logger LOG = LoggerFactory.getLogger(KafkaLogger.class);
@@ -41,8 +35,8 @@ public class KafkaLogger {
         WARN("WARN", 2),
         ERROR("ERROR", 3);
 
-        private int level;
-        private String value;
+        private final int level;
+        private final String value;
         LogLevel(String value, int level) {
             this.value = value;
             this.level = level;
@@ -98,15 +92,6 @@ public class KafkaLogger {
         		Thread.currentThread().getStackTrace()[2].toString(), 
         		msg + "\n" + ExceptionUtils.getFullStackTrace(ex));
         LOG.error(msg);
-    }
-
-    void open() {
-//        producer = ConfigHelper.kafkaProducer();
-    }
-
-    void close() {
-//        producer.flush();
-//        producer.close();
     }
 
     private KafkaLogger() {

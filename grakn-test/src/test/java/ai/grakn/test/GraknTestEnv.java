@@ -4,7 +4,6 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ch.qos.logback.classic.Level;

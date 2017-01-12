@@ -342,7 +342,7 @@ public class TemplateParserTest {
 
         Map<String, Object> address = new HashMap<>();
         address.put("street", "Collins Ave");
-        address.put("number", 01);
+        address.put("number", 1);
 
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Phil Collins");
@@ -635,10 +635,6 @@ public class TemplateParserTest {
 
     @Test
     public void complicatedGroupExpressionTest(){
-        Map<String, Object> data = new HashMap<>();
-        data.put("true", true);
-        data.put("false", false);
-
         String template = "if (((false) and (false)) or (not ((true) and (false))))" +
                 "do {insert isa y;} else {insert isa z;}";
 

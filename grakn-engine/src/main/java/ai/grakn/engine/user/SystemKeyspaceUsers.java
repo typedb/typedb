@@ -181,7 +181,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 			L.forEach(map -> {
 				map.forEach( (k,v) -> {
 					if ("entity".equals(k)) {
-						v.asInstance().resources().forEach(r -> r.delete() );
+						v.asInstance().resources().forEach(Concept::delete);
 						v.delete();
 					}
 				});

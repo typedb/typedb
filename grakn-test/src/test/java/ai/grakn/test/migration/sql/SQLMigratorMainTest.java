@@ -19,7 +19,6 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.migration.sql.Main;
-import ai.grakn.migration.sql.Main;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

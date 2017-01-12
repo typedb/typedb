@@ -27,7 +27,7 @@ import java.util.List;
  * Convert the given value into an unescaped. Only accepts one argument.
  *
  * Usage:
- *      @noescp(<value>)
+ *      {@literal @}noescp(<value>)
  * </p>
  *
  * @author alexandraorth

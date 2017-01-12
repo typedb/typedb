@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
  * Each test needs to be run with a clean Kafka to pass
  */
 public class SchedulerTest extends EngineTestBase {
-    private GraknStateStorage stateStorage = new GraknStateStorage();
+    private final GraknStateStorage stateStorage = new GraknStateStorage();
     private SynchronizedStateStorage zkStorage;
     private final ClusterManager clusterManager = ClusterManager.getInstance();
 

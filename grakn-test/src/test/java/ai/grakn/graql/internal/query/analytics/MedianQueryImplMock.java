@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  */
 public class MedianQueryImplMock extends MedianQueryImpl {
-    int numberOfWorkers;
+    final int numberOfWorkers;
 
     public MedianQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);

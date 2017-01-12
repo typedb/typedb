@@ -35,7 +35,7 @@ import java.util.Set;
 import static ai.grakn.graql.Graql.var;
 
 public class TestSubProperties extends TestOwlGraknBase {
-	private IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
+	private final IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
 	private OWLOntology shakespeare = null;
 
 	@Ignore //TODO: Fix this test. Not sure why it is not working remotely
@@ -53,7 +53,7 @@ public class TestSubProperties extends TestOwlGraknBase {
     	IRI createdProp = baseIri.resolve("#created");
     	Map<OWLNamedIndividual, Set<OWLNamedIndividual>> createdInstances = 
     			reasoner.getObjectPropertyInstances(manager.getOWLDataFactory().getOWLObjectProperty(createdProp));
-    	int owlCount = createdInstances.values().stream().mapToInt(S -> S.size()).sum();
+    	int owlCount = createdInstances.values().stream().mapToInt(Set::size).sum();
         int mmCount = migrator.graph().graql().infer(false).match(var("r").isa(migrator.namer().objectPropertyName(createdProp)))
     		.stream().mapToInt(M -> 1).sum();
     	Assert.assertEquals(owlCount, mmCount);

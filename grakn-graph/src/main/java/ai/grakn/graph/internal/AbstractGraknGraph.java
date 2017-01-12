@@ -744,7 +744,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
 
-        Set<CastingImpl> castings = castingVertices.stream().map(elementFactory::<CastingImpl>buildConcept).collect(Collectors.toSet());
+        Set<CastingImpl> castings = castingVertices.stream().map( elementFactory::<CastingImpl>buildConcept).collect(Collectors.toSet());
 
         if(castings.size() < 2){
             return false;

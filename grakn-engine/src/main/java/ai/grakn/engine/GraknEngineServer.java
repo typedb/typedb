@@ -58,8 +58,8 @@ import static spark.Spark.*;
  */
 
 public class GraknEngineServer {
-    private static ConfigProperties prop = ConfigProperties.getInstance();
-    private static Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
+    private static final ConfigProperties prop = ConfigProperties.getInstance();
+    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,

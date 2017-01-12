@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  */
 public class SumQueryImplMock extends SumQueryImpl{
-    int numberOfWorkers;
+    final int numberOfWorkers;
 
     public SumQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);

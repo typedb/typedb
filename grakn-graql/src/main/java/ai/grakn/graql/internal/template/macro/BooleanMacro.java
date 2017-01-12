@@ -27,7 +27,7 @@ import java.util.List;
  * Templating function that will convert the given value into a boolean (true/false). Only accepts one argument.
  *
  * Usage:
- *      @boolean(<value>)
+ *      {@literal @}boolean(<value>)
  * </p>
  * @author alexandraorth
  */

@@ -22,8 +22,6 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
 import ai.grakn.test.EngineTestBase;
 import org.json.JSONObject;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,6 +33,7 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
@@ -66,11 +65,11 @@ public class TaskManagerTest extends EngineTestBase {
         }
     }
 
-    @Test
     /**
      * Run end to end test and assert that the state
      * is correct in zookeeper.
      */
+    @Test
     public void endToEndTest(){
         Collection<String> ids = new HashSet<>();
         final int startCount = TestTask.startedCounter.get();
@@ -83,7 +82,7 @@ public class TaskManagerTest extends EngineTestBase {
         }
 
         ids.forEach(this::waitToFinish);
-        ids.stream().map(manager::getState).allMatch(s -> s == COMPLETED);
+        assertTrue(ids.stream().map(manager::getState).allMatch(s -> s == COMPLETED));
         assertEquals(20, TestTask.startedCounter.get()-startCount);
     }
 }

@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GraknEngineServerException extends RuntimeException {
 
-    int status;
+    final int status;
 
     public GraknEngineServerException(int status, String message) {
         super(message);

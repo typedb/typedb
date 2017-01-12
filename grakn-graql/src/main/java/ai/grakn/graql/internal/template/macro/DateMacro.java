@@ -32,8 +32,8 @@ import java.util.List;
  * Returns a String with the value.
  *
  * Usage:
- *      @date("01/30/2017", "mm/dd/yyyy", "dd/mm/yyyy")
- *      @date("01/30/2017", "mm/dd/yyyy")
+ *      {@literal @}date("01/30/2017", "mm/dd/yyyy", "dd/mm/yyyy")
+ *      {@literal @}date("01/30/2017", "mm/dd/yyyy")
  * </p>
  *
  * @author alexandraorth

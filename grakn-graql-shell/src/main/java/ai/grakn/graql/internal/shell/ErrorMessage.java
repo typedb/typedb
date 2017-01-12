@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.shell;
 
-@SuppressWarnings("JavaDoc")
 /**
  * Error message strings for shell
  */
