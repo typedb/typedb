@@ -29,6 +29,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 
@@ -115,7 +116,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param name A unique name which identifies the Type in the graph.
      * @return The Type with the provided name or null if no such Type exists.
      */
-    Type getType(String name);
+    Type getType(TypeName name);
 
     /**
      * Get the Resources holding the value provided, if they exist.
