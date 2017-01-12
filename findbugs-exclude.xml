@@ -1,0 +1,6 @@
+<FindBugsFilter>
+    <!-- Exclude generated ANTLR classes -->
+    <Match>
+        <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
+    </Match>
+</FindBugsFilter>
