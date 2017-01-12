@@ -462,7 +462,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
         }
         return casting;
     }
@@ -476,7 +476,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         EdgeImpl assertionToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);// Relation To Casting
-        assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+        assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
 
         putShortcutEdges(relation, relation.type());
 
@@ -529,14 +529,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if (!exists) {
             EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName());
-            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId());
+            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
 
             if (fromRolePlayer.getId() != null)
-                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId());
+                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
             edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName());
 
             if (toRolePlayer.getId() != null)
-                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId());
+                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
             edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
 
             edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName());
@@ -812,7 +812,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //Perform the transfer
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
                 }
             }
 
