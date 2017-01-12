@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class AtomicQuery extends Query{
+public class AtomicQuery extends ReasonerQueryImpl {
 
     private Atom atom;
     private AtomicQuery parent = null;

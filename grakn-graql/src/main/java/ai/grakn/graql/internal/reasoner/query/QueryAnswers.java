@@ -117,7 +117,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @param query query containing filters
      * @return filtered answers
      */
-    public QueryAnswers filterNonEquals(Query query){
+    public QueryAnswers filterNonEquals(ReasonerQueryImpl query){
         Set<NotEquals> filters = query.getAtoms().stream()
                 .filter(at -> at.getClass() == NotEquals.class)
                 .map(at -> (NotEquals) at)

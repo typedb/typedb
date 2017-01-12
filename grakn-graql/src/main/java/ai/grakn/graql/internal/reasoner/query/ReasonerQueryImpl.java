@@ -61,31 +61,31 @@ import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
  * @author Kasper Piskorski
  *
  */
-public class Query implements ReasonerQuery {
+public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
     private final Set<VarName> selectVars;
 
-    public Query(MatchQuery query, GraknGraph graph) {
+    public ReasonerQueryImpl(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         inferTypes();
     }
 
-    public Query(String query, GraknGraph graph) {
+    public ReasonerQueryImpl(String query, GraknGraph graph) {
         this(graph.graql().infer(false).<MatchQuery>parse(query), graph);
     }
 
-    public Query(Query q) {
+    public ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
         this.selectVars = q.getSelectedNames();
         q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
         inferTypes();
     }
 
-    protected Query(Atom atom, Set<VarName> vars) {
+    protected ReasonerQueryImpl(Atom atom, Set<VarName> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().graph();
@@ -102,7 +102,7 @@ public class Query implements ReasonerQuery {
     public boolean equals(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Query a2 = (Query) obj;
+        ReasonerQueryImpl a2 = (ReasonerQueryImpl) obj;
         return this.isEquivalent(a2);
     }
 
@@ -468,7 +468,7 @@ public class Query implements ReasonerQuery {
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
-    public boolean isEquivalent(Query q) {
+    public boolean isEquivalent(ReasonerQueryImpl q) {
         boolean equivalent = true;
         Set<Atom> atoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)

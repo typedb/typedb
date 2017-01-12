@@ -23,10 +23,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.pattern.property.ValueFlagProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
@@ -48,7 +46,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
     public ValuePredicate(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     public ValuePredicate(VarName varName, ValuePredicateAdmin pred, ReasonerQuery par){
-        this(Graql.var(varName).value(pred).admin(), par);}
+        this(createValueVar(varName, pred), par);}
     public ValuePredicate(VarName varName, ReasonerQuery par){
         this(Graql.var(varName).value().admin(), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
@@ -56,6 +54,10 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     @Override
     public Atomic clone() {
         return new ValuePredicate(this);
+    }
+
+    public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
+        return Graql.var(name).value(pred).admin();
     }
 
     @Override

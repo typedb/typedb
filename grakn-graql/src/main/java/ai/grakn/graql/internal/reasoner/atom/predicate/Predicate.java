@@ -22,7 +22,6 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.HashMap;

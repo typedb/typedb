@@ -39,7 +39,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -219,7 +219,7 @@ public class Relation extends TypeAtom {
 
     private boolean isRuleApplicableViaAtom(Atom childAtom, InferenceRule child) {
         boolean ruleRelevant = true;
-        Query parent = (Query) getParentQuery();
+        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         Map<RoleType, Pair<VarName, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
         Map<RoleType, Pair<VarName, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
 
@@ -308,7 +308,7 @@ public class Relation extends TypeAtom {
 
     private void addPredicate(Predicate pred) {
         if (getParentQuery() == null) throw new IllegalStateException("No parent in addPredicate");
-        Query parent = (Query) getParentQuery();
+        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         pred.setParentQuery(parent);
         setPredicate(pred);
         parent.addAtom(pred);
@@ -350,7 +350,7 @@ public class Relation extends TypeAtom {
 
     private void inferTypeFromHasRole(){
         if (getPredicate() == null && getParentQuery() != null) {
-            Query parent = (Query) getParentQuery();
+            ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
             VarName valueVariable = getValueVariable();
             HasRole hrAtom = parent.getAtoms().stream()
                     .filter(at -> at.getVarName().equals(valueVariable))
@@ -395,7 +395,7 @@ public class Relation extends TypeAtom {
         //from types
         getTypeConstraints()
                 .forEach(atom -> {
-                    Predicate predicate = ((Query) getParentQuery()).getIdPredicate(atom.getValueVariable());
+                    Predicate predicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable());
                     if (predicate != null) idPredicates.add(predicate);
                 });
         return idPredicates;
@@ -511,7 +511,7 @@ public class Relation extends TypeAtom {
                 RoleType roleType = !typeName.isEmpty() ? graph.getRoleType(typeName): null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {
-                    Predicate rolePredicate = ((Query) getParentQuery()).getIdPredicate(role.getVarName());
+                    Predicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
                     if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicateValue());
                 }
                 allocatedVars.add(var);
@@ -596,7 +596,7 @@ public class Relation extends TypeAtom {
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((Query) getParentQuery()).getIdPredicate(rt.getVarName())))
+                .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicateValue())));
     }

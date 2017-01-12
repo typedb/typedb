@@ -27,7 +27,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import javafx.util.Pair;
 
@@ -166,7 +166,7 @@ public abstract class Atom extends AtomBase {
     public Set<Atom> getTypeConstraints(){
         Set<Atom> relevantTypes = new HashSet<>();
         //ids from indirect types
-        ((Query) getParentQuery()).getTypeConstraints().stream()
+        ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(atom -> {
                     relevantTypes.add(atom);

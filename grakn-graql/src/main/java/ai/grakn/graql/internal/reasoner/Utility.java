@@ -29,7 +29,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
@@ -38,7 +37,6 @@ import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
@@ -55,6 +53,7 @@ import java.util.Stack;
 import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -132,10 +131,6 @@ public class Utility {
             if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
         }
         return predicate;
-    }
-
-    public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
-        return Graql.var(name).value(pred).admin();
     }
 
     /**
