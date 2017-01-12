@@ -142,9 +142,9 @@ public class RelationTest extends GraphTestBase{
             if(edge.getProperty(TO_ROLE_NAME).equals(role2.getName())) {
                 foundEdge = true;
                 assertEquals(edge.getProperty(RELATION_TYPE_NAME), relationType.getName());
-                assertEquals(edge.getProperty(RELATION_ID), relation.getId());
-                assertEquals(edge.getProperty(TO_ID), b.getId());
-                assertEquals(edge.getProperty(FROM_ID), a.getId());
+                assertEquals(edge.getProperty(RELATION_ID), relation.getId().getValue());
+                assertEquals(edge.getProperty(TO_ID), b.getId().getValue());
+                assertEquals(edge.getProperty(FROM_ID), a.getId().getValue());
                 assertEquals(edge.getProperty(FROM_TYPE_NAME), a.type().getName());
                 assertEquals(edge.getProperty(TO_TYPE_NAME), b.type().getName());
             }
