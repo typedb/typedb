@@ -728,11 +728,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
-            String error = ErrorMessage.VALIDATION.getMessage(errors.size());
+            StringBuilder error = new StringBuilder();
+            error.append(ErrorMessage.VALIDATION.getMessage(errors.size()));
             for (String s : errors) {
-                error += s;
+                error.append(s);
             }
-            throw new GraknValidationException(error);
+            throw new GraknValidationException(error.toString());
         }
     }
 
