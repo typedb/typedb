@@ -229,7 +229,7 @@ class HALConceptData {
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
 
-        entity.relations().parallelStream().forEach(rel -> {
+        entity.relations().forEach(rel -> {
 
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
             String rolePlayedByCurrentConcept = null;
@@ -284,7 +284,7 @@ class HALConceptData {
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
         if (!type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
-            type.instances().parallelStream().forEach(instance -> {
+            type.instances().forEach(instance -> {
 
                 if (instance.isType() && instance.asType().isImplicit()) return;
 
