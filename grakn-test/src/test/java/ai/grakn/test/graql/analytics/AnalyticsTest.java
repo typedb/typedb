@@ -111,7 +111,7 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         // the null role-player caused analytics to fail at some stage
         try {
-            graph.graql().compute().degree().persist().execute();
+            graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
@@ -148,7 +148,8 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.commit();
         String keyspace = graph.getKeyspace();
 
-        graph.graql().compute().degree().persist().execute();
+        //TODO: Replace the following persistence behaviour
+//        graph.graql().compute().degree().persist().execute();
 
         Collection<Resource<Object>> degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
                 .getResourceType(Schema.Analytics.DEGREE.getName()).instances();

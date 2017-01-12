@@ -130,18 +130,7 @@ public class DegreeTest extends AbstractGraphTest {
                 }
         ));
 
-        // compute degrees again after persisting degrees
-        graph.graql().compute().degree().persist().execute();
-        Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().execute();
-        assertEquals(degrees.size(), degrees2.size());
-        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
-
-        degrees2 = graph.graql().compute().degree().of("thing").execute();
+        Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
         assertEquals(2, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
         assertEquals(1, degrees2.get(3L).size());
@@ -200,177 +189,6 @@ public class DegreeTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testDegreesAndPersist() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        // create instances
-        EntityType thing = graph.putEntityType("thing");
-        EntityType anotherThing = graph.putEntityType("another");
-
-        ConceptId entity1 = thing.addEntity().getId();
-        ConceptId entity2 = thing.addEntity().getId();
-        ConceptId entity3 = thing.addEntity().getId();
-        ConceptId entity4 = anotherThing.addEntity().getId();
-
-        RoleType role1 = graph.putRoleType("role1");
-        RoleType role2 = graph.putRoleType("role2");
-        thing.playsRole(role1).playsRole(role2);
-        anotherThing.playsRole(role1).playsRole(role2);
-        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
-
-        // relate them
-        ConceptId id1 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity1))
-                .putRolePlayer(role2, graph.getConcept(entity2))
-                .getId();
-        ConceptId id2 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity2))
-                .putRolePlayer(role2, graph.getConcept(entity3))
-                .getId();
-        ConceptId id3 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity2))
-                .putRolePlayer(role2, graph.getConcept(entity4))
-                .getId();
-        graph.commit();
-
-        // compute degrees on subgraph
-        Graql.compute().degree().of("thing").in("thing", "related").persist().withGraph(graph).execute();
-
-        Map<ConceptId, Long> correctDegrees = new HashMap<>();
-        correctDegrees.put(entity1, 1L);
-        correctDegrees.put(entity2, 3L);
-        correctDegrees.put(entity3, 1L);
-
-        // assert persisted degrees are correct
-        graph = factory.getGraph();
-        checkDegrees(correctDegrees);
-        checkNoDegree(Schema.Analytics.DEGREE.getName(), id1, id2, id3, entity4);
-
-        Graql.compute().degree().in("thing", "related").persist().withGraph(graph).execute();
-
-        correctDegrees.put(id1, 2L);
-        correctDegrees.put(id2, 2L);
-        correctDegrees.put(id3, 1L);
-
-        // assert persisted degrees are correct
-        graph = factory.getGraph();
-        checkDegrees(correctDegrees);
-        checkNoDegree(Schema.Analytics.DEGREE.getName(), entity4);
-
-        // compute again and again ...
-        long numVertices = 0;
-        for (int i = 0; i < 2; i++) {
-            graph.graql().compute().degree().in("thing", "related").persist().execute();
-            graph = factory.getGraph();
-            checkDegrees(correctDegrees);
-
-            // assert the number of vertices remain the same
-            if (i == 0) {
-                numVertices = graph.graql().compute().count().execute();
-            } else {
-                assertEquals(numVertices, graph.graql().compute().count().execute().longValue());
-            }
-        }
-
-        // compute degrees on all types, again and again ...
-        correctDegrees.put(entity4, 1L);
-        correctDegrees.put(id3, 2L);
-        for (int i = 0; i < 2; i++) {
-            graph.graql().compute().degree().persist().execute();
-            graph = factory.getGraph();
-            checkDegrees(correctDegrees);
-
-            // assert the number of vertices remain the same
-            assertEquals(numVertices, graph.graql().compute().count().execute().longValue());
-        }
-    }
-
-    @Test
-    public void testDegreesAndPersistName() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        // create instances
-        EntityType thing = graph.putEntityType("thing");
-        EntityType anotherThing = graph.putEntityType("another");
-
-        ConceptId entity1 = thing.addEntity().getId();
-        ConceptId entity2 = thing.addEntity().getId();
-        ConceptId entity3 = thing.addEntity().getId();
-        ConceptId entity4 = anotherThing.addEntity().getId();
-
-        RoleType role1 = graph.putRoleType("role1");
-        RoleType role2 = graph.putRoleType("role2");
-        thing.playsRole(role1).playsRole(role2);
-        anotherThing.playsRole(role1).playsRole(role2);
-        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
-
-        // relate them
-        ConceptId id1 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity1))
-                .putRolePlayer(role2, graph.getConcept(entity2))
-                .getId();
-        ConceptId id2 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity2))
-                .putRolePlayer(role2, graph.getConcept(entity3))
-                .getId();
-        ConceptId id3 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity2))
-                .putRolePlayer(role2, graph.getConcept(entity4))
-                .getId();
-        graph.commit();
-
-        Map<ConceptId, Long> correctDegrees = new HashMap<>();
-        correctDegrees.put(entity1, 1L);
-        correctDegrees.put(entity2, 3L);
-        correctDegrees.put(entity3, 1L);
-        correctDegrees.put(id1, 2L);
-        correctDegrees.put(id2, 2L);
-        correctDegrees.put(id3, 1L);
-
-        // assert persisted degrees are correct
-        String label = "label";
-        Graql.compute().degree().in("thing", "related").persist(label).withGraph(graph).execute();
-
-        // assert persisted degrees are correct
-        graph = factory.getGraph();
-        checkDegrees(correctDegrees, label);
-        checkNoDegree(label, entity4);
-
-        assertEquals(null, graph.getType(Schema.Analytics.DEGREE.getName()));
-        assertNotEquals(null, graph.getType(label));
-    }
-
-    private void checkDegrees(Map<ConceptId, Long> correctDegrees) {
-        correctDegrees.entrySet().forEach(entry -> {
-            Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(entry.getKey())
-                            .resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
-            assertEquals(1, resources.size());
-            assertEquals(entry.getValue(), resources.iterator().next().getValue());
-        });
-    }
-
-    private void checkDegrees(Map<ConceptId, Long> correctDegrees, String resourceTypeName) {
-        correctDegrees.entrySet().forEach(entry -> {
-            Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(entry.getKey())
-                            .resources(graph.getResourceType(resourceTypeName));
-            assertEquals(1, resources.size());
-            assertEquals(entry.getValue(), resources.iterator().next().getValue());
-        });
-    }
-
-    private void checkNoDegree(String resourceTypeName, ConceptId... ids) {
-        Sets.newHashSet(ids).forEach(id -> {
-            Collection<Resource<?>> resources =
-                    graph.<Instance>getConcept(id).resources(graph.getResourceType(resourceTypeName));
-            assertEquals(0, resources.size());
-        });
-    }
-
-    @Test
     public void testSubIsAccountedForInSubgraph() throws Exception {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
@@ -387,12 +205,10 @@ public class DegreeTest extends AbstractGraphTest {
 
         // set subgraph
         HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
-        graph.graql().compute().degree().persist().in(ct).execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
 
         // check that dog has a degree to confirm sub has been inferred
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-        Collection<Resource<?>> degrees = graph.getConcept(foofoo).asEntity().resources();
-        assertTrue(degrees.iterator().next().getValue().equals(0L));
+        assertTrue(degrees.keySet().iterator().next().equals(0L));
     }
 
     @Test
@@ -483,7 +299,7 @@ public class DegreeTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testDegreeIsPersisted() throws Exception {
+    public void testDegreeMissingRolePlayer() throws Exception {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -511,131 +327,17 @@ public class DegreeTest extends AbstractGraphTest {
         graph.commit();
 
         // compute and persist degrees
-        graph.graql().compute().degree().persist().execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
 
         // check degrees are correct
-        graph = factory.getGraph();
-        GraknGraph finalGraph = graph;
-        referenceDegrees.entrySet().forEach(entry -> {
-            Instance instance = finalGraph.getConcept(entry.getKey());
-            assertTrue(instance.resources().iterator().next().getValue().equals(entry.getValue()));
-        });
-
-        // check only expected resources exist
-        Collection<ConceptId> allConcepts = new ArrayList<>();
-        ResourceType<Long> rt = graph.getResourceType(Schema.Analytics.DEGREE.getName());
-        Collection<Resource<Long>> degrees = rt.instances();
-        Map<Instance, Long> currentDegrees = new HashMap<>();
-        degrees.forEach(degree -> {
-            Long degreeValue = degree.getValue();
-            degree.ownerInstances().forEach(instance -> currentDegrees.put(instance, degreeValue));
-        });
-
-        // check all resources exist and no more
-        assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
-
-        // persist again and check again
-        graph.graql().compute().degree().persist().execute();
-
-        // check only expected resources exist
-        graph = factory.getGraph();
-        rt = graph.getResourceType(Schema.Analytics.DEGREE.getName());
-        degrees = rt.instances();
-        degrees.forEach(i -> i.ownerInstances().iterator()
-                .forEachRemaining(r -> allConcepts.add(r.getId())));
-
-        // check degrees are correct
-        GraknGraph finalGraph1 = graph;
-        referenceDegrees.entrySet().forEach(entry -> {
-            Instance instance = finalGraph1.getConcept(entry.getKey());
-            assertTrue(instance.resources().iterator().next().getValue().equals(entry.getValue()));
-        });
-
-        degrees = rt.instances();
-        currentDegrees.clear();
-        degrees.forEach(degree -> {
-            Long degreeValue = degree.getValue();
-            degree.ownerInstances().forEach(instance -> currentDegrees.put(instance, degreeValue));
-        });
-
-        // check all resources exist and no more
-        assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
+        referenceDegrees.entrySet().forEach(entry ->
+                assertTrue(degrees.get(entry.getValue()).contains(entry.getKey())));
+        degrees.entrySet().forEach(entry ->
+                entry.getValue().forEach(id -> assertEquals(entry.getKey(), referenceDegrees.get(id))));
     }
 
     @Test
-    public void testDegreeIsPersistedInPresenceOfOtherResource()
-            throws GraknValidationException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
-        RoleType breeder = graph.putRoleType("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
-                .hasRole(pet).hasRole(owner).hasRole(breeder);
-        EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
-        EntityType animal = graph.putEntityType("animal").playsRole(pet);
-
-        // make one person breeder and owner
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
-                .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
-
-        // manual degrees
-        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(coco.getId(), 1L);
-        referenceDegrees.put(dave.getId(), 1L);
-        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
-
-        // create a decoy resource using same relationship
-        ResourceType<Long> decoyResourceType =
-                graph.putResourceType("decoy-resource", ResourceType.DataType.LONG);
-        Resource<Long> decoyResource = decoyResourceType.putResource(100L);
-
-        animal.hasResource(decoyResourceType);
-        coco.hasResource(decoyResource);
-
-        graph.commit();
-
-        // compute and persist degrees
-        HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
-        graph.graql().compute().degree().persist().in(ct).execute();
-        graph = factory.getGraph();
-        ResourceType<Long> degreeResource = graph.getResourceType(Schema.Analytics.DEGREE.getName());
-
-        // check degrees are correct
-        boolean isSeen = false;
-        for (Map.Entry<ConceptId, Long> entry : referenceDegrees.entrySet()) {
-            Instance instance = graph.getConcept(entry.getKey());
-            if (instance.isEntity()) {
-                for (Resource<?> resource : instance.asEntity().resources()) {
-                    if (resource.type().equals(degreeResource)) {
-                        // check value is correct
-                        assertTrue(resource.getValue().equals(entry.getValue()));
-                        // ensure a resource of this type is seen
-                        isSeen = true;
-                    }
-                }
-            } else if (instance.isRelation()) {
-                for (Resource<?> resource : instance.asRelation().resources()) {
-                    if (resource.type().equals(degreeResource)) {
-                        // check value
-                        assertTrue(resource.getValue().equals(entry.getValue()));
-                        // ensure exists
-                        isSeen = true;
-                    }
-                }
-            }
-            // fails if a resource is not found for everything in the referenceDegree map
-            assertTrue(isSeen);
-            isSeen = false;
-        }
-    }
-
-    @Test
-    public void testDegreeIsCorrectAssertionAboutAssertion()
+    public void testDegreeAssertionAboutAssertion()
             throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
@@ -717,7 +419,7 @@ public class DegreeTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testDegreeIsCorrectTernaryRelationships()
+    public void testDegreeTernaryRelationships()
             throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
@@ -749,13 +451,12 @@ public class DegreeTest extends AbstractGraphTest {
         graph.commit();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        graph = factory.getGraph();
         assertTrue(degrees.get(3L).contains(relationId.getValue()));
         assertTrue(degrees.get(1L).contains(marlonId.getValue()));
     }
 
     @Test
-    public void testDegreeIsCorrectOneRoleplayerMultipleRoles()
+    public void testDegreeOneRolePlayerMultipleRoles()
             throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
@@ -796,49 +497,8 @@ public class DegreeTest extends AbstractGraphTest {
         ));
     }
 
-
     @Test
-    public void testDegreeIsCorrectMissingRolePlayer()
-            throws GraknValidationException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
-        RoleType breeder = graph.putRoleType("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
-                .hasRole(pet).hasRole(owner).hasRole(breeder);
-        EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
-        EntityType animal = graph.putEntityType("animal").playsRole(pet);
-
-        // make one person breeder and owner
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
-                .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
-
-        // manual degrees
-        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(coco.getId(), 1L);
-        referenceDegrees.put(dave.getId(), 1L);
-        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
-
-        // validate
-        graph.commit();
-
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
-    }
-
-    @Test
-    public void testDegreeIsCorrectRolePlayerWrongType()
+    public void testDegreeRolePlayerWrongType()
             throws GraknValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
@@ -883,76 +543,5 @@ public class DegreeTest extends AbstractGraphTest {
                     assertEquals(referenceDegrees.get(ConceptId.of(id)), entry.getKey());
                 }
         ));
-    }
-
-    @Test
-    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes()
-            throws GraknValidationException, ExecutionException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        // create a simple graph
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
-        EntityType person = graph.putEntityType("person").playsRole(owner);
-        EntityType cat = graph.putEntityType("cat").playsRole(pet);
-
-        // make one person breeder and owner of a dog and a cat
-        Entity coco = cat.addEntity();
-        Entity dave = person.addEntity();
-        mansBestFriend.addRelation()
-                .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
-
-        // validate
-        graph.commit();
-
-        // count and persist
-        assertEquals(3L, graph.graql().compute().count().execute().longValue());
-
-        graph.graql().compute().degree().persist().execute();
-        graph = factory.getGraph();
-        assertEquals(3L, graph.graql().compute().count().execute().longValue());
-
-        graph.graql().compute().degree().persist().execute();
-        graph = factory.getGraph();
-        assertEquals(3L, graph.graql().compute().count().execute().longValue());
-
-        graph.graql().compute().degree().persist().execute();
-        graph = factory.getGraph();
-        assertEquals(3L, graph.graql().compute().count().execute().longValue());
-    }
-
-    @Test
-    public void testComputingUsingDegreeResource() throws GraknValidationException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        // create something with degrees
-        RoleType pet = graph.putRoleType("pet");
-        RoleType owner = graph.putRoleType("owner");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
-        EntityType person = graph.putEntityType("person").playsRole(owner);
-        EntityType cat = graph.putEntityType("cat").playsRole(pet);
-
-        // make one person breeder and owner of a dog and a cat
-        Entity coco = cat.addEntity();
-        Entity dave = person.addEntity();
-        mansBestFriend.addRelation()
-                .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
-
-        // validate
-        graph.commit();
-
-        // create degrees
-        graph.graql().compute().degree().persist().execute();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
-        // compute sum
-        assertEquals(4L, graph.graql().compute().sum().of(Schema.Analytics.DEGREE.getName()).execute().get());
-
-        // compute count
-        assertEquals(graph.getResourceType(Schema.Analytics.DEGREE.getName()).instances().size(),
-                graph.graql().compute().count().in(Schema.Analytics.DEGREE.getName()).execute().intValue());
     }
 }
