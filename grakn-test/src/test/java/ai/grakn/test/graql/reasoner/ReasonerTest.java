@@ -841,9 +841,10 @@ public class ReasonerTest extends AbstractGraknTest {
     private QueryAnswers queryAnswers(MatchQuery query) {
         return new QueryAnswers(query.admin().results());
     }
-
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(queryAnswers(q1), queryAnswers(q2));
+        QueryAnswers answers = queryAnswers(q1);
+        QueryAnswers answers2 = queryAnswers(q2);
+        assertEquals(answers, answers2);
     }
 }
 
