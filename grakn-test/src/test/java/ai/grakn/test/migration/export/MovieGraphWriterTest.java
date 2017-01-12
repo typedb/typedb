@@ -17,52 +17,49 @@
  */
 package ai.grakn.test.migration.export;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.migration.export.GraphWriter;
-import ai.grakn.test.AbstractGraphTest;
-import org.junit.After;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertDataEqual;
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertOntologiesEqual;
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.insert;
 
-public class MovieGraphWriterTest extends AbstractGraphTest {
+public class MovieGraphWriterTest {
 
-    private GraknGraph copy;
     private GraphWriter writer;
+
+    @ClassRule
+    public static GraphContext original = GraphContext.preLoad(MovieGraph.get());
+
+    @Rule
+    public GraphContext copy = GraphContext.empty();
 
     @Before
     public void setup() {
-        MovieGraphFactory.loadGraph(graph);
-
-        writer = new GraphWriter(graph);
-        copy = factory.getGraph("copy");
-    }
-
-    @After
-    public void takedown(){
-        copy.clear();
+        writer = new GraphWriter(original.graph());
     }
 
     @Test
     public void testWritingMovieGraphOntology() {
         String ontology = writer.dumpOntology();
-        insert(copy, ontology);
+        insert(copy.graph(), ontology);
 
-        assertOntologiesEqual(graph, copy);
+        assertOntologiesEqual(original.graph(), copy.graph());
     }
 
     @Test
     public void testWritingMovieGraphData() {
         String ontology = writer.dumpOntology();
-        insert(copy, ontology);
+        insert(copy.graph(), ontology);
 
         String data = writer.dumpData();
-        insert(copy, data);
+        insert(copy.graph(), data);
 
-        assertDataEqual(graph, copy);
+        assertDataEqual(original.graph(), copy.graph());
     }
 }

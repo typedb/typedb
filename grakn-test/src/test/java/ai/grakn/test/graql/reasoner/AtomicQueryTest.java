@@ -18,22 +18,21 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graphs.AdmissionsGraph;
+import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
-import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
-import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
-import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import com.google.common.collect.ImmutableMap;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -44,32 +43,43 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static org.junit.Assert.assertEquals;
+import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class AtomicQueryTest extends AbstractGraphTest {
-    private static GraknGraph graph;
-    @org.junit.Rule
+public class AtomicQueryTest {
+
+    @ClassRule
+    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+    
+    @ClassRule
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+
+    @ClassRule
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+
+    @ClassRule
+    public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
+
+    @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void setUpClass() {
         assumeTrue(usingTinker());
-        graph = SNBGraph.getGraph();
     }
 
     @Test
-    public void testErrorNonAtomicQuery() {
+    public void testErrorNonReasonerReasonerAtomicQuery() {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;";
         exception.expect(IllegalStateException.class);
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, graph);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, snbGraph.graph());
     }
 
     @Test
     public void testCopyConstructor(){
         String queryString = "match ($x, $y) isa recommendation;";
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, graph);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, snbGraph.graph());
         ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
         assertEquals(atomicQuery, copy);
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
@@ -77,18 +87,14 @@ public class AtomicQueryTest extends AbstractGraphTest {
 
     @Test
     public void testMaterialize(){
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
         String explicitQuery = "match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic';";
         assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
-        QueryAnswers answers = new QueryAnswers();
-
-        answers.add(ImmutableMap.of(
-                varName("x"), getConcept("Bob"),
-                varName("y"), getConcept("Colour of Magic")));
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, graph);
-        atomicQuery.getAnswers().addAll(answers);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, snbGraph.graph());
+        atomicQuery.addAtom(new IdPredicate(varName("x"), getConcept("Bob"), atomicQuery));
+        atomicQuery.addAtom(new IdPredicate(varName("y"), getConcept("Colour of Magic"), atomicQuery));
         atomicQuery.materialise();
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
@@ -97,9 +103,8 @@ public class AtomicQueryTest extends AbstractGraphTest {
     @Ignore
     @Test
     public void testUnification(){
-        GraknGraph localGraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", localGraph);
-        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery("match ($X, $Y) isa Friend; $Y has name 'd'; select $X;", localGraph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", ancestorGraph.graph());
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery("match ($X, $Y) isa Friend; $Y has name 'd'; select $X;", ancestorGraph.graph());
 
         Atomic parentAtom = parentQuery.getAtom();
         Atomic childAtom = childQuery.getAtom();
@@ -117,15 +122,14 @@ public class AtomicQueryTest extends AbstractGraphTest {
         String queryString2 = "match" +
                 "$x has firstname $x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581;" +
                 "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
-        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(queryString, graph);
-        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(queryString2, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(queryString, snbGraph.graph());
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(queryString2, snbGraph.graph());
         assertEquals(parentQuery, childQuery);
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
     @Test
     public void testResourceEquivalence2() {
-        GraknGraph lgraph = AdmissionsGraph.getGraph();
         String queryString = "match $x isa $x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680;" +
                 "$x has GRE $x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45;" +
                 "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 type-name 'applicant';" +
@@ -135,28 +139,27 @@ public class AtomicQueryTest extends AbstractGraphTest {
                 "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
                 "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 type-name 'applicant';" +
                 "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
-        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(queryString, lgraph);
-        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(queryString2, lgraph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(queryString, admissionsGraph.graph());
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(queryString2, admissionsGraph.graph());
         assertEquals(parentQuery, childQuery);
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
     @Test
     public void testQueryEquivalence(){
-        GraknGraph graph = GeoGraph.getGraph();
         String queryString = "match " +
                 "(entity-location: $x2, geo-entity: $xx) isa is-located-in;" +
                 "$x1 isa $t1; $t1 sub geoObject;";
         String queryString2 = "match " +
                 "(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
                 "$y1 isa $t2; $t2 sub geoObject;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, graph);
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, graph);
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, geoGraph.graph());
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, geoGraph.graph());
         assertTrue(query.isEquivalent(query2));
     }
 
-    private static Concept getConcept(String id){
-        Set<Concept> instances = graph.getResourcesByValue(id)
+    private Concept getConcept(String id){
+        Set<Concept> instances = snbGraph.graph().getResourcesByValue(id)
                 .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");

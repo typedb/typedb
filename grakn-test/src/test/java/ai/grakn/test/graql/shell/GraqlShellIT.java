@@ -18,14 +18,16 @@
 
 package ai.grakn.test.graql.shell;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -49,7 +51,13 @@ import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
 @Ignore
-public class GraqlShellIT extends AbstractGraphTest {
+public class GraqlShellIT {
+
+    @ClassRule
+    public static final GraphContext rule = GraphContext.empty();
+
+    private static final GraknGraph graph = rule.graph();
+
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;

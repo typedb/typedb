@@ -24,7 +24,6 @@ import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.AbstractEngineTest;
-import ai.grakn.test.AbstractGraphTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;

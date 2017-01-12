@@ -16,44 +16,57 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.reasoner.graphs;
+package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 
+import java.util.function.Consumer;
+
 import static com.google.common.math.IntMath.pow;
 
-public class PathGraphSymmetric extends TestGraph{
+public class PathGraph extends TestGraph {
 
-    final static String key = "index";
-    final static String gqlFile = "path-test-symmetric.gql";
+    private final static String key = "index";
+    private final static String gqlFile = "path-test.gql";
 
-    public PathGraphSymmetric(int n, int m){
-        super(key, gqlFile);
-        buildExtensionalDB(n, m);
-        commit();
+    private final int n;
+    private final int children;
+
+    public PathGraph(int n, int children){
+        this.n = n;
+        this.children = children;
     }
 
-    public static GraknGraph getGraph(int n, int m) {
-        return new PathGraphSymmetric(n, m).graph();
+    public static Consumer<GraknGraph> get(int n, int children) {
+        return new PathGraph(n, children).build();
     }
-    protected void buildExtensionalDB(int n, int children) {
+
+    @Override
+    public Consumer<GraknGraph> build(){
+        return (GraknGraph graph) -> {
+            loadFromFile(graph, gqlFile);
+            buildExtensionalDB(graph, n, children);
+        };
+    }
+
+    protected void buildExtensionalDB(GraknGraph graph, int n, int children) {
         long startTime = System.currentTimeMillis();
 
-        EntityType vertex = graknGraph.getEntityType("vertex");
-        EntityType startVertex = graknGraph.getEntityType("start-vertex");
-        RoleType arcFrom = graknGraph.getRoleType("arcA");
-        RoleType arcTo = graknGraph.getRoleType("arcB");
+        EntityType vertex = graph.getEntityType("vertex");
+        EntityType startVertex = graph.getEntityType("start-vertex");
+        RoleType arcFrom = graph.getRoleType("arc-from");
+        RoleType arcTo = graph.getRoleType("arc-to");
 
-        RelationType arc = graknGraph.getRelationType("arc");
-        putEntity("a0", startVertex);
+        RelationType arc = graph.getRelationType("arc");
+        putEntity(graph, "a0", startVertex, key);
 
         for(int i = 1 ; i <= n ;i++) {
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
-                putEntity("a" + i + "," + j, vertex);
+                putEntity(graph, "a" + i + "," + j, vertex, key);
                 if (j != 0 && j % 100 ==0)
                     System.out.println(j + " entities out of " + m + " inserted");
             }
@@ -61,8 +74,8 @@ public class PathGraphSymmetric extends TestGraph{
 
         for (int j = 0; j < children; j++) {
             arc.addRelation()
-                    .putRolePlayer(arcFrom, getInstance("a0"))
-                    .putRolePlayer(arcTo, getInstance("a1," + j));
+                    .putRolePlayer(arcFrom, getInstance(graph, "a0"))
+                    .putRolePlayer(arcTo, getInstance(graph, "a1," + j));
         }
 
         for(int i = 1 ; i < n ;i++) {
@@ -70,8 +83,8 @@ public class PathGraphSymmetric extends TestGraph{
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
                     arc.addRelation()
-                            .putRolePlayer(arcFrom, getInstance("a" + i + "," + j))
-                            .putRolePlayer(arcTo, getInstance("a" + (i + 1) + "," + (j * children + c)));
+                            .putRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
+                            .putRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + (j * children + c)));
 
                 }
                 if (j!= 0 && j % 100 == 0)

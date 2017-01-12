@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -31,13 +32,14 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -53,7 +55,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class ClusteringTest extends AbstractGraphTest {
+public class ClusteringTest {
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
@@ -72,14 +74,15 @@ public class ClusteringTest extends AbstractGraphTest {
     private ConceptId entityId4;
     private List<ConceptId> instanceIds;
 
-    private String keyspace;
+    @ClassRule
+    public static final GraphContext rule = GraphContext.empty();
+
+    public static GraknGraph graph = rule.graph();
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
         assumeFalse(usingOrientDB());
-
-        keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -336,11 +339,11 @@ public class ClusteringTest extends AbstractGraphTest {
                 .playsRole(resourceValue7));
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 
     private void addResourceRelations() throws GraknValidationException {
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
         Entity entity1 = graph.getConcept(entityId1);
         Entity entity2 = graph.getConcept(entityId2);
@@ -413,6 +416,6 @@ public class ClusteringTest extends AbstractGraphTest {
         graph.getResourceType(resourceType6).putResource(0.8);
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 }

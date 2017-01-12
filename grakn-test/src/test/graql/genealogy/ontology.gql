@@ -69,7 +69,7 @@ confidence sub resource datatype string;
 person sub entity
 	plays-role protagonist
 	plays-role spouse
-	plays-role parent	
+	plays-role parent
 	plays-role child
 	plays-role sibling
 	plays-role grandparent

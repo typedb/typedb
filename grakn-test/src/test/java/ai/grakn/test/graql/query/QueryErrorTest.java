@@ -20,30 +20,35 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.name;
+import static ai.grakn.test.GraphContext.graphWithNewKeyspace;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
-public class QueryErrorTest extends AbstractGraphTest {
+public class QueryErrorTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        MovieGraphFactory.loadGraph(graph);
-        qb = graph.graql();
+        qb = rule.graph().graql();
     }
 
     @Test

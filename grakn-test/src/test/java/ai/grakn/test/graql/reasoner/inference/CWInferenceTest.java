@@ -20,15 +20,17 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.AbstractGraphTest;
 import ai.grakn.concept.RuleType;
+import ai.grakn.graphs.AbstractGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
-import ai.grakn.test.graql.reasoner.graphs.CWGraph;
+import ai.grakn.graphs.CWGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Map;
@@ -41,14 +43,19 @@ import static org.junit.Assume.assumeTrue;
 
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class CWInferenceTest extends AbstractGraphTest {
+public class CWInferenceTest {
     private static QueryBuilder qb;
+
+    @ClassRule
+    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
+
+    @ClassRule
+    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get());
 
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        GraknGraph graph = CWGraph.getGraph();
-        qb = graph.graql().infer(false);
+        qb = cwGraph.graph().graql().infer(false);
     }
 
     @Test
@@ -72,8 +79,7 @@ public class CWInferenceTest extends AbstractGraphTest {
 
     @Test
     public void testTransactionQuery() {
-        GraknGraph graph = CWGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = cwGraph2.graph().graql().infer(false);
                 String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parse(queryString);
 
@@ -219,7 +225,7 @@ public class CWInferenceTest extends AbstractGraphTest {
 
     @Test
     public void testGraphCase() {
-        GraknGraph localGraph = CWGraph.getGraph();
+        GraknGraph localGraph = cwGraph2.graph();
         QueryBuilder lqb = localGraph.graql().infer(false);
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");
 

@@ -18,12 +18,12 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.Autocomplete;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Set;
@@ -32,14 +32,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AutocompleteTest extends AbstractGraphTest {
+public class AutocompleteTest {
 
     private final Set<String> types = ImmutableSet.of("production", "movie", "person");
 
-    @Before
-    public void setup(){
-        MovieGraphFactory.loadGraph(graph);
-    }
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Test
     public void testAutocompleteEmpty() {

@@ -24,14 +24,14 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -39,6 +39,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,22 +66,25 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class InsertQueryTest extends AbstractGraphTest {
+public class InsertQueryTest {
 
     private QueryBuilder qb;
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @Rule
+    public final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+
     @Before
     public void setUp() {
-        MovieGraphFactory.loadGraph(graph);
-        graph.showImplicitConcepts(true);
-        qb = graph.graql();
+        movieGraph.graph().showImplicitConcepts(true);
+        qb = movieGraph.graph().graql();
     }
 
     @After
     public void tearDown() {
-        if (graph != null) graph.showImplicitConcepts(false);
+        if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
     }
 
     @Test
@@ -382,7 +386,7 @@ public class InsertQueryTest extends AbstractGraphTest {
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
         assertTrue(newType.asEntityType().isAbstract());
-        assertTrue(newType.playsRoles().contains(graph.getRoleType("has-title-owner")));
+        assertTrue(newType.playsRoles().contains(movieGraph.graph().getRoleType("has-title-owner")));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
@@ -400,7 +404,7 @@ public class InsertQueryTest extends AbstractGraphTest {
         Var vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
         qb.insert(vars).execute();
 
-        RuleType ruleType = graph.getRuleType(ruleTypeId);
+        RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
         boolean found = false;
         for (ai.grakn.concept.Rule rule : ruleType.instances()) {
             if(lhsPattern.equals(rule.getLHS()) && rhsPattern.equals(rule.getRHS())){
@@ -438,7 +442,7 @@ public class InsertQueryTest extends AbstractGraphTest {
                 name("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
         ).execute();
 
-        graph.showImplicitConcepts(true);
+        movieGraph.graph().showImplicitConcepts(true);
 
         // Make sure a-new-type can have the given resource type, but not other resource types
         assertTrue(qb.match(name("a-new-type").sub("entity").hasResource("a-new-resource-type")).ask().execute());
@@ -490,7 +494,7 @@ public class InsertQueryTest extends AbstractGraphTest {
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -505,7 +509,7 @@ public class InsertQueryTest extends AbstractGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -521,7 +525,7 @@ public class InsertQueryTest extends AbstractGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -536,7 +540,7 @@ public class InsertQueryTest extends AbstractGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -551,7 +555,7 @@ public class InsertQueryTest extends AbstractGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test

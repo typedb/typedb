@@ -2,6 +2,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ch.qos.logback.classic.Level;
@@ -42,7 +43,7 @@ public abstract class GraknTestEnv {
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
     private static Path tempDirectory;
 
-    static void ensureCassandraRunning() throws Exception {
+    public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
             startEmbeddedCassandra();
             System.out.println("CASSANDRA RUNNING.");
@@ -51,7 +52,7 @@ public abstract class GraknTestEnv {
 
     //TODO :: This will be removed when we fix BUG #12029. We will be able to run AbstractGraphTest classes
     //TODO :: without touching any engine component. Starting the HTTP server will move into startEngine()
-    static void ensureHTTPRunning(){
+    public static void ensureHTTPRunning(){
         if(HTTP_RUNNING.compareAndSet(false, true)) {
             RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
             GraknEngineServer.startHTTP();

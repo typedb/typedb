@@ -19,13 +19,13 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,11 +43,16 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class DeleteQueryTest extends AbstractGraphTest {
+public class DeleteQueryTest {
 
     private QueryBuilder qb;
+
+    @Rule
+    public final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
     private MatchQuery kurtz;
     private MatchQuery marlonBrando;
     private MatchQuery apocalypseNow;
@@ -55,9 +60,7 @@ public class DeleteQueryTest extends AbstractGraphTest {
 
     @Before
     public void setUp() {
-        MovieGraphFactory.loadGraph(graph);
-
-        qb = graph.graql();
+        qb = rule.graph().graql();
 
         kurtz = qb.match(var("x").has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = qb.match(var("x").has("name", "Marlon Brando"));
@@ -255,17 +258,17 @@ public class DeleteQueryTest extends AbstractGraphTest {
     public void testDeleteEntityTypeAfterInstances() {
         MatchQuery movie = qb.match(var("x").isa("movie"));
 
-        assertNotNull(graph.getEntityType("movie"));
+        assertNotNull(rule.graph().getEntityType("movie"));
         assertTrue(exists(movie));
 
         movie.delete("x").execute();
 
-        assertNotNull(graph.getEntityType("movie"));
+        assertNotNull(rule.graph().getEntityType("movie"));
         assertFalse(exists(movie));
 
         qb.match(var("x").name("movie").sub("entity")).delete("x").execute();
 
-        assertNull(graph.getEntityType("movie"));
+        assertNull(rule.graph().getEntityType("movie"));
     }
 
     @Test

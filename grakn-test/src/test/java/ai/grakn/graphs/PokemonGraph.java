@@ -16,41 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.migration.graphs;
+package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.example.PokemonGraphFactory;
 
-public abstract class TestGraph {
+import java.util.function.Consumer;
 
-    private GraknGraph graph;
+public class PokemonGraph extends TestGraph {
 
-    public TestGraph(GraknGraph graph){
-        this.graph = graph;
-        this.graph.showImplicitConcepts(true);
+    public static Consumer<GraknGraph> get(){
+        return new MovieGraph().build();
     }
 
-    abstract TestGraph buildOntology();
-
-    abstract TestGraph buildInstances();
-
-    abstract TestGraph buildRelations();
-
-    abstract TestGraph buildRules();
-
-    public GraknGraph graph(){
-        if(graph.isClosed()){
-//            graph = ;
-        }
-
-        return graph;
-    }
-
-    public TestGraph build(){
-        buildOntology();
-        buildInstances();
-        buildRelations();
-        buildRules();
-
-        return this;
+    @Override
+    public void buildOntology(GraknGraph graph) {
+        PokemonGraphFactory.loadGraph(graph);
     }
 }

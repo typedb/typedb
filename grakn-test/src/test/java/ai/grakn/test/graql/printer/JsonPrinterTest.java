@@ -22,15 +22,16 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import mjson.Json;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -38,13 +39,15 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 
-public class JsonPrinterTest extends AbstractGraphTest {
+public class JsonPrinterTest {
 
     private Printer printer;
 
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
     @Before
     public void setUp() {
-        MovieGraphFactory.loadGraph(graph);
         printer = Printers.json();
     }
 
@@ -80,19 +83,19 @@ public class JsonPrinterTest extends AbstractGraphTest {
 
     @Test
     public void testJsonMetaType() {
-        ConceptId id = graph.admin().getMetaEntityType().getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", "concept"), graph.admin().getMetaEntityType());
+        ConceptId id = rule.graph().admin().getMetaEntityType().getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", "concept"), rule.graph().admin().getMetaEntityType());
     }
 
     @Test
     public void testJsonEntityType() {
-        ConceptId id = graph.getEntityType("movie").getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), graph.getEntityType("movie"));
+        ConceptId id = rule.graph().getEntityType("movie").getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), rule.graph().getEntityType("movie"));
     }
 
     @Test
     public void testJsonResource() {
-        ResourceType<String> resourceType = graph.getResourceType("title");
+        ResourceType<String> resourceType = rule.graph().getResourceType("title");
         Resource<String> resource = resourceType.getResource("The Muppets");
 
         assertJsonEquals(
@@ -103,10 +106,10 @@ public class JsonPrinterTest extends AbstractGraphTest {
 
     @Test
     public void testJsonRule() {
-        Rule rule = graph.getResourceType("name").getResource("expectation-rule").owner().asRule();
+        Rule jsonRule = rule.graph().getResourceType("name").getResource("expectation-rule").owner().asRule();
         assertJsonEquals(
-                Json.object("id", rule.getId().getValue(), "isa", "a-rule-type", "lhs", rule.getLHS().toString(), "rhs", rule.getRHS().toString()),
-                rule
+                Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "lhs", jsonRule.getLHS().toString(), "rhs", jsonRule.getRHS().toString()),
+                jsonRule
         );
     }
 
