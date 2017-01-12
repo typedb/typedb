@@ -36,9 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 /**
- * Internal factory to produce different types of concepts
- */
-/**
  * <p>
  *     Constructs Concepts And Edges
  * </p>

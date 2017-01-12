@@ -27,7 +27,7 @@ import java.util.List;
  * Convert the given value into a quoted string. Only accepts one argument.
  *
  * Usage:
- *      @string(<value>)
+ *      {@literal @}string(<value>)
  * </p>
  * @author alexandraorth
  */

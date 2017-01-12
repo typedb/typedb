@@ -24,20 +24,20 @@ import java.util.Collection;
 
 /**
  * A Resource is the Concept that represents a resource associated with one or more Instances. 
+ * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
 public interface Resource<D> extends Instance{
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves the value of the Resource.
      *
-     * @param D The data type of this resource. Supported Types include: String, Long, Double, and Boolean
      * @return The Resource itself
      */
     D getValue();
 
     /**
      * Retrieves the type of the Resource, that is, the ResourceType of which this resource is an Instance.
-     * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
+     *
      * @return The ResourceType of which this resource is an Instance.
      */
     ResourceType<D> type();
@@ -45,7 +45,6 @@ public interface Resource<D> extends Instance{
     /**
      * Retrieves the data type of this Resource's ResourceType.
      *
-     * @param <D> The data type of the Resource. Supported Types include: String, Long, Double, and Boolean
      * @return The data type of this Resource's type.
      */
     ResourceType.DataType<D> dataType();

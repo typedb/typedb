@@ -68,7 +68,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.properties = properties;
 
         if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME))
-            systemKeyspace = new SystemKeyspace<M, G>(getSystemFactory());
+            systemKeyspace = new SystemKeyspace<>(getSystemFactory());
     }
 
     InternalFactory<M, G> getSystemFactory(){
@@ -98,7 +98,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         //This checks if the previous graph built with this factory is the same as the one we trying to build now.
         if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
             //This then checks if the previous graph built has undergone a commit
-            boolean hasCommitted = false;
+            boolean hasCommitted;
             if(lastGraphBuiltBatchLoading) {
                 hasCommitted = batchLoadingGraknGraph.hasCommitted();
             } else {

@@ -449,7 +449,7 @@ class VarImpl implements VarAdmin {
     }
 
     private static boolean invalidInnerVariable(VarAdmin var) {
-        return var.getProperties().filter(p -> !(p instanceof NameProperty)).findAny().isPresent();
+        return var.getProperties().anyMatch(p -> !(p instanceof NameProperty));
     }
 
     /**

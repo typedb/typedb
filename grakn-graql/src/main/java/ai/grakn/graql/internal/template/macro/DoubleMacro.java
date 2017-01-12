@@ -27,8 +27,8 @@ import java.util.List;
  * Convert the given value into a boolean (true/false). Only accepts one argument.
  *
  * Usage:
- *      @boolean(<value>)
- *      @boolean("true")
+ *      {@literal @}boolean(<value>)
+ *      {@literal @}boolean("true")
  * </p>
  *
  * @author alexandraorth

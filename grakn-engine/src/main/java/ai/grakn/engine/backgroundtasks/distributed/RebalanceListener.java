@@ -26,7 +26,7 @@ import java.util.Collection;
 
 public class RebalanceListener implements ConsumerRebalanceListener {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
-    private KafkaConsumer consumer;
+    private final KafkaConsumer consumer;
 
     public RebalanceListener(KafkaConsumer consumer) {
         this.consumer = consumer;

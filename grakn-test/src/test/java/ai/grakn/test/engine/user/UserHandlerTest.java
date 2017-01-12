@@ -40,8 +40,8 @@ import static org.junit.Assert.assertTrue;
 
 public class UserHandlerTest extends EngineTestBase {
     private static UsersHandler users;
-    private static String userName = "geralt";
-    private static String password = "witcher";
+    private static final String userName = "geralt";
+    private static final String password = "witcher";
 
     @BeforeClass
     public static void setup(){

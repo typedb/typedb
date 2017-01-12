@@ -140,9 +140,9 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     }
 
     static class ConfiguredFactory {
-        Properties properties;
-        String graphComputer;
-        InternalFactory factory;
+        final Properties properties;
+        final String graphComputer;
+        final InternalFactory factory;
 
         ConfiguredFactory(Properties properties, String graphComputer, InternalFactory factory){
             this.properties = properties;

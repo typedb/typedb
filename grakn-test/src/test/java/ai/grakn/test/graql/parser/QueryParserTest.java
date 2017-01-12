@@ -159,7 +159,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 or(var("n").value(contains("ar")), var("n").value(regex("^M.*$")))
         );
 
-        MatchQuery parsed = (MatchQuery) qb.parse(
+        MatchQuery parsed = qb.parse(
                 "match ($x, $y); $y isa person, has name $n;" +
                 "$n value contains 'ar' or $n value /^M.*$/;"
         );

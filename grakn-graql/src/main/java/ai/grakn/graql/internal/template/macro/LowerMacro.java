@@ -27,7 +27,7 @@ import java.util.List;
  * Convert the given value into an lower case string. Only accepts one argument.
  *
  * Usage:
- *      @lower(<value>)
+ *      {@literal @}lower(<value>)
  * </p>
  *
  * @author alexandraorth

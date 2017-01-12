@@ -33,7 +33,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,21 +49,21 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class StandaloneTaskManager implements TaskManager {
-    private static String RUN_ONCE_NAME = "One off task scheduler.";
-    private static String RUN_RECURRING_NAME = "Recurring task scheduler.";
-    private static String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
-    private static String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
+    private static final String RUN_ONCE_NAME = "One off task scheduler.";
+    private static final String RUN_RECURRING_NAME = "Recurring task scheduler.";
+    private static final String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
+    private static final String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
 
     private static StandaloneTaskManager instance = null;
 
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
-    private Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
-    private StateStorage stateStorage;
-    private ReentrantLock stateUpdateLock;
+    private final Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
+    private final StateStorage stateStorage;
+    private final ReentrantLock stateUpdateLock;
 
-    private ExecutorService executorService;
-    private ScheduledExecutorService schedulingService;
+    private final ExecutorService executorService;
+    private final ScheduledExecutorService schedulingService;
 
     private StandaloneTaskManager() {
         instantiatedTasks = new ConcurrentHashMap<>();

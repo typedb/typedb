@@ -59,8 +59,8 @@ public class Loader {
     private Semaphore blocker = new Semaphore(25);
 
     private int batchSize;
-    private Collection<InsertQuery> queries;
-    private String keyspace;
+    private final Collection<InsertQuery> queries;
+    private final String keyspace;
 
     public Loader(String keyspace){
         this.keyspace = keyspace;

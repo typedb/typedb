@@ -45,10 +45,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
 
 /**
- * The global structural rules to validate.
- * This ensures the graph conforms to our concept.
- */
-/**
  * <p>
  *     Specific Validation Rules
  * </p>

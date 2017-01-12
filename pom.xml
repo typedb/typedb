@@ -79,6 +79,10 @@
         <owl-api.version>5.0.2</owl-api.version>
         <systen-rules.version>1.16.0</systen-rules.version>
         <java-jwt.version>2.2.1</java-jwt.version>
+        <kafka.version>0.10.1.0</kafka.version>
+        <kafka-unit.version>0.6</kafka-unit.version>
+        <curator.version>2.11.1</curator.version>
+        <zookeeper.version>3.4.9</zookeeper.version>
     </properties>
 
     <organization>
