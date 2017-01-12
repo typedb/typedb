@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.exception.NoEdgeException;
@@ -27,8 +28,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -56,7 +55,7 @@ public class CastingTest extends GraphTestBase{
     public void testEquals() throws Exception {
         Graph graph = graknGraph.getTinkerPopGraph();
         Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
-        CastingImpl castingCopy = (CastingImpl) graknGraph.getConcept(v.id().toString());
+        CastingImpl castingCopy = graknGraph.getConcept(ConceptId.of(v.id().toString()));
         assertEquals(casting, castingCopy);
 
         EntityType type = graknGraph.putEntityType("Another entity type");
@@ -75,12 +74,10 @@ public class CastingTest extends GraphTestBase{
     @Test
     public void testGetRole() throws Exception {
         assertEquals(role, casting.getRole());
-
-        String id = UUID.randomUUID().toString();
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
         vertex.property(Schema.ConceptProperty.ID.name(), vertex.id().toString());
 
-        CastingImpl casting2 = (CastingImpl) graknGraph.getConcept(vertex.id().toString());
+        CastingImpl casting2 = graknGraph.getConcept(ConceptId.of(vertex.id().toString()));
         boolean exceptionThrown = false;
         try{
             casting2.getRole();

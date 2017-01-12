@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.VarName;
@@ -114,7 +115,7 @@ public class Fragments {
         return new DistinctCastingFragment(start, otherCastingName);
     }
 
-    public static IdFragment id(VarName start, String id) {
+    public static IdFragment id(VarName start, ConceptId id) {
         return new IdFragment(start, id);
     }
 

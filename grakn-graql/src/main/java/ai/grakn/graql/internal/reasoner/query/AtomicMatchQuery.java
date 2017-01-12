@@ -25,7 +25,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +137,7 @@ public class AtomicMatchQuery extends AtomicQuery{
 
         Set<VarName> queryVars = getSelectedNames();
         Set<VarName> headVars = ruleHead.getSelectedNames();
-        Set<Predicate> extraSubs = new HashSet<>();
+        Set<IdPredicate> extraSubs = new HashSet<>();
         if(queryVars.size() > headVars.size()){
             extraSubs.addAll(ruleHead.getIdPredicates()
                     .stream().filter(sub -> queryVars.contains(sub.getVarName()))
@@ -147,7 +146,7 @@ public class AtomicMatchQuery extends AtomicQuery{
 
         answers.forEach( map -> {
             Map<VarName, Concept> newAns = new HashMap<>(map);
-            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicateValue())) );
+            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicate())) );
             newAnswers.add(newAns);
         });
         return newAnswers;

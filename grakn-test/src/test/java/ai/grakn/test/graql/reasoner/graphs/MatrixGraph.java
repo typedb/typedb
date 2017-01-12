@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -49,8 +50,8 @@ public class MatrixGraph extends TestGraph{
         RelationType R1 = graknGraph.getRelationType("R1");
         RelationType R2 = graknGraph.getRelationType("R2");
 
-        String[] aInstancesIds = new String[m+1];
-        String[][] bInstancesIds = new String[m][n+1];
+        ConceptId[] aInstancesIds = new ConceptId[m+1];
+        ConceptId[][] bInstancesIds = new ConceptId[m][n+1];
         aInstancesIds[0] = putEntity("a0", graknGraph.getEntityType("start")).getId();
         aInstancesIds[m] = putEntity("a" + m, graknGraph.getEntityType("end")).getId();
         for(int i = 1 ; i < m ;i++)

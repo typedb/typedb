@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Atomic;
@@ -83,7 +84,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
+        ConceptId scopeId = scope.getId().orElseThrow(() -> failDelete(this));
         concept.asRelation().deleteScope(graph.getConcept(scopeId));
     }
 

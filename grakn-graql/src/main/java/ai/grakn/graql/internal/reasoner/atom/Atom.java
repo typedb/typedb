@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
@@ -49,14 +50,14 @@ import java.util.Set;
 public abstract class Atom extends AtomBase {
 
     protected Type type = null;
-    protected String typeId = null;
+    protected ConceptId typeId = null;
 
     protected Atom(VarAdmin pattern) { this(pattern, null);}
     protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
-        this.typeId = a.typeId;
+        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
     @Override
@@ -103,18 +104,15 @@ public abstract class Atom extends AtomBase {
 
     @Override
     public boolean isRecursive(){
-        if (isResource()) return false;
+        if (isResource() || getType() == null) return false;
         boolean atomRecursive = false;
 
-        String typeId = getTypeId();
-        if (typeId.isEmpty()) return false;
         Type type = getType();
         Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
         Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
 
         for(Rule rule : presentInConclusion)
             atomRecursive |= presentInHypothesis.contains(rule);
-
         return atomRecursive;
     }
 
@@ -127,15 +125,15 @@ public abstract class Atom extends AtomBase {
      * @return corresponding type if any
      */
     public Type getType(){
-        if (type == null)
-            type = getParentQuery().graph().getType(typeId);
+        if (type == null && typeId != null)
+            type = getParentQuery().graph().getConcept(typeId).asType();
         return type;
     }
 
     /**
      * @return type id of the corresponding type if any
      */
-    public String getTypeId(){ return typeId;}
+    public ConceptId getTypeId(){ return typeId;}
 
     /**
      * @return value variable name
