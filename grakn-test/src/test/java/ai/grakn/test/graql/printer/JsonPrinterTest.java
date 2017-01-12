@@ -44,7 +44,7 @@ public class JsonPrinterTest {
     private Printer printer;
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContext movieContext = GraphContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {
@@ -83,19 +83,19 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonMetaType() {
-        ConceptId id = rule.graph().admin().getMetaEntityType().getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", "concept"), rule.graph().admin().getMetaEntityType());
+        ConceptId id = movieContext.graph().admin().getMetaEntityType().getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", "concept"), movieContext.graph().admin().getMetaEntityType());
     }
 
     @Test
     public void testJsonEntityType() {
-        ConceptId id = rule.graph().getEntityType("movie").getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), rule.graph().getEntityType("movie"));
+        ConceptId id = movieContext.graph().getEntityType("movie").getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), movieContext.graph().getEntityType("movie"));
     }
 
     @Test
     public void testJsonResource() {
-        ResourceType<String> resourceType = rule.graph().getResourceType("title");
+        ResourceType<String> resourceType = movieContext.graph().getResourceType("title");
         Resource<String> resource = resourceType.getResource("The Muppets");
 
         assertJsonEquals(
@@ -106,9 +106,9 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonRule() {
-        Rule jsonRule = rule.graph().getResourceType("name").getResource("expectation-rule").owner().asRule();
+        Rule jsonRule = movieContext.graph().getResourceType("name").getResource("expectation-movieContext").owner().asRule();
         assertJsonEquals(
-                Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "lhs", jsonRule.getLHS().toString(), "rhs", jsonRule.getRHS().toString()),
+                Json.object("id", jsonRule.getId().getValue(), "isa", "a-movieContext-type", "lhs", jsonRule.getLHS().toString(), "rhs", jsonRule.getRHS().toString()),
                 jsonRule
         );
     }

@@ -19,6 +19,7 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
@@ -57,7 +58,7 @@ public class MatrixGraphII extends TestGraph {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationType Q = graph.getRelationType("Q");
-        String[][] aInstancesIds = new String[n+1][m+1];
+        ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
         Instance aInst = putEntity(graph, "a", graph.getEntityType("entity"), key);
         for(int i = 1 ; i <= n ;i++)
             for(int j = 1 ; j <= m ;j++)

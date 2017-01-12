@@ -19,6 +19,7 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
@@ -63,12 +64,12 @@ public class NguyenGraph extends TestGraph {
         RelationType P = graph.getRelationType("P");
         RelationType Q = graph.getRelationType("Q");
 
-        String cId = putEntity(graph, "c", entity, key).getId();
-        String dId = putEntity(graph, "d", entity, key).getId();
-        String eId = putEntity(graph, "e", entity, key).getId();
+        ConceptId cId = putEntity(graph, "c", entity, key).getId();
+        ConceptId dId = putEntity(graph, "d", entity, key).getId();
+        ConceptId eId = putEntity(graph, "e", entity, key).getId();
 
-        String[] aInstancesIds = new String[n+2];
-        String[] bInstancesIds = new String[n+2];
+        ConceptId[] aInstancesIds = new ConceptId[n+2];
+        ConceptId[] bInstancesIds = new ConceptId[n+2];
 
         aInstancesIds[n+1] = putEntity(graph, "a" + (n+1), aEntity, key).getId();
         for(int i = 0 ; i <= n ;i++) {
