@@ -49,7 +49,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
     @Override
-    public Atomic clone() {
+    public Atomic copy() {
         return new ValuePredicate(this);
     }
 

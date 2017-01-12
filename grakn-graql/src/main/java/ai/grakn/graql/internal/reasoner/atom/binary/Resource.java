@@ -91,7 +91,7 @@ public class Resource extends MultiPredicateBinary{
     }
 
     @Override
-    public Atomic clone(){ return new Resource(this);}
+    public Atomic copy(){ return new Resource(this);}
 
     @Override
     public boolean isResource(){ return true;}
