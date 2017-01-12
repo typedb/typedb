@@ -26,7 +26,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Interface for atoms.
+ * Basic interface for logical atoms used in reasoning.
  * </p>
  *
  * @author Kasper Piskorski
@@ -63,6 +63,9 @@ public interface Atomic extends Cloneable{
      */
     default boolean isSelectable(){ return false;}
 
+    /**
+     * @return true if atom is recursive
+     */
     default boolean isRecursive(){ return false;}
 
     /**
@@ -81,7 +84,14 @@ public interface Atomic extends Cloneable{
      */
     PatternAdmin getCombinedPattern();
 
+    /**
+     * @return the query the atom is contained in
+     */
     ReasonerQuery getParentQuery();
+
+    /**
+     * @param q query this atom is supposed to belong to
+     */
     void setParentQuery(ReasonerQuery q);
 
     Map<VarName, VarName> getUnifiers(Atomic parentAtom);
