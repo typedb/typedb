@@ -83,6 +83,8 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
                     bulkResourceMutate.putValue(vertex, getEdgeCount(messenger));
                 }
                 break;
+            default:
+                throw new RuntimeException("unreachable");
         }
     }
 
