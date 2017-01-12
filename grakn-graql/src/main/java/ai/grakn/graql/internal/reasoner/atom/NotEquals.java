@@ -45,7 +45,6 @@ public class NotEquals extends AtomBase {
 
     private VarName refVarName;
 
-    public NotEquals(VarName varName, NeqProperty prop){ this(varName, prop, null);}
     public NotEquals(VarName varName, NeqProperty prop, ReasonerQuery parent){
         super(var(varName).neq(var(prop.getVar().getVarName())).admin(), parent);
         this.refVarName = prop.getVar().getVarName();

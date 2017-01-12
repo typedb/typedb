@@ -29,7 +29,6 @@ public class RegexAtom extends AtomBase {
 
     private final String regex;
 
-    public RegexAtom(VarName varName, RegexProperty prop){ this(varName, prop, null);}
     public RegexAtom(VarName varName, RegexProperty prop, ReasonerQuery parent){
         super(Graql.var(varName).regex(prop.getRegex()).admin(), parent);
         this.regex = prop.getRegex();

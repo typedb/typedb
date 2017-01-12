@@ -82,9 +82,6 @@ public class Relation extends TypeAtom {
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
     private Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = null;
 
-    public Relation(VarAdmin pattern) {
-        this(pattern, null, null);
-    }
     public Relation(VarAdmin pattern, ReasonerQuery par) {
         this(pattern, null, par);
     }
@@ -308,17 +305,14 @@ public class Relation extends TypeAtom {
     }
 
     private void addPredicate(IdPredicate pred) {
-        if (getParentQuery() == null) throw new IllegalStateException("No parent in addPredicate");
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        pred.setParentQuery(parent);
         setPredicate(pred);
-        parent.addAtom(pred);
+        ((ReasonerQueryImpl) getParentQuery()).addAtom(pred);
     }
 
     private void addType(Type type) {
         typeId = type.getId();
         VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
-        addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin()));
+        addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
     }

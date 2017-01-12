@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 public class Resource extends MultiPredicateBinary{
 
     public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
-    public Resource(VarAdmin pattern, Set<Predicate> p){ this(pattern, p, null);}
     public Resource(VarAdmin pattern, Set<Predicate> p, ReasonerQuery par){ super(pattern, p, par);}
     private Resource(Resource a) { super(a);}
 

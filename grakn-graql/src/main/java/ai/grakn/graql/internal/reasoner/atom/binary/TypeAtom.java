@@ -39,9 +39,7 @@ import java.util.Set;
  */
 public class TypeAtom extends Binary{
 
-    public TypeAtom(VarAdmin pattern, ReasonerQuery par) {
-        this(pattern, null, par);
-    }
+    public TypeAtom(VarAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public TypeAtom(VarAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 

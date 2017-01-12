@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.Atomic;
 
 public class IsAbstractAtom extends AtomBase {
 
-    public IsAbstractAtom(VarName varName, IsAbstractProperty prop){ this(varName, prop, null);}
     public IsAbstractAtom(VarName varName, IsAbstractProperty prop, ReasonerQuery parent){
         super(Graql.var(varName).isAbstract().admin(), parent);
     }

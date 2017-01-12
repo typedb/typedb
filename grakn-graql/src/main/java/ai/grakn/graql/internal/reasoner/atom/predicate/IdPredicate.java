@@ -39,9 +39,6 @@ import ai.grakn.graql.admin.Atomic;
  */
 public class IdPredicate extends Predicate<ConceptId>{
 
-    public IdPredicate(VarAdmin pattern) {
-        super(pattern);
-    }
     public IdPredicate(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
     }

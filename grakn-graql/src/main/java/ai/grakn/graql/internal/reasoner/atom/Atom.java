@@ -52,7 +52,6 @@ public abstract class Atom extends AtomBase {
     protected Type type = null;
     protected ConceptId typeId = null;
 
-    protected Atom(VarAdmin pattern) { this(pattern, null);}
     protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);

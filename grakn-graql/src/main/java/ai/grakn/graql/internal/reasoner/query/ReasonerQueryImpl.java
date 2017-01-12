@@ -410,12 +410,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean addAtom(Atomic atom) {
         if(atomSet.add(atom)) {
-            ((AtomBase)atom).setParentQuery(this);
+            atom.setParentQuery(this);
             return true;
         }
         else return false;
     }
-
 
     /**
      * @param atom to be removed

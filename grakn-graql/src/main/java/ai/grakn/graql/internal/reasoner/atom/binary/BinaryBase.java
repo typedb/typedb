@@ -53,7 +53,6 @@ public abstract class BinaryBase extends Atom {
     protected BinaryBase(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
-
     }
 
     protected BinaryBase(BinaryBase a) {

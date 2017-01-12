@@ -56,9 +56,6 @@ public abstract class Predicate<T> extends AtomBase {
      * @return true if the atom corresponds to a unifier (id atom)
      * */
     public boolean isIdPredicate(){ return false;}
-
-    public boolean isNamePredicate(){ return false;}
-
     /**
      * @return true if the atom corresponds to a value atom
      * */

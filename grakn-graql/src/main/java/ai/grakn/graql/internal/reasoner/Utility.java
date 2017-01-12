@@ -99,11 +99,12 @@ public class Utility {
     }
 
     /**
-     *
-     * @param typeVariable
-     * @param vars
-     * @param parent
-     * @return
+     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
+     * covers the case when specified variable name is user defined
+     * @param typeVariable variable name of interest
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return mapped IdPredicate
      */
     public static IdPredicate getUserDefinedIdPredicate(VarName typeVariable, Set<VarAdmin> vars, ReasonerQuery parent){
         return  vars.stream()
@@ -115,11 +116,13 @@ public class Utility {
     }
 
     /**
-     * @param typeVariable
-     * @param typeVar
-     * @param vars
-     * @param parent
-     * @return
+     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
+     * covers both the cases when variable is and isn't user defined
+     * @param typeVariable variable name of interest
+     * @param typeVar VarAdmin to look for in case the variable name is not user defined
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return mapped IdPredicate
      */
     public static IdPredicate getIdPredicate(VarName typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
@@ -134,12 +137,13 @@ public class Utility {
     }
 
     /**
-     *
-     * @param valueVariable
-     * @param valueVar
-     * @param vars
-     * @param parent
-     * @return
+     * looks for appropriate var properties with a specified name among the vars and maps them to ValuePredicates,
+     * covers both the case when variable is and isn't user defined
+     * @param valueVariable variable name of interest
+     * @param valueVar VarAdmin to look for in case the variable name is not user defined
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return set of mapped ValuePredicates
      */
     public static Set<Predicate> getValuePredicates(VarName valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
         Set<Predicate> predicates = new HashSet<>();
