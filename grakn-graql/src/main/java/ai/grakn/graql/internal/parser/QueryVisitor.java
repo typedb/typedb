@@ -332,15 +332,6 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.MEMBERS() != null) cluster = cluster.members();
 
-        if (ctx.PERSIST() != null) {
-            if (ctx.id() != null) {
-                //TODO: Possible a bug that this is asking for the Type name but we extracting the ID. Temporary workaround using getValue()
-                cluster = cluster.persist(visitId(ctx.id()).getValue());
-            } else {
-                cluster = cluster.persist();
-            }
-        }
-
         if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
 
         if (ctx.inList() != null) {
@@ -353,15 +344,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public DegreeQuery<?> visitDegrees(GraqlParser.DegreesContext ctx) {
         DegreeQuery<?> degree = queryBuilder.compute().degree();
-
-        if (ctx.PERSIST() != null) {
-            if (ctx.id() != null) {
-                //TODO: Possible a bug that this is asking for the Type name but we extracting the ID. Temporary workaround using getValue()
-                degree = degree.persist(visitId(ctx.id()).getValue());
-            } else {
-                degree = degree.persist();
-            }
-        }
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));

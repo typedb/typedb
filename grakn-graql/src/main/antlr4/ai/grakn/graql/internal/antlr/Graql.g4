@@ -45,8 +45,8 @@ median         : MEDIAN   'of' ofList      ('in' inList)? ';' ;
 mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
-degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';'                                    (PERSIST id? ';')? ;
-cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (SIZE INTEGER ';')? (PERSIST id? ';')? ;
+degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
+cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (SIZE INTEGER ';')? ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
@@ -124,7 +124,7 @@ id             : identifier ;
 // Some keywords can also be used as identifiers
 identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
-               | DEGREES | MEMBERS | PERSIST | SIZE
+               | DEGREES | MEMBERS | SIZE
                ;
 
 // keywords
@@ -139,7 +139,6 @@ PATH           : 'path' ;
 CLUSTER        : 'cluster' ;
 DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
-PERSIST        : 'persist' ;
 SIZE           : 'size' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;

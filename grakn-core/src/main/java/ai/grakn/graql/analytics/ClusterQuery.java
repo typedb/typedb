@@ -39,23 +39,6 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<Map<String, Set<String>>> members();
 
     /**
-     * Persist the result in the graph after executing the query. Be default, the cluster label is saved as a resource
-     * of the vertex, with resource type name "cluster".
-     *
-     * @return a ClusterQuery with persist flag set
-     */
-    ClusterQuery<T> persist();
-
-    /**
-     * Persist the result in the graph after executing the query. The cluster label is saved as a resource of
-     * the vertex.
-     *
-     * @param resourceTypeName the name of the resource type to save the cluster label
-     * @return a ClusterQuery with persist flag and customised resource type name set
-     */
-    ClusterQuery<T> persist(String resourceTypeName);
-
-    /**
      * @param clusterSize the size of the clusters returned and/or persisted
      * @return a ClusterQuery with cluster set
      */
