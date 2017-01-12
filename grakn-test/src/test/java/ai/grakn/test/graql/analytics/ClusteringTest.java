@@ -17,6 +17,7 @@
  */
 
 package ai.grakn.test.graql.analytics;
+
 import ai.grakn.Grakn;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -42,16 +43,13 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -216,15 +214,15 @@ public class ClusteringTest extends AbstractGraphTest {
         assertEquals(7, memberMap.size());
 
         String id;
-        id = graph.getResourceType(resourceType1).putResource(2.8).asInstance().getId();
+        id = graph.getResourceType(resourceType1).putResource(2.8).asInstance().getId().getValue();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType2).putResource(-5L).asInstance().getId();
+        id = graph.getResourceType(resourceType2).putResource(-5L).asInstance().getId().getValue();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType3).putResource(100L).asInstance().getId();
+        id = graph.getResourceType(resourceType3).putResource(100L).asInstance().getId().getValue();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType5).putResource(10L).asInstance().getId();
+        id = graph.getResourceType(resourceType5).putResource(10L).asInstance().getId().getValue();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType6).putResource(0.8).asInstance().getId();
+        id = graph.getResourceType(resourceType6).putResource(0.8).asInstance().getId().getValue();
         assertEquals(1L, sizeMap.get(id).longValue());
     }
 

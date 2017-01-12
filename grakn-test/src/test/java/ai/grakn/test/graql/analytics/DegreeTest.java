@@ -18,12 +18,9 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -31,20 +28,15 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.AbstractGraphTest;
-import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -55,7 +47,6 @@ import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -331,9 +322,9 @@ public class DegreeTest extends AbstractGraphTest {
 
         // check degrees are correct
         referenceDegrees.entrySet().forEach(entry ->
-                assertTrue(degrees.get(entry.getValue()).contains(entry.getKey())));
+                assertTrue(degrees.get(entry.getValue()).contains(entry.getKey().getValue())));
         degrees.entrySet().forEach(entry ->
-                entry.getValue().forEach(id -> assertEquals(entry.getKey(), referenceDegrees.get(id))));
+                entry.getValue().forEach(id -> assertEquals(entry.getKey(), referenceDegrees.get(ConceptId.of(id)))));
     }
 
     @Test

@@ -42,12 +42,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class AnalyticsTest extends AbstractGraphTest {
 
