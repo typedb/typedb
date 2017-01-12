@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
@@ -57,7 +58,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
-    private final ImmutableSet<String> typeNames;
+    private final ImmutableSet<TypeName> typeNames;
 
     /**
      * @param pattern a pattern to match in the graph
@@ -168,7 +169,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
                 .collect(Collectors.toSet());
     }
 
-    private ImmutableSet<String> getAllTypeNames() {
+    private ImmutableSet<TypeName> getAllTypeNames() {
         return pattern.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
                 .map(VarAdmin::getTypeName)

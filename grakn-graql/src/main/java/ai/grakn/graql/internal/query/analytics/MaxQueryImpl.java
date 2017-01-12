@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -42,7 +43,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
@@ -53,22 +54,22 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery of(String... resourceTypeNames) {
+    public MaxQuery of(TypeName... resourceTypeNames) {
         return (MaxQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MaxQuery of(Collection<String> resourceTypeNames) {
+    public MaxQuery of(Collection<TypeName> resourceTypeNames) {
         return (MaxQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MaxQuery in(String... subTypeNames) {
+    public MaxQuery in(TypeName... subTypeNames) {
         return (MaxQuery) super.in(subTypeNames);
     }
 
     @Override
-    public MaxQuery in(Collection<String> subTypeNames) {
+    public MaxQuery in(Collection<TypeName> subTypeNames) {
         return (MaxQuery) super.in(subTypeNames);
     }
 

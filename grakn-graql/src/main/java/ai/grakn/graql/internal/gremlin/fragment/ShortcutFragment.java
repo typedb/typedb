@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -33,12 +34,12 @@ import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
 
 class ShortcutFragment extends AbstractFragment {
 
-    private final Optional<String> relationType;
-    private final Optional<String> roleStart;
-    private final Optional<String> roleEnd;
+    private final Optional<TypeName> relationType;
+    private final Optional<TypeName> roleStart;
+    private final Optional<TypeName> roleEnd;
 
     ShortcutFragment(
-            Optional<String> relationType, Optional<String> roleStart, Optional<String> roleEnd,
+            Optional<TypeName> relationType, Optional<TypeName> roleStart, Optional<TypeName> roleEnd,
             VarName start, VarName end
     ) {
         super(start, end);
@@ -58,9 +59,9 @@ class ShortcutFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        String start = roleStart.map(rs -> idToString(rs) + " ").orElse("");
-        String type = relationType.map(rt -> ":" + idToString(rt)).orElse("");
-        String end = roleEnd.map(re -> " " + idToString(re)).orElse("");
+        String start = roleStart.map(rs -> idToString(rs.getValue()) + " ").orElse("");
+        String type = relationType.map(rt -> ":" + idToString(rt.getValue())).orElse("");
+        String end = roleEnd.map(re -> " " + idToString(re.getValue())).orElse("");
         return "-[" + start + "shortcut" + type + end + "]->";
     }
 

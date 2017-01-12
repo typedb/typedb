@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.VarAdmin;
 
 /**
@@ -37,16 +38,16 @@ import ai.grakn.graql.admin.VarAdmin;
 public interface Var extends Pattern {
 
     /**
-     * @param id a string that this variable's ID must match
+     * @param id a ConceptId that this variable's ID must match
      * @return this
      */
     Var id(ConceptId id);
 
     /**
-     * @param name a string that this variable's name must match
+     * @param name a TypeName that this variable's name must match
      * @return this
      */
-    Var name(String name);
+    Var name(TypeName name);
 
     /**
      * this variable must have a value
@@ -70,7 +71,7 @@ public interface Var extends Pattern {
      * @param type a resource type that this variable must have an instance of
      * @return this
      */
-    Var has(String type);
+    Var has(TypeName type);
 
     /**
      * @param var a variable representing a resource
@@ -85,7 +86,7 @@ public interface Var extends Pattern {
      * @param value a value of a resource
      * @return this
      */
-    Var has(String type, Object value);
+    Var has(TypeName type, Object value);
 
     /**
      * the variable must have a resource or name of the given type that matches the given atom
@@ -109,7 +110,7 @@ public interface Var extends Pattern {
      * @param type a concept type id that the variable must be of this type
      * @return this
      */
-    Var isa(String type);
+    Var isa(TypeName type);
 
     /**
      * @param type a concept type that this variable must be an instance of
@@ -175,7 +176,7 @@ public interface Var extends Pattern {
      * @param type a resource type that this type variable can be one-to-one related to
      * @return this
      */
-    Var hasKey(String type);
+    Var hasKey(TypeName type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to

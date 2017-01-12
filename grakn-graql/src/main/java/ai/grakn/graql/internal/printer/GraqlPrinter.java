@@ -77,12 +77,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append(colorKeyword("value ")).append(valueToString(concept.asResource().getValue()));
             } else if (concept.isType()) {
                 Type type = concept.asType();
-                sb.append(colorKeyword("type-name ")).append(colorType(idToString(type.getName())));
+                sb.append(colorKeyword("type-name ")).append(colorType(idToString(type.getName().getValue())));
 
                 Type superType = type.superType();
 
                 if (superType != null) {
-                    sb.append(colorKeyword(" sub ")).append(colorType(idToString(superType.getName())));
+                    sb.append(colorKeyword(" sub ")).append(colorType(idToString(superType.getName().getValue())));
                 }
             } else {
                 sb.append(colorKeyword("id ")).append(idToString(concept.getId().getValue()));
@@ -94,7 +94,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     Instance rolePlayer = entry.getValue();
 
                     if (rolePlayer != null) {
-                        String s = colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId().getValue());
+                        String s = colorType(idToString(roleType.getName().getValue())) + ": id " + idToString(rolePlayer.getId().getValue());
                         return Optional.of(s);
                     } else {
                         return Optional.<String>empty();
@@ -107,7 +107,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display type of each instance
             if (concept.isInstance()) {
                 Type type = concept.asInstance().type();
-                sb.append(colorKeyword(" isa ")).append(colorType(idToString(type.getName())));
+                sb.append(colorKeyword(" isa ")).append(colorType(idToString(type.getName().getValue())));
             }
 
             // Display lhs and rhs for rules
@@ -119,7 +119,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display any requested resources
             if (concept.isInstance() && resourceTypes.length > 0) {
                 concept.asInstance().resources(resourceTypes).forEach(resource -> {
-                    String resourceType = colorType(idToString(resource.type().getName()));
+                    String resourceType = colorType(idToString(resource.type().getName().getValue()));
                     String value = valueToString(resource.getValue());
                     sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
                 });

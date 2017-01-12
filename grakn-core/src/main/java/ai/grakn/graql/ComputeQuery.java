@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 
 import java.util.Collection;
 
@@ -38,11 +39,11 @@ public interface ComputeQuery<T> extends Query<T> {
      * @param subTypeNames an array of types to include in the subgraph
      * @return a ComputeQuery with the subTypeNames set
      */
-    ComputeQuery<T> in(String... subTypeNames);
+    ComputeQuery<T> in(TypeName... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph
      * @return a ComputeQuery with the subTypeNames set
      */
-    ComputeQuery<T> in(Collection<String> subTypeNames);
+    ComputeQuery<T> in(Collection<TypeName> subTypeNames);
 }

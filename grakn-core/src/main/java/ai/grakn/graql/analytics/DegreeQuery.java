@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -33,28 +34,28 @@ public interface DegreeQuery<T> extends ComputeQuery<T> {
      * @return a DegreeQuery with the subTypeNames set
      */
     @Override
-    DegreeQuery<T> in(String... subTypeNames);
+    DegreeQuery<T> in(TypeName... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph
      * @return a DegreeQuery with the subTypeNames set
      */
     @Override
-    DegreeQuery<T> in(Collection<String> subTypeNames);
+    DegreeQuery<T> in(Collection<TypeName> subTypeNames);
 
     /**
      * @param ofTypeNames an array of types in the subgraph to compute degree of. By default the degrees of all the
      *                    types in the graph will be computed
      * @return a DegreeQuery with the subTypeNames set
      */
-    DegreeQuery<T> of(String... ofTypeNames);
+    DegreeQuery<T> of(TypeName... ofTypeNames);
 
     /**
      * @param ofTypeNames a collection of types in the subgraph to compute degree of. By default the degrees of all the
      *                    types in the graph will be computed
      * @return a DegreeQuery with the subTypeNames set
      */
-    DegreeQuery<T> of(Collection<String> ofTypeNames);
+    DegreeQuery<T> of(Collection<TypeName> ofTypeNames);
 
     /**
      * @param graph the graph to execute the query on

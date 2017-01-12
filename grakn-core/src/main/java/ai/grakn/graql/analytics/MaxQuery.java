@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -33,27 +34,27 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
      * @param resourceTypeNames an array of types of resources to execute the query on
      * @return a MaxQuery with the subTypeNames set
      */
-    MaxQuery of(String... resourceTypeNames);
+    MaxQuery of(TypeName... resourceTypeNames);
 
     /**
      * @param resourceTypeNames a collection of types of resources to execute the query on
      * @return a MaxQuery with the subTypeNames set
      */
-    MaxQuery of(Collection<String> resourceTypeNames);
+    MaxQuery of(Collection<TypeName> resourceTypeNames);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
      * @return a MaxQuery with the subTypeNames set
      */
     @Override
-    MaxQuery in(String... subTypeNames);
+    MaxQuery in(TypeName... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph
      * @return a MaxQuery with the subTypeNames set
      */
     @Override
-    MaxQuery in(Collection<String> subTypeNames);
+    MaxQuery in(Collection<TypeName> subTypeNames);
 
     /**
      * Execute the query.

@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -49,14 +50,14 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      * @return a ClusterQuery with the subTypeNames set
      */
     @Override
-    ClusterQuery<T> in(String... subTypeNames);
+    ClusterQuery<T> in(TypeName... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph
      * @return a ClusterQuery with the subTypeNames set
      */
     @Override
-    ClusterQuery<T> in(Collection<String> subTypeNames);
+    ClusterQuery<T> in(Collection<TypeName> subTypeNames);
 
     /**
      * @param graph the graph to execute the query on

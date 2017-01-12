@@ -28,6 +28,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
@@ -60,7 +61,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Optional<GraknGraph> graph = Optional.empty();
     String keySpace;
-    Set<String> subTypeNames = new HashSet<>();
+    Set<TypeName> subTypeNames = new HashSet<>();
 
     @Override
     public ComputeQuery<T> withGraph(GraknGraph graph) {
@@ -69,13 +70,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     @Override
-    public ComputeQuery<T> in(String... subTypeNames) {
+    public ComputeQuery<T> in(TypeName... subTypeNames) {
         this.subTypeNames = Sets.newHashSet(subTypeNames);
         return this;
     }
 
     @Override
-    public ComputeQuery<T> in(Collection<String> subTypeNames) {
+    public ComputeQuery<T> in(Collection<TypeName> subTypeNames) {
         this.subTypeNames = Sets.newHashSet(subTypeNames);
         return this;
     }
@@ -166,7 +167,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         GraknGraph theGraph = this.graph.get();
 
         ResourceType resource = theGraph.putResourceType(resourceTypeName, resourceDataType);
-        for (String type : subTypeNames) {
+        for (TypeName type : subTypeNames) {
             theGraph.getType(type).hasResource(resource);
         }
 

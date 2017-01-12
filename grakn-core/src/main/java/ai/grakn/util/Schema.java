@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import ai.grakn.concept.TypeName;
+
 /**
  * A type enum which restricts the types of links/concepts which can be created
  */
@@ -176,8 +178,8 @@ public final class Schema {
             this.name = name;
         }
 
-        public String getName(String resourceTypeName) {
-            return String.format(name, resourceTypeName);
+        public TypeName getName(TypeName resourceType) {
+            return TypeName.of(String.format(name, resourceType.getValue()));
         }
     }
 
@@ -195,8 +197,8 @@ public final class Schema {
             this.name = name;
         }
 
-        public String getName() {
-            return name;
+        public TypeName getName() {
+            return TypeName.of(name);
         }
     }
 }

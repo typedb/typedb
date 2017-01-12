@@ -25,6 +25,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -87,7 +88,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
             if (roleType.isPresent()) {
-                Optional<String> roleTypeName = roleType.get().getTypeName();
+                Optional<TypeName> roleTypeName = roleType.get().getTypeName();
 
                 if (roleTypeName.isPresent()) {
                     shortcutTraversal.addRel(roleTypeName.get(), relationPlayer.getRolePlayer().getVarName());
@@ -204,12 +205,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
 
-        Set<String> roleTypes = relationPlayers.stream()
+        Set<TypeName> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
                 .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
-        Optional<String> maybeName =
+        Optional<TypeName> maybeName =
                 var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeName);
 
         maybeName.ifPresent(name -> {
@@ -221,7 +222,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
             Collection<RelationType> relationTypes = relationType.subTypes();
 
-            Set<String> validRoles = relationTypes.stream()
+            Set<TypeName> validRoles = relationTypes.stream()
                     .flatMap(r -> r.hasRoles().stream())
                     .map(Type::getName)
                     .collect(toSet());

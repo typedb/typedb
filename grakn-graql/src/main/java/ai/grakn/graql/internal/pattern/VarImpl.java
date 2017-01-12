@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.ValuePredicate;
@@ -125,7 +126,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var name(String name) {
+    public Var name(TypeName name) {
         return addProperty(new NameProperty(name));
     }
 
@@ -225,7 +226,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasKey(String type) {
+    public Var hasKey(TypeName type) {
         return hasKey(Graql.var().name(type));
     }
 
@@ -315,7 +316,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Optional<String> getTypeName() {
+    public Optional<TypeName> getTypeName() {
         return getProperty(NameProperty.class).map(NameProperty::getNameValue);
     }
 
@@ -335,7 +336,7 @@ class VarImpl implements VarAdmin {
         if (userDefinedName) {
             return name.toString();
         } else {
-            return getTypeName().map(StringConverter::idToString).orElse("'" + toString() + "'");
+            return getTypeName().map((name) -> StringConverter.idToString(name.getValue())).orElse("'" + toString() + "'");
         }
     }
 
@@ -392,7 +393,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<String> getTypeNames() {
+    public Set<TypeName> getTypeNames() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
                 .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)

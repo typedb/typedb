@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -31,13 +32,13 @@ import java.util.Set;
 
 public class NameProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
-    private final String name;
+    private final TypeName name;
 
-    public NameProperty(String name) {
+    public NameProperty(TypeName name) {
         this.name = name;
     }
 
-    public String getNameValue() {
+    public TypeName getNameValue() {
         return name;
     }
 
@@ -48,7 +49,7 @@ public class NameProperty extends AbstractVarProperty implements NamedProperty, 
 
     @Override
     public String getProperty() {
-        return StringConverter.idToString(name);
+        return StringConverter.idToString(name.getValue());
     }
 
     @Override
