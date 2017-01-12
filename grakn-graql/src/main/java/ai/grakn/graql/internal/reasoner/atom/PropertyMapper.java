@@ -53,7 +53,6 @@ import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 
 import java.util.HashSet;
 import java.util.Optional;

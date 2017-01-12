@@ -20,6 +20,7 @@ package ai.grakn.engine.backgroundtasks.taskstorage;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
@@ -72,11 +73,11 @@ public class GraknStateStorage implements StateStorage {
 
         Optional<String> result = attemptCommitToSystemGraph((graph) -> {
             InsertQuery query = graph.graql().insert(state);
-            String id = query.stream().findFirst().get().get(TASK_VAR).getId();
+            ConceptId id = query.stream().findFirst().get().get(TASK_VAR).getId();
 
             LOG.debug("Created " + graph.getConcept(id));
 
-            return id;
+            return id.getValue();
         }, true);
 
         return result.map(x -> x).orElse(null);
@@ -95,7 +96,7 @@ public class GraknStateStorage implements StateStorage {
         final Set<String> resourcesToDettach = new HashSet<String>();
         
         // New resources to add
-        Var resources = var(TASK_VAR).id(id);
+        Var resources = var(TASK_VAR).id(ConceptId.of(id));
 
         if(status != null) {
         	resourcesToDettach.add(STATUS);
@@ -130,8 +131,8 @@ public class GraknStateStorage implements StateStorage {
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             LOG.debug("dettaching: " + resourcesToDettach);
             LOG.debug("inserting " + resources);
-            final Entity task = (Entity)graph.getConcept(id);
-            // Remove relations to any resources we want to currently update 
+            final Entity task = graph.getConcept(ConceptId.of(id));
+            // Remove relations to any resources we want to currently update
             resourcesToDettach.forEach(typeName -> {
                 RoleType roleType = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(typeName));
                 if (roleType == null)
@@ -151,7 +152,7 @@ public class GraknStateStorage implements StateStorage {
             return null;
 
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
-            Instance instance = graph.getConcept(id);
+            Instance instance = graph.getConcept(ConceptId.of(id));
             return instanceToState(graph, instance);
         }, false);
 
@@ -213,7 +214,7 @@ public class GraknStateStorage implements StateStorage {
             for (Map<String, Concept> m : res) {
                 Concept c = m.values().stream().findFirst().orElse(null);
                 if (c != null) {
-                    String id = c.getId();
+                    String id = c.getId().getValue();
                     out.add(new Pair<>(id, instanceToState(graph, c.asInstance())));
                 }
             }

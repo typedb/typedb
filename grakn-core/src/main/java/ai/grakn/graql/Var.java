@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.VarAdmin;
 
@@ -39,7 +40,7 @@ public interface Var extends Pattern {
      * @param id a string that this variable's ID must match
      * @return this
      */
-    Var id(String id);
+    Var id(ConceptId id);
 
     /**
      * @param name a string that this variable's name must match

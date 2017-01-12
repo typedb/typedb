@@ -20,6 +20,7 @@ package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -35,13 +36,13 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      * @param sourceId the id of the source instance
      * @return a PathQuery with the source instance set
      */
-    PathQuery from(String sourceId);
+    PathQuery from(ConceptId sourceId);
 
     /**
      * @param destinationId the id of the destination instance
      * @return a PathQuery with the the destination instance set
      */
-    PathQuery to(String destinationId);
+    PathQuery to(ConceptId destinationId);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
