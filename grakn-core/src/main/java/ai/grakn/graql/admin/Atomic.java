@@ -81,6 +81,9 @@ public interface Atomic extends Cloneable{
      */
     PatternAdmin getCombinedPattern();
 
+    ReasonerQuery getParentQuery();
+    void setParentQuery(ReasonerQuery q);
+
     Map<VarName, VarName> getUnifiers(Atomic parentAtom);
 
     /**

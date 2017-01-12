@@ -17,6 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
@@ -42,7 +43,7 @@ public abstract class Predicate<T> extends AtomBase {
     protected T predicate = null;
 
     protected Predicate(VarAdmin pattern) { this(pattern, null);}
-    protected Predicate(VarAdmin pattern, Query par) {
+    protected Predicate(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
     }
@@ -56,6 +57,8 @@ public abstract class Predicate<T> extends AtomBase {
      * @return true if the atom corresponds to a unifier (id atom)
      * */
     public boolean isIdPredicate(){ return false;}
+
+    public boolean isNamePredicate(){ return false;}
 
     /**
      * @return true if the atom corresponds to a value atom

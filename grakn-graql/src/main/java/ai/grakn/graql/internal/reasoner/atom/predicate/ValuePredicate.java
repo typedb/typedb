@@ -19,9 +19,11 @@
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.pattern.property.ValueFlagProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -44,17 +46,12 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public ValuePredicate(VarAdmin pattern) {
         super(pattern);
     }
-    public ValuePredicate(VarAdmin pattern, Query par) {
-        super(pattern, par);
-    }
-    public ValuePredicate(VarName varName, ValueProperty prop){ this(varName, prop, null);}
-    public ValuePredicate(VarName varName, ValueProperty prop, Query par){
-        this(createValueVar(varName, prop.getPredicate()), par);}
+    public ValuePredicate(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    public ValuePredicate(VarName varName, ValuePredicateAdmin pred, ReasonerQuery par){
+        this(Graql.var(varName).value(pred).admin(), par);}
+    public ValuePredicate(VarName varName, ReasonerQuery par){
+        this(Graql.var(varName).value().admin(), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
-
-    public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
-        return Graql.var(name).value(pred).admin();
-    }
 
     @Override
     public Atomic clone() {

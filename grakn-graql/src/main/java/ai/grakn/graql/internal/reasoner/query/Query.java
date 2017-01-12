@@ -70,7 +70,7 @@ public class Query implements ReasonerQuery {
     public Query(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
-        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this, graph));
+        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         inferTypes();
     }
 
@@ -88,7 +88,7 @@ public class Query implements ReasonerQuery {
     protected Query(Atom atom, Set<VarName> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        this.graph = atom.getParentQuery().graph;
+        this.graph = atom.getParentQuery().graph();
         this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
         addAtom(AtomicFactory.create(atom, this));
@@ -121,9 +121,7 @@ public class Query implements ReasonerQuery {
     private void inferTypes(){
         getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .forEach(at -> {
-                    at.inferTypes();
-                });
+                .forEach(Atom::inferTypes);
     }
 
     public Set<VarName> getSelectedNames() { return Sets.newHashSet(selectVars);}
@@ -210,17 +208,6 @@ public class Query implements ReasonerQuery {
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
                 .filter(Predicate::isValuePredicate)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of resource atoms contained in this query
-     */
-    public Set<Atom> getResources(){
-        return getAtoms().stream()
-                .filter(Atomic::isAtom)
-                .map(at -> (Atom) at)
-                .filter(Atom::isResource)
                 .collect(Collectors.toSet());
     }
 

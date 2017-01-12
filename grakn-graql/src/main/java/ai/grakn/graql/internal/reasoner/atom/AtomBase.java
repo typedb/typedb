@@ -18,9 +18,11 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.Query;
@@ -47,9 +49,9 @@ public abstract class AtomBase implements Atomic {
 
     protected VarName varName = null;
     protected PatternAdmin atomPattern = null;
-    private Query parent = null;
+    private ReasonerQuery parent = null;
 
-    protected AtomBase(VarAdmin pattern, Query par) {
+    protected AtomBase(VarAdmin pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
         this.varName = pattern.getVarName();
         this.parent = par;
@@ -81,7 +83,7 @@ public abstract class AtomBase implements Atomic {
     }
 
     public Set<VarName> getSelectedNames(){
-         Set<VarName> vars = getParentQuery().getSelectedNames();
+        Set<VarName> vars = getParentQuery().getSelectedNames();
         vars.retainAll(getVarNames());
         return vars;
     }
@@ -106,14 +108,13 @@ public abstract class AtomBase implements Atomic {
     /**
      * @return the query the atom is contained in
      */
-    public Query getParentQuery(){
-        return parent;
-    }
+    public ReasonerQuery getParentQuery(){ return parent;}
 
     /**
      * @param q query this atom is supposed to belong to
      */
-    public void setParentQuery(Query q){ parent = q;}
+    public void setParentQuery(ReasonerQuery q){ parent = q;}
+    public GraknGraph graph(){ return getParentQuery().graph();}
 
     private void setVarName(VarName var){
         varName = var;

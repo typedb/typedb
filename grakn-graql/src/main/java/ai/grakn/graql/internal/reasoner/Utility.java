@@ -28,8 +28,17 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
@@ -88,6 +97,70 @@ public class Utility {
     public static boolean isCaptured(VarName var) {
         // TODO: This could cause bugs if a user has a variable including the word "capture"
         return var.getValue().contains(CAPTURE_MARK);
+    }
+
+    /**
+     *
+     * @param typeVariable
+     * @param vars
+     * @param parent
+     * @return
+     */
+    public static IdPredicate getUserDefinedIdPredicate(VarName typeVariable, Set<VarAdmin> vars, ReasonerQuery parent){
+        return  vars.stream()
+                .filter(v -> v.getVarName().equals(typeVariable))
+                .flatMap(v -> v.hasProperty(NameProperty.class)?
+                        v.getProperties(NameProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
+                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * @param typeVariable
+     * @param typeVar
+     * @param vars
+     * @param parent
+     * @return
+     */
+    public static IdPredicate getIdPredicate(VarName typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        IdPredicate predicate = null;
+        //look for id predicate among vars
+        if(typeVar.isUserDefinedName())
+            predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+        else{
+            NameProperty nameProp = typeVar.getProperty(NameProperty.class).orElse(null);
+            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
+        }
+        return predicate;
+    }
+
+    public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
+        return Graql.var(name).value(pred).admin();
+    }
+
+    /**
+     *
+     * @param valueVariable
+     * @param valueVar
+     * @param vars
+     * @param parent
+     * @return
+     */
+    public static Set<Predicate> getValuePredicates(VarName valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        Set<Predicate> predicates = new HashSet<>();
+        if(valueVar.isUserDefinedName()){
+            vars.stream()
+                    .filter(v -> v.getVarName().equals(valueVariable))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
+                    .forEach(predicates::add);
+        }
+        //add value atom
+        else {
+            valueVar.getProperties(ValueProperty.class)
+                    .forEach(vp -> predicates
+                            .add(new ValuePredicate(createValueVar(valueVariable, vp.getPredicate()), parent)));
+        }
+        return predicates;
     }
 
     /**

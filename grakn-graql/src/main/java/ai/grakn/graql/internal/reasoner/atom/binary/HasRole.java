@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.admin.Atomic;
@@ -42,7 +43,7 @@ public class HasRole extends TypeAtom {
     private Predicate relationPredicate = null;
 
     public HasRole(VarAdmin pattern, Predicate relPredicate, Predicate predicate) { this(pattern, relPredicate, predicate, null);}
-    public HasRole(VarAdmin pattern, Predicate relPredicate, Predicate predicate, Query par) {
+    public HasRole(VarAdmin pattern, Predicate relPredicate, Predicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
         this.relationPredicate = relPredicate;
     }

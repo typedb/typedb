@@ -20,18 +20,27 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
@@ -104,5 +113,21 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public int hashCode() {
         return type.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        //IsaProperty is unique within a var, so skip if this is a relation
+        if (var.hasProperty(RelationProperty.class)) return null;
+
+        VarName varName = var.getVarName();
+        VarAdmin typeVar = this.getType();
+        VarName typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getVarName() : varName.map(name -> name + "-type-" + UUID.randomUUID().toString());
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+
+        //isa part
+        VarAdmin resVar = Graql.var(varName).isa(Graql.var(typeVariable)).admin();
+        return new TypeAtom(resVar, predicate, parent);
     }
 }

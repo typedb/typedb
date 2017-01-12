@@ -22,6 +22,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.query.Query;
 
 import java.util.HashSet;
@@ -44,26 +46,24 @@ public class AtomicFactory {
      * @param parent query the copied atom should belong to
      * @return atom copy
      */
-    public static Atomic create(Atomic atom, Query parent) {
+    public static Atomic create(Atomic atom, ReasonerQuery parent) {
         Atomic copy = atom.clone();
-        ((AtomBase)copy).setParentQuery(parent);
+        copy.setParentQuery(parent);
         return copy;
     }
 
     /**
      * @param pattern conjunction of patterns to be converted to atoms
      * @param parent query the created atoms should belong to
-     * @param graph graph of interest
      * @return set of atoms
      */
-    public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent, GraknGraph graph) {
+    public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()
                 .flatMap(var -> var.getProperties()
-                        .map(prop -> PropertyMapper.map(prop, var, pattern.getVars()))
+                        .map(vp -> vp.mapToAtom(var, pattern.getVars(), parent))
                         .filter(Objects::nonNull))
                 .forEach(atoms::add);
-        atoms.forEach(at -> ((AtomBase) at).setParentQuery(parent));
         return atoms;
     }
 }

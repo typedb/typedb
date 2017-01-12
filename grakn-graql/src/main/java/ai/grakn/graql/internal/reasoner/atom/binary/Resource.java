@@ -17,6 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -42,9 +43,9 @@ import java.util.stream.Collectors;
  */
 public class Resource extends MultiPredicateBinary{
 
-    public Resource(VarAdmin pattern, Query par) { this(pattern, null, par);}
+    public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
     public Resource(VarAdmin pattern, Set<Predicate> p){ this(pattern, p, null);}
-    public Resource(VarAdmin pattern, Set<Predicate> p, Query par){ super(pattern, p, par);}
+    public Resource(VarAdmin pattern, Set<Predicate> p, ReasonerQuery par){ super(pattern, p, par);}
     private Resource(Resource a) { super(a);}
 
     @Override
@@ -96,10 +97,9 @@ public class Resource extends MultiPredicateBinary{
     @Override
     public boolean requiresMaterialisation(){ return true;}
 
-    //TODO fix the single predicate
     @Override
     public Set<Predicate> getValuePredicates(){
-        return getParentQuery().getValuePredicates().stream()
+        return ((Query) getParentQuery()).getValuePredicates().stream()
                 .filter(atom -> atom.getVarName().equals(getValueVariable()))
                 .collect(Collectors.toSet());
     }

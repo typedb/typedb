@@ -1,6 +1,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -24,25 +25,20 @@ import java.util.Set;
 public abstract class Binary extends BinaryBase {
     private Predicate predicate = null;
 
-    protected Binary(VarAdmin pattern, Predicate p) { this(pattern, p, null);}
-    protected Binary(VarAdmin pattern, Predicate p, Query par) {
+    protected Binary(VarAdmin pattern, Predicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = p;
-        //this.typeId = extractTypeId(atomPattern.asVar());
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
     protected Binary(Binary a) {
         super(a);
-        this.predicate = a.getPredicate() != null ? (Predicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
-        //this.typeId = extractTypeId(atomPattern.asVar());
+        this.predicate = a.getPredicate() != null ?
+                (Predicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
     protected abstract String extractTypeId(VarAdmin var);
-
-    @Override
-    public void inferTypes(){
-        typeId = extractTypeId(atomPattern.asVar());
-    }
 
     @Override
     public PatternAdmin getCombinedPattern() {
@@ -52,7 +48,7 @@ public abstract class Binary extends BinaryBase {
     }
 
     @Override
-    public void setParentQuery(Query q) {
+    public void setParentQuery(ReasonerQuery q) {
         super.setParentQuery(q);
         if (predicate != null) predicate.setParentQuery(q);
     }

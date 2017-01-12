@@ -21,6 +21,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
@@ -51,7 +52,7 @@ public abstract class Atom extends AtomBase {
     protected String typeId = null;
 
     protected Atom(VarAdmin pattern) { this(pattern, null);}
-    protected Atom(VarAdmin pattern, Query par) { super(pattern, par);}
+    protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
@@ -165,7 +166,7 @@ public abstract class Atom extends AtomBase {
     public Set<Atom> getTypeConstraints(){
         Set<Atom> relevantTypes = new HashSet<>();
         //ids from indirect types
-        getParentQuery().getTypeConstraints().stream()
+        ((Query) getParentQuery()).getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(atom -> {
                     relevantTypes.add(atom);
@@ -206,5 +207,5 @@ public abstract class Atom extends AtomBase {
      * @param q query the rewritten atom should belong to
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parent, Query q){ return new Pair<>(this, new HashMap<>());}
+    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parent, ReasonerQuery q){ return new Pair<>(this, new HashMap<>());}
 }
