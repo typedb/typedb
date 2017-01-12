@@ -152,12 +152,14 @@ public class Reasoner {
      */
     public static Stream<Map<VarName, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
         GraknGraph graph = inputQuery.admin().getGraph().orElse(null);
-        if (graph == null)
+        if (graph == null) {
             throw new IllegalArgumentException(ErrorMessage.NO_GRAPH.getMessage());
+        }
 
         linkConceptTypes(graph);
-        if (!Reasoner.hasRules(graph))
+        if (!Reasoner.hasRules(graph)) {
             return inputQuery.admin().streamWithVarNames();
+        }
         Set<VarName> selectVars = inputQuery.admin().getSelectedNames();
         Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Query conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);

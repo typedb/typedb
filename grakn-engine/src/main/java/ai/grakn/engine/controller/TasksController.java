@@ -107,14 +107,17 @@ public class TasksController {
         int limit = 0;
         int offset = 0;
 
-        if(request.queryParams(LIMIT_PARAM) != null)
+        if(request.queryParams(LIMIT_PARAM) != null) {
             limit = Integer.valueOf(request.queryParams(LIMIT_PARAM));
+        }
 
-        if(request.queryParams(OFFSET_PARAM) != null)
+        if(request.queryParams(OFFSET_PARAM) != null) {
             offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
+        }
 
-        if(request.queryParams(TASK_STATUS_PARAMETER) != null)
+        if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
             status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
+        }
 
         JSONArray result = new JSONArray();
         for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
@@ -175,14 +178,17 @@ public class TasksController {
         Long interval = 0L;
         JSONObject configuration = new JSONObject();
 
-        if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null)
+        if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null) {
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
-        if(className == null || createdBy == null || runAt == null)
+        }
+        if(className == null || createdBy == null || runAt == null) {
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
+        }
 
         try {
-            if(request.body() != null && (!request.body().isEmpty()))
+            if(request.body() != null && (!request.body().isEmpty())) {
                 configuration = new JSONObject(request.body());
+            }
 
             Date runAtDate = new Date(Long.valueOf(runAt));
 

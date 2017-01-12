@@ -26,7 +26,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -58,8 +57,9 @@ public class ReasonerMatchQuery extends Query{
 
     @Override
     public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
-        if (!this.isRuleResolvable())
+        if (!this.isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames();
+        }
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
         Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);

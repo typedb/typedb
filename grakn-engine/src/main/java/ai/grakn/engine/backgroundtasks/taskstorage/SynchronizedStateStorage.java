@@ -23,8 +23,6 @@ import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import org.apache.curator.framework.CuratorFramework;
 
-import java.util.concurrent.TimeUnit;
-
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
@@ -74,15 +72,18 @@ public class SynchronizedStateStorage {
     }
 
     public void newState(String id, TaskStatus status, String engineID, String checkpoint) throws Exception {
-        if(id == null || status == null)
+        if(id == null || status == null) {
             return;
+        }
 
         // Serialise to SynchronizedState obj
         SynchronizedState state = new SynchronizedState(status);
-        if(engineID != null)
+        if(engineID != null) {
             state.engineID(engineID);
-        if(checkpoint != null)
+        }
+        if(checkpoint != null) {
             state.checkpoint(checkpoint);
+        }
 
         zookeeperConnection.create()
               .creatingParentContainersIfNeeded()
@@ -90,24 +91,30 @@ public class SynchronizedStateStorage {
     }
 
     public Boolean updateState(String id, TaskStatus status, String engineID, String checkpoint) {
-        if(id == null)
+        if(id == null) {
             return false;
+        }
 
-        if(status == null && engineID == null && checkpoint == null)
+        if(status == null && engineID == null && checkpoint == null) {
             return false;
+        }
 
         try {
             SynchronizedState state = getState(id);
-            if(state == null)
+            if(state == null) {
                 return false;
+            }
 
             // Update values
-            if (status != null)
+            if (status != null) {
                 state.status(status);
-            if (engineID != null)
+            }
+            if (engineID != null) {
                 state.engineID(engineID);
-            if (checkpoint != null)
+            }
+            if (checkpoint != null) {
                 state.checkpoint(checkpoint);
+            }
 
             // Save to ZK
             zookeeperConnection.setData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
@@ -133,16 +140,20 @@ public class SynchronizedStateStorage {
     }
 
     private void createZKPaths() throws Exception {
-        if(zookeeperConnection.checkExists().forPath(SCHEDULER) == null)
+        if(zookeeperConnection.checkExists().forPath(SCHEDULER) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(SCHEDULER);
+        }
 
-        if(zookeeperConnection.checkExists().forPath(RUNNERS_WATCH) == null)
+        if(zookeeperConnection.checkExists().forPath(RUNNERS_WATCH) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(RUNNERS_WATCH);
+        }
 
-        if(zookeeperConnection.checkExists().forPath(RUNNERS_STATE) == null)
+        if(zookeeperConnection.checkExists().forPath(RUNNERS_STATE) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(RUNNERS_STATE);
+        }
 
-        if(zookeeperConnection.checkExists().forPath(TASKS_PATH_PREFIX) == null)
+        if(zookeeperConnection.checkExists().forPath(TASKS_PATH_PREFIX) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(TASKS_PATH_PREFIX);
+        }
     }
 }

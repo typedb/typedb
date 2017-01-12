@@ -112,10 +112,11 @@ public class AtomicQuery extends Query{
     public void establishRelation(AtomicQuery aq){
         Atom aqAtom = aq.getAtom();
         if(atom.getTypeId().equals(aqAtom.getTypeId())) {
-            if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size())
+            if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size()) {
                 aq.addChild(this);
-            else
+            } else {
                 this.addChild(aq);
+            }
         }
     }
 
@@ -218,12 +219,12 @@ public class AtomicQuery extends Query{
                     insertAnswers.addAll(queryToMaterialise.materialiseComplete());
                     queryToMaterialise.removeAtom(relationWithRoles);
                 });
-            }
-            else
+            } else {
                 insertAnswers.addAll(queryToMaterialise.materialiseComplete());
-        }
-        else
+            }
+        } else {
             insertAnswers.addAll(queryToMaterialise.materialiseComplete());
+        }
         return insertAnswers;
     }
 
@@ -236,8 +237,9 @@ public class AtomicQuery extends Query{
     @Override
     public Set<Atom> selectAtoms() {
         Set<Atom> selectedAtoms = super.selectAtoms();
-        if (selectedAtoms.size() != 1)
+        if (selectedAtoms.size() != 1) {
             throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
+        }
         return selectedAtoms;
     }
 

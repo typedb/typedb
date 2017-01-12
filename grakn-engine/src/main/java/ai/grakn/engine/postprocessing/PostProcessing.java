@@ -57,8 +57,9 @@ public class PostProcessing {
     }
 
     public static synchronized PostProcessing getInstance() {
-        if (instance == null)
+        if (instance == null) {
             instance = new PostProcessing();
+        }
         return instance;
     }
 

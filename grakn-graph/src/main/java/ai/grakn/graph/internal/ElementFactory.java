@@ -127,11 +127,13 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Rules
     RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
-        if(lhs == null)
+        if(lhs == null) {
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS.name()));
+        }
 
-        if(rhs == null)
+        if(rhs == null) {
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
+        }
 
         return trackConcept(buildRule(v, Optional.of(type), Optional.of(lhs), Optional.of(rhs)));
     }

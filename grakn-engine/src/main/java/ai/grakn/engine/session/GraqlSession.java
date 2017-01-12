@@ -263,12 +263,15 @@ class GraqlSession {
         });
     }
 
-    private void attemptRollback() {
+    private boolean attemptRollback() {
         try {
             graph.rollback();
+            return true;
         } catch (UnsupportedOperationException ignored) {
+            return false;
         } catch (Throwable e) {
             LOG.error("Error during rollback", e);
+            return false;
         }
     }
 

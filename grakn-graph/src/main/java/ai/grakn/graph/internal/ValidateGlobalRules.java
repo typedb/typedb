@@ -110,10 +110,11 @@ class ValidateGlobalRules {
             currentConcept = (TypeImpl) currentConcept.superType();
         }
 
-        if(satisfiesPlaysRole)
+        if(satisfiesPlaysRole) {
             return Optional.empty();
-        else
+        } else {
             return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
+        }
     }
 
     /**
@@ -122,10 +123,12 @@ class ValidateGlobalRules {
      * @return An error message if the hasRole does not have a single incoming HAS_ROLE edge
      */
     static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
-        if(roleType.isAbstract())
+        if(roleType.isAbstract()) {
             return Optional.empty();
-        if(roleType.relationTypes().isEmpty())
+        }
+        if(roleType.relationTypes().isEmpty()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
+        }
         return Optional.empty();
     }
 
@@ -153,8 +156,9 @@ class ValidateGlobalRules {
         Set<CastingImpl> castings = relation.getMappingCasting();
         Collection<RoleType> roleTypes = relationType.hasRoles();
 
-        if(castings.size() > roleTypes.size())
+        if(castings.size() > roleTypes.size()) {
             return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
+        }
 
         for(CastingImpl casting: castings){
             boolean notFound = true;
@@ -165,8 +169,9 @@ class ValidateGlobalRules {
                 }
             }
 
-            if(notFound)
+            if(notFound) {
                 return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getName(), relationType.getName()));
+            }
         }
 
         return Optional.empty();

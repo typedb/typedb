@@ -83,8 +83,9 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     public Stream<String> resultsString(Printer printer) {
         Object computeResult = execute();
         if (computeResult instanceof Map) {
-            if (((Map) computeResult).isEmpty())
+            if (((Map) computeResult).isEmpty()) {
                 return Stream.of("There are no instances of the selected type(s).");
+            }
             if (((Map) computeResult).values().iterator().next() instanceof Set) {
                 Map<?, ?> map = (Map) computeResult;
                 return map.entrySet().stream().map(entry -> {
@@ -105,10 +106,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         keySpace = theGraph.getKeyspace();
 
         // make sure we don't accidentally commit anything
-        // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
         try {
             theGraph.rollback();
         } catch (UnsupportedOperationException ignored) {
+            // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
         }
         getAllSubTypes(theGraph);
     }
@@ -181,10 +182,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         for (int i = 0; i < numberOfOntologyChecks; i++) {
             boolean isOntologyComplete = true;
-            // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             try {
                 theGraph.rollback();
             } catch (UnsupportedOperationException ignored) {
+                // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             }
 
             ResourceType resource = theGraph.getResourceType(resourceTypeId);

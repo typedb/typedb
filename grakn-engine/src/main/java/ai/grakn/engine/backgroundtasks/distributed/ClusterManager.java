@@ -20,15 +20,15 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.engine.util.ExceptionWrapper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
 
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.*;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -50,8 +50,9 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private CountDownLatch leaderInitLatch = new CountDownLatch(1);
     
     public static synchronized ClusterManager getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new ClusterManager();
+        }
 
         return instance;
     }
@@ -78,12 +79,13 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
             // the selection for this instance doesn't start until the leader selector is started
             // leader selection is done in the background so this call to leaderSelector.start() returns immediately
-            leaderSelector.start();            	
+            leaderSelector.start();
             while (!leaderSelector.getLeader().isLeader()) {
                 Thread.sleep(1000);
             }
-            if (leaderSelector.hasLeadership())
-            	leaderInitLatch.await();
+            if (leaderSelector.hasLeadership()) {
+                leaderInitLatch.await();
+            }
         }
         catch (Exception e) {
             LOG.error(getFullStackTrace(e));
@@ -96,11 +98,13 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     public void stop() {
         noThrow(leaderSelector::interruptLeadership, "Could not interrupt leadership.");
         noThrow(leaderSelector::close, "Could not close leaderSelector.");
-        if(scheduler != null)
+        if(scheduler != null) {
             noThrow(scheduler::close, "Could not stop scheduler.");
+        }
 
-        if(cache != null)
+        if(cache != null) {
             noThrow(cache::close, "Could not close ZK Tree Cache.");
+        }
 
         noThrow(taskRunner::close, "Could not stop TaskRunner.");
 

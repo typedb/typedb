@@ -126,8 +126,9 @@ public abstract class Atom extends AtomBase {
      * @return corresponding type if any
      */
     public Type getType(){
-        if (type == null)
+        if (type == null) {
             type = getParentQuery().graph().getType(typeId);
+        }
         return type;
     }
 

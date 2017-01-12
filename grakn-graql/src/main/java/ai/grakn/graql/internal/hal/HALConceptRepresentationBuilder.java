@@ -155,8 +155,9 @@ public class HALConceptRepresentationBuilder {
                     rolePlayersInVar.forEach(rolePlayer -> {
                         linkedNodes.putIfAbsent(rolePlayer, new HashSet<>());
                         rolePlayersInVar.forEach(y -> {
-                            if (!y.equals(rolePlayer))
+                            if (!y.equals(rolePlayer)) {
                                 linkedNodes.get(rolePlayer).add(var);
+                            }
                         });
                     });
                 }

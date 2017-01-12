@@ -31,12 +31,9 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import java.util.HashMap;
@@ -87,8 +84,9 @@ public class Query {
     }
 
     protected Query(Atom atom, Set<VarName> vars) {
-        if (atom.getParentQuery() == null)
+        if (atom.getParentQuery() == null) {
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
+        }
         this.graph = atom.getParentQuery().graph;
         this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
@@ -150,8 +148,9 @@ public class Query {
     public boolean isRuleResolvable(){
         boolean ruleResolvable = false;
         Iterator<Atomic> it = atomSet.iterator();
-        while(it.hasNext() && !ruleResolvable)
+        while(it.hasNext() && !ruleResolvable) {
             ruleResolvable = it.next().isRuleResolvable();
+        }
         return ruleResolvable;
     }
 
@@ -383,10 +382,11 @@ public class Query {
      * @return corresponding MatchQuery
      */
     public MatchQuery getMatchQuery() {
-        if (selectVars.isEmpty())
+        if (selectVars.isEmpty()) {
             return graph.graql().infer(false).match(getPattern());
-        else
+        } else {
             return graph.graql().infer(false).match(getPattern()).select(selectVars);
+        }
     }
 
     /**
@@ -471,8 +471,9 @@ public class Query {
                 .filter(atom -> atom.containsVar(var))
                 .collect(Collectors.toSet())));
 
-        if (orderedSelection.isEmpty())
+        if (orderedSelection.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
+        }
         return orderedSelection;
     }
 

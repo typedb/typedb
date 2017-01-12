@@ -33,7 +33,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -77,8 +76,9 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     public static synchronized StandaloneTaskManager getInstance() {
-        if (instance == null)
+        if (instance == null) {
             instance = new StandaloneTaskManager();
+        }
         return instance;
     }
 
@@ -105,10 +105,11 @@ public class StandaloneTaskManager implements TaskManager {
             stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
 
             ScheduledFuture<?> future;
-            if(recurring)
+            if(recurring) {
                 future = schedulingService.scheduleAtFixedRate(runTask(id, task, true), delay, period, MILLISECONDS);
-            else
+            } else {
                 future = schedulingService.schedule(runTask(id, task, false), delay, MILLISECONDS);
+            }
 
             instantiatedTasks.put(id, new Pair<>(future, task));
 
@@ -152,8 +153,9 @@ public class StandaloneTaskManager implements TaskManager {
         stateUpdateLock.lock();
 
         TaskState state = stateStorage.getState(id);
-        if(state == null)
+        if(state == null) {
             return this;
+        }
 
         Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
         String name = this.getClass().getName();
@@ -193,8 +195,9 @@ public class StandaloneTaskManager implements TaskManager {
                 task.start(saveCheckpoint(id), stateStorage.getState(id).configuration());
 
                 stateUpdateLock.lock();
-                if(stateStorage.getState(id).status() == RUNNING)
+                if(stateStorage.getState(id).status() == RUNNING) {
                     stateStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null, null);
+                }
                 stateUpdateLock.unlock();
             }
             catch (Throwable t) {

@@ -124,8 +124,9 @@ public class AtomicMatchQuery extends AtomicQuery{
             Set<IdPredicate> subs = new HashSet<>();
             answer.forEach((var, con) -> {
                 IdPredicate sub = new IdPredicate(var, con);
-                if (!containsAtom(sub))
+                if (!containsAtom(sub)) {
                     subs.add(sub);
+                }
             });
             fullAnswers.addAll(materialise(subs));
         });
@@ -211,10 +212,11 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
-        if (!this.getAtom().isRuleResolvable())
+        if (!this.getAtom().isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames();
-        else
+        } else {
             return new QueryAnswerIterator(materialise).hasStream();
+        }
     }
 
     private class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
@@ -278,9 +280,9 @@ public class AtomicMatchQuery extends AtomicQuery{
             else if (dAns != 0 || iter == 0 ){
                 computeNext();
                 return hasNext();
-            }
-            else
+            } else {
                 return false;
+            }
         }
 
         /**

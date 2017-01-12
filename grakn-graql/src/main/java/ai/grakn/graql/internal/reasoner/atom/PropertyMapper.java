@@ -21,9 +21,9 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
@@ -53,7 +53,6 @@ import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -82,38 +81,39 @@ public class PropertyMapper {
      * @return set of converted atoms
      */
     public static Atomic map(VarProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph){
-        if(prop instanceof RelationProperty)
-            return map((RelationProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof IdProperty)
-            return map((IdProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof NameProperty)
-            return map((NameProperty)prop, var, vars, parent, graph);
-        else if(prop instanceof ValueProperty)
-            return map((ValueProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof SubProperty)
-            return map((SubProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof PlaysRoleProperty)
-            return map((PlaysRoleProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof HasRoleProperty)
-            return map((HasRoleProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof HasResourceTypeProperty)
-            return map((HasResourceTypeProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof HasScopeProperty)
-            return map((HasScopeProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof IsaProperty)
-            return map((IsaProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof HasResourceProperty)
-            return map((HasResourceProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof NeqProperty)
+        if(prop instanceof RelationProperty) {
+            return map((RelationProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof IdProperty) {
+            return map((IdProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof NameProperty) {
+            return map((NameProperty) prop, var, vars, parent, graph);
+        } else if(prop instanceof ValueProperty) {
+            return map((ValueProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof SubProperty) {
+            return map((SubProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof PlaysRoleProperty) {
+            return map((PlaysRoleProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof HasRoleProperty) {
+            return map((HasRoleProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof HasResourceTypeProperty) {
+            return map((HasResourceTypeProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof HasScopeProperty) {
+            return map((HasScopeProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof IsaProperty) {
+            return map((IsaProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof HasResourceProperty) {
+            return map((HasResourceProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof NeqProperty) {
             return map((NeqProperty) prop, var, vars, parent, graph);
-        else if (prop instanceof IsAbstractProperty)
-            return map((IsAbstractProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof DataTypeProperty)
-            return map((DataTypeProperty)prop, var, vars, parent, graph);
-        else if (prop instanceof RegexProperty)
-            return map((RegexProperty)prop, var, vars, parent, graph);
-        else
+        } else if (prop instanceof IsAbstractProperty) {
+            return map((IsAbstractProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof DataTypeProperty) {
+            return map((DataTypeProperty) prop, var, vars, parent, graph);
+        } else if (prop instanceof RegexProperty) {
+            return map((RegexProperty) prop, var, vars, parent, graph);
+        } else {
             throw new IllegalArgumentException(ErrorMessage.GRAQL_PROPERTY_NOT_MAPPED.getMessage(prop.toString()));
+        }
     }
 
     private static Atomic map(RelationProperty prop, VarAdmin var, Set<VarAdmin> vars, Query parent, GraknGraph graph) {
@@ -138,9 +138,9 @@ public class PropertyMapper {
             if (!typeName.isEmpty()) {
                 VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
-            }
-            else
+            } else {
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+            }
         }
         return new Relation(relVar.admin(), predicate, parent);
     }
@@ -271,9 +271,9 @@ public class PropertyMapper {
     private static IdPredicate getIdPredicate(VarName typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, Query parent, GraknGraph graph){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.isUserDefinedName())
+        if(typeVar.isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
-        else{
+        } else {
             NameProperty nameProp = typeVar.getProperty(NameProperty.class).orElse(null);
             if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
         }

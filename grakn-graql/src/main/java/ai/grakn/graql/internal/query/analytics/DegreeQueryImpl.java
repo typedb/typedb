@@ -60,9 +60,10 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
         initSubGraph();
         if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
         ofTypeNames.forEach(type -> {
-            if (!subTypeNames.contains(type))
+            if (!subTypeNames.contains(type)) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(type));
+            }
         });
 
         ComputerResult result;
@@ -146,8 +147,9 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     String graqlString() {
         String string = "degrees";
 
-        if (ofTypeNamesSet) string += " of " + ofTypeNames.stream()
-                .map(StringConverter::idToString).collect(joining(", "));
+        if (ofTypeNamesSet) {
+            string += " of " + ofTypeNames.stream().map(StringConverter::idToString).collect(joining(", "));
+        }
 
         string += subtypeString();
 

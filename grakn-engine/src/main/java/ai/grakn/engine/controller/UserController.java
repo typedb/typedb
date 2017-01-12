@@ -27,16 +27,16 @@ import static spark.Spark.put;
 @Produces({"application/json", "text/plain"})
 public class UserController {
     private final Logger LOG = LoggerFactory.getLogger(UserController.class);
-	private UsersHandler users = UsersHandler.getInstance();
-	
-	public UserController() {
+    private UsersHandler users = UsersHandler.getInstance();
+
+    public UserController() {
         get(REST.WebPath.ALL_USERS, this::findUsers);
         get(REST.WebPath.ONE_USER, this::getUser);
         post(REST.WebPath.ONE_USER, this::createUser);
         delete(REST.WebPath.ONE_USER, this::removeUser);
         put(REST.WebPath.ONE_USER, this::updateUser);
-	}
-	
+    }
+
     @GET
     @Path("/all")
     @ApiOperation(value = "Get users.")
@@ -45,16 +45,16 @@ public class UserController {
         @ApiImplicitParam(name = "offset", value = "Start results from the given offset.", dataType = "int", paramType = "query")
     })
     private Json findUsers(Request request, Response response) {
-    	int limit, offset;
-    	try {
-    		limit = !request.params().containsKey("limit") ? Integer.MAX_VALUE : Integer.parseInt(request.params().get("limit"));
-    		offset = !request.params().containsKey("offset") ? Integer.MAX_VALUE : Integer.parseInt(request.params().get("offset"));
-        	return users.allUsers(offset, limit);
-    	}
-    	catch (NumberFormatException ex) {
-    		response.status(400);
-    		return Json.nil();
-    	}
+        int limit, offset;
+        try {
+            limit = !request.params().containsKey("limit") ? Integer.MAX_VALUE : Integer.parseInt(request.params().get("limit"));
+            offset = !request.params().containsKey("offset") ? Integer.MAX_VALUE : Integer.parseInt(request.params().get("offset"));
+            return users.allUsers(offset, limit);
+        }
+        catch (NumberFormatException ex) {
+            response.status(400);
+            return Json.nil();
+        }
     }
     
     @GET
@@ -62,7 +62,7 @@ public class UserController {
     @ApiOperation(value = "Get one user.")
     @ApiImplicitParam(name = "user-name", value = "Username of user.", required = true, dataType = "string", paramType = "path")
     private Json getUser(Request request, Response response) {
-    	return users.getUser(request.queryParams(UsersHandler.USER_NAME));
+        return users.getUser(request.queryParams(UsersHandler.USER_NAME));
     }
     
     @POST
@@ -72,8 +72,9 @@ public class UserController {
     private boolean createUser(Request request, Response response) {
         try {
             Json user = Json.read(request.body());
-            if (users.userExists(user.at(UsersHandler.USER_NAME).asString()))
+            if (users.userExists(user.at(UsersHandler.USER_NAME).asString())) {
                 return false;
+            }
             users.addUser(user);
             return true;
         } catch(Exception e){
@@ -95,9 +96,10 @@ public class UserController {
     @ApiOperation(value = "Update an existing user.")
     @ApiImplicitParam(name = "user", value = "A JSON object representing the user.", dataType = "String", paramType = "body")
     private boolean updateUser(Request request, Response response) {
-    	Json user = Json.read(request.body());    	
-    	if (!users.userExists(user.at(UsersHandler.USER_NAME).asString()))
-    		return false;
-    	return users.updateUser(user);
+        Json user = Json.read(request.body());
+        if (!users.userExists(user.at(UsersHandler.USER_NAME).asString())) {
+            return false;
+        }
+        return users.updateUser(user);
     }
 }

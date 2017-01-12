@@ -131,10 +131,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
         Boolean value = local.get();
-        if(value == null)
+        if(value == null) {
             return false;
-        else
+        } else {
             return value;
+        }
     }
 
     @Override
@@ -233,8 +234,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
-            if(!isBatchLoadingEnabled() && vertices.hasNext())
+            if(!isBatchLoadingEnabled() && vertices.hasNext()) {
                 throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
+            }
             return elementFactory.buildConcept(vertex);
         } else {
             return null;
@@ -286,8 +288,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addVertex(baseType);
             vertex.property(Schema.ConceptProperty.NAME.name(), name);
         } else {
-            if(!baseType.name().equals(concept.getBaseType()))
+            if(!baseType.name().equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, name);
+            }
             vertex = concept.getVertex();
         }
         return vertex;
@@ -467,8 +470,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
     CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
         CastingImpl foundCasting  = null;
-        if(rolePlayer != null)
+        if(rolePlayer != null) {
             foundCasting = getCasting(role, rolePlayer);
+        }
 
         if(foundCasting == null){
             foundCasting = addCasting(role, rolePlayer);
@@ -487,10 +491,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         try {
             String hash = CastingImpl.generateNewHash(role, rolePlayer);
             ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, hash);
-            if (concept != null)
+            if (concept != null) {
                 return concept.asCasting();
-            else
+            } else {
                 return null;
+            }
         } catch(GraphRuntimeException e){
             throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CASTINGS.getMessage(role, rolePlayer));
         }
@@ -501,15 +506,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(roleMap.size() > 1) {
             for(Map.Entry<RoleType, Instance> from : roleMap.entrySet()){
                 for(Map.Entry<RoleType, Instance> to :roleMap.entrySet()){
-                    if(from.getValue() != null && to.getValue() != null){
-                        if(from.getKey() != to.getKey())
-                            putShortcutEdge(
-                                    relation,
-                                    relationType.asRelationType(),
-                                    from.getKey().asRoleType(),
-                                    from.getValue().asInstance(),
-                                    to.getKey().asRoleType(),
-                                    to.getValue().asInstance());
+                    if (from.getValue() != null && to.getValue() != null && from.getKey() != to.getKey()) {
+                        putShortcutEdge(
+                                relation,
+                                relationType.asRelationType(),
+                                from.getKey().asRoleType(),
+                                from.getValue().asInstance(),
+                                to.getKey().asRoleType(),
+                                to.getValue().asInstance());
                     }
                 }
             }
@@ -530,12 +534,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName());
             edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId());
 
-            if (fromRolePlayer.getId() != null)
+            if (fromRolePlayer.getId() != null) {
                 edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId());
+            }
             edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName());
 
-            if (toRolePlayer.getId() != null)
+            if (toRolePlayer.getId() != null) {
                 edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId());
+            }
             edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
 
             edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName());
@@ -553,16 +559,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         String toRoleValue = toRole.getId();
         String assertionIdValue = relation.getId();
 
-        if(relationIdValue != null)
-            hash += relationIdValue;
-        if(fromIdValue != null)
-            hash += fromIdValue;
-        if(fromRoleValue != null)
-            hash += fromRoleValue;
-        if(toIdValue != null)
-            hash += toIdValue;
-        if(toRoleValue != null)
-            hash += toRoleValue;
+        if(relationIdValue != null) hash += relationIdValue;
+        if(fromIdValue != null) hash += fromIdValue;
+        if(fromRoleValue != null) hash += fromRoleValue;
+        if(toIdValue != null) hash += toIdValue;
+        if(toRoleValue != null) hash += toRoleValue;
         hash += String.valueOf(assertionIdValue);
 
         return hash;
@@ -573,11 +574,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         String hash = RelationImpl.generateNewHash(relationType, roleMap);
         Concept concept = getConceptLog().getCachedRelation(hash);
 
-        if(concept == null)
+        if(concept == null) {
             concept = getConcept(Schema.ConceptProperty.INDEX, hash);
+        }
 
-        if(concept == null)
+        if(concept == null) {
             return null;
+        }
         return concept.asRelation();
     }
 
@@ -660,18 +663,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Set<String> castings = getConceptLog().getModifiedCastingIds();
         Set<String> resources = getConceptLog().getModifiedResourceIds();
 
-        if(castings.size() > 0)
+        if(castings.size() > 0) {
             modifiedConcepts.put(Schema.BaseType.CASTING, castings);
-        if(resources.size() > 0)
+        }
+        if(resources.size() > 0) {
             modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
+        }
 
         LOG.debug("Graph is valid. Committing graph . . . ");
         commitTx();
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        if(submitLogs && modifiedConcepts.size() > 0)
+        if(submitLogs && modifiedConcepts.size() > 0) {
             submitCommitLogs(modifiedConcepts);
+        }
     }
     protected void commitTx(){
         try {
@@ -716,8 +722,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.debug("Response from engine [" + result + "]");
     }
     private String getCommitLogEndPoint(){
-        if(Grakn.IN_MEMORY.equals(engine))
+        if(Grakn.IN_MEMORY.equals(engine)) {
             return Grakn.IN_MEMORY;
+        }
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
@@ -730,8 +737,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean fixDuplicateCasting(Object castingId){
         //Get the Casting
         ConceptImpl concept = getConceptByBaseIdentifier(castingId);
-        if(concept == null || !concept.isCasting())
+        if(concept == null || !concept.isCasting()) {
             return false;
+        }
 
         //Check if the casting has duplicates
         CastingImpl casting = concept.asCasting();

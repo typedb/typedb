@@ -55,10 +55,12 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         if (sourceId == null) throw new IllegalStateException(ErrorMessage.NO_SOURCE.getMessage());
         if (destinationId == null) throw new IllegalStateException(ErrorMessage.NO_DESTINATION.getMessage());
         initSubGraph();
-        if (!verticesExistInSubgraph(sourceId, destinationId))
+        if (!verticesExistInSubgraph(sourceId, destinationId)) {
             throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
-        if (sourceId.equals(destinationId))
+        }
+        if (sourceId.equals(destinationId)) {
             return Optional.of(Collections.singletonList(graph.get().getConcept(sourceId)));
+        }
         ComputerResult result;
         try {
             result = getGraphComputer().compute(

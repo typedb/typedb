@@ -94,12 +94,14 @@ class HALConceptData {
             Instance instance = concept.asInstance();
             if (typesInQuery.contains(instance.type().getName())
                     || (instance.type().superType() != null &&
-                    typesInQuery.contains(instance.type().superType().getName())))
+                    typesInQuery.contains(instance.type().superType().getName()))) {
                 embedType(halResource, instance);
+            }
         }
 
-        if (concept.isType() && concept.asType().superType() != null)
+        if (concept.isType() && concept.asType().superType() != null) {
             embedSuperType(halResource, concept.asType());
+        }
 
         //If a match query contains an assertion we always embed the role players
         if (concept.isRelation() && separationDegree == 0) {
@@ -237,9 +239,8 @@ class HALConceptData {
                 if (entry.getValue() != null) {
                     if (entry.getValue().isResource()) {
                         isResource = true;
-                    } else {
-                        if (entry.getValue().getId().equals(entity.getId()))
-                            rolePlayedByCurrentConcept = entry.getKey().getName();
+                    } else if (entry.getValue().getId().equals(entity.getId())) {
+                        rolePlayedByCurrentConcept = entry.getKey().getName();
                     }
                 }
             }

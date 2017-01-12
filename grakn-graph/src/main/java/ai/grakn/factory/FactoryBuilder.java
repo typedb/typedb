@@ -54,10 +54,11 @@ class FactoryBuilder {
     static InternalFactory getFactory(String keyspace, String engineUrl, Properties properties){
         try{
             String factoryType;
-            if (!Grakn.IN_MEMORY.equals(engineUrl))
+            if (!Grakn.IN_MEMORY.equals(engineUrl)) {
                 factoryType = properties.get(FACTORY).toString();
-            else
+            } else {
                 factoryType = TinkerInternalFactory.class.getName();
+            }
             return getGraknGraphFactory(factoryType, keyspace, engineUrl, properties);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
@@ -74,9 +75,10 @@ class FactoryBuilder {
         String key = factoryType + keyspace.toLowerCase();
         Log.debug("Get factory for " + key);
         InternalFactory factory = openFactories.get(key);
-        if (factory != null)
-        	return factory;
-    	synchronized (openFactories) {    		
+        if (factory != null) {
+            return factory;
+        }
+        synchronized (openFactories) {
             InternalFactory<?, ?> internalFactory;
             try {
                 //internalFactory = (InternalFactory) Class.forName(factoryType).newInstance();
@@ -89,13 +91,13 @@ class FactoryBuilder {
             openFactories.put(key, internalFactory);
             Log.debug("New factory created " + internalFactory);
             if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            	Log.debug("This is a system factory, loading system ontology.");
-            	new SystemKeyspace<>(internalFactory).loadSystemOntology();
+                Log.debug("This is a system factory, loading system ontology.");
+                new SystemKeyspace<>(internalFactory).loadSystemOntology();
+            } else {
+                Log.debug("This is not a system factory, not loading system ontology.");
             }
-            else
-            	Log.debug("This is not a system factory, not loading system ontology.");
             return internalFactory;
-    	}
+        }
     }
 
     /**

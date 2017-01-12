@@ -99,8 +99,9 @@ public class Utility {
             result.entrySet().forEach(entry -> {
                 Concept concept = entry.getValue();
                 System.out.print(entry.getKey() + ": " + concept.getId() + " : ");
-                if (concept.isResource())
+                if (concept.isResource()) {
                     System.out.print(concept.asResource().getValue() + " ");
+                }
             });
             System.out.println();
         });
@@ -136,8 +137,9 @@ public class Utility {
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
         compatibleTypes.addAll(typeMapper.apply(it.next()));
-        while(it.hasNext() && compatibleTypes.size() > 1)
+        while(it.hasNext() && compatibleTypes.size() > 1) {
             compatibleTypes.retainAll(typeMapper.apply(it.next()));
+        }
         return compatibleTypes;
     }
 
@@ -158,11 +160,12 @@ public class Utility {
             tempVars.remove(var);
             tempRoles.remove(role);
             roleMap.put(var, Graql.var().name(role.getName()).admin());
-            if (!tempVars.isEmpty() && !tempRoles.isEmpty())
+            if (!tempVars.isEmpty() && !tempRoles.isEmpty()) {
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
-            else {
-                if (!roleMap.isEmpty())
+            } else {
+                if (!roleMap.isEmpty()) {
                     roleMaps.add(Maps.newHashMap(roleMap));
+                }
                 roleMap.remove(var);
             }
             tempVars.add(var);
@@ -197,8 +200,7 @@ public class Utility {
      */
     public static Rule createTransitiveRule(RelationType relType, String fromRoleName, String toRoleName, GraknGraph graph){
         final int arity = relType.hasRoles().size();
-        if (arity != 2)
-            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+        if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
         VarAdmin startVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "z").admin();
         VarAdmin endVar = var().isa(relType.getName()).rel(fromRoleName, "z").rel(toRoleName, "y").admin();
@@ -215,8 +217,7 @@ public class Utility {
      */
     public static Rule createReflexiveRule(RelationType relType, GraknGraph graph){
         final int arity = relType.hasRoles().size();
-        if (arity != 2)
-            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+        if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
         Var body = var().isa(relType.getName()).rel("x").rel("y");
         Var head = var().isa(relType.getName()).rel("x").rel("x");
@@ -235,8 +236,9 @@ public class Utility {
                                              GraknGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
-        if (parentArity != childArity || parentArity != roleMappings.size())
+        if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+        }
         Var parentVar = var().isa(parent.getName());
         Var childVar = var().isa(child.getName());
         Set<VarName> vars = new HashSet<>();
@@ -323,10 +325,11 @@ public class Utility {
      */
     public static <T> Set<T> subtractSets(Set<T> A, Set<T> B){
         Set<T> sub =  A.size() > B.size()? Sets.newHashSet(A) : Sets.newHashSet(B);
-        if (A.size() > B.size())
+        if (A.size() > B.size()) {
             sub.removeAll(B);
-        else
+        } else {
             sub.removeAll(A);
+        }
         return sub;
     }
 }

@@ -69,8 +69,9 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         this.forEach(answer -> {
             Map<VarName, Concept> map = new HashMap<>();
             answer.forEach((var, concept) -> {
-                if (vars.contains(var))
+                if (vars.contains(var)) {
                     map.put(var, concept);
+                }
             });
             if (!map.isEmpty()) results.add(map);
         });
@@ -160,8 +161,9 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @return joined answers
      */
     public QueryAnswers join(QueryAnswers localTuples) {
-        if (this.isEmpty() || localTuples.isEmpty())
+        if (this.isEmpty() || localTuples.isEmpty()) {
             return new QueryAnswers();
+        }
 
         QueryAnswers join = new QueryAnswers();
         for( Map<VarName, Concept> lanswer : localTuples){
@@ -172,8 +174,9 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
                     Map.Entry<VarName, Concept> entry = it.next();
                     VarName var = entry.getKey();
                     Concept concept = entry.getValue();
-                    if(answer.containsKey(var) && !concept.equals(answer.get(var)))
+                    if(answer.containsKey(var) && !concept.equals(answer.get(var))) {
                         isCompatible = false;
+                    }
                 }
 
                 if (isCompatible) {
@@ -209,13 +212,15 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
                 Concept con = entry.get(var);
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
-                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId()) ) )
+                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId()) ) ) {
                     isCompatible = false;
-                else
+                } else {
                     answer.put(var, con);
+                }
             }
-            if (isCompatible && !answer.isEmpty())
+            if (isCompatible && !answer.isEmpty()) {
                 unifiedAnswers.add(answer);
+            }
         });
 
         return unifiedAnswers;
@@ -255,10 +260,11 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
                 VarName var = sub.getVarName();
                 Concept con = graph.getConcept(sub.getPredicateValue());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
-                if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())
+                if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size()) {
                     valueConstraints.put(var, con);
-                else
+                } else {
                     subVars.put(var, con);
+                }
             });
         }
 
