@@ -26,8 +26,9 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import org.json.JSONObject;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -53,9 +54,12 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class TasksLoadingControllerTest extends AbstractEngineTest {
+public class TasksLoadingControllerTest {
     private static final String keyspace = "KEYSPACE";
     private static final int NUMBER_TO_TEST = 10;
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Test
     public void loaderTaskAPITest(){

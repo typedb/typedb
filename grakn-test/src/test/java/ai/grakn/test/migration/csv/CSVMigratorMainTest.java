@@ -19,9 +19,10 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.migration.csv.Main;
+import ai.grakn.test.EngineContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -31,19 +32,22 @@ import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrec
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 
-public class CSVMigratorMainTest extends AbstractEngineTest {
+public class CSVMigratorMainTest {
+
+    private GraknGraph graph;
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
 
-    private GraknGraph graph;
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setup(){
-        graph = factoryWithNewKeyspace().getGraph();
+        graph = engine.getNewGraph();
         load(graph, getFile("csv", "pets/schema.gql"));
     }
 

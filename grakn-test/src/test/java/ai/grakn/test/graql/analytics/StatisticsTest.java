@@ -28,7 +28,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 // TODO We can extend AbstractGraphTest instead when we remove persisting in analytics
-public class StatisticsTest extends AbstractEngineTest {
+public class StatisticsTest {
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";

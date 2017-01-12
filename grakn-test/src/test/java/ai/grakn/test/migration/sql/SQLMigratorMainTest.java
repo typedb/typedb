@@ -20,9 +20,10 @@ package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.migration.sql.Main;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,7 +40,7 @@ import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
 
-public class SQLMigratorMainTest extends AbstractEngineTest {
+public class SQLMigratorMainTest {
 
     private final String templateFile = getFile("sql", "pets/template.gql").getAbsolutePath();
     private final String query = "SELECT * FROM pet";
@@ -49,9 +50,12 @@ public class SQLMigratorMainTest extends AbstractEngineTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void setup() throws SQLException {
-        graph = factoryWithNewKeyspace().getGraph();
+        graph = engine.getNewGraph();
         connection = setupExample(graph, "pets");
     }
 

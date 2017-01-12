@@ -21,11 +21,12 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import com.jayway.restassured.response.Response;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.apache.commons.io.IOUtils;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -40,7 +41,10 @@ import static com.jayway.restassured.RestAssured.post;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class ImportControllerTest extends AbstractEngineTest {
+public class ImportControllerTest {
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Test
     public void testLoadOntologyAndData() {

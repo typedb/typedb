@@ -21,7 +21,7 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.junit.*;
@@ -34,8 +34,11 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static org.junit.Assert.*;
 
-public class GraknStateStorageTest extends AbstractEngineTest {
+public class GraknStateStorageTest {
     private StateStorage stateStorage;
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void setUp() {

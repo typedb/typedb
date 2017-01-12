@@ -20,11 +20,12 @@ package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.migration.sql.SQLMigrator;
 import org.jooq.exception.DataAccessException;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,16 +40,19 @@ import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
-public class SQLMigratorTest extends AbstractEngineTest {
+public class SQLMigratorTest {
 
     private GraknGraph graph;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void setup(){
-        graph = factoryWithNewKeyspace().getGraph();
+        graph = engine.getNewGraph();
     }
 
     @Test

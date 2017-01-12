@@ -20,14 +20,14 @@ package ai.grakn.test.migration.json;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.test.AbstractEngineTest;
-import ai.grakn.test.migration.MigratorTestUtils;
+import ai.grakn.test.EngineContext;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -45,13 +45,16 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class JsonMigratorTest extends AbstractEngineTest {
+public class JsonMigratorTest {
 
     private GraknGraph graph;
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void setup(){
-        graph = factoryWithNewKeyspace().getGraph();
+        graph = engine.getNewGraph();
     }
 
     @Test

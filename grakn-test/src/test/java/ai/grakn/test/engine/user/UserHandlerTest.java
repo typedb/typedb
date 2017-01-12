@@ -23,7 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Before;
@@ -38,15 +38,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class UserHandlerTest extends AbstractEngineTest {
-    private static UsersHandler users;
-    private static final String userName = "geralt";
-    private static final String password = "witcher";
+public class UserHandlerTest {
 
-    @BeforeClass
-    public static void setup(){
-        users = UsersHandler.getInstance();
-    }
+    private static UsersHandler users = UsersHandler.getInstance();
+    private static String userName = "geralt";
+    private static String password = "witcher";
 
     @Before
     public void addUser(){

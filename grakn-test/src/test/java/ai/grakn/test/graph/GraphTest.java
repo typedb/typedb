@@ -7,8 +7,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -21,19 +22,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-public class GraphTest extends AbstractEngineTest {
+public class GraphTest {
 
-    private GraknGraphFactory factory;
-    private GraknGraph graph;
-
-    @Before
-    public void setup(){
-        this.factory = factoryWithNewKeyspace();
-        this.graph = factory.getGraph();
-    }
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Test
     public void testSwitchingBetweenNormalAndBatchGraphCleanly() throws Exception {
+        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, "testSwitching");
+        GraknGraph graph = factory.getGraph();
+
         String thing = "thing";
         graph.putEntityType(thing);
         graph.commit();
@@ -100,6 +98,8 @@ public class GraphTest extends AbstractEngineTest {
 
         assertFalse(graph.isClosed());
         assertFalse(graph.getEntityType("thing").instances().isEmpty());
+
+        graph.close();
     }
 
     private void addThingToBatch(){
@@ -117,5 +117,7 @@ public class GraphTest extends AbstractEngineTest {
         GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).getGraph();
         GraknGraph graph2 = GraphFactory.getInstance().getGraph(key);
         assertEquals(graph1, graph2);
+        graph1.close();
+        graph2.close();
     }
 }

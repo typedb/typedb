@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
@@ -33,7 +32,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.name;
-import static ai.grakn.test.GraphContext.graphWithNewKeyspace;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -43,6 +41,9 @@ public class QueryErrorTest {
 
     @ClassRule
     public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
+    @ClassRule
+    public static final GraphContext empty = GraphContext.empty();
 
     private QueryBuilder qb;
 
@@ -142,9 +143,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() throws GraknValidationException {
         // Create a fresh graph, with no has-resource between person and name
-        GraknGraph empty = graphWithNewKeyspace();
-
-        QueryBuilder emptyQb = empty.graql();
+        QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
                 name("person").sub("entity"),
                 name("name").sub("resource").datatype(ResourceType.DataType.STRING)
@@ -156,9 +155,6 @@ public class QueryErrorTest {
                 containsString("name")
         ));
         emptyQb.insert(Graql.var().isa("person").has("name", "Bob")).execute();
-
-        empty.clear();
-        empty.close();
     }
 
     @Test

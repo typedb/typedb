@@ -40,13 +40,14 @@ import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -80,7 +82,7 @@ import static org.junit.Assert.assertFalse;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
-public class ScalingTestIT extends AbstractEngineTest {
+public class ScalingTestIT {
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};
@@ -103,6 +105,9 @@ public class ScalingTestIT extends AbstractEngineTest {
     List<Integer> workerNumbers;
     List<String> headers;
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void setUp() {
         // compute the sample of graph sizes
@@ -115,7 +120,7 @@ public class ScalingTestIT extends AbstractEngineTest {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        factory = factoryWithNewKeyspace();
+        factory = Grakn.factory(Grakn.DEFAULT_URI, "a" + UUID.randomUUID().toString());
         GraknGraph graph = factory.getGraph();
         keyspace = graph.getKeyspace();
 

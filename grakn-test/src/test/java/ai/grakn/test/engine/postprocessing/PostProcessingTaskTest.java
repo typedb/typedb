@@ -20,7 +20,7 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import org.junit.*;
 
 import java.util.Date;
@@ -29,13 +29,11 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 
-public class PostProcessingTaskTest extends AbstractEngineTest {
-    private StandaloneTaskManager taskManager;
+public class PostProcessingTaskTest {
+    private StandaloneTaskManager taskManager = StandaloneTaskManager.getInstance();
 
-    @Before
-    public void setUp() {
-        taskManager = StandaloneTaskManager.getInstance();
-    }
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Test
     public void testStart() throws Exception {

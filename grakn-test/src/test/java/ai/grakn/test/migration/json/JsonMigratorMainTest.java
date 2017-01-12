@@ -24,8 +24,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.migration.json.Main;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,7 +40,7 @@ import static ai.grakn.test.migration.MigratorTestUtils.getResource;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 import static junit.framework.TestCase.assertEquals;
 
-public class JsonMigratorMainTest extends AbstractEngineTest {
+public class JsonMigratorMainTest {
 
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
@@ -49,9 +50,12 @@ public class JsonMigratorMainTest extends AbstractEngineTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void setup() {
-        graph = factoryWithNewKeyspace().getGraph();
+        graph = engine.getNewGraph();
         load(graph, getFile("json", "simple-schema/schema.gql"));
     }
 
@@ -113,7 +117,6 @@ public class JsonMigratorMainTest extends AbstractEngineTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-//        graph = factory.getGraph();
 
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());

@@ -19,22 +19,21 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
-public class UserControllerTest extends AbstractEngineTest {
-    private UsersHandler users;
+public class UserControllerTest {
+    private UsersHandler users = UsersHandler.getInstance();
 
-    @Before
-    public void setup(){
-        users = UsersHandler.getInstance();
-    }
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Test
     public void testAddNewUser(){

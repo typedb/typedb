@@ -26,8 +26,9 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.owl.OWLMigrator;
 import ai.grakn.migration.owl.OwlModel;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -49,26 +50,23 @@ import static ai.grakn.test.migration.MigratorTestUtils.getFile;
  * @author borislav
  *
  */
-public class TestOwlGraknBase extends AbstractEngineTest {
+public class TestOwlGraknBase {
     protected OWLOntologyManager manager;
     protected OWLMigrator migrator;
 
-    protected GraknGraphFactory factory;
     protected GraknGraph graph;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void init() {
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = engine.getNewGraph();
         manager = OWLManager.createOWLOntologyManager();
-    }
-    
-    @Before
-    public void initMigrator() {
-         migrator = new OWLMigrator();
+        migrator = new OWLMigrator();
     }
 
     OWLOntologyManager owlManager() {

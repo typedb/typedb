@@ -19,64 +19,41 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import com.google.common.io.Files;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
-import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class VisualiserControllerTest extends AbstractEngineTest {
-    private GraknGraph graph;
+public class VisualiserControllerTest {
+    private static GraknGraph graph;
 
-    @Before
-    public void setUp() throws Exception{
-        graph = factoryWithNewKeyspace().getGraph();
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
-        load(getFile("genealogy/ontology.gql"));
-        load(getFile("genealogy/data.gql"));
-    }
+    @BeforeClass
+    public static void setUp() throws Exception{
+        graph = engine.getNewGraph();
 
-    @After
-    public void takeDown(){
-        graph.close();
-    }
-
-    protected static File getFile(String fileName){
-        return new File(VisualiserControllerTest.class.getResource(fileName).getPath());
-    }
-
-    private void load(File file) {
-        try {
-            graph.graql()
-                    .parse(Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n")))
-                    .execute();
-
-            graph.commit();
-        } catch (IOException |GraknValidationException e){
-            throw new RuntimeException(e);
-        }
+        loadFromFile(graph, "genealogy/ontology.gql");
+        loadFromFile(graph, "genealogy/data.gql");
     }
 
     @Test
@@ -91,7 +68,7 @@ public class VisualiserControllerTest extends AbstractEngineTest {
         assertEquals(4,resultArray.size());
         assertEquals(9,resultArray.get("entities").asList().size());
         assertEquals(35,resultArray.get("roles").asList().size());
-        assertEquals(19,resultArray.get("resources").asList().size());
+        assertEquals(18,resultArray.get("resources").asList().size());
         assertEquals(10,resultArray.get("relations").asList().size());
     }
 
@@ -106,15 +83,13 @@ public class VisualiserControllerTest extends AbstractEngineTest {
                 .then().statusCode(200).extract().response().andReturn();
 
         Json resultArray = Json.read(response.getBody().asString());
-        assertEquals(2,resultArray.asJsonList().size());
+        assertEquals(60,resultArray.asJsonList().size());
         checkHALStructureOfPerson(resultArray.at(0));
 
         Json firstPerson = resultArray.at(0);
         Json samePerson = retrieveConceptById(firstPerson.at("_id").asString());
 
         assertEquals(firstPerson.at("_id"),samePerson.at("_id"));
-
-
     }
 
     private void checkHALStructureOfPerson(Json person){
@@ -188,14 +163,14 @@ public class VisualiserControllerTest extends AbstractEngineTest {
     public void getTypeByID() {
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
-                .get(REST.WebPath.CONCEPT_BY_ID_URI +graph.getType("person").getId())
+                .get(REST.WebPath.CONCEPT_BY_ID_URI +graph.getType("person").getId().getValue())
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
 
         //TODO:maybe change person to proper id? and add  _nameType property
         assertEquals(message.at("_id").asString(),"person");
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), message.at("_baseType").asString());
-        assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId()+"?keyspace="+graph.getKeyspace());
-        assertEquals(2,message.at("_embedded").at("isa").asJsonList().size());
+        assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId().getValue()+"?keyspace="+graph.getKeyspace());
+        assertEquals(60,message.at("_embedded").at("isa").asJsonList().size());
     }
 }

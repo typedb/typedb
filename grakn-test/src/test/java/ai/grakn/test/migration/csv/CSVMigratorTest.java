@@ -24,8 +24,9 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.csv.CSVMigrator;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -43,13 +44,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class CSVMigratorTest extends AbstractEngineTest {
+public class CSVMigratorTest {
 
     private GraknGraph graph;
 
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void setup(){
-        graph = factoryWithNewKeyspace().getGraph();
+        graph = engine.getNewGraph();
     }
 
     @Test

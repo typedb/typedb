@@ -32,37 +32,31 @@ import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 
-import java.util.UUID;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class PostProcessingTest extends AbstractEngineTest {
-    private PostProcessing postProcessing;
-    private Cache cache;
+public class PostProcessingTest {
+    private PostProcessing postProcessing = PostProcessing.getInstance();
+    private Cache cache = Cache.getInstance();
 
     private GraknGraph graph;
 
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        assumeTrue(usingTinker());
-    }
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void setUp() throws Exception {
-        cache = Cache.getInstance();
-        postProcessing = PostProcessing.getInstance();
+        assumeTrue(usingTinker());
 
-        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = engine.getNewGraph();
     }
 
     @After

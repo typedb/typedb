@@ -43,28 +43,21 @@ public class GraphContext extends ExternalResource {
     private Consumer<GraknGraph> preLoad;
     private String[] files;
 
-    private GraphContext(){}
+    private GraphContext(Consumer<GraknGraph> build, String[] files){
+        this.preLoad = build;
+        this.files = files;
+    }
 
     public static GraphContext empty(){
-        return new GraphContext();
+        return new GraphContext(null, null);
     }
 
     public static GraphContext preLoad(Consumer<GraknGraph> build){
-        return new GraphContext().setPreLoad(build);
+        return new GraphContext(build, null);
     }
 
     public static GraphContext preLoad(String... filesToLoad){
-        return new GraphContext().setFiles(filesToLoad);
-    }
-
-    public GraphContext setPreLoad(Consumer<GraknGraph> preLoad) {
-        this.preLoad = preLoad;
-        return this;
-    }
-
-    public GraphContext setFiles(String[] files) {
-        this.files = files;
-        return this;
+        return new GraphContext(null, filesToLoad);
     }
 
     public GraknGraph graph(){
@@ -89,8 +82,7 @@ public class GraphContext extends ExternalResource {
         }
 
         if(files != null){
-            for(int i = 0; i < files.length; i++){
-                String file = files[i];
+            for (String file : files) {
                 loadFromFile(graph, file);
             }
         }
@@ -105,7 +97,7 @@ public class GraphContext extends ExternalResource {
         }
     }
 
-    public static GraknGraph graphWithNewKeyspace() {
+    private static GraknGraph graphWithNewKeyspace() {
         String keyspace;
         if (usingOrientDB()) {
             keyspace = "memory";

@@ -31,13 +31,13 @@ import ai.grakn.engine.loader.Loader;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -48,10 +48,13 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class LoaderTest extends AbstractEngineTest {
+public class LoaderTest {
 
     private Loader loader;
     private GraknGraph graph;
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @BeforeClass
     public static void startup() throws Exception {
@@ -66,7 +69,7 @@ public class LoaderTest extends AbstractEngineTest {
     @Before
     public void setup() {
         //TODO fix this
-        graph = factoryWithNewKeyspace().getGraph();
+        graph = engine.getNewGraph();
         loader = new Loader(graph.getKeyspace());
         loadOntology(graph.getKeyspace());
     }
