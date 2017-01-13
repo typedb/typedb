@@ -32,6 +32,7 @@ import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 
 /**
  *
@@ -64,6 +65,16 @@ public class GraphContext extends ExternalResource {
         return graph;
     }
 
+    public void rollback(){
+        try {
+            graph.rollback();
+        } catch (UnsupportedOperationException e) {
+            // If operation unsupported, make a fresh graph
+            closeGraph();
+            loadGraph();
+        }
+    }
+
     @Override
     protected void before() throws Throwable {
         ensureCassandraRunning();
@@ -74,7 +85,32 @@ public class GraphContext extends ExternalResource {
         //TODO finish remove
 
         // create the graph
-        graph = graphWithNewKeyspace();
+        loadGraph();
+    }
+
+    @Override
+    protected void after() {
+        closeGraph();
+    }
+
+    private void closeGraph(){
+        // close the graph
+        if(!graph.isClosed()) {
+            graph.clear();
+            graph.close();
+        }
+    }
+
+    private void loadGraph() {
+        String keyspace;
+        if (usingOrientDB()) {
+            keyspace = "memory";
+        } else {
+            // Embedded Casandra has problems dropping keyspaces that start with a number
+            keyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+        }
+
+        graph = GraphFactory.getInstance().getGraph(keyspace);
 
         // if data should be pre-loaded, load
         if(preLoad != null){
@@ -86,26 +122,5 @@ public class GraphContext extends ExternalResource {
                 loadFromFile(graph, file);
             }
         }
-    }
-
-    @Override
-    protected void after() {
-        // close the graph
-        if(!graph.isClosed()) {
-            graph.clear();
-            graph.close();
-        }
-    }
-
-    private static GraknGraph graphWithNewKeyspace() {
-        String keyspace;
-        if (usingOrientDB()) {
-            keyspace = "memory";
-        } else {
-            // Embedded Casandra has problems dropping keyspaces that start with a number
-            keyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-        }
-
-        return GraphFactory.getInstance().getGraph(keyspace);
     }
 }

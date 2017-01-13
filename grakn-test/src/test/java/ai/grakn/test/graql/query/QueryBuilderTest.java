@@ -25,6 +25,8 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.GraphContext;
+import org.junit.After;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,11 +39,16 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryBuilderTest {
 
-    @Rule
-    public final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    @ClassRule
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
+    @After
+    public void rollback(){
+        movieGraph.rollback();
+    }
 
     @Test
     public void testBuildQueryGraphFirst() {

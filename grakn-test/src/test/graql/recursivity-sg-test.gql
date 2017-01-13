@@ -4,19 +4,19 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" sub entity
+"entity2" sub entity
     has-resource name;
-"Human" sub entity;
+"Human" sub entity2;
 
 "parent" sub role;
 "child" sub role;
 "Parent" sub relation, has-role parent, has-role child;
-entity plays-role parent, plays-role child;
+entity2 plays-role parent, plays-role child;
 
 "SG-role-A" sub role;
 "SG-role-B" sub role;
 "SameGen" sub relation, has-role SG-role-A, has-role SG-role-B;
-entity plays-role SG-role-A, plays-role SG-role-B;
+entity2 plays-role SG-role-A, plays-role SG-role-B;
 
 "name" sub resource, datatype string;
 
@@ -24,14 +24,14 @@ entity plays-role SG-role-A, plays-role SG-role-B;
 ##################DATA#############################
 ####################################################
 
-$a isa entity, has name "a";
-$b isa entity, has name "b";
-$c isa entity, has name "c";
+$a isa entity2, has name "a";
+$b isa entity2, has name "b";
+$c isa entity2, has name "c";
 $d isa Human, has name "d";
-$e isa entity, has name "e";
-$f isa entity, has name "f";
-$g isa entity, has name "g";
-$h isa entity, has name "h";
+$e isa entity2, has name "e";
+$f isa entity2, has name "f";
+$g isa entity2, has name "g";
+$h isa entity2, has name "h";
 
 (parent: $a, child: $b) isa Parent;
 (parent: $a, child: $c) isa Parent;

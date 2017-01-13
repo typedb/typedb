@@ -38,6 +38,7 @@ import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -88,8 +89,8 @@ public class MatchQueryTest {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
-    @Rule
-    public final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    @ClassRule
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -482,6 +483,9 @@ public class MatchQueryTest {
         // This method should work despite subs
         //noinspection ResultOfMethodCallIgnored
         qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
+
+        // clean graph of inserts
+        movieGraph.rollback();
     }
 
     @Test
@@ -517,6 +521,9 @@ public class MatchQueryTest {
         assertFalse(qb.match(name("a").playsRole("f")).ask().execute());
         assertFalse(qb.match(name("b").playsRole("d")).ask().execute());
         assertFalse(qb.match(name("c").playsRole("d")).ask().execute());
+
+        // clean graph of inserts
+        movieGraph.rollback();
     }
 
     @Test

@@ -73,13 +73,18 @@ public class InsertQueryTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    @ClassRule
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {
         movieGraph.graph().showImplicitConcepts(true);
         qb = movieGraph.graph().graql();
+    }
+
+    @After
+    public void rollback(){
+        movieGraph.rollback();
     }
 
     @After
