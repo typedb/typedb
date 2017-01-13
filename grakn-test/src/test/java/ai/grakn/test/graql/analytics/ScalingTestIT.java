@@ -48,6 +48,7 @@ import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -105,9 +106,7 @@ public class ScalingTestIT {
     List<Integer> workerNumbers;
     List<String> headers;
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
-
+    @Ignore
     @Before
     public void setUp() {
         // compute the sample of graph sizes
@@ -134,12 +133,14 @@ public class ScalingTestIT {
         ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.Loader.class)).setLevel(Level.INFO);
     }
 
+    @Ignore
     @After
     public void cleanGraph() {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         graph.clear();
     }
 
+    @Ignore
     @Test
     public void countIT() throws InterruptedException, ExecutionException, GraknValidationException, IOException {
         CSVPrinter printer = createCSVPrinter("countIT.txt");
@@ -199,7 +200,7 @@ public class ScalingTestIT {
         printer.close();
     }
 
-
+    @Ignore
     @Test
     public void persistConstantIncreasingLoadIT() throws InterruptedException, GraknValidationException, ExecutionException, IOException {
         CSVPrinter printerWrite = createCSVPrinter("persistConstantIncreasingLoadITWrite.txt");
@@ -280,6 +281,7 @@ public class ScalingTestIT {
         printerMutate.close();
     }
 
+    @Ignore
     @Test
     public void testLargeDegreeMutationResultsInReadableGraphIT() throws Exception {
 
@@ -378,6 +380,7 @@ public class ScalingTestIT {
      *
      * median(g) = S*N
      */
+    @Ignore
     @Test
     public void testStatisticsWithConstantDegree() throws IOException, GraknValidationException {
         int totalSteps = NUM_DIVS;
