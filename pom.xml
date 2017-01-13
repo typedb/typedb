@@ -298,6 +298,9 @@
                     <excludes>
                         <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
                     </excludes>
+                    <rulesets>
+                        <ruleset>${project.parent.basedir}/pmd-rules.xml</ruleset>
+                    </rulesets>
                 </configuration>
                 <executions>
                     <execution>
