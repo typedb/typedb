@@ -127,9 +127,9 @@ public class Utility {
     public static IdPredicate getIdPredicate(VarName typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.isUserDefinedName())
+        if(typeVar.isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
-        else{
+        } else {
             NameProperty nameProp = typeVar.getProperty(NameProperty.class).orElse(null);
             if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
         }
