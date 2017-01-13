@@ -111,7 +111,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     void checkValidProperty(GraknGraph graph, VarAdmin var) {
         if (resourceType.isPresent()) {
             Type type = graph.getType(resourceType.get());
-            if(type != null && !type.isResourceType()) {
+            if(type == null || !type.isResourceType()) {
                 throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
             }
         }

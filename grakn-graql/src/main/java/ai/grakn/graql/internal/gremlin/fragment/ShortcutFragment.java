@@ -51,9 +51,9 @@ class ShortcutFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel());
-        roleStart.ifPresent(rs -> edgeTraversal.has(FROM_ROLE_NAME.name(), rs));
-        roleEnd.ifPresent(re -> edgeTraversal.has(TO_ROLE_NAME.name(), re));
-        relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_NAME.name(), rt));
+        roleStart.ifPresent(rs -> edgeTraversal.has(FROM_ROLE_NAME.name(), rs.getValue()));
+        roleEnd.ifPresent(re -> edgeTraversal.has(TO_ROLE_NAME.name(), re.getValue()));
+        relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_NAME.name(), rt.getValue()));
         edgeTraversal.inV();
     }
 

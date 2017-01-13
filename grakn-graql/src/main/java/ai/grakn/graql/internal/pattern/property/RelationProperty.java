@@ -214,11 +214,13 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeName);
 
         maybeName.ifPresent(name -> {
-            RelationType relationType = graph.getType(name);
+            Type type = graph.getType(name);
 
-            if (relationType == null) {
+            if (type == null || !type.isRelationType()) {
                 throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(name));
             }
+
+            RelationType relationType = type.asRelationType();
 
             Collection<RelationType> relationTypes = relationType.subTypes();
 
@@ -238,7 +240,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         // Check all role types exist
         roleTypes.forEach(roleId -> {
-            if (graph.getType(roleId) == null) {
+            Type type = graph.getType(roleId);
+            if (type == null || !type.isRoleType()) {
                 throw new IllegalStateException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
             }
         });
