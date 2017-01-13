@@ -1,7 +1,12 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.GraknVersion;
@@ -9,7 +14,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * <p>
