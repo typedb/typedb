@@ -166,6 +166,14 @@ public class Graql {
      * @return a query variable that identifies a concept by name
      */
     public static Var name(TypeName name) {
+        return var().name(name.getValue());
+    }
+
+    /**
+     * @param name the name of a concept
+     * @return a query variable that identifies a concept by name
+     */
+    public static Var name(String name) {
         return var().name(name);
     }
 
