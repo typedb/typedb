@@ -66,20 +66,20 @@ public class SynchronizedState {
 
     String serialize() {
         JSONObject json = new JSONObject();
-        json.put(STATUS, status)
-            .put(ENGINE_ID, engineID)
-            .put(TASK_CHECKPOINT, checkpoint);
+        json.put(STATUS.getValue(), status)
+            .put(ENGINE_ID.getValue(), engineID)
+            .put(TASK_CHECKPOINT.getValue(), checkpoint);
 
         return json.toString();
     }
 
     public static SynchronizedState deserialize(String serialized){
         JSONObject json = new JSONObject(serialized);
-        TaskStatus status = TaskStatus.valueOf(json.getString(STATUS));
+        TaskStatus status = TaskStatus.valueOf(json.getString(STATUS.getValue()));
 
         SynchronizedState state = new SynchronizedState(status);
-        state = json.has(ENGINE_ID) ? state.engineID(json.getString(ENGINE_ID)) : state;
-        state = json.has(TASK_CHECKPOINT) ? state.checkpoint(json.getString(TASK_CHECKPOINT)) : state;
+        state = json.has(ENGINE_ID.getValue()) ? state.engineID(json.getString(ENGINE_ID.getValue())) : state;
+        state = json.has(TASK_CHECKPOINT.getValue()) ? state.checkpoint(json.getString(TASK_CHECKPOINT.getValue())) : state;
         return state;
     }
 }

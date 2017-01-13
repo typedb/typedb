@@ -21,6 +21,7 @@ package ai.grakn.engine.session;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Printer;
@@ -349,7 +350,7 @@ class GraqlSession {
      * @param graph the graph to find types in
      * @return all type IDs in the ontology
      */
-    private static Stream<String> getTypes(GraknGraph graph) {
+    private static Stream<TypeName> getTypes(GraknGraph graph) {
         return graph.admin().getMetaConcept().subTypes().stream().map(Type::getName);
     }
 
