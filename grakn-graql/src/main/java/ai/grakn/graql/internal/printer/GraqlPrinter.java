@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
 /**
@@ -54,8 +55,8 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
      * @param type a type to color-code using ANSI colors
      * @return the type, color-coded
      */
-    private static String colorType(String type) {
-        return ANSI.color(type, ANSI.PURPLE);
+    private static String colorType(Type type) {
+        return ANSI.color(typeNameToString(type.getName()), ANSI.PURPLE);
     }
 
     private final ResourceType[] resourceTypes;
@@ -77,15 +78,15 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append(colorKeyword("value ")).append(valueToString(concept.asResource().getValue()));
             } else if (concept.isType()) {
                 Type type = concept.asType();
-                sb.append(colorKeyword("type-name ")).append(colorType(idToString(type.getName().getValue())));
+                sb.append(colorKeyword("type-name ")).append(colorType(type));
 
                 Type superType = type.superType();
 
                 if (superType != null) {
-                    sb.append(colorKeyword(" sub ")).append(colorType(idToString(superType.getName().getValue())));
+                    sb.append(colorKeyword(" sub ")).append(colorType(superType));
                 }
             } else {
-                sb.append(colorKeyword("id ")).append(idToString(concept.getId().getValue()));
+                sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
             }
 
             if (concept.isRelation()) {
@@ -94,7 +95,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     Instance rolePlayer = entry.getValue();
 
                     if (rolePlayer != null) {
-                        String s = colorType(idToString(roleType.getName().getValue())) + ": id " + idToString(rolePlayer.getId().getValue());
+                        String s = colorType(roleType) + ": id " + idToString(rolePlayer.getId());
                         return Optional.of(s);
                     } else {
                         return Optional.<String>empty();
@@ -107,7 +108,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display type of each instance
             if (concept.isInstance()) {
                 Type type = concept.asInstance().type();
-                sb.append(colorKeyword(" isa ")).append(colorType(idToString(type.getName().getValue())));
+                sb.append(colorKeyword(" isa ")).append(colorType(type));
             }
 
             // Display lhs and rhs for rules
@@ -119,7 +120,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display any requested resources
             if (concept.isInstance() && resourceTypes.length > 0) {
                 concept.asInstance().resources(resourceTypes).forEach(resource -> {
-                    String resourceType = colorType(idToString(resource.type().getName().getValue()));
+                    String resourceType = colorType(resource.type());
                     String value = valueToString(resource.getValue());
                     sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
                 });

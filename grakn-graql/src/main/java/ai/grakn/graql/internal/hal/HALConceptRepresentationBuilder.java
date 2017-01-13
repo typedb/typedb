@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
+
 public class HALConceptRepresentationBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);
@@ -137,7 +139,7 @@ public class HALConceptRepresentationBuilder {
             firstRole = (roleTypes.get(otherVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
         }
 
-        String isaString = (relationType==null) ? "" : "isa "+relationType.getValue();
+        String isaString = (relationType==null) ? "" : "isa "+typeNameToString(relationType);
 
         String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString);
         currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(assertionID, relationType));

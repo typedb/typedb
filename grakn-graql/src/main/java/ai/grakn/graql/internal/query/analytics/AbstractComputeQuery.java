@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
@@ -151,7 +152,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         if (subTypeNames.isEmpty()) return false;
 
         List<Pattern> checkSubtypes = subTypeNames.stream()
-                .map(type -> var("x").isa(type.getValue())).collect(Collectors.toList());
+                .map(type -> var("x").isa(name(type))).collect(Collectors.toList());
         return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
     }
 
@@ -225,7 +226,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             return ";";
         } else {
             return " in "
-                    + subTypeNames.stream().map(type -> StringConverter.idToString(type.getValue())).collect(joining(", ")) + ";";
+                    + subTypeNames.stream().map(StringConverter::typeNameToString).collect(joining(", ")) + ";";
         }
     }
 

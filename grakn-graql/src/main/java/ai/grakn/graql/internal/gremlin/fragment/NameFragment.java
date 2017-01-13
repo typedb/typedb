@@ -23,7 +23,7 @@ import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static ai.grakn.util.Schema.ConceptProperty.NAME;
 
 class NameFragment extends AbstractFragment {
@@ -42,7 +42,7 @@ class NameFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        return "[name:" + idToString(name.getValue()) + "]";
+        return "[name:" + typeNameToString(name) + "]";
     }
 
     @Override

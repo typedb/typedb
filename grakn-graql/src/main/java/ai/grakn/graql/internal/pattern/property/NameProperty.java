@@ -49,7 +49,7 @@ public class NameProperty extends AbstractVarProperty implements NamedProperty, 
 
     @Override
     public String getProperty() {
-        return StringConverter.idToString(name.getValue());
+        return StringConverter.typeNameToString(name);
     }
 
     @Override

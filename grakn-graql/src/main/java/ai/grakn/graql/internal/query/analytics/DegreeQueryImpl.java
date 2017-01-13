@@ -40,7 +40,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static java.util.stream.Collectors.joining;
 
 class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
@@ -137,7 +137,7 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
         String string = "degrees";
 
         if (ofTypeNamesSet) {
-            string += " of " + ofTypeNames.stream().map(type -> StringConverter.idToString(type.getValue())).collect(joining(", "));
+            string += " of " + ofTypeNames.stream().map(StringConverter::typeNameToString).collect(joining(", "));
         }
 
         string += subtypeString();
@@ -145,7 +145,7 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
         if (persist) {
             string += " persist";
             if (!degreeName.equals(Schema.Analytics.DEGREE.getName())) {
-                string += " " + idToString(degreeName.getValue());
+                string += " " + typeNameToString(degreeName);
             }
             string += ";";
         }

@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.VarAdmin;
 
 /**
@@ -47,6 +48,12 @@ public interface Var extends Pattern {
      * @return this
      */
     Var name(String name);
+
+    /**
+     * @param name a type name that this variable's name must match
+     * @return this
+     */
+    Var name(TypeName name);
 
     /**
      * this variable must have a value

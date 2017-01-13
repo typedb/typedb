@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -98,7 +99,7 @@ public class Reasoner {
      */
     private static boolean hasRules(GraknGraph graph) {
         TypeName inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
-        return graph.graql().infer(false).match(var("x").isa(inferenceRule.getValue())).ask().execute();
+        return graph.graql().infer(false).match(var("x").isa(name(inferenceRule))).ask().execute();
     }
 
     /**

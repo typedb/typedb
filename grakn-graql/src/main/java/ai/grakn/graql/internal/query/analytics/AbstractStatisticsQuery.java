@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
@@ -76,7 +77,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     final String resourcesString() {
         return " of " + statisticsResourceTypeNames.stream()
-                .map(name -> StringConverter.idToString(name.getValue())).collect(joining(", "));
+                .map(StringConverter::typeNameToString).collect(joining(", "));
     }
 
     private void getResourceTypes(GraknGraph graph) {
@@ -140,9 +141,9 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
         List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
-                .map(type -> var("x").has(type.getValue())).collect(Collectors.toList());
+                .map(type -> var("x").has(name(type))).collect(Collectors.toList());
         List<Pattern> checkSubtypes = subTypeNames.stream()
-                .map(type -> var("x").isa(type.getValue())).collect(Collectors.toList());
+                .map(type -> var("x").isa(name(type))).collect(Collectors.toList());
 
         return graph.graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }

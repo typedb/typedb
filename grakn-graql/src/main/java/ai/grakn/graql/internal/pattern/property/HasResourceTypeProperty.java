@@ -38,6 +38,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.name;
+
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin resourceType;
@@ -58,13 +60,13 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = Graql.name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName))
-                .sub(Schema.MetaSchema.ROLE.getName().getValue()).admin();
-        valueRole = Graql.name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName))
-                .sub(Schema.MetaSchema.ROLE.getName().getValue()).admin();
+        ownerRole = name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName))
+                .sub(name(Schema.MetaSchema.ROLE.getName())).admin();
+        valueRole = name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName))
+                .sub(name(Schema.MetaSchema.ROLE.getName())).admin();
 
-        relationType = Graql.name(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName))
-                .sub(Schema.MetaSchema.RELATION.getName().getValue())
+        relationType = name(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName))
+                .sub(name(Schema.MetaSchema.RELATION.getName()))
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
         ownerPlaysRole = new PlaysRoleProperty(ownerRole, required);
@@ -145,7 +147,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         VarName varName = var.getVarName();
         TypeName typeName = this.getResourceType().getTypeName().orElse(null);
         //isa part
-        VarAdmin resVar = Graql.var(varName).hasResource(typeName.getValue()).admin();
+        VarAdmin resVar = Graql.var(varName).hasResource(name(typeName)).admin();
         return new TypeAtom(resVar, parent);
     }
 }

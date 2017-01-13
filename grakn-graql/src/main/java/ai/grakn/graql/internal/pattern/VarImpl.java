@@ -127,7 +127,12 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var name(String name) {
-        return addProperty(new NameProperty(TypeName.of(name)));
+        return name(TypeName.of(name));
+    }
+
+    @Override
+    public Var name(TypeName name) {
+        return addProperty(new NameProperty(name));
     }
 
     @Override
@@ -336,7 +341,7 @@ class VarImpl implements VarAdmin {
         if (userDefinedName) {
             return name.toString();
         } else {
-            return getTypeName().map((name) -> StringConverter.idToString(name.getValue())).orElse("'" + toString() + "'");
+            return getTypeName().map(StringConverter::typeNameToString).orElse("'" + toString() + "'");
         }
     }
 

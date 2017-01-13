@@ -99,7 +99,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
             Type type = graph.getType(typeName);
             return type.isRoleType();
         }).ifPresent(type -> {
-            throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getValue()));
+            throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type));
         });
     }
 

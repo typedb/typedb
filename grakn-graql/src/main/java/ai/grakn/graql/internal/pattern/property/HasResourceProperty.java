@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.internal.reasoner.Utility.getValuePredicates;
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
@@ -57,12 +58,12 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     public HasResourceProperty(VarAdmin resource) {
         this.resourceType = Optional.empty();
-        this.resource = resource.isa(Schema.MetaSchema.RESOURCE.getName().getValue()).admin();
+        this.resource = resource.isa(name(Schema.MetaSchema.RESOURCE.getName())).admin();
     }
 
     public HasResourceProperty(TypeName resourceType, VarAdmin resource) {
         this.resourceType = Optional.of(resourceType);
-        this.resource = resource.isa(resourceType.getValue()).admin();
+        this.resource = resource.isa(name(resourceType)).admin();
     }
 
     public Optional<TypeName> getType() {
@@ -82,7 +83,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
-        resourceType.ifPresent(type -> repr.add(type.getValue()));
+        resourceType.ifPresent(type -> repr.add(typeNameToString(type)));
 
         if (resource.isUserDefinedName()) {
             repr.add(resource.getPrintableName());
