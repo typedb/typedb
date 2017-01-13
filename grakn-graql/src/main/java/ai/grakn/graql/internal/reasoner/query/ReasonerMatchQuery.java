@@ -41,7 +41,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
  * @author Kasper Piskorski
  *
  */
-public class ReasonerMatchQuery extends Query{
+public class ReasonerMatchQuery extends ReasonerQueryImpl {
 
     final private QueryAnswers answers;
 

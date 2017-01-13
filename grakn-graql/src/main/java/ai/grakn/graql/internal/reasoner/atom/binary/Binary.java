@@ -2,13 +2,13 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 import com.google.common.collect.Sets;
 import java.util.Map;
@@ -26,7 +26,7 @@ import java.util.Set;
 public abstract class Binary extends BinaryBase {
     private IdPredicate predicate = null;
 
-    protected Binary(VarAdmin pattern, IdPredicate p, Query par) {
+    protected Binary(VarAdmin pattern, IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = p;
         this.typeId = extractTypeId(atomPattern.asVar());
@@ -48,7 +48,7 @@ public abstract class Binary extends BinaryBase {
     }
 
     @Override
-    public void setParentQuery(Query q) {
+    public void setParentQuery(ReasonerQuery q) {
         super.setParentQuery(q);
         if (predicate != null) predicate.setParentQuery(q);
     }

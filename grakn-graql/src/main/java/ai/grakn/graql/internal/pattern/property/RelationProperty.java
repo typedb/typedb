@@ -25,6 +25,10 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
@@ -33,6 +37,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
@@ -43,6 +48,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
@@ -52,6 +59,7 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsaCastings;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
+import static ai.grakn.graql.internal.reasoner.Utility.getUserDefinedIdPredicate;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -278,4 +286,37 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public int hashCode() {
         return relationPlayers.hashCode();
     }
+
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+            Var relVar = var.isUserDefinedName()? Graql.var(var.getVarName()) : Graql.var();
+            Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(Collectors.toSet());
+            relationPlayers.forEach(rp -> {
+                VarAdmin role = rp.getRoleType().orElse(null);
+                VarAdmin rolePlayer = rp.getRolePlayer();
+                if (role != null) relVar.rel(role, rolePlayer);
+                else relVar.rel(rolePlayer);
+            });
+
+            //id part
+            IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
+            IdPredicate predicate = null;
+            //Isa present
+            if (isaProp != null) {
+                VarAdmin isaVar = isaProp.getType();
+                String typeName = isaVar.getTypeName().orElse("");
+                VarName typeVariable = typeName.isEmpty()? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
+                relVar.isa(Graql.var(typeVariable));
+                if (!typeName.isEmpty()) {
+                    GraknGraph graph = parent.graph();
+                    VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
+                    predicate = new IdPredicate(idVar, parent);
+                }
+                else
+                    predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+            }
+            return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), predicate, parent);
+    }
+
 }

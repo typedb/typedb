@@ -24,7 +24,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
@@ -48,7 +47,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -128,33 +126,6 @@ public class GraqlTest extends AbstractGraphTest {
         ));
     }
 
-    @Test
-    public void testDegreesAndPersist() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        addOntologyAndEntities();
-        qb.parse("compute degrees; persist;").execute();
-
-        Map<String, Long> correctDegrees = new HashMap<>();
-        correctDegrees.put(entityId1, 1L);
-        correctDegrees.put(entityId2, 2L);
-        correctDegrees.put(entityId3, 0L);
-        correctDegrees.put(entityId4, 1L);
-        correctDegrees.put(relationId12, 2L);
-        correctDegrees.put(relationId24, 2L);
-
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
-        correctDegrees.entrySet().forEach(entry -> {
-            Collection<Resource<?>> resources =
-                    graph.getConcept(ConceptId.of(entry.getKey())).asInstance()
-                            .resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
-            assertEquals(1, resources.size());
-            assertEquals(entry.getValue(), resources.iterator().next().getValue());
-        });
-    }
-
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidIdWithAnalytics() {
         qb.parse("compute sum of thing;").execute();
@@ -215,9 +186,6 @@ public class GraqlTest extends AbstractGraphTest {
         Map<String, Set<String>> memberMap =
                 qb.<ClusterQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
         assertTrue(memberMap.isEmpty());
-        Map<String, Long> sizeMapPersist =
-                qb.<ClusterQuery<Map<String, Long>>>parse("compute cluster; persist;").execute();
-        assertTrue(sizeMapPersist.isEmpty());
     }
 
     @Test

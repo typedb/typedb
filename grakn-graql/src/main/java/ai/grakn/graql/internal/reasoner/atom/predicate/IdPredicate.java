@@ -21,12 +21,12 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.admin.Atomic;
 
 /**
  *
@@ -39,17 +39,13 @@ import ai.grakn.graql.internal.reasoner.query.Query;
  */
 public class IdPredicate extends Predicate<ConceptId>{
 
-    public IdPredicate(VarAdmin pattern) {
-        super(pattern);
-    }
-    public IdPredicate(VarAdmin pattern, Query par) {
+    public IdPredicate(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
     }
-    public IdPredicate(VarName varName, IdProperty prop, Query par){
+    public IdPredicate(VarName varName, IdProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop.getId()), par);
     }
-
-    public IdPredicate(VarName varName, NameProperty prop, Query par){
+    public IdPredicate(VarName varName, NameProperty prop, ReasonerQuery par){
         this(createIdVar(varName, par.graph().getType(prop.getNameValue()).getId()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}

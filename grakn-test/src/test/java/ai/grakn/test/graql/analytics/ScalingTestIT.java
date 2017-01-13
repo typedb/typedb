@@ -227,7 +227,8 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                     LOGGER.info("persist degree");
                     Long startTime = System.currentTimeMillis();
-                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
+                    //TODO: Remove persistence
+//                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
                     Long stopTime = System.currentTimeMillis();
                     degreeAndPersistTimeWrite += stopTime - startTime;
                     LOGGER.info("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
@@ -245,7 +246,8 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                     LOGGER.info("mutate degree");
                     startTime = System.currentTimeMillis();
-                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
+                    //TODO: Remove persistence
+//                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
                     stopTime = System.currentTimeMillis();
                     degreeAndPersistTimeMutate += stopTime - startTime;
                     LOGGER.info("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
@@ -282,7 +284,8 @@ public class ScalingTestIT extends AbstractScalingTest {
         addNodes(keyspace, 0, MAX_SIZE);
 
         Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
+        //TODO: Remove persistence
+//        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
 
         // assert mutated degrees are as expected
         GraknGraph graph = factory.getGraph();
@@ -301,7 +304,8 @@ public class ScalingTestIT extends AbstractScalingTest {
         addEdges(keyspace, MAX_SIZE);
 
         Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
+        //TODO: Remove persistence
+//        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
 
         // assert mutated degrees are as expected
         graph = factory.getGraph();

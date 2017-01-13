@@ -24,7 +24,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -119,7 +119,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @param query query containing filters
      * @return filtered answers
      */
-    public QueryAnswers filterNonEquals(Query query){
+    public QueryAnswers filterNonEquals(ReasonerQueryImpl query){
         Set<NotEquals> filters = query.getAtoms().stream()
                 .filter(at -> at.getClass() == NotEquals.class)
                 .map(at -> (NotEquals) at)

@@ -132,7 +132,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         return fullAnswers;
     }
 
-    private QueryAnswers propagateHeadIdPredicates(Query ruleHead, QueryAnswers answers){
+    private QueryAnswers propagateHeadIdPredicates(ReasonerQueryImpl ruleHead, QueryAnswers answers){
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
@@ -158,7 +158,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
-        Query ruleBody = rule.getBody();
+        ReasonerQueryImpl ruleBody = rule.getBody();
         AtomicQuery ruleHead = rule.getHead();
 
         Set<Atom> atoms = ruleBody.selectAtoms();
