@@ -79,8 +79,9 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     private void getResourceTypes(GraknGraph graph) {
-        if (statisticsResourceTypeNames.isEmpty())
+        if (statisticsResourceTypeNames.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.RESOURCE_TYPE_NOT_SPECIFIED.getMessage());
+        }
 
         Set<Type> statisticsResourceTypes = statisticsResourceTypeNames.stream().map((name) -> {
             Type type = graph.getType(name);
@@ -99,31 +100,35 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
-        if (types == null || types.isEmpty())
+        if (types == null || types.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
+        }
 
         String dataType = null;
         for (String type : types) {
             // check if the selected type is a resource-type
-            if (!resourceTypesDataTypeMap.containsKey(type))
+            if (!resourceTypesDataTypeMap.containsKey(type)) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
+            }
 
             if (dataType == null) {
                 // check if the resource-type has data-type LONG or DOUBLE
                 dataType = resourceTypesDataTypeMap.get(type);
 
                 if (!dataType.equals(ResourceType.DataType.LONG.getName()) &&
-                        !dataType.equals(ResourceType.DataType.DOUBLE.getName()))
+                        !dataType.equals(ResourceType.DataType.DOUBLE.getName())) {
                     throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                             .getMessage(this.getClass().toString()));
+                }
 
             } else {
                 // check if all the resource-types have the same data-type
-                if (!dataType.equals(resourceTypesDataTypeMap.get(type)))
+                if (!dataType.equals(resourceTypesDataTypeMap.get(type))) {
                     throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                             .getMessage(this.getClass().toString()));
+                }
             }
         }
         return dataType;

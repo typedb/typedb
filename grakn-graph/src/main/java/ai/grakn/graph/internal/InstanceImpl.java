@@ -137,8 +137,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         parent.castings().forEach(c -> {
             CastingImpl casting = c.asCasting();
             if (roleTypeNames.size() != 0) {
-                if (roleTypeNames.contains(casting.getType()))
+                if (roleTypeNames.contains(casting.getType())) {
                     relations.addAll(casting.getRelations());
+                }
             } else {
                 relations.addAll(casting.getRelations());
             }

@@ -94,16 +94,18 @@ class EdgeImpl {
      */
     <X> X getProperty(Schema.EdgeProperty type){
         org.apache.tinkerpop.gremlin.structure.Property<X> property = edge.property(type.name());
-        if(property != null && property.isPresent())
+        if(property != null && property.isPresent()) {
             return property.value();
-        else
+        } else {
             return null;
+        }
     }
 
     Boolean getPropertyBoolean(Schema.EdgeProperty key){
         Boolean value = getProperty(key);
-        if(value == null)
+        if(value == null) {
             return false;
+        }
         return value;
     }
 

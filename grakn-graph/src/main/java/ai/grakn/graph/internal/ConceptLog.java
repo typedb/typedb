@@ -71,10 +71,12 @@ public class ConceptLog {
         if(!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
 
-            if(concept.isCasting())
+            if(concept.isCasting()) {
                 modifiedCastings.add(concept.asCasting());
-            if(concept.isResource())
+            }
+            if(concept.isResource()) {
                 modifiedResources.add((ResourceImpl) concept);
+            }
         }
 
         //Caching of relations in memory so they can be retrieved without needing a commit

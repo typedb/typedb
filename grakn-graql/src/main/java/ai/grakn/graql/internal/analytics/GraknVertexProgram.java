@@ -19,10 +19,14 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.computer.*;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;

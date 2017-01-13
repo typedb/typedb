@@ -60,12 +60,6 @@ public class AtomicMatchQuery extends AtomicQuery{
         newAnswers = new QueryAnswers();
     }
 
-    public AtomicMatchQuery(MatchQuery query, GraknGraph graph){
-        super(query, graph);
-        answers = new QueryAnswers();
-        newAnswers = new QueryAnswers();
-    }
-
     public AtomicMatchQuery(AtomicQuery query, QueryAnswers ans){
         super(query);
         answers = new QueryAnswers(ans);
@@ -119,14 +113,13 @@ public class AtomicMatchQuery extends AtomicQuery{
     @Override
     public QueryAnswers materialise(){
         QueryAnswers fullAnswers = new QueryAnswers();
+        AtomicQuery queryToMaterialise = new AtomicQuery(this);
         answers.forEach(answer -> {
             Set<IdPredicate> subs = new HashSet<>();
-            answer.forEach((var, con) -> {
-                IdPredicate sub = new IdPredicate(var, con);
-                if (!containsAtom(sub))
-                    subs.add(sub);
-            });
-            fullAnswers.addAll(materialise(subs));
+            answer.forEach((var, con) -> subs.add(new IdPredicate(var, con, queryToMaterialise)));
+            subs.forEach(queryToMaterialise::addAtom);
+            fullAnswers.addAll(queryToMaterialise.materialise());
+            subs.forEach(queryToMaterialise::removeAtom);
         });
         return fullAnswers;
     }
@@ -210,10 +203,11 @@ public class AtomicMatchQuery extends AtomicQuery{
 
     @Override
     public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
-        if (!this.getAtom().isRuleResolvable())
+        if (!this.getAtom().isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames();
-        else
+        } else {
             return new QueryAnswerIterator(materialise).hasStream();
+        }
     }
 
     private class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
@@ -277,9 +271,9 @@ public class AtomicMatchQuery extends AtomicQuery{
             else if (dAns != 0 || iter == 0 ){
                 computeNext();
                 return hasNext();
-            }
-            else
+            } else {
                 return false;
+            }
         }
 
         /**

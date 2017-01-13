@@ -113,10 +113,11 @@ public class AtomicQuery extends ReasonerQueryImpl {
     public void establishRelation(AtomicQuery aq){
         Atom aqAtom = aq.getAtom();
         if(Objects.equals(atom.getTypeId(), aq.getAtom().getTypeId())) {
-            if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size())
+            if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size()) {
                 aq.addChild(this);
-            else
+            } else {
                 this.addChild(aq);
+            }
         }
     }
 
@@ -186,45 +187,38 @@ public class AtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
-     * @return inserted concepts if the atom required materialisation in order to be referencable
-     */
-    public QueryAnswers materialise(){ return materialiseComplete();}
-
-    /**
-     * Add explicit IdPredicates and materialise
-     * @param subs IdPredicates of variables
      * @return Materialised answers
      */
-    public QueryAnswers materialise(Set<IdPredicate> subs) {
+    public QueryAnswers materialise() {
         QueryAnswers insertAnswers = new QueryAnswers();
-        AtomicQuery queryToMaterialise = new AtomicQuery(this);
-        subs.forEach(queryToMaterialise::addAtom);
 
         //extrapolate if needed
-        Atom at = queryToMaterialise.getAtom();
-        if(at.isRelation()){
-            Relation relAtom = (Relation) at;
+        if(atom.isRelation()){
+            Relation relAtom = (Relation) atom;
             Set<VarName> rolePlayers = relAtom.getRolePlayers();
             if (relAtom.getRoleVarTypeMap().size() != rolePlayers.size()) {
-                RelationType relType = (RelationType) atom.getType();
+                RelationType relType = (RelationType) relAtom.getType();
                 Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
                 Set<Map<VarName, Var>> roleMaps = new HashSet<>();
                 Utility.computeRoleCombinations(rolePlayers , roles, new HashMap<>(), roleMaps);
 
-                queryToMaterialise.removeAtom(relAtom);
                 roleMaps.forEach(roleMap -> {
-                    Relation relationWithRoles = new Relation(atom.getVarName(), relAtom.getValueVariable(),
-                            roleMap, relAtom.getPredicate(), queryToMaterialise);
-                    queryToMaterialise.addAtom(relationWithRoles);
-                    insertAnswers.addAll(queryToMaterialise.materialiseComplete());
-                    queryToMaterialise.removeAtom(relationWithRoles);
+                    Relation relationWithRoles = new Relation(relAtom.getVarName(), relAtom.getValueVariable(),
+                            roleMap, relAtom.getPredicate(), this);
+                    this.removeAtom(relAtom);
+                    this.addAtom(relationWithRoles);
+                    insertAnswers.addAll(this.materialiseComplete());
+                    this.removeAtom(relationWithRoles);
+                    this.addAtom(relAtom);
                 });
             }
-            else
-                insertAnswers.addAll(queryToMaterialise.materialiseComplete());
+            else {
+                insertAnswers.addAll(this.materialiseComplete());
+            }
         }
-        else
-            insertAnswers.addAll(queryToMaterialise.materialiseComplete());
+        else {
+            insertAnswers.addAll(this.materialiseComplete());
+        }
         return insertAnswers;
     }
 
@@ -237,8 +231,9 @@ public class AtomicQuery extends ReasonerQueryImpl {
     @Override
     public Set<Atom> selectAtoms() {
         Set<Atom> selectedAtoms = super.selectAtoms();
-        if (selectedAtoms.size() != 1)
+        if (selectedAtoms.size() != 1) {
             throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
+        }
         return selectedAtoms;
     }
 

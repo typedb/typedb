@@ -19,10 +19,10 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.util.ConfigProperties;
-import javafx.util.Pair;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.util.ConfigProperties;
+import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
@@ -50,7 +51,6 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC
 import static ai.grakn.engine.util.ConfigProperties.SCHEDULER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -231,11 +231,11 @@ public class Scheduler implements Runnable, AutoCloseable {
         tasks.stream()
                 .filter(p -> p.getValue().status() != STOPPED)
                 .forEach(p -> {
-                	// Not sure what is the right format for "no configuration", but somehow the configuration
-                	// here for a postprocessing task is "null": if we say that the configuration of a task
-                	// is a JSONObject, then an empty configuration ought to be {}
-                	String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
-                	scheduleTask(p.getKey(), config, p.getValue());	
+                    // Not sure what is the right format for "no configuration", but somehow the configuration
+                    // here for a postprocessing task is "null": if we say that the configuration of a task
+                    // is a JSONObject, then an empty configuration ought to be {}
+                    String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
+                    scheduleTask(p.getKey(), config, p.getValue());
                 });
         LOG.debug("Scheduler restarted " + tasks.size() + " recurring tasks");
     }

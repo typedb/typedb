@@ -65,13 +65,15 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexType(vertex)))
+                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     degreeStep0(vertex, messenger);
+                }
                 break;
 
             case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name()))
+                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
                     degreeStep1(messenger);
+                }
                 break;
 
             case 2:

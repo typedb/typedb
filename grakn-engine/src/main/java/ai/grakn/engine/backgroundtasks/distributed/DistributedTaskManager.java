@@ -48,8 +48,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * Class to manage tasks distributed using Kafka.
  */
 public class DistributedTaskManager implements TaskManager{
-	private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
-	private final AtomicBoolean OPENED = new AtomicBoolean(false);
+    private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
+    private final AtomicBoolean OPENED = new AtomicBoolean(false);
     private static DistributedTaskManager instance = null;
 
     private KafkaProducer<String, String> producer;
@@ -57,8 +57,9 @@ public class DistributedTaskManager implements TaskManager{
     private SynchronizedStateStorage zkStorage;
 
     public static synchronized DistributedTaskManager getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new DistributedTaskManager();
+        }
         return instance;
     }
 

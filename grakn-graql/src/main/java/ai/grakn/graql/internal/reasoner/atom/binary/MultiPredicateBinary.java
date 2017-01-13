@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -86,8 +86,9 @@ public abstract class MultiPredicateBinary extends BinaryBase {
         while(it.hasNext() && predicatesEquivalent){
             Iterator<Predicate> objIt = atom.getMultiPredicate().iterator();
             boolean predicateHasEquivalent = false;
-            while(objIt.hasNext() && !predicateHasEquivalent)
+            while(objIt.hasNext() && !predicateHasEquivalent) {
                 predicateHasEquivalent = it.next().isEquivalent(objIt.next());
+            }
             predicatesEquivalent = predicateHasEquivalent;
         }
         return predicatesEquivalent;

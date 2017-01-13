@@ -32,6 +32,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
@@ -230,8 +231,9 @@ public class Relation extends TypeAtom {
             Iterator<RoleType> childRolesIt = childRoleVarTypeMap.keySet().iterator();
             //if child roles are unspecified then compatible
             boolean roleCompatible = !childRolesIt.hasNext();
-            while (childRolesIt.hasNext() && !roleCompatible)
+            while (childRolesIt.hasNext() && !roleCompatible) {
                 roleCompatible = checkTypesCompatible(parentRole, childRolesIt.next());
+            }
             ruleRelevant = roleCompatible;
 
             //check type compatibility
@@ -249,8 +251,9 @@ public class Relation extends TypeAtom {
                         VarName pVar = entry.getValue().getKey();
                         Predicate childPredicate = child.getBody().getIdPredicate(chVar);
                         Predicate parentPredicate = parent.getIdPredicate(pVar);
-                        if (childPredicate != null && parentPredicate != null)
+                        if (childPredicate != null && parentPredicate != null) {
                             ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
+                        }
                     }
                 }
             }
@@ -269,19 +272,20 @@ public class Relation extends TypeAtom {
 
         Type type = getType();
         //Case: relation without type - match all
-        if (type == null)
+        if (type == null) {
             return isRuleApplicableViaType((RelationType) childAtom.getType());
-        else
+        } else {
             return isRuleApplicableViaAtom(childAtom, child);
+        }
     }
 
     @Override
     public boolean isRuleResolvable() {
         Type t = getType();
-        if (t != null)
+        if (t != null) {
             return !t.getRulesOfConclusion().isEmpty()
                     && !this.getApplicableRules().isEmpty();
-        else {
+        } else {
             GraknGraph graph = getParentQuery().graph();
             Set<Rule> rules = Reasoner.getRules(graph);
             return rules.stream()
@@ -354,8 +358,9 @@ public class Relation extends TypeAtom {
             if (hrAtom != null) {
                 AtomicQuery hrQuery = new AtomicMatchQuery(hrAtom, Sets.newHashSet(hrAtom.getVarName()));
                 hrQuery.DBlookup();
-                if (hrQuery.getAnswers().size() != 1)
+                if (hrQuery.getAnswers().size() != 1) {
                     throw new IllegalStateException("ambigious answer to has-role query");
+                }
                 IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
                         hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
 
@@ -379,8 +384,9 @@ public class Relation extends TypeAtom {
     public boolean containsVar(VarName name) {
         boolean varFound = false;
         Iterator<RelationPlayer> it = relationPlayers.iterator();
-        while(it.hasNext() && !varFound)
+        while(it.hasNext() && !varFound) {
             varFound = it.next().getRolePlayer().getVarName().equals(name);
+        }
         return varFound;
     }
 
@@ -453,20 +459,20 @@ public class Relation extends TypeAtom {
             Type type = varTypeMap.get(var);
             String roleTypeName = "";
             for(RelationPlayer c : relationPlayers) {
-                if (c.getRolePlayer().getVarName().equals(var))
+                if (c.getRolePlayer().getVarName().equals(var)) {
                     roleTypeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse("");
+                }
             }
             //roletype explicit
-            if (!roleTypeName.isEmpty())
+            if (!roleTypeName.isEmpty()) {
                 roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeName)));
-            else {
-                if (type != null && relType != null) {
-                    Set<RoleType> cRoles = Utility.getCompatibleRoleTypes(type, relType);
-                    //if roleType is unambigous
-                    if (cRoles.size() == 1)
-                        roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));
-                    else
-                        roleVarTypeMap.put(var, new Pair<>(type, null));
+            } else if (type != null && relType != null) {
+                Set<RoleType> cRoles = Utility.getCompatibleRoleTypes(type, relType);
+                //if roleType is unambigous
+                if (cRoles.size() == 1) {
+                    roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));
+                } else {
+                    roleVarTypeMap.put(var, new Pair<>(type, null));
                 }
             }
         }
@@ -475,8 +481,9 @@ public class Relation extends TypeAtom {
 
     @Override
     public Map<VarName, Pair<Type, RoleType>> getVarTypeRoleMap() {
-        if (varTypeRoleMap == null)
+        if (varTypeRoleMap == null) {
             varTypeRoleMap = computeVarTypeRoleMap();
+        }
         return varTypeRoleMap;
     }
 
@@ -574,11 +581,11 @@ public class Relation extends TypeAtom {
                 roleVarTypeMap = new HashMap<>();
                 varTypeRoleMap.forEach((var, tpair) -> {
                     RoleType rt = tpair.getValue();
-                    if (rt != null)
-                        roleVarTypeMap.put(rt, new Pair<>(var, tpair.getKey()));
+                    if (rt != null) roleVarTypeMap.put(rt, new Pair<>(var, tpair.getKey()));
                 });
-            } else
+            } else {
                 roleVarTypeMap = computeRoleVarTypeMap();
+            }
         }
         return roleVarTypeMap;
     }
@@ -644,8 +651,9 @@ public class Relation extends TypeAtom {
 
     @Override
     public Map<VarName, VarName> getUnifiers(Atomic pAtom) {
-        if (!(pAtom instanceof TypeAtom))
+        if (!(pAtom instanceof TypeAtom)) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+        }
 
         Map<VarName, VarName> unifiers = super.getUnifiers(pAtom);
         if (((Atom) pAtom).isRelation()){
@@ -700,14 +708,15 @@ public class Relation extends TypeAtom {
                         VarName rolePlayerVarName = Patterns.varName();
                         unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
                         VarAdmin roleType = c.getRoleType().orElse(null);
-                        if (roleType != null)
+                        if (roleType != null) {
                             relVar.rel(roleType, Graql.var(rolePlayerVarName));
-                        else
+                        } else {
                             relVar.rel(Graql.var(rolePlayerVarName));
+                        }
                     });
             return new Pair<>(new Relation(relVar.admin(), getPredicate(), parent), unifiers);
-        }
-        else
+        } else {
             return new Pair<>(this, new HashMap<>());
+        }
     }
 }

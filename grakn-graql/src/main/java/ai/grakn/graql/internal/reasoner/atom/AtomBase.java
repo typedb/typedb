@@ -126,8 +126,11 @@ public abstract class AtomBase implements Atomic {
      */
     public void unify(Map<VarName, VarName> unifiers){
         VarName var = getVarName();
-        if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var)) setVarName(capture(var));
+        if (unifiers.containsKey(var)) {
+            setVarName(unifiers.get(var));
+        } else if (unifiers.containsValue(var)) {
+            setVarName(capture(var));
+        }
     }
 
     /**
@@ -136,11 +139,13 @@ public abstract class AtomBase implements Atomic {
      * @return map of unifiers
      */
     public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
-        if (parentAtom.getClass() != this.getClass())
+        if (parentAtom.getClass() != this.getClass()) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+        }
         Map<VarName, VarName> map = new HashMap<>();
-        if (!this.getVarName().equals(parentAtom.getVarName()))
+        if (!this.getVarName().equals(parentAtom.getVarName())) {
             map.put(this.getVarName(), parentAtom.getVarName());
+        }
         return map;
     }
 }
