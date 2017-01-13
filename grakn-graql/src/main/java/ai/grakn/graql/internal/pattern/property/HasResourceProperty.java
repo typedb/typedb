@@ -24,6 +24,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -108,8 +109,11 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     void checkValidProperty(GraknGraph graph, VarAdmin var) {
-        if (resourceType.isPresent() && graph.getType(resourceType.get()) == null) {
-            throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+        if (resourceType.isPresent()) {
+            Type type = graph.getType(resourceType.get());
+            if(type != null && !type.isResourceType()) {
+                throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+            }
         }
     }
 
