@@ -99,9 +99,10 @@ public class GraphFactoryController {
             }
             for (Entity keyspace : graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
                 Collection<Resource<?>> names = keyspace.resources(keyspaceName);
-                if (names.size() != 1)
+                if (names.size() != 1) {
                     throw new GraknEngineServerException(500,
                             ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " hos no unique name."));
+                }
                 result.add(names.iterator().next().getValue());
             }
             return result.toString();

@@ -81,8 +81,9 @@ public class InferenceRule {
                     .filter(type -> !body.containsEquivalentAtom(type))
                     .collect(Collectors.toSet());
             Set<Predicate> predicates = parentAtom.getPredicates();
-            if(parentAtom.isResource())
-                    predicates.addAll(((Resource) parentAtom).getMultiPredicate());
+            if(parentAtom.isResource()) {
+                predicates.addAll(((Resource) parentAtom).getMultiPredicate());
+            }
 
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);

@@ -54,8 +54,9 @@ public class Main {
 
     public static void runOwl(OwlMigrationOptions options){
         File owlfile = new File(options.getInput());
-        if (!owlfile.exists())
+        if (!owlfile.exists()) {
             die("Cannot find file: " + options.getInput());
+        }
 
         printInitMessage(options, owlfile.getPath());
 

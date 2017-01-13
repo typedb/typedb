@@ -57,8 +57,9 @@ public class ReasonerMatchQuery extends ReasonerQueryImpl {
 
     @Override
     public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
-        if (!this.isRuleResolvable())
+        if (!this.isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames();
+        }
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next(), this.getSelectedNames());
         Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);

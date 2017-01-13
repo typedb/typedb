@@ -70,8 +70,9 @@ public class ImportController {
 
     public ImportController() {
         before(REST.WebPath.IMPORT_DATA_URI, (req, res) -> {
-            if (loadingInProgress.get())
+            if (loadingInProgress.get()) {
                 halt(423, "Another loading process is still running.\n");
+            }
         });
 
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
@@ -93,8 +94,9 @@ public class ImportController {
             final String pathToFile = getAsString(PATH_FIELD, req.body());
 
             final File file = new File(pathToFile);
-            if (!file.exists())
+            if (!file.exists()) {
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
+            }
 
             Loader loader = getLoader(keyspace);
 
@@ -167,8 +169,9 @@ public class ImportController {
             var = batchIterator.next();
             if (var instanceof Var) {
                 insertQuery.add(((Var) var));
-            } else
+            } else {
                 break;
+            }
         }
         loader.add(Graql.insert(insertQuery));
 
@@ -182,20 +185,23 @@ public class ImportController {
             var = batchIterator.next();
             if (var instanceof Var) {
                 insertQueryMatch.add(((Var) var));
-            } else
+            } else {
                 break;
+            }
         }
         List<Var> insertQuery;
-        if (!var.equals(INSERT_KEYWORD))
+        if (!var.equals(INSERT_KEYWORD)) {
             throw new GraknEngineServerException(500, "Match statement not followed by any Insert.");
+        }
 
         insertQuery = new ArrayList<>();
         while (batchIterator.hasNext()) {
             var = batchIterator.next();
             if (var instanceof Var) {
                 insertQuery.add(((Var) var));
-            } else
+            } else {
                 break;
+            }
         }
 
 

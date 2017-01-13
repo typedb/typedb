@@ -18,20 +18,27 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
-import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.util.Schema;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * <p>
@@ -166,8 +173,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
-        if(instance != null)
+        if(instance != null) {
             getGraknGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
+        }
         return this;
     }
 
@@ -190,8 +198,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
         // tracking
         rolePlayers.forEach(r -> {
-            if(r != null)
+            if(r != null) {
                 getGraknGraph().getConceptLog().putConcept((ConceptImpl) r);
+            }
         });
         this.getMappingCasting().forEach(c -> getGraknGraph().getConceptLog().putConcept(c));
 

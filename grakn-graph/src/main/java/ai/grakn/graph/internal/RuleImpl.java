@@ -93,10 +93,11 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     }
 
     private Pattern parsePattern(String value){
-        if(value == null)
+        if(value == null) {
             return null;
-        else
+        } else {
             return getGraknGraph().graql().parsePattern(value);
+        }
     }
 
 

@@ -109,8 +109,9 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
-            if(concept==null)
-                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER),keyspace));
+            if(concept==null) {
+                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
+            }
 
 
             return renderHALConceptData(concept, separationDegree, keyspace);

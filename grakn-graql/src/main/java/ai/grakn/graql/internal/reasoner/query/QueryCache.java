@@ -52,8 +52,8 @@ public class QueryCache extends HashMap<AtomicQuery, AtomicQuery> {
         if (equivalentQuery != null) {
             QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, atomicQuery, atomicQuery.getAnswers());
             get(atomicQuery).getAnswers().addAll(unifiedAnswers);
-        }
-        else
+        } else {
             put(atomicQuery, atomicQuery);
+        }
     }
 }

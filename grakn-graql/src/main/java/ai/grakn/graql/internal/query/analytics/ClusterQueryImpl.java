@@ -92,15 +92,16 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
                                     clusterSize));
                 }
             } else {
-                if (anySize)
+                if (anySize) {
                     result = computer.compute(
                             new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
-                else
+                } else {
                     result = computer.compute(
                             new ConnectedComponentVertexProgram(withResourceRelationTypes),
                             new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                     clusterSize));
+                }
             }
         } else {
             if (persist) {

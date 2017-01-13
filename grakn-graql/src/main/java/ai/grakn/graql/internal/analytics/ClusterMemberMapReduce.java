@@ -84,8 +84,9 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
         final Map<Serializable, Set<String>> clusterPopulation = new HashMap<>();
         if (this.persistentProperties.containsKey(CLUSTER_SIZE)) {
             keyValues.forEachRemaining(pair -> {
-                if (Long.valueOf(pair.getValue().size()).equals(persistentProperties.get(CLUSTER_SIZE)))
+                if (Long.valueOf(pair.getValue().size()).equals(persistentProperties.get(CLUSTER_SIZE))) {
                     clusterPopulation.put(pair.getKey(), pair.getValue());
+                }
             });
         } else {
             keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));

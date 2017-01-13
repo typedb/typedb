@@ -128,31 +128,33 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
     public Concept visit(OWLSubClassOfAxiom axiom) {
         OWLClassExpression subclass = axiom.getSubClass();
         EntityType subtype;
-        if (subclass.isOWLClass())
+        if (subclass.isOWLClass()) {
             subtype = migrator.entityType(subclass.asOWLClass());
-        else {
+        } else {
             // TODO - we need a strategy to support class expressions, e.g. as constraints 
             // on instances
             return null;
         }
         OWLClassExpression superclass = axiom.getSuperClass();
         EntityType supertype;
-        if (superclass.isOWLClass())
+        if (superclass.isOWLClass()) {
             supertype = migrator.entityType(superclass.asOWLClass());
-        else {
+        } else {
             // TODO - we need a strategy to support class expressions, e.g. as constraints 
             // on instances
             return null;
         }
-        if (!supertype.equals(subtype.superType()))
+        if (!supertype.equals(subtype.superType())) {
             subtype.superType(supertype);
+        }
         return null;
     }
 
     @Override
     public Concept visit(OWLObjectPropertyDomainAxiom axiom) {
-        if (!axiom.getProperty().isOWLObjectProperty())
+        if (!axiom.getProperty().isOWLObjectProperty()) {
             return null;
+        }
         RelationType objectRelation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
         if (axiom.getDomain().isOWLClass()) {           
             EntityType entityType = migrator.entityType(axiom.getDomain().asOWLClass());
@@ -167,8 +169,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLObjectPropertyRangeAxiom axiom) {
-        if (!axiom.getProperty().isOWLObjectProperty())
+        if (!axiom.getProperty().isOWLObjectProperty()) {
             return null;
+        }
         RelationType objectRelation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
         if (axiom.getRange().isOWLClass()) {
             EntityType entityType = migrator.entityType(axiom.getRange().asOWLClass());
@@ -182,8 +185,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLSubObjectPropertyOfAxiom axiom) {
-        if (!axiom.getSubProperty().isOWLObjectProperty() || !axiom.getSuperProperty().isOWLObjectProperty())
+        if (!axiom.getSubProperty().isOWLObjectProperty() || !axiom.getSuperProperty().isOWLObjectProperty()) {
             return null;
+        }
         RelationType subRelation = migrator.relation(axiom.getSubProperty().asOWLObjectProperty());
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLObjectProperty());
 
@@ -200,8 +204,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLSubDataPropertyOfAxiom axiom) {
-        if (!axiom.getSubProperty().isOWLDataProperty() || !axiom.getSuperProperty().isOWLDataProperty())
+        if (!axiom.getSubProperty().isOWLDataProperty() || !axiom.getSuperProperty().isOWLDataProperty()) {
             return null;
+        }
         RelationType subRelation = migrator.relation(axiom.getSubProperty().asOWLDataProperty());
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLDataProperty());
         subRelation.superType(superRelation);
@@ -212,8 +217,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
     public Concept visit(OWLEquivalentObjectPropertiesAxiom axiom) {
         Set<OWLObjectPropertyExpression> properties = axiom.getAxiomWithoutAnnotations()
                             .properties().filter(AsOWLObjectProperty::isOWLObjectProperty).collect(Collectors.toSet());
-        if (properties.size() != axiom.getAxiomWithoutAnnotations().properties().count())
+        if (properties.size() != axiom.getAxiomWithoutAnnotations().properties().count()) {
             return null;
+        }
 
         for (OWLObjectPropertyExpression property : properties) {
             RelationType relation = migrator.relation(property.asOWLObjectProperty());
@@ -234,8 +240,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLInverseObjectPropertiesAxiom axiom) {
-        if (!axiom.getFirstProperty().isOWLObjectProperty() || !axiom.getSecondProperty().isOWLObjectProperty())
+        if (!axiom.getFirstProperty().isOWLObjectProperty() || !axiom.getSecondProperty().isOWLObjectProperty()) {
             return null;
+        }
         RelationType relation = migrator.relation(axiom.getFirstProperty().asOWLObjectProperty());
         RelationType inverseRelation = migrator.relation(axiom.getSecondProperty().asOWLObjectProperty());
 
@@ -253,8 +260,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLTransitiveObjectPropertyAxiom axiom) {
-        if (!axiom.getProperty().isOWLObjectProperty())
+        if (!axiom.getProperty().isOWLObjectProperty()) {
             return null;
+        }
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
         Utility.createTransitiveRule(relation, migrator.namer().subjectRole(relation.getName()),
                 migrator.namer().objectRole(relation.getName()), migrator.graph());
@@ -263,8 +271,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLReflexiveObjectPropertyAxiom axiom) {
-        if (!axiom.getProperty().isOWLObjectProperty())
+        if (!axiom.getProperty().isOWLObjectProperty()) {
             return null;
+        }
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
         Utility.createReflexiveRule(relation, migrator.graph());
         return null;
@@ -272,8 +281,9 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLSubPropertyChainOfAxiom axiom) {
-        if (!axiom.getSuperProperty().isOWLObjectProperty())
+        if (!axiom.getSuperProperty().isOWLObjectProperty()) {
             return null;
+        }
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLObjectProperty());
         LinkedHashMap<RelationType, Pair<String, String>> chain = new LinkedHashMap<>();
 
@@ -290,10 +300,11 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
 
     @Override
     public Concept visit(OWLClassAssertionAxiom axiom) {
-        if (!axiom.getIndividual().isNamed())
+        if (!axiom.getIndividual().isNamed()) {
             return null;
-        else
+        } else {
             return migrator.entity(axiom.getIndividual().asOWLNamedIndividual());
+        }
     }
 
     @Override
@@ -321,12 +332,13 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         Entity entity = migrator.entity(axiom.getSubject().asOWLNamedIndividual());
         String valueAsString =  axiom.getObject().getLiteral();
         Object value = valueAsString;
-        if (resourceType.getDataType() == ResourceType.DataType.BOOLEAN)
+        if (resourceType.getDataType() == ResourceType.DataType.BOOLEAN) {
             value = Boolean.parseBoolean(valueAsString);
-        else if (resourceType.getDataType() == ResourceType.DataType.LONG)
+        } else if (resourceType.getDataType() == ResourceType.DataType.LONG) {
             value = Long.parseLong(valueAsString);
-        else if (resourceType.getDataType() == ResourceType.DataType.DOUBLE)
+        } else if (resourceType.getDataType() == ResourceType.DataType.DOUBLE) {
             value = Double.parseDouble(valueAsString);
+        }
         Resource resource = resourceType.putResource(value);
         RelationType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());
         RoleType entityRole = migrator.entityRole(entity.type(), resource.type());
@@ -337,21 +349,24 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
                      .putRolePlayer(resourceRole, resource);
         }
         catch (ConceptException ex) {
-            if (ex.getMessage().contains("The Relation with the provided role players already exists"))
+            if (ex.getMessage().contains("The Relation with the provided role players already exists")) {
                 System.err.println("[WARN] Grakn does not support multiple values per data property/resource, ignoring axiom " + axiom);
-            else
+            } else {
                 ex.printStackTrace(System.err);
+            }
             return null;
         }
     }
 
     @Override 
     public Concept visit(OWLAnnotationAssertionAxiom axiom) {
-        if (! (axiom.getSubject() instanceof OWLNamedIndividual) )
+        if (! (axiom.getSubject() instanceof OWLNamedIndividual) ) {
             return null;
+        }
         Optional<OWLLiteral> value = axiom.getValue().asLiteral();
-        if (!value.isPresent())
+        if (!value.isPresent()) {
             return null;
+        }
         @SuppressWarnings("unchecked")
         ResourceType<String> resourceType = (ResourceType<String>)visit(axiom.getProperty());
         Entity entity = migrator.entity((OWLNamedIndividual)axiom.getSubject());
