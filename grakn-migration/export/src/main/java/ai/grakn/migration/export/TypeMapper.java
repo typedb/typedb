@@ -111,11 +111,11 @@ public class TypeMapper {
      * @return Var containing basic information about the given type
      */
     private static Var formatBase(Type type) {
-        Var var = var().name(type.getName());
+        Var var = var().name(type.getName().getValue());
 
         Type superType = type.superType();
         if (type.superType() != null) {
-            var.sub(superType.getName());
+            var.sub(superType.getName().getValue());
         }
 
         var = playsRoles(var, type);
@@ -141,7 +141,7 @@ public class TypeMapper {
      */
     private static Var playsRoles(Var var, Type type) {
         for(RoleType role:type.playsRoles()){
-            var = var.playsRole(role.getName());
+            var = var.playsRole(role.getName().getValue());
         }
         return var;
     }
@@ -154,7 +154,7 @@ public class TypeMapper {
      */
     private static Var hasRoles(Var var, RelationType type){
         for(RoleType role:type.hasRoles()){
-            var = var.hasRole(role.getName());
+            var = var.hasRole(role.getName().getValue());
         }
         return var;
     }

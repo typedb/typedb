@@ -17,6 +17,7 @@
  */
 package ai.grakn.migration.owl;
 
+import ai.grakn.concept.TypeName;
 import org.semanticweb.owlapi.model.IRI;
 
 /**
@@ -78,8 +79,8 @@ public interface Namer {
      *  
      * @param relationName The name of the Grakn <code>RelationType</code>.
      */
-    default String objectRole(String relationName) {
-        return OwlModel.OBJECT.owlname() + "-" + relationName;
+    default TypeName objectRole(TypeName relationName) {
+        return TypeName.of(OwlModel.OBJECT.owlname() + "-" + relationName.getValue());
     }
     /**
      * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
@@ -87,14 +88,14 @@ public interface Namer {
      *  
      * @param relationName The name of the Grakn <code>RelationType</code>.
      */
-    default String subjectRole(String relationName) {
-        return OwlModel.SUBJECT.owlname() + "-" + relationName;
+    default TypeName subjectRole(TypeName relationName) {
+        return TypeName.of(OwlModel.SUBJECT.owlname() + "-" + relationName.getValue());
     }
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
-    default String entityRole(String resourceTypeName) {
-        return "has-" + resourceTypeName + "-owner";
+    default String entityRole(TypeName resourceTypeName) {
+        return "has-" + resourceTypeName.getValue() + "-owner";
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
@@ -103,7 +104,7 @@ public interface Namer {
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
-    default String resourceRole(String resourceTypeName) {
-        return "has-" + resourceTypeName + "-value";
+    default String resourceRole(TypeName resourceTypeName) {
+        return "has-" + resourceTypeName.getValue() + "-value";
     }
 }

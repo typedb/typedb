@@ -180,7 +180,7 @@ public class GraqlShellTest {
         assertThat(
                 result,
                 allOf(
-                        containsString(Schema.MetaSchema.RELATION.getName()), containsString("match"),
+                        containsString(Schema.MetaSchema.RELATION.getName().getValue()), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );
