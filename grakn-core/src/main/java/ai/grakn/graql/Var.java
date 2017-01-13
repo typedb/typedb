@@ -20,7 +20,6 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.VarAdmin;
 
 /**
@@ -44,10 +43,10 @@ public interface Var extends Pattern {
     Var id(ConceptId id);
 
     /**
-     * @param name a TypeName that this variable's name must match
+     * @param name a string that this variable's name must match
      * @return this
      */
-    Var name(TypeName name);
+    Var name(String name);
 
     /**
      * this variable must have a value
@@ -71,7 +70,7 @@ public interface Var extends Pattern {
      * @param type a resource type that this variable must have an instance of
      * @return this
      */
-    Var has(TypeName type);
+    Var has(String type);
 
     /**
      * @param var a variable representing a resource
@@ -86,7 +85,7 @@ public interface Var extends Pattern {
      * @param value a value of a resource
      * @return this
      */
-    Var has(TypeName type, Object value);
+    Var has(String type, Object value);
 
     /**
      * the variable must have a resource or name of the given type that matches the given atom
@@ -95,7 +94,7 @@ public interface Var extends Pattern {
      * @param predicate a atom on the value of a resource
      * @return this
      */
-    Var has(TypeName type, ValuePredicate predicate);
+    Var has(String type, ValuePredicate predicate);
 
     /**
      * the variable must have a resource or name of the given type that matches the given atom
@@ -104,13 +103,13 @@ public interface Var extends Pattern {
      * @param var a variable representing a resource
      * @return this
      */
-    Var has(TypeName type, Var var);
+    Var has(String type, Var var);
 
     /**
      * @param type a concept type id that the variable must be of this type
      * @return this
      */
-    Var isa(TypeName type);
+    Var isa(String type);
 
     /**
      * @param type a concept type that this variable must be an instance of
@@ -122,7 +121,7 @@ public interface Var extends Pattern {
      * @param type a concept type id that this variable must be a kind of
      * @return this
      */
-    Var sub(TypeName type);
+    Var sub(String type);
 
     /**
      * @param type a concept type that this variable must be a kind of
@@ -134,7 +133,7 @@ public interface Var extends Pattern {
      * @param type a role type id that this relation type variable must have
      * @return this
      */
-    Var hasRole(TypeName type);
+    Var hasRole(String type);
 
     /**
      * @param type a role type that this relation type variable must have
@@ -146,7 +145,7 @@ public interface Var extends Pattern {
      * @param type a role type id that this concept type variable must play
      * @return this
      */
-    Var playsRole(TypeName type);
+    Var playsRole(String type);
 
     /**
      * @param type a role type that this concept type variable must play
@@ -164,7 +163,7 @@ public interface Var extends Pattern {
      * @param type a resource type that this type variable can be related to
      * @return this
      */
-    Var hasResource(TypeName type);
+    Var hasResource(String type);
 
     /**
      * @param type a resource type that this type variable can be related to
@@ -176,7 +175,7 @@ public interface Var extends Pattern {
      * @param type a resource type that this type variable can be one-to-one related to
      * @return this
      */
-    Var hasKey(TypeName type);
+    Var hasKey(String type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to
@@ -207,7 +206,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
-    Var rel(TypeName roletype, String roleplayer);
+    Var rel(String roletype, String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -225,7 +224,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
-    Var rel(TypeName roletype, Var roleplayer);
+    Var rel(String roletype, Var roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype

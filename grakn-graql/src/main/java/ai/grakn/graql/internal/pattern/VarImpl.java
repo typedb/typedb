@@ -126,7 +126,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var name(TypeName name) {
+    public Var name(String name) {
         return addProperty(new NameProperty(name));
     }
 
@@ -146,7 +146,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var has(TypeName type) {
+    public Var has(String type) {
         return has(type, Graql.var());
     }
 
@@ -156,22 +156,22 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var has(TypeName type, Object value) {
+    public Var has(String type, Object value) {
         return has(type, Graql.eq(value));
     }
 
     @Override
-    public Var has(TypeName type, ValuePredicate predicate) {
+    public Var has(String type, ValuePredicate predicate) {
         return has(type, Graql.var().value(predicate));
     }
 
     @Override
-    public Var has(TypeName type, Var var) {
+    public Var has(String type, Var var) {
         return addProperty(new HasResourceProperty(type, var.admin()));
     }
 
     @Override
-    public Var isa(TypeName type) {
+    public Var isa(String type) {
         return isa(Graql.name(type));
     }
 
@@ -181,7 +181,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var sub(TypeName type) {
+    public Var sub(String type) {
         return sub(Graql.name(type));
     }
 
@@ -191,7 +191,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasRole(TypeName type) {
+    public Var hasRole(String type) {
         return hasRole(Graql.name(type));
     }
 
@@ -201,7 +201,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var playsRole(TypeName type) {
+    public Var playsRole(String type) {
         return playsRole(Graql.name(type));
     }
 
@@ -216,7 +216,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasResource(TypeName type) {
+    public Var hasResource(String type) {
         return hasResource(Graql.name(type));
     }
 
@@ -226,7 +226,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasKey(TypeName type) {
+    public Var hasKey(String type) {
         return hasKey(Graql.var().name(type));
     }
 
@@ -246,7 +246,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var rel(TypeName roletype, String roleplayer) {
+    public Var rel(String roletype, String roleplayer) {
         return rel(Graql.name(roletype), Graql.var(roleplayer));
     }
 
@@ -256,7 +256,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var rel(TypeName roletype, Var roleplayer) {
+    public Var rel(String roletype, Var roleplayer) {
         return rel(Graql.name(roletype), roleplayer);
     }
 
