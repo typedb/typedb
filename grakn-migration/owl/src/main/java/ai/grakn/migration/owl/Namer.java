@@ -18,6 +18,7 @@
 package ai.grakn.migration.owl;
 
 import ai.grakn.concept.TypeName;
+import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.IRI;
 
 /**
@@ -94,17 +95,19 @@ public interface Namer {
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
-    default String entityRole(TypeName resourceTypeName) {
-        return "has-" + resourceTypeName.getValue() + "-owner";
+    default TypeName entityRole(TypeName resourceTypeName) {
+        return Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName);
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
      */
-    default String resourceRelation(String resourceTypeName) { return "has-" + resourceTypeName;}
+    default TypeName resourceRelation(TypeName resourceTypeName) {
+        return Schema.Resource.HAS_RESOURCE.getName(resourceTypeName);
+    }
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
-    default String resourceRole(TypeName resourceTypeName) {
-        return "has-" + resourceTypeName.getValue() + "-value";
+    default TypeName resourceRole(TypeName resourceTypeName) {
+        return Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName);
     }
 }

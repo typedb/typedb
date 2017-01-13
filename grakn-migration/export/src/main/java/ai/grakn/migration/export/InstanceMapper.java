@@ -24,14 +24,11 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Var;
 
-import java.util.Collection;
-
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Map Grakn Core instance to Graql representation
@@ -77,7 +74,7 @@ public class InstanceMapper {
      */
     //TODO resources on relations
     private static Var map(Relation relation){
-        if(isHasResourceRelation(relation)){
+        if(relation.type().isImplicit()){
             return var();
         }
 
@@ -135,7 +132,7 @@ public class InstanceMapper {
      */
     private static  Var roleplayers(Var var, Relation relation){
         for(RoleType role:relation.rolePlayers().keySet()){
-            var = var.rel(role.getName().getValue(), relation.rolePlayers().get(role).getId().getValue());
+            var = var.rel(name(role.getName()), relation.rolePlayers().get(role).getId().getValue());
         }
         return var;
     }
@@ -146,7 +143,7 @@ public class InstanceMapper {
      * @return var patterns representing given instance
      */
     private static  Var base(Instance instance){
-        Var var = var(instance.getId().getValue()).isa(instance.type().getName().getValue());
+        Var var = var(instance.getId().getValue()).isa(name(instance.type().getName()));
         return hasResources(var, instance);
     }
 
@@ -156,17 +153,7 @@ public class InstanceMapper {
      * @return true if the relation is a has-resource relation
      */
     private static boolean isHasResourceRelation(Relation relation){
-        TypeName relationType = relation.type().getName();
-
-        if(!relationType.getValue().startsWith("has-")){
-            return false;
-        }
-
-        Collection<TypeName> roles = relation.rolePlayers().keySet().stream().map(RoleType::getName).collect(toSet());
-
-        return  roles.size() == 2 &&
-                roles.contains(TypeName.of(relationType.getValue() + "-value")) &&
-                roles.contains(TypeName.of(relationType.getValue() + "-owner"));
+        return relation.type().isImplicit();
     }
 
     /**

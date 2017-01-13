@@ -25,6 +25,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -111,11 +112,11 @@ public class TypeMapper {
      * @return Var containing basic information about the given type
      */
     private static Var formatBase(Type type) {
-        Var var = var().name(type.getName().getValue());
+        Var var = var().name(type.getName());
 
         Type superType = type.superType();
         if (type.superType() != null) {
-            var.sub(superType.getName().getValue());
+            var.sub(name(superType.getName()));
         }
 
         var = playsRoles(var, type);
@@ -141,7 +142,7 @@ public class TypeMapper {
      */
     private static Var playsRoles(Var var, Type type) {
         for(RoleType role:type.playsRoles()){
-            var = var.playsRole(role.getName().getValue());
+            var = var.playsRole(name(role.getName()));
         }
         return var;
     }
@@ -154,7 +155,7 @@ public class TypeMapper {
      */
     private static Var hasRoles(Var var, RelationType type){
         for(RoleType role:type.hasRoles()){
-            var = var.hasRole(role.getName().getValue());
+            var = var.hasRole(name(role.getName()));
         }
         return var;
     }
