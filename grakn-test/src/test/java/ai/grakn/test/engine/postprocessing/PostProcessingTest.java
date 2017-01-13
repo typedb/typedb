@@ -52,10 +52,13 @@ public class PostProcessingTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
 
+    @BeforeClass
+    public static void onlyRunOnTinker(){
+        assumeTrue(usingTinker());
+    }
+
     @Before
     public void setUp() throws Exception {
-        assumeTrue(usingTinker());
-
         graph = engine.getNewGraph();
     }
 
