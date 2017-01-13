@@ -8,8 +8,6 @@ http://pmd.sourceforge.net/ruleset/2.0.0 ">
 
     <rule ref="rulesets/java/basic.xml"/>
 
-    <rule ref="rulesets/java/empty.xml"/>
-
     <!-- No redundant imports -->
     <rule ref="rulesets/java/imports.xml">
 
