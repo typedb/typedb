@@ -100,14 +100,14 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                         .put(type.asType().getName(), type.asResourceType().getDataType().getName()));
     }
 
-    String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
-        if (types == null || types.isEmpty()) {
+    String checkSelectedResourceTypesHaveCorrectDataType(Set<TypeName> types) {
+        if (types == null || types.isEmpty()){
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
 
         String dataType = null;
-        for (String type : types) {
+        for (TypeName type : types) {
             // check if the selected type is a resource-type
             if (!resourceTypesDataTypeMap.containsKey(type)) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION

@@ -24,6 +24,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -90,7 +91,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        String roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
+        TypeName roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
         concept.asType().deletePlaysRole(graph.getRoleType(roleName));
     }
 

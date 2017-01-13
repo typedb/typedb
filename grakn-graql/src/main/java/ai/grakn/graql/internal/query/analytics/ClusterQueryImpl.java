@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
@@ -46,7 +47,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     private boolean persist = false;
     private boolean anySize = true;
     private long clusterSize = -1L;
-    private String clusterName = Schema.Analytics.CLUSTER.getName();
+    private TypeName clusterName = Schema.Analytics.CLUSTER.getName();
 
     ClusterQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
@@ -61,7 +62,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         ComputerResult result;
         GraknComputer computer = getGraphComputer();
 
-        Set<String> withResourceRelationTypes = getHasResourceRelationTypes();
+        Set<TypeName> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeNames);
 
         if (members) {
@@ -167,12 +168,12 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> in(String... subTypeNames) {
+    public ClusterQuery<T> in(TypeName... subTypeNames) {
         return (ClusterQuery<T>) super.in(subTypeNames);
     }
 
     @Override
-    public ClusterQuery<T> in(Collection<String> subTypeNames) {
+    public ClusterQuery<T> in(Collection<TypeName> subTypeNames) {
         return (ClusterQuery<T>) super.in(subTypeNames);
     }
 
@@ -191,7 +192,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         if (persist) {
             string += " persist";
             if (!clusterName.equals(Schema.Analytics.CLUSTER.getName())) {
-                string += " " + idToString(clusterName);
+                string += " " + idToString(clusterName.getValue());
             }
             string += ";";
         }

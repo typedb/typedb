@@ -163,7 +163,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return true;
     }
 
-    void mutateResourceOntology(String resourceTypeName, ResourceType.DataType<?> resourceDataType) {
+    void mutateResourceOntology(TypeName resourceTypeName, ResourceType.DataType<?> resourceDataType) {
         GraknGraph theGraph = this.graph.get();
 
         ResourceType resource = theGraph.putResourceType(resourceTypeName, resourceDataType);
@@ -178,7 +178,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         }
     }
 
-    void waitOnMutateResourceOntology(String resourceTypeId) {
+    void waitOnMutateResourceOntology(TypeName resourceTypeName) {
         GraknGraph theGraph = this.graph.get();
         theGraph.showImplicitConcepts(true);
 
@@ -190,16 +190,16 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             }
 
-            ResourceType resource = theGraph.getResourceType(resourceTypeId);
+            ResourceType resource = theGraph.getResourceType(resourceTypeName);
             if (resource == null) continue;
-            RoleType degreeOwner = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+            RoleType degreeOwner = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
             if (degreeOwner == null) continue;
-            RoleType degreeValue = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+            RoleType degreeValue = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
             if (degreeValue == null) continue;
-            RelationType relationType = theGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId));
+            RelationType relationType = theGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
             if (relationType == null) continue;
 
-            for (String type : subTypeNames) {
+            for (TypeName type : subTypeNames) {
                 Collection<RoleType> roles = theGraph.getType(type).playsRoles();
                 if (!roles.contains(degreeOwner)) {
                     isOntologyComplete = false;
@@ -225,7 +225,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             return ";";
         } else {
             return " in "
-                    + subTypeNames.stream().map(StringConverter::idToString).collect(joining(", ")) + ";";
+                    + subTypeNames.stream().map(type -> StringConverter.idToString(type.getValue())).collect(joining(", ")) + ";";
         }
     }
 
@@ -234,7 +234,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return "compute " + graqlString();
     }
 
-    Set<String> getHasResourceRelationTypes() {
+    Set<TypeName> getHasResourceRelationTypes() {
         return subTypeNames.stream()
                 .filter(type -> graph.get().getType(type).isResourceType())
                 .map(Schema.Resource.HAS_RESOURCE::getName)

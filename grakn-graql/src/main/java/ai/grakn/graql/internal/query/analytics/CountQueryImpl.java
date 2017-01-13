@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -52,12 +53,12 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery in(String... subTypeNames) {
+    public CountQuery in(TypeName... subTypeNames) {
         return (CountQuery) super.in(subTypeNames);
     }
 
     @Override
-    public CountQuery in(Collection<String> subTypeNames) {
+    public CountQuery in(Collection<TypeName> subTypeNames) {
         return (CountQuery) super.in(subTypeNames);
     }
 

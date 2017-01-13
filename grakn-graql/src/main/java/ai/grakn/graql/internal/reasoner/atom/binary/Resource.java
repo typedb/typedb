@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -72,8 +73,8 @@ public class Resource extends MultiPredicateBinary{
     @Override
     protected ConceptId extractTypeId(VarAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        String typeName = resProp != null? resProp.getType().orElse("") : "";
-        return !typeName.isEmpty()? getParentQuery().graph().getType(typeName).getId() : null;
+        TypeName typeName = resProp != null? resProp.getType().orElse(null) : null;
+        return typeName != null ? getParentQuery().graph().getType(typeName).getId() : null;
     }
 
     @Override

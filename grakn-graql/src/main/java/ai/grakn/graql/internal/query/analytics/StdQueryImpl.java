@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -42,7 +43,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
@@ -57,22 +58,22 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery of(String... resourceTypeNames) {
+    public StdQuery of(TypeName... resourceTypeNames) {
         return (StdQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public StdQuery of(Collection<String> resourceTypeNames) {
+    public StdQuery of(Collection<TypeName> resourceTypeNames) {
         return (StdQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public StdQuery in(String... subTypeNames) {
+    public StdQuery in(TypeName... subTypeNames) {
         return (StdQuery) super.in(subTypeNames);
     }
 
     @Override
-    public StdQuery in(Collection<String> subTypeNames) {
+    public StdQuery in(Collection<TypeName> subTypeNames) {
         return (StdQuery) super.in(subTypeNames);
     }
 

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -42,7 +43,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
@@ -53,22 +54,22 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery of(String... resourceTypeNames) {
+    public SumQuery of(TypeName... resourceTypeNames) {
         return (SumQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public SumQuery of(Collection<String> resourceTypeNames) {
+    public SumQuery of(Collection<TypeName> resourceTypeNames) {
         return (SumQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public SumQuery in(String... subTypeNames) {
+    public SumQuery in(TypeName... subTypeNames) {
         return (SumQuery) super.in(subTypeNames);
     }
 
     @Override
-    public SumQuery in(Collection<String> subTypeNames) {
+    public SumQuery in(Collection<TypeName> subTypeNames) {
         return (SumQuery) super.in(subTypeNames);
     }
 

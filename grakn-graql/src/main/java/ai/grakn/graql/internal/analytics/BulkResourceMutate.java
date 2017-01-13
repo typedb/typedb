@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
@@ -25,9 +27,8 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
-import ai.grakn.Grakn;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -61,7 +62,7 @@ public class BulkResourceMutate<T> {
     private int batchSize = 100;
     private GraknGraph graph;
     private int currentNumberOfVertices = 0;
-    private final String resourceTypeName;
+    private final TypeName resourceTypeName;
     private final String keyspace;
     private final Map<ConceptId, T> resourcesToPersist = new HashMap<>();
 
@@ -70,13 +71,13 @@ public class BulkResourceMutate<T> {
     private RoleType resourceValue;
     private RelationType relationType;
 
-    BulkResourceMutate(String keyspace, String resourceTypeName) {
+    BulkResourceMutate(String keyspace, TypeName resourceTypeName) {
         LOGGER.debug("Starting BulkResourceMutate");
         this.keyspace = keyspace;
         this.resourceTypeName = resourceTypeName;
     }
 
-    BulkResourceMutate(String keyspace, String resourceTypeName, int batchSize) {
+    BulkResourceMutate(String keyspace, TypeName resourceTypeName, int batchSize) {
         this(keyspace, resourceTypeName);
         this.batchSize = batchSize;
     }

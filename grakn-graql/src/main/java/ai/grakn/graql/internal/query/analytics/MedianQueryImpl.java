@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -39,7 +40,7 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new MedianVertexProgram(allSubTypes, statisticsResourceTypeNames, dataType));
@@ -48,22 +49,22 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery of(String... resourceTypeNames) {
+    public MedianQuery of(TypeName... resourceTypeNames) {
         return (MedianQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MedianQuery of(Collection<String> resourceTypeNames) {
+    public MedianQuery of(Collection<TypeName> resourceTypeNames) {
         return (MedianQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MedianQuery in(String... subTypeNames) {
+    public MedianQuery in(TypeName... subTypeNames) {
         return (MedianQuery) super.in(subTypeNames);
     }
 
     @Override
-    public MedianQuery in(Collection<String> subTypeNames) {
+    public MedianQuery in(Collection<TypeName> subTypeNames) {
         return (MedianQuery) super.in(subTypeNames);
     }
 

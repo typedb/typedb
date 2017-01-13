@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -87,7 +88,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        String roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
+        TypeName roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
         concept.asRelationType().deleteHasRole(graph.getRoleType(roleName));
     }
 

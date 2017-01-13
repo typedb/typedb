@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -41,7 +42,7 @@ public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
     public MeanMapReduce() {
     }
 
-    public MeanMapReduce(Set<String> selectedTypes, String resourceDataType) {
+    public MeanMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
         this.selectedTypes = selectedTypes;
         String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
                 Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();

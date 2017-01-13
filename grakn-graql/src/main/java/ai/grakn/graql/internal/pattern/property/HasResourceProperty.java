@@ -24,6 +24,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -51,7 +52,7 @@ import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final Optional<String> resourceType;
+    private final Optional<TypeName> resourceType;
     private final VarAdmin resource;
 
     public HasResourceProperty(VarAdmin resource) {
@@ -59,12 +60,12 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         this.resource = resource.isa(Schema.MetaSchema.RESOURCE.getName()).admin();
     }
 
-    public HasResourceProperty(String resourceType, VarAdmin resource) {
+    public HasResourceProperty(TypeName resourceType, VarAdmin resource) {
         this.resourceType = Optional.of(resourceType);
         this.resource = resource.isa(resourceType).admin();
     }
 
-    public Optional<String> getType() {
+    public Optional<TypeName> getType() {
         return resourceType;
     }
 
@@ -81,7 +82,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
-        resourceType.ifPresent(repr);
+        resourceType.ifPresent(type -> repr.add(type.getValue()));
 
         if (resource.isUserDefinedName()) {
             repr.add(resource.getPrintableName());
@@ -123,7 +124,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        String type = resourceType.orElseThrow(() -> failDelete(this));
+        TypeName type = resourceType.orElseThrow(() -> failDelete(this));
 
         RoleType owner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(type));
         RoleType value = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(type));

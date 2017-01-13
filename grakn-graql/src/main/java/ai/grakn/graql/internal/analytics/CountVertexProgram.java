@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -40,7 +41,7 @@ public class CountVertexProgram extends GraknVertexProgram {
     public CountVertexProgram() {
     }
 
-    public CountVertexProgram(Set<String> types) {
+    public CountVertexProgram(Set<TypeName> types) {
         selectedTypes = types;
     }
 

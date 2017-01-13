@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -42,7 +43,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
@@ -53,22 +54,22 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery of(String... resourceTypeNames) {
+    public MinQuery of(TypeName... resourceTypeNames) {
         return (MinQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery of(Collection<String> resourceTypeNames) {
+    public MinQuery of(Collection<TypeName> resourceTypeNames) {
         return (MinQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MinQuery in(String... subTypeNames) {
+    public MinQuery in(TypeName... subTypeNames) {
         return (MinQuery) super.in(subTypeNames);
     }
 
     @Override
-    public MinQuery in(Collection<String> subTypeNames) {
+    public MinQuery in(Collection<TypeName> subTypeNames) {
         return (MinQuery) super.in(subTypeNames);
     }
 

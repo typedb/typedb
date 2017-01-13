@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;

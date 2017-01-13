@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -40,7 +41,7 @@ public abstract class CommonOLAP {
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
-    public static final Set<String> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
+    public static final Set<TypeName> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
             Schema.Analytics.DEGREE.getName(),
             Schema.Resource.HAS_RESOURCE.getName(Schema.Analytics.DEGREE.getName()),
             Schema.Analytics.CLUSTER.getName(),
@@ -57,7 +58,7 @@ public abstract class CommonOLAP {
     /**
      * The types that define a subgraph.
      */
-    Set<String> selectedTypes = new HashSet<>();
+    Set<TypeName> selectedTypes = new HashSet<>();
 
     /**
      * Properties that will be reloaded whenever the class is instantiated in a spark executor.
@@ -98,7 +99,7 @@ public abstract class CommonOLAP {
     public void loadState(final Graph graph, final Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
-                selectedTypes.add(configuration.getString(PREFIX_SELECTED_TYPE_KEY + "." + key)));
+                selectedTypes.add(TypeName.of(configuration.getString(PREFIX_SELECTED_TYPE_KEY + "." + key))));
 
         // load fields
 

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -42,7 +43,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
@@ -54,22 +55,22 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery of(String... resourceTypeNames) {
+    public MeanQuery of(TypeName... resourceTypeNames) {
         return (MeanQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MeanQuery of(Collection<String> resourceTypeNames) {
+    public MeanQuery of(Collection<TypeName> resourceTypeNames) {
         return (MeanQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
     @Override
-    public MeanQuery in(String... subTypeNames) {
+    public MeanQuery in(TypeName... subTypeNames) {
         return (MeanQuery) super.in(subTypeNames);
     }
 
     @Override
-    public MeanQuery in(Collection<String> subTypeNames) {
+    public MeanQuery in(Collection<TypeName> subTypeNames) {
         return (MeanQuery) super.in(subTypeNames);
     }
 

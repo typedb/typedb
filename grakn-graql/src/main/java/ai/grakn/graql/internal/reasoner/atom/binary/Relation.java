@@ -22,6 +22,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -45,7 +46,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -455,7 +456,7 @@ public class Relation extends TypeAtom {
 
         for (VarName var : vars) {
             Type type = varTypeMap.get(var);
-            String roleTypeName = "";
+            TypeName roleTypeName = null;
             for(RelationPlayer c : relationPlayers) {
                 if (c.getRolePlayer().getVarName().equals(var)) {
                     roleTypeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse("");
@@ -507,8 +508,8 @@ public class Relation extends TypeAtom {
                 Type type = varTypeMap.get(var);
                 roleVarTypeMap.put(role, new Pair<>(var, type));
                 //try directly
-                String typeName = role.getTypeName().orElse("");
-                RoleType roleType = !typeName.isEmpty() ? graph.getRoleType(typeName): null;
+                TypeName typeName = role.getTypeName().orElse(null);
+                RoleType roleType = typeName != null ? graph.getRoleType(typeName): null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());

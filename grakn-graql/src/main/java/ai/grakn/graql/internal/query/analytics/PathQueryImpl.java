@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -108,12 +109,12 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery in(String... subTypeNames) {
+    public PathQuery in(TypeName... subTypeNames) {
         return (PathQuery) super.in(subTypeNames);
     }
 
     @Override
-    public PathQuery in(Collection<String> subTypeNames) {
+    public PathQuery in(Collection<TypeName> subTypeNames) {
         return (PathQuery) super.in(subTypeNames);
     }
 

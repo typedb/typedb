@@ -83,8 +83,8 @@ public final class Schema {
             name = i;
         }
 
-        public String getName() {
-            return name;
+        public TypeName getName() {
+            return TypeName.of(name);
         }
 
         public static boolean isMetaName(String name) {
@@ -92,6 +92,10 @@ public final class Schema {
                 if (metaSchema.getName().equals(name)) return true;
             }
             return false;
+        }
+
+        public static boolean isMetaName(TypeName name) {
+            return isMetaName(name.getValue());
         }
     }
 

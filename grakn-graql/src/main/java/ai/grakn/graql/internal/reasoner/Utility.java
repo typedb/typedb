@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -270,7 +271,7 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, String fromRoleName, String toRoleName, GraknGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
@@ -304,7 +305,7 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<String, String> roleMappings,
+    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeName, TypeName> roleMappings,
                                              GraknGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
@@ -333,8 +334,8 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createPropertyChainRule(RelationType relation, String fromRoleName, String toRoleName,
-                                             LinkedHashMap<RelationType, Pair<String, String>> chain, GraknGraph graph){
+    public static Rule createPropertyChainRule(RelationType relation, TypeName fromRoleName, TypeName toRoleName,
+                                             LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain, GraknGraph graph){
         Stack<VarName> varNames = new Stack<>();
         varNames.push(Patterns.varName("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();

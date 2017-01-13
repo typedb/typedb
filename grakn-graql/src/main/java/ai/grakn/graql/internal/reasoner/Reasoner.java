@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -96,7 +97,7 @@ public class Reasoner {
      * @return true if at least one inference rule is present in the graph
      */
     private static boolean hasRules(GraknGraph graph) {
-        String inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
+        TypeName inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
         return graph.graql().infer(false).match(var("x").isa(inferenceRule)).ask().execute();
     }
 
