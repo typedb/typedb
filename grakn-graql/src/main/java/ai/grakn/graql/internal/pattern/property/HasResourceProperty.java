@@ -187,7 +187,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         //add resource atom
         Var resource = Graql.var(valueVariable);
         VarAdmin resVar = type
-                .map(t ->Graql.var(varName).has(t.getValue(), resource))
+                .map(t ->Graql.var(varName).has(t, resource))
                 .orElseGet(() -> Graql.var(varName).has(resource)).admin();
         return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }

@@ -172,7 +172,12 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(String type, Var var) {
-        return addProperty(new HasResourceProperty(TypeName.of(type), var.admin()));
+        return has(TypeName.of(type), var);
+    }
+
+    @Override
+    public Var has(TypeName type, Var var) {
+        return addProperty(new HasResourceProperty(type, var.admin()));
     }
 
     @Override

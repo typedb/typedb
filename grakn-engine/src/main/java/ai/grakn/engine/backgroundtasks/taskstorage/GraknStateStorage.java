@@ -82,15 +82,15 @@ public class GraknStateStorage implements StateStorage {
         }
 
         Var state = var(TASK_VAR).isa(SCHEDULED_TASK.getValue())
-                                 .has(STATUS.getValue(), CREATED.toString())
-                                 .has(TASK_CLASS_NAME.getValue(), taskName)
-                                 .has(CREATED_BY.getValue(), createdBy)
-                                 .has(RUN_AT.getValue(), runAt.getTime())
-                                 .has(RECURRING.getValue(), recurring)
-                                 .has(RECUR_INTERVAL.getValue(), interval);
+                                 .has(STATUS, var().value(CREATED.toString()))
+                                 .has(TASK_CLASS_NAME, var().value(taskName))
+                                 .has(CREATED_BY, var().value(createdBy))
+                                 .has(RUN_AT, var().value(runAt.getTime()))
+                                 .has(RECURRING, var().value(recurring))
+                                 .has(RECUR_INTERVAL, var().value(interval));
 
         if(configuration != null) {
-            state.has(TASK_CONFIGURATION.getValue(), configuration.toString());
+            state.has(TASK_CONFIGURATION, var().value(configuration.toString()));
         }
 
         Optional<String> result = attemptCommitToSystemGraph((graph) -> {
@@ -125,32 +125,32 @@ public class GraknStateStorage implements StateStorage {
         if(status != null) {
             resourcesToDettach.add(STATUS);
             resourcesToDettach.add(STATUS_CHANGE_TIME);
-            resources.has(STATUS.getValue(), status.toString())
-                     .has(STATUS_CHANGE_TIME.getValue(), new Date().getTime());
+            resources.has(STATUS, var().value(status.toString()))
+                     .has(STATUS_CHANGE_TIME, var().value(new Date().getTime()));
         }
         if(statusChangeBy != null) {
             resourcesToDettach.add(STATUS_CHANGE_BY);            
-            resources.has(STATUS_CHANGE_BY.getValue(), statusChangeBy);
+            resources.has(STATUS_CHANGE_BY, var().value(statusChangeBy));
         }
         if(engineID != null) {
             resourcesToDettach.add(ENGINE_ID);
-            resources.has(ENGINE_ID.getValue(), engineID);
+            resources.has(ENGINE_ID, var().value(engineID));
         }
         if(failure != null) {
             resourcesToDettach.add(TASK_EXCEPTION);
             resourcesToDettach.add(STACK_TRACE);            
-            resources.has(TASK_EXCEPTION.getValue(), failure.toString());
+            resources.has(TASK_EXCEPTION, var().value(failure.toString()));
             if(failure.getStackTrace().length > 0) {
-                resources.has(STACK_TRACE.getValue(), Arrays.toString(failure.getStackTrace()));
+                resources.has(STACK_TRACE, var().value(Arrays.toString(failure.getStackTrace())));
             }
         }
         if(checkpoint != null) {
             resourcesToDettach.add(TASK_CHECKPOINT);
-            resources.has(TASK_CHECKPOINT.getValue(), checkpoint);
+            resources.has(TASK_CHECKPOINT, var().value(checkpoint));
         }
         if(configuration != null) {
             resourcesToDettach.add(TASK_CONFIGURATION);            
-            resources.has(TASK_CONFIGURATION.getValue(), configuration.toString());
+            resources.has(TASK_CONFIGURATION, var().value(configuration.toString()));
         }
 
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
@@ -218,16 +218,16 @@ public class GraknStateStorage implements StateStorage {
         Var matchVar = var(TASK_VAR).isa(SCHEDULED_TASK.getValue());
 
         if(taskStatus != null) {
-            matchVar.has(STATUS.getValue(), taskStatus.toString());
+            matchVar.has(STATUS, var().value(taskStatus.toString()));
         }
         if(taskClassName != null) {
-            matchVar.has(TASK_CLASS_NAME.getValue(), taskClassName);
+            matchVar.has(TASK_CLASS_NAME, var().value(taskClassName));
         }
         if(createdBy != null) {
-            matchVar.has(CREATED_BY.getValue(), createdBy);
+            matchVar.has(CREATED_BY, var().value(createdBy));
         }
         if(recurring != null) {
-            matchVar.has(RECURRING.getValue(), recurring);
+            matchVar.has(RECURRING, var().value(recurring));
         }
 
         Optional<Set<Pair<String, TaskState>>> result = attemptCommitToSystemGraph((graph) -> {
