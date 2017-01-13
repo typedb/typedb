@@ -43,16 +43,8 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
  */
 public class ReasonerMatchQuery extends ReasonerQueryImpl {
 
-    final private QueryAnswers answers;
-
     public ReasonerMatchQuery(MatchQuery query, GraknGraph graph){
         super(query, graph);
-        answers = new QueryAnswers();
-    }
-
-    public ReasonerMatchQuery(MatchQuery query, GraknGraph graph, QueryAnswers ans){
-        super(query, graph);
-        answers = new QueryAnswers(ans);
     }
 
     @Override
