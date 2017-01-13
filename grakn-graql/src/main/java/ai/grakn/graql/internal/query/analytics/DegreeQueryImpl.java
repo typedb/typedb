@@ -103,18 +103,6 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     }
 
     @Override
-    public DegreeQuery<String> persist() {
-        this.persist = true;
-        return (DegreeQuery<String>) this;
-    }
-
-    @Override
-    public DegreeQuery<String> persist(String resourceTypeName) {
-        this.degreeName = resourceTypeName;
-        return this.persist();
-    }
-
-    @Override
     public DegreeQuery<T> in(String... subTypeNames) {
         return (DegreeQuery<T>) super.in(subTypeNames);
     }

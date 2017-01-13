@@ -493,12 +493,12 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testParseComputeCluster() {
-        assertParseEquivalence("compute cluster in movie, person; members; persist;");
+        assertParseEquivalence("compute cluster in movie, person; members;");
     }
 
     @Test
     public void testParseComputeDegree() {
-        assertParseEquivalence("compute degrees in movie; persist;");
+        assertParseEquivalence("compute degrees in movie;");
     }
 
     @Test
