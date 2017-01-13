@@ -53,7 +53,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
-    private static String expectedVersion = "graql-9.9.9";
+    private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
     @BeforeClass

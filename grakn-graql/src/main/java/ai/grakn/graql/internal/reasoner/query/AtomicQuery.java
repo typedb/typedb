@@ -32,11 +32,12 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.HashMap;
@@ -55,7 +56,7 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class AtomicQuery extends Query{
+public class AtomicQuery extends ReasonerQueryImpl {
 
     private Atom atom;
     private AtomicQuery parent = null;
@@ -92,7 +93,7 @@ public class AtomicQuery extends Query{
     }
 
     private void addChild(AtomicQuery q){
-        if (!this.isEquivalent(q) && atom.getTypeId().equals(q.getAtom().getTypeId())){
+        if (!this.isEquivalent(q) && Objects.equals(atom.getTypeId(), q.getAtom().getTypeId())){
             children.add(q);
             q.setParent(this);
         }
@@ -111,7 +112,7 @@ public class AtomicQuery extends Query{
      */
     public void establishRelation(AtomicQuery aq){
         Atom aqAtom = aq.getAtom();
-        if(atom.getTypeId().equals(aqAtom.getTypeId())) {
+        if(Objects.equals(atom.getTypeId(), aq.getAtom().getTypeId())) {
             if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size())
                 aq.addChild(this);
             else
@@ -151,19 +152,19 @@ public class AtomicQuery extends Query{
      * materialise the query provided all variables are mapped
      */
     private QueryAnswers materialiseComplete() {
-        Atom atom = getAtom();
-        QueryAnswers insertAnswers = new QueryAnswers();
-        boolean dataPresent = atom.requiresMaterialisation()? getMatchQuery().ask().execute() : false;
-        if(!dataPresent){
+        QueryAnswers insertAnswers = new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
+        if(insertAnswers.isEmpty()){
+            Atom atom = getAtom();
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
             Set<Concept> insertedConcepts = insert.stream().flatMap(result -> result.values().stream()).collect(Collectors.toSet());
+            //extract resource/relation id if needed
             if (atom.isUserDefinedName()) {
                 insertedConcepts.stream()
                         .filter(c -> c.isResource() || c.isRelation())
                         .forEach(c -> {
                             Map<VarName, Concept> answer = new HashMap<>();
                             if (c.isResource()) {
-                                answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicateValue()));
+                                answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicate()));
                                 answer.put(atom.getValueVariable(), c);
                             } else if (c.isRelation()) {
                                 answer.put(atom.getVarName(), c);

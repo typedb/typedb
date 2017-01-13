@@ -19,17 +19,19 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,10 +50,9 @@ import static ai.grakn.graql.internal.reasoner.Utility.capture;
 public abstract class BinaryBase extends Atom {
     private VarName valueVariable;
 
-    protected BinaryBase(VarAdmin pattern,  Query par) {
+    protected BinaryBase(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
-
     }
 
     protected BinaryBase(BinaryBase a) {
@@ -85,11 +86,21 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
+        hashCode = hashCode * 37 + this.varName.hashCode();
+        hashCode = hashCode * 37 + this.valueVariable.hashCode();
+        return hashCode;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
-        return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
+        return Objects.equals(this.typeId, a2.getTypeId())
+                && this.varName.equals(a2.getVarName())
                 && this.valueVariable.equals(a2.getValueVariable());
     }
 
@@ -98,23 +109,14 @@ public abstract class BinaryBase extends Atom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
-        return this.typeId.equals(a2.getTypeId())
+        return Objects.equals(this.typeId, a2.getTypeId())
                 && predicatesEquivalent(a2);
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        hashCode = hashCode * 37 + this.valueVariable.hashCode();
-        return hashCode;
     }
 
     @Override
     public Set<Predicate> getIdPredicates() {
         //direct predicates
-        return getParentQuery().getIdPredicates().stream()
+        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
@@ -159,16 +161,6 @@ public abstract class BinaryBase extends Atom {
         if(isUserDefinedName()) vars.add(getVarName());
         if(isValueUserDefinedName()) vars.add(getValueVariable());
         return vars;
-    }
-
-    @Override
-    public void unify(VarName from, VarName to) {
-        super.unify(from, to);
-        VarName var = valueVariable;
-        if (var.equals(from))
-            setValueVariable(to);
-        else if (var.equals(to))
-            setValueVariable(capture(var));
     }
 
     @Override

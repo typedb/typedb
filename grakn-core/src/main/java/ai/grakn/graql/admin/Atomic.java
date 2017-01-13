@@ -16,20 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.admin;
 
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  *
  * <p>
- * Interface for atoms.
+ * Basic interface for logical atoms used in reasoning.
  * </p>
  *
  * @author Kasper Piskorski
@@ -66,6 +63,9 @@ public interface Atomic extends Cloneable{
      */
     default boolean isSelectable(){ return false;}
 
+    /**
+     * @return true if atom is recursive
+     */
     default boolean isRecursive(){ return false;}
 
     /**
@@ -75,29 +75,26 @@ public interface Atomic extends Cloneable{
     default boolean containsVar(VarName name){ return false;}
 
     /**
-     * @return the corresponding pattern
+     * @return the corresponding base pattern
      * */
     PatternAdmin getPattern();
 
     /**
-     * @return the query this atom belongs to
-     * */
-    Query getParentQuery();
+     * @return the base pattern combined with possible predicate patterns
+     */
+    PatternAdmin getCombinedPattern();
+
+    /**
+     * @return the query the atom is contained in
+     */
+    ReasonerQuery getParentQuery();
 
     /**
      * @param q query this atom is supposed to belong to
      */
-    void setParentQuery(Query q);
+    void setParentQuery(ReasonerQuery q);
 
     Map<VarName, VarName> getUnifiers(Atomic parentAtom);
-
-    /**
-     * change each variable occurrence in the atom (apply unifier [from/to])
-     * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
-     * @param from variable name to be changed
-     * @param to new variable name
-     */
-    void unify (VarName from, VarName to);
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})

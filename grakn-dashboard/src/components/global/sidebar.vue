@@ -62,8 +62,8 @@
 </style>
 
 <script>
-import EngineClient from '../js/EngineClient.js';
-import User from '../js/User.js';
+import EngineClient from '../../js/EngineClient.js';
+import User from '../../js/User.js';
 
 
 export default {

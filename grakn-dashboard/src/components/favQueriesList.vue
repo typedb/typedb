@@ -117,7 +117,7 @@ import _ from 'underscore';
 
 
 export default {
-    name: "favQueriesList",
+    name: "FavQueriesList",
     data() {
         return {
             favouriteQueries: [],

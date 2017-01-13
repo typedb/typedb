@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -27,6 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -58,7 +60,8 @@ import java.util.stream.Collectors;
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type) {
-        super(graknGraph, v, type);
+        super(graknGraph, v);
+        type.ifPresent(this::type);
     }
 
     /**
@@ -95,7 +98,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return All the {@link Resource} that this Instance is linked with
      */
     public Collection<Resource<?>> resources(ResourceType... resourceTypes) {
-        Set<String> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
+        Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
 
         Set<Resource<?>> resources = new HashSet<>();
         this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
@@ -178,6 +181,32 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         relation.putRolePlayer(hasResourceValue, resource);
 
         return relation;
+    }
+
+    /**
+     *
+     * @param type The type of this concept
+     * @return The concept itself casted to the correct interface
+     */
+    protected T type(V type) {
+        if(type != null && type() == null){
+            V currentIsa = type();
+            if(currentIsa == null){
+                setType(String.valueOf(type.getName()));
+                putEdge(type, Schema.EdgeLabel.ISA);
+            } else if(!currentIsa.equals(type)){
+                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
+            }
+        }
+        return getThis();
+    }
+
+    /**
+     *
+     * @return The type of the concept casted to the correct interface
+     */
+    public V type() {
+        return getOutgoingNeighbour(Schema.EdgeLabel.ISA);
     }
 
 }

@@ -18,16 +18,10 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.util.ConfigProperties;
-
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.LOG_TOPIC;
 
 public class KafkaLogger {
     private final static Logger LOG = LoggerFactory.getLogger(KafkaLogger.class);
@@ -41,8 +35,8 @@ public class KafkaLogger {
         WARN("WARN", 2),
         ERROR("ERROR", 3);
 
-        private int level;
-        private String value;
+        private final int level;
+        private final String value;
         LogLevel(String value, int level) {
             this.value = value;
             this.level = level;
@@ -65,26 +59,30 @@ public class KafkaLogger {
     }
 
     public void debug(String msg) {
-        if(logLevel.level() <= LogLevel.DEBUG.level())
+        if(logLevel.level() <= LogLevel.DEBUG.level()) {
             sendMsg(LogLevel.DEBUG.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
+        }
         LOG.debug(msg);
     }
 
     public void info(String msg) {
-        if(logLevel.level() <= LogLevel.INFO.level())
+        if(logLevel.level() <= LogLevel.INFO.level()) {
             sendMsg(LogLevel.INFO.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
+        }
         LOG.info(msg);
     }
 
     public void warn(String msg) {
-        if(logLevel.level() <= LogLevel.WARN.level())
-        sendMsg(LogLevel.WARN.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
+        if(logLevel.level() <= LogLevel.WARN.level()) {
+            sendMsg(LogLevel.WARN.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
+        }
         LOG.warn(msg);
     }
 
     public void error(String msg) {
-        if(logLevel.level() <= LogLevel.ERROR.level())
-        sendMsg(LogLevel.ERROR.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
+        if(logLevel.level() <= LogLevel.ERROR.level()) {
+            sendMsg(LogLevel.ERROR.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
+        }
         LOG.error(msg);
     }
     
@@ -96,21 +94,12 @@ public class KafkaLogger {
         LOG.error(msg);
     }
 
-    void open() {
-//        producer = ConfigHelper.kafkaProducer();
-    }
-
-    void close() {
-//        producer.flush();
-//        producer.close();
-    }
-
     private KafkaLogger() {
         logLevel = LogLevel.DEBUG;//LogLevel.valueOf(ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_LEVEL));
     }
 
     private void sendMsg(String level, String caller, String msg) {
-    	System.out.println("LOG from " + caller + ": " + msg);
+//    	System.out.println("LOG from " + caller + ": " + msg);
 //        ProducerRecord record = new ProducerRecord(LOG_TOPIC, level + " - " + caller + " - " + msg);
 //        producer.send(record);
     }

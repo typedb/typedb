@@ -33,7 +33,7 @@ class MatchQueryOrder extends MatchQueryModifier {
 
     private final MatchOrderImpl order;
 
-    MatchQueryOrder(MatchQueryInternal inner, MatchOrderImpl order) {
+    MatchQueryOrder(AbstractMatchQuery inner, MatchOrderImpl order) {
         super(inner);
         this.order = order;
     }
@@ -45,6 +45,6 @@ class MatchQueryOrder extends MatchQueryModifier {
 
     @Override
     protected String modifierString() {
-        return order.toString();
+        return " " + order.toString() + ";";
     }
 }

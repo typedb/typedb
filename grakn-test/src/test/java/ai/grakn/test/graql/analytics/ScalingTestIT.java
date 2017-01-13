@@ -18,52 +18,19 @@
 
 package ai.grakn.test.graql.analytics;
 
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.var;
-import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import ai.grakn.engine.loader.Loader;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.engine.loader.Loader;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
 import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
@@ -71,7 +38,6 @@ import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 import ai.grakn.test.AbstractScalingTest;
@@ -86,7 +52,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,12 +90,12 @@ public class ScalingTestIT extends AbstractScalingTest {
     Logger LOGGER;
 
     // test parameters
-    int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 24; // the maximum number of non super nodes to add to the test graph
-    int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
-    int REPEAT = 3; // the number of times to repeat at each size for average runtimes
-    int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
-    int WORKER_DIVS = 4; // the number of divisions of MAX_WORKERS to use for testing
+    final int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
+    final int MAX_SIZE = 24; // the maximum number of non super nodes to add to the test graph
+    final int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
+    final int REPEAT = 3; // the number of times to repeat at each size for average runtimes
+    final int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
+    final int WORKER_DIVS = 4; // the number of divisions of MAX_WORKERS to use for testing
 
     // test variables
     int STEP_SIZE;
@@ -187,7 +152,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
             LOGGER.info("current scale - super " + NUM_SUPER_NODES + " - nodes " + graphSize);
-            Long conceptCount = Long.valueOf(NUM_SUPER_NODES * (graphSize + 1) + graphSize);
+            Long conceptCount = (long) (NUM_SUPER_NODES * (graphSize + 1) + graphSize);
             printer.print(String.valueOf(conceptCount));
 
             LOGGER.info("start generate graph " + System.currentTimeMillis() / 1000L + "s");
@@ -195,7 +160,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             previousGraphSize = graphSize;
             LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
 
-            Long gremlinCount = Long.valueOf(NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
+            Long gremlinCount = (long) (NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
             LOGGER.info("gremlin count is: " +
                     Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().admin().getTinkerTraversal().count().next());
             gremlinCount += emptyCount;
@@ -236,7 +201,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         CSVPrinter printerMutate = createCSVPrinter("persistConstantIncreasingLoadITMutate.txt");
 
         for (int graphSize : graphSizes) {
-            Long conceptCount = Long.valueOf(graphSize) * 3 / 2;
+            Long conceptCount = (long) graphSize * 3 / 2;
             printerWrite.print(String.valueOf(conceptCount));
             printerMutate.print(String.valueOf(conceptCount));
             for (int workerNumber : workerNumbers) {
@@ -262,7 +227,8 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                     LOGGER.info("persist degree");
                     Long startTime = System.currentTimeMillis();
-                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
+                    //TODO: Remove persistence
+//                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
                     Long stopTime = System.currentTimeMillis();
                     degreeAndPersistTimeWrite += stopTime - startTime;
                     LOGGER.info("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
@@ -280,7 +246,8 @@ public class ScalingTestIT extends AbstractScalingTest {
 
                     LOGGER.info("mutate degree");
                     startTime = System.currentTimeMillis();
-                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
+                    //TODO: Remove persistence
+//                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
                     stopTime = System.currentTimeMillis();
                     degreeAndPersistTimeMutate += stopTime - startTime;
                     LOGGER.info("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
@@ -317,7 +284,8 @@ public class ScalingTestIT extends AbstractScalingTest {
         addNodes(keyspace, 0, MAX_SIZE);
 
         Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
+        //TODO: Remove persistence
+//        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
 
         // assert mutated degrees are as expected
         GraknGraph graph = factory.getGraph();
@@ -336,7 +304,8 @@ public class ScalingTestIT extends AbstractScalingTest {
         addEdges(keyspace, MAX_SIZE);
 
         Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
+        //TODO: Remove persistence
+//        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
 
         // assert mutated degrees are as expected
         graph = factory.getGraph();
@@ -461,9 +430,9 @@ public class ScalingTestIT extends AbstractScalingTest {
                     LOGGER.info("starting with: " + workerNumber + " threads");
 
                     // configure assertions
-                    final long currentG = Long.valueOf(g);
-                    final long N = Long.valueOf(nodesPerStep);
-                    final long S = Long.valueOf(totalSteps);
+                    final long currentG = (long) g;
+                    final long N = (long) nodesPerStep;
+                    final long S = (long) totalSteps;
                     statisticsAssertions.put(methods.get(0), number -> {
                         Number sum = currentG * N * (1L + currentG * N + 6L * S * N + 2L) / 2L;
                         assertEquals(sum.doubleValue(),
@@ -572,7 +541,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
-            superNodes.add(thing.addEntity().getId());
+            superNodes.add(thing.addEntity().getId().getValue());
         }
         graph.commit();
         graph.close();
@@ -610,7 +579,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             List<Var> insertQuery = new ArrayList<>();
             insertQuery.add(var("node"+String.valueOf(nodeIndex)).isa("thing"));
             for (String supernodeId : superNodes) {
-                insertQuery.add(var(supernodeId).id(supernodeId));
+                insertQuery.add(var(supernodeId).id(ConceptId.of(supernodeId)));
                 insertQuery.add(var().isa("related")
                         .rel("relation1", "node"+String.valueOf(nodeIndex))
                         .rel("relation2", supernodeId));

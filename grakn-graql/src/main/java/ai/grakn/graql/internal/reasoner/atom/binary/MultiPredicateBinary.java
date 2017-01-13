@@ -18,15 +18,21 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.AtomBase;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -40,7 +46,7 @@ import java.util.Set;
 public abstract class MultiPredicateBinary extends BinaryBase {
     private final  Set<Predicate> multiPredicate = new HashSet<>();
 
-    protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, Query par) {
+    protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, ReasonerQuery par) {
         super(pattern, par);
         this.multiPredicate.addAll(preds);
         this.typeId = extractTypeId(atomPattern.asVar());
@@ -48,19 +54,29 @@ public abstract class MultiPredicateBinary extends BinaryBase {
 
     protected MultiPredicateBinary(MultiPredicateBinary a) {
         super(a);
-        a.getMultiPredicate().forEach(multiPredicate::add);
-        this.typeId = extractTypeId(atomPattern.asVar());
+        a.getMultiPredicate().forEach(pred -> multiPredicate.add((Predicate) AtomicFactory.create(pred, getParentQuery())));
+        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
-    protected abstract String extractTypeId(VarAdmin var);
+    protected abstract ConceptId extractTypeId(VarAdmin var);
 
     @Override
-    public void setParentQuery(Query q) {
+    public void setParentQuery(ReasonerQuery q) {
         super.setParentQuery(q);
         multiPredicate.forEach(pred -> pred.setParentQuery(q));
     }
 
     public Set<Predicate> getMultiPredicate() { return multiPredicate;}
+
+    @Override
+    public PatternAdmin getCombinedPattern() {
+        Set<VarAdmin> vars = getMultiPredicate().stream()
+                .map(AtomBase::getPattern)
+                .map(PatternAdmin::asVar)
+                .collect(Collectors.toSet());
+        vars.add(super.getPattern().asVar());
+        return Patterns.conjunction(vars);
+    }
 
     @Override
     protected boolean predicatesEquivalent(BinaryBase at) {
@@ -86,19 +102,13 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
         hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
         return hashCode;
     }
 
     @Override
     public boolean isValueUserDefinedName() { return multiPredicate.isEmpty();}
-
-    @Override
-    public void unify(VarName from, VarName to) {
-        super.unify(from, to);
-        multiPredicate.forEach(predicate -> predicate.unify(from, to));
-    }
 
     @Override
     public void unify (Map<VarName, VarName> unifiers) {

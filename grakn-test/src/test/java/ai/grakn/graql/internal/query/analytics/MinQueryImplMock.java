@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  */
 public class MinQueryImplMock extends MinQueryImpl {
-    int numberOfWorkers;
+    final int numberOfWorkers;
 
     public MinQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);

@@ -27,9 +27,9 @@ import java.util.List;
  * Compares the given values. The result is true if all of the values are equal. Accepts at least two arguments.
  *
  * Usage:
- *      @equals(<value>, null)
- *      @equals(<value1>, "this")
- *      @equals(<value1>, <value2>, <value3>)
+ *      {@literal @}equals(<value>, null)
+ *      {@literal @}equals(<value1>, "this")
+ *      {@literal @}equals(<value1>, <value2>, <value3>)
  * </p>
  *
  * @author alexandraorth

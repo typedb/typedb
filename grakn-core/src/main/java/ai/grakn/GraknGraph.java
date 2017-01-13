@@ -19,6 +19,7 @@
 package ai.grakn;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -37,9 +38,6 @@ import java.util.Map;
 /**
  * A GraknGraph instance which connects to a specific graph keyspace.
  * Through this object, transactions are automatically opened, which enable the graph to be queried and mutated.
- *
- *
- * @version
  */
 
 public interface GraknGraph extends AutoCloseable{
@@ -109,7 +107,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param id A unique identifier for the Concept in the graph.
      * @return The Concept with the provided id or null if no such Concept exists.
      */
-    <T extends Concept> T getConcept(String id);
+    <T extends Concept> T getConcept(ConceptId id);
 
     /**
      * Get the Type with the name provided, if it exists.

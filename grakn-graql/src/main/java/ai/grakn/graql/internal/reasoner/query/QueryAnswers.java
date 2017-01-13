@@ -24,9 +24,10 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import java.util.Collection;
@@ -117,7 +118,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @param query query containing filters
      * @return filtered answers
      */
-    public QueryAnswers filterNonEquals(Query query){
+    public QueryAnswers filterNonEquals(ReasonerQueryImpl query){
         Set<NotEquals> filters = query.getAtoms().stream()
                 .filter(at -> at.getClass() == NotEquals.class)
                 .map(at -> (NotEquals) at)
@@ -209,7 +210,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
                 Concept con = entry.get(var);
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
-                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId()) ) )
+                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId().getValue()) ) )
                     isCompatible = false;
                 else
                     answer.put(var, con);
@@ -250,10 +251,10 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         //find extra subs
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
             //get |child - parent| set difference
-            Set<Predicate> extraSubs = Utility.subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
+            Set<IdPredicate> extraSubs = Utility.subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
             extraSubs.forEach( sub -> {
                 VarName var = sub.getVarName();
-                Concept con = graph.getConcept(sub.getPredicateValue());
+                Concept con = graph.getConcept(sub.getPredicate());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())
                     valueConstraints.put(var, con);

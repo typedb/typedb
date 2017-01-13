@@ -23,11 +23,12 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
+import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import com.google.common.collect.Sets;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -69,8 +71,8 @@ public class AtomicQueryTest extends AbstractGraknTest {
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         AtomicQuery copy = new AtomicQuery(atomicQuery);
-        assert(atomicQuery.equals(copy));
-        assert(atomicQuery.hashCode() == copy.hashCode());
+        assertEquals(atomicQuery, copy);
+        assertEquals(atomicQuery.hashCode(), copy.hashCode());
     }
 
     @Test
@@ -111,8 +113,8 @@ public class AtomicQueryTest extends AbstractGraknTest {
                 "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
         AtomicQuery parentQuery = new AtomicQuery(queryString, graph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, graph);
-        assertTrue(parentQuery.equals(childQuery));
-        assertTrue(parentQuery.hashCode() == childQuery.hashCode());
+        assertEquals(parentQuery, childQuery);
+        assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
     @Test
@@ -129,8 +131,22 @@ public class AtomicQueryTest extends AbstractGraknTest {
                 "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
         AtomicQuery parentQuery = new AtomicQuery(queryString, lgraph);
         AtomicQuery childQuery = new AtomicQuery(queryString2, lgraph);
-        assertTrue(parentQuery.equals(childQuery));
-        assertTrue(parentQuery.hashCode() == childQuery.hashCode());
+        assertEquals(parentQuery, childQuery);
+        assertEquals(parentQuery.hashCode(), childQuery.hashCode());
+    }
+
+    @Test
+    public void testQueryEquivalence(){
+        GraknGraph graph = GeoGraph.getGraph();
+        String queryString = "match " +
+                "(entity-location: $x2, geo-entity: $xx) isa is-located-in;" +
+                "$x1 isa $t1; $t1 sub geoObject;";
+        String queryString2 = "match " +
+                "(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
+                "$y1 isa $t2; $t2 sub geoObject;";
+        AtomicQuery query = new AtomicQuery(queryString, graph);
+        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
+        assertTrue(query.isEquivalent(query2));
     }
 
     private static Concept getConcept(String id){

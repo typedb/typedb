@@ -66,7 +66,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 import User from '../js/User.js'
 
 export default {
-    name: "LoginView",
+    name: "LoginPage",
     data() {
         return {
             credentials: {

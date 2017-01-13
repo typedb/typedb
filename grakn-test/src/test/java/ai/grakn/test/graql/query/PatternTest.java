@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import org.junit.Test;

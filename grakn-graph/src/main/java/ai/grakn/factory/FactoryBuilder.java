@@ -77,7 +77,7 @@ class FactoryBuilder {
         if (factory != null)
         	return factory;
     	synchronized (openFactories) {    		
-            InternalFactory internalFactory;
+            InternalFactory<?, ?> internalFactory;
             try {
                 //internalFactory = (InternalFactory) Class.forName(factoryType).newInstance();
                 internalFactory = (InternalFactory) Class.forName(factoryType)
@@ -90,7 +90,7 @@ class FactoryBuilder {
             Log.debug("New factory created " + internalFactory);
             if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
             	Log.debug("This is a system factory, loading system ontology.");
-            	new SystemKeyspace(internalFactory).loadSystemOntology();
+            	new SystemKeyspace<>(internalFactory).loadSystemOntology();
             }
             else
             	Log.debug("This is not a system factory, not loading system ontology.");

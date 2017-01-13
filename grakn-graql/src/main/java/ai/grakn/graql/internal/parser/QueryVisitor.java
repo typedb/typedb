@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
@@ -331,14 +332,6 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.MEMBERS() != null) cluster = cluster.members();
 
-        if (ctx.PERSIST() != null) {
-            if (ctx.id() != null) {
-                cluster = cluster.persist(visitId(ctx.id()));
-            } else {
-                cluster = cluster.persist();
-            }
-        }
-
         if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
 
         if (ctx.inList() != null) {
@@ -351,14 +344,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public DegreeQuery<?> visitDegrees(GraqlParser.DegreesContext ctx) {
         DegreeQuery<?> degree = queryBuilder.compute().degree();
-
-        if (ctx.PERSIST() != null) {
-            if (ctx.id() != null) {
-                degree = degree.persist(visitId(ctx.id()));
-            } else {
-                degree = degree.persist();
-            }
-        }
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));
@@ -591,8 +576,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public String visitId(GraqlParser.IdContext ctx) {
-        return visitIdentifier(ctx.identifier());
+    public ConceptId visitId(GraqlParser.IdContext ctx) {
+        return ConceptId.of(visitIdentifier(ctx.identifier()));
     }
 
     @Override

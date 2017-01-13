@@ -31,7 +31,7 @@ import java.util.concurrent.Future;
 
 class GraqlClientMock implements GraqlClient {
 
-    private RemoteSession server = new RemoteSession(keyspace -> {
+    private final RemoteSession server = new RemoteSession(keyspace -> {
         this.keyspace = keyspace;
         return Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     });

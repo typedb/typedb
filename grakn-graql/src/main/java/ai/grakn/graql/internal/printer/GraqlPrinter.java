@@ -34,8 +34,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.query.match.MatchQueryInternal.colorKeyword;
-import static ai.grakn.graql.internal.query.match.MatchQueryInternal.colorType;
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
@@ -43,6 +41,22 @@ import static ai.grakn.graql.internal.util.StringConverter.valueToString;
  * Default printer that prints results in Graql syntax
  */
 class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
+
+    /**
+     * @param keyword a keyword to color-code using ANSI colors
+     * @return the keyword, color-coded
+     */
+    private static String colorKeyword(String keyword) {
+        return ANSI.color(keyword, ANSI.BLUE);
+    }
+
+    /**
+     * @param type a type to color-code using ANSI colors
+     * @return the type, color-coded
+     */
+    private static String colorType(String type) {
+        return ANSI.color(type, ANSI.PURPLE);
+    }
 
     private final ResourceType[] resourceTypes;
 
@@ -71,7 +85,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     sb.append(colorKeyword(" sub ")).append(colorType(idToString(superType.getName())));
                 }
             } else {
-                sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
+                sb.append(colorKeyword("id ")).append(idToString(concept.getId().getValue()));
             }
 
             if (concept.isRelation()) {
@@ -80,7 +94,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     Instance rolePlayer = entry.getValue();
 
                     if (rolePlayer != null) {
-                        String s = colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId());
+                        String s = colorType(idToString(roleType.getName())) + ": id " + idToString(rolePlayer.getId().getValue());
                         return Optional.of(s);
                     } else {
                         return Optional.<String>empty();

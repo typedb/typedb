@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
-        super(graknGraph, v, Optional.empty());
+        super(graknGraph, v);
         superType.ifPresent(this::superType);
         isImplicit.ifPresent(i -> setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, i, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity()));
     }
@@ -107,6 +107,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         } else {
             deleteNode();
         }
+    }
+
+    /**
+     *
+     * @return This type's super type
+     */
+    public T superType() {
+        T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
+        if(concept == null)
+            return null;
+        else
+            return concept;
     }
 
     /**
@@ -245,7 +257,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
             putEdge(superType, Schema.EdgeLabel.SUB);
-            type(); //Check if there is a circular sub loop
+
+            checkForLoop(Schema.EdgeLabel.SUB);
 
             //Track any existing data if there is some
             instances().forEach(concept -> {
@@ -266,9 +279,22 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
      * @return The Type itself
      */
     public T subType(T type){
-        ((TypeImpl) type).putEdge(this, Schema.EdgeLabel.SUB);
-        type(); //Check if there is a circular sub loop
+        //noinspection unchecked
+        ((TypeImpl) type).superType(this);
         return getThis();
+    }
+
+    private void checkForLoop(Schema.EdgeLabel edge){
+        //Check For Loop
+        HashSet<Type> foundTypes = new HashSet<>();
+        Type currentSuperType = superType();
+        while (currentSuperType != null){
+            foundTypes.add(currentSuperType);
+            currentSuperType = currentSuperType.superType();
+            if(foundTypes.contains(currentSuperType)){
+                throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), edge.getLabel()));
+            }
+        }
     }
 
     T playsRole(RoleType roleType, boolean required) {

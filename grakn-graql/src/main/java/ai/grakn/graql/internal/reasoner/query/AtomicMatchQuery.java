@@ -25,7 +25,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,11 +58,6 @@ public class AtomicMatchQuery extends AtomicQuery{
         super(atom, vars);
         answers = new QueryAnswers();
         newAnswers = new QueryAnswers();
-    }
-
-    @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return answers.stream();
     }
 
     public AtomicMatchQuery(MatchQuery query, GraknGraph graph){
@@ -138,13 +131,13 @@ public class AtomicMatchQuery extends AtomicQuery{
         return fullAnswers;
     }
 
-    private QueryAnswers propagateHeadIdPredicates(Query ruleHead, QueryAnswers answers){
+    private QueryAnswers propagateHeadIdPredicates(ReasonerQueryImpl ruleHead, QueryAnswers answers){
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
         Set<VarName> queryVars = getSelectedNames();
         Set<VarName> headVars = ruleHead.getSelectedNames();
-        Set<Predicate> extraSubs = new HashSet<>();
+        Set<IdPredicate> extraSubs = new HashSet<>();
         if(queryVars.size() > headVars.size()){
             extraSubs.addAll(ruleHead.getIdPredicates()
                     .stream().filter(sub -> queryVars.contains(sub.getVarName()))
@@ -153,7 +146,7 @@ public class AtomicMatchQuery extends AtomicQuery{
 
         answers.forEach( map -> {
             Map<VarName, Concept> newAns = new HashMap<>(map);
-            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicateValue())) );
+            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicate())) );
             newAnswers.add(newAns);
         });
         return newAnswers;
@@ -164,7 +157,7 @@ public class AtomicMatchQuery extends AtomicQuery{
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
-        Query ruleBody = rule.getBody();
+        ReasonerQueryImpl ruleBody = rule.getBody();
         AtomicQuery ruleHead = rule.getHead();
 
         Set<Atom> atoms = ruleBody.selectAtoms();
@@ -186,12 +179,12 @@ public class AtomicMatchQuery extends AtomicQuery{
                 .filterVars(ruleHead.getSelectedNames())
                 .filterKnown(this.getAnswers());
 
-        QueryAnswers newAnswers = new QueryAnswers();
-        if (materialise || ruleHead.getAtom().requiresMaterialisation())
-            newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
-        if (!newAnswers.isEmpty()){
-            if (materialise) answers = newAnswers;
-            else answers = answers.join(newAnswers);
+        if (materialise || ruleHead.getAtom().requiresMaterialisation()){
+            QueryAnswers newAnswers = new AtomicMatchQuery(ruleHead, answers).materialise();
+            if (!newAnswers.isEmpty()) {
+                if (materialise) answers = newAnswers;
+                else answers = answers.join(newAnswers);
+            }
         }
 
         //TODO do all combinations if roles missing
@@ -272,7 +265,6 @@ public class AtomicMatchQuery extends AtomicQuery{
             LOG.debug("Resolving rule: " + rule.getId() + " answers: " + size());
             outer().resolveViaRule(rule, subGoals, cache, materialise);
             if (!hasNextRule()) completeIteration();
-
             answerIterator = outer().newAnswers.iterator();
         }
 

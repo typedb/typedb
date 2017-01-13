@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -45,7 +46,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -75,31 +75,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     private final AbstractGraknGraph graknGraph;
     private Vertex vertex;
 
-    ConceptImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type){
+    ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
         this.vertex = v;
         this.graknGraph = graknGraph;
-        type.ifPresent(this::type);
-        graknGraph.getConceptLog().putConcept(this);
-    }
-
-    /**
-     *
-     * @param type The type of this concept
-     * @return The concept itself casted to the correct interface
-     */
-    protected T type(V type) {
-        if(type != null && type() == null){
-            TypeImpl currentIsa = getParentIsa();
-            if(currentIsa == null){
-                setType(String.valueOf(type.getName()));
-                putEdge(type, Schema.EdgeLabel.ISA);
-            } else if(!currentIsa.equals(type)){
-                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
-            }
-
-        }
-
-        return getThis();
     }
 
     /**
@@ -182,54 +160,13 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     }
 
     /**
-     *
-     * @return The type of the concept casted to the correct interface
-     */
-    @SuppressWarnings("unchecked")
-    public V type() {
-        HashSet<Concept> visitedConcepts = new HashSet<>();
-        ConceptImpl currentConcept = this;
-        visitedConcepts.add(currentConcept);
-        Type type = null;
-        boolean notFound = true;
-
-        while(notFound && currentConcept != null){
-            ConceptImpl concept = currentConcept.getParentIsa();
-            if(concept != null){
-                notFound = false;
-                type = concept.asType();
-            } else {
-                currentConcept = (ConceptImpl) currentConcept.superType();
-                if(visitedConcepts.contains(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
-                }
-                visitedConcepts.add(currentConcept);
-            }
-        }
-        return (V) type;
-    }
-
-    /**
-     *
-     * @return This type's super type
-     */
-    @SuppressWarnings("unchecked")
-    public T superType() {
-        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(concept == null)
-            return null;
-        else
-            return (T) concept;
-    }
-
-    /**
      * Helper method to cast a concept to it's correct type
      * @param type The type to cast to
      * @param <E> The type of the interface we are casting to.
      * @return The concept itself casted to the defined interface
      * @throws InvalidConceptTypeException when casting a concept incorrectly
      */
-    private <E> E castConcept(Class<E> type){
+    private <E extends Concept> E castConcept(Class<E> type){
         try {
             return type.cast(this);
         } catch(ClassCastException e){
@@ -454,19 +391,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @return The result of following one outgoing isa edge to a Type.
-     */
-    public TypeImpl getParentIsa(){
-        Concept isaParent = getOutgoingNeighbour(Schema.EdgeLabel.ISA);
-        if(isaParent != null){
-            return (TypeImpl) isaParent;
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     *
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one outgoing edge of a specific type
      */
@@ -500,21 +424,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @param edgeLabel The edge label to traverse
-     * @return The neighbouring concept found by traversing one incoming edge of a specific type
-     */
-    <X extends Concept> X getIncomingNeighbour(Schema.EdgeLabel edgeLabel){
-        Set<X> concepts = getIncomingNeighbours(edgeLabel);
-        if(concepts.size() == 1){
-            return concepts.iterator().next();
-        } else if(concepts.isEmpty()){
-            return null;
-        } else {
-            throw new MoreThanOneEdgeException(this, edgeLabel);
-        }
-    }
-    /**
-     *
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
@@ -544,11 +453,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
-    @SuppressWarnings("unchecked")
-    public <X extends Object> X getProperty(Schema.ConceptProperty key){
-        VertexProperty property = vertex.property(key.name());
+    public <X> X getProperty(Schema.ConceptProperty key){
+        VertexProperty<X> property = vertex.property(key.name());
         if(property != null && property.isPresent())
-            return (X) property.value();
+            return property.value();
         return null;
     }
     public Boolean getPropertyBoolean(Schema.ConceptProperty key){
@@ -596,8 +504,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return A string representing the concept's unique id.
      */
     @Override
-    public String getId(){
-        return getProperty(Schema.ConceptProperty.ID);
+    public ConceptId getId(){
+        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
     }
 
     /**
@@ -726,8 +634,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     @Override
     public String toString(){
-        String message = "[" +  this.hashCode() + "] "+
-                "- Base Type [" + getBaseType() + "] ";
+        String message = "[Base Type [" + getBaseType() + "] ";
         if(getId() != null)
             message = message + "- Id [" + getId() + "] ";
 

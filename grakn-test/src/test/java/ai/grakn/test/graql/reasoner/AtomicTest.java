@@ -21,14 +21,14 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
@@ -147,21 +147,21 @@ public class AtomicTest extends AbstractGraknTest {
     @Test
     public void testTypeInference(){
         GraknGraph graph = snbGraph;
-        String typeId = graph.getType("recommendation").getId();
+        String typeId = graph.getType("recommendation").getId().getValue();
         String queryString = "match ($x, $y); $x isa person; $y isa product;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().equals(typeId));
+        assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
 
     @Test
     public void testTypeInference2(){
         GraknGraph graph = cwGraph;
-        String typeId = graph.getType("transaction").getId();
+        String typeId = graph.getType("transaction").getId().getValue();
         String queryString = "match ($z, $y, $x);$z isa country;$x isa rocket;$y isa person;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().equals(typeId));
+        assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
 
     @Test
@@ -281,7 +281,7 @@ public class AtomicTest extends AbstractGraknTest {
         Relation parentRelation = (Relation) new AtomicQuery("match ($a, $x);", graph).getAtom();
         Map<VarName, VarName> unifiers = relation.getUnifiers(parentRelation);
         relation.unify(unifiers);
-        assertTrue(unifiers.size() == 2);
+        assertEquals(unifiers.size(), 2);
         Set<VarName> vars = relation.getVarNames();
         Set<VarName> correctVars = new HashSet<>();
         correctVars.add(varName("a"));
@@ -310,8 +310,8 @@ public class AtomicTest extends AbstractGraknTest {
 
     @Test
     public void testValuePredicateComparison(){
-        Atomic atom = new Query("match $x value '0';", snbGraph).getAtoms().iterator().next();
-        Atomic atom2 =new Query("match $x value != '0';", snbGraph).getAtoms().iterator().next();
+        Atomic atom = new ReasonerQueryImpl("match $x value '0';", snbGraph).getAtoms().iterator().next();
+        Atomic atom2 =new ReasonerQueryImpl("match $x value != '0';", snbGraph).getAtoms().iterator().next();
         assertTrue(!atom.isEquivalent(atom2));
     }
 

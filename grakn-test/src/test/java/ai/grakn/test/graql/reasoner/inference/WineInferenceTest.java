@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
 import org.junit.BeforeClass;
@@ -39,20 +39,19 @@ import static org.junit.Assume.assumeTrue;
 import static ai.grakn.test.GraknTestEnv.*;
 
 public class WineInferenceTest extends AbstractGraknTest {
-    private static Reasoner reasoner;
-    private static QueryBuilder qb;
+
+    private static GraknGraph graph;
 
     @BeforeClass
     public static void setUpClass() {
         assumeTrue(usingTinker());
-        GraknGraph graph = TestGraph.getGraph("name", "wines-test.gql", "wines-rules.gql");
-        reasoner = new Reasoner(graph);
-        qb = graph.graql().infer(false);
+        graph = TestGraph.getGraph("name", "wines-test.gql", "wines-rules.gql");
     }
 
     @Test
     public void testRecommendation() {
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;";
+        QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
@@ -63,8 +62,8 @@ public class WineInferenceTest extends AbstractGraknTest {
                         "{$nameP value 'Eva';$nameW value 'Tamaioasa Romaneasca';} or" +
                         "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
-        assertQueriesEqual(reasoner.resolve(query, true), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
     }
 
     private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {

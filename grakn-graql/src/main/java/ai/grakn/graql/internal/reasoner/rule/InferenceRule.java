@@ -23,14 +23,13 @@ import ai.grakn.concept.Rule;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import javafx.util.Pair;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,18 +47,18 @@ import static ai.grakn.graql.Graql.match;
  */
 public class InferenceRule {
 
-    private final Query body;
+    private final ReasonerQueryImpl body;
     private final AtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
-        body = new Query(match(rule.getLHS()), graph);
+        body = new ReasonerQueryImpl(match(rule.getLHS()), graph);
         head = new AtomicQuery(match(rule.getRHS()), graph);
     }
 
     /**
      * @return body of the rule of the form head :- body
      */
-    public Query getBody(){return body;}
+    public ReasonerQueryImpl getBody(){return body;}
 
     /**
      * @return head of the rule of the form head :- body
@@ -70,7 +69,7 @@ public class InferenceRule {
      * @return a conclusion atom which parent contains all atoms in the rule
      */
     public Atom getRuleConclusionAtom() {
-        Query ruleQuery = new Query(head);
+        ReasonerQueryImpl ruleQuery = new ReasonerQueryImpl(head);
         Atom atom = ruleQuery.selectAtoms().iterator().next();
         body.getAtoms().forEach(at -> ruleQuery.addAtom(at.clone()));
         return atom;
@@ -81,14 +80,9 @@ public class InferenceRule {
             Set<Atom> types = parentAtom.getTypeConstraints().stream()
                     .filter(type -> !body.containsEquivalentAtom(type))
                     .collect(Collectors.toSet());
-            Set<Predicate> predicates = new HashSet<>();
-            //predicates obtained from types
-            types.stream().map(type -> (Binary) type)
-                    .filter(type -> type.getPredicate() != null)
-                    .map(Binary::getPredicate)
-                    .forEach(predicates::add);
-            //direct predicates
-            predicates.addAll(parentAtom.getPredicates());
+            Set<Predicate> predicates = parentAtom.getPredicates();
+            if(parentAtom.isResource())
+                    predicates.addAll(((Resource) parentAtom).getMultiPredicate());
 
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);

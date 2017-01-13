@@ -1,12 +1,18 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
+import com.google.common.collect.Sets;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -18,9 +24,9 @@ import java.util.Map;
  *
  */
 public abstract class Binary extends BinaryBase {
-    private Predicate predicate = null;
+    private IdPredicate predicate = null;
 
-    protected Binary(VarAdmin pattern, Predicate p, Query par) {
+    protected Binary(VarAdmin pattern, IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = p;
         this.typeId = extractTypeId(atomPattern.asVar());
@@ -28,33 +34,40 @@ public abstract class Binary extends BinaryBase {
 
     protected Binary(Binary a) {
         super(a);
-        this.predicate = a.getPredicate() != null ? (Predicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
-        this.typeId = extractTypeId(atomPattern.asVar());
+        this.predicate = a.getPredicate() != null ? (IdPredicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
+        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
-    protected abstract String extractTypeId(VarAdmin var);
+    protected abstract ConceptId extractTypeId(VarAdmin var);
 
     @Override
-    public void setParentQuery(Query q) {
+    public PatternAdmin getCombinedPattern() {
+        Set<VarAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
+        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
+        return Patterns.conjunction(vars);
+    }
+
+    @Override
+    public void setParentQuery(ReasonerQuery q) {
         super.setParentQuery(q);
         if (predicate != null) predicate.setParentQuery(q);
     }
 
-    public Predicate getPredicate() { return predicate;}
-    protected void setPredicate(Predicate p) { predicate = p;}
+    public IdPredicate getPredicate() { return predicate;}
+    protected void setPredicate(IdPredicate p) { predicate = p;}
 
     @Override
     protected boolean predicatesEquivalent(BinaryBase atom) {
         Predicate pred = getPredicate();
         Predicate objPredicate = ((Binary) atom).getPredicate();
         return (pred == null && objPredicate == null)
-                || ((pred != null && objPredicate != null) && pred.isEquivalent(objPredicate));
+                || (pred != null  && pred.isEquivalent(objPredicate));
     }
 
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + (typeId != null? this.typeId.hashCode() : 0);
         hashCode = hashCode * 37 + (predicate != null ? predicate.equivalenceHashCode() : 0);
         return hashCode;
     }
@@ -62,12 +75,6 @@ public abstract class Binary extends BinaryBase {
     @Override
     public boolean isValueUserDefinedName() {
         return predicate == null && !getValueVariable().getValue().isEmpty();
-    }
-
-    @Override
-    public void unify(VarName from, VarName to) {
-        super.unify(from, to);
-        if (predicate != null) predicate.unify(from, to);
     }
 
     @Override

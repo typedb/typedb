@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -141,9 +142,9 @@ public class RelationTest extends GraphTestBase{
             if(edge.getProperty(TO_ROLE_NAME).equals(role2.getName())) {
                 foundEdge = true;
                 assertEquals(edge.getProperty(RELATION_TYPE_NAME), relationType.getName());
-                assertEquals(edge.getProperty(RELATION_ID), relation.getId());
-                assertEquals(edge.getProperty(TO_ID), b.getId());
-                assertEquals(edge.getProperty(FROM_ID), a.getId());
+                assertEquals(edge.getProperty(RELATION_ID), relation.getId().getValue());
+                assertEquals(edge.getProperty(TO_ID), b.getId().getValue());
+                assertEquals(edge.getProperty(FROM_ID), a.getId().getValue());
                 assertEquals(edge.getProperty(FROM_TYPE_NAME), a.type().getName());
                 assertEquals(edge.getProperty(TO_TYPE_NAME), b.type().getName());
             }
@@ -411,7 +412,7 @@ public class RelationTest extends GraphTestBase{
         Entity b = type.addEntity();
         Entity c = type.addEntity();
 
-        String relationId = relation.addRelation().putRolePlayer(roleA, a).putRolePlayer(roleB, b).putRolePlayer(roleC, c).getId();
+        ConceptId relationId = relation.addRelation().putRolePlayer(roleA, a).putRolePlayer(roleB, b).putRolePlayer(roleC, c).getId();
 
         a.delete();
         assertNotNull(graknGraph.getConcept(relationId));
@@ -493,10 +494,6 @@ public class RelationTest extends GraphTestBase{
         RelationImpl assertion = (RelationImpl) cast.addRelation().
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
-        Map<RoleType, Instance> roleMap = new HashMap<>();
-        roleMap.clear();
-        roleMap.put(movieOfGenre, godfather);
-        roleMap.put(movieGenre, crime);
         movieHasGenre.addRelation().
                 putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 

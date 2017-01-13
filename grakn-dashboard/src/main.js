@@ -16,89 +16,85 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-// change this to alias Vue instead of import vue/dist - check out Aliasify
-import Vue from 'vue/dist/vue.js'
-import User from './js/User.js'
-import EngineClient from './js/EngineClient.js';
 import VeeValidate from 'vee-validate';
+// change this to alias Vue instead of import vue/dist - check out Aliasify
+import Vue from 'vue/dist/vue';
+import User from './js/User';
+import EngineClient from './js/EngineClient';
 
-var VueRouter = require('vue-router')
+const VueRouter = require('vue-router');
 
 Vue.use(VueRouter);
 Vue.use(VeeValidate);
 
 // Components
-const visualiser = require('./components/visualiser.vue')
-const console = require('./components/console.vue')
-const config = require('./components/config.vue')
-const login = require('./components/login.vue')
-const sidebar = require('./components/sidebar.vue')
-const keyspacesmodal = require('./components/keyspacesModal.vue')
-const signupmodal = require('./components/signupModal.vue')
-
+const graphPage = require('./components/graphPage.vue');
+const consolePage = require('./components/consolePage.vue');
+const configPage = require('./components/configPage.vue');
+const loginPage = require('./components/loginPage.vue');
+const sidebar = require('./components/global/sidebar.vue');
+const keyspacesmodal = require('./components/global/keyspacesModal.vue');
+const signupmodal = require('./components/global/signupModal.vue');
 
 // ---------------------- Vue setup ---------------------//
 
 const routes = [{
-    path: '/',
-    redirect: '/graph'
+  path: '/',
+  redirect: '/graph',
 }, {
-    path: '/config',
-    component: config
+  path: '/config',
+  component: configPage,
 }, {
-    path: '/graph',
-    component: visualiser
+  path: '/graph',
+  component: graphPage,
 }, {
-    path: '/console',
-    component: console
+  path: '/console',
+  component: consolePage,
 }, {
-    path: '/login',
-    component: login
-}]
+  path: '/login',
+  component: loginPage,
+}];
 
 const router = new VueRouter({
-    linkActiveClass: 'active',
-    routes
-})
+  linkActiveClass: 'active',
+  routes,
+});
 
-var authNeeded = undefined;
+let authNeeded;
 
-
-//Before loading every page we need to check if Authentication is enabled, if yes the user must be logged in.
+// Before loading every page we need to check if Authentication is enabled, if yes the user must be logged in.
 router.beforeEach((to, from, next) => {
-    if (authNeeded === undefined && !User.isAuthenticated()) {
-        EngineClient.request({
-            url: "/auth/enabled/",
-            callback: (resp, error) => {
-                authNeeded =resp;
-                if (authNeeded) {
-                    next('/login');
-                } else {
-                    next();
-                }
-            }
-        });
-    } else {
-        if ( User.isAuthenticated() || authNeeded == false || to.path === "/login") {
-            next();
+  if (authNeeded === undefined) {
+    EngineClient.request({
+      url: '/auth/enabled/',
+      callback: (resp, error) => {
+        authNeeded = resp;
+        if (authNeeded) {
+          next('/login');
         } else {
-            next('/login');
+          next();
         }
-    }
-})
+      },
+    });
+  } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
+    next();
+  } else {
+    next('/login');
+  }
+});
 
 Vue.component('side-bar', {
-    render: h => h(sidebar)
-})
+  render: h => h(sidebar),
+});
 
 Vue.component('keyspaces-modal', {
-    render: h => h(keyspacesmodal)
-})
+  render: h => h(keyspacesmodal),
+});
 
 Vue.component('signup-modal', {
-    render: h => h(signupmodal)
-})
+  render: h => h(signupmodal),
+});
 
-const graknDashboard = new Vue({
-    router: router
-}).$mount('#grakn-app')
+new Vue({
+  router,
+}).$mount('#grakn-app');

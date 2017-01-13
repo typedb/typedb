@@ -28,9 +28,9 @@ import java.util.List;
  * Templating function that splits the given value based on the given character. Accepts exactly two arguments.
  *
  * Usage:
- *      @split(<value>, ",")
- *      @split(<value>, "-")
- *      @split(<value>, "and")
+ *      {@literal @}split(<value>, ",")
+ *      {@literal @}split(<value>, "-")
+ *      {@literal @}split(<value>, "and")
  * </p>
  *
  * @author alexandraorth

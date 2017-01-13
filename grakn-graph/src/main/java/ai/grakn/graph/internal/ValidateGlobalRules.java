@@ -45,10 +45,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
 
 /**
- * The global structural rules to validate.
- * This ensures the graph conforms to our concept.
- */
-/**
  * <p>
  *     Specific Validation Rules
  * </p>
@@ -87,7 +83,7 @@ class ValidateGlobalRules {
      */
     static Optional<String> validatePlaysRoleStructure(CastingImpl casting) {
         InstanceImpl<?, ?> rolePlayer = casting.getRolePlayer();
-        TypeImpl<?, ?> currentConcept = rolePlayer.getParentIsa();
+        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
         RoleType roleType = casting.getRole();
 
         boolean satisfiesPlaysRole = false;

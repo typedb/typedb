@@ -107,8 +107,8 @@ import EngineClient from '../js/EngineClient.js';
 import simpleGraql from '../js/codemirrorGraql.js';
 
 //Sub-components
-var addCurrentQuery = require('./addCurrentQuery.vue');
-var favQueriesList = require('./favQueriesList.vue');
+const addCurrentQuery = require('./addCurrentQuery.vue');
+const favQueriesList = require('./favQueriesList.vue');
 
 
 export default {

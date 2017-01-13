@@ -101,7 +101,7 @@ import User from '../js/User.js'
 var GraqlEditor = require('./graqlEditor.vue')
 
 export default {
-    name: "ConsoleView",
+    name: "ConsolePage",
     components: {
         GraqlEditor
     },
@@ -149,7 +149,7 @@ export default {
          */
         shellResponse(resp, err) {
             if (resp != null)
-                this.graqlResponse = Prism.highlight(resp, PLang.graql);
+                this.graqlResponse = Prism.highlight(resp, PLang.default);
             else
                 this.showError(err);
         },

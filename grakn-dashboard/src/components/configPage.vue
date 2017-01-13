@@ -167,7 +167,7 @@ import User from '../js/User.js'
 
 
 export default {
-    name: "ConfigurationView",
+    name: "ConfigurationPage",
     data: () => {
         return {
             response: undefined,

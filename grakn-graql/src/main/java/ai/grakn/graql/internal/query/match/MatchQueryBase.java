@@ -22,11 +22,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.gremlin.GremlinQuery;
+import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -34,8 +34,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -49,7 +52,9 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base MatchQuery implementation that executes the gremlin traversal
  */
-public class MatchQueryBase implements MatchQueryInternal {
+public class MatchQueryBase extends AbstractMatchQuery {
+
+    protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
     private final ImmutableSet<String> typeNames;
@@ -76,7 +81,19 @@ public class MatchQueryBase implements MatchQueryInternal {
         for (VarAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph).getTraversal();
+        GraqlTraversal graqlTraversal = GraqlTraversal.semiOptimal(pattern);
+        LOG.debug("Created query plan");
+        LOG.debug(graqlTraversal.toString());
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal(graph);
+
+        String[] selectedNames = getSelectedNames().stream().map(VarName::getValue).toArray(String[]::new);
+
+        // Must provide three arguments in order to pass an array to .select
+        // If ordering, select the variable to order by as well
+        if (selectedNames.length != 0) {
+            traversal.select(selectedNames[0], selectedNames[0], selectedNames);
+        }
+
         return traversal.toStream()
                 .map(vertices -> makeResults(graph, vertices))
                 .filter(result -> shouldShowResult(graph, result))
@@ -85,8 +102,12 @@ public class MatchQueryBase implements MatchQueryInternal {
 
     @Override
     public Set<Type> getTypes(GraknGraph graph) {
-        GremlinQuery gremlinQuery = getQuery(graph);
-        return gremlinQuery.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
+        return pattern.getVars().stream()
+                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.getTypeNames().stream())
+                .map(graph::getType)
+                .filter(Objects::nonNull)
+                .collect(toSet());
     }
 
     @Override
@@ -153,14 +174,6 @@ public class MatchQueryBase implements MatchQueryInternal {
                 .map(VarAdmin::getTypeName)
                 .flatMap(CommonUtil::optionalToStream)
                 .collect(toImmutableSet());
-    }
-
-    /**
-     * @param graph the graph to execute the query on
-     * @return the query that will match the specified patterns
-     */
-    private GremlinQuery getQuery(GraknGraph graph) {
-        return new GremlinQuery(graph, this.pattern, getSelectedNames());
     }
 
     /**

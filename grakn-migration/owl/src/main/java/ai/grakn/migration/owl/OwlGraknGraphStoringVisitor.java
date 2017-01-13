@@ -56,7 +56,6 @@ import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.SWRLRule;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -78,7 +77,7 @@ import java.util.stream.Collectors;
  *
  */
 public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWLEntityVisitorEx<Concept> {
-    private OWLMigrator migrator;
+    private final OWLMigrator migrator;
 
     public OwlGraknGraphStoringVisitor(OWLMigrator migrator) {
         this.migrator = migrator;
@@ -128,7 +127,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
     @Override
     public Concept visit(OWLSubClassOfAxiom axiom) {
         OWLClassExpression subclass = axiom.getSubClass();
-        EntityType subtype = null;
+        EntityType subtype;
         if (subclass.isOWLClass())
             subtype = migrator.entityType(subclass.asOWLClass());
         else {
@@ -137,7 +136,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         OWLClassExpression superclass = axiom.getSuperClass();
-        EntityType supertype = null;
+        EntityType supertype;
         if (superclass.isOWLClass())
             supertype = migrator.entityType(superclass.asOWLClass());
         else {
@@ -216,12 +215,11 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         if (properties.size() != axiom.getAxiomWithoutAnnotations().properties().count())
             return null;
 
-        Iterator<OWLObjectPropertyExpression> it = properties.iterator();
-        while(it.hasNext()){
-            RelationType relation = migrator.relation(it.next().asOWLObjectProperty());
+        for (OWLObjectPropertyExpression property : properties) {
+            RelationType relation = migrator.relation(property.asOWLObjectProperty());
             properties.forEach(prop -> {
                 RelationType eqRelation = migrator.relation(prop.asOWLObjectProperty());
-                if (!relation.equals(eqRelation)){
+                if (!relation.equals(eqRelation)) {
                     Map<String, String> roleMap = new HashMap<>();
                     roleMap.put(migrator.namer().subjectRole(relation.getName()),
                             migrator.namer().subjectRole(eqRelation.getName()));

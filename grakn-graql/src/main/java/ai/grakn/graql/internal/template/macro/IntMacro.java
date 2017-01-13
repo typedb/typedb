@@ -27,7 +27,7 @@ import java.util.List;
  * Convert the given value into an integer. Only accepts one argument.
  *
  * Usage:
- *      @int(<value>)
+ *      {@literal @}int(<value>)
  * </p>
  *
  * @author alexandraorth

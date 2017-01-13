@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -44,11 +45,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class StatisticsTest extends AbstractGraphTest {
 
@@ -65,10 +67,10 @@ public class StatisticsTest extends AbstractGraphTest {
 
     private static final double delta = 0.000001;
 
-    private String entityId1;
-    private String entityId2;
-    private String entityId3;
-    private String entityId4;
+    private ConceptId entityId1;
+    private ConceptId entityId2;
+    private ConceptId entityId3;
+    private ConceptId entityId4;
 
     private String keyspace;
 

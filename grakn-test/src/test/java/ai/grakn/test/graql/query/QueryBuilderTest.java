@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
@@ -104,7 +105,7 @@ public class QueryBuilderTest extends AbstractMovieGraphTest {
 
     @Test
     public void testErrorExecuteInsertQueryWithoutGraph() {
-        InsertQuery query = insert(var().id("another-movie").isa("movie"));
+        InsertQuery query = insert(var().id(ConceptId.of("another-movie")).isa("movie"));
         exception.expect(IllegalStateException.class);
         exception.expectMessage("graph");
         query.execute();

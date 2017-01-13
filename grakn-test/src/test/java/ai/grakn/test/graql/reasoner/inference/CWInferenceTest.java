@@ -25,7 +25,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import org.junit.BeforeClass;
@@ -42,15 +42,12 @@ import static org.junit.Assume.assumeTrue;
 import static ai.grakn.test.GraknTestEnv.*;
 
 public class CWInferenceTest extends AbstractGraknTest {
-    private static GraknGraph graph;
-    private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        graph = CWGraph.getGraph();
-        reasoner = new Reasoner(graph);
+        GraknGraph graph = CWGraph.getGraph();
         qb = graph.graql().infer(false);
     }
 
@@ -62,7 +59,7 @@ public class CWInferenceTest extends AbstractGraknTest {
                 "{$x isa weapon;} or {" +
                 "{{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};} or {$x isa rocket;$x has propulsion 'gsp';};" +
                 "};";
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -70,15 +67,14 @@ public class CWInferenceTest extends AbstractGraknTest {
         String queryString = "match $z isa country;$z has alignment 'hostile';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $z isa country, has name 'Nono';";
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTransactionQuery() {
         GraknGraph graph = CWGraph.getGraph();
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
-        String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
+                String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
@@ -94,7 +90,7 @@ public class CWInferenceTest extends AbstractGraknTest {
                 "($z, $y) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -117,7 +113,7 @@ public class CWInferenceTest extends AbstractGraknTest {
                 "($z, $y) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -142,7 +138,7 @@ public class CWInferenceTest extends AbstractGraknTest {
                 "$z isa country;" +
                 "}; select $x;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -168,7 +164,7 @@ public class CWInferenceTest extends AbstractGraknTest {
             "$x isa person;" +
             "$z isa country;};} or {$x has nationality 'American';$x isa person;}; select $x;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -193,7 +189,7 @@ public class CWInferenceTest extends AbstractGraknTest {
                 "($yy, $yyy) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
@@ -218,13 +214,12 @@ public class CWInferenceTest extends AbstractGraknTest {
                 "($z, $x) isa owns;" +
                 "};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
     }
 
     @Test
     public void testGraphCase() {
         GraknGraph localGraph = CWGraph.getGraph();
-        Reasoner localReasoner = new Reasoner(localGraph);
         QueryBuilder lqb = localGraph.graql().infer(false);
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");
 
@@ -257,7 +252,7 @@ public class CWInferenceTest extends AbstractGraknTest {
                 "};" +
                 "}; select $x;";
 
-        assertQueriesEqual(localReasoner.resolve(query, false), lqb.parse(explicitQuery));
+        assertQueriesEqual(Reasoner.resolve(query, false), lqb.parse(explicitQuery));
     }
 
     private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {

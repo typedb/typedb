@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ImportControllerTest extends EngineTestBase {
-    private String KEYSPACE = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
+    private final String KEYSPACE = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
 
     @Test
     public void testLoadOntologyAndData() {

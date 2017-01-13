@@ -33,6 +33,9 @@
     "babelify": "^7.3.0",
     "browserify": "^13.1.0",
     "nyc": "^10.0.0",
+    "eslint": "^3.12.2",
+    "eslint-config-airbnb-base": "^11.0.0",
+    "eslint-plugin-import": "^2.2.0",
     "vueify": "^9.0",
     "watchify": "^3.7.0"
   },

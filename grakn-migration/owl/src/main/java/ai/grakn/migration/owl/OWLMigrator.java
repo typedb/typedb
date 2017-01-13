@@ -18,6 +18,7 @@
 package ai.grakn.migration.owl;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -161,7 +162,7 @@ public class OWLMigrator {
 
     public Entity entity(OWLNamedIndividual individual) {
         String id = namer.individualEntityName(individual.getIRI());
-        Entity entity = graph.getConcept(id);
+        Entity entity = graph.getConcept(ConceptId.of(id));
         if (entity != null)
             return entity;
         OWLClass owlclass = eval(() -> {

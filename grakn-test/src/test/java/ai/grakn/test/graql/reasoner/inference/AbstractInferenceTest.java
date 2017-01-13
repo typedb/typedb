@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.test.AbstractGraknTest;
@@ -39,13 +39,11 @@ import static org.junit.Assert.assertEquals;
 
 
 public class AbstractInferenceTest extends AbstractGraknTest {
-    private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         GraknGraph graph = AbstractGraph.getGraph();
-        reasoner = new Reasoner(graph);
         qb = graph.graql().infer(false);
     }
 
@@ -63,7 +61,7 @@ public class AbstractInferenceTest extends AbstractGraknTest {
                 "($x, $y) isa rel\n" +
                 "}; select $x";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**silently allows multiple isas*/
@@ -83,7 +81,7 @@ public class AbstractInferenceTest extends AbstractGraknTest {
                                 "$y isa P;\n" +
                                 "($y, $yy) isa REL; select $yy";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, Stream<Map<String, Concept>> s2) {

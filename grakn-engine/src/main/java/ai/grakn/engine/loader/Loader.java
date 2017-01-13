@@ -59,8 +59,8 @@ public class Loader {
     private Semaphore blocker = new Semaphore(25);
 
     private int batchSize;
-    private Collection<InsertQuery> queries;
-    private String keyspace;
+    private final Collection<InsertQuery> queries;
+    private final String keyspace;
 
     public Loader(String keyspace){
         this.keyspace = keyspace;
@@ -128,7 +128,7 @@ public class Loader {
         }
 
         String taskId = manager.scheduleTask(new LoaderTask(), keyspace, new Date(), 0, getConfiguration(batch));
-        CompletableFuture completableFuture = manager.completableFuture(taskId);
+        CompletableFuture<?> completableFuture = manager.completableFuture(taskId);
         completableFuture.thenAccept(i -> releaseSemaphore());
         completableFuture.exceptionally(i -> {
             releaseSemaphore();

@@ -17,14 +17,16 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Iterator;
@@ -42,8 +44,8 @@ import java.util.stream.Collectors;
  */
 public class Resource extends MultiPredicateBinary{
 
-    public Resource(VarAdmin pattern, Query par) { this(pattern, null, par);}
-    public Resource(VarAdmin pattern, Set<Predicate> p, Query par){ super(pattern, p, par);}
+    public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
+    public Resource(VarAdmin pattern, Set<Predicate> p, ReasonerQuery par){ super(pattern, p, par);}
     private Resource(Resource a) { super(a);}
 
     @Override
@@ -67,9 +69,10 @@ public class Resource extends MultiPredicateBinary{
     }
 
     @Override
-    protected String extractTypeId(VarAdmin var) {
+    protected ConceptId extractTypeId(VarAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        return resProp != null? resProp.getType().orElse("") : "";
+        String typeName = resProp != null? resProp.getType().orElse("") : "";
+        return !typeName.isEmpty()? getParentQuery().graph().getType(typeName).getId() : null;
     }
 
     @Override
@@ -95,10 +98,9 @@ public class Resource extends MultiPredicateBinary{
     @Override
     public boolean requiresMaterialisation(){ return true;}
 
-    //TODO fix the single predicate
     @Override
     public Set<Predicate> getValuePredicates(){
-        return getParentQuery().getValuePredicates().stream()
+        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
                 .filter(atom -> atom.getVarName().equals(getValueVariable()))
                 .collect(Collectors.toSet());
     }

@@ -36,7 +36,7 @@ class MatchQueryGraph extends MatchQueryModifier {
 
     private final GraknGraph graph;
 
-    MatchQueryGraph(GraknGraph graph, MatchQueryInternal inner) {
+    MatchQueryGraph(GraknGraph graph, AbstractMatchQuery inner) {
         super(inner);
         this.graph = graph;
     }
@@ -62,11 +62,6 @@ class MatchQueryGraph extends MatchQueryModifier {
 
     @Override
     protected String modifierString() {
-        throw new RuntimeException("modifierString should never be called");
-    }
-
-    @Override
-    public String toString() {
-        return inner.toString();
+        return "";
     }
 }

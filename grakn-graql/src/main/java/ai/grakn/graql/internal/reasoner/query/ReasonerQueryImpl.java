@@ -25,26 +25,25 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.match.MatchQueryInternal;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -63,34 +62,34 @@ import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
  * @author Kasper Piskorski
  *
  */
-public class Query implements MatchQueryInternal {
+public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
     private final Set<VarName> selectVars;
 
-    public Query(MatchQuery query, GraknGraph graph) {
+    public ReasonerQueryImpl(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
-        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this, graph));
+        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         inferTypes();
     }
 
-    public Query(String query, GraknGraph graph) {
+    public ReasonerQueryImpl(String query, GraknGraph graph) {
         this(graph.graql().infer(false).<MatchQuery>parse(query), graph);
     }
 
-    public Query(Query q) {
-        this.graph = q.getGraph().orElse(null);
+    public ReasonerQueryImpl(ReasonerQueryImpl q) {
+        this.graph = q.graph;
         this.selectVars = q.getSelectedNames();
         q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
         inferTypes();
     }
 
-    protected Query(Atom atom, Set<VarName> vars) {
+    protected ReasonerQueryImpl(Atom atom, Set<VarName> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        this.graph = atom.getParentQuery().getGraph().orElse(null);
+        this.graph = atom.getParentQuery().graph();
         this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
         addAtom(AtomicFactory.create(atom, this));
@@ -104,7 +103,7 @@ public class Query implements MatchQueryInternal {
     public boolean equals(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Query a2 = (Query) obj;
+        ReasonerQueryImpl a2 = (ReasonerQueryImpl) obj;
         return this.isEquivalent(a2);
     }
 
@@ -126,50 +125,23 @@ public class Query implements MatchQueryInternal {
                 .forEach(Atom::inferTypes);
     }
 
-    @Override
-    public Set<Type> getTypes(GraknGraph graph){ return getMatchQuery().admin().getTypes(graph);}
-
-    @Override
-    public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
-
-    @Override
     public Set<VarName> getSelectedNames() { return Sets.newHashSet(selectVars);}
-
-    @Override
-    public MatchQuery select(Set<VarName> vars){
-        selectVars.clear();
-        selectVars.addAll(vars);
-        return this;
-    }
 
     /**
      * append to select variables
      * @param vars variables to append
-     * @return appended query
      */
-    public MatchQuery selectAppend(Set<VarName> vars){
+    public void selectAppend(Set<VarName> vars){
         selectVars.addAll(vars);
-        return this;
     }
 
-    @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return getMatchQuery().admin().streamWithVarNames();
-    }
-
-    @Override
-    public Optional<GraknGraph> getGraph(){ return Optional.of(graph);}
     public GraknGraph graph(){ return graph;}
 
-    @Override
     public Conjunction<PatternAdmin> getPattern() {
         Set<PatternAdmin> patterns = new HashSet<>();
-        atomSet.stream().map(Atomic::getPattern).forEach(patterns::add);
+        atomSet.stream().map(Atomic::getCombinedPattern).forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
-
-    @Override
-    public List<Map<String, Concept>> execute() { return getMatchQuery().execute();}
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule
@@ -220,11 +192,12 @@ public class Query implements MatchQueryInternal {
     /**
      * @return set of id predicates contained in this query
      */
-    public Set<Predicate> getIdPredicates(){
+    public Set<IdPredicate> getIdPredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
                 .filter(Predicate::isIdPredicate)
+                .map(predicate -> (IdPredicate) predicate)
                 .collect(Collectors.toSet());
     }
 
@@ -236,17 +209,6 @@ public class Query implements MatchQueryInternal {
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
                 .filter(Predicate::isValuePredicate)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of resource atoms contained in this query
-     */
-    public Set<Atom> getResources(){
-        return getAtoms().stream()
-                .filter(Atomic::isAtom)
-                .map(at -> (Atom) at)
-                .filter(Atom::isResource)
                 .collect(Collectors.toSet());
     }
 
@@ -331,7 +293,7 @@ public class Query implements MatchQueryInternal {
         atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
         toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.unify(from, to));
+        toAdd.forEach(atom -> atom.unify(ImmutableMap.of(from, to)));
         toAdd.forEach(this::addAtom);
 
         Map<VarName, VarName> mapping = new HashMap<>();
@@ -351,7 +313,6 @@ public class Query implements MatchQueryInternal {
         for (Map.Entry<VarName, VarName> mapping: mappings.entrySet()) {
             VarName varToReplace = mapping.getKey();
             VarName replacementVar = mapping.getValue();
-
             if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
                 //bidirectional mapping
                 if (mappings.containsKey(replacementVar) && mappings.get(replacementVar).equals(varToReplace)) {
@@ -430,15 +391,16 @@ public class Query implements MatchQueryInternal {
      * @param var variable name
      * @return id predicate for the specified var name if any
      */
-    public Predicate getIdPredicate(VarName var) {
+    public IdPredicate getIdPredicate(VarName var) {
         //direct
-        Set<Predicate> relevantSubs = getIdPredicates().stream()
+        Set<IdPredicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
         //indirect
         getTypeConstraints().stream()
                 .filter(type -> type.getVarName().equals(var))
-                .forEach(type -> type.getPredicates().stream().findFirst().ifPresent(relevantSubs::add));
+                .forEach(type -> type.getPredicates().stream().findFirst().
+                        ifPresent(predicate -> relevantSubs.add((IdPredicate) predicate)));
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 
@@ -454,7 +416,6 @@ public class Query implements MatchQueryInternal {
         else return false;
     }
 
-
     /**
      * @param atom to be removed
      * @return true if the atom set contained the specified atom
@@ -468,12 +429,6 @@ public class Query implements MatchQueryInternal {
                 .filter(at -> !at.isRuleResolvable())
                 .collect(Collectors.toSet());
         addAtomConstraints(types);
-        //id predicates from types
-        addAtomConstraints(types.stream()
-                .map(type -> (TypeAtom) type)
-                .filter(type -> type.getPredicate() != null)
-                .map(Binary::getPredicate)
-                .collect(Collectors.toSet()));
     }
 
     /**
@@ -514,7 +469,7 @@ public class Query implements MatchQueryInternal {
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
-    public boolean isEquivalent(Query q) {
+    public boolean isEquivalent(ReasonerQueryImpl q) {
         boolean equivalent = true;
         Set<Atom> atoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)

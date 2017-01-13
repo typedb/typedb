@@ -23,7 +23,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -33,18 +34,19 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
@@ -80,18 +82,15 @@ public class Relation extends TypeAtom {
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
     private Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = null;
 
-    public Relation(VarAdmin pattern) {
-        this(pattern, null, null);
-    }
-    public Relation(VarAdmin pattern, Query par) {
+    public Relation(VarAdmin pattern, ReasonerQuery par) {
         this(pattern, null, par);
     }
-    public Relation(VarAdmin pattern, Predicate predicate, Query par) {
+    public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
         this.relationPlayers = getRelationPlayers(pattern);
     }
 
-    public Relation(VarName name, VarName typeVariable, Map<VarName, Var> roleMap, Predicate pred, Query par) {
+    public Relation(VarName name, VarName typeVariable, Map<VarName, Var> roleMap, IdPredicate pred, ReasonerQuery par) {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
         this.relationPlayers = getRelationPlayers(getPattern().asVar());
     }
@@ -157,7 +156,7 @@ public class Relation extends TypeAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
-        return this.getTypeId().equals(a2.getTypeId())
+        return Objects.equals(this.typeId, a2.getTypeId())
                 && this.getVarNames().equals(a2.getVarNames())
                 && relationPlayers.equals(a2.relationPlayers);
     }
@@ -165,7 +164,7 @@ public class Relation extends TypeAtom {
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + getTypeId().hashCode();
+        hashCode = hashCode * 37 + (getTypeId() != null? getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + getVarNames().hashCode();
         return hashCode;
     }
@@ -177,13 +176,14 @@ public class Relation extends TypeAtom {
         Relation a2 = (Relation) obj;
         Map<RoleType, String> map = getRoleConceptIdMap();
         Map<RoleType, String> map2 = a2.getRoleConceptIdMap();
-        return this.getTypeId().equals(a2.getTypeId()) && map.equals(map2);
+        return Objects.equals(this.typeId, a2.getTypeId())
+                && map.equals(map2);
     }
 
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);
         hashCode = hashCode * 37 + this.getRoleConceptIdMap().hashCode();
         return hashCode;
     }
@@ -217,7 +217,7 @@ public class Relation extends TypeAtom {
 
     private boolean isRuleApplicableViaAtom(Atom childAtom, InferenceRule child) {
         boolean ruleRelevant = true;
-        Query parent = getParentQuery();
+        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         Map<RoleType, Pair<VarName, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
         Map<RoleType, Pair<VarName, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
 
@@ -304,24 +304,21 @@ public class Relation extends TypeAtom {
         return roleTypes;
     }
 
-    private void addPredicate(Predicate pred) {
-        if (getParentQuery() == null) throw new IllegalStateException("No parent in addPredicate");
-        Query parent = getParentQuery();
-        pred.setParentQuery(parent);
+    private void addPredicate(IdPredicate pred) {
         setPredicate(pred);
-        getParentQuery().addAtom(pred);
+        ((ReasonerQueryImpl) getParentQuery()).addAtom(pred);
     }
 
     private void addType(Type type) {
         typeId = type.getId();
         VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
-        addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin()));
+        addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
     }
 
     private void inferTypeFromRoles() {
-        if (getParentQuery() != null && !isValueUserDefinedName() && getTypeId().isEmpty()) {
+        if (getParentQuery() != null && !isValueUserDefinedName() && getTypeId() == null) {
             //look at available roles
             RelationType type = null;
             Set<RelationType> compatibleTypes = getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes);
@@ -348,7 +345,7 @@ public class Relation extends TypeAtom {
 
     private void inferTypeFromHasRole(){
         if (getPredicate() == null && getParentQuery() != null) {
-            Query parent = getParentQuery();
+            ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
             VarName valueVariable = getValueVariable();
             HasRole hrAtom = parent.getAtoms().stream()
                     .filter(at -> at.getVarName().equals(valueVariable))
@@ -393,23 +390,10 @@ public class Relation extends TypeAtom {
         //from types
         getTypeConstraints()
                 .forEach(atom -> {
-                    Predicate predicate = getParentQuery().getIdPredicate(atom.getValueVariable());
+                    Predicate predicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable());
                     if (predicate != null) idPredicates.add(predicate);
                 });
         return idPredicates;
-    }
-
-    @Override
-    public void unify(VarName from, VarName to) {
-        super.unify(from, to);
-        relationPlayers.forEach(c -> {
-            VarName var = c.getRolePlayer().getVarName();
-            if (var.equals(from)) {
-                c.getRolePlayer().setVarName(to);
-            } else if (var.equals(to)) {
-                c.getRolePlayer().setVarName(capture(var));
-            }
-        });
     }
 
     @Override
@@ -522,8 +506,8 @@ public class Relation extends TypeAtom {
                 RoleType roleType = !typeName.isEmpty() ? graph.getRoleType(typeName): null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {
-                    Predicate rolePredicate = getParentQuery().getIdPredicate(role.getVarName());
-                    if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicateValue());
+                    IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
+                    if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
                 }
                 allocatedVars.add(var);
                 if (roleType != null) {
@@ -607,9 +591,9 @@ public class Relation extends TypeAtom {
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(rt -> new AbstractMap.SimpleEntry<>(rt, getParentQuery().getIdPredicate(rt.getVarName())))
+                .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicateValue())));
+                .collect(Collectors.toMap(e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicate())));
     }
 
     private Map<VarName, VarName> getUnifiers(Map<VarName, RoleType> childMap, Map<RoleType, VarName> parentMap,
@@ -704,7 +688,7 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parentAtom, Query parent){
+    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parentAtom, ReasonerQuery parent){
         if(parentAtom.isUserDefinedName()){
             Map<VarName, VarName> unifiers = new HashMap<>();
             Var relVar = Graql.var(UUID.randomUUID().toString());

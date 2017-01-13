@@ -46,9 +46,7 @@ public class JWTHandler {
             JWTVerifier verifier = new JWTVerifier(secret);
             verifier.verify(jwt);
             return true;
-        } catch (JWTVerifyException e) {
-            return false;
-        } catch (NoSuchAlgorithmException | IOException | SignatureException | InvalidKeyException e) {
+        } catch (JWTVerifyException | NoSuchAlgorithmException | IOException | SignatureException | InvalidKeyException e) {
             return false;
         }
     }

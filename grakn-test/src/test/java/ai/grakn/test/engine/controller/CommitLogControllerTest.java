@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest extends EngineTestBase {
     private final String KEYSPACE = "test";
-    private Cache cache = Cache.getInstance();
+    private final Cache cache = Cache.getInstance();
 
     @Before
     public void setUp() throws Exception {

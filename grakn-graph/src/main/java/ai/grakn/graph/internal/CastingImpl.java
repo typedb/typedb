@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *
  * @author fppt
  */
-class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
+class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
 
     CastingImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type) {
         super(graknGraph, v, type);
@@ -55,7 +55,7 @@ class CastingImpl extends ConceptImpl<CastingImpl, RoleType> {
      * @return The {@link RoleType} this casting is linked with
      */
     public RoleType getRole() {
-        Concept concept = getParentIsa();
+        Concept concept = type();
         if(concept != null)
             return concept.asRoleType();
         else

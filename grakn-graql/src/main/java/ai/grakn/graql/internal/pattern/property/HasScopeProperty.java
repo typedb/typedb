@@ -20,16 +20,26 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -74,7 +84,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
+        ConceptId scopeId = scope.getId().orElseThrow(() -> failDelete(this));
         concept.asRelation().deleteScope(graph.getConcept(scopeId));
     }
 
@@ -92,5 +102,18 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     @Override
     public int hashCode() {
         return scope.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        VarName varName = var.getVarName();
+        VarAdmin scopeVar = this.getScope();
+        VarName scopeVariable = scopeVar.isUserDefinedName() ?
+                scopeVar.getVarName() : varName.map(name -> name + "-scope-" + UUID.randomUUID().toString());
+        IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
+
+        //isa part
+        VarAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
+        return new TypeAtom(scVar, predicate, parent);
     }
 }

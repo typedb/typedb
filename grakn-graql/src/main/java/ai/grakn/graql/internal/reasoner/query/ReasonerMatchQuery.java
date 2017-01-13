@@ -26,7 +26,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -42,7 +41,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
  * @author Kasper Piskorski
  *
  */
-public class ReasonerMatchQuery extends Query{
+public class ReasonerMatchQuery extends ReasonerQueryImpl {
 
     final private QueryAnswers answers;
 
@@ -54,11 +53,6 @@ public class ReasonerMatchQuery extends Query{
     public ReasonerMatchQuery(MatchQuery query, GraknGraph graph, QueryAnswers ans){
         super(query, graph);
         answers = new QueryAnswers(ans);
-    }
-
-    @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return answers.stream();
     }
 
     @Override

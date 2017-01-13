@@ -20,7 +20,6 @@ package ai.grakn.migration.sql;
 
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.base.AbstractMigrator;
-import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -29,6 +28,7 @@ import org.jooq.impl.DSL;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -79,7 +79,7 @@ public class SQLMigrator extends AbstractMigrator {
      * @return valid data
      */
     public Map<String, Object> convertToValidValues(Map<String, Object> data){
-        data = Maps.filterValues(data, Predicates.notNull());
+        data = Maps.filterValues(data, Objects::nonNull);
         data = Maps.transformValues(data, this::convertToSupportedTypes);
         return data;
     }

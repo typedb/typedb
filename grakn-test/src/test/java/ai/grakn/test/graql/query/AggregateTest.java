@@ -100,8 +100,8 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
         long count = (long) results.get("c");
 
-        //noinspection unchecked
-        Map<Concept, List<Map<String, Concept>>> groups = (Map<Concept, List<Map<String, Concept>>>) results.get("g");
+        // We can't guarantee the generic type is correct here
+        @SuppressWarnings("unchecked") Map<Concept, List<Map<String, Concept>>> groups = (Map) results.get("g");
 
         Assert.assertEquals(QueryUtil.movies.length, groups.size());
 

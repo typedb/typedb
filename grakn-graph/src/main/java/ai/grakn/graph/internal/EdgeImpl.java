@@ -23,9 +23,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
- * Wraps a tinkerpop edge constraining it to our object concept
- */
-/**
  * <p>
  *     Represent an Edge in a Grakn Graph
  * </p>
@@ -115,7 +112,10 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @param value The value of the property
      */
-    void setProperty(Schema.EdgeProperty type, Object value){
+    void setProperty(Schema.EdgeProperty type, String value){
+        edge.property(type.name(), value);
+    }
+    void setProperty(Schema.EdgeProperty type, boolean value){
         edge.property(type.name(), value);
     }
 

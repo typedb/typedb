@@ -26,8 +26,6 @@ import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.engine.util.ExceptionWrapper;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
@@ -38,7 +36,10 @@ import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -51,7 +52,7 @@ public class DistributedTaskManager implements TaskManager{
 	private final AtomicBoolean OPENED = new AtomicBoolean(false);
     private static DistributedTaskManager instance = null;
 
-    private KafkaProducer producer;
+    private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
     private SynchronizedStateStorage zkStorage;
 
