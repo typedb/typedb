@@ -53,7 +53,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestReasoning extends TestOwlGraknBase {
 
-    private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
+    private final IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
     private OWLReasoner hermit;
 
     @Before

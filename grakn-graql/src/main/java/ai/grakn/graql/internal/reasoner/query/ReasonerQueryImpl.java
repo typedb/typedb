@@ -25,10 +25,12 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -60,34 +62,34 @@ import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
  * @author Kasper Piskorski
  *
  */
-public class Query {
+public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
     private final Set<VarName> selectVars;
 
-    public Query(MatchQuery query, GraknGraph graph) {
+    public ReasonerQueryImpl(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
-        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this, graph));
+        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         inferTypes();
     }
 
-    public Query(String query, GraknGraph graph) {
+    public ReasonerQueryImpl(String query, GraknGraph graph) {
         this(graph.graql().infer(false).<MatchQuery>parse(query), graph);
     }
 
-    public Query(Query q) {
+    public ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
         this.selectVars = q.getSelectedNames();
         q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
         inferTypes();
     }
 
-    protected Query(Atom atom, Set<VarName> vars) {
+    protected ReasonerQueryImpl(Atom atom, Set<VarName> vars) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        this.graph = atom.getParentQuery().graph;
+        this.graph = atom.getParentQuery().graph();
         this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
         addAtom(AtomicFactory.create(atom, this));
@@ -101,7 +103,7 @@ public class Query {
     public boolean equals(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Query a2 = (Query) obj;
+        ReasonerQueryImpl a2 = (ReasonerQueryImpl) obj;
         return this.isEquivalent(a2);
     }
 
@@ -128,7 +130,6 @@ public class Query {
     /**
      * append to select variables
      * @param vars variables to append
-     * @return appended query
      */
     public void selectAppend(Set<VarName> vars){
         selectVars.addAll(vars);
@@ -208,17 +209,6 @@ public class Query {
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
                 .filter(Predicate::isValuePredicate)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of resource atoms contained in this query
-     */
-    public Set<Atom> getResources(){
-        return getAtoms().stream()
-                .filter(Atomic::isAtom)
-                .map(at -> (Atom) at)
-                .filter(Atom::isResource)
                 .collect(Collectors.toSet());
     }
 
@@ -426,7 +416,6 @@ public class Query {
         else return false;
     }
 
-
     /**
      * @param atom to be removed
      * @return true if the atom set contained the specified atom
@@ -480,7 +469,7 @@ public class Query {
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
-    public boolean isEquivalent(Query q) {
+    public boolean isEquivalent(ReasonerQueryImpl q) {
         boolean equivalent = true;
         Set<Atom> atoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)

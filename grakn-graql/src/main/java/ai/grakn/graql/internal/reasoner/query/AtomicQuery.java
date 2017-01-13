@@ -32,7 +32,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class AtomicQuery extends Query{
+public class AtomicQuery extends ReasonerQueryImpl {
 
     private Atom atom;
     private AtomicQuery parent = null;

@@ -18,7 +18,6 @@
 
 package ai.grakn.test.engine.loader;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;

@@ -27,7 +27,7 @@ import static spark.Spark.put;
 @Produces({"application/json", "text/plain"})
 public class UserController {
     private final Logger LOG = LoggerFactory.getLogger(UserController.class);
-	private UsersHandler users = UsersHandler.getInstance();
+	private final UsersHandler users = UsersHandler.getInstance();
 	
 	public UserController() {
         get(REST.WebPath.ALL_USERS, this::findUsers);

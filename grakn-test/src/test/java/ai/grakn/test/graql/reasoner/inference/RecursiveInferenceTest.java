@@ -66,7 +66,7 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
         GraknGraph graph = TestGraph.getGraph("name", "recursivity-test.gql");
             }
 
-    /**single-directional*/
+    /*single-directional*/
     /**from Bancilhon - An Amateur's Introduction to Recursive Query Processing Strategies p. 25*/
     @Test
     public void testAncestor() {
@@ -199,7 +199,7 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
+    /*from Vieille - Recursive Query Processing: The power of logic p. 25*/
     /** SG(X, X) :- H(X) doesn't get applied*/
     @Ignore
     @Test
@@ -401,7 +401,7 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     }
 
     @Test
-    /**modified test 6.10 from Cao p. 82*/
+    /*modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 3;
         GraknGraph graph = PathGraphII.getGraph(N, N);
@@ -416,7 +416,7 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     }
 
     @Test
-    /**modified test 6.10 from Cao p. 82*/
+    /*modified test 6.10 from Cao p. 82*/
     public void testPathIIPrime(){
         final int N = 3;
         GraknGraph graph = PathGraphII.getGraph(N, N);

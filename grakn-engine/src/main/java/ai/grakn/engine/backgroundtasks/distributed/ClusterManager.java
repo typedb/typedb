@@ -20,7 +20,6 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.engine.util.ExceptionWrapper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
@@ -47,7 +46,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private TaskRunner taskRunner;
     private Thread taskRunnerThread;
     private SynchronizedStateStorage zookeeperStorage;
-    private CountDownLatch leaderInitLatch = new CountDownLatch(1);
+    private final CountDownLatch leaderInitLatch = new CountDownLatch(1);
     
     public static synchronized ClusterManager getInstance() {
         if(instance == null)
@@ -62,7 +61,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
     public void start() {
         try {
-            LOG.open();
             LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
 
             zookeeperStorage = SynchronizedStateStorage.getInstance();
@@ -113,8 +111,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
         noThrow(zookeeperStorage::close, "Could not close ZK storage.");
         zookeeperStorage = null;
-
-        noThrow(LOG::close, "Could not close KafkaLogger");
     }
 
     /**

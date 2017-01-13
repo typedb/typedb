@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryStateStorage implements StateStorage {
     private static InMemoryStateStorage instance = null;
 
-    private Map<String, SoftReference<TaskState>> storage;
+    private final Map<String, SoftReference<TaskState>> storage;
 
     private InMemoryStateStorage() {
         storage = new ConcurrentHashMap<>();

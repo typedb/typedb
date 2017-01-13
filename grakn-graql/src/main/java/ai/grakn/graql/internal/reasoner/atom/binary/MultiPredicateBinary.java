@@ -20,13 +20,13 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public abstract class MultiPredicateBinary extends BinaryBase {
     private final  Set<Predicate> multiPredicate = new HashSet<>();
 
-    protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, Query par) {
+    protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, ReasonerQuery par) {
         super(pattern, par);
         this.multiPredicate.addAll(preds);
         this.typeId = extractTypeId(atomPattern.asVar());
@@ -61,7 +61,7 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     protected abstract ConceptId extractTypeId(VarAdmin var);
 
     @Override
-    public void setParentQuery(Query q) {
+    public void setParentQuery(ReasonerQuery q) {
         super.setParentQuery(q);
         multiPredicate.forEach(pred -> pred.setParentQuery(q));
     }

@@ -18,7 +18,6 @@
 
 package ai.grakn.test.migration;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
@@ -37,7 +36,6 @@ import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -112,7 +110,7 @@ public class AbstractGraknMigratorTest extends EngineTestBase {
     protected void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
         RelationType relationType = graph.getRelationType(relation);
 
-        RoleType role1 = instance1.playsRoles().stream().filter(r -> r.relationTypes().stream().filter(rel -> rel.equals(relationType)).findAny().isPresent()).findFirst().get();
+        RoleType role1 = instance1.playsRoles().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
         assertTrue(instance1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().values().contains(instance2)));
     }
 

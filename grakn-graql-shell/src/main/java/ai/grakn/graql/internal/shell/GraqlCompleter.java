@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class GraqlCompleter implements Completer {
 
-    private CompletableFuture<Set<String>> types = new CompletableFuture<>();
+    private final CompletableFuture<Set<String>> types = new CompletableFuture<>();
 
     public void setTypes(Set<String> types) {
         this.types.complete(types);

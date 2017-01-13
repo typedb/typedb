@@ -42,7 +42,7 @@ public class TaskState implements Cloneable, Serializable {
     /**
      * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
      */
-    private String taskClassName;
+    private final String taskClassName;
     /**
      * String identifying who created this task.
      */

@@ -159,7 +159,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 or(var("n").value(contains("ar")), var("n").value(regex("^M.*$")))
         );
 
-        MatchQuery parsed = (MatchQuery) qb.parse(
+        MatchQuery parsed = qb.parse(
                 "match ($x, $y); $y isa person, has name $n;" +
                 "$n value contains 'ar' or $n value /^M.*$/;"
         );
@@ -493,12 +493,12 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testParseComputeCluster() {
-        assertParseEquivalence("compute cluster in movie, person; members; persist;");
+        assertParseEquivalence("compute cluster in movie, person; members;");
     }
 
     @Test
     public void testParseComputeDegree() {
-        assertParseEquivalence("compute degrees in movie; persist;");
+        assertParseEquivalence("compute degrees in movie;");
     }
 
     @Test

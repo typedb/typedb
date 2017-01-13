@@ -27,7 +27,7 @@ import java.util.List;
  * Convert the given value into a long. Only accepts one argument.
  *
  * Usage:
- *      @long(<value>)
+ *      {@literal @}long(<value>)
  * </p>
  *
  * @author alexandraorth
