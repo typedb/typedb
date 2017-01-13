@@ -37,7 +37,7 @@ class EdgeImpl {
     private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
-    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, AbstractGraknGraph graknGraph){
+    EdgeImpl(Edge e, AbstractGraknGraph graknGraph){
         edge = e;
         this.graknGraph = graknGraph;
     }
@@ -121,7 +121,7 @@ class EdgeImpl {
         edge.property(type.name(), value);
     }
 
-    private boolean edgeEquals(org.apache.tinkerpop.gremlin.structure.Edge toEdge) {
+    private boolean edgeEquals(Edge toEdge) {
         return edge.equals(toEdge);
     }
 }

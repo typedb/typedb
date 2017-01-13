@@ -35,7 +35,7 @@ public class CSVMigrationOptions extends MigrationOptions {
     private final String nullString = CSVMigrator.NULL_STRING;
 
     public CSVMigrationOptions(String[] args) {
-        super(args);
+        super();
 
         options.addOption("i", "input", true, "input csv file");
         options.addOption("t", "template", true, "graql template to apply over data");

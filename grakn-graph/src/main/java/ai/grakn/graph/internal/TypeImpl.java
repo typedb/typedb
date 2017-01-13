@@ -86,10 +86,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
     }
 
     private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){
-        if(!getGraknGraph().implicitConceptsVisible()){
-            if(!types.isEmpty() && types.iterator().next().isType()) {
-                return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
-            }
+        if (!getGraknGraph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isType()) {
+            return types.stream().filter(t -> !t.asType().isImplicit()).collect(Collectors.toSet());
         }
         return types;
     }

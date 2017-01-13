@@ -26,7 +26,6 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.util.REST;
 import com.google.common.base.Splitter;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -43,10 +42,14 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
+import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
@@ -108,23 +111,23 @@ class GraqlSession {
     }
 
     void handleMessage(Json json) {
-        switch (json.at(REST.RemoteShell.ACTION).asString()) {
-            case REST.RemoteShell.ACTION_QUERY:
+        switch (json.at(ACTION).asString()) {
+            case ACTION_QUERY:
                 receiveQuery(json);
                 break;
-            case REST.RemoteShell.ACTION_END:
+            case ACTION_END:
                 executeQuery();
                 break;
-            case REST.RemoteShell.ACTION_QUERY_ABORT:
+            case ACTION_QUERY_ABORT:
                 abortQuery();
                 break;
-            case REST.RemoteShell.ACTION_COMMIT:
+            case ACTION_COMMIT:
                 commit();
                 break;
-            case REST.RemoteShell.ACTION_ROLLBACK:
+            case ACTION_ROLLBACK:
                 rollback();
                 break;
-            case REST.RemoteShell.ACTION_DISPLAY:
+            case ACTION_DISPLAY:
                 setDisplayOptions(json);
                 break;
         }
