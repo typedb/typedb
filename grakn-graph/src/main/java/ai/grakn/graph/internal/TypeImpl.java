@@ -193,7 +193,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
 
         //noinspection unchecked
         GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                .has(Schema.ConceptProperty.NAME.name(), getName())
+                .has(Schema.ConceptProperty.NAME.name(), getName().getValue())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
