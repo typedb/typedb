@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -36,8 +35,8 @@ import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -54,10 +53,8 @@ import static org.junit.Assume.assumeFalse;
 
 public class AnalyticsTest {
 
-    @ClassRule
-    public static final GraphContext rule = GraphContext.empty();
-
-    public static final GraknGraph graph = rule.graph();
+    @Rule
+    public final GraphContext context = GraphContext.empty();
 
     @Before
     public void setUp() {
@@ -77,21 +74,21 @@ public class AnalyticsTest {
         assumeFalse(usingTinker());
 
         String resourceTypeName = "degree";
-        ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
-        EntityType thing = graph.putEntityType("thing");
+        ResourceType<Long> degree = context.graph().putResourceType(resourceTypeName, ResourceType.DataType.LONG);
+        EntityType thing = context.graph().putEntityType("thing");
         thing.hasResource(degree);
 
         Entity thisThing = thing.addEntity();
         Resource thisResource = degree.putResource(1L);
         thisThing.hasResource(thisResource);
-        graph.commit();
+        context.graph().commit();
 
         Map<Long, Set<String>> degrees;
-        degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
+        degrees = context.graph().graql().compute().degree().of("thing").in("thing", "degree").execute();
         assertEquals(1, degrees.size());
         assertEquals(1, degrees.get(1L).size());
 
-        degrees = graph.graql().compute().degree().in("thing", "degree").execute();
+        degrees = context.graph().graql().compute().degree().in("thing", "degree").execute();
         assertEquals(1, degrees.size());
         assertEquals(2, degrees.get(1L).size());
     }
@@ -101,25 +98,25 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // make slightly odd graph
+        // make slightly odd context.graph()
         String resourceTypeId = "degree";
-        EntityType thing = graph.putEntityType("thing");
+        EntityType thing = context.graph().putEntityType("thing");
 
-        graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
-        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
-        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
+        context.graph().putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+        RoleType degreeOwner = context.graph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+        RoleType degreeValue = context.graph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+        RelationType relationType = context.graph().putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
         thing.playsRole(degreeOwner);
 
         Entity thisThing = thing.addEntity();
         relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
-        graph.commit();
+        context.graph().commit();
 
         // the null role-player caused analytics to fail at some stage
         try {
-            graph.graql().compute().degree().execute();
+            context.graph().graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
@@ -139,12 +136,12 @@ public class AnalyticsTest {
             cache.getCastingJobs(keyspace).clear();
         });
 
-        RoleType friend1 = graph.putRoleType("friend1");
-        RoleType friend2 = graph.putRoleType("friend2");
-        RelationType friendship = graph.putRelationType("friendship");
+        RoleType friend1 = context.graph().putRoleType("friend1");
+        RoleType friend2 = context.graph().putRoleType("friend2");
+        RelationType friendship = context.graph().putRelationType("friendship");
         friendship.hasRole(friend1).hasRole(friend2);
 
-        EntityType person = graph.putEntityType("person");
+        EntityType person = context.graph().putEntityType("person");
         person.playsRole(friend1).playsRole(friend2);
 
         for (int i = 0; i < 10; i++) {
@@ -153,8 +150,8 @@ public class AnalyticsTest {
                     .putRolePlayer(friend2, person.addEntity());
         }
 
-        graph.commit();
-        String keyspace = graph.getKeyspace();
+        context.graph().commit();
+        String keyspace = context.graph().getKeyspace();
 
         //TODO: Replace the following persistence behaviour
 //        graph.graql().compute().degree().persist().execute();
@@ -176,7 +173,7 @@ public class AnalyticsTest {
         postProcessing.run();
 
         //Check all is good
-        graph.close();
+        context.graph().close();
         degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
                 .getResourceType("degree").instances();
         assertEquals(2, degrees.size());
