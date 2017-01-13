@@ -23,10 +23,10 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -35,7 +35,6 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
@@ -47,7 +46,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
@@ -56,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -238,22 +237,20 @@ public class Relation extends TypeAtom {
 
             //check type compatibility
             Type pType = entry.getValue().getValue();
-            if (pType != null && ruleRelevant) {
-                //vars can be matched by role types
-                if (childRoleVarTypeMap.containsKey(parentRole)) {
-                    Type chType = childRoleVarTypeMap.get(parentRole).getValue();
-                    //check type compatibility
-                    if (chType != null) {
-                        ruleRelevant = checkTypesCompatible(pType, chType);
+            //vars can be matched by role types
+            if (pType != null && ruleRelevant && childRoleVarTypeMap.containsKey(parentRole)) {
+                Type chType = childRoleVarTypeMap.get(parentRole).getValue();
+                //check type compatibility
+                if (chType != null) {
+                    ruleRelevant = checkTypesCompatible(pType, chType);
 
-                        //Check for any constraints on the variables
-                        VarName chVar = childRoleVarTypeMap.get(parentRole).getKey();
-                        VarName pVar = entry.getValue().getKey();
-                        Predicate childPredicate = child.getBody().getIdPredicate(chVar);
-                        Predicate parentPredicate = parent.getIdPredicate(pVar);
-                        if (childPredicate != null && parentPredicate != null) {
-                            ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
-                        }
+                    //Check for any constraints on the variables
+                    VarName chVar = childRoleVarTypeMap.get(parentRole).getKey();
+                    VarName pVar = entry.getValue().getKey();
+                    Predicate childPredicate = child.getBody().getIdPredicate(chVar);
+                    Predicate parentPredicate = parent.getIdPredicate(pVar);
+                    if (childPredicate != null && parentPredicate != null) {
+                        ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
                     }
                 }
             }
