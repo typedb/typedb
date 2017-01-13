@@ -16,20 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.admin;
 
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.query.Query;
 
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  *
  * <p>
- * Interface for atoms.
+ * Basic interface for logical atoms used in reasoning.
  * </p>
  *
  * @author Kasper Piskorski
@@ -66,6 +63,9 @@ public interface Atomic extends Cloneable{
      */
     default boolean isSelectable(){ return false;}
 
+    /**
+     * @return true if atom is recursive
+     */
     default boolean isRecursive(){ return false;}
 
     /**
@@ -85,14 +85,14 @@ public interface Atomic extends Cloneable{
     PatternAdmin getCombinedPattern();
 
     /**
-     * @return the query this atom belongs to
-     * */
-    Query getParentQuery();
+     * @return the query the atom is contained in
+     */
+    ReasonerQuery getParentQuery();
 
     /**
      * @param q query this atom is supposed to belong to
      */
-    void setParentQuery(Query q);
+    void setParentQuery(ReasonerQuery q);
 
     Map<VarName, VarName> getUnifiers(Atomic parentAtom);
 

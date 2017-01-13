@@ -19,12 +19,16 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.Collection;
+import java.util.Set;
 
 public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty{
 
@@ -67,5 +71,10 @@ public class RhsProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
         throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        return null;
     }
 }

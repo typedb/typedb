@@ -25,10 +25,10 @@ import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
@@ -310,8 +310,8 @@ public class AtomicTest extends AbstractGraknTest {
 
     @Test
     public void testValuePredicateComparison(){
-        Atomic atom = new Query("match $x value '0';", snbGraph).getAtoms().iterator().next();
-        Atomic atom2 =new Query("match $x value != '0';", snbGraph).getAtoms().iterator().next();
+        Atomic atom = new ReasonerQueryImpl("match $x value '0';", snbGraph).getAtoms().iterator().next();
+        Atomic atom2 =new ReasonerQueryImpl("match $x value != '0';", snbGraph).getAtoms().iterator().next();
         assertTrue(!atom.isEquivalent(atom2));
     }
 

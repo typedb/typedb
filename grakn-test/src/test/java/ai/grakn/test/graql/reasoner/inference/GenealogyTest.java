@@ -25,7 +25,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.EngineTestBase;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
@@ -558,8 +558,8 @@ public class GenealogyTest extends EngineTestBase {
     public void testRelationResources(){
         String queryString = "match $rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';";
         String queryString2 = "match $rel (happening: $b, protagonist: $p) isa event-protagonist; $rel has event-role 'parent';";
-        Query query = new Query(queryString, graph);
-        Query query2 = new Query(queryString2, graph);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, graph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, graph);
         assertTrue(query.equals(query2));
     }
 

@@ -19,11 +19,16 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
+import java.util.Set;
 
 public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
@@ -66,5 +71,10 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
     @Override
     public int hashCode() {
         return id.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        return new IdPredicate(var.getVarName(), this, parent);
     }
 }
