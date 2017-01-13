@@ -77,25 +77,21 @@ public final class Schema {
         CONSTRAINT_RULE("constraint-rule");
 
 
-        private final String name;
+        private final TypeName name;
 
         MetaSchema(String i) {
-            name = i;
+            name = TypeName.of(i);
         }
 
         public TypeName getName() {
-            return TypeName.of(name);
-        }
-
-        public static boolean isMetaName(String name) {
-            for (MetaSchema metaSchema : MetaSchema.values()) {
-                if (metaSchema.getName().getValue().equals(name)) return true;
-            }
-            return false;
+            return name;
         }
 
         public static boolean isMetaName(TypeName name) {
-            return isMetaName(name.getValue());
+            for (MetaSchema metaSchema : MetaSchema.values()) {
+                if (metaSchema.getName().equals(name)) return true;
+            }
+            return false;
         }
     }
 
