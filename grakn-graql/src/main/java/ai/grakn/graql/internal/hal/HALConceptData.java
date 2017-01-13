@@ -196,7 +196,7 @@ class HALConceptData {
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else { // temp fix until a new behaviour is defined
             Type type = concept.asType();
-            resource.withProperty(ID_PROPERTY, type.getName())
+            resource.withProperty(ID_PROPERTY, type.getName().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
 
         }
