@@ -37,7 +37,7 @@ class NameFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(NAME.name(), name);
+        traversal.has(NAME.name(), name.getValue());
     }
 
     @Override
