@@ -28,7 +28,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -195,8 +195,8 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person;$x has age <10;";
         String queryString2 = "match $x isa person;$x has age $y;$y value <10;select $x;";
-        ReasonerQueryImpl query = new AtomicQuery(queryString, graph);
-        ReasonerQueryImpl query2 = new AtomicQuery(queryString2, graph);
+        ReasonerQueryImpl query = new ReasonerAtomicQuery(queryString, graph);
+        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(queryString2, graph);
         assertTrue(query.equals(query2));
     }
 
@@ -205,8 +205,8 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname 'Bob';";
         String queryString2 = "match $x has firstname $y;$y value 'Bob';select $x;";
-        ReasonerQueryImpl query = new AtomicQuery(queryString, graph);
-        ReasonerQueryImpl query2 = new AtomicQuery(queryString2, graph);
+        ReasonerQueryImpl query = new ReasonerAtomicQuery(queryString, graph);
+        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(queryString2, graph);
         assertTrue(query.equals(query2));
     }
 
