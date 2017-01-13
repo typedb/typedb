@@ -28,21 +28,21 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -82,14 +82,6 @@ public class AtomicQuery extends ReasonerQueryImpl {
     public AtomicQuery(Atom at, Set<VarName> vars) {
         super(at, vars);
         atom = selectAtoms().stream().findFirst().orElse(null);
-    }
-
-    @Override
-    public boolean equals(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        AtomicQuery a2 = (AtomicQuery) obj;
-        return this.isEquivalent(a2);
     }
 
     private void addChild(AtomicQuery q){
@@ -264,5 +256,27 @@ public class AtomicQuery extends ReasonerQueryImpl {
      */
     public QueryAnswers answer(Set<AtomicQuery> subGoals, QueryCache cache, boolean materialise){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        AtomicQuery that = (AtomicQuery) o;
+
+        if (!atom.equals(that.atom)) return false;
+        if (parent != null ? !parent.equals(that.parent) : that.parent != null) return false;
+        return children.equals(that.children);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + atom.hashCode();
+        result = 31 * result + (parent != null ? parent.hashCode() : 0);
+        result = 31 * result + children.hashCode();
+        return result;
     }
 }
