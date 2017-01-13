@@ -219,11 +219,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-    /**
-     * @param atom in question
-     * @return true if atom is contained in the query
-     */
-    public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
 
     /**
      * @param atom in question

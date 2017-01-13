@@ -303,10 +303,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
-     * @return Materialised answers
+     * @return materialised complete answers (with all ids)
      */
     public QueryAnswers materialise(){
-        if(answers.isEmpty()) return new QueryAnswers();
         QueryAnswers fullAnswers = new QueryAnswers();
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         answers.forEach(answer -> {
