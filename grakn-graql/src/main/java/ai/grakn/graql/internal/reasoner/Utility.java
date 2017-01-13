@@ -232,7 +232,7 @@ public class Utility {
         roles.forEach(role -> {
             tempVars.remove(var);
             tempRoles.remove(role);
-            roleMap.put(var, Graql.var().name(role.getName()).admin());
+            roleMap.put(var, Graql.var().name(role.getName().getValue()).admin());
             if (!tempVars.isEmpty() && !tempRoles.isEmpty()) {
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
             } else {
@@ -275,9 +275,9 @@ public class Utility {
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        VarAdmin startVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "z").admin();
-        VarAdmin endVar = var().isa(relType.getName()).rel(fromRoleName, "z").rel(toRoleName, "y").admin();
-        VarAdmin headVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "y").admin();
+        VarAdmin startVar = var().isa(relType.getName().getValue()).rel(fromRoleName.getValue(), "x").rel(toRoleName.getValue(), "z").admin();
+        VarAdmin endVar = var().isa(relType.getName().getValue()).rel(fromRoleName.getValue(), "z").rel(toRoleName.getValue(), "y").admin();
+        VarAdmin headVar = var().isa(relType.getName().getValue()).rel(fromRoleName.getValue(), "x").rel(toRoleName.getValue(), "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
         return graph.admin().getMetaRuleInference().addRule(body, headVar);
     }
@@ -292,8 +292,8 @@ public class Utility {
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var body = var().isa(relType.getName()).rel("x").rel("y");
-        Var head = var().isa(relType.getName()).rel("x").rel("x");
+        Var body = var().isa(relType.getName().getValue()).rel("x").rel("y");
+        Var head = var().isa(relType.getName().getValue()).rel("x").rel("x");
         return graph.admin().getMetaRuleInference().addRule(body, head);
     }
 
@@ -312,14 +312,14 @@ public class Utility {
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
         }
-        Var parentVar = var().isa(parent.getName());
-        Var childVar = var().isa(child.getName());
+        Var parentVar = var().isa(parent.getName().getValue());
+        Var childVar = var().isa(child.getName().getValue());
         Set<VarName> vars = new HashSet<>();
 
         roleMappings.forEach( (parentRoleName, childRoleName) -> {
             VarName varName = createFreshVariable(vars, Patterns.varName("x"));
-            parentVar.rel(parentRoleName, var(varName));
-            childVar.rel(childRoleName, var(varName));
+            parentVar.rel(parentRoleName.getValue(), var(varName));
+            childVar.rel(childRoleName.getValue(), var(varName));
             vars.add(varName);
         });
         return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
@@ -341,14 +341,14 @@ public class Utility {
         Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
             VarName varName = createFreshVariable(Sets.newHashSet(varNames), Patterns.varName("x"));
-            VarAdmin var = var().isa(relType.getName())
-                    .rel(rolePair.getKey(), var(varNames.peek()))
-                    .rel(rolePair.getValue(), var(varName)).admin();
+            VarAdmin var = var().isa(relType.getName().getValue())
+                    .rel(rolePair.getKey().getValue(), var(varNames.peek()))
+                    .rel(rolePair.getValue().getValue(), var(varName)).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        Var headVar = var().isa(relation.getName()).rel(fromRoleName, "x").rel(toRoleName, var(varNames.peek()));
+        Var headVar = var().isa(relation.getName().getValue()).rel(fromRoleName.getValue(), "x").rel(toRoleName.getValue(), var(varNames.peek()));
         return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
 

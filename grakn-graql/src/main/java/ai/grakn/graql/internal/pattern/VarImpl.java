@@ -127,7 +127,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var name(String name) {
-        return addProperty(new NameProperty(name));
+        return addProperty(new NameProperty(TypeName.of(name)));
     }
 
     @Override
@@ -167,7 +167,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(String type, Var var) {
-        return addProperty(new HasResourceProperty(type, var.admin()));
+        return addProperty(new HasResourceProperty(TypeName.of(type), var.admin()));
     }
 
     @Override

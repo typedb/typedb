@@ -98,7 +98,7 @@ public class Reasoner {
      */
     private static boolean hasRules(GraknGraph graph) {
         TypeName inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
-        return graph.graql().infer(false).match(var("x").isa(inferenceRule)).ask().execute();
+        return graph.graql().infer(false).match(var("x").isa(inferenceRule.getValue())).ask().execute();
     }
 
     /**

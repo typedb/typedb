@@ -140,9 +140,9 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
         List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
-                .map(type -> var("x").has(type)).collect(Collectors.toList());
+                .map(type -> var("x").has(type.getValue())).collect(Collectors.toList());
         List<Pattern> checkSubtypes = subTypeNames.stream()
-                .map(type -> var("x").isa(type)).collect(Collectors.toList());
+                .map(type -> var("x").isa(type.getValue())).collect(Collectors.toList());
 
         return graph.graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }

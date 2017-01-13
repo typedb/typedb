@@ -534,7 +534,7 @@ public class Relation extends TypeAtom {
                 //if roleType is unambigous
                 if (cRoles.size() == 1) {
                     RoleType roleType = cRoles.iterator().next();
-                    VarAdmin roleVar = Graql.var().name(roleType.getName()).admin();
+                    VarAdmin roleVar = Graql.var().name(roleType.getName().getValue()).admin();
                     roleVarTypeMap.put(roleVar, new Pair<>(var, type));
                     allocatedVars.add(var);
                     allocatedRoles.add(roleType);
@@ -556,7 +556,7 @@ public class Relation extends TypeAtom {
             VarName var = varsToAllocate.iterator().next();
             Type type = varTypeMap.get(var);
             roleTypeMap.put(topRole, new Pair<>(var, type));
-            roleVarTypeMap.put(Graql.var().name(topRole.getName()).admin(), new Pair<>(var, type));
+            roleVarTypeMap.put(Graql.var().name(topRole.getName().getValue()).admin(), new Pair<>(var, type));
         }
 
         //update pattern and castings

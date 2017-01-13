@@ -151,7 +151,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         if (subTypeNames.isEmpty()) return false;
 
         List<Pattern> checkSubtypes = subTypeNames.stream()
-                .map(type -> var("x").isa(type)).collect(Collectors.toList());
+                .map(type -> var("x").isa(type.getValue())).collect(Collectors.toList());
         return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
     }
 

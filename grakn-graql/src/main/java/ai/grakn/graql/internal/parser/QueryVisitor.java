@@ -374,7 +374,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Set<TypeName> visitNameList(GraqlParser.NameListContext ctx) {
-        return ctx.name().stream().map(this::visitName).collect(toSet());
+        return ctx.name().stream().map(c-> TypeName.of(this.visitName(c))).collect(toSet());
     }
 
     @Override
@@ -484,7 +484,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         Var resource = var(getVariable(ctx.VARIABLE()));
 
         if (ctx.name() != null) {
-            TypeName type = visitName(ctx.name());
+            String type = visitName(ctx.name());
             return var -> var.has(type, resource);
         } else {
             return var -> var.has(resource);
@@ -493,7 +493,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
-        TypeName type = visitName(ctx.name());
+        String type = visitName(ctx.name());
 
         if (ctx.predicate() != null) {
             return var -> var.has(type, visitPredicate(ctx.predicate()));
@@ -572,8 +572,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public TypeName visitName(GraqlParser.NameContext ctx) {
-        return TypeName.of(visitIdentifier(ctx.identifier()));
+    public String visitName(GraqlParser.NameContext ctx) {
+        return visitIdentifier(ctx.identifier());
     }
 
     @Override
