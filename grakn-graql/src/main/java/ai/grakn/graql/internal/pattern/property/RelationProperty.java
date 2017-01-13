@@ -28,12 +28,12 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -306,10 +306,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             //Isa present
             if (isaProp != null) {
                 VarAdmin isaVar = isaProp.getType();
-                String typeName = isaVar.getTypeName().orElse("");
-                VarName typeVariable = typeName.isEmpty()? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
+                TypeName typeName = isaVar.getTypeName().orElse(null);
+                VarName typeVariable = typeName == null ? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
                 relVar.isa(Graql.var(typeVariable));
-                if (!typeName.isEmpty()) {
+                if (typeName != null) {
                     GraknGraph graph = parent.graph();
                     VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
                     predicate = new IdPredicate(idVar, parent);

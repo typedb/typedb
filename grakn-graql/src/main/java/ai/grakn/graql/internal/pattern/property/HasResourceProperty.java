@@ -173,16 +173,16 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
-        Optional<String> type = this.getType();
+        Optional<TypeName> type = this.getType();
         VarAdmin valueVar = this.getResource();
         VarName valueVariable = valueVar.isUserDefinedName() ?
-                valueVar.getVarName() : varName.map(name -> name + "-" + type.orElse("") + "-" + UUID.randomUUID().toString());
+                valueVar.getVarName() : varName.map(name -> name + "-" + type.orElse(null) + "-" + UUID.randomUUID().toString());
         Set<Predicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom
         Var resource = Graql.var(valueVariable);
         VarAdmin resVar = type
-                .map(t ->Graql.var(varName).has(t, resource))
+                .map(t ->Graql.var(varName).has(t.getValue(), resource))
                 .orElseGet(() -> Graql.var(varName).has(resource)).admin();
         return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }

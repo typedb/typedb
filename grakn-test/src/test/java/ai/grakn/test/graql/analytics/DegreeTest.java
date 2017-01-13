@@ -130,7 +130,7 @@ public class DegreeTest {
         ));
 
         start = System.currentTimeMillis();
-        Map<Long, Set<String>> degrees2 = context.graph().graql().compute().degree().of("thing").execute();
+        Map<Long, Set<String>> degrees2 = context.graph().graql().compute().degree().of(TypeName.of("thing")).execute();
         System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(2, degrees2.size());
@@ -144,7 +144,6 @@ public class DegreeTest {
         ));
 
         degrees2 = context.graph().graql().compute().degree().of(TypeName.of("thing"), TypeName.of("related")).execute();
-
         assertEquals(3, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
         assertEquals(3, degrees2.get(2L).size());
@@ -209,8 +208,8 @@ public class DegreeTest {
         ConceptId foofoo = dog.addEntity().getId();
         context.graph().commit();
 
-        // set subcontext.graph()
-        HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
+        // set subgraph
+        HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("person"), TypeName.of("animal"), TypeName.of("mans-best-friend"));
         Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(ct).execute();
 
         // check that dog has a degree to confirm sub has been inferred

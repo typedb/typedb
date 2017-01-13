@@ -24,10 +24,10 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -35,7 +35,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -459,7 +458,7 @@ public class Relation extends TypeAtom {
             TypeName roleTypeName = null;
             for(RelationPlayer c : relationPlayers) {
                 if (c.getRolePlayer().getVarName().equals(var)) {
-                    roleTypeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse("");
+                    roleTypeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse(null);
                 }
             }
             //roletype explicit

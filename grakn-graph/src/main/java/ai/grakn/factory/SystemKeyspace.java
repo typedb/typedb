@@ -7,9 +7,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.GraknVersion;
-import ai.grakn.concept.TypeName;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.util.GraknVersion;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,13 +72,13 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     public SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
         openSpaces.computeIfAbsent(keyspace, name -> {
             try (GraknGraph graph = factory.getGraph(false)) {
-                ResourceType<String> keyspaceName = graph.getResourceType(KEYSPACE_RESOURCE);
+                ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
                 Resource<String> resource = keyspaceName.getResource(keyspace);
                 if (resource == null) {
                     resource = keyspaceName.putResource(keyspace);
                 }
                 if (resource.owner() == null) {
-                    graph.getEntityType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
+                    graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
                 }
                 graph.commit();
             } catch (GraknValidationException e) {
@@ -99,7 +96,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
      */
     public void loadSystemOntology() {
         try (GraknGraph graph = factory.getGraph(false)) {
-            if (graph.getEntityType(KEYSPACE_ENTITY) != null) {
+            if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;
             }
             ClassLoader loader = this.getClass().getClassLoader();
