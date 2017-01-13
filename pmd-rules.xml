@@ -10,6 +10,7 @@ http://pmd.sourceforge.net/ruleset/2.0.0 ">
 
     <rule ref="rulesets/java/empty.xml"/>
 
+    <!-- No redundant imports -->
     <rule ref="rulesets/java/imports.xml">
 
         <!-- This is fine because we don't use '*' imports -->
@@ -17,7 +18,13 @@ http://pmd.sourceforge.net/ruleset/2.0.0 ">
 
     </rule>
 
-    <rule ref="rulesets/java/unnecessary.xml"/>
+    <!-- Any entirely redundant things, such as `this` -->
+    <rule ref="rulesets/java/unnecessary.xml">
+
+        <!-- Unnecessary parentheses can make code clearer -->
+        <exclude name="UselessParentheses"/>
+
+    </rule>
 
     <rule ref="rulesets/java/unusedcode.xml"/>
 
