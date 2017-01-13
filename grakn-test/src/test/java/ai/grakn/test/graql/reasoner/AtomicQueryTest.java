@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
@@ -78,13 +79,15 @@ public class AtomicQueryTest extends AbstractGraknTest {
     @Test
     public void testMaterialize(){
         QueryBuilder qb = graph.graql().infer(false);
-        assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
+        String explicitQuery = "match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic';";
+        assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        atomicQuery.materialise(Sets.newHashSet(new IdPredicate(varName("x"), getConcept("Bob"))
-                , new IdPredicate(varName("y"), getConcept("Colour of Magic"))));
-        assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
+        atomicQuery.addAtom(new IdPredicate(varName("x"), getConcept("Bob"), atomicQuery));
+        atomicQuery.addAtom(new IdPredicate(varName("y"), getConcept("Colour of Magic"), atomicQuery));
+        atomicQuery.materialise();
+        assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
 
     //TODO Bug #10655 if we group resources into atomic queries
