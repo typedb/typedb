@@ -212,11 +212,13 @@ public class AtomicQuery extends ReasonerQueryImpl {
                     this.addAtom(relAtom);
                 });
             }
-            else
+            else {
                 insertAnswers.addAll(this.materialiseComplete());
+            }
         }
-        else
+        else {
             insertAnswers.addAll(this.materialiseComplete());
+        }
         return insertAnswers;
     }
 
