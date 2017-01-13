@@ -83,6 +83,7 @@
         <kafka-unit.version>0.6</kafka-unit.version>
         <curator.version>2.11.1</curator.version>
         <zookeeper.version>3.4.9</zookeeper.version>
+        <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
 
     <organization>
@@ -318,7 +319,7 @@
                         <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
                     </excludes>
                     <rulesets>
-                        <ruleset>${project.parent.basedir}/pmd-rules.xml</ruleset>
+                        <ruleset>${main.basedir}/pmd-rules.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <executions>
