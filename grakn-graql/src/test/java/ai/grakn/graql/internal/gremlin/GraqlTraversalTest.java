@@ -226,9 +226,9 @@ public class GraqlTraversalTest {
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
-        Fragment xMarriesY = shortcut(Optional.of("marriage"), Optional.empty(), Optional.empty(), x, y);
-        Fragment yMarriesX = shortcut(Optional.of("marriage"), Optional.empty(), Optional.empty(), y, x);
-        Fragment marriageFragment = name(marriageName, "marriage");
+        Fragment xMarriesY = shortcut(Optional.of(TypeName.of("marriage")), Optional.empty(), Optional.empty(), x, y);
+        Fragment yMarriesX = shortcut(Optional.of(TypeName.of("marriage")), Optional.empty(), Optional.empty(), y, x);
+        Fragment marriageFragment = name(marriageName, TypeName.of("marriage"));
 
         assertThat(graqlTraversal, anyOf(
                 is(traversal(xMarriesY, marriageFragment)),
@@ -248,9 +248,9 @@ public class GraqlTraversalTest {
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
-        Fragment xMarriesY = shortcut(Optional.empty(), Optional.empty(), Optional.of("wife"), x, y);
-        Fragment yMarriesX = shortcut(Optional.empty(), Optional.of("wife"), Optional.empty(), y, x);
-        Fragment wifeFragment = name(wifeName, "wife");
+        Fragment xMarriesY = shortcut(Optional.empty(), Optional.empty(), Optional.of(TypeName.of("wife")), x, y);
+        Fragment yMarriesX = shortcut(Optional.empty(), Optional.of(TypeName.of("wife")), Optional.empty(), y, x);
+        Fragment wifeFragment = name(wifeName, TypeName.of("wife"));
 
         assertThat(graqlTraversal, anyOf(
                 is(traversal(xMarriesY, wifeFragment)),
