@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import java.util.function.Function;
+
 /**
  * <p>
  *     A Name
@@ -39,6 +41,15 @@ public class TypeName implements Comparable<TypeName> {
 
     public String getValue(){
         return name;
+    }
+
+    /**
+     * Rename a type name (does not modify the original {@code TypeName})
+     * @param mapper a function to apply to the underlying type name
+     * @return the new type name
+     */
+    public TypeName map(Function<String, String> mapper) {
+        return TypeName.of(mapper.apply(name));
     }
 
     @Override

@@ -81,7 +81,7 @@ public interface Namer {
      * @param relationName The name of the Grakn <code>RelationType</code>.
      */
     default TypeName objectRole(TypeName relationName) {
-        return TypeName.of(OwlModel.OBJECT.owlname() + "-" + relationName.getValue());
+        return relationName.map(relation -> OwlModel.OBJECT.owlname() + "-" + relation);
     }
     /**
      * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
@@ -90,7 +90,7 @@ public interface Namer {
      * @param relationName The name of the Grakn <code>RelationType</code>.
      */
     default TypeName subjectRole(TypeName relationName) {
-        return TypeName.of(OwlModel.SUBJECT.owlname() + "-" + relationName.getValue());
+        return relationName.map(relation -> OwlModel.SUBJECT.owlname() + "-" + relation);
     }
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property

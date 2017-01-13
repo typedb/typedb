@@ -179,7 +179,7 @@ public final class Schema {
         }
 
         public TypeName getName(TypeName resourceType) {
-            return TypeName.of(String.format(name, resourceType.getValue()));
+            return resourceType.map(resource -> String.format(name, resource));
         }
     }
 
