@@ -157,17 +157,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         return (ClusterQuery<Map<String, Set<String>>>) this;
     }
 
-    @Override
-    public ClusterQuery<T> persist() {
-        this.persist = true;
-        return this;
-    }
-
-    @Override
-    public ClusterQuery<T> persist(String resourceTypeName) {
-        this.clusterName = resourceTypeName;
-        return this.persist();
-    }
 
     @Override
     public ClusterQuery<T> clusterSize(long clusterSize) {

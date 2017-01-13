@@ -19,11 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 
@@ -49,10 +50,9 @@ import static ai.grakn.graql.internal.reasoner.Utility.capture;
 public abstract class BinaryBase extends Atom {
     private VarName valueVariable;
 
-    protected BinaryBase(VarAdmin pattern,  Query par) {
+    protected BinaryBase(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.valueVariable = extractValueVariableName(pattern);
-
     }
 
     protected BinaryBase(BinaryBase a) {
@@ -116,7 +116,7 @@ public abstract class BinaryBase extends Atom {
     @Override
     public Set<Predicate> getIdPredicates() {
         //direct predicates
-        return getParentQuery().getIdPredicates().stream()
+        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }

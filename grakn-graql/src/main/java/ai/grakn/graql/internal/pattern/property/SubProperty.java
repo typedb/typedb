@@ -19,17 +19,26 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
@@ -104,5 +113,17 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     @Override
     public int hashCode() {
         return superType.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        VarName varName = var.getVarName();
+        VarAdmin typeVar = this.getSuperType();
+        VarName typeVariable = typeVar.isUserDefinedName() ?
+                typeVar.getVarName() : varName.map(name -> name + "-sub-" + UUID.randomUUID().toString());
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+
+        VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
+        return new TypeAtom(resVar, predicate, parent);
     }
 }
