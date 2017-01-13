@@ -119,15 +119,13 @@ public class AtomicMatchQuery extends AtomicQuery{
     @Override
     public QueryAnswers materialise(){
         QueryAnswers fullAnswers = new QueryAnswers();
+        AtomicQuery queryToMaterialise = new AtomicQuery(this);
         answers.forEach(answer -> {
             Set<IdPredicate> subs = new HashSet<>();
-            answer.forEach((var, con) -> {
-                IdPredicate sub = new IdPredicate(var, con);
-                if (!containsAtom(sub)) {
-                    subs.add(sub);
-                }
-            });
-            fullAnswers.addAll(materialise(subs));
+            answer.forEach((var, con) -> subs.add(new IdPredicate(var, con, queryToMaterialise)));
+            subs.forEach(queryToMaterialise::addAtom);
+            fullAnswers.addAll(queryToMaterialise.materialise());
+            subs.forEach(queryToMaterialise::removeAtom);
         });
         return fullAnswers;
     }
