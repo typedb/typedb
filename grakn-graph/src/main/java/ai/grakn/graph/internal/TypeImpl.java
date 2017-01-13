@@ -25,6 +25,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -382,7 +383,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
     public RelationType hasResource(ResourceType resourceType, boolean required){
-        String resourceTypeName = resourceType.getName();
+        TypeName resourceTypeName = resourceType.getName();
         RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
         RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
         RelationType relationType = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName)).
@@ -392,7 +393,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
         if(resourceTypeSuper != null){
-            String superName = resourceTypeSuper.getName();
+            TypeName superName = resourceTypeSuper.getName();
             if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
                 RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
                 RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
@@ -420,8 +421,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
      * @return The name of this type
      */
     @Override
-    public String getName() {
-        return getProperty(Schema.ConceptProperty.NAME);
+    public TypeName getName() {
+        return TypeName.of(getProperty(Schema.ConceptProperty.NAME));
     }
 
     /**

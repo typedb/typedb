@@ -31,6 +31,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.InvalidConceptTypeException;
@@ -515,8 +516,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public String getType(){
-        return getProperty(Schema.ConceptProperty.TYPE);
+    public TypeName getType(){
+        return TypeName.of(getProperty(Schema.ConceptProperty.TYPE));
     }
 
     /**

@@ -32,6 +32,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
@@ -276,21 +277,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return vertex;
     }
 
-    private Vertex putVertex(String name, Schema.BaseType baseType){
+    private Vertex putVertex(TypeName name, Schema.BaseType baseType){
         if(Schema.MetaSchema.isMetaName(name)){
             throw new ConceptException(ErrorMessage.ID_RESERVED.getMessage(name));
         }
         return putVertexInternal(name, baseType);
     }
-    private Vertex putVertexInternal(String name, Schema.BaseType baseType){
+    private Vertex putVertexInternal(TypeName name, Schema.BaseType baseType){
         Vertex vertex;
-        ConceptImpl concept = getConcept(Schema.ConceptProperty.NAME, name);
+        ConceptImpl concept = getConcept(Schema.ConceptProperty.NAME, name.getValue());
         if(concept == null) {
             vertex = addVertex(baseType);
             vertex.property(Schema.ConceptProperty.NAME.name(), name);
         } else {
             if(!baseType.name().equals(concept.getBaseType())) {
-                throw new ConceptNotUniqueException(concept, name);
+                throw new ConceptNotUniqueException(concept, name.getValue());
             }
             vertex = concept.getVertex();
         }
@@ -299,34 +300,57 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public EntityType putEntityType(String name) {
+        return putEntityType(TypeName.of(name));
+    }
+
+    @Override
+    public EntityType putEntityType(TypeName name) {
         return putType(name, Schema.BaseType.ENTITY_TYPE, getMetaEntityType()).asEntityType();
     }
 
-    private TypeImpl putType(String name, Schema.BaseType baseType, Type metaType) {
+    private TypeImpl putType(TypeName name, Schema.BaseType baseType, Type metaType) {
         checkOntologyMutation();
         return elementFactory.buildSpecificType(putVertex(name, baseType), metaType);
     }
+
     @Override
     public RelationType putRelationType(String name) {
+        return putRelationType(TypeName.of(name));
+    }
+
+    @Override
+    public RelationType putRelationType(TypeName name) {
         return putType(name, Schema.BaseType.RELATION_TYPE, getMetaRelationType()).asRelationType();
     }
 
-    RelationType putRelationTypeImplicit(String itemIdentifier) {
-        Vertex v = putVertex(itemIdentifier, Schema.BaseType.RELATION_TYPE);
+    RelationType putRelationTypeImplicit(TypeName name) {
+        Vertex v = putVertex(name, Schema.BaseType.RELATION_TYPE);
         return elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.TRUE);
     }
+
     @Override
     public RoleType putRoleType(String name) {
+        return putRoleType(TypeName.of(name));
+    }
+
+    @Override
+    public RoleType putRoleType(TypeName name) {
         return putType(name, Schema.BaseType.ROLE_TYPE, getMetaRoleType()).asRoleType();
     }
 
-    RoleType putRoleTypeImplicit(String itemIdentifier) {
-        Vertex v = putVertex(itemIdentifier, Schema.BaseType.ROLE_TYPE);
+    RoleType putRoleTypeImplicit(TypeName name) {
+        Vertex v = putVertex(name, Schema.BaseType.ROLE_TYPE);
         return elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.TRUE);
     }
-    @SuppressWarnings("unchecked")
+
     @Override
     public <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType) {
+        return putResourceType(TypeName.of(name), dataType);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
         return elementFactory.buildResourceType(
                 putType(name, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
                 getMetaResourceType(),
@@ -334,9 +358,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 false);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType){
+        return putResourceTypeUnique(TypeName.of(name), dataType);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
         return elementFactory.buildResourceType(
                 putType(name, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
                 getMetaResourceType(),
@@ -346,6 +375,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RuleType putRuleType(String name) {
+        return putRuleType(TypeName.of(name));
+    }
+
+    @Override
+    public RuleType putRuleType(TypeName name) {
         return putType(name, Schema.BaseType.RULE_TYPE, getMetaRuleType()).asRuleType();
     }
 
@@ -370,8 +404,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public <T extends Concept> T getConcept(ConceptId id) {
         return getConcept(Schema.ConceptProperty.ID, id.getValue());
     }
-    private <T extends Type> T getTypeByName(String name){
-        return getConcept(Schema.ConceptProperty.NAME, name);
+    private <T extends Type> T getTypeByName(TypeName name){
+        return getConcept(Schema.ConceptProperty.NAME, name.getValue());
     }
 
     @Override
@@ -390,32 +424,32 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Type getType(String name) {
+    public Type getType(TypeName name) {
         return validConceptOfType(getTypeByName(name), TypeImpl.class);
     }
 
     @Override
-    public EntityType getEntityType(String name) {
+    public EntityType getEntityType(TypeName name) {
         return validConceptOfType(getTypeByName(name), EntityTypeImpl.class);
     }
 
     @Override
-    public RelationType getRelationType(String name) {
+    public RelationType getRelationType(TypeName name) {
         return validConceptOfType(getTypeByName(name), RelationTypeImpl.class);
     }
 
     @Override
-    public <V> ResourceType<V> getResourceType(String name) {
+    public <V> ResourceType<V> getResourceType(TypeName name) {
         return validConceptOfType(getTypeByName(name), ResourceTypeImpl.class);
     }
 
     @Override
-    public RoleType getRoleType(String name) {
+    public RoleType getRoleType(TypeName name) {
         return validConceptOfType(getTypeByName(name), RoleTypeImpl.class);
     }
 
     @Override
-    public RuleType getRuleType(String name) {
+    public RuleType getRuleType(TypeName name) {
         return validConceptOfType(getTypeByName(name), RuleTypeImpl.class);
     }
 
@@ -532,21 +566,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         if (!exists) {
             EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName());
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
             edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
 
             if (fromRolePlayer.getId() != null) {
                 edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
             }
-            edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName());
+            edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
 
             if (toRolePlayer.getId() != null) {
                 edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
             }
-            edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
+            edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
 
-            edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName());
-            edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toRolePlayer.type().getName());
+            edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName().getValue());
+            edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toRolePlayer.type().getName().getValue());
             edge.setProperty(Schema.EdgeProperty.SHORTCUT_HASH, hash);
         }
     }
