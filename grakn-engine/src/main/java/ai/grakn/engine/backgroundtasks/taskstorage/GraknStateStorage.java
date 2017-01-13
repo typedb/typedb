@@ -64,6 +64,7 @@ import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -81,7 +82,7 @@ public class GraknStateStorage implements StateStorage {
             return null;
         }
 
-        Var state = var(TASK_VAR).isa(SCHEDULED_TASK.getValue())
+        Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
                                  .has(STATUS, var().value(CREATED.toString()))
                                  .has(TASK_CLASS_NAME, var().value(taskName))
                                  .has(CREATED_BY, var().value(createdBy))
@@ -215,7 +216,7 @@ public class GraknStateStorage implements StateStorage {
 
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
                                                  int limit, int offset, Boolean recurring) {
-        Var matchVar = var(TASK_VAR).isa(SCHEDULED_TASK.getValue());
+        Var matchVar = var(TASK_VAR).isa(name(SCHEDULED_TASK));
 
         if(taskStatus != null) {
             matchVar.has(STATUS, var().value(taskStatus.toString()));
