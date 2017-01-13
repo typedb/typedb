@@ -1,8 +1,6 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
@@ -11,11 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -58,7 +52,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     public static final TypeName SYSTEM_VERSION = TypeName.of("system-version");
 
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
-    
+
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
     private final InternalFactory<M, T> factory;
 

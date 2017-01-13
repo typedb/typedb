@@ -106,7 +106,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return pattern.getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeNames().stream())
-                .map(graph::getType)
+                .map(graph::<Type>getType)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }

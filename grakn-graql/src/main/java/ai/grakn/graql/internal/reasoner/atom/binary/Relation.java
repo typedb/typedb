@@ -302,7 +302,7 @@ public class Relation extends TypeAtom {
                 .flatMap(CommonUtil::optionalToStream)
                 .map(VarAdmin::getTypeName)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(graph::getRoleType)
+                .map(graph::<RoleType>getType)
                 .forEach(roleTypes::add);
         return roleTypes;
     }
@@ -463,8 +463,8 @@ public class Relation extends TypeAtom {
                 }
             }
             //roletype explicit
-            if (!roleTypeName.isEmpty()) {
-                roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeName)));
+            if (roleTypeName != null) {
+                roleVarTypeMap.put(var, new Pair<>(type, graph.getType(roleTypeName)));
             } else if (type != null && relType != null) {
                 Set<RoleType> cRoles = Utility.getCompatibleRoleTypes(type, relType);
                 //if roleType is unambigous
@@ -509,7 +509,7 @@ public class Relation extends TypeAtom {
                 roleVarTypeMap.put(role, new Pair<>(var, type));
                 //try directly
                 TypeName typeName = role.getTypeName().orElse(null);
-                RoleType roleType = typeName != null ? graph.getRoleType(typeName): null;
+                RoleType roleType = typeName != null ? graph.getType(typeName): null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());

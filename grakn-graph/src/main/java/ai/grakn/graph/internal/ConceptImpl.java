@@ -554,7 +554,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The grakn graph this concept is bound to.
      */
-    protected AbstractGraknGraph getGraknGraph() {return graknGraph;}
+    protected AbstractGraknGraph<?> getGraknGraph() {return graknGraph;}
 
     //--------- Create Links -------//
     /**

@@ -186,10 +186,10 @@ public class BulkResourceMutate<T> {
     }
 
     private void refreshOntologyElements() {
-        resourceType = graph.getResourceType(resourceTypeName);
-        resourceOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
-        resourceValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
-        relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
+        resourceType = graph.getType(resourceTypeName);
+        resourceOwner = graph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
+        resourceValue = graph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
+        relationType = graph.getType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
     }
 
     private void initialiseGraph() {

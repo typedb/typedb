@@ -288,7 +288,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         ConceptImpl concept = getConcept(Schema.ConceptProperty.NAME, name.getValue());
         if(concept == null) {
             vertex = addVertex(baseType);
-            vertex.property(Schema.ConceptProperty.NAME.name(), name);
+            vertex.property(Schema.ConceptProperty.NAME.name(), name.getValue());
         } else {
             if(!baseType.name().equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, name.getValue());
@@ -424,33 +424,33 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public Type getType(TypeName name) {
+    public <T extends Type> T getType(TypeName name) {
         return validConceptOfType(getTypeByName(name), TypeImpl.class);
     }
 
     @Override
-    public EntityType getEntityType(TypeName name) {
-        return validConceptOfType(getTypeByName(name), EntityTypeImpl.class);
+    public EntityType getEntityType(String name) {
+        return validConceptOfType(getTypeByName(TypeName.of(name)), EntityTypeImpl.class);
     }
 
     @Override
-    public RelationType getRelationType(TypeName name) {
-        return validConceptOfType(getTypeByName(name), RelationTypeImpl.class);
+    public RelationType getRelationType(String name) {
+        return validConceptOfType(getTypeByName(TypeName.of(name)), RelationTypeImpl.class);
     }
 
     @Override
-    public <V> ResourceType<V> getResourceType(TypeName name) {
-        return validConceptOfType(getTypeByName(name), ResourceTypeImpl.class);
+    public <V> ResourceType<V> getResourceType(String name) {
+        return validConceptOfType(getTypeByName(TypeName.of(name)), ResourceTypeImpl.class);
     }
 
     @Override
-    public RoleType getRoleType(TypeName name) {
-        return validConceptOfType(getTypeByName(name), RoleTypeImpl.class);
+    public RoleType getRoleType(String name) {
+        return validConceptOfType(getTypeByName(TypeName.of(name)), RoleTypeImpl.class);
     }
 
     @Override
-    public RuleType getRuleType(TypeName name) {
-        return validConceptOfType(getTypeByName(name), RuleTypeImpl.class);
+    public RuleType getRuleType(String name) {
+        return validConceptOfType(getTypeByName(TypeName.of(name)), RuleTypeImpl.class);
     }
 
     @Override

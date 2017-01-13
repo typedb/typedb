@@ -190,13 +190,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             }
 
-            ResourceType resource = theGraph.getResourceType(resourceTypeName);
+            ResourceType resource = theGraph.getType(resourceTypeName);
             if (resource == null) continue;
-            RoleType degreeOwner = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
+            RoleType degreeOwner = theGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
             if (degreeOwner == null) continue;
-            RoleType degreeValue = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
+            RoleType degreeValue = theGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
             if (degreeValue == null) continue;
-            RelationType relationType = theGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
+            RelationType relationType = theGraph.getType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
             if (relationType == null) continue;
 
             for (TypeName type : subTypeNames) {

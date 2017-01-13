@@ -107,7 +107,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     void checkValidProperty(GraknGraph graph, VarAdmin var) {
-        if (resourceType.isPresent() && graph.getResourceType(resourceType.get()) == null) {
+        if (resourceType.isPresent() && graph.getType(resourceType.get()) == null) {
             throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
         }
     }
@@ -126,8 +126,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         TypeName type = resourceType.orElseThrow(() -> failDelete(this));
 
-        RoleType owner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(type));
-        RoleType value = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(type));
+        RoleType owner = graph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(type));
+        RoleType value = graph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(type));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))

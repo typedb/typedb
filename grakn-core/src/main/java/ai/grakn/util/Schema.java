@@ -89,7 +89,7 @@ public final class Schema {
 
         public static boolean isMetaName(String name) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
-                if (metaSchema.getName().equals(name)) return true;
+                if (metaSchema.getName().getValue().equals(name)) return true;
             }
             return false;
         }

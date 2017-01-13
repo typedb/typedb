@@ -172,7 +172,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param name A unique name which identifies the Type in the graph.
      * @return The Type with the provided name or null if no such Type exists.
      */
-    Type getType(TypeName name);
+    <T extends Type> T getType(TypeName name);
 
     /**
      * Get the Resources holding the value provided, if they exist.
@@ -189,7 +189,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param name A unique name which identifies the Entity Type in the graph.
      * @return The Entity Type  with the provided name or null if no such Entity Type exists.
      */
-    EntityType getEntityType(TypeName name);
+    EntityType getEntityType(String name);
 
     /**
      * Get the Relation Type with the name provided, if it exists.
@@ -197,7 +197,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param name A unique name which identifies the Relation Type in the graph.
      * @return The Relation Type with the provided name or null if no such Relation Type exists.
      */
-    RelationType getRelationType(TypeName name);
+    RelationType getRelationType(String name);
 
     /**
      * Get the Resource Type with the name provided, if it exists.
@@ -206,7 +206,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The Resource Type with the provided name or null if no such Resource Type exists.
      */
-    <V> ResourceType<V> getResourceType(TypeName name);
+    <V> ResourceType<V> getResourceType(String name);
 
     /**
      * Get the Role Type with the name provided, if it exists.
@@ -214,7 +214,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param name A unique name which identifies the Role Type in the graph.
      * @return The Role Type  with the provided name or null if no such Role Type exists.
      */
-    RoleType getRoleType(TypeName name);
+    RoleType getRoleType(String name);
 
     /**
      * Get the Rule Type with the name provided, if it exists.
@@ -222,7 +222,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param name A unique name which identifies the Rule Type in the graph.
      * @return The Rule Type with the provided name or null if no such Rule Type exists.
      */
-    RuleType getRuleType(TypeName name);
+    RuleType getRuleType(String name);
 
     /**
      * Get a collection of Relations that match the specified Relation Type and role map, if it exists.

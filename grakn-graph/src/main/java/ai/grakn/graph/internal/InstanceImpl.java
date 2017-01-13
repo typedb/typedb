@@ -170,9 +170,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Relation hasResource(Resource resource){
         TypeName name = resource.type().getName();
-        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getName(name));
-        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
-        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
+        RelationType hasResource = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE.getName(name));
+        RoleType hasResourceTarget = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
+        RoleType hasResourceValue = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getName(), resource.type().getName()));
