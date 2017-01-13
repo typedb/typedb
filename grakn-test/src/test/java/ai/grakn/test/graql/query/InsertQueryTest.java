@@ -195,10 +195,10 @@ public class InsertQueryTest {
     @Test
     public void testInsertOntology() {
         qb.insert(
-                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName()),
-                name("evolution").sub(Schema.MetaSchema.RELATION.getName()),
-                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName()),
-                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName()),
+                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
+                name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue()),
+                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
+                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
                 name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
 
@@ -209,10 +209,10 @@ public class InsertQueryTest {
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).execute();
 
-        assertTrue(qb.match(name("pokemon").sub(Schema.MetaSchema.ENTITY.getName())).ask().execute());
-        assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("pokemon").sub(Schema.MetaSchema.ENTITY.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
         assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
@@ -238,8 +238,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertIsAbstract() {
         qb.insert(
-                name("concrete-type").sub(Schema.MetaSchema.ENTITY.getName()),
-                name("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getName())
+                name("concrete-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
+                name("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getName().getValue())
         ).execute();
 
         assertFalse(qb.match(name("concrete-type").isAbstract()).ask().execute());
@@ -249,7 +249,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.LONG)
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName().getValue()).datatype(ResourceType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").name("my-type"));
@@ -261,7 +261,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.STRING),
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName().getValue()).datatype(ResourceType.DataType.STRING),
                 name("sub-type").sub("my-type")
         ).execute();
 
@@ -274,8 +274,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                name("marriage").sub(Schema.MetaSchema.RELATION.getName()).hasRole("spouse1").hasRole("spouse2"),
-                name("spouse").sub(Schema.MetaSchema.ROLE.getName()).isAbstract(),
+                name("marriage").sub(Schema.MetaSchema.RELATION.getName().getValue()).hasRole("spouse1").hasRole("spouse2"),
+                name("spouse").sub(Schema.MetaSchema.ROLE.getName().getValue()).isAbstract(),
                 name("spouse1").sub("spouse"),
                 name("spouse2").sub("spouse")
         ).execute();
@@ -376,7 +376,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertReferenceByName() {
         qb.insert(
-                name("new-type").sub(Schema.MetaSchema.ENTITY.getName()),
+                name("new-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
                 name("new-type").isAbstract(),
                 name("new-type").playsRole("has-title-owner"),
                 var("x").isa("new-type")
@@ -398,7 +398,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertRuleType() {
-        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName()));
+        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName().getValue()));
     }
 
     @Test
@@ -601,16 +601,16 @@ public class InsertQueryTest {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        qb.insert(name("my-resource").sub(Schema.MetaSchema.RESOURCE.getName())).execute();
+        qb.insert(name("my-resource").sub(Schema.MetaSchema.RESOURCE.getName().getValue())).execute();
     }
 
     @Test
     public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getName()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getName().getValue()))
         );
-        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getName())).execute();
+        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getName().getValue())).execute();
     }
 
     @Test

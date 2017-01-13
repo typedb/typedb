@@ -78,7 +78,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteMultiple() {
-        qb.insert(name("fake-type").sub(Schema.MetaSchema.ENTITY.getName())).execute();
+        qb.insert(name("fake-type").sub(Schema.MetaSchema.ENTITY.getName().getValue())).execute();
         qb.insert(var("x").isa("fake-type"), var("y").isa("fake-type")).execute();
 
         assertEquals(2, qb.match(var("x").isa("fake-type")).stream().count());

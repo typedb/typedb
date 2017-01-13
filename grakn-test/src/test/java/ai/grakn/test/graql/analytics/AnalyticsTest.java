@@ -25,6 +25,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
@@ -73,7 +74,7 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        String resourceTypeName = "degree";
+        TypeName resourceTypeName = TypeName.of("degree");
         ResourceType<Long> degree = context.graph().putResourceType(resourceTypeName, ResourceType.DataType.LONG);
         EntityType thing = context.graph().putEntityType("thing");
         thing.hasResource(degree);
@@ -84,11 +85,11 @@ public class AnalyticsTest {
         context.graph().commit();
 
         Map<Long, Set<String>> degrees;
-        degrees = context.graph().graql().compute().degree().of("thing").in("thing", "degree").execute();
+        degrees = context.graph().graql().compute().degree().of(TypeName.of("thing")).in(TypeName.of("thing"), TypeName.of("degree")).execute();
         assertEquals(1, degrees.size());
         assertEquals(1, degrees.get(1L).size());
 
-        degrees = context.graph().graql().compute().degree().in("thing", "degree").execute();
+        degrees = context.graph().graql().compute().degree().in(TypeName.of("thing"), TypeName.of("degree")).execute();
         assertEquals(1, degrees.size());
         assertEquals(2, degrees.get(1L).size());
     }
@@ -98,8 +99,8 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // make slightly odd context.graph()
-        String resourceTypeId = "degree";
+        // make slightly odd graph
+        TypeName resourceTypeId = TypeName.of("degree");
         EntityType thing = context.graph().putEntityType("thing");
 
         context.graph().putResourceType(resourceTypeId, ResourceType.DataType.LONG);
@@ -157,7 +158,7 @@ public class AnalyticsTest {
 //        graph.graql().compute().degree().persist().execute();
 
         Collection<Resource<Object>> degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
-                .getResourceType(Schema.Analytics.DEGREE.getName()).instances();
+                .getResourceType(Schema.Analytics.DEGREE.getName().getValue()).instances();
         assertTrue(degrees.size() > 1);
 
         //Wait for cache to be updated

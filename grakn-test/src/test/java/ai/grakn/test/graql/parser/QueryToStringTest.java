@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.parser;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -159,25 +160,25 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQuerySubgraphToString() {
-        ComputeQuery query = qb.compute().degree().in("movie", "person");
+        ComputeQuery query = qb.compute().degree().in(TypeName.of("movie"), TypeName.of("person"));
         assertEquivalent(query, "compute degrees in movie, person;");
     }
 
     @Test
     public void testClusterToString() {
-        ComputeQuery query = qb.compute().cluster().in("movie", "person");
+        ComputeQuery query = qb.compute().cluster().in(TypeName.of("movie"), TypeName.of("person"));
         assertEquivalent(query, "compute cluster in movie, person;");
     }
 
     @Test
     public void testClusterSizeToString() {
-        ComputeQuery query = qb.compute().cluster().in("movie", "person").clusterSize(10);
+        ComputeQuery query = qb.compute().cluster().in(TypeName.of("movie"), TypeName.of("person")).clusterSize(10);
         assertEquivalent(query, "compute cluster in movie, person; size 10;");
     }
 
     @Test
     public void testDegreeOf() {
-        ComputeQuery query = qb.compute().degree().in("movie", "person").of("person");
+        ComputeQuery query = qb.compute().degree().in(TypeName.of("movie"), TypeName.of("person")).of(TypeName.of("person"));
         assertEquivalent(query, "compute degrees of person in movie, person;");
     }
 

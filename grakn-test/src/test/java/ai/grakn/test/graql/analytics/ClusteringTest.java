@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
@@ -53,17 +54,17 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class ClusteringTest {
-    private static final String thing = "thing";
-    private static final String anotherThing = "anotherThing";
-    private static final String related = "related";
+    private static final TypeName thing = TypeName.of("thing");
+    private static final TypeName anotherThing = TypeName.of("anotherThing");
+    private static final TypeName related = TypeName.of("related");
 
-    private static final String resourceType1 = "resourceType1";
-    private static final String resourceType2 = "resourceType2";
-    private static final String resourceType3 = "resourceType3";
-    private static final String resourceType4 = "resourceType4";
-    private static final String resourceType5 = "resourceType5";
-    private static final String resourceType6 = "resourceType6";
-    private static final String resourceType7 = "resourceType7";
+    private static final TypeName resourceType1 = TypeName.of("resourceType1");
+    private static final TypeName resourceType2 = TypeName.of("resourceType2");
+    private static final TypeName resourceType3 = TypeName.of("resourceType3");
+    private static final TypeName resourceType4 = TypeName.of("resourceType4");
+    private static final TypeName resourceType5 = TypeName.of("resourceType5");
+    private static final TypeName resourceType6 = TypeName.of("resourceType6");
+    private static final TypeName resourceType7 = TypeName.of("resourceType7");
 
     private ConceptId entityId1;
     private ConceptId entityId2;
