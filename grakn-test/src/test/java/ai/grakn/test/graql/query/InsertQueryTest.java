@@ -580,7 +580,7 @@ public class InsertQueryTest {
         Map<String, Concept> result = results.get(0);
         assertEquals(Sets.newHashSet("x"), result.keySet());
         Entity x = result.get("x").asEntity();
-        assertEquals("movie", x.type().getName());
+        assertEquals("movie", x.type().getName().getValue());
     }
 
     @Test
