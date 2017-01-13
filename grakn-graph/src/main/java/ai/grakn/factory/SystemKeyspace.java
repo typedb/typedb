@@ -46,68 +46,70 @@ import java.util.stream.Collectors;
  * @param <T>
  */
 public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
-	// This will eventually be configurable and obtained the same way the factory is obtained
-	// from engine. For now, we just make sure Engine and Core use the same system keyspace name.
-	// If there is a more natural home for this constant, feel free to put it there! (Boris)
-    public static final String SYSTEM_GRAPH_NAME = "graknSystem";	
+    // This will eventually be configurable and obtained the same way the factory is obtained
+    // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
+    // If there is a more natural home for this constant, feel free to put it there! (Boris)
+    public static final String SYSTEM_GRAPH_NAME = "graknSystem";
     public static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
-	public static final String KEYSPACE_ENTITY = "keyspace";
-	public static final String KEYSPACE_RESOURCE = "keyspace-name";
-	
+    public static final String KEYSPACE_ENTITY = "keyspace";
+    public static final String KEYSPACE_RESOURCE = "keyspace-name";
+
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     
-	private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-	private final InternalFactory<M, T> factory;
+    private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
+    private final InternalFactory<M, T> factory;
 
     public SystemKeyspace(InternalFactory<M, T> factory){
         this.factory = factory;
     }
 
-	/**
-	 * Notify that we just opened a keyspace with the same engineUrl & config.
-	 */
-	public SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
-		openSpaces.computeIfAbsent(keyspace, name -> {
-			try (GraknGraph graph = factory.getGraph(false)) { 
-				ResourceType<String> keyspaceName = graph.getResourceType(KEYSPACE_RESOURCE);
-				Resource<String> resource = keyspaceName.getResource(keyspace);
-				if (resource == null)
-					resource = keyspaceName.putResource(keyspace);
-				if (resource.owner() == null) {
-					graph.getEntityType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
-				}
-				graph.commit();
-			} catch (GraknValidationException e) {
-				e.printStackTrace();
-			}
-			return true;
-		});
-		return this;
-	}
+    /**
+     * Notify that we just opened a keyspace with the same engineUrl & config.
+     */
+    public SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
+        openSpaces.computeIfAbsent(keyspace, name -> {
+            try (GraknGraph graph = factory.getGraph(false)) {
+                ResourceType<String> keyspaceName = graph.getResourceType(KEYSPACE_RESOURCE);
+                Resource<String> resource = keyspaceName.getResource(keyspace);
+                if (resource == null) {
+                    resource = keyspaceName.putResource(keyspace);
+                }
+                if (resource.owner() == null) {
+                    graph.getEntityType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
+                }
+                graph.commit();
+            } catch (GraknValidationException e) {
+                e.printStackTrace();
+            }
+            return true;
+        });
+        return this;
+    }
 
-	/**
-	 * Load the system ontology into a newly created system keyspace. Because the ontology
-	 * only consists of types, the inserts are idempotent and it is safe to load it 
-	 * multiple times.
-	 */
-	public void loadSystemOntology() {
-		try (GraknGraph graph = factory.getGraph(false)) {
-			if (graph.getEntityType(KEYSPACE_ENTITY) != null)
-				return;
-			ClassLoader loader = this.getClass().getClassLoader();
-			String query;
-			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE)))) {
-				query = buffer.lines().collect(Collectors.joining("\n"));
-			}
-			LOG.info("System ontology is " + query);
-			graph.graql().parse(query).execute();
+    /**
+     * Load the system ontology into a newly created system keyspace. Because the ontology
+     * only consists of types, the inserts are idempotent and it is safe to load it
+     * multiple times.
+     */
+    public void loadSystemOntology() {
+        try (GraknGraph graph = factory.getGraph(false)) {
+            if (graph.getEntityType(KEYSPACE_ENTITY) != null) {
+                return;
+            }
+            ClassLoader loader = this.getClass().getClassLoader();
+            String query;
+            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE)))) {
+                query = buffer.lines().collect(Collectors.joining("\n"));
+            }
+            LOG.info("System ontology is " + query);
+            graph.graql().parse(query).execute();
             graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
-			graph.commit();
-			LOG.info("Loaded system ontology to system keyspace.");
-		}
-		catch(IOException|GraknValidationException|NullPointerException e) {
-			e.printStackTrace(System.err);
-			LOG.error("Could not load system ontology. The error was: " + e);
-		}
-	}
+            graph.commit();
+            LOG.info("Loaded system ontology to system keyspace.");
+        }
+        catch(IOException|GraknValidationException|NullPointerException e) {
+            e.printStackTrace(System.err);
+            LOG.error("Could not load system ontology. The error was: " + e);
+        }
+    }
 }

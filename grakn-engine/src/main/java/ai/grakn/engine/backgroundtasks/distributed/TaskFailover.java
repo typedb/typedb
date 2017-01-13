@@ -31,14 +31,18 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONArray;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.*;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
@@ -54,8 +58,9 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private SynchronizedStateStorage synchronizedStateStorage;
 
     public static synchronized TaskFailover getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new TaskFailover();
+        }
 
         return instance;
     }
@@ -167,16 +172,19 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
             SynchronizedState state = synchronizedStateStorage.getState(id);
 
-            if(state.status() != RUNNING)
+            if(state.status() != RUNNING) {
                 break;
+            }
 
             String engineId = state.engineID();
-            if(engineId == null || engineId.isEmpty())
-                throw new IllegalStateException("ZK Task SynchronizedState - "+id+" - has no engineID ("+engineId+") - status "+state.status().toString());
+            if(engineId == null || engineId.isEmpty()) {
+                throw new IllegalStateException("ZK Task SynchronizedState - " + id + " - has no engineID (" + engineId + ") - status " + state.status().toString());
+            }
 
             // Avoid further calls to ZK if we already know about this one.
-            if(deadRunners.contains(engineId))
+            if(deadRunners.contains(engineId)) {
                 break;
+            }
 
             // Check if assigned engine is still alive
             if(client.checkExists().forPath(RUNNERS_WATCH+"/"+engineId) == null) {

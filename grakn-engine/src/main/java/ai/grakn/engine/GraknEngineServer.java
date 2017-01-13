@@ -51,7 +51,15 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import static spark.Spark.*;
+import static spark.Spark.awaitInitialization;
+import static spark.Spark.before;
+import static spark.Spark.exception;
+import static spark.Spark.halt;
+import static spark.Spark.ipAddress;
+import static spark.Spark.port;
+import static spark.Spark.staticFiles;
+import static spark.Spark.webSocket;
+import static spark.Spark.webSocketIdleTimeoutMillis;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -172,8 +180,9 @@ public class GraknEngineServer {
             //add check to see if string contains substring "Bearer ", for now a lot of optimism here
             boolean authenticated;
             try {
-                if (request.headers("Authorization") == null || !request.headers("Authorization").startsWith("Bearer "))
+                if (request.headers("Authorization") == null || !request.headers("Authorization").startsWith("Bearer ")) {
                     throw new GraknEngineServerException(400, "Authorization field in header corrupted or absent.");
+                }
 
                 String token = request.headers("Authorization").substring(7);
                 authenticated = JWTHandler.verifyJWT(token);

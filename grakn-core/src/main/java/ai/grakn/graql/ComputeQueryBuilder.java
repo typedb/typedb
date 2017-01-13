@@ -1,7 +1,16 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.graql.analytics.*;
+import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.CountQuery;
+import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.MaxQuery;
+import ai.grakn.graql.analytics.MeanQuery;
+import ai.grakn.graql.analytics.MedianQuery;
+import ai.grakn.graql.analytics.MinQuery;
+import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.StdQuery;
+import ai.grakn.graql.analytics.SumQuery;
 
 import java.util.Map;
 import java.util.Set;

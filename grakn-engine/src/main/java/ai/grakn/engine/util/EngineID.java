@@ -42,8 +42,9 @@ public class EngineID {
     }
 
     public static synchronized EngineID getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new EngineID();
+        }
 
         return instance;
     }

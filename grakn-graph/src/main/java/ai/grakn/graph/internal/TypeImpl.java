@@ -115,10 +115,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
      */
     public T superType() {
         T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(concept == null)
+        if(concept == null) {
             return null;
-        else
+        } else {
             return concept;
+        }
     }
 
     /**
@@ -131,10 +132,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         T superParent = superType();
 
         while(superParent != null && !Schema.MetaSchema.CONCEPT.getName().equals(superParent.getName())){
-            if(superSet.contains(superParent))
+            if(superSet.contains(superParent)) {
                 throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
-            else
+            } else {
                 superSet.add(superParent);
+            }
             //noinspection unchecked
             superParent = (T) superParent.superType();
         }
@@ -353,8 +355,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
     public T setAbstract(Boolean isAbstract) {
         checkTypeMutation();
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
-        if(isAbstract)
+        if(isAbstract) {
             getGraknGraph().getConceptLog().putConcept(this);
+        }
         return getThis();
     }
 

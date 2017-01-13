@@ -311,9 +311,9 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                     GraknGraph graph = parent.graph();
                     VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
                     predicate = new IdPredicate(idVar, parent);
-                }
-                else
+                } else {
                     predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+                }
             }
             return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), predicate, parent);
     }

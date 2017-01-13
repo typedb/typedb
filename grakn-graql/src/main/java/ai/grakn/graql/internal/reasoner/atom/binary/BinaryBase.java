@@ -167,16 +167,18 @@ public abstract class BinaryBase extends Atom {
     public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         VarName var = valueVariable;
-        if (unifiers.containsKey(var))
+        if (unifiers.containsKey(var)) {
             setValueVariable(unifiers.get(var));
-        else if (unifiers.containsValue(var))
+        } else if (unifiers.containsValue(var)) {
             setValueVariable(capture(var));
+        }
     }
 
     @Override
     public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
-        if (!(parentAtom instanceof BinaryBase))
+        if (!(parentAtom instanceof BinaryBase)) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+        }
 
         Map<VarName, VarName> unifiers = new HashMap<>();
         VarName childValVarName = this.getValueVariable();
@@ -185,12 +187,14 @@ public abstract class BinaryBase extends Atom {
         if (parentAtom.isUserDefinedName()){
             VarName childVarName = this.getVarName();
             VarName parentVarName = parentAtom.getVarName();
-            if (!childVarName.equals(parentVarName))
+            if (!childVarName.equals(parentVarName)) {
                 unifiers.put(childVarName, parentVarName);
+            }
         }
         if (!parentValVarName.getValue().isEmpty()
-                && !childValVarName.equals(parentValVarName))
+                && !childValVarName.equals(parentValVarName)) {
             unifiers.put(childValVarName, parentValVarName);
+        }
         return unifiers;
     }
 }

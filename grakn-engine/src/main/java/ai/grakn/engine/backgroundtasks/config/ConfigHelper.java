@@ -27,7 +27,17 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.util.Properties;
 
-import static ai.grakn.engine.util.ConfigProperties.*;
+import static ai.grakn.engine.util.ConfigProperties.KAFKA_BATCH_SIZE;
+import static ai.grakn.engine.util.ConfigProperties.KAFKA_BOOTSTRAP_SERVERS;
+import static ai.grakn.engine.util.ConfigProperties.KAFKA_BUFFER_MEM;
+import static ai.grakn.engine.util.ConfigProperties.KAFKA_LINGER_MS;
+import static ai.grakn.engine.util.ConfigProperties.KAFKA_RETRIES;
+import static ai.grakn.engine.util.ConfigProperties.KAFKA_SESSION_TIMEOUT;
+import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_BASE_SLEEP_TIME;
+import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_MAX_RETRIES;
+import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
+import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
+import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 
 public class ConfigHelper {
 

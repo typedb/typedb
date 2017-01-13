@@ -49,8 +49,7 @@ public class Utility {
      * @return if the vertex is alive
      */
     static boolean isAlive(Vertex vertex) {
-        if (vertex == null)
-            return false;
+        if (vertex == null) return false;
 
         try {
             return vertex.property(Schema.BaseType.TYPE.name()).isPresent();

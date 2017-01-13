@@ -23,14 +23,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -87,8 +86,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     protected ReasonerQueryImpl(Atom atom, Set<VarName> vars) {
-        if (atom.getParentQuery() == null)
+        if (atom.getParentQuery() == null) {
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
+        }
         this.graph = atom.getParentQuery().graph();
         this.selectVars = atom.getSelectedNames();
         selectVars.addAll(vars);
@@ -149,8 +149,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public boolean isRuleResolvable(){
         boolean ruleResolvable = false;
         Iterator<Atomic> it = atomSet.iterator();
-        while(it.hasNext() && !ruleResolvable)
+        while(it.hasNext() && !ruleResolvable) {
             ruleResolvable = it.next().isRuleResolvable();
+        }
         return ruleResolvable;
     }
 
@@ -372,10 +373,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return corresponding MatchQuery
      */
     public MatchQuery getMatchQuery() {
-        if (selectVars.isEmpty())
+        if (selectVars.isEmpty()) {
             return graph.graql().infer(false).match(getPattern());
-        else
+        } else {
             return graph.graql().infer(false).match(getPattern()).select(selectVars);
+        }
     }
 
     /**
@@ -460,8 +462,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .filter(atom -> atom.containsVar(var))
                 .collect(Collectors.toSet())));
 
-        if (orderedSelection.isEmpty())
+        if (orderedSelection.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
+        }
         return orderedSelection;
     }
 

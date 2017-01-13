@@ -125,19 +125,21 @@ class HALConceptOntology {
             attachRolesPlayed(halResource, concept.asType().playsRoles());
         }
 
-        if (concept.isType() && concept.asType().superType() != null)
+        if (concept.isType() && concept.asType().superType() != null) {
             embedSuperType(halResource, concept.asType());
+        }
 
-        if (concept.isType())
+        if (concept.isType()) {
             concept.asType().subTypes().forEach(instance -> {
                 // let's not put the current type in its own embedded
                 if (!instance.getId().equals(concept.getId())) {
-                    Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId()+this.keyspace)
+                    Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
                             .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                     generateStateAndLinks(instanceResource, instance);
                     halResource.withRepresentation(SUB_EDGE, instanceResource);
                 }
             });
+        }
     }
 
     private void embedSuperType(Representation halResource, Type type) {

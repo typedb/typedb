@@ -118,8 +118,9 @@ public class CommitLogController {
         }
     }
     private long getJobCount(Set jobs){
-        if(jobs != null)
+        if(jobs != null) {
             return jobs.size();
+        }
         return 0L;
     }
 }
