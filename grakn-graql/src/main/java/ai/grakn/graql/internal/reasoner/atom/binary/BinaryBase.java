@@ -23,7 +23,9 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
@@ -114,7 +116,7 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public Set<Predicate> getIdPredicates() {
+    public Set<IdPredicate> getIdPredicates() {
         //direct predicates
         return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
@@ -122,11 +124,12 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public Set<Predicate> getValuePredicates(){ return new HashSet<>();}
+    public Set<ValuePredicate> getValuePredicates(){ return new HashSet<>();}
 
     @Override
     public Set<Predicate> getPredicates() {
-        Set<Predicate> predicates = getValuePredicates();
+        Set<Predicate> predicates = new HashSet<>();
+        predicates.addAll(getValuePredicates());
         predicates.addAll(getIdPredicates());
         return predicates;
     }

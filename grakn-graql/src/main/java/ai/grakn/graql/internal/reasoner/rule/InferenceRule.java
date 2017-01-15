@@ -26,7 +26,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import javafx.util.Pair;
 
@@ -48,11 +48,11 @@ import static ai.grakn.graql.Graql.match;
 public class InferenceRule {
 
     private final ReasonerQueryImpl body;
-    private final AtomicQuery head;
+    private final ReasonerAtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
         body = new ReasonerQueryImpl(match(rule.getLHS()), graph);
-        head = new AtomicQuery(match(rule.getRHS()), graph);
+        head = new ReasonerAtomicQuery(match(rule.getRHS()), graph);
     }
 
     /**
@@ -63,7 +63,7 @@ public class InferenceRule {
     /**
      * @return head of the rule of the form head :- body
      */
-    public AtomicQuery getHead(){return head;}
+    public ReasonerAtomicQuery getHead(){return head;}
 
     /**
      * @return a conclusion atom which parent contains all atoms in the rule

@@ -25,7 +25,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.Iterator;
@@ -56,10 +56,12 @@ class MatchQueryInfer extends MatchQueryModifier {
         Reasoner.linkConceptTypes(graph);
         if (!Reasoner.hasRules(graph)) return streamWithVarNames();
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        ReasonerQuery conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
+        //ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
+        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
         Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
         while(conjIt.hasNext()) {
-            conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
+            //conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
+            conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
             answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
         }
         return answerStream;

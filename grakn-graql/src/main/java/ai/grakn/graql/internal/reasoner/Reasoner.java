@@ -24,10 +24,9 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.QueryCache;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
@@ -116,12 +115,12 @@ public class Reasoner {
     public static void precomputeInferences(GraknGraph graph){
         linkConceptTypes(graph);
         QueryCache cache = new QueryCache();
-        Set<AtomicQuery> subGoals = new HashSet<>();
+        Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
-            AtomicQuery atomicQuery = new AtomicMatchQuery(rule.getHead(), new QueryAnswers());
+            ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead(), new QueryAnswers());
             int dAns;
-            Set<AtomicQuery> SG;
+            Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
                 dAns = atomicQuery.getAnswers().size();

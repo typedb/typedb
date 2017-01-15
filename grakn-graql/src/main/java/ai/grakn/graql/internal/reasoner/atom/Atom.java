@@ -27,7 +27,9 @@ import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import javafx.util.Pair;
@@ -150,12 +152,12 @@ public abstract class Atom extends AtomBase {
     /**
      * @return set of id predicates relevant to this atom
      */
-    public abstract Set<Predicate> getIdPredicates();
+    public abstract Set<IdPredicate> getIdPredicates();
 
     /**
      * @return set of value predicates relevant to this atom
      */
-    public abstract Set<Predicate> getValuePredicates();
+    public abstract Set<ValuePredicate> getValuePredicates();
 
 
     /**

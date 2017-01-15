@@ -27,6 +27,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.admin.Atomic;
+import java.util.Map;
 
 /**
  *
