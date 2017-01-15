@@ -30,6 +30,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
+import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,6 +66,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @return filtered answers
      */
     public QueryAnswers filterVars(Set<VarName> vars) {
+        /*
         QueryAnswers results = new QueryAnswers();
         if (this.isEmpty()) return results;
         this.forEach(answer -> {
@@ -77,6 +79,8 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
             if (!map.isEmpty()) results.add(map);
         });
         return new QueryAnswers(results.stream().distinct().collect(Collectors.toSet()));
+        */
+        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result, vars::contains)).collect(Collectors.toSet()));
     }
 
     /**
@@ -85,7 +89,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @return filtered answers
      */
     public QueryAnswers filterKnown(QueryAnswers known){
-        if (this.getVars().equals(known.getVars())){
+        if (this.getVars().equals(known.getVars()) || known.isEmpty() ){
             QueryAnswers results = new QueryAnswers(this);
             results.removeAll(known);
             return results;
@@ -165,24 +169,21 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         if (this.isEmpty() || localTuples.isEmpty()) {
             return new QueryAnswers();
         }
-
         QueryAnswers join = new QueryAnswers();
+        Set<VarName> joinVars = new HashSet<>(this.getVars());
+        joinVars.retainAll(localTuples.getVars());
+
         for( Map<VarName, Concept> lanswer : localTuples){
             for (Map<VarName, Concept> answer : this){
                 boolean isCompatible = true;
-                Iterator<Map.Entry<VarName, Concept>> it = lanswer.entrySet().iterator();
-                while(it.hasNext() && isCompatible) {
-                    Map.Entry<VarName, Concept> entry = it.next();
-                    VarName var = entry.getKey();
-                    Concept concept = entry.getValue();
-                    if(answer.containsKey(var) && !concept.equals(answer.get(var))) {
-                        isCompatible = false;
-                    }
+                Iterator<VarName> vit = joinVars.iterator();
+                while(vit.hasNext() && isCompatible) {
+                    VarName var = vit.next();
+                    isCompatible = answer.get(var).equals(lanswer.get(var));
                 }
 
                 if (isCompatible) {
-                    Map<VarName, Concept> merged = new HashMap<>();
-                    merged.putAll(lanswer);
+                    Map<VarName, Concept> merged = new HashMap<>(lanswer);
                     merged.putAll(answer);
                     join.add(merged);
                 }
@@ -270,7 +271,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         }
 
         QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, valueConstraints, typeConstraints);
-        return unifiedAnswers.filterVars(parentQuery.getSelectedNames())
-                             .filterIncomplete(parentQuery.getSelectedNames());
+        return unifiedAnswers.filterVars(parentQuery.getSelectedNames());
+                             //.filterIncomplete(parentQuery.getSelectedNames());
     }
 }

@@ -271,17 +271,22 @@ public class ReasonerTest extends AbstractGraknTest {
         String queryString = "match $x isa person;$y isa $type;($x, $y) isa recommendation;";
         String explicitQuery = "match $y isa $type;" +
                 "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
-                "{$x has name 'Bob';{$y has name 'Ducatti 1299';} or " +
+                "{$x has name 'Bob';" +
+                    "{$y has name 'Ducatti 1299';} or " +
                     "{$y has name 'The Good the Bad the Ugly';};} or" +
-                "{$x has name 'Charlie';{$y has name 'Blizzard of Ozz';} or " +
+                "{$x has name 'Charlie';" +
+                    "{$y has name 'Blizzard of Ozz';} or " +
                     "{$y has name 'Stratocaster';};} or " +
-                "{$x has name 'Denis';{$y has name 'Colour of Magic';} or " +
+                "{$x has name 'Denis';" +
+                    "{$y has name 'Colour of Magic';} or " +
                     "{$y has name 'Dorian Gray';};} or"+
                 "{$x has name 'Frank';$y has name 'Nocturnes';} or" +
-                "{$x has name 'Karl Fischer';{$y has name 'Faust';} or " +
-                        "{$y has name 'Nocturnes';};} or " +
+                "{$x has name 'Karl Fischer';" +
+                    "{$y has name 'Faust';} or " +
+                    "{$y has name 'Nocturnes';};} or " +
                 "{$x has name 'Gary';$y has name 'The Wall';} or" +
-                "{$x has name 'Charlie';{$y has name 'Yngwie Malmsteen';} or " +
+                "{$x has name 'Charlie';"+
+                    "{$y has name 'Yngwie Malmsteen';} or " +
                     "{$y has name 'Cacophony';} or " +
                     "{$y has name 'Steve Vai';} or " +
                     "{$y has name 'Black Sabbath';};} or " +
@@ -434,10 +439,11 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph graph = GeoGraph.getGraph();
         String queryString = "match $y isa country;$y has name $name;"+
                 "$name value  /.*(.*)land(.*).*/;($x, $y) isa is-located-in;select $x, $y;";
-        String explicitQuery = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
+        String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in;";
-        MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
+        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
         assertQueriesEqual(query, query2);
     }
 
@@ -446,10 +452,11 @@ public class ReasonerTest extends AbstractGraknTest {
         GraknGraph graph = GeoGraph.getGraph();
         String queryString = "match $y isa country;$y has name $name;"+
                 "$name value contains 'land';($x, $y) isa is-located-in;select $x, $y;";
-        String explicitQuery = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
+        String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in;";
-        MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
+        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
         assertQueriesEqual(query, query2);
     }
 
@@ -742,6 +749,7 @@ public class ReasonerTest extends AbstractGraknTest {
         MatchQuery query3 = graph3.graql().infer(true).materialise(false).parse(queryString3);
 
         QueryAnswers answers = queryAnswers(query);
+        System.out.println("answers: " +  answers.size());
         QueryAnswers answers2 = queryAnswers(query2);
         QueryAnswers answers3 = queryAnswers(query3);
         assertEquals(answers, answers2);

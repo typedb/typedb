@@ -28,6 +28,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.ErrorMessage;
 
+import com.google.common.collect.Maps;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -59,12 +60,15 @@ class MatchQueryInfer extends MatchQueryModifier {
         //ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
         ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
         Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
+                //.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));
         while(conjIt.hasNext()) {
             //conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
             conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
-            answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
+            Stream<Map<VarName, Concept>> localStream = conjunctiveQuery.resolve(materialise);
+                    //.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));
+            answerStream = Stream.concat(answerStream, localStream);
         }
-        return answerStream;
+        return answerStream.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));
     }
 
     @Override

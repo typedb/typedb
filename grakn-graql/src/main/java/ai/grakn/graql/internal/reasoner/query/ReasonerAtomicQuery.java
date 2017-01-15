@@ -391,6 +391,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
+        //System.out.println();
     }
 
     /**
@@ -459,7 +460,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + size());
             dAns = size() - dAns;
             iter++;
-            if (!materialise) cache.propagateAnswers();
+            //if (!materialise) cache.propagateAnswers();
+            //LOG.debug();
         }
 
         private void computeNext(){
