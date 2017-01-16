@@ -88,7 +88,7 @@ public class Scheduler implements Runnable, AutoCloseable {
                 ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(SCHEDULER_POLLING_FREQ));
 
                 for(ConsumerRecord<String, String> record:records) {
-                    LOG.debug(String.format("Scheduler received topic = %s, partition = %s, offset = %s, taskid = %s, value = %s\n",
+                    LOG.debug(String.format("Scheduler received topic = %s, partition = %s, offset = %s, taskid = %s, value = %s%n",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value()));
 
                     scheduleTask(record.key(), record.value());
