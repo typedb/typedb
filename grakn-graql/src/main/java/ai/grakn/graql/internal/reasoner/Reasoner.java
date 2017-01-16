@@ -28,24 +28,22 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.QueryCache;
-import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 
@@ -126,12 +124,12 @@ public class Reasoner {
     public static void precomputeInferences(GraknGraph graph){
         linkConceptTypes(graph);
         QueryCache cache = new QueryCache();
-        Set<AtomicQuery> subGoals = new HashSet<>();
+        Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
-            AtomicQuery atomicQuery = new AtomicMatchQuery(rule.getHead(), new QueryAnswers());
+            ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead(), new QueryAnswers());
             int dAns;
-            Set<AtomicQuery> SG;
+            Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
                 dAns = atomicQuery.getAnswers().size();
@@ -162,10 +160,10 @@ public class Reasoner {
         }
         Set<VarName> selectVars = inputQuery.admin().getSelectedNames();
         Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        ReasonerQueryImpl conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
+        ReasonerQueryImpl conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(selectVars), graph);
         Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
         while(conjIt.hasNext()) {
-            conjunctiveQuery = new ReasonerMatchQuery(graph.graql().match(conjIt.next()).select(selectVars), graph);
+            conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(selectVars), graph);
             answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
         }
         return answerStream;
