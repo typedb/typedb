@@ -41,7 +41,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknMapReduce.class);
 
-    public static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
+    static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
     public static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
 
     public GraknMapReduce(Set<TypeName> selectedTypes) {this.selectedTypes = selectedTypes;}

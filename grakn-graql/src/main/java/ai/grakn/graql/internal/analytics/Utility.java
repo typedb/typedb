@@ -23,6 +23,10 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
@@ -71,5 +75,19 @@ public class Utility {
     static String graknJavaTypeConverter(String resourceDataType) {
         return resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
                 Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
+    }
+
+    /**
+     * A helper method for String MapReduce. It simply combines sets of strings into one set.
+     *
+     * @param values the aggregated values associated with the key
+     * @return the combined set
+     */
+    static Set<String> reduceString(Iterator<Set<String>> values) {
+        Set<String> set = new HashSet<>();
+        while (values.hasNext()) {
+            set.addAll(values.next());
+        }
+        return set;
     }
 }
