@@ -1,0 +1,1 @@
+match (spouse1: $x, spouse2: $y) isa marriage, has date $d; $x has identifier $xi; $y has identifier $yi;
