@@ -72,7 +72,6 @@ public class AtomicTest extends AbstractGraknTest {
     public void testRecursive(){
         String recRelString = "match ($x, $y) isa resides;";
         String nrecRelString = "match ($x, $y) isa recommendation;";
-
         ReasonerAtomicQuery recQuery = new ReasonerAtomicQuery(recRelString, snbGraph);
         ReasonerAtomicQuery nrecQuery = new ReasonerAtomicQuery(nrecRelString, snbGraph);
 

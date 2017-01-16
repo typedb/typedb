@@ -325,6 +325,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Set<VarName> queryVars = getSelectedNames();
         Set<VarName> headVars = ruleHead.getSelectedNames();
         Set<IdPredicate> extraSubs = new HashSet<>();
+
         //if(queryVars.size() > headVars.size()){
         ruleHead.getIdPredicates()
                 .stream().filter(sub -> queryVars.contains(sub.getVarName()))
@@ -391,7 +392,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
-        //System.out.println();
     }
 
     /**
@@ -461,7 +461,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             dAns = size() - dAns;
             iter++;
             //if (!materialise) cache.propagateAnswers();
-            //LOG.debug();
         }
 
         private void computeNext(){
