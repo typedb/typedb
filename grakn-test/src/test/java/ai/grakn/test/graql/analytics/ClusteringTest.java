@@ -163,7 +163,7 @@ public class ClusteringTest {
         assertEquals(5, result.values().iterator().next().size());
 
         assertEquals(1, context.graph().graql().compute()
-                .cluster().in(thing, anotherThing, aResourceTypeName).members().execute().size());
+                .cluster().in(TypeName.of(thing), TypeName.of(anotherThing), TypeName.of(aResourceTypeName)).members().execute().size());
     }
 
     @Test

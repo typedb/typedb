@@ -171,7 +171,7 @@ public class DegreeTest {
         ));
 
         // compute degrees on subgraph
-        Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in(TypeName.of("thing"), TypeName.of("related")).execute();
+        Map<Long, Set<String>> degrees3 = context.graph().graql().compute().degree().in(TypeName.of("thing"), TypeName.of("related")).execute();
         correctDegrees.put(id3, 1L);
         assertTrue(!degrees3.isEmpty());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -181,7 +181,7 @@ public class DegreeTest {
                 }
         ));
 
-        degrees3 = graph.graql().compute().degree().of(TypeName.of("thing")).in(TypeName.of("thing"), TypeName.of("related")).execute();
+        degrees3 = context.graph().graql().compute().degree().of(TypeName.of("thing")).in(TypeName.of("thing"), TypeName.of("related")).execute();
         assertEquals(2, degrees3.size());
         assertEquals(2, degrees3.get(1L).size());
         assertEquals(1, degrees3.get(3L).size());
@@ -271,8 +271,8 @@ public class DegreeTest {
         context.graph().commit();
 
         // create a subgraph excluding resources and the relationship
-        HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
+        HashSet<TypeName> subGraphTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"));
+        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(subGraphTypes).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -282,8 +282,8 @@ public class DegreeTest {
         ));
 
         // create a subgraph excluding resource type only
-        HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "has-name", "name");
-        degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
+        HashSet<TypeName> almostFullTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"), TypeName.of("has-name"), TypeName.of("name"));
+        degrees = context.graph().graql().compute().degree().in(almostFullTypes).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -399,7 +399,7 @@ public class DegreeTest {
         // create a subgraph with assertion on assertion
         HashSet<TypeName> ct =
                 Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"), TypeName.of("start-date"), TypeName.of("has-ownership-resource"));
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(ct).execute();
         assertTrue(!degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -413,7 +413,7 @@ public class DegreeTest {
         ct.add(TypeName.of("animal"));
         ct.add(TypeName.of("person"));
         ct.add(TypeName.of("mans-best-friend"));
-        degrees = graph.graql().compute().degree().in(ct).execute();
+        degrees = context.graph().graql().compute().degree().in(ct).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -540,7 +540,7 @@ public class DegreeTest {
         // check degree for dave owning cats
         //TODO: should we count the relationship even if there is no cat attached?
         HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("mans-best-friend"), TypeName.of("cat"), TypeName.of("person"));
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(ct).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {

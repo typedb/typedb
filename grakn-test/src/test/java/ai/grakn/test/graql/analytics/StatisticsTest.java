@@ -596,7 +596,7 @@ public class StatisticsTest {
         RoleType resourceValue5 = context.graph().getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType5));
         RoleType resourceValue6 = context.graph().getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType6));
 
-        RelationType relationType1 = context.graph().getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceType1));
+        RelationType relationType1 = context.graph().getType(Schema.Resource.HAS_RESOURCE.getName(resourceType1));
         relationType1.addRelation()
                 .putRolePlayer(resourceOwner1, entity1)
                 .putRolePlayer(resourceValue1, context.graph().<ResourceType<Double>>getType(resourceType1).putResource(1.2));
@@ -618,7 +618,7 @@ public class StatisticsTest {
                 .putRolePlayer(resourceOwner2, entity4)
                 .putRolePlayer(resourceValue2, context.graph().<ResourceType<Long>>getType(resourceType2).putResource(0L));
 
-        context.graph().getResourceType(resourceType3).putResource(100L);
+        context.graph().<ResourceType<Long>>getType(resourceType3).putResource(100L);
 
         RelationType relationType5 = context.graph().getType(Schema.Resource.HAS_RESOURCE.getName(resourceType5));
         relationType5.addRelation()
