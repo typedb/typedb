@@ -78,7 +78,7 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
                 break;
 
             case 2:
-                String type = Utility.getVertexType(vertex);
+                TypeName type = Utility.getVertexType(vertex);
                 if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
                     bulkResourceMutate.putValue(vertex, getEdgeCount(messenger));
                 }

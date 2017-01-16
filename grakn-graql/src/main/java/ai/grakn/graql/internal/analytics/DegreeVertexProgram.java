@@ -59,7 +59,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeNames.add(TypeName.of((String) configuration.getProperty(OF_TYPE_NAMES + "." + key))));
+                ofTypeNames.add(TypeName.of(configuration.getProperty(OF_TYPE_NAMES + "." + key).toString())));
     }
 
     @Override
@@ -89,7 +89,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                 break;
 
             case 2:
-                String type = Utility.getVertexType(vertex);
+                TypeName type = Utility.getVertexType(vertex);
                 if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
                     vertex.property(DEGREE, getEdgeCount(messenger));
                 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.concept;
 
+import java.io.Serializable;
 import java.util.function.Function;
 
 /**
@@ -32,7 +33,7 @@ import java.util.function.Function;
  *
  * @author fppt
  */
-public class TypeName implements Comparable<TypeName> {
+public class TypeName implements Comparable<TypeName>, Serializable {
     private String name;
 
     private TypeName(String name){

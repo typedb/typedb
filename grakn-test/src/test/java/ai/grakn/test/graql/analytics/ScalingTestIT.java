@@ -48,6 +48,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -84,6 +85,7 @@ import static org.junit.Assert.assertFalse;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
+@Ignore
 public class ScalingTestIT {
 
     private static final String[] HOST_NAME =

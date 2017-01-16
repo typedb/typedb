@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -28,8 +29,8 @@ public class Utility {
      * @param vertex the Tinkerpop vertex
      * @return the type
      */
-    static String getVertexType(Vertex vertex) {
-        return vertex.value(Schema.ConceptProperty.TYPE.name());
+    static TypeName getVertexType(Vertex vertex) {
+        return TypeName.of(vertex.value(Schema.ConceptProperty.TYPE.name()));
     }
 
     /**
