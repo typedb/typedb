@@ -23,12 +23,13 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 
 import java.util.function.Consumer;
 
 public class NguyenGraph extends TestGraph {
 
-    private final static String key = "index";
+    private final static TypeName key = TypeName.of("index");
     private final static String gqlFile = "nguyen-test.gql";
 
     private final int n;

@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -83,7 +84,7 @@ public class ReasonerTest {
 
     @Test
     public void testSubPropertyRule() {
-        Map<String, String> roleMap = new HashMap<>();
+        Map<TypeName, TypeName> roleMap = new HashMap<>();
         RelationType parent = snbGraph.graph().getRelationType("sublocate");
         RelationType child = snbGraph.graph().getRelationType("resides");
 
@@ -135,7 +136,7 @@ public class ReasonerTest {
         RelationType resides = snbGraph.graph().getRelationType("resides");
         RelationType sublocate = snbGraph.graph().getRelationType("sublocate");
 
-        LinkedHashMap<RelationType, Pair<String, String>> chain = new LinkedHashMap<>();
+        LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain = new LinkedHashMap<>();
 
         chain.put(resides, new Pair<>(snbGraph.graph().getRoleType("located-subject").getName(), snbGraph.graph().getRoleType("subject-location").getName()));
         chain.put(sublocate, new Pair<>(snbGraph.graph().getRoleType("member-location").getName(), snbGraph.graph().getRoleType("container-location").getName()));

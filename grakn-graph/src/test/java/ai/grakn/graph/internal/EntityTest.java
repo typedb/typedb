@@ -27,6 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
@@ -232,25 +233,25 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void testHasResource(){
-        String resourceTypeId = "A Resource Thing";
+        TypeName resourceTypeName = TypeName.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeName, ResourceType.DataType.STRING);
         entityType.hasResource(resourceType);
 
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
         Relation relation = entity.hasResource(resource);
-        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relation.type().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
         relation.rolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
             Instance instance = entry.getValue();
 
             if(instance.equals(entity)){
-                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName), roleType.getName());
             } else {
-                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName), roleType.getName());
             }
         });
     }
@@ -273,25 +274,25 @@ public class EntityTest extends GraphTestBase{
 
     @Test
     public void testKey(){
-        String resourceTypeId = "A Resource Thing";
+        TypeName resourceTypeName = TypeName.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeName, ResourceType.DataType.STRING);
         entityType.key(resourceType);
 
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
         Relation relation = entity.hasResource(resource);
-        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId), relation.type().getName());
+        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
         relation.rolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
             Instance instance = entry.getValue();
 
             if(instance.equals(entity)){
-                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName), roleType.getName());
             } else {
-                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId), roleType.getName());
+                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName), roleType.getName());
             }
         });
     }

@@ -27,6 +27,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
@@ -142,7 +143,7 @@ public class GraqlTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        String resourceTypeId = "my-resource";
+        TypeName resourceTypeId = TypeName.of("my-resource");
 
         RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
         RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));

@@ -45,7 +45,7 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        return "[id:" + idToString(id.getValue()) + "]";
+        return "[id:" + idToString(id) + "]";
     }
 
     @Override

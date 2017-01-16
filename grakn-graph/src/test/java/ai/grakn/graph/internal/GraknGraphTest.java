@@ -12,6 +12,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -225,11 +226,11 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void testSimpleGraqlQuery(){
-        String entityType = Schema.MetaSchema.ENTITY.getName();
+        TypeName entityType = Schema.MetaSchema.ENTITY.getName();
         EntityType type1 = graknGraph.putEntityType("Concept Type ");
         EntityType type2 = graknGraph.putEntityType("Concept Type 1");
 
-        List<Map<String, Concept>> results = graknGraph.graql().match(var("x").sub(entityType)).execute();
+        List<Map<String, Concept>> results = graknGraph.graql().match(var("x").sub(entityType.getValue())).execute();
 
         boolean found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type1)));
         assertTrue(found);
@@ -254,9 +255,9 @@ public class GraknGraphTest extends GraphTestBase {
         assertEquals(1, graknGraph.getMetaRoleType().subTypes().size());
 
         //Check things are still returned when explicitly asking for them
-        assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
-        assertNotNull(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType.getName())));
-        assertNotNull(graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName())));
 
         //Switch on flag
         graknGraph.showImplicitConcepts(true);

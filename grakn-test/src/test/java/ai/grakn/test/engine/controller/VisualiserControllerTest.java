@@ -20,6 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.test.EngineContext;
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.jayway.restassured.response.Response;
@@ -163,14 +164,14 @@ public class VisualiserControllerTest {
     public void getTypeByID() {
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
-                .get(REST.WebPath.CONCEPT_BY_ID_URI +graph.getType("person").getId().getValue())
+                .get(REST.WebPath.CONCEPT_BY_ID_URI +graph.getType(TypeName.of("person")).getId().getValue())
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
 
         //TODO:maybe change person to proper id? and add  _nameType property
         assertEquals(message.at("_id").asString(),"person");
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), message.at("_baseType").asString());
-        assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType("person").getId().getValue()+"?keyspace="+graph.getKeyspace());
+        assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType(TypeName.of("person")).getId().getValue()+"?keyspace="+graph.getKeyspace());
         assertEquals(60,message.at("_embedded").at("isa").asJsonList().size());
     }
 }

@@ -139,14 +139,14 @@ public class RelationTest extends GraphTestBase{
         //Check Structure of Shortcut Edge
         boolean foundEdge = false;
         for (EdgeImpl edge : a.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT)) {
-            if(edge.getProperty(TO_ROLE_NAME).equals(role2.getName())) {
+            if(edge.getProperty(TO_ROLE_NAME).equals(role2.getName().getValue())) {
                 foundEdge = true;
-                assertEquals(edge.getProperty(RELATION_TYPE_NAME), relationType.getName());
+                assertEquals(edge.getProperty(RELATION_TYPE_NAME), relationType.getName().getValue());
                 assertEquals(edge.getProperty(RELATION_ID), relation.getId().getValue());
                 assertEquals(edge.getProperty(TO_ID), b.getId().getValue());
                 assertEquals(edge.getProperty(FROM_ID), a.getId().getValue());
-                assertEquals(edge.getProperty(FROM_TYPE_NAME), a.type().getName());
-                assertEquals(edge.getProperty(TO_TYPE_NAME), b.type().getName());
+                assertEquals(edge.getProperty(FROM_TYPE_NAME), a.type().getName().getValue());
+                assertEquals(edge.getProperty(TO_TYPE_NAME), b.type().getName().getValue());
             }
         }
         assertTrue(foundEdge);

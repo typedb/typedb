@@ -22,19 +22,20 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -45,7 +46,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -298,7 +299,7 @@ public class Relation extends TypeAtom {
                 .flatMap(CommonUtil::optionalToStream)
                 .map(VarAdmin::getTypeName)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(graph::getRoleType)
+                .map(graph::<RoleType>getType)
                 .forEach(roleTypes::add);
         return roleTypes;
     }
@@ -469,15 +470,15 @@ public class Relation extends TypeAtom {
 
         for (VarName var : vars) {
             Type type = varTypeMap.get(var);
-            String roleTypeName = "";
+            TypeName roleTypeName = null;
             for(RelationPlayer c : relationPlayers) {
                 if (c.getRolePlayer().getVarName().equals(var)) {
-                    roleTypeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse("");
+                    roleTypeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse(null);
                 }
             }
             //roletype explicit
-            if (!roleTypeName.isEmpty()) {
-                roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeName)));
+            if (roleTypeName != null) {
+                roleVarTypeMap.put(var, new Pair<>(type, graph.getType(roleTypeName)));
             } else if (type != null && relType != null) {
                 Set<RoleType> cRoles = Utility.getCompatibleRoleTypes(type, relType);
                 //if roleType is unambigous
@@ -521,8 +522,8 @@ public class Relation extends TypeAtom {
                 Type type = varTypeMap.get(var);
                 roleVarTypeMap.put(role, new Pair<>(var, type));
                 //try directly
-                String typeName = role.getTypeName().orElse("");
-                RoleType roleType = !typeName.isEmpty() ? graph.getRoleType(typeName): null;
+                TypeName typeName = role.getTypeName().orElse(null);
+                RoleType roleType = typeName != null ? graph.getType(typeName): null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());

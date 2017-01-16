@@ -22,6 +22,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
@@ -106,7 +107,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(author);
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
-            assertRelationBetweenInstancesExists(graph, work, author, "op-wrote");
+            assertRelationBetweenInstancesExists(graph, work, author, TypeName.of("op-wrote"));
             Assert.assertTrue(!Reasoner.getRules(graph).isEmpty());
         }
         catch (Throwable t) {
@@ -168,12 +169,12 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item")));
             item1.resources().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
-            RoleType subjectRole = migrator.graph().getRoleType(migrator.namer().subjectRole("op-related"));
-            RoleType objectRole = migrator.graph().getRoleType(migrator.namer().objectRole("op-related"));
+            RoleType subjectRole = migrator.graph().getType(migrator.namer().subjectRole(TypeName.of("op-related")));
+            RoleType objectRole = migrator.graph().getType(migrator.namer().objectRole(TypeName.of("op-related")));
             assertTrue(item2.relations(subjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers().get(objectRole))));
-            RoleType catsubjectRole = migrator.graph().getRoleType(migrator.namer().subjectRole("op-hasCategory"));
-            RoleType catobjectRole = migrator.graph().getRoleType(migrator.namer().objectRole("op-hasCategory"));
+            RoleType catsubjectRole = migrator.graph().getType(migrator.namer().subjectRole(TypeName.of("op-hasCategory")));
+            RoleType catobjectRole = migrator.graph().getType(migrator.namer().objectRole(TypeName.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
             assertTrue(catsubjectRole.playedByTypes().contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));

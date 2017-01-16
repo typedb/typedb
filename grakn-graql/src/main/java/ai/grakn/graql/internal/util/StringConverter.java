@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.internal.util;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -84,17 +86,32 @@ public class StringConverter {
     }
 
     /**
-     * @param id an ID or name of a type
+     * @param id an ID of a concept
      * @return
      * The id of the concept correctly escaped in graql.
      * If the ID doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
-    public static String idToString(String id) {
-        if (id.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(id)) {
-            return id;
+    public static String idToString(ConceptId id) {
+        return escapeNameOrId(id.getValue());
+    }
+
+    /**
+     * @param typeName a name of a type
+     * @return
+     * The name of the type correctly escaped in graql.
+     * If the name doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
+     * then it will be returned as-is, otherwise it will be quoted and escaped.
+     */
+    public static String typeNameToString(TypeName typeName) {
+        return escapeNameOrId(typeName.getValue());
+    }
+
+    private static String escapeNameOrId(String name) {
+        if (name.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(name)) {
+            return name;
         } else {
-            return quoteString(id);
+            return quoteString(name);
         }
     }
 

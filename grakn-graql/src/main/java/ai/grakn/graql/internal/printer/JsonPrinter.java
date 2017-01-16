@@ -40,10 +40,10 @@ class JsonPrinter implements Printer<Json> {
         Json json = Json.object("id", concept.getId().getValue());
 
         if (concept.isType()) {
-            json.set("name", concept.asType().getName());
-            json.set("sub", concept.asType().superType().getName());
+            json.set("name", concept.asType().getName().getValue());
+            json.set("sub", concept.asType().superType().getName().getValue());
         } else {
-            json.set("isa", concept.asInstance().type().getName());
+            json.set("isa", concept.asInstance().type().getName().getValue());
         }
 
         if (concept.isResource()) {
