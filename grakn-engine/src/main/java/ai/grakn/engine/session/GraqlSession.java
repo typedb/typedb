@@ -128,6 +128,8 @@ class GraqlSession {
             case REST.RemoteShell.ACTION_DISPLAY:
                 setDisplayOptions(json);
                 break;
+            default:
+                throw new RuntimeException("Unrecognized message: " + json);
         }
     }
 
