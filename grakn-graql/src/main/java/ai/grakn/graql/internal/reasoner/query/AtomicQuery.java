@@ -34,7 +34,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
