@@ -108,11 +108,11 @@ public class TasksController {
         int offset = 0;
 
         if(request.queryParams(LIMIT_PARAM) != null) {
-            limit = Integer.valueOf(request.queryParams(LIMIT_PARAM));
+            limit = Integer.parseInt(request.queryParams(LIMIT_PARAM));
         }
 
         if(request.queryParams(OFFSET_PARAM) != null) {
-            offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
+            offset = Integer.parseInt(request.queryParams(OFFSET_PARAM));
         }
 
         if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
@@ -190,7 +190,7 @@ public class TasksController {
                 configuration = new JSONObject(request.body());
             }
 
-            Instant runAtInstant = Instant.ofEpochMilli(Long.valueOf(runAt));
+            Instant runAtInstant = Instant.ofEpochMilli(Long.parseLong(runAt));
 
             Class<?> clazz = Class.forName(className);
             BackgroundTask task = (BackgroundTask)clazz.newInstance();
