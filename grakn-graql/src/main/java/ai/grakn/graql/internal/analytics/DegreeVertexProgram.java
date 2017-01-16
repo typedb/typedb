@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -63,6 +64,11 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     @Override
     public Set<String> getElementComputeKeys() {
         return ELEMENT_COMPUTE_KEYS;
+    }
+
+    @Override
+    public Set<MessageScope> getMessageScopes(final Memory memory) {
+        return memory.getIteration() == 2 ? Collections.emptySet() : messageScopeSet;
     }
 
     @Override
