@@ -79,6 +79,8 @@ public class GraphFactoryController {
                     case REST.GraphConfig.COMPUTER:
                         graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
                         break;
+                    default:
+                        throw new RuntimeException("Unrecognised graph config: " + graphConfig);
                 }
             }
             return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
