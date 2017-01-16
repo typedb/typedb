@@ -151,37 +151,38 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     public TaskManager stopTask(String id, String requesterName) {
-        stateUpdateLock.lock();
+        try {
+            stateUpdateLock.lock();
 
-        TaskState state = stateStorage.getState(id);
-        if(state == null) {
-            return this;
-        }
-
-        Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
-        String name = this.getClass().getName();
-
-        synchronized (pair) {
-            if(state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
-                LOG.info("Stopping a currently scheduled task "+id);
-                pair.getKey().cancel(true);
-                stateStorage.updateState(id, STOPPED, name,null, null, null, null);
+            TaskState state = stateStorage.getState(id);
+            if (state == null) {
+                return this;
             }
-            else if(state.status() == RUNNING) {
-                LOG.info("Stopping running task "+id);
 
-                BackgroundTask task = pair.getValue();
-                if(task != null) {
-                    task.stop();
+            Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
+            String name = this.getClass().getName();
+
+            synchronized (pair) {
+                if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
+                    LOG.info("Stopping a currently scheduled task " + id);
+                    pair.getKey().cancel(true);
+                    stateStorage.updateState(id, STOPPED, name, null, null, null, null);
+                } else if (state.status() == RUNNING) {
+                    LOG.info("Stopping running task " + id);
+
+                    BackgroundTask task = pair.getValue();
+                    if (task != null) {
+                        task.stop();
+                    }
+
+                    stateStorage.updateState(id, STOPPED, name, null, null, null, null);
+                } else {
+                    LOG.warn("Task not running - " + id);
                 }
-
-                stateStorage.updateState(id, STOPPED, name, null, null, null, null);
             }
-            else {
-                LOG.warn("Task not running - "+id);
-            }
+        } finally {
+            stateUpdateLock.unlock();
         }
-        stateUpdateLock.unlock();
 
         return this;
     }
