@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -38,12 +39,12 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
-    private Set<String> ofTypeNames = new HashSet<>();
+    private Set<TypeName> ofTypeNames = new HashSet<>();
 
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<String> types, Set<String> ofTypeNames) {
+    public DegreeVertexProgram(Set<TypeName> types, Set<TypeName> ofTypeNames) {
         selectedTypes = types;
         this.ofTypeNames = ofTypeNames;
     }
@@ -58,7 +59,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeNames.add((String) configuration.getProperty(OF_TYPE_NAMES + "." + key)));
+                ofTypeNames.add(TypeName.of(configuration.getProperty(OF_TYPE_NAMES + "." + key).toString())));
     }
 
     @Override
@@ -88,7 +89,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                 break;
 
             case 2:
-                String type = Utility.getVertexType(vertex);
+                TypeName type = Utility.getVertexType(vertex);
                 if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
                     vertex.property(DEGREE, getEdgeCount(messenger));
                 }

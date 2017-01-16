@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -52,6 +53,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
@@ -270,13 +272,13 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, String fromRoleName, String toRoleName, GraknGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        VarAdmin startVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "z").admin();
-        VarAdmin endVar = var().isa(relType.getName()).rel(fromRoleName, "z").rel(toRoleName, "y").admin();
-        VarAdmin headVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "y").admin();
+        VarAdmin startVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "z").admin();
+        VarAdmin endVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "z").rel(name(toRoleName), "y").admin();
+        VarAdmin headVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
         return graph.admin().getMetaRuleInference().addRule(body, headVar);
     }
@@ -291,8 +293,8 @@ public class Utility {
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var body = var().isa(relType.getName()).rel("x").rel("y");
-        Var head = var().isa(relType.getName()).rel("x").rel("x");
+        Var body = var().isa(name(relType.getName())).rel("x").rel("y");
+        Var head = var().isa(name(relType.getName())).rel("x").rel("x");
         return graph.admin().getMetaRuleInference().addRule(body, head);
     }
 
@@ -304,21 +306,21 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<String, String> roleMappings,
+    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeName, TypeName> roleMappings,
                                              GraknGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
         }
-        Var parentVar = var().isa(parent.getName());
-        Var childVar = var().isa(child.getName());
+        Var parentVar = var().isa(name(parent.getName()));
+        Var childVar = var().isa(name(child.getName()));
         Set<VarName> vars = new HashSet<>();
 
         roleMappings.forEach( (parentRoleName, childRoleName) -> {
             VarName varName = createFreshVariable(vars, Patterns.varName("x"));
-            parentVar.rel(parentRoleName, var(varName));
-            childVar.rel(childRoleName, var(varName));
+            parentVar.rel(name(parentRoleName), var(varName));
+            childVar.rel(name(childRoleName), var(varName));
             vars.add(varName);
         });
         return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
@@ -333,21 +335,21 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createPropertyChainRule(RelationType relation, String fromRoleName, String toRoleName,
-                                             LinkedHashMap<RelationType, Pair<String, String>> chain, GraknGraph graph){
+    public static Rule createPropertyChainRule(RelationType relation, TypeName fromRoleName, TypeName toRoleName,
+                                             LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain, GraknGraph graph){
         Stack<VarName> varNames = new Stack<>();
         varNames.push(Patterns.varName("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
             VarName varName = createFreshVariable(Sets.newHashSet(varNames), Patterns.varName("x"));
-            VarAdmin var = var().isa(relType.getName())
-                    .rel(rolePair.getKey(), var(varNames.peek()))
-                    .rel(rolePair.getValue(), var(varName)).admin();
+            VarAdmin var = var().isa(name(relType.getName()))
+                    .rel(name(rolePair.getKey()), var(varNames.peek()))
+                    .rel(name(rolePair.getValue()), var(varName)).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        Var headVar = var().isa(relation.getName()).rel(fromRoleName, "x").rel(toRoleName, var(varNames.peek()));
+        Var headVar = var().isa(name(relation.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), var(varNames.peek()));
         return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
 

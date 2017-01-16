@@ -21,6 +21,7 @@ package ai.grakn.test.migration.owl;
 import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
@@ -71,7 +72,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         assertNotNull(type);
         assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
         assertNotNull(type.superType());
-        assertEquals("tPerson", type.superType().getName());
+        assertEquals("tPerson", type.superType().getName().getValue());
         assertEquals(top, type.superType().superType());
         assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
         assertNotEquals(0, type.instances().size());
@@ -86,7 +87,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         assertNotNull(author);
         final Entity work = getEntity("eHamlet");
         assertNotNull(work);
-        assertRelationBetweenInstancesExists(graph, work, author, "op-wrote");
+        assertRelationBetweenInstancesExists(graph, work, author, TypeName.of("op-wrote"));
         assertTrue(!Reasoner.getRules(graph).isEmpty());
     }
 }

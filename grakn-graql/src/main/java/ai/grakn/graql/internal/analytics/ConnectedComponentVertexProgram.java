@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -56,19 +57,19 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     private static final String CLUSTER_NAME = "connectedComponentVertexProgram.clusterName";
 
     private BulkResourceMutate<String> bulkResourceMutate;
-    private Set<String> withoutHasResource = new HashSet<>();
+    private Set<TypeName> withoutHasResource = new HashSet<>();
     private Set<String> selectedLabels = new HashSet<>();
 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<String> selectedTypes) {
+    public ConnectedComponentVertexProgram(Set<TypeName> selectedTypes) {
         this.selectedTypes = selectedTypes;
         this.persistentProperties.put(PERSIST, false);
     }
 
-    public ConnectedComponentVertexProgram(Set<String> selectedTypes, Set<String> withoutHasResource,
-                                           String keyspace, String clusterName) {
+    public ConnectedComponentVertexProgram(Set<TypeName> selectedTypes, Set<TypeName> withoutHasResource,
+                                           String keyspace, TypeName clusterName) {
         this.selectedTypes = selectedTypes;
         this.withoutHasResource = withoutHasResource;
         this.persistentProperties.put(PERSIST, true);
@@ -77,8 +78,8 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         System.out.println("withoutHasResource = " + withoutHasResource);
     }
 
-    public ConnectedComponentVertexProgram(Set<String> selectedTypes, Set<String> withoutHasResource,
-                                           String keyspace, String clusterName, Set<String> selectedLabels) {
+    public ConnectedComponentVertexProgram(Set<TypeName> selectedTypes, Set<TypeName> withoutHasResource,
+                                           String keyspace, TypeName clusterName, Set<String> selectedLabels) {
         this(selectedTypes, withoutHasResource, keyspace, clusterName);
         this.selectedLabels = selectedLabels;
     }
@@ -95,7 +96,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(WITHOUT_HAS_RESOURCE).getKeys().forEachRemaining(key ->
-                withoutHasResource.add((String) configuration.getProperty(WITHOUT_HAS_RESOURCE + "." + key)));
+                withoutHasResource.add(TypeName.of((String) configuration.getProperty(WITHOUT_HAS_RESOURCE + "." + key))));
         configuration.subset(CLUSTER_LABEL).getKeys().forEachRemaining(key ->
                 selectedLabels.add((String) configuration.getProperty(CLUSTER_LABEL + "." + key)));
     }
@@ -231,7 +232,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
             LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
             bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE),
-                    (String) persistentProperties.get(CLUSTER_NAME));
+                    TypeName.of((String) persistentProperties.get(CLUSTER_NAME)));
         }
     }
 

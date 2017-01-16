@@ -20,6 +20,7 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -33,8 +34,8 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class CountTest {
 
@@ -80,7 +81,7 @@ public class CountTest {
         // assert computer returns the correct count of instances
         startTime = System.currentTimeMillis();
         Assert.assertEquals(2L,
-                graph.graql().compute().count().in(Collections.singleton(nameThing)).execute().longValue());
+                graph.graql().compute().count().in(Collections.singleton(TypeName.of(nameThing))).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
         startTime = System.currentTimeMillis();
         Assert.assertEquals(2L,

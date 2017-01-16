@@ -21,9 +21,10 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.internal.reasoner.Reasoner;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -146,7 +147,7 @@ public class AtomicTest {
 
     @Test
     public void testTypeInference(){
-        String typeId = snbGraph.graph().getType("recommendation").getId().getValue();
+        String typeId = snbGraph.graph().getType(TypeName.of("recommendation")).getId().getValue();
         String queryString = "match ($x, $y); $x isa person; $y isa product;";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, snbGraph.graph());
         Atom atom = query.getAtom();
@@ -155,7 +156,7 @@ public class AtomicTest {
 
     @Test
     public void testTypeInference2(){
-        String typeId = cwGraph.graph().getType("transaction").getId().getValue();
+        String typeId = cwGraph.graph().getType(TypeName.of("transaction")).getId().getValue();
         String queryString = "match ($z, $y, $x);$z isa country;$x isa rocket;$y isa person;";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, cwGraph.graph());
         Atom atom = query.getAtom();

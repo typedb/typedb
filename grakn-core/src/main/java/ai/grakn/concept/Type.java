@@ -69,7 +69,7 @@ public interface Type extends Concept {
      *
      * @return The name of this type
      */
-    String getName();
+    TypeName getName();
 
     /**
      *
