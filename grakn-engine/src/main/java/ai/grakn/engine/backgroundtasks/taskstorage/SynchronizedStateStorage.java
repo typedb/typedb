@@ -68,6 +68,10 @@ public class SynchronizedStateStorage {
 
     public void close() {
         zookeeperConnection.close();
+        removeInstance();
+    }
+
+    private static void removeInstance() {
         instance = null;
     }
 
