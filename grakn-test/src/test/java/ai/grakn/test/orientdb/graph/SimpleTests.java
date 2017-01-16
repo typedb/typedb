@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.RelationType;
 import ai.grakn.engine.postprocessing.Cache;
-import ai.grakn.test.AbstractRollbackGraphTest;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
@@ -33,7 +32,7 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
-public class SimpleTests extends AbstractRollbackGraphTest {
+public class SimpleTests {
 
     @Ignore //Failing due to inconsistent clears.
     @Test

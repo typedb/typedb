@@ -26,9 +26,10 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import org.json.JSONObject;
-import org.junit.*;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Date;
@@ -36,6 +37,8 @@ import java.util.Date;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static ai.grakn.graql.Graql.parse;
+import static ai.grakn.test.engine.controller.ImportControllerTest.readFileAsString;
+import static ai.grakn.test.engine.loader.LoaderTest.loadOntology;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
@@ -51,25 +54,16 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class TasksLoadingControllerTest extends EngineTestBase {
+public class TasksLoadingControllerTest {
     private static final String keyspace = "KEYSPACE";
     private static final int NUMBER_TO_TEST = 10;
-    private GraknGraph graph;
 
-    @Before
-    public void setup() {
-        graph = GraphFactory.getInstance().getGraph(keyspace);
-    }
-
-    @After
-    public void clean(){
-        graph.clear();
-        graph.close();
-    }
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Test
     public void loaderTaskAPITest(){
-        loadOntology("dblp-ontology.gql", keyspace);
+        loadOntology(keyspace);
 
         String nametags = readFileAsString("small_nametags.gql");
 
@@ -84,7 +78,7 @@ public class TasksLoadingControllerTest extends EngineTestBase {
 
         waitToFinish(taskID);
 
-        graph = GraphFactory.getInstance().getGraph(keyspace);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
         assertEquals(NUMBER_TO_TEST, nameTags.size());

@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.parser;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
@@ -33,11 +34,13 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -75,15 +78,20 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class QueryParserTest extends AbstractMovieGraphTest {
+public class QueryParserTest {
 
     private QueryBuilder qb;
+    private GraknGraph graph = rule.graph();
+
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp() {
-        qb = graph.graql();
+        qb = rule.graph().graql();
     }
 
     @Test

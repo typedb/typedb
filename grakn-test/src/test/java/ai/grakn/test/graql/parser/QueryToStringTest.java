@@ -24,8 +24,10 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
@@ -37,13 +39,16 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
-public class QueryToStringTest extends AbstractMovieGraphTest {
+public class QueryToStringTest {
 
     private QueryBuilder qb;
 
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
     @Before
     public void setUp() {
-        qb = graph.graql();
+        qb = rule.graph().graql();
     }
 
     @Test

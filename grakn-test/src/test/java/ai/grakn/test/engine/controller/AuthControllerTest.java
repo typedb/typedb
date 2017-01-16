@@ -3,9 +3,10 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
 
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -13,7 +14,11 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AuthControllerTest extends EngineTestBase {
+public class AuthControllerTest{
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     //Ignoring a couple of randomly failing tests. I will probably need to create a new config file with password protection enabled.
     //Or maybe find alternative to singleton.
     @Test
