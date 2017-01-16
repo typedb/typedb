@@ -33,11 +33,13 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
 import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
@@ -105,7 +107,7 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     }
 
     @Override
-    public DegreeQuery<T> in(TypeName... subTypeNames) {
+    public DegreeQuery<T> in(String... subTypeNames) {
         return (DegreeQuery<T>) super.in(subTypeNames);
     }
 
@@ -115,10 +117,10 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     }
 
     @Override
-    public DegreeQuery<T> of(TypeName... ofTypeNames) {
+    public DegreeQuery<T> of(String... ofTypeNames) {
         if (ofTypeNames.length > 0) {
             ofTypeNamesSet = true;
-            this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+            this.ofTypeNames = Arrays.stream(ofTypeNames).map(TypeName::of).collect(Collectors.toSet());
         }
         return this;
     }

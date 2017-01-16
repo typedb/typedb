@@ -39,7 +39,7 @@ public interface ComputeQuery<T> extends Query<T> {
      * @param subTypeNames an array of types to include in the subgraph
      * @return a ComputeQuery with the subTypeNames set
      */
-    ComputeQuery<T> in(TypeName... subTypeNames);
+    ComputeQuery<T> in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

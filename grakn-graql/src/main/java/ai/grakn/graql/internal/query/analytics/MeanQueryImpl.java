@@ -55,7 +55,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery of(TypeName... resourceTypeNames) {
+    public MeanQuery of(String... resourceTypeNames) {
         return (MeanQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
@@ -65,7 +65,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery in(TypeName... subTypeNames) {
+    public MeanQuery in(String... subTypeNames) {
         return (MeanQuery) super.in(subTypeNames);
     }
 

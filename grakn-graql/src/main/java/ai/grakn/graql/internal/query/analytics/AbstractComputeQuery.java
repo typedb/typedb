@@ -41,6 +41,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -71,8 +72,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     @Override
-    public ComputeQuery<T> in(TypeName... subTypeNames) {
-        this.subTypeNames = Sets.newHashSet(subTypeNames);
+    public ComputeQuery<T> in(String... subTypeNames) {
+        this.subTypeNames = Arrays.stream(subTypeNames).map(TypeName::of).collect(Collectors.toSet());
         return this;
     }
 

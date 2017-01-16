@@ -35,7 +35,7 @@ public interface CountQuery extends ComputeQuery<Long> {
      * @return a CountQuery with the subTypeNames set
      */
     @Override
-    CountQuery in(TypeName... subTypeNames);
+    CountQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

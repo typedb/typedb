@@ -34,7 +34,7 @@ public interface MinQuery extends ComputeQuery<Optional<Number>> {
      * @param resourceTypeNames an array of types of resources to execute the query on
      * @return a MinQuery with the subTypeNames set
      */
-    MinQuery of(TypeName... resourceTypeNames);
+    MinQuery of(String... resourceTypeNames);
 
     /**
      * @param resourceTypeNames a collection of types of resources to execute the query on
@@ -47,7 +47,7 @@ public interface MinQuery extends ComputeQuery<Optional<Number>> {
      * @return a MinQuery with the subTypeNames set
      */
     @Override
-    MinQuery in(TypeName... subTypeNames);
+    MinQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

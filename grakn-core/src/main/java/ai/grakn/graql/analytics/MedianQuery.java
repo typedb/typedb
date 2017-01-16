@@ -34,7 +34,7 @@ public interface MedianQuery extends ComputeQuery<Optional<Number>> {
      * @param resourceTypeNames an array of types of resources to execute the query on
      * @return a MedianQuery with the subTypeNames set
      */
-    MedianQuery of(TypeName... resourceTypeNames);
+    MedianQuery of(String... resourceTypeNames);
 
     /**
      * @param resourceTypeNames a collection of types of resources to execute the query on
@@ -47,7 +47,7 @@ public interface MedianQuery extends ComputeQuery<Optional<Number>> {
      * @return a MedianQuery with the subTypeNames set
      */
     @Override
-    MedianQuery in(TypeName... subTypeNames);
+    MedianQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

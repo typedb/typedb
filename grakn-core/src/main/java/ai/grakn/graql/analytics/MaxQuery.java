@@ -34,7 +34,7 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
      * @param resourceTypeNames an array of types of resources to execute the query on
      * @return a MaxQuery with the subTypeNames set
      */
-    MaxQuery of(TypeName... resourceTypeNames);
+    MaxQuery of(String... resourceTypeNames);
 
     /**
      * @param resourceTypeNames a collection of types of resources to execute the query on
@@ -47,7 +47,7 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
      * @return a MaxQuery with the subTypeNames set
      */
     @Override
-    MaxQuery in(TypeName... subTypeNames);
+    MaxQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

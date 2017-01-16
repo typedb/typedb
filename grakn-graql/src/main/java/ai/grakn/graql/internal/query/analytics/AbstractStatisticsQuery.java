@@ -29,6 +29,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,8 +48,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     Set<TypeName> statisticsResourceTypeNames = new HashSet<>();
     private final Map<TypeName, String> resourceTypesDataTypeMap = new HashMap<>();
 
-    AbstractStatisticsQuery<T> setStatisticsResourceType(TypeName... statisticsResourceTypeNames) {
-        this.statisticsResourceTypeNames = Sets.newHashSet(statisticsResourceTypeNames);
+    AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeNames) {
+        this.statisticsResourceTypeNames = Arrays.stream(statisticsResourceTypeNames).map(TypeName::of).collect(Collectors.toSet());
         return this;
     }
 

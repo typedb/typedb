@@ -34,7 +34,7 @@ public interface StdQuery extends ComputeQuery<Optional<Double>> {
      * @param resourceTypeNames an array of types of resources to execute the query on
      * @return a StdQuery with the subTypeNames set
      */
-    StdQuery of(TypeName... resourceTypeNames);
+    StdQuery of(String... resourceTypeNames);
 
     /**
      * @param resourceTypeNames a collection of types of resources to execute the query on
@@ -47,7 +47,7 @@ public interface StdQuery extends ComputeQuery<Optional<Double>> {
      * @return a StdQuery with the subTypeNames set
      */
     @Override
-    StdQuery in(TypeName... subTypeNames);
+    StdQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

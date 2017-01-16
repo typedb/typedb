@@ -158,12 +158,12 @@ public class ClusteringTest {
         context.graph().commit();
 
         Map<String, Set<String>> result = context.graph().graql().compute()
-                .cluster().in(TypeName.of(thing), TypeName.of(anotherThing), TypeName.of(aResourceTypeName)).members().execute();
+                .cluster().in(thing, anotherThing, aResourceTypeName).members().execute();
         assertEquals(1, result.size());
         assertEquals(5, result.values().iterator().next().size());
 
         assertEquals(1, context.graph().graql().compute()
-                .cluster().in(TypeName.of(thing), TypeName.of(anotherThing), TypeName.of(aResourceTypeName)).members().execute().size());
+                .cluster().in(thing, anotherThing, aResourceTypeName).members().execute().size());
     }
 
     @Test

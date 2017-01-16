@@ -85,11 +85,11 @@ public class AnalyticsTest {
         context.graph().commit();
 
         Map<Long, Set<String>> degrees;
-        degrees = context.graph().graql().compute().degree().of(TypeName.of("thing")).in(TypeName.of("thing"), TypeName.of("degree")).execute();
+        degrees = context.graph().graql().compute().degree().of("thing").in("thing", "degree").execute();
         assertEquals(1, degrees.size());
         assertEquals(1, degrees.get(1L).size());
 
-        degrees = context.graph().graql().compute().degree().in(TypeName.of("thing"), TypeName.of("degree")).execute();
+        degrees = context.graph().graql().compute().degree().in("thing", "degree").execute();
         assertEquals(1, degrees.size());
         assertEquals(2, degrees.get(1L).size());
     }

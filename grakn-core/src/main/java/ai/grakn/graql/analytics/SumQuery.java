@@ -34,7 +34,7 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
      * @param resourceTypeNames an array of types of resources to execute the query on
      * @return a SumQuery with the subTypeNames set
      */
-    SumQuery of(TypeName... resourceTypeNames);
+    SumQuery of(String... resourceTypeNames);
 
     /**
      * @param resourceTypeNames a collection of types of resources to execute the query on
@@ -47,7 +47,7 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
      * @return a SumQuery with the subTypeNames set
      */
     @Override
-    SumQuery in(TypeName... subTypeNames);
+    SumQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

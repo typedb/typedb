@@ -109,7 +109,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery in(TypeName... subTypeNames) {
+    public PathQuery in(String... subTypeNames) {
         return (PathQuery) super.in(subTypeNames);
     }
 

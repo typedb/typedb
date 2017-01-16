@@ -50,7 +50,7 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      * @return a ClusterQuery with the subTypeNames set
      */
     @Override
-    ClusterQuery<T> in(TypeName... subTypeNames);
+    ClusterQuery<T> in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

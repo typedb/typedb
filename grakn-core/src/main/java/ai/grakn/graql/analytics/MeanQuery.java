@@ -34,7 +34,7 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
      * @param resourceTypeNames an array of types of resources to execute the query on
      * @return a MeanQuery with the subTypeNames set
      */
-    MeanQuery of(TypeName... resourceTypeNames);
+    MeanQuery of(String... resourceTypeNames);
 
     /**
      * @param resourceTypeNames a collection of types of resources to execute the query on
@@ -47,7 +47,7 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
      * @return a MeanQuery with the subTypeNames set
      */
     @Override
-    MeanQuery in(TypeName... subTypeNames);
+    MeanQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph

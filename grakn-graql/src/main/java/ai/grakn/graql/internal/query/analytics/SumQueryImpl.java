@@ -54,7 +54,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery of(TypeName... resourceTypeNames) {
+    public SumQuery of(String... resourceTypeNames) {
         return (SumQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
@@ -64,7 +64,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery in(TypeName... subTypeNames) {
+    public SumQuery in(String... subTypeNames) {
         return (SumQuery) super.in(subTypeNames);
     }
 

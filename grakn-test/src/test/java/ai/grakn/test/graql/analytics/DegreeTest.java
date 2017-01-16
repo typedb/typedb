@@ -130,7 +130,7 @@ public class DegreeTest {
         ));
 
         start = System.currentTimeMillis();
-        Map<Long, Set<String>> degrees2 = context.graph().graql().compute().degree().of(TypeName.of("thing")).execute();
+        Map<Long, Set<String>> degrees2 = context.graph().graql().compute().degree().of("thing").execute();
         System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(2, degrees2.size());
@@ -143,7 +143,7 @@ public class DegreeTest {
                 }
         ));
 
-        degrees2 = context.graph().graql().compute().degree().of(TypeName.of("thing"), TypeName.of("related")).execute();
+        degrees2 = context.graph().graql().compute().degree().of("thing", "related").execute();
         assertEquals(3, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
         assertEquals(3, degrees2.get(2L).size());
@@ -171,7 +171,7 @@ public class DegreeTest {
         ));
 
         // compute degrees on subgraph
-        Map<Long, Set<String>> degrees3 = context.graph().graql().compute().degree().in(TypeName.of("thing"), TypeName.of("related")).execute();
+        Map<Long, Set<String>> degrees3 = context.graph().graql().compute().degree().in("thing", "related").execute();
         correctDegrees.put(id3, 1L);
         assertTrue(!degrees3.isEmpty());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -181,7 +181,7 @@ public class DegreeTest {
                 }
         ));
 
-        degrees3 = context.graph().graql().compute().degree().of(TypeName.of("thing")).in(TypeName.of("thing"), TypeName.of("related")).execute();
+        degrees3 = context.graph().graql().compute().degree().of("thing").in("thing", "related").execute();
         assertEquals(2, degrees3.size());
         assertEquals(2, degrees3.get(1L).size());
         assertEquals(1, degrees3.get(3L).size());

@@ -34,7 +34,7 @@ public interface DegreeQuery<T> extends ComputeQuery<T> {
      * @return a DegreeQuery with the subTypeNames set
      */
     @Override
-    DegreeQuery<T> in(TypeName... subTypeNames);
+    DegreeQuery<T> in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph
@@ -48,7 +48,7 @@ public interface DegreeQuery<T> extends ComputeQuery<T> {
      *                    types in the graph will be computed
      * @return a DegreeQuery with the subTypeNames set
      */
-    DegreeQuery<T> of(TypeName... ofTypeNames);
+    DegreeQuery<T> of(String... ofTypeNames);
 
     /**
      * @param ofTypeNames a collection of types in the subgraph to compute degree of. By default the degrees of all the
