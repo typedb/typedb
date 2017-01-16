@@ -24,12 +24,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
+public class ClusterMemberMapReduce extends StringMapReduce {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
     private static final String CLUSTER_SIZE = "clusterSizeMapReduce.clusterSize";
@@ -38,7 +37,7 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     }
 
     public ClusterMemberMapReduce(Set<String> selectedTypes, String clusterLabel) {
-        this.selectedTypes = selectedTypes;
+        super(selectedTypes);
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
@@ -56,27 +55,6 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
             return;
         }
         emitter.emit(NullObject.instance(), Collections.emptySet());
-    }
-
-    @Override
-    public void reduce(final Serializable key, final Iterator<Set<String>> values,
-                       final ReduceEmitter<Serializable, Set<String>> emitter) {
-        Set<String> set = new HashSet<>();
-        while (values.hasNext()) {
-            set.addAll(values.next());
-        }
-        emitter.emit(key, set);
-    }
-
-    @Override
-    public void combine(final Serializable key, final Iterator<Set<String>> values,
-                        final ReduceEmitter<Serializable, Set<String>> emitter) {
-        this.reduce(key, values, emitter);
-    }
-
-    @Override
-    public boolean doStage(Stage stage) {
-        return true;
     }
 
     @Override

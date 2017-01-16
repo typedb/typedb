@@ -32,17 +32,11 @@ public class CountMapReduce extends GraknMapReduce<Long> {
 
     public static final String MEMORY_KEY = "count";
 
-    //Needed internally for OLAP tasks
     public CountMapReduce() {
     }
 
     public CountMapReduce(Set<String> types) {
-        selectedTypes = types;
-    }
-
-    @Override
-    public boolean doStage(final Stage stage) {
-        return true;
+        super(types);
     }
 
     @Override

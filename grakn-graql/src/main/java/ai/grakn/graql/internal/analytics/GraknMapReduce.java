@@ -20,13 +20,17 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A map reduce task specific to Grakn with common method implementations.
@@ -36,7 +40,19 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknMapReduce.class);
 
+    public static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
     public static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
+
+    public GraknMapReduce(Set<String> selectedTypes) {this.selectedTypes = selectedTypes;}
+
+    public GraknMapReduce(Set<String> selectedTypes, String resourceDataType) {
+        this(selectedTypes);
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
+    }
+
+    // Needed internally for OLAP tasks
+    public GraknMapReduce() {
+    }
 
     /**
      * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".
@@ -77,5 +93,22 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
             throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),
                     e.getMessage()), e);
         }
+    }
+
+    @Override
+    public boolean doStage(final Stage stage) {
+        return true;
+    }
+
+    @Override
+    public void combine(Serializable key, Iterator<T> values, ReduceEmitter<Serializable, T> emitter) {
+       this.reduce(key, values, emitter);
+    }
+
+    @Override
+    public Map<Serializable, T> generateFinalResult(Iterator<KeyValue<Serializable, T>> iterator) {
+        final Map<Serializable, T> result = new HashMap<>();
+        iterator.forEachRemaining(pair -> result.put(pair.getKey(), pair.getValue()));
+        return result;
     }
 }

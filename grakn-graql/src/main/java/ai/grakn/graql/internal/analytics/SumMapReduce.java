@@ -33,14 +33,12 @@ import java.util.Set;
 public class SumMapReduce extends GraknMapReduce<Number> {
 
     public static final String MEMORY_KEY = "sum";
-    private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
     public SumMapReduce() {
     }
 
     public SumMapReduce(Set<String> selectedTypes, String resourceDataType) {
-        this.selectedTypes = selectedTypes;
-        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
+        super(selectedTypes, resourceDataType);
     }
 
     @Override
@@ -82,11 +80,6 @@ public class SumMapReduce extends GraknMapReduce<Number> {
     public void combine(final Serializable key, final Iterator<Number> values,
                         final ReduceEmitter<Serializable, Number> emitter) {
         this.reduce(key, values, emitter);
-    }
-
-    @Override
-    public boolean doStage(final Stage stage) {
-        return true;
     }
 
     @Override
