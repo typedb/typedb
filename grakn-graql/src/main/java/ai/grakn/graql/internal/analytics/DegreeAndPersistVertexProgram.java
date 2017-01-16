@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -32,13 +33,13 @@ public class DegreeAndPersistVertexProgram extends DegreeVertexProgram {
     private static final String DEGREE_NAME = "degreeAndPersistVertexProgram.degreeName";
 
     private BulkResourceMutate<Long> bulkResourceMutate;
-    private Set<String> ofTypeNames = new HashSet<>();
+    private Set<TypeName> ofTypeNames = new HashSet<>();
 
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(Set<String> types, Set<String> ofTypeNames,
-                                         String keySpace, String degreeName) {
+    public DegreeAndPersistVertexProgram(Set<TypeName> types, Set<TypeName> ofTypeNames,
+                                         String keySpace, TypeName degreeName) {
         super(types, ofTypeNames);
         this.persistentProperties.put(KEYSPACE_KEY, keySpace);
         this.persistentProperties.put(DEGREE_NAME, degreeName);
@@ -54,14 +55,14 @@ public class DegreeAndPersistVertexProgram extends DegreeVertexProgram {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeNames.add((String) configuration.getProperty(OF_TYPE_NAMES + "." + key)));
+                ofTypeNames.add(TypeName.of((String) configuration.getProperty(OF_TYPE_NAMES + "." + key))));
     }
 
     @Override
     public void workerIterationStart(Memory memory) {
         if (memory.getIteration() == 2) {
             bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE_KEY),
-                    (String) persistentProperties.get(DEGREE_NAME));
+                    TypeName.of((String) persistentProperties.get(DEGREE_NAME)));
         }
     }
 

@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -27,10 +26,11 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.EngineTestBase;
-import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
+import ai.grakn.graphs.GenealogyGraph;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -45,16 +45,16 @@ import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GenealogyTest extends EngineTestBase {
+public class GenealogyTest {
 
-    private static GraknGraph graph;
     private static QueryBuilder qb;
+
+    @ClassRule
+    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        GenealogyGraph genealogyGraph = new GenealogyGraph();
-        graph = genealogyGraph.graph();
-        qb = graph.graql().infer(false);
+        qb = genealogyGraph.graph().graql().infer(false);
     }
 
     /*
@@ -96,7 +96,7 @@ public class GenealogyTest extends EngineTestBase {
 
     @Test
     public void testSpecificPerson(){
-        Concept concept = Sets.newHashSet(graph.graql().infer(false).<MatchQuery>parse("match $x isa person;"))
+        Concept concept = Sets.newHashSet(genealogyGraph.graph().graql().infer(false).<MatchQuery>parse("match $x isa person;"))
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
@@ -158,8 +158,8 @@ public class GenealogyTest extends EngineTestBase {
         "$rel1 has event-role 'parent';" +
         "$rel2 (happening: $b, protagonist: $c) isa event-protagonist;" +
         "$rel2 has event-role 'newborn';select $c, $p;";
-        MatchQuery query = graph.graql().infer(true).parse(queryString);
-        MatchQuery query2 = graph.graql().parse(queryString2);
+        MatchQuery query = genealogyGraph.graph().graql().infer(true).parse(queryString);
+        MatchQuery query2 = genealogyGraph.graph().graql().parse(queryString2);
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
         assertTrue(!hasDuplicates(answers));
@@ -558,8 +558,8 @@ public class GenealogyTest extends EngineTestBase {
     public void testRelationResources(){
         String queryString = "match $rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';";
         String queryString2 = "match $rel (happening: $b, protagonist: $p) isa event-protagonist; $rel has event-role 'parent';";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, graph);
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, graph);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, genealogyGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, genealogyGraph.graph());
         assertTrue(query.equals(query2));
     }
 

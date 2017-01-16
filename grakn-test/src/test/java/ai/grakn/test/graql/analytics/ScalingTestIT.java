@@ -27,6 +27,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
@@ -40,13 +41,16 @@ import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
-import ai.grakn.test.AbstractScalingTest;
+import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -60,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -80,7 +85,8 @@ import static org.junit.Assert.assertFalse;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
-public class ScalingTestIT extends AbstractScalingTest {
+@Ignore
+public class ScalingTestIT {
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};
@@ -103,6 +109,7 @@ public class ScalingTestIT extends AbstractScalingTest {
     List<Integer> workerNumbers;
     List<String> headers;
 
+    @Ignore
     @Before
     public void setUp() {
         // compute the sample of graph sizes
@@ -115,7 +122,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        factory = factoryWithNewKeyspace();
+        factory = Grakn.factory(Grakn.DEFAULT_URI, "a" + UUID.randomUUID().toString());
         GraknGraph graph = factory.getGraph();
         keyspace = graph.getKeyspace();
 
@@ -129,12 +136,14 @@ public class ScalingTestIT extends AbstractScalingTest {
         ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.Loader.class)).setLevel(Level.INFO);
     }
 
+    @Ignore
     @After
     public void cleanGraph() {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         graph.clear();
     }
 
+    @Ignore
     @Test
     public void countIT() throws InterruptedException, ExecutionException, GraknValidationException, IOException {
         CSVPrinter printer = createCSVPrinter("countIT.txt");
@@ -194,7 +203,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         printer.close();
     }
 
-
+    @Ignore
     @Test
     public void persistConstantIncreasingLoadIT() throws InterruptedException, GraknValidationException, ExecutionException, IOException {
         CSVPrinter printerWrite = createCSVPrinter("persistConstantIncreasingLoadITWrite.txt");
@@ -275,6 +284,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         printerMutate.close();
     }
 
+    @Ignore
     @Test
     public void testLargeDegreeMutationResultsInReadableGraphIT() throws Exception {
 
@@ -373,6 +383,7 @@ public class ScalingTestIT extends AbstractScalingTest {
      *
      * median(g) = S*N
      */
+    @Ignore
     @Test
     public void testStatisticsWithConstantDegree() throws IOException, GraknValidationException {
         int totalSteps = NUM_DIVS;
@@ -385,17 +396,17 @@ public class ScalingTestIT extends AbstractScalingTest {
         Map<String,Function<ComputeQueryBuilderImplMock,Optional>> statisticsMethods = new HashMap<>();
         Map<String,Consumer<Number>> statisticsAssertions = new HashMap<>();
         methods.add("testStatisticsWithConstantDegreeSum.txt");
-        statisticsMethods.put(methods.get(0), queryBuilder -> getSumQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(0), queryBuilder -> getSumQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMin.txt");
-        statisticsMethods.put(methods.get(1), queryBuilder -> getMinQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(1), queryBuilder -> getMinQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMax.txt");
-        statisticsMethods.put(methods.get(2), queryBuilder -> getMaxQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(2), queryBuilder -> getMaxQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMean.txt");
-        statisticsMethods.put(methods.get(3), queryBuilder -> getMeanQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(3), queryBuilder -> getMeanQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeStd.txt");
-        statisticsMethods.put(methods.get(4), queryBuilder -> getStdQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(4), queryBuilder -> getStdQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMedian.txt");
-        statisticsMethods.put(methods.get(5), queryBuilder -> getMedianQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(5), queryBuilder -> getMedianQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
 
         // load up the result files
         Map<String,CSVPrinter> printers = new HashMap<>();

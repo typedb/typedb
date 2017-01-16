@@ -24,8 +24,10 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Maps;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Map;
@@ -37,13 +39,16 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class GraqlPrinterTest extends AbstractMovieGraphTest {
+public class GraqlPrinterTest {
+
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Test
     public void testRelationOutput() {
         Printer printer = Printers.graql();
 
-        MatchQuery query = graph.graql().match(var("r").isa("has-cast")
+        MatchQuery query = rule.graph().graql().match(var("r").isa("has-cast")
                 .rel(var().has("name", "Al Pacino"))
                 .rel(var().has("name", "Michael Corleone"))
                 .rel(var().has("title", "Godfather")));
@@ -60,7 +65,7 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
     public void testResourceOutputNoResources() {
         Printer printer = Printers.graql();
 
-        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
+        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
@@ -75,10 +80,10 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
     @Test
     public void testResourceOutputWithResource() {
         Printer printer = Printers.graql(
-                graph.getResourceType("title"), graph.getResourceType("tmdb-vote-count"), graph.getResourceType("name")
+                rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
         );
 
-        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
+        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
@@ -101,7 +106,7 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
     public void testType() {
         Printer printer = Printers.graql();
 
-        Type production = graph.getEntityType("production");
+        Type production = rule.graph().getEntityType("production");
 
         String productionString = printer.graqlString(production);
 
@@ -117,7 +122,7 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
     public void testEntityType() {
         Printer printer = Printers.graql();
 
-        Type entity = graph.admin().getMetaEntityType();
+        Type entity = rule.graph().admin().getMetaEntityType();
 
         String entityString = printer.graqlString(entity);
 
@@ -132,7 +137,7 @@ public class GraqlPrinterTest extends AbstractMovieGraphTest {
     public void testConcept() {
         Printer printer = Printers.graql();
 
-        Type concept = graph.admin().getMetaConcept();
+        Type concept = rule.graph().admin().getMetaConcept();
 
         String conceptString = printer.graqlString(concept);
 

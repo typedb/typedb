@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -77,7 +78,7 @@ public class InsertQueryExecutor {
     private Map<VarName, Concept> namedConcepts;
     private final Stack<VarName> visitedVars = new Stack<>();
     private final ImmutableMap<VarName, List<VarAdmin>> varsByVarName;
-    private final ImmutableMap<String, List<VarAdmin>> varsByTypeName;
+    private final ImmutableMap<TypeName, List<VarAdmin>> varsByTypeName;
     private final ImmutableMap<ConceptId, List<VarAdmin>> varsById;
 
     InsertQueryExecutor(Collection<VarAdmin> vars, GraknGraph graph) {
@@ -172,7 +173,7 @@ public class InsertQueryExecutor {
             throw new IllegalStateException(INSERT_ISA_AND_SUB.getMessage(printableName));
         }
 
-        Optional<String> typeName = var.getTypeName();
+        Optional<TypeName> typeName = var.getTypeName();
         Optional<ConceptId> id = var.getId();
 
         typeName.ifPresent(name -> {
@@ -271,7 +272,7 @@ public class InsertQueryExecutor {
      * @param sub the supertype property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Type putType(Optional<String> name, VarAdmin var, SubProperty sub) {
+    private Type putType(Optional<TypeName> name, VarAdmin var, SubProperty sub) {
         Type superType = getConcept(sub.getSuperType()).asType();
 
         if (superType.isEntityType()) {
@@ -308,7 +309,7 @@ public class InsertQueryExecutor {
      * @return the name, if present
      * @throws IllegalStateException if the name was not present
      */
-    private String getTypeNameOrThrow(Optional<String> name) throws IllegalStateException {
+    private TypeName getTypeNameOrThrow(Optional<TypeName> name) throws IllegalStateException {
         return name.orElseThrow(() -> new IllegalStateException(INSERT_TYPE_WITHOUT_NAME.getMessage()));
     }
 

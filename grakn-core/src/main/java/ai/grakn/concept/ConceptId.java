@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import java.io.Serializable;
+
 /**
  * <p>
  *     A Concept Id
@@ -30,7 +32,7 @@ package ai.grakn.concept;
  *
  * @author fppt
  */
-public class ConceptId implements Comparable<ConceptId> {
+public class ConceptId implements Comparable<ConceptId>, Serializable {
     private String conceptId;
 
     private ConceptId(String conceptId){

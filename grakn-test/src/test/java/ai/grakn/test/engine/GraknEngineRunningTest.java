@@ -23,10 +23,11 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.AbstractGraknTest;
+import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.var;
@@ -34,7 +35,10 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class GraknEngineRunningTest extends AbstractGraknTest {
+public class GraknEngineRunningTest {
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void resetLogs() {

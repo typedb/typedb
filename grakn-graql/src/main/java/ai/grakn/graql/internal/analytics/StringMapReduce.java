@@ -1,5 +1,7 @@
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
+
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,7 +15,7 @@ public abstract class StringMapReduce extends GraknMapReduce<Set<String>> {
     public StringMapReduce() {
     }
 
-    public StringMapReduce(Set<String> selectedTypes) {
+    public StringMapReduce(Set<TypeName> selectedTypes) {
         super(selectedTypes);
     }
 

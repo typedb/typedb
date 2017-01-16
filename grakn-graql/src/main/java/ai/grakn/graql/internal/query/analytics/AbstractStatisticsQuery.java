@@ -22,12 +22,14 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,21 +38,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
-    Set<String> statisticsResourceTypeNames = new HashSet<>();
-    private final Map<String, String> resourceTypesDataTypeMap = new HashMap<>();
+    Set<TypeName> statisticsResourceTypeNames = new HashSet<>();
+    private final Map<TypeName, String> resourceTypesDataTypeMap = new HashMap<>();
 
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeNames) {
-        this.statisticsResourceTypeNames = Sets.newHashSet(statisticsResourceTypeNames);
+        this.statisticsResourceTypeNames = Arrays.stream(statisticsResourceTypeNames).map(TypeName::of).collect(Collectors.toSet());
         return this;
     }
 
-    AbstractStatisticsQuery<T> setStatisticsResourceType(Collection<String> statisticsResourceTypeNames) {
+    AbstractStatisticsQuery<T> setStatisticsResourceType(Collection<TypeName> statisticsResourceTypeNames) {
         this.statisticsResourceTypeNames = Sets.newHashSet(statisticsResourceTypeNames);
         return this;
     }
@@ -75,7 +78,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     final String resourcesString() {
         return " of " + statisticsResourceTypeNames.stream()
-                .map(StringConverter::idToString).collect(joining(", "));
+                .map(StringConverter::typeNameToString).collect(joining(", "));
     }
 
     private void getResourceTypes(GraknGraph graph) {
@@ -99,14 +102,14 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                         .put(type.asType().getName(), type.asResourceType().getDataType().getName()));
     }
 
-    String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
-        if (types == null || types.isEmpty()) {
+    String checkSelectedResourceTypesHaveCorrectDataType(Set<TypeName> types) {
+        if (types == null || types.isEmpty()){
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
 
         String dataType = null;
-        for (String type : types) {
+        for (TypeName type : types) {
             // check if the selected type is a resource-type
             if (!resourceTypesDataTypeMap.containsKey(type)) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
@@ -134,20 +137,20 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         return dataType;
     }
 
-    boolean selectedResourceTypesHaveInstance(Set<String> statisticsResourceTypes) {
+    boolean selectedResourceTypesHaveInstance(Set<TypeName> statisticsResourceTypes) {
 
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
 
         List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
-                .map(type -> var("x").has(type)).collect(Collectors.toList());
+                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
         List<Pattern> checkSubtypes = subTypeNames.stream()
-                .map(type -> var("x").isa(type)).collect(Collectors.toList());
+                .map(type -> var("x").isa(name(type))).collect(Collectors.toList());
 
         return graph.graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 
-    Set<String> getCombinedSubTypes() {
-        Set<String> allSubTypes = statisticsResourceTypeNames.stream()
+    Set<TypeName> getCombinedSubTypes() {
+        Set<TypeName> allSubTypes = statisticsResourceTypeNames.stream()
                 .map(Schema.Resource.HAS_RESOURCE::getName).collect(Collectors.toSet());
         allSubTypes.addAll(subTypeNames);
         allSubTypes.addAll(statisticsResourceTypeNames);

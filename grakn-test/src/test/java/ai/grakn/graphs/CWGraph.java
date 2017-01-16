@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.reasoner.graphs;
+package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
@@ -28,7 +28,12 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
 
+import java.util.function.Consumer;
+
 public class CWGraph extends TestGraph {
+
+    private static ResourceType<String> key;
+
     private static EntityType person, criminal, weapon, rocket, missile, country;
     
     private static ResourceType<String> alignment;
@@ -49,77 +54,79 @@ public class CWGraph extends TestGraph {
 
     private static Instance colonelWest, Nono, America, Tomahawk;
 
-    public static GraknGraph getGraph() {
-        return new CWGraph().graph();
+    public static Consumer<GraknGraph> get() {
+        return new CWGraph().build();
     }
 
     @Override
-    protected void buildOntology() {
-        nationalityTarget = graknGraph.putRoleType("has-nationality-owner");
-        nationalityValue = graknGraph.putRoleType("has-nationality-value");
-        nationality = graknGraph.putResourceType("nationality", ResourceType.DataType.STRING)
+    protected void buildOntology(GraknGraph graph) {
+        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+
+        nationalityTarget = graph.putRoleType("has-nationality-owner");
+        nationalityValue = graph.putRoleType("has-nationality-value");
+        nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING)
                 .playsRole(nationalityValue);
 
-        propulsionTarget = graknGraph.putRoleType("has-propulsion-owner");
-        propulsionValue = graknGraph.putRoleType("has-propulsion-value");
-        propulsion = graknGraph.putResourceType("propulsion", ResourceType.DataType.STRING)
+        propulsionTarget = graph.putRoleType("has-propulsion-owner");
+        propulsionValue = graph.putRoleType("has-propulsion-value");
+        propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING)
                 .playsRole(propulsionValue);
 
-        alignmentTarget = graknGraph.putRoleType("has-alignment-owner");
-        alignmentValue = graknGraph.putRoleType("has-alignment-value");
-        alignment = graknGraph.putResourceType("alignment", ResourceType.DataType.STRING)
+        alignmentTarget = graph.putRoleType("has-alignment-owner");
+        alignmentValue = graph.putRoleType("has-alignment-value");
+        alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING)
                 .playsRole(alignmentValue);
 
-        enemySource = graknGraph.putRoleType("enemy-source");
-        enemyTarget = graknGraph.putRoleType("enemy-target");
-        isEnemyOf = graknGraph.putRelationType("is-enemy-of")
+        enemySource = graph.putRoleType("enemy-source");
+        enemyTarget = graph.putRoleType("enemy-target");
+        isEnemyOf = graph.putRelationType("is-enemy-of")
                 .hasRole(enemySource).hasRole(enemyTarget);
 
         //owns
-        owner = graknGraph.putRoleType("item-owner");
-        ownedItem = graknGraph.putRoleType("owned-item");
-        owns = graknGraph.putRelationType("owns")
+        owner = graph.putRoleType("item-owner");
+        ownedItem = graph.putRoleType("owned-item");
+        owns = graph.putRelationType("owns")
                 .hasRole(owner).hasRole(ownedItem);
 
         //transaction
-        seller = graknGraph.putRoleType("seller");
-        buyer = graknGraph.putRoleType("buyer");
-        transactionItem = graknGraph.putRoleType("transaction-item");
-        transaction = graknGraph.putRelationType("transaction")
+        seller = graph.putRoleType("seller");
+        buyer = graph.putRoleType("buyer");
+        transactionItem = graph.putRoleType("transaction-item");
+        transaction = graph.putRelationType("transaction")
                 .hasRole(seller).hasRole(buyer).hasRole(transactionItem);
 
         //isPaidBy
-        payee = graknGraph.putRoleType("payee");
-        payer = graknGraph.putRoleType("payer");
-        isPaidBy = graknGraph.putRelationType("is-paid-by")
+        payee = graph.putRoleType("payee");
+        payer = graph.putRoleType("payer");
+        isPaidBy = graph.putRelationType("is-paid-by")
                 .hasRole(payee).hasRole(payer);
 
-        person = graknGraph.putEntityType("person")
+        person = graph.putEntityType("person")
                 .playsRole(seller)
                 .playsRole(payee);
         person.hasResource(key);
         person.hasResource(nationality);
 
-        criminal = graknGraph.putEntityType("criminal")
+        criminal = graph.putEntityType("criminal")
                 .superType(person);
 
-        weapon = graknGraph.putEntityType("weapon")
+        weapon = graph.putEntityType("weapon")
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
         weapon.hasResource(key);
 
-        rocket = graknGraph.putEntityType("rocket")
+        rocket = graph.putEntityType("rocket")
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
         rocket.hasResource(key);
         rocket.hasResource(propulsion);
 
-        missile = graknGraph.putEntityType("missile")
+        missile = graph.putEntityType("missile")
                 .superType(weapon)
                 .playsRole(transactionItem);
         missile.hasResource(key);
 
-        country = graknGraph.putEntityType("country")
+        country = graph.putEntityType("country")
                 .playsRole(buyer)
                 .playsRole(owner)
                 .playsRole(enemyTarget)
@@ -130,18 +137,18 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances() {
-        colonelWest =  putEntity("colonelWest", person);
-        Nono =  putEntity("Nono", country);
-        America =  putEntity("America", country);
-        Tomahawk =  putEntity("Tomahawk", rocket);
+    protected void buildInstances(GraknGraph graph) {
+        colonelWest =  putEntity(graph, "colonelWest", person, key.getName());
+        Nono =  putEntity(graph, "Nono", country, key.getName());
+        America =  putEntity(graph, "America", country, key.getName());
+        Tomahawk =  putEntity(graph, "Tomahawk", rocket, key.getName());
 
         putResource(colonelWest, nationality, "American");
         putResource(Tomahawk, propulsion, "gsp");
     }
 
     @Override
-    protected void buildRelations() {
+    protected void buildRelations(GraknGraph graph) {
         //Enemy(Nono, America)
         isEnemyOf.addRelation()
                 .putRolePlayer(enemySource, Nono)
@@ -159,45 +166,45 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRules() {
-        RuleType inferenceRule = graknGraph.admin().getMetaRuleInference();
+    protected void buildRules(GraknGraph graph) {
+        RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
         Pattern R1_LHS = Graql.and(
-                graknGraph.graql().parsePatterns("$x isa person;$x has nationality 'American';" +
+                graph.graql().parsePatterns("$x isa person;$x has nationality 'American';" +
                 "$y isa weapon;" +
                 "$z isa country;$z has alignment 'hostile';" +
                 "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;"));
 
-        Pattern R1_RHS = Graql.and(graknGraph.graql().parsePatterns("$x isa criminal;"));
+        Pattern R1_RHS = Graql.and(graph.graql().parsePatterns("$x isa criminal;"));
         inferenceRule.addRule(R1_LHS, R1_RHS);
 
         //R2: "Missiles are a kind of a weapon"
-        Pattern R2_LHS = Graql.and(graknGraph.graql().parsePatterns("$x isa missile;"));
-        Pattern R2_RHS = Graql.and(graknGraph.graql().parsePatterns("$x isa weapon;"));
+        Pattern R2_LHS = Graql.and(graph.graql().parsePatterns("$x isa missile;"));
+        Pattern R2_RHS = Graql.and(graph.graql().parsePatterns("$x isa weapon;"));
         inferenceRule.addRule(R2_LHS, R2_RHS);
 
         //R3: "If a country is an enemy of America then it is hostile"
         Pattern R3_LHS = Graql.and(
-                graknGraph.graql().parsePatterns("$x isa country;" +
+                graph.graql().parsePatterns("$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
                 "$y isa country;$y has name 'America';"));
-        Pattern R3_RHS = Graql.and(graknGraph.graql().parsePatterns("$x has alignment 'hostile';"));
+        Pattern R3_RHS = Graql.and(graph.graql().parsePatterns("$x has alignment 'hostile';"));
         inferenceRule.addRule(R3_LHS, R3_RHS);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
-        Pattern R4_LHS = Graql.and(graknGraph.graql().parsePatterns("$x isa rocket;$x has propulsion 'gsp';"));
-        Pattern R4_RHS = Graql.and(graknGraph.graql().parsePatterns("$x isa missile;"));
+        Pattern R4_LHS = Graql.and(graph.graql().parsePatterns("$x isa rocket;$x has propulsion 'gsp';"));
+        Pattern R4_RHS = Graql.and(graph.graql().parsePatterns("$x isa missile;"));
         inferenceRule.addRule(R4_LHS, R4_RHS);
 
         Pattern R5_LHS = Graql.and(
-                graknGraph.graql().parsePatterns("$x isa person;" +
+                graph.graql().parsePatterns("$x isa person;" +
                 "$y isa country;" +
                 "$z isa weapon;" +
                 "($x, $y) isa is-paid-by;" +
                 "($y, $z) isa owns;"));
 
-        Pattern R5_RHS = Graql.and(graknGraph.graql().parsePatterns("(seller: $x, buyer: $y, transaction-item: $z) isa transaction;"));
+        Pattern R5_RHS = Graql.and(graph.graql().parsePatterns("(seller: $x, buyer: $y, transaction-item: $z) isa transaction;"));
         inferenceRule.addRule(R5_LHS, R5_RHS);
     }
 }

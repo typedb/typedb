@@ -23,6 +23,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -77,7 +78,7 @@ public class TypeMapper {
 
         Type superType = type.superType();
         if (type.superType() != null) {
-            var.sub(superType.getName());
+            var.sub(name(superType.getName()));
         }
 
         var = playsRoles(var, type);
@@ -103,7 +104,7 @@ public class TypeMapper {
      */
     private static Var playsRoles(Var var, Type type) {
         for(RoleType role:type.playsRoles()){
-            var = var.playsRole(role.getName());
+            var = var.playsRole(name(role.getName()));
         }
         return var;
     }
@@ -116,7 +117,7 @@ public class TypeMapper {
      */
     private static Var hasRoles(Var var, RelationType type){
         for(RoleType role:type.hasRoles()){
-            var = var.hasRole(role.getName());
+            var = var.hasRole(name(role.getName()));
         }
         return var;
     }

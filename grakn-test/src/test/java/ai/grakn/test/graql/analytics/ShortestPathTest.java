@@ -1,5 +1,6 @@
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -10,11 +11,12 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.GraphContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
-public class ShortestPathTest extends AbstractGraphTest {
+public class ShortestPathTest {
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
@@ -49,14 +51,17 @@ public class ShortestPathTest extends AbstractGraphTest {
     private ConceptId relationId34;
     private ConceptId relationId1A12;
 
-    private String keyspace;
+    public GraknGraph graph;
+
+    @Rule
+    public GraphContext rule = GraphContext.empty();
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
         assumeFalse(usingOrientDB());
 
-        keyspace = graph.getKeyspace();
+        graph = rule.graph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);

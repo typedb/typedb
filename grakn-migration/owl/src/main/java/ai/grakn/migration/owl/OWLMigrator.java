@@ -20,13 +20,14 @@ package ai.grakn.migration.owl;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -138,7 +139,7 @@ public class OWLMigrator {
         Entity current = getEntity(id, owlIriResource());
         if(current != null) return current;
 
-        String hasIriResourceId = OwlModel.IRI.owlname();
+        TypeName hasIriResourceId = TypeName.of(OwlModel.IRI.owlname());
         ResourceType<String> iriResource = owlIriResource();
         RoleType hasIriOwner = entityRole(type, iriResource);
         RoleType hasIriValue = resourceRole(iriResource);

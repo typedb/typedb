@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -43,9 +44,9 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     public static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
     public static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
 
-    public GraknMapReduce(Set<String> selectedTypes) {this.selectedTypes = selectedTypes;}
+    public GraknMapReduce(Set<TypeName> selectedTypes) {this.selectedTypes = selectedTypes;}
 
-    public GraknMapReduce(Set<String> selectedTypes, String resourceDataType) {
+    public GraknMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
         this(selectedTypes);
         persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
     }
