@@ -37,7 +37,7 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     }
 
     public ClusterSizeMapReduce(Set<String> selectedTypes, String clusterLabel) {
-        this.selectedTypes = selectedTypes;
+        super(selectedTypes);
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
@@ -66,11 +66,6 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     public void combine(final Serializable key, final Iterator<Long> values,
                         final ReduceEmitter<Serializable, Long> emitter) {
         this.reduce(key, values, emitter);
-    }
-
-    @Override
-    public boolean doStage(Stage stage) {
-        return true;
     }
 
     @Override

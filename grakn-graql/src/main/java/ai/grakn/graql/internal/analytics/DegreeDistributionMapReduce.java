@@ -24,18 +24,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
+public class DegreeDistributionMapReduce extends StringMapReduce {
 
     public DegreeDistributionMapReduce() {
     }
 
     public DegreeDistributionMapReduce(Set<String> selectedTypes) {
-        this.selectedTypes = selectedTypes;
+        super(selectedTypes);
     }
 
     @Override
@@ -46,27 +45,6 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
             return;
         }
         emitter.emit(NullObject.instance(), Collections.emptySet());
-    }
-
-    @Override
-    public void reduce(final Serializable key, final Iterator<Set<String>> values,
-                       final ReduceEmitter<Serializable, Set<String>> emitter) {
-        Set<String> set = new HashSet<>();
-        while (values.hasNext()) {
-            set.addAll(values.next());
-        }
-        emitter.emit(key, set);
-    }
-
-    @Override
-    public void combine(final Serializable key, final Iterator<Set<String>> values,
-                        final ReduceEmitter<Serializable, Set<String>> emitter) {
-        this.reduce(key, values, emitter);
-    }
-
-    @Override
-    public boolean doStage(Stage stage) {
-        return true;
     }
 
     @Override

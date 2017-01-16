@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -56,5 +57,18 @@ public class Utility {
         } catch (IllegalStateException e) {
             return false;
         }
+    }
+
+    /**
+     * Converts from the java data type to the grakn data type. Some map reduce methods require the grakn resource
+     * datatype instead of the java datatype as arguments to the constructor. This method is a simple translator for
+     * longs and doubles.
+     *
+     * @param resourceDataType either java.int.long or java.int.double
+     * @return the grakn resource data type
+     */
+    static String graknJavaTypeConverter(String resourceDataType) {
+        return resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
+                Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
     }
 }
