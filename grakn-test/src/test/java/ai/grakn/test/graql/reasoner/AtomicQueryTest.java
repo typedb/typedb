@@ -27,8 +27,10 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.SNBGraph;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
+import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -92,9 +94,13 @@ public class AtomicQueryTest {
         assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
+        QueryAnswers answers = new QueryAnswers();
+
+        answers.add(ImmutableMap.of(
+                varName("x"), getConcept("Bob"),
+                varName("y"), getConcept("Colour of Magic")));
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, snbGraph.graph());
-        atomicQuery.addAtom(new IdPredicate(varName("x"), getConcept("Bob"), atomicQuery));
-        atomicQuery.addAtom(new IdPredicate(varName("y"), getConcept("Colour of Magic"), atomicQuery));
+        atomicQuery.getAnswers().addAll(answers);
         atomicQuery.materialise();
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
