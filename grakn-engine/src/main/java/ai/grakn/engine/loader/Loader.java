@@ -27,23 +27,21 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-
+import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.util.ConfigProperties.BATCH_SIZE_PROPERTY;
-
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-
+import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -127,7 +125,7 @@ public class Loader {
             throw new RuntimeException(e);
         }
 
-        String taskId = manager.scheduleTask(new LoaderTask(), keyspace, new Date(), 0, getConfiguration(batch));
+        String taskId = manager.scheduleTask(new LoaderTask(), keyspace, Instant.now(), 0, getConfiguration(batch));
         CompletableFuture<?> completableFuture = manager.completableFuture(taskId);
         completableFuture.thenAccept(i -> releaseSemaphore());
         completableFuture.exceptionally(i -> {

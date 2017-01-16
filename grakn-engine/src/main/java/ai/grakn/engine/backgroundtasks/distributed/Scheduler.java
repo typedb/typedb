@@ -33,8 +33,9 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -183,7 +184,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param state state of the task
      */
     private void scheduleTask(String id,  String configuration, TaskState state) {
-        long delay = state.runAt().getTime() - new Date().getTime();
+        long delay = Duration.between(state.runAt(), Instant.now()).toMillis();
 
         markAsScheduled(id);
         if(state.isRecurring()) {

@@ -29,7 +29,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,13 +94,13 @@ public class StandaloneTaskManager implements TaskManager {
         instance = null;
     }
 
-    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
         Boolean recurring = (period != 0);
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
 
         // Schedule task to run.
-        Date now = new Date();
-        long delay = now.getTime() - runAt.getTime();
+        Instant now = Instant.now();
+        long delay = Duration.between(runAt, now).toMillis();
 
         try {
             stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
