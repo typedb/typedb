@@ -115,8 +115,8 @@ public class ConfigProperties {
     private ConfigProperties() {
         getProjectPath();
         prop = new Properties();
-        try {
-            prop.load(new FileInputStream(getConfigFilePath()));
+        try (FileInputStream inputStream = new FileInputStream(getConfigFilePath())){
+            prop.load(inputStream);
         } catch (Exception e) {
             e.printStackTrace();
         }

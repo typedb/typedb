@@ -41,6 +41,7 @@ import javax.ws.rs.Produces;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -51,11 +52,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.controller.Utilities.getAsString;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
+import static ai.grakn.util.REST.Request.PATH_FIELD;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static spark.Spark.before;
 import static spark.Spark.halt;
 import static spark.Spark.post;
-import static ai.grakn.util.REST.Request.PATH_FIELD;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Api(value = "/import", description = "Endpoints to import Graql data from a file.")
 @Path("/import")
@@ -137,8 +138,8 @@ public class ImportController {
     private void importDataFromFile(File file, Loader loaderParam, Future statusPrinter) {
         LOG.info("Data loading started.");
         loadingInProgress.set(true);
-        try {
-            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(new FileInputStream(file)).iterator();
+        try (InputStream inputStream = new FileInputStream(file)) {
+            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(inputStream).iterator();
             if (batchIterator.hasNext()) {
                 Object var = batchIterator.next();
                 // -- ENTITIES --
