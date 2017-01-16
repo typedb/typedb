@@ -275,7 +275,7 @@ public class Utility {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, VarAdmin> roleMap,
+    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, Var> roleMap,
                                         Set<Map<VarName, Var>> roleMaps){
         Set<VarName> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
