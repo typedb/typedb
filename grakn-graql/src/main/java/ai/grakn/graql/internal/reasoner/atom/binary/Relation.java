@@ -81,9 +81,6 @@ public class Relation extends TypeAtom {
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
     private Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = null;
 
-    public Relation(VarAdmin pattern, ReasonerQuery par) {
-        this(pattern, null, par);
-    }
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
         this.relationPlayers = getRelationPlayers(pattern);
