@@ -41,7 +41,6 @@ public abstract class Predicate<T> extends AtomBase {
 
     protected T predicate = null;
 
-    protected Predicate(VarAdmin pattern) { this(pattern, null);}
     protected Predicate(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
