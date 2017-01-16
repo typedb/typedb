@@ -116,7 +116,10 @@ public class DegreeTest {
         correctDegrees.put(id3, 2L);
 
         // compute degrees
+        long start = System.currentTimeMillis();
         Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().execute();
+        System.out.println(System.currentTimeMillis() - start + " ms");
+
         assertEquals(3, degrees.size());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -125,7 +128,10 @@ public class DegreeTest {
                 }
         ));
 
+        start = System.currentTimeMillis();
         Map<Long, Set<String>> degrees2 = context.graph().graql().compute().degree().of("thing").execute();
+        System.out.println(System.currentTimeMillis() - start + " ms");
+
         assertEquals(2, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
         assertEquals(1, degrees2.get(3L).size());
@@ -136,7 +142,10 @@ public class DegreeTest {
                 }
         ));
 
+        start = System.currentTimeMillis();
         degrees2 = context.graph().graql().compute().degree().of("thing", "related").execute();
+        System.out.println(System.currentTimeMillis() - start + " ms");
+
         assertEquals(3, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
         assertEquals(3, degrees2.get(2L).size());
@@ -148,7 +157,10 @@ public class DegreeTest {
                 }
         ));
 
+        start = System.currentTimeMillis();
         degrees2 = context.graph().graql().compute().degree().of().execute();
+        System.out.println(System.currentTimeMillis() - start + " ms");
+
         assertEquals(3, degrees2.size());
         assertEquals(3, degrees2.get(1L).size());
         assertEquals(3, degrees2.get(2L).size());

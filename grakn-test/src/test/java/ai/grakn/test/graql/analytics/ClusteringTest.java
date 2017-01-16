@@ -188,7 +188,9 @@ public class ClusteringTest {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
+        long start = System.currentTimeMillis();
         sizeMap = context.graph().graql().compute().cluster().execute();
+        System.out.println(System.currentTimeMillis() - start + " ms");
         Map<Long, Integer> populationCount00 = new HashMap<>();
         sizeMap.values().forEach(value -> populationCount00.put(value,
                 populationCount00.containsKey(value) ? populationCount00.get(value) + 1 : 1));
