@@ -23,9 +23,11 @@ import ai.grakn.concept.Instance;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.List;
@@ -44,13 +46,16 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 
-public class AggregateTest extends AbstractMovieGraphTest {
+public class AggregateTest {
+
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        qb = graph.graql();
+        qb = rule.graph().graql();
     }
 
     @Test
@@ -74,7 +79,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
                 assertEquals(movie, result.get(varName("x")));
-                assertEquals(graph.getEntityType("person"), result.get(varName("y")).asInstance().type());
+                assertEquals(rule.graph().getEntityType("person"), result.get(varName("y")).asInstance().type());
             });
         });
     }
@@ -86,7 +91,7 @@ public class AggregateTest extends AbstractMovieGraphTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Instance godfather = graph.getResourceType("title").getResource("Godfather").owner();
+        Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }

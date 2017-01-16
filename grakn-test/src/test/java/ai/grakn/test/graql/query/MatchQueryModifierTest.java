@@ -22,9 +22,11 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Lists;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -44,13 +46,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class MatchQueryModifierTest extends AbstractMovieGraphTest {
+public class MatchQueryModifierTest {
 
     private QueryBuilder qb;
 
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+
     @Before
     public void setUp() {
-        qb = graph.graql();
+        qb = rule.graph().graql();
     }
 
     @Test
@@ -95,7 +100,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         ).orderBy("n").offset(4).limit(8).select("x");
 
         QueryUtil.assertResultsMatch(
-                query, "x", "movie", graph.getResourceType("title"), "Hocus Pocus", "Spy", "The Muppets", "Godfather", "Apocalypse Now"
+                query, "x", "movie", rule.graph().getResourceType("title"), "Hocus Pocus", "Spy", "The Muppets", "Godfather", "Apocalypse Now"
         );
     }
 
@@ -106,7 +111,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         assertResultsOrderedByValue(query, "n", false);
 
         // Make sure all results are included
-        QueryUtil.assertResultsMatch(query, "the-movie", "movie", graph.getResourceType("title"), QueryUtil.movies);
+        QueryUtil.assertResultsMatch(query, "the-movie", "movie", rule.graph().getResourceType("title"), QueryUtil.movies);
     }
 
     @Test
@@ -140,7 +145,7 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         ).select("x");
         List<Map<String, Concept>> nondistinctResults = Lists.newArrayList(query);
 
-        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("name"), "Kermit The Frog", "Miss Piggy");
+        QueryUtil.assertResultsMatch(query, "x", "person", rule.graph().getResourceType("name"), "Kermit The Frog", "Miss Piggy");
         assertEquals(4, nondistinctResults.size());
     }
 
@@ -153,13 +158,13 @@ public class MatchQueryModifierTest extends AbstractMovieGraphTest {
         ).distinct().select("x");
         List<Map<String, Concept>> distinctResults = Lists.newArrayList(query);
 
-        QueryUtil.assertResultsMatch(query, "x", "person", graph.getResourceType("name"), "Kermit The Frog", "Miss Piggy");
+        QueryUtil.assertResultsMatch(query, "x", "person", rule.graph().getResourceType("name"), "Kermit The Frog", "Miss Piggy");
         assertEquals(2, distinctResults.size());
     }
 
     private void assertOrderedResultsMatch(MatchQuery query, String var, String expectedType, String... expectedTitles) {
         Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedTitles));
-        ResourceType title = graph.getResourceType("title");
+        ResourceType title = rule.graph().getResourceType("title");
 
         query.forEach(results -> {
             Concept result = results.get(var);

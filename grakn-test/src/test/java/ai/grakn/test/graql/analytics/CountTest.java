@@ -18,15 +18,17 @@
 
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.GraphContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -34,12 +36,19 @@ import java.util.Collections;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class CountTest extends AbstractGraphTest {
+public class CountTest {
+
+    @Rule
+    public final GraphContext rule = GraphContext.empty();
+
+    private GraknGraph graph;
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
+
+        graph = rule.graph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -58,7 +67,7 @@ public class CountTest extends AbstractGraphTest {
 
         // create 3 instances
         System.out.println("Creating 3 instances");
-        graph = factory.getGraph();
+//        graph = factory.getGraph();
         String nameThing = "thing";
         String nameAnotherThing = "another";
         EntityType thing = graph.putEntityType(nameThing);

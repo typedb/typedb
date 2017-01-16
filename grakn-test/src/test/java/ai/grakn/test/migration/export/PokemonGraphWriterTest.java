@@ -17,33 +17,49 @@
  */
 package ai.grakn.test.migration.export;
 
-import ai.grakn.example.PokemonGraphFactory;
+import ai.grakn.graphs.PokemonGraph;
+import ai.grakn.migration.export.GraphWriter;
+import ai.grakn.test.GraphContext;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
-public class PokemonGraphWriterTest extends GraphWriterTestBase {
+import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertDataEqual;
+import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertOntologiesEqual;
+import static ai.grakn.test.migration.export.GraphWriterTestUtil.insert;
+
+public class PokemonGraphWriterTest {
+
+    private GraphWriter writer;
+
+    @ClassRule
+    public static GraphContext original = GraphContext.preLoad(PokemonGraph.get());
+
+    @Rule
+    public GraphContext copy = GraphContext.empty();
 
     @Before
-    public void setup(){
-        PokemonGraphFactory.loadGraph(graph);
+    public void setup() {
+        writer = new GraphWriter(original.graph());
     }
 
     @Test
     public void testWritingPokemonGraphOntology(){
         String ontology = writer.dumpOntology();
-        insert(copy, ontology);
+        insert(copy.graph(), ontology);
 
-        assertOntologiesEqual(graph, copy);
+        assertOntologiesEqual(original.graph(), copy.graph());
     }
 
     @Test
     public void testWritingPokemonGraphData(){
         String ontology = writer.dumpOntology();
-        insert(copy, ontology);
+        insert(copy.graph(), ontology);
 
         String data = writer.dumpData();
-        insert(copy, data);
+        insert(copy.graph(), data);
 
-        assertDataEqual(graph, copy);
+        assertDataEqual(original.graph(), copy.graph());
     }
 }

@@ -20,7 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.backgroundtasks.LongRunningTask;
 import ai.grakn.test.engine.backgroundtasks.TestTask;
 import ch.qos.logback.classic.Level;
@@ -46,8 +46,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class TasksControllerTest extends EngineTestBase {
+public class TasksControllerTest {
     private String singleTask;
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @BeforeClass
     public static void startEngine() throws Exception{
@@ -59,10 +62,6 @@ public class TasksControllerTest extends EngineTestBase {
         assumeFalse(usingTinker());
         DistributedTaskManager manager = DistributedTaskManager.getInstance();
         singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
-
-        // Stopping tasks is not currently supported by the DistributedTaskManager.
-//        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
-//        taskManager.stopTask(singleTask, this.getClass().getName());
     }
 
     @Test

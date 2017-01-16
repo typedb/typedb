@@ -18,21 +18,25 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
+import ai.grakn.GraknGraph;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class SQLMigratorTestBase extends AbstractGraknMigratorTest {
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
+
+public class SQLMigratorTestUtils {
 
     public static final String USER = "test";
     public static final String PASS = "";
     public static final String DRIVER = "org.h2.Driver";
     public static final String URL = "jdbc:h2:~/test;";
 
-    public Connection setupExample(String example) throws SQLException {
-        load(getFile("sql", example + "/schema.gql"));
+    public static Connection setupExample(GraknGraph graph, String example) throws SQLException {
+        load(graph, getFile("sql", example + "/schema.gql"));
 
         // read schema and data from file
         String schema = getFileAsString("sql", example + "/create-db.sql");

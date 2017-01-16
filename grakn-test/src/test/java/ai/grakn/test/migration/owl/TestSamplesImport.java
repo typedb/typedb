@@ -31,6 +31,8 @@ import org.semanticweb.owlapi.model.OWLOntology;
 
 import java.util.Optional;
 
+import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
+import static ai.grakn.test.migration.MigratorTestUtils.assertResourceEntityRelationExists;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -104,8 +106,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(author);
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
-            assertRelationBetweenInstancesExists(work, author, "op-wrote");
-            assertTrue(!Reasoner.getRules(graph).isEmpty());
+            assertRelationBetweenInstancesExists(graph, work, author, "op-wrote");
+            Assert.assertTrue(!Reasoner.getRules(graph).isEmpty());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -132,7 +134,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Optional<Entity> e = findById(type.instances(), "eProduct5");
             assertTrue(e.isPresent());
             e.get().resources().stream().map(Resource::type).forEach(System.out::println);
-            assertResourceEntityRelationExists("Product_Available", "14", e.get());
+            assertResourceEntityRelationExists(graph, "Product_Available", "14", e.get());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

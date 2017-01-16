@@ -18,14 +18,14 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
-import ai.grakn.test.graql.reasoner.graphs.TestGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -46,10 +46,12 @@ public class MoogiInferenceTest {
     private final static String assertionFile2 = dataDir + "assertions_3-new.gql";
     private final static String ruleFile = dataDir + "rules.gql";
 
+    @ClassRule
+    public static final GraphContext moogiGraph = GraphContext.preLoad(schemaFile, entityFile, assertionFile2, assertionFile, ruleFile);
+
     @BeforeClass
     public static void setUpClass() {
-        GraknGraph graph = TestGraph.getGraph("name", schemaFile, entityFile, assertionFile2, assertionFile, ruleFile);
-        qb = graph.graql();
+        qb = moogiGraph.graph().graql();
     }
 
     @Test

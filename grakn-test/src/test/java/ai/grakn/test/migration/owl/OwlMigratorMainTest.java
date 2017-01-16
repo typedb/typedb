@@ -18,13 +18,18 @@
 
 package ai.grakn.test.migration.owl;
 
+import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -60,7 +65,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     public void runAndAssertDataCorrect(String... args){
         run(args);
 
-        graph = factory.getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
         EntityType top = graph.getEntityType("tThing");
         EntityType type = graph.getEntityType("tAuthor");
         assertNotNull(type);
@@ -81,7 +86,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         assertNotNull(author);
         final Entity work = getEntity("eHamlet");
         assertNotNull(work);
-        assertRelationBetweenInstancesExists(work, author, "op-wrote");
+        assertRelationBetweenInstancesExists(graph, work, author, "op-wrote");
         assertTrue(!Reasoner.getRules(graph).isEmpty());
     }
 }
