@@ -44,6 +44,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
+import static ai.grakn.graql.internal.reasoner.Utility.generateListPermutations;
+import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
+
 /**
  *
  * <p>
@@ -66,55 +69,26 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
 
     public QueryAnswers permute(Atom atom){
         if (!atom.isRelation()) return this;
-        Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = atom.getRoleVarTypeMap();
-        Set<VarName> mappedVars = roleVarTypeMap.values().stream().map(Pair::getKey).collect(Collectors.toSet());
-        List<VarName> permuteVars = new ArrayList<>(((Relation) atom).getRolePlayers());
-        permuteVars.removeAll(mappedVars);
-
+        List<VarName> permuteVars = new ArrayList<>(((Relation) atom).getUnmappedRolePlayers());
         List<List<VarName>> varPermutations = generateListPermutations(new ArrayList<>(permuteVars));
         Set<Map<VarName, VarName>> unifierSet = getUnifiersFromPermutations(permuteVars, varPermutations);
         QueryAnswers permutedAnswers = new QueryAnswers();
         unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
 
-        //TODO filter by checking substitutions
-        return permutedAnswers;
-    }
-
-    private Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> vars, List<List<VarName>> permutations){
-        Set<Map<VarName, VarName>> unifierSet = new HashSet<>();
-        permutations.forEach(perm -> {
-            Map<VarName, VarName> unifiers = new HashMap<>();
-            Iterator<VarName> pIt = vars.iterator();
-            Iterator<VarName> cIt = perm.iterator();
-            while(pIt.hasNext() && cIt.hasNext()){
-                VarName pVar = pIt.next();
-                VarName chVar = cIt.next();
-                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
-            }
-            unifierSet.add(unifiers);
+        //filter by checking substitutions
+        Set<IdPredicate> subs = atom.getIdPredicates().stream()
+                .filter(pred -> permuteVars.contains(pred.getVarName()))
+                .collect(Collectors.toSet());
+        QueryAnswers filteredOutAnswers = new QueryAnswers();
+        subs.forEach( sub -> {
+            permutedAnswers.stream()
+                    .filter(answer -> {
+                        return !answer.get(sub.getVarName()).getId().equals(sub.getPredicate());
+                    })
+                    .forEach(filteredOutAnswers::add);
         });
-
-        return unifierSet;
-    }
-
-    public static <T> List<List<T>> generateListPermutations(List<T> entryList) {
-        if (entryList.isEmpty()) {
-            List<List<T>> result = new ArrayList<>();
-            result.add(new ArrayList<>());
-            return result;
-        }
-        List<T> list = new ArrayList<>(entryList);
-        T firstElement = list.remove(0);
-        List<List<T>> returnValue = new ArrayList<>();
-        List<List<T>> permutations = generateListPermutations(list);
-        for (List<T> smallerPermutated : permutations) {
-            for (int index=0; index <= smallerPermutated.size(); index++) {
-                List<T> temp = new ArrayList<T>(smallerPermutated);
-                temp.add(index, firstElement);
-                returnValue.add(temp);
-            }
-        }
-        return returnValue;
+        permutedAnswers.removeAll(filteredOutAnswers);
+        return permutedAnswers;
     }
 
     /**

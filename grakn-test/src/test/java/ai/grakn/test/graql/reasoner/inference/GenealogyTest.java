@@ -168,8 +168,6 @@ public class GenealogyTest extends EngineTestBase {
         assertEquals(answers, answers2);
     }
 
-    //It is expected that results are different due to how rules are defined
-    @Ignore
     @Test
     public void testParentship2() {
         String queryString = "match (child: $x, $y) isa parentship;select $x;";
@@ -178,7 +176,6 @@ public class GenealogyTest extends EngineTestBase {
         MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        answers.forEach(answer -> assertEquals(answer.size(), 2));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
@@ -222,8 +219,6 @@ public class GenealogyTest extends EngineTestBase {
         assertEquals(answers, answers2);
     }
 
-    //TODO need to do all combinations for roles missing
-    //@Ignore
     @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
@@ -488,8 +483,10 @@ public class GenealogyTest extends EngineTestBase {
     public void testFemaleFather() {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g value 'female';";
         MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         assertTrue(answers.isEmpty());
+        assertEquals(answers, answers2);
     }
 
 

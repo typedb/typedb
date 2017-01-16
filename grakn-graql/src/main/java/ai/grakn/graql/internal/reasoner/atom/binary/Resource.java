@@ -25,7 +25,9 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
@@ -100,10 +102,10 @@ public class Resource extends MultiPredicateBinary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
-    public Set<Predicate> getValuePredicates(){
-        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getValueVariable()))
-                .collect(Collectors.toSet());
+    public Set<ValuePredicate> getValuePredicates(){
+        Set<ValuePredicate> valuePredicates = super.getValuePredicates();
+        getMultiPredicate().stream().map(p -> (ValuePredicate) p).forEach(valuePredicates::add);
+        return valuePredicates;
     }
 
     @Override

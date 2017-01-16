@@ -41,6 +41,9 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -178,6 +181,43 @@ public class Utility {
             System.out.println();
         });
         System.out.println();
+    }
+
+    public static Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> vars, List<List<VarName>> permutations){
+        Set<Map<VarName, VarName>> unifierSet = new HashSet<>();
+        permutations.forEach(perm -> {
+            Map<VarName, VarName> unifiers = new HashMap<>();
+            Iterator<VarName> pIt = vars.iterator();
+            Iterator<VarName> cIt = perm.iterator();
+            while(pIt.hasNext() && cIt.hasNext()){
+                VarName pVar = pIt.next();
+                VarName chVar = cIt.next();
+                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
+            }
+            unifierSet.add(unifiers);
+        });
+
+        return unifierSet;
+    }
+
+    public static <T> List<List<T>> generateListPermutations(List<T> entryList) {
+        if (entryList.isEmpty()) {
+            List<List<T>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+        List<T> list = new ArrayList<>(entryList);
+        T firstElement = list.remove(0);
+        List<List<T>> returnValue = new ArrayList<>();
+        List<List<T>> permutations = generateListPermutations(list);
+        for (List<T> smallerPermutated : permutations) {
+            for (int index=0; index <= smallerPermutated.size(); index++) {
+                List<T> temp = new ArrayList<T>(smallerPermutated);
+                temp.add(index, firstElement);
+                returnValue.add(temp);
+            }
+        }
+        return returnValue;
     }
 
     /**

@@ -848,21 +848,14 @@ public class ReasonerTest extends AbstractGraknTest {
     }
 
     @Test
-    public void testVarPermutation(){
+    public void testAmbiguousRolePlayersWithSub(){
         GraknGraph graph = GeoGraph.getGraph();
-        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
-        String queryString2 = "match ($x, $y) isa is-located-in;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, graph);
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, graph);
-        query.lookup(new QueryCache());
-        query2.lookup(new QueryCache());
-        QueryAnswers answers = query.getAnswers();
-        QueryAnswers permutedAnswers = answers.permute(query.getAtom());
-        QueryAnswers permutedAnswers2 = answers.permute(query2.getAtom());
-        QueryAnswers fullAnswers = query2.getAnswers();
+        String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
+        MatchQuery query = graph.graql().parse(queryString);
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
 
-        assertEquals(fullAnswers, permutedAnswers2);
-        assertEquals(answers, permutedAnswers);
+        QueryAnswers answers2 = queryAnswers(query);
+        assertEquals(answers, answers2);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
