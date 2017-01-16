@@ -85,6 +85,9 @@ public class InMemoryStateStorage implements StateStorage {
         }
 
         TaskState state = storage.get(id).get();
+
+        if (state == null) return false;
+
         synchronized (state) {
             state.status(status);
 
@@ -115,6 +118,9 @@ public class InMemoryStateStorage implements StateStorage {
         }
 
         TaskState state = storage.get(id).get();
+
+        if (state == null) return null;
+
         TaskState newState = null;
 
         synchronized (state) {
