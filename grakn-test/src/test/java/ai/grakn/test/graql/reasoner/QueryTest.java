@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
@@ -146,15 +146,15 @@ public class QueryTest extends AbstractGraknTest {
         String parentQueryString = "match (entity-location: $y, geo-entity: $y1), isa is-located-in; select $y1, $y;";
         String childQueryString = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
 
-        AtomicQuery parentQuery = new AtomicQuery(parentQueryString, lgraph);
-        AtomicQuery childQuery = new AtomicQuery(childQueryString, lgraph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(parentQueryString, lgraph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(childQueryString, lgraph);
 
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
 
-        AtomicQuery childCopy = new AtomicQuery(childQuery.toString(), lgraph);
+        ReasonerAtomicQuery childCopy = new ReasonerAtomicQuery(childQuery.toString(), lgraph);
         childCopy.unify(unifiers);
         Atomic childAtomCopy = childCopy.getAtom();
 

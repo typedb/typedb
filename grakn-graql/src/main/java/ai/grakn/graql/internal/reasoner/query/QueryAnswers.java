@@ -232,7 +232,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @param parentQuery parent atomic query containing target variables
      * @return unified answers
      */
-    public static QueryAnswers getUnifiedAnswers(AtomicQuery parentQuery, AtomicQuery childQuery, QueryAnswers answers){
+    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
         GraknGraph graph = childQuery.graph();
         Atomic childAtom = childQuery.getAtom();

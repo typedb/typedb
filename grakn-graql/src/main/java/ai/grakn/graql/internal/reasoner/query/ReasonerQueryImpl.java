@@ -51,6 +51,9 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.isCaptured;
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilterFunction;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -139,7 +142,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     public Conjunction<PatternAdmin> getPattern() {
         Set<PatternAdmin> patterns = new HashSet<>();
-        atomSet.stream().map(Atomic::getCombinedPattern).forEach(patterns::add);
+        atomSet.stream()
+                .map(Atomic::getCombinedPattern)
+                .flatMap(p -> p.getVars().stream())
+                .forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
 
@@ -153,36 +159,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             ruleResolvable = it.next().isRuleResolvable();
         }
         return ruleResolvable;
-    }
-
-    public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
-    public QueryAnswers getNewAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
-
-    /**
-     * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
-     * @param cache container of already performed query resolutions
-     */
-    public void lookup(QueryCache cache){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
-
-    /**
-     * resolve the query by performing a db lookup
-     */
-    public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
-
-    /**
-     * resolve the query by performing a memory (cache) lookup
-     * @param cache container of already performed query resolutions
-     */
-    public void memoryLookup(QueryCache cache){
-        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
-    }
-
-    /**
-     * propagate answers to relation resolutions in the cache
-     * @param cache container of already performed query resolutions
-     */
-    public void propagateAnswers(QueryCache cache){
-        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
     /**
@@ -243,11 +219,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-    /**
-     * @param atom in question
-     * @return true if atom is contained in the query
-     */
-    public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
 
     /**
      * @param atom in question
@@ -489,7 +460,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param materialise materialisation flag
      * @return stream of answers
      */
+    @Override
     public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
-        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+        if (!this.isRuleResolvable()) {
+            return this.getMatchQuery().admin().streamWithVarNames();
+        }
+        Iterator<Atom> atIt = this.selectAtoms().iterator();
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next(), this.getSelectedNames());
+        Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);
+        while (atIt.hasNext()) {
+            atomicQuery = new ReasonerAtomicQuery(atIt.next(), this.getSelectedNames());
+            Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
+            answerStream = join(answerStream, subAnswerStream);
+        }
+        return answerStream
+                .flatMap(a -> nonEqualsFilterFunction.apply(a, this.getFilters()))
+                .flatMap(a -> varFilterFunction.apply(a, this.getSelectedNames()));
     }
 }
