@@ -223,7 +223,7 @@ public class GenealogyTest extends EngineTestBase {
     }
 
     //TODO need to do all combinations for roles missing
-    @Ignore
+    //@Ignore
     @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";

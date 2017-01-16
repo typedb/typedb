@@ -383,7 +383,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         //TODO do all combinations if roles missing
         QueryAnswers filteredAnswers = answers
                 .filterVars(this.getSelectedNames())
-                .filterIncomplete(this.getSelectedNames());
+                .filterIncomplete(this.getSelectedNames())
+                .permute(this.getAtom());
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
@@ -455,7 +456,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + size());
             dAns = size() - dAns;
             iter++;
-            if (!materialise) cache.propagateAnswers();
+            //if (!materialise) cache.propagateAnswers();
         }
 
         private void computeNext(){

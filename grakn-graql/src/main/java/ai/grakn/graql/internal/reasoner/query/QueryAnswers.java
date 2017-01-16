@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -27,17 +28,21 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javafx.util.Pair;
 
 /**
  *
@@ -57,6 +62,59 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
     public Set<VarName> getVars(){
         Optional<Map<VarName, Concept>> map = this.stream().findFirst();
         return map.isPresent()? map.get().keySet() : new HashSet<>();
+    }
+
+    public QueryAnswers permute(Atom atom){
+        if (!atom.isRelation()) return this;
+        Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = atom.getRoleVarTypeMap();
+        Set<VarName> mappedVars = roleVarTypeMap.values().stream().map(Pair::getKey).collect(Collectors.toSet());
+        List<VarName> permuteVars = new ArrayList<>(((Relation) atom).getRolePlayers());
+        permuteVars.removeAll(mappedVars);
+
+        List<List<VarName>> varPermutations = generateListPermutations(new ArrayList<>(permuteVars));
+        Set<Map<VarName, VarName>> unifierSet = getUnifiersFromPermutations(permuteVars, varPermutations);
+        QueryAnswers permutedAnswers = new QueryAnswers();
+        unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
+
+        //TODO filter by checking substitutions
+        return permutedAnswers;
+    }
+
+    private Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> vars, List<List<VarName>> permutations){
+        Set<Map<VarName, VarName>> unifierSet = new HashSet<>();
+        permutations.forEach(perm -> {
+            Map<VarName, VarName> unifiers = new HashMap<>();
+            Iterator<VarName> pIt = vars.iterator();
+            Iterator<VarName> cIt = perm.iterator();
+            while(pIt.hasNext() && cIt.hasNext()){
+                VarName pVar = pIt.next();
+                VarName chVar = cIt.next();
+                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
+            }
+            unifierSet.add(unifiers);
+        });
+
+        return unifierSet;
+    }
+
+    public static <T> List<List<T>> generateListPermutations(List<T> entryList) {
+        if (entryList.isEmpty()) {
+            List<List<T>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+        List<T> list = new ArrayList<>(entryList);
+        T firstElement = list.remove(0);
+        List<List<T>> returnValue = new ArrayList<>();
+        List<List<T>> permutations = generateListPermutations(list);
+        for (List<T> smallerPermutated : permutations) {
+            for (int index=0; index <= smallerPermutated.size(); index++) {
+                List<T> temp = new ArrayList<T>(smallerPermutated);
+                temp.add(index, firstElement);
+                returnValue.add(temp);
+            }
+        }
+        return returnValue;
     }
 
     /**

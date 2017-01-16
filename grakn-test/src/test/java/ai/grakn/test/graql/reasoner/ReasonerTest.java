@@ -28,6 +28,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.query.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -35,7 +36,9 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import java.util.Set;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -385,8 +388,8 @@ public class ReasonerTest extends AbstractGraknTest {
     }
 
     //TODO loses type variable as non-core types are not unified in rules
-    @Test
     @Ignore
+    @Test
     public void testPlaysRole2(){
         GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
@@ -544,8 +547,6 @@ public class ReasonerTest extends AbstractGraknTest {
         assertEquals(answers.size(), answers2.size());
     }
 
-    //TODO need answer extrapolation
-    @Ignore
     @Test
     public void testRelationVariable2(){
         GraknGraph lgraph = GeoGraph.getGraph();
@@ -831,6 +832,37 @@ public class ReasonerTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
         QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
         assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testAmbiguousRolePlayers(){
+        GraknGraph graph = GeoGraph.getGraph();
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        MatchQuery query = graph.graql().parse(queryString);
+        MatchQuery query2 = graph.graql().parse(queryString2);
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        assertTrue(answers2.containsAll(answers));
+        assertTrue(2*answers.size() == answers2.size());
+    }
+
+    @Test
+    public void testVarPermutation(){
+        GraknGraph graph = GeoGraph.getGraph();
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, graph);
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, graph);
+        query.lookup(new QueryCache());
+        query2.lookup(new QueryCache());
+        QueryAnswers answers = query.getAnswers();
+        QueryAnswers permutedAnswers = answers.permute(query.getAtom());
+        QueryAnswers permutedAnswers2 = answers.permute(query2.getAtom());
+        QueryAnswers fullAnswers = query2.getAnswers();
+
+        assertEquals(fullAnswers, permutedAnswers2);
+        assertEquals(answers, permutedAnswers);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
