@@ -183,11 +183,17 @@ public class Utility {
         System.out.println();
     }
 
-    public static Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> vars, List<List<VarName>> permutations){
+    /**
+     * get unifiers by comparing permutations with original variables
+     * @param originalVars original ordered variables
+     * @param permutations different permutations on the variables
+     * @return set of unifiers
+     */
+    public static Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> originalVars, List<List<VarName>> permutations){
         Set<Map<VarName, VarName>> unifierSet = new HashSet<>();
         permutations.forEach(perm -> {
             Map<VarName, VarName> unifiers = new HashMap<>();
-            Iterator<VarName> pIt = vars.iterator();
+            Iterator<VarName> pIt = originalVars.iterator();
             Iterator<VarName> cIt = perm.iterator();
             while(pIt.hasNext() && cIt.hasNext()){
                 VarName pVar = pIt.next();
@@ -196,11 +202,16 @@ public class Utility {
             }
             unifierSet.add(unifiers);
         });
-
         return unifierSet;
     }
 
-    public static <T> List<List<T>> generateListPermutations(List<T> entryList) {
+    /**
+     * get all permutations of an entry list
+     * @param entryList entry list to generate permutations of
+     * @param <T> element type
+     * @return set of all possible permutations
+     */
+    public static <T> List<List<T>> getListPermutations(List<T> entryList) {
         if (entryList.isEmpty()) {
             List<List<T>> result = new ArrayList<>();
             result.add(new ArrayList<>());
@@ -209,10 +220,10 @@ public class Utility {
         List<T> list = new ArrayList<>(entryList);
         T firstElement = list.remove(0);
         List<List<T>> returnValue = new ArrayList<>();
-        List<List<T>> permutations = generateListPermutations(list);
-        for (List<T> smallerPermutated : permutations) {
-            for (int index=0; index <= smallerPermutated.size(); index++) {
-                List<T> temp = new ArrayList<T>(smallerPermutated);
+        List<List<T>> permutations = getListPermutations(list);
+        for (List<T> smallerPermuted : permutations) {
+            for (int index = 0; index <= smallerPermuted.size(); index++) {
+                List<T> temp = new ArrayList<>(smallerPermuted);
                 temp.add(index, firstElement);
                 returnValue.add(temp);
             }

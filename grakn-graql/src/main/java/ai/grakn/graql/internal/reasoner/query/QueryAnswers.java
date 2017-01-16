@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -32,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
+import com.google.common.collect.Maps;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,9 +42,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
-import static ai.grakn.graql.internal.reasoner.Utility.generateListPermutations;
+import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 
 /**
@@ -70,7 +69,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
     public QueryAnswers permute(Atom atom){
         if (!atom.isRelation()) return this;
         List<VarName> permuteVars = new ArrayList<>(((Relation) atom).getUnmappedRolePlayers());
-        List<List<VarName>> varPermutations = generateListPermutations(new ArrayList<>(permuteVars));
+        List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
         Set<Map<VarName, VarName>> unifierSet = getUnifiersFromPermutations(permuteVars, varPermutations);
         QueryAnswers permutedAnswers = new QueryAnswers();
         unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
@@ -82,9 +81,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         QueryAnswers filteredOutAnswers = new QueryAnswers();
         subs.forEach( sub -> {
             permutedAnswers.stream()
-                    .filter(answer -> {
-                        return !answer.get(sub.getVarName()).getId().equals(sub.getPredicate());
-                    })
+                    .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
                     .forEach(filteredOutAnswers::add);
         });
         permutedAnswers.removeAll(filteredOutAnswers);
@@ -97,18 +94,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @return filtered answers
      */
     public QueryAnswers filterVars(Set<VarName> vars) {
-        QueryAnswers results = new QueryAnswers();
-        if (this.isEmpty()) return results;
-        this.forEach(answer -> {
-            Map<VarName, Concept> map = new HashMap<>();
-            answer.forEach((var, concept) -> {
-                if (vars.contains(var)) {
-                    map.put(var, concept);
-                }
-            });
-            if (!map.isEmpty()) results.add(map);
-        });
-        return new QueryAnswers(results.stream().distinct().collect(Collectors.toSet()));
+        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result, vars::contains)).collect(Collectors.toSet()));
     }
 
     /**
