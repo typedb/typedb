@@ -20,13 +20,12 @@ package ai.grakn.engine.backgroundtasks;
 
 import org.json.JSONObject;
 
-import java.io.Serializable;
 import java.time.Instant;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
  */
-public class TaskState implements Cloneable, Serializable {
+public class TaskState implements Cloneable {
     /**
      * Task status, @see TaskStatus.
      */
