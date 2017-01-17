@@ -23,11 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.rules.ExternalResource;
-
-import java.util.UUID;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.test.GraknTestEnv.*;
@@ -49,6 +45,10 @@ public class EngineContext extends ExternalResource {
         return factoryWithNewKeyspace().getGraph();
     }
 
+    public GraknGraphFactory factoryWithNewKeyspace() {
+        return Grakn.factory(Grakn.DEFAULT_URI, randomKeyspace());
+    }
+
     @Override
     protected void before() throws Throwable {
         //TODO remove when Bug #12029 fixed
@@ -66,17 +66,5 @@ public class EngineContext extends ExternalResource {
             e.printStackTrace(System.err);
             throw new RuntimeException("Stopping Engine for test", e);
         }
-    }
-
-    protected GraknGraphFactory factoryWithNewKeyspace() {
-        String keyspace;
-        if (usingOrientDB()) {
-            keyspace = "memory";
-        } else {
-            // Embedded Casandra has problems dropping keyspaces that start with a number
-            keyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-        }
-
-         return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
     }
 }
