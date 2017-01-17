@@ -3,11 +3,4 @@
     <Match>
         <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
     </Match>
-
-    <!-- Exclude System Out Encoding-->
-    <Match>
-        <Class name="ai.grakn.graql.GraqlShell" />
-        <Method name="runShell" />
-        <Bug pattern="DM_DEFAULT_ENCODING" />
-    </Match>
 </FindBugsFilter>

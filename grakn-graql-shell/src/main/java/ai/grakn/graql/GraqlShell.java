@@ -43,16 +43,19 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -186,7 +189,8 @@ public class GraqlShell {
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            PrintWriter printWriter = new PrintWriter(System.out);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
+            PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
             int width = helpFormatter.getWidth();
             int leftPadding = helpFormatter.getLeftPadding();
             int descPadding = helpFormatter.getDescPadding();
