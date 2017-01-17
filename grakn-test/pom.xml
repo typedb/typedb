@@ -170,6 +170,7 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-engine</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
