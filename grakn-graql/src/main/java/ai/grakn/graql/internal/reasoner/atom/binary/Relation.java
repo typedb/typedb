@@ -352,7 +352,7 @@ public class Relation extends TypeAtom {
                     .filter(at -> at instanceof HasRole).map(at -> (HasRole) at)
                     .findFirst().orElse(null);
             if (hrAtom != null) {
-                ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom, Sets.newHashSet(hrAtom.getVarName()));
+                ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
                 hrQuery.DBlookup();
                 if (hrQuery.getAnswers().size() != 1) {
                     throw new IllegalStateException("ambigious answer to has-role query");
@@ -424,13 +424,6 @@ public class Relation extends TypeAtom {
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(VarAdmin::isUserDefinedName)
                 .forEach(r -> vars.add(r.getVarName()));
-        return vars;
-    }
-
-    @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
-        vars.addAll(getRolePlayers());
         return vars;
     }
 

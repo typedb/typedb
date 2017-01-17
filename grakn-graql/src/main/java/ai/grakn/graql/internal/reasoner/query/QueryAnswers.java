@@ -269,14 +269,14 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         });
 
         //find extra subs
-        if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
+        if (parentQuery.getVarNames().size() != childQuery.getVarNames().size()){
             //get |child - parent| set difference
             Set<IdPredicate> extraSubs = Utility.subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
             extraSubs.forEach( sub -> {
                 VarName var = sub.getVarName();
                 Concept con = graph.getConcept(sub.getPredicate());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
-                if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size()) {
+                if (childQuery.getVarNames().size() > parentQuery.getVarNames().size()) {
                     valueConstraints.put(var, con);
                 } else {
                     subVars.put(var, con);
@@ -285,7 +285,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         }
 
         QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, valueConstraints, typeConstraints);
-        return unifiedAnswers.filterVars(parentQuery.getSelectedNames());
-                             //.filterIncomplete(parentQuery.getSelectedNames());
+        return unifiedAnswers.filterVars(parentQuery.getVarNames());
     }
 }

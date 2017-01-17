@@ -84,8 +84,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
-    public ReasonerAtomicQuery(Atom at, Set<VarName> vars) {
-        super(at, vars);
+    public ReasonerAtomicQuery(Atom at) {
+        super(at);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
     
@@ -270,24 +270,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
-        Set<VarName> queryVars = getSelectedNames();
-        /*
-        Set<VarName> headVars = ruleHead.getSelectedNames();
-        Set<IdPredicate> extraSubs = new HashSet<>();
-        if(queryVars.size() > headVars.size()){
-            extraSubs.addAll(ruleHead.getIdPredicates()
-                    .stream().filter(sub -> queryVars.contains(sub.getVarName()))
-                    .collect(Collectors.toSet()));
-        }
-
-        answers.forEach( map -> {
-            Map<VarName, Concept> newAns = new HashMap<>(map);
-            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicate())) );
-            newAnswers.add(newAns);
-        });
-        return newAnswers;
-        */
-
+        Set<VarName> queryVars = getVarNames();
         Set<IdPredicate> extraSubs = new HashSet<>();
         ruleHead.getIdPredicates()
                 .stream().filter(sub -> queryVars.contains(sub.getVarName()))
@@ -323,17 +306,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Iterator<Atom> atIt = atoms.iterator();
 
         subGoals.add(this);
-        ReasonerAtomicQuery childAtomicQuery = new ReasonerAtomicQuery(atIt.next(), this.getSelectedNames());
+        ReasonerAtomicQuery childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
         QueryAnswers subs = childAtomicQuery.answer(subGoals, cache, materialise);
         while(atIt.hasNext()){
-            childAtomicQuery = new ReasonerAtomicQuery(atIt.next(), getSelectedNames());
+            childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
             QueryAnswers localSubs = childAtomicQuery.answer(subGoals, cache, materialise);
             subs = subs.join(localSubs);
         }
 
         QueryAnswers answers = this.propagateHeadIdPredicates(ruleHead, subs)
                 .filterNonEquals(ruleBody)
-                .filterVars(ruleHead.getSelectedNames())
+                .filterVars(ruleHead.getVarNames())
                 .filterKnown(this.getAnswers());
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()){
@@ -345,7 +328,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         QueryAnswers filteredAnswers = answers
-                .filterVars(this.getSelectedNames())
+                .filterVars(this.getVarNames())
                 //.filterIncomplete(this.getSelectedNames())
                 .permute(this.getAtom());
 

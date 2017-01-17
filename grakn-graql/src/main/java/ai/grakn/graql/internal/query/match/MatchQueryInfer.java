@@ -55,19 +55,15 @@ class MatchQueryInfer extends MatchQueryModifier {
         GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
-
+        
         Reasoner.linkConceptTypes(graph);
         if (!Reasoner.hasRules(graph)) return streamWithVarNames();
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        //ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
-        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
+        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
         Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
-                //.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));
         while(conjIt.hasNext()) {
-            //conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
-            conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(getSelectedNames()), graph);
+            conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
             Stream<Map<VarName, Concept>> localStream = conjunctiveQuery.resolve(materialise);
-                    //.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));
             answerStream = Stream.concat(answerStream, localStream);
         }
         return answerStream.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));

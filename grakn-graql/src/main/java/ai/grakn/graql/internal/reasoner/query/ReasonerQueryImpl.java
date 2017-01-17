@@ -69,11 +69,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
-    private final Set<VarName> selectVars;
 
     public ReasonerQueryImpl(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
-        this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
         inferTypes();
     }
@@ -84,21 +82,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     public ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
-        this.selectVars = q.getSelectedNames();
         q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
         inferTypes();
     }
 
-    protected ReasonerQueryImpl(Atom atom, Set<VarName> vars) {
+    protected ReasonerQueryImpl(Atom atom) {
         if (atom.getParentQuery() == null) {
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         }
         this.graph = atom.getParentQuery().graph();
-        this.selectVars = atom.getSelectedNames();
-        selectVars.addAll(vars);
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
-        selectVars.retainAll(getVarSet());
         inferTypes();
     }
 
@@ -127,19 +121,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .forEach(Atom::inferTypes);
-    }
-
-    public Set<VarName> getSelectedNames() {
-        return getVarSet();
-        //return Sets.newHashSet(selectVars);
-    }
-
-    /**
-     * append to select variables
-     * @param vars variables to append
-     */
-    public void selectAppend(Set<VarName> vars){
-        selectVars.addAll(vars);
     }
 
     public GraknGraph graph(){ return graph;}
@@ -214,7 +195,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return set of variables appearing in this query
      */
-    public Set<VarName> getVarSet() {
+    public Set<VarName> getVarNames() {
         Set<VarName> vars = new HashSet<>();
         atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
         return vars;
@@ -233,19 +214,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             isContained = atom.isEquivalent(at);
         }
         return isContained;
-    }
-
-    private void updateSelectedVars(Map<VarName, VarName> mappings) {
-        Set<VarName> toRemove = new HashSet<>();
-        Set<VarName> toAdd = new HashSet<>();
-        mappings.forEach( (from, to) -> {
-                    if (selectVars.contains(from)) {
-                        toRemove.add(from);
-                        toAdd.add(to);
-                    }
-                });
-        toRemove.forEach(selectVars::remove);
-        toAdd.forEach(selectVars::add);
     }
 
     private void exchangeRelVarNames(VarName from, VarName to){
@@ -271,7 +239,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         Map<VarName, VarName> mapping = new HashMap<>();
         mapping.put(from, to);
-        updateSelectedVars(mapping);
     }
 
     /**
@@ -316,7 +283,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(this::addAtom);
 
         mappings.putAll(resolveCaptures());
-        updateSelectedVars(mappings);
     }
 
     /**
@@ -327,14 +293,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Map<VarName, VarName> newMappings = new HashMap<>();
         //find captures
         Set<VarName> captures = new HashSet<>();
-        getVarSet().forEach(v -> {
+        getVarNames().forEach(v -> {
             // TODO: This could cause bugs if a user has a variable including the word "capture"
             if (isCaptured(v)) captures.add(v);
         });
 
         captures.forEach(cap -> {
             VarName old = uncapture(cap);
-            VarName fresh = Utility.createFreshVariable(getVarSet(), old);
+            VarName fresh = Utility.createFreshVariable(getVarNames(), old);
             unify(cap, fresh);
             newMappings.put(old, fresh);
         });
@@ -345,11 +311,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return corresponding MatchQuery
      */
     public MatchQuery getMatchQuery() {
-        if (selectVars.isEmpty()) {
-            return graph.graql().infer(false).match(getPattern());
-        } else {
-            return graph.graql().infer(false).match(getPattern()).select(selectVars);
-        }
+        return graph.graql().infer(false).match(getPattern());
     }
 
     /**
@@ -430,7 +392,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         //order by variables
         Set<Atom> orderedSelection = new LinkedHashSet<>();
-        getVarSet().forEach(var -> orderedSelection.addAll(selectedAtoms.stream()
+        getVarNames().forEach(var -> orderedSelection.addAll(selectedAtoms.stream()
                 .filter(atom -> atom.containsVar(var))
                 .collect(Collectors.toSet())));
 
@@ -469,15 +431,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             return this.getMatchQuery().admin().streamWithVarNames();
         }
         Iterator<Atom> atIt = this.selectAtoms().iterator();
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next(), this.getSelectedNames());
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);
         while (atIt.hasNext()) {
-            atomicQuery = new ReasonerAtomicQuery(atIt.next(), this.getSelectedNames());
+            atomicQuery = new ReasonerAtomicQuery(atIt.next());
             Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
             answerStream = join(answerStream, subAnswerStream);
         }
         return answerStream
                 .flatMap(a -> nonEqualsFilterFunction.apply(a, this.getFilters()))
-                .flatMap(a -> varFilterFunction.apply(a, this.getSelectedNames()));
+                .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()));
     }
 }

@@ -168,17 +168,17 @@ public class AtomicQueryTest {
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, geoGraph.graph());
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, geoGraph.graph());
-        query.lookup(new QueryCache());
-        query2.lookup(new QueryCache());
-        QueryAnswers answers = query.getAnswers();
-        QueryAnswers permutedAnswers = answers.permute(query.getAtom());
-        QueryAnswers permutedAnswers2 = answers.permute(query2.getAtom());
-        QueryAnswers fullAnswers = query2.getAnswers();
-
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers fullAnswers = queryAnswers(qb.parse(queryString2));
+        QueryAnswers permutedAnswers = answers.permute(new ReasonerAtomicQuery(queryString, geoGraph.graph()).getAtom());
+        QueryAnswers permutedAnswers2 = answers.permute(new ReasonerAtomicQuery(queryString2, geoGraph.graph()).getAtom());
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
+    }
+
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().results());
     }
 
     private Concept getConcept(String id){
