@@ -106,7 +106,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery a2 = (ReasonerAtomicQuery) obj;
         return this.isEquivalent(a2);
     }
-    
+
+    //TODO: Kasper check if this hashcode definition is suitable.
+    @Override
+    public int hashCode(){
+        return super.hashCode();
+    }
+
 
     private void addChild(ReasonerAtomicQuery q){
         if (!this.isEquivalent(q) && Objects.equals(atom.getTypeId(), q.getAtom().getTypeId())){
