@@ -26,7 +26,6 @@ import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.EngineTestBase;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
@@ -36,6 +35,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Instant;

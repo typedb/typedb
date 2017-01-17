@@ -26,6 +26,7 @@ import javafx.util.Pair;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Instant;

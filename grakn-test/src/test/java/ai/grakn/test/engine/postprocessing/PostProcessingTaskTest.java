@@ -21,10 +21,8 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.test.EngineContext;
-import org.junit.*;
-import ai.grakn.test.EngineTestBase;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Instant;

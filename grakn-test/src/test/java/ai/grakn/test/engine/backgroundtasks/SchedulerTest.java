@@ -27,7 +27,6 @@ import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.EngineTestBase;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
@@ -38,11 +37,10 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.*;
-import java.util.function.Predicate;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +49,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Predicate;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;

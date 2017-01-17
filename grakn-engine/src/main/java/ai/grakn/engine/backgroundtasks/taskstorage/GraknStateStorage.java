@@ -88,7 +88,7 @@ public class GraknStateStorage implements StateStorage {
                                  .has(STATUS, var().value(CREATED.toString()))
                                  .has(TASK_CLASS_NAME, var().value(taskName))
                                  .has(CREATED_BY, var().value(createdBy))
-                                 .has(RUN_AT, var().value(runAt.getTime()))
+                                 .has(RUN_AT, var().value(runAt.getEpochSecond()))
                                  .has(RECURRING, var().value(recurring))
                                  .has(RECUR_INTERVAL, var().value(interval));
 
