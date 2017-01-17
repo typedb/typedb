@@ -29,7 +29,7 @@ public class GraphTest {
 
     @Test
     public void testSwitchingBetweenNormalAndBatchGraphCleanly() throws Exception {
-        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, "testSwitching");
+        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.getGraph();
 
         String thing = "thing";
@@ -83,14 +83,15 @@ public class GraphTest {
 
     @Test
     public void isClosedTest() throws Exception {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, "isitclosed").getGraph();
+        GraknGraph graph = engine.getNewGraph();
+        String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
         graph.commit();
 
         assertFalse(graph.isClosed());
 
         HashSet<Future> futures = new HashSet<>();
-        futures.add(Executors.newCachedThreadPool().submit(this::addThingToBatch));
+        futures.add(Executors.newCachedThreadPool().submit(() -> addThingToBatch(keyspace)));
 
         for (Future future : futures) {
             future.get();
@@ -102,8 +103,8 @@ public class GraphTest {
         graph.close();
     }
 
-    private void addThingToBatch(){
-        try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, "isitclosed").getGraph()) {
+    private void addThingToBatch(String keyspace){
+        try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
             graphBatchLoading.getEntityType("thing").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
