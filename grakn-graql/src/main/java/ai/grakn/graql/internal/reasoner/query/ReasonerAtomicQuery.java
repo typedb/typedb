@@ -101,7 +101,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery a2 = (ReasonerAtomicQuery) obj;
         return this.isEquivalent(a2);
     }
-    
+
     /**
      * @return the atom constituting this atomic query
      */
