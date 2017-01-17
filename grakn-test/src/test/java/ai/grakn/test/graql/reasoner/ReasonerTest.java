@@ -386,11 +386,7 @@ public class ReasonerTest {
                 "}; select $x, $y, $type;";
         MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
-<<<<<<< HEAD
         assertQueriesEqual(query, query2);
-=======
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
->>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
     }
 
     //TODO loses type variable as non-core types are not unified in rules
@@ -810,10 +806,11 @@ public class ReasonerTest {
     public void testAmbiguousRolePlayers(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertTrue(answers2.containsAll(answers));
         assertTrue(2*answers.size() == answers2.size());
     }
@@ -821,9 +818,10 @@ public class ReasonerTest {
     @Test
     public void testAmbiguousRolePlayersWithSub(){
         String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = queryAnswers(query);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
         assertEquals(answers, answers2);
     }
 

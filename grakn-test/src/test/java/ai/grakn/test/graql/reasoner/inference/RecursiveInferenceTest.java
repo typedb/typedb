@@ -120,13 +120,8 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa Person, has name $name;" +
                 "{$name value 'a';} or {$name value 'aaa';} or {$name value 'aab';} or {$name value 'aaaa';};select $Y;";
 
-<<<<<<< HEAD
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-=======
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
->>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -170,13 +165,8 @@ public class RecursiveInferenceTest {
                 "{$nameX value 'c';$nameY value 'ca';} or " +
                 "{$nameY value 'c';$nameX value 'ca';}; select $X, $Y;";
 
-<<<<<<< HEAD
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-=======
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
->>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
