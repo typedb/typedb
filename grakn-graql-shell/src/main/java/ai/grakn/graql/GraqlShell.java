@@ -504,6 +504,8 @@ public class GraqlShell {
             case ACTION_ERROR:
                 System.err.print(json.at(ERROR).asString());
                 break;
+            default:
+                throw new RuntimeException("Unrecognized message: " + json);
         }
     }
 
