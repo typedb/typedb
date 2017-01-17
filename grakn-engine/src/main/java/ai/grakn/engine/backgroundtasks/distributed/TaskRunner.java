@@ -23,11 +23,9 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -40,7 +38,6 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -56,12 +53,9 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.TASK_RUNNER_GROU
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -168,14 +162,17 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     private void processRecords(ConsumerRecords<String, String> records) {
         for(ConsumerRecord<String, String> record: records) {
-            LOG.debug("Got a record\n\t\tkey: "+record.key()+"\n\t\toffset "+record.offset()+"\n\t\tvalue "+record.value());
-            LOG.debug("Runner currently has tasks: "+getRunningTasksCount()+" allowed: "+EXECUTOR_SIZE);
+            LOG.debug("Received " + record.key() + "\n Runner currently has tasks: "+ getRunningTasksCount() + " allowed: "+ EXECUTOR_SIZE);
+
+            // Exit loop when TaskRunner capacity full
             if(getRunningTasksCount() >= EXECUTOR_SIZE) {
                 seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
                 break;
             }
 
             String id = record.key();
+            JSONObject configuration = new JSONObject(record.value());
+
             TaskStatus status = getStatus(id);
             if(status != SCHEDULED) {
                 LOG.debug("Cant schedule this task - " + id + " because\n\t\tstatus: "+ status);
@@ -187,17 +184,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
             updateTaskState(id, RUNNING, this.getClass().getName(), ENGINE_ID, null, null);
 
             // Submit to executor
-            try {
-                JSONObject configuration = new JSONObject(record.value());
-                executor.submit(() -> executeTask(id, configuration));
-            }
-            catch (RejectedExecutionException | NullPointerException e) {
-                removeRunningTask(id);
-                LOG.error(getFullStackTrace(e));
-            }
+            executor.submit(() -> executeTask(id, configuration));
 
             // Advance offset
-            LOG.debug("Runner next read from " + record.key() + " OFFSET " + (record.offset()+1) + " topic " + record.topic());
             seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset()+1);
         }
     }
