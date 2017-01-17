@@ -68,6 +68,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
+    private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
+
     private ExecutorService executor;
     private final Integer allowableRunningTasks;
     private final Set<String> runningTasks = new HashSet<>();
@@ -95,17 +97,15 @@ public class TaskRunner implements Runnable, AutoCloseable {
             while (running) {
                 printInitialization();
                 LOG.debug("TaskRunner polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(WORK_QUEUE_TOPIC).stream().map(i -> new TopicPartition(WORK_QUEUE_TOPIC, i.partition())).collect(toSet())));
+
                 // Poll for new tasks only when we know we have space to accept them.
                 if (getRunningTasksCount() < allowableRunningTasks) {
-                    ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ));
-                    processRecords(records);
-                } else {
-                    Thread.sleep(500);
+                    processRecords(consumer.poll(POLLING_FREQUENCY));
                 }
             }
 
         }
-        catch (WakeupException|InterruptedException e) {
+        catch (WakeupException e) {
             if (running) {
                 LOG.error("TaskRunner interrupted unexpectedly (without clearing 'running' flag first", e);
             } else {
@@ -154,7 +154,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             // Wait for thread calling run() to wakeup and close consumer.
             try {
-                waitToClose.await(5*properties.getPropertyAsLong(TASKRUNNER_POLLING_FREQ), MILLISECONDS);
+                waitToClose.await(5*POLLING_FREQUENCY, MILLISECONDS);
             } catch (Throwable t) {
                 LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
             }
@@ -216,9 +216,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
      * @return Boolean, true if task could be marked as running (and we should run), false otherwise.
      */
     private TaskStatus getStatus(String id) {
-        SynchronizedState state = zkStorage.getState(id);
-
-        return state.status();
+        return zkStorage.getState(id).status();
     }
 
     /**
@@ -258,10 +256,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
      * @return A Consumer<String> function that can be called by the background task on demand to save its checkpoint.
      */
     private Consumer<String> saveCheckpoint(String id) {
-        return checkpoint -> {
-            LOG.debug("Writing checkpoint");
-            updateTaskState(id, null, null, null, null, checkpoint);
-        };
+        return checkpoint -> updateTaskState(id, null, null, null, null, checkpoint);
     }
 
     private void updateTaskState(String id, TaskStatus status, String statusChangeBy, String engineID,
