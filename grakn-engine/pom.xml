@@ -111,6 +111,30 @@
             <artifactId>zookeeper</artifactId>
             <version>${zookeeper.version}</version>
         </dependency>
+        <dependency>
+            <groupId>info.batey.kafka</groupId>
+            <artifactId>kafka-unit</artifactId>
+            <version>${kafka-unit.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.21</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>${jline.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
