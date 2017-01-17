@@ -456,7 +456,7 @@ public class GraqlShell {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream(LICENSE_LOCATION);
 
-        Scanner scanner = new Scanner(is);
+        Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name());
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();
             result.append(line).append("\n");
