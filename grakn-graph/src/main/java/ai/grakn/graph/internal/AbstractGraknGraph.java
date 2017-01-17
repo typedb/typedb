@@ -728,11 +728,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
-            String error = ErrorMessage.VALIDATION.getMessage(errors.size());
+            StringBuilder error = new StringBuilder();
+            error.append(ErrorMessage.VALIDATION.getMessage(errors.size()));
             for (String s : errors) {
-                error += s;
+                error.append(s);
             }
-            throw new GraknValidationException(error);
+            throw new GraknValidationException(error.toString());
         }
     }
 
@@ -952,9 +953,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
 
         //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
-        for (RoleType roleType : rolePlayers.keySet()) {
-            if(rolePlayers.get(roleType).equals(other)){
-                rolePlayers.put(roleType, main);
+        for (Map.Entry<RoleType, Instance> rolePlayer : rolePlayers.entrySet()) {
+            if(rolePlayer.getValue().equals(other)){
+                rolePlayers.put(rolePlayer.getKey(), main);
             }
         }
 

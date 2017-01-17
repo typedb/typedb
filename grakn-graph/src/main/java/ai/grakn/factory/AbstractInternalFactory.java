@@ -23,7 +23,10 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Properties;
+
+import static javax.annotation.meta.When.MAYBE;
 
 /**
  * <p>
@@ -163,8 +166,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             }
         }
     }
-    protected G getGraphWithNewTransaction(G graph){
-        return graph;
-    }
+
+    @CheckReturnValue(when=MAYBE)
+    protected abstract G getGraphWithNewTransaction(G graph);
 
 }

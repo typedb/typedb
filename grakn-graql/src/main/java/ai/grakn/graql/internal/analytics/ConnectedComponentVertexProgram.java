@@ -176,7 +176,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                     }
                 } else {
                     // split the default case because shortcut edges cannot be filtered out
-                    if (memory.getIteration() % 2 == 1) {
+                    if (memory.getIteration() % 2 != 0) {
                         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                             update(vertex, messenger, memory);
                         }

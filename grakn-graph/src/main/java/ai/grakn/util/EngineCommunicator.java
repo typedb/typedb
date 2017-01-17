@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -70,7 +71,7 @@ public class EngineCommunicator {
                 if (body != null) {
                     connection.setDoOutput(true);
                     try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                        wr.write(body.getBytes());
+                        wr.write(body.getBytes(StandardCharsets.UTF_8));
                     }
                 }
 
@@ -79,7 +80,7 @@ public class EngineCommunicator {
                 }
 
                 //Reading from Connection
-                BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
                 StringBuilder sb = new StringBuilder();
                 String line;
                 while ((line = br.readLine()) != null) {

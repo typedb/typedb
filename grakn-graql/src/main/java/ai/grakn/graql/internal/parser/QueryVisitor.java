@@ -739,7 +739,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private long getInteger(TerminalNode integer) {
-        return Long.valueOf(integer.getText());
+        return Long.parseLong(integer.getText());
     }
 
     private Order getOrder(TerminalNode order) {

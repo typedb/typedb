@@ -70,4 +70,9 @@ class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, Ti
         }
         return super.graph;
     }
+
+    @Override
+    protected TinkerGraph getGraphWithNewTransaction(TinkerGraph graph) {
+        return graph;
+    }
 }
