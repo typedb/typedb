@@ -164,7 +164,6 @@ public class RecursiveInferenceTest {
                 +
                 "{$nameX value 'c';$nameY value 'ca';} or " +
                 "{$nameY value 'c';$nameX value 'ca';}; select $X, $Y;";
-
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }

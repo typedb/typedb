@@ -27,7 +27,7 @@ abs_path() {
     echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 }
 
-CASSANDRA_HOME=$(cd `abs_path`/.. && pwd)
+CASSANDRA_HOME=$(cd "`abs_path`"/.. && pwd)
 
 # The directory where Cassandra's configs live (required)
 CASSANDRA_CONF=$CASSANDRA_HOME/conf/cassandra
@@ -53,7 +53,7 @@ CLASSPATH="$CLASSPATH":"$CASSANDRA_HOME"/lib/slf4j-log4j12-1.7.5.jar
 
 for jar in "${CASSANDRA_HOME}"/lib/*.jar; do
     if [[ $jar != *slf4j-log4j12* ]] ; then
-        CLASSPATH="$CLASSPATH:$jar"
+        CLASSPATH="$CLASSPATH":"$jar"
     fi
 done
 
@@ -65,7 +65,7 @@ case "`uname`" in
     CYGWIN*) logdir="`echo $logdir | cygpath --windows --path -f -`" ;;
 esac
 
-export JVM_OPTS="$JVM_OPTS -Dtitan.logdir=$logdir"
+export JVM_OPTS+=("-Dtitan.logdir=$logdir")
 
 # Change to $CASSANDRA_HOME
 # (typically the directory containing bin/)

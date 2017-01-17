@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
+import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -102,15 +103,7 @@ public class GraphContext extends ExternalResource {
     }
 
     private void loadGraph() {
-        String keyspace;
-        if (usingOrientDB()) {
-            keyspace = "memory";
-        } else {
-            // Embedded Casandra has problems dropping keyspaces that start with a number
-            keyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-        }
-
-        graph = GraphFactory.getInstance().getGraph(keyspace);
+        graph = GraphFactory.getInstance().getGraph(randomKeyspace());
 
         // if data should be pre-loaded, load
         if(preLoad != null){

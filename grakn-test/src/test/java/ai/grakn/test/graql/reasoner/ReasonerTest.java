@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
@@ -26,8 +25,6 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -47,8 +44,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -535,9 +530,7 @@ public class ReasonerTest {
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
-        answers2.forEach(answer -> {
-            assertEquals(answer.size(), 3);
-        });
+        answers2.forEach(answer -> assertEquals(answer.size(), 3));
         assertEquals(answers.size(), answers2.size());
     }
 
@@ -550,9 +543,7 @@ public class ReasonerTest {
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
-        answers2.forEach(answer -> {
-            assertEquals(answer.size(), 3);
-        });
+        answers2.forEach(answer -> assertEquals(answer.size(), 3));
         assertEquals(answers.size(), answers2.size());
     }
 
