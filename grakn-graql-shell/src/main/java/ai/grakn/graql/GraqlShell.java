@@ -64,7 +64,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,6 +98,7 @@ import static ai.grakn.util.REST.WebPath.IMPORT_DATA_URI;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -147,6 +151,8 @@ public class GraqlShell {
     private Session session;
 
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
+
+    private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
 
     /**
      * Run a Graql REPL
@@ -238,7 +244,7 @@ public class GraqlShell {
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
-            System.err.println(e.toString());
+            System.err.println(getFullStackTrace(e));
         }
     }
 
@@ -322,7 +328,7 @@ public class GraqlShell {
             sendJson(initJson);
 
             // Wait to receive confirmation
-            waitForEnd();
+            handleMessagesFromServer();
 
             // If session has closed, then we couldn't authorise
             if (!session.isOpen()) {
@@ -483,37 +489,15 @@ public class GraqlShell {
             System.err.println("Websocket closed, code: " + statusCode + ", reason: " + reason);
         }
 
-        // Alert anyone waiting for a response that the connection has closed
-        synchronized (this) {
-            notifyAll();
-        }
+        // Add dummy end message from server
+        messages.add(Json.object(ACTION, ACTION_END));
     }
 
     @OnWebSocketMessage
     public void onMessage(String msg) {
+        System.out.println(msg);
         Json json = Json.read(msg);
-
-        switch (json.at(ACTION).asString()) {
-            case ACTION_QUERY:
-                String result = json.at(QUERY_RESULT).asString();
-                print(result);
-                break;
-            case ACTION_END:
-                // Alert the shell that the query has finished, so it can prompt for another query
-                synchronized (this) {
-                    notifyAll();
-                }
-                break;
-            case ACTION_TYPES:
-                Set<String> types = json.at(TYPES).asJsonList().stream().map(Json::asString).collect(toSet());
-                graqlCompleter.setTypes(types);
-                break;
-            case ACTION_ERROR:
-                System.err.print(json.at(ERROR).asString());
-                break;
-            default:
-                throw new RuntimeException("Unrecognized message: " + json);
-        }
+        messages.add(json);
     }
 
     private void ping() {
@@ -549,18 +533,52 @@ public class GraqlShell {
         }
 
         sendJson(Json.object(ACTION, ACTION_END));
-        waitForEnd();
+        handleMessagesFromServer();
     }
 
-    private void waitForEnd() {
-        // Wait until the command is executed before continuing
-        synchronized (this) {
+    private void handleMessagesFromServer() {
+        boolean isEndMessage;
+
+        do {
+            Json message;
             try {
-                wait();
+                message = messages.poll(5, TimeUnit.MINUTES);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.err.println(e.getMessage());
+                return;
             }
+            isEndMessage = handleMessage(message);
+        } while (!isEndMessage);
+    }
+
+    /**
+     * Handle the given server message
+     * @param message the message to handle
+     * @return whether this is an end message
+     */
+    private boolean handleMessage(Json message) {
+        switch (message.at(ACTION).asString()) {
+            case ACTION_QUERY:
+                String result = message.at(QUERY_RESULT).asString();
+                print(result);
+                break;
+            case ACTION_END:
+                return true;
+            case ACTION_TYPES:
+                Set<String> types = message.at(TYPES).asJsonList().stream().map(Json::asString).collect(toSet());
+                graqlCompleter.setTypes(types);
+                break;
+            case ACTION_ERROR:
+                System.err.print(message.at(ERROR).asString());
+                break;
+            case ACTION_PING:
+                // Ignore
+                break;
+            default:
+                throw new RuntimeException("Unrecognized message: " + message);
         }
+
+        return false;
     }
 
     private void setDisplayOptions(Set<String> displayOptions) {
@@ -572,7 +590,7 @@ public class GraqlShell {
 
     private void commit() {
         sendJson(Json.object(ACTION, ACTION_COMMIT));
-        waitForEnd();
+        handleMessagesFromServer();
     }
 
     private void rollback() {
