@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.shell.ShellCommandCompleter;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import jline.console.ConsoleReader;
@@ -128,9 +129,10 @@ public class GraqlShell {
     /**
      * Array of available commands in shell
      */
-    public static final String[] COMMANDS = {
-        EDIT_COMMAND, ROLLBACK_COMMAND, COMMIT_COMMAND, LOAD_COMMAND, CLEAR_COMMAND, EXIT_COMMAND
-    };
+    public static final ImmutableList<String> COMMANDS = ImmutableList.of(
+            EDIT_COMMAND, COMMIT_COMMAND, ROLLBACK_COMMAND, LOAD_COMMAND, DISPLAY_COMMAND, CLEAR_COMMAND, EXIT_COMMAND,
+            LICENSE_COMMAND
+    );
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
     private static final String HISTORY_FILENAME = "/graql-history";
