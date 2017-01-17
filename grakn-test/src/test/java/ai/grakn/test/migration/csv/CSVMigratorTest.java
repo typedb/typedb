@@ -53,7 +53,7 @@ public class CSVMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
     }
 
     @Test

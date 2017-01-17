@@ -51,7 +51,7 @@ public class VisualiserControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception{
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
 
         loadFromFile(graph, "genealogy/ontology.gql");
         loadFromFile(graph, "genealogy/data.gql");

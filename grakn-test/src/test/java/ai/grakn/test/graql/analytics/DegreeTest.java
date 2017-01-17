@@ -198,7 +198,7 @@ public class DegreeTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // create a simple context.graph()
+        // create a simple graph
         RoleType pet = context.graph().putRoleType("pet");
         RoleType owner = context.graph().putRoleType("owner");
         context.graph().putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
@@ -221,7 +221,7 @@ public class DegreeTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // create a simple context.graph()
+        // create a simple graph
         RoleType pet = context.graph().putRoleType("pet");
         RoleType owner = context.graph().putRoleType("owner");
         RelationType mansBestFriend = context.graph().putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
@@ -234,7 +234,7 @@ public class DegreeTest {
         ResourceType<String> altName =
                 context.graph().putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
 
-        // add data to the context.graph()
+        // add data to the graph
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
         Resource coconut = name.putResource("coconut");
@@ -292,7 +292,7 @@ public class DegreeTest {
                 }
         ));
 
-        // full context.graph()
+        // full graph
         degrees = context.graph().graql().compute().degree().execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -308,7 +308,7 @@ public class DegreeTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // create a simple context.graph()
+        // create a simple graph
         RoleType pet = context.graph().putRoleType("pet");
         RoleType owner = context.graph().putRoleType("owner");
         RoleType breeder = context.graph().putRoleType("breeder");
@@ -347,7 +347,7 @@ public class DegreeTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // create a simple context.graph()
+        // create a simple graph
         RoleType pet = context.graph().putRoleType("pet");
         RoleType owner = context.graph().putRoleType("owner");
         RelationType mansBestFriend = context.graph().putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
@@ -367,7 +367,7 @@ public class DegreeTest {
                 context.graph().putResourceType("start-date", ResourceType.DataType.STRING).playsRole(ownershipResource);
         mansBestFriend.playsRole(ownership);
 
-        // add data to the context.graph()
+        // add data to the graph
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
         Resource coconut = name.putResource("coconut");
@@ -408,7 +408,7 @@ public class DegreeTest {
                 }
         ));
 
-        // create subcontext.graph() without assertion on assertion
+        // create subgraph without assertion on assertion
         ct.clear();
         ct.add(TypeName.of("animal"));
         ct.add(TypeName.of("person"));
@@ -466,7 +466,7 @@ public class DegreeTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // create a simple context.graph()
+        // create a simple graph
         RoleType pet = context.graph().putRoleType("pet");
         RoleType owner = context.graph().putRoleType("owner");
         RoleType breeder = context.graph().putRoleType("breeder");
@@ -508,7 +508,7 @@ public class DegreeTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // create a simple context.graph()
+        // create a simple graph
         RoleType pet = context.graph().putRoleType("pet");
         RoleType owner = context.graph().putRoleType("owner");
         RoleType breeder = context.graph().putRoleType("breeder");

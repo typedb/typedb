@@ -55,7 +55,7 @@ public class SQLMigratorMainTest {
 
     @Before
     public void setup() throws SQLException {
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
         connection = setupExample(graph, "pets");
     }
 

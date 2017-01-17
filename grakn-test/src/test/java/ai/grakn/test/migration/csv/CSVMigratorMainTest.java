@@ -47,7 +47,7 @@ public class CSVMigratorMainTest {
 
     @Before
     public void setup(){
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
         load(graph, getFile("csv", "pets/schema.gql"));
     }
 
