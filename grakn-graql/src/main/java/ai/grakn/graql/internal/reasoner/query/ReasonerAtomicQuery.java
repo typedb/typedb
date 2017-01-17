@@ -65,7 +65,6 @@ import org.slf4j.LoggerFactory;
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Atom atom;
-    private ReasonerAtomicQuery parent = null;
     final private QueryAnswers answers = new QueryAnswers();
     final private QueryAnswers newAnswers = new QueryAnswers();
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
@@ -83,7 +82,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerAtomicQuery(ReasonerAtomicQuery q){
         super(q);
         atom = selectAtoms().stream().findFirst().orElse(null);
-        parent = q.getParent();
     }
 
     public ReasonerAtomicQuery(Atom at, Set<VarName> vars) {
@@ -103,11 +101,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery a2 = (ReasonerAtomicQuery) obj;
         return this.isEquivalent(a2);
     }
-
-    /**
-     * @return the parent (more specific related query) of this query
-     */
-    public ReasonerAtomicQuery getParent(){ return parent;}
 
     /**
      * @return the atom constituting this atomic query
