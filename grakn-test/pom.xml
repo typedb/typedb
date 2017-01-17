@@ -101,16 +101,19 @@
                             <artifactId>logback-classic</artifactId>
                         </exclusion>
                     </exclusions>
+                    <scope>test</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.cassandraunit</groupId>
                     <artifactId>cassandra-unit</artifactId>
                     <version>${cassandra-unit.version}</version>
+                    <scope>test</scope>
                 </dependency>
                 <dependency>
                     <groupId>com.datastax.cassandra</groupId>
                     <artifactId>cassandra-driver-core</artifactId>
                     <version>3.1.2</version>
+                    <scope>test</scope>
                 </dependency>
             </dependencies>
         </profile>
@@ -125,6 +128,7 @@
                     <groupId>ai.grakn</groupId>
                     <artifactId>grakn-orientdb-factory</artifactId>
                     <version>${project.version}</version>
+                    <scope>test</scope>
                 </dependency>
             </dependencies>
         </profile>
@@ -149,6 +153,7 @@
                             <artifactId>logback-classic</artifactId>
                         </exclusion>
                     </exclusions>
+                    <scope>test</scope>
                 </dependency>
             </dependencies>
             <build>
