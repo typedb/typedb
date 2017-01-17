@@ -156,12 +156,8 @@ public abstract class GraknTestEnv {
     }
 
     static String randomKeyspace(){
-        if (usingOrientDB()) {
-            return "memory";
-        } else {
-            // Embedded Casandra has problems dropping keyspaces that start with a number
-            return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-        }
+        // Embedded Casandra has problems dropping keyspaces that start with a number
+        return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
     static void hideLogs() {

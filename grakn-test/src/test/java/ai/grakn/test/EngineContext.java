@@ -26,7 +26,10 @@ import ai.grakn.engine.util.ConfigProperties;
 import org.junit.rules.ExternalResource;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
-import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
+import static ai.grakn.test.GraknTestEnv.randomKeyspace;
+import static ai.grakn.test.GraknTestEnv.startEngine;
+import static ai.grakn.test.GraknTestEnv.stopEngine;
 
 /**
  * <p>
