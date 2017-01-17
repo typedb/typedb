@@ -69,7 +69,7 @@ public class LoaderTest {
     @Before
     public void setup() {
         //TODO fix this
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
         loader = new Loader(graph.getKeyspace());
         loadOntology(graph.getKeyspace());
     }

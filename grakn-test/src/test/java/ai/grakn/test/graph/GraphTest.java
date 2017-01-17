@@ -8,7 +8,6 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.test.EngineContext;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -83,7 +82,7 @@ public class GraphTest {
 
     @Test
     public void isClosedTest() throws Exception {
-        GraknGraph graph = engine.getNewGraph();
+        GraknGraph graph = engine.graphWithNewKeyspace();
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
         graph.commit();

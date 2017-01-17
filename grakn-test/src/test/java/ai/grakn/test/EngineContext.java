@@ -41,7 +41,7 @@ public class EngineContext extends ExternalResource {
         return new EngineContext();
     }
 
-    public GraknGraph getNewGraph(){
+    public GraknGraph graphWithNewKeyspace(){
         return factoryWithNewKeyspace().getGraph();
     }
 

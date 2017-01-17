@@ -56,7 +56,7 @@ public class JsonMigratorMainTest {
 
     @Before
     public void setup() {
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
         load(graph, getFile("json", "simple-schema/schema.gql"));
     }
 
