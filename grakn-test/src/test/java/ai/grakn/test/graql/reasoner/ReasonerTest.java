@@ -386,12 +386,16 @@ public class ReasonerTest {
                 "}; select $x, $y, $type;";
         MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
+<<<<<<< HEAD
         assertQueriesEqual(query, query2);
+=======
+        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+>>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
     }
 
     //TODO loses type variable as non-core types are not unified in rules
-    @Test
     @Ignore
+    @Test
     public void testPlaysRole2(){
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
         String queryString2 = "match $x isa person;$y isa $type;{$type type-name 'product';} or {$type type-name 'tag';};($x, $y) isa recommendation;";
@@ -541,8 +545,6 @@ public class ReasonerTest {
         assertEquals(answers.size(), answers2.size());
     }
 
-    //TODO need answer extrapolation
-    @Ignore
     @Test
     public void testRelationVariable2(){
         String queryString = "match ($x, $y) isa is-located-in;";
@@ -802,6 +804,27 @@ public class ReasonerTest {
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
         assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testAmbiguousRolePlayers(){
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        MatchQuery query = geoGraph.graph().graql().parse(queryString);
+        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        assertTrue(answers2.containsAll(answers));
+        assertTrue(2*answers.size() == answers2.size());
+    }
+
+    @Test
+    public void testAmbiguousRolePlayersWithSub(){
+        String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
+        MatchQuery query = geoGraph.graph().graql().parse(queryString);
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = queryAnswers(query);
+        assertEquals(answers, answers2);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

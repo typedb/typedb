@@ -120,8 +120,13 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa Person, has name $name;" +
                 "{$name value 'a';} or {$name value 'aaa';} or {$name value 'aab';} or {$name value 'aaaa';};select $Y;";
 
+<<<<<<< HEAD
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+=======
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+>>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
     }
 
     @Test
@@ -147,21 +152,31 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
         String queryString = "match ($X, $Y) isa Ancestor;";
         String explicitQuery = "match $Y isa Person, has name $nameY; $X isa Person, has name $nameX;" +
-                "{$nameX value 'a';$nameY value 'aa';} or {$nameX value 'a';$nameY value 'ab';} or" +
-                "{$nameX value 'a';$nameY value 'aaa';} or {$nameX value 'a';$nameY value 'aab';} or" +
-                "{$nameX value 'a';$nameY value 'aaaa';} or {$nameY value 'a';$nameX value 'aa';} or" +
+                "{$nameX value 'a';$nameY value 'aa';} or " +
+                "{$nameX value 'a';$nameY value 'ab';} or {$nameX value 'a';$nameY value 'aaa';} or" +
+                "{$nameX value 'a';$nameY value 'aab';} or {$nameX value 'a';$nameY value 'aaaa';} or " +
+                "{$nameY value 'a';$nameX value 'aa';} or" +
                 "{$nameY value 'a';$nameX value 'ab';} or {$nameY value 'a';$nameX value 'aaa';} or" +
-                "{$nameY value 'a';$nameX value 'aab';} or {$nameY value 'a';$nameX value 'aaaa';} or " +
+                "{$nameY value 'a';$nameX value 'aab';} or {$nameY value 'a';$nameX value 'aaaa';} or "
+                +
                 "{$nameX value 'aa';$nameY value 'aaa';} or {$nameX value 'aa';$nameY value 'aab';} or" +
-                "{$nameX value 'aa';$nameY value 'aaaa';} or {$nameY value 'aa';$nameX value 'aaa';} or" +
-                "{$nameY value 'aa';$nameX value 'aab';} or {$nameY value 'aa';$nameX value 'aaaa';} or " +
+                "{$nameX value 'aa';$nameY value 'aaaa';} or " +
+                "{$nameY value 'aa';$nameX value 'aaa';} or {$nameY value 'aa';$nameX value 'aab';} or" +
+                "{$nameY value 'aa';$nameX value 'aaaa';} or "
+                +
                 "{$nameX value 'aaa';$nameY value 'aaaa';} or " +
-                "{$nameY value 'aaa';$nameX value 'aaaa';} or " +
+                "{$nameY value 'aaa';$nameX value 'aaaa';} or "
+                +
                 "{$nameX value 'c';$nameY value 'ca';} or " +
                 "{$nameY value 'c';$nameX value 'ca';}; select $X, $Y;";
 
+<<<<<<< HEAD
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+=======
+        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+>>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/

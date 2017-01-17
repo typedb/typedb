@@ -165,16 +165,21 @@ public class GenealogyTest {
         assertEquals(answers, answers2);
     }
 
-    //It is expected that results are different due to how rules are defined
-    @Ignore
     @Test
     public void testParentship2() {
         String queryString = "match (child: $x, $y) isa parentship;select $x;";
         String queryString2 = "match (child: $x) isa parentship;";
+<<<<<<< HEAD
 
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.parse(queryString2));
         answers.forEach(answer -> assertEquals(answer.size(), 2));
+=======
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+>>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
@@ -215,8 +220,6 @@ public class GenealogyTest {
         assertEquals(answers, answers2);
     }
 
-    //TODO need to do all combinations for roles missing
-    @Ignore
     @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
@@ -474,9 +477,16 @@ public class GenealogyTest {
     @Test
     public void testFemaleFather() {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g value 'female';";
+<<<<<<< HEAD
         MatchQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
+=======
+        MatchQuery query = qb.parse(queryString);
+        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+>>>>>>> 3fb7abcd46f83128c9c500e7b61b19d296cfd5b7
         assertTrue(answers.isEmpty());
+        assertEquals(answers, answers2);
     }
 
 

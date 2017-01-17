@@ -23,10 +23,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 
@@ -35,7 +31,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.Utility.capture;
 
@@ -113,25 +108,6 @@ public abstract class BinaryBase extends Atom {
         BinaryBase a2 = (BinaryBase) obj;
         return Objects.equals(this.typeId, a2.getTypeId())
                 && predicatesEquivalent(a2);
-    }
-
-    @Override
-    public Set<IdPredicate> getIdPredicates() {
-        //direct predicates
-        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
-                .filter(atom -> containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<ValuePredicate> getValuePredicates(){ return new HashSet<>();}
-
-    @Override
-    public Set<Predicate> getPredicates() {
-        Set<Predicate> predicates = new HashSet<>();
-        predicates.addAll(getValuePredicates());
-        predicates.addAll(getIdPredicates());
-        return predicates;
     }
 
     /**

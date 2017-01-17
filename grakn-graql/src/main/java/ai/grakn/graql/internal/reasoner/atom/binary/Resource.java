@@ -28,12 +28,10 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -103,9 +101,9 @@ public class Resource extends MultiPredicateBinary{
 
     @Override
     public Set<ValuePredicate> getValuePredicates(){
-        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getValueVariable()))
-                .collect(Collectors.toSet());
+        Set<ValuePredicate> valuePredicates = super.getValuePredicates();
+        getMultiPredicate().stream().map(p -> (ValuePredicate) p).forEach(valuePredicates::add);
+        return valuePredicates;
     }
 
     @Override

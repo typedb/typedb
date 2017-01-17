@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -147,18 +148,30 @@ public abstract class Atom extends AtomBase {
     /**
      * @return set of predicates relevant to this atom
      */
-    public abstract Set<Predicate> getPredicates();
+    public Set<Predicate> getPredicates() {
+        Set<Predicate> predicates = new HashSet<>();
+        predicates.addAll(getValuePredicates());
+        predicates.addAll(getIdPredicates());
+        return predicates;
+    }
 
     /**
      * @return set of id predicates relevant to this atom
      */
-    public abstract Set<IdPredicate> getIdPredicates();
+    public Set<IdPredicate> getIdPredicates() {
+        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+    }
 
     /**
      * @return set of value predicates relevant to this atom
      */
-    public abstract Set<ValuePredicate> getValuePredicates();
-
+    public Set<ValuePredicate> getValuePredicates(){
+        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
+            .filter(atom -> atom.getVarName().equals(getValueVariable()))
+            .collect(Collectors.toSet());
+    }
 
     /**
      * @return set of types relevant to this atom
