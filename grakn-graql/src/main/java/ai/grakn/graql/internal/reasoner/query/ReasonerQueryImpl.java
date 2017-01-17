@@ -236,9 +236,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toRemove.forEach(this::removeAtom);
         toAdd.forEach(atom -> atom.unify(ImmutableMap.of(from, to)));
         toAdd.forEach(this::addAtom);
-
-        Map<VarName, VarName> mapping = new HashMap<>();
-        mapping.put(from, to);
     }
 
     /**
