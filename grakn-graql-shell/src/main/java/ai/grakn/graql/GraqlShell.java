@@ -372,11 +372,7 @@ public class GraqlShell {
             if (!success) print(ErrorMessage.COULD_NOT_CREATE_TEMP_FILE.getMessage());
         }
 
-        // Create history file
-        File historyFile = new File(System.getProperty("java.io.tmpdir") + historyFilename);
-        historyFile.createNewFile();
-        FileHistory history = new FileHistory(historyFile);
-        console.setHistory(history);
+        setupHistory();
 
         // Add all autocompleters
         console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
@@ -386,8 +382,6 @@ public class GraqlShell {
         java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
 
         while ((queryString = console.readLine()) != null) {
-            history.flush();
-
             Matcher matcher = commandPattern.matcher(queryString);
 
             if (matcher.matches()) {
@@ -443,6 +437,25 @@ public class GraqlShell {
 
             executeQuery(queryString);
         }
+    }
+
+    private boolean setupHistory() throws IOException {
+        // Create history file
+        File historyFile = new File(System.getProperty("java.io.tmpdir") + historyFilename);
+        boolean fileCreated = historyFile.createNewFile();
+        FileHistory history = new FileHistory(historyFile);
+        console.setHistory(history);
+
+        // Make sure history is saved on shutdown
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                history.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+
+        return fileCreated;
     }
 
     private void printLicense(){
