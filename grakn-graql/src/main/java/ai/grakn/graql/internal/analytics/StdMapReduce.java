@@ -43,12 +43,10 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
-        if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
+        if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(3);
             Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
-            double value =
-                    ((Number) vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY))).doubleValue();
+            double value = resourceValue(vertex);
             tuple.put(SUM, value * degree);
             tuple.put(SQUARE_SUM, value * value * degree);
             tuple.put(COUNT, degree);
@@ -63,18 +61,17 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
     }
 
     @Override
-    public void reduce(final Serializable key, final Iterator<Map<String, Double>> values,
-                       final ReduceEmitter<Serializable, Map<String, Double>> emitter) {
+    Map<String, Double> reduceValues(Iterator<Map<String, Double>> values) {
         Map<String, Double> emptyTuple = new HashMap<>(3);
         emptyTuple.put(SUM, 0D);
         emptyTuple.put(SQUARE_SUM, 0D);
         emptyTuple.put(COUNT, 0D);
-        emitter.emit(key, IteratorUtils.reduce(values, emptyTuple,
+        return IteratorUtils.reduce(values, emptyTuple,
                 (a, b) -> {
                     a.put(COUNT, a.get(COUNT) + b.get(COUNT));
                     a.put(SUM, a.get(SUM) + b.get(SUM));
                     a.put(SQUARE_SUM, a.get(SQUARE_SUM) + b.get(SQUARE_SUM));
                     return a;
-                }));
+                });
     }
 }

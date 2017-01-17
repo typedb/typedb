@@ -21,10 +21,13 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 public class Utility {
@@ -78,16 +81,31 @@ public class Utility {
     }
 
     /**
-     * A helper method for String MapReduce. It simply combines sets of strings into one set.
+     * A helper method for set MapReduce. It simply combines sets into one set.
      *
      * @param values the aggregated values associated with the key
+     * @Param <T> the type of the set
      * @return the combined set
      */
-    static Set<String> reduceString(Iterator<Set<String>> values) {
-        Set<String> set = new HashSet<>();
+    static <T> Set<T> reduceSet(Iterator<Set<T>> values) {
+        Set<T> set = new HashSet<>();
         while (values.hasNext()) {
             set.addAll(values.next());
         }
         return set;
+    }
+
+    /**
+     * Transforms an iterator of key-value pairs into a map
+     *
+     * @param keyValues an iterator of key-value pairs
+     * @param <K> the type of the keys
+     * @param <V> the type of the values
+     * @return the resulting map
+     */
+    static <K, V> Map<K, V> keyValuesToMap(Iterator<KeyValue<K, V>> keyValues) {
+        Map<K, V> map = new HashMap<>();
+        keyValues.forEachRemaining(pair -> map.put(pair.getKey(), pair.getValue()));
+        return map;
     }
 }

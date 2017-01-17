@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
@@ -28,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -72,12 +72,19 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     @Override
-    public void map(Vertex vertex, MapEmitter<Serializable, T> emitter) {
+    public final void map(Vertex vertex, MapEmitter<Serializable, T> emitter) {
         // try to deal with ghost vertex issues by ignoring them
         if (Utility.isAlive(vertex)) {
             safeMap(vertex, emitter);
         }
     }
+
+    @Override
+    public final void reduce(Serializable key, Iterator<T> values, ReduceEmitter<Serializable, T> emitter) {
+        emitter.emit(key, reduceValues(values));
+    }
+
+    abstract T reduceValues(Iterator<T> values);
 
     @Override
     public String getMemoryKey() {
@@ -102,14 +109,25 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     @Override
-    public void combine(Serializable key, Iterator<T> values, ReduceEmitter<Serializable, T> emitter) {
+    public final void combine(Serializable key, Iterator<T> values, ReduceEmitter<Serializable, T> emitter) {
        this.reduce(key, values, emitter);
     }
 
     @Override
     public Map<Serializable, T> generateFinalResult(Iterator<KeyValue<Serializable, T>> iterator) {
-        final Map<Serializable, T> result = new HashMap<>();
-        iterator.forEachRemaining(pair -> result.put(pair.getKey(), pair.getValue()));
-        return result;
+        return Utility.keyValuesToMap(iterator);
+    }
+
+    final boolean resourceIsValid(Vertex vertex) {
+        boolean isSelected = selectedTypes.contains(Utility.getVertexType(vertex));
+        return isSelected && vertex.<Long>value(DegreeVertexProgram.DEGREE) > 0;
+    }
+
+    final <V> V resourceValue(Vertex vertex) {
+        return vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY));
+    }
+
+    final boolean usingLong() {
+        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName());
     }
 }

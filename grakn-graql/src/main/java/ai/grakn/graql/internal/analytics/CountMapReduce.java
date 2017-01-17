@@ -53,8 +53,7 @@ public class CountMapReduce extends GraknMapReduce<Long> {
     }
 
     @Override
-    public void reduce(final Serializable key, final Iterator<Long> values,
-                       final ReduceEmitter<Serializable, Long> emitter) {
-        emitter.emit(key, IteratorUtils.reduce(values, 0L, (a, b) -> a + b));
+    Long reduceValues(Iterator<Long> values) {
+        return IteratorUtils.reduce(values, 0L, (a, b) -> a + b);
     }
 }

@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -39,9 +38,8 @@ public class SumMapReduce extends GraknMapReduce<Number> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
-        if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
-            if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                    ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
+        if (usingLong()) {
+            if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
                         ((Long) vertex.value(Schema.ConceptProperty.VALUE_LONG.name())) *
                                 ((Long) vertex.value(DegreeVertexProgram.DEGREE)));
@@ -49,8 +47,7 @@ public class SumMapReduce extends GraknMapReduce<Number> {
             }
             emitter.emit(NullObject.instance(), 0L);
         } else {
-            if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                    ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
+            if (resourceIsValid(vertex)) {
                 emitter.emit(NullObject.instance(),
                         ((Double) vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name())) *
                                 ((Long) vertex.value(DegreeVertexProgram.DEGREE)));
@@ -61,14 +58,11 @@ public class SumMapReduce extends GraknMapReduce<Number> {
     }
 
     @Override
-    public void reduce(final Serializable key, final Iterator<Number> values,
-                       final ReduceEmitter<Serializable, Number> emitter) {
-        if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
-            emitter.emit(key, IteratorUtils.reduce(values, 0L,
-                    (a, b) -> a.longValue() + b.longValue()));
+    Number reduceValues(Iterator<Number> values) {
+        if (usingLong()) {
+            return IteratorUtils.reduce(values, 0L, (a, b) -> a.longValue() + b.longValue());
         } else {
-            emitter.emit(key, IteratorUtils.reduce(values, 0D,
-                    (a, b) -> a.doubleValue() + b.doubleValue()));
+            return IteratorUtils.reduce(values, 0D, (a, b) -> a.doubleValue() + b.doubleValue());
         }
     }
 }

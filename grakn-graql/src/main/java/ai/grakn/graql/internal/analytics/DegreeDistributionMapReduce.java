@@ -24,12 +24,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.Utility.reduceString;
+import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
 
 public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
@@ -43,24 +42,20 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-            emitter.emit(vertex.value(DegreeVertexProgram.DEGREE),
-                    Collections.singleton(vertex.id().toString()));
-            return;
+            emitter.emit(vertex.value(DegreeVertexProgram.DEGREE), Collections.singleton(vertex.id().toString()));
+        } else {
+            emitter.emit(NullObject.instance(), Collections.emptySet());
         }
-        emitter.emit(NullObject.instance(), Collections.emptySet());
     }
 
     @Override
-    public void reduce(final Serializable key, final Iterator<Set<String>> values,
-                       final ReduceEmitter<Serializable, Set<String>> emitter) {
-        Set<String> set = reduceString(values);
-        emitter.emit(key, set);
+    Set<String> reduceValues(Iterator<Set<String>> values) {
+        return reduceSet(values);
     }
 
     @Override
     public Map<Serializable, Set<String>> generateFinalResult(Iterator<KeyValue<Serializable, Set<String>>> keyValues) {
-        final Map<Serializable, Set<String>> clusterPopulation = new HashMap<>();
-        keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+        final Map<Serializable, Set<String>> clusterPopulation = Utility.keyValuesToMap(keyValues);
         clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }

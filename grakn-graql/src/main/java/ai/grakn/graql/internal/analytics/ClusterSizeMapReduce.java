@@ -57,23 +57,22 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     }
 
     @Override
-    public void reduce(final Serializable key, final Iterator<Long> values,
-                       final ReduceEmitter<Serializable, Long> emitter) {
-        emitter.emit(key, IteratorUtils.reduce(values, 0L,
-                (a, b) -> a + b));
+    Long reduceValues(Iterator<Long> values) {
+        return IteratorUtils.reduce(values, 0L, (a, b) -> a + b);
     }
 
     @Override
     public Map<Serializable, Long> generateFinalResult(Iterator<KeyValue<Serializable, Long>> keyValues) {
-        final Map<Serializable, Long> clusterPopulation = new HashMap<>();
+        final Map<Serializable, Long> clusterPopulation;
         if (this.persistentProperties.containsKey(CLUSTER_SIZE)) {
+            clusterPopulation = new HashMap<>();
             keyValues.forEachRemaining(pair -> {
                 if (pair.getValue().equals(persistentProperties.get(CLUSTER_SIZE))) {
                     clusterPopulation.put(pair.getKey(), pair.getValue());
                 }
             });
         } else {
-            keyValues.forEachRemaining(pair -> clusterPopulation.put(pair.getKey(), pair.getValue()));
+            clusterPopulation = Utility.keyValuesToMap(keyValues);
         }
         clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
