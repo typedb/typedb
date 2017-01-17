@@ -181,26 +181,31 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql-shell</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jayway.restassured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>${rest-assured.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
             <version>${commons-collections.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>${commons-csv.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- migration -->
@@ -208,6 +213,7 @@
             <groupId>ai.grakn</groupId>
             <artifactId>migration-sql</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
@@ -219,6 +225,7 @@
             <groupId>ai.grakn</groupId>
             <artifactId>migration-csv</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -234,21 +241,25 @@
                     <artifactId>jackson-annotations</artifactId>
                 </exclusion>
             </exclusions>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-json</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-export</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-base</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.owlapi</groupId>
@@ -296,16 +307,19 @@
                             <artifactId>logback-classic</artifactId>
                         </exclusion>
                     </exclusions>
+                    <scope>test</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.cassandraunit</groupId>
                     <artifactId>cassandra-unit</artifactId>
                     <version>${cassandra-unit.version}</version>
+                    <scope>test</scope>
                 </dependency>
                 <dependency>
                     <groupId>com.datastax.cassandra</groupId>
                     <artifactId>cassandra-driver-core</artifactId>
                     <version>3.1.2</version>
+                    <scope>test</scope>
                 </dependency>
 
     </dependencies>
