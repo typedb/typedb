@@ -24,7 +24,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -51,9 +50,9 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
             emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)), 1L);
-            return;
+        } else {
+            emitter.emit(NullObject.instance(), 0L);
         }
-        emitter.emit(NullObject.instance(), 0L);
     }
 
     @Override
@@ -63,17 +62,11 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
 
     @Override
     public Map<Serializable, Long> generateFinalResult(Iterator<KeyValue<Serializable, Long>> keyValues) {
-        final Map<Serializable, Long> clusterPopulation;
         if (this.persistentProperties.containsKey(CLUSTER_SIZE)) {
-            clusterPopulation = new HashMap<>();
-            keyValues.forEachRemaining(pair -> {
-                if (pair.getValue().equals(persistentProperties.get(CLUSTER_SIZE))) {
-                    clusterPopulation.put(pair.getKey(), pair.getValue());
-                }
-            });
-        } else {
-            clusterPopulation = Utility.keyValuesToMap(keyValues);
+            long clusterSize = (long) persistentProperties.get(CLUSTER_SIZE);
+            keyValues = IteratorUtils.filter(keyValues, pair -> pair.getValue().equals(clusterSize));
         }
+        final Map<Serializable, Long> clusterPopulation = Utility.keyValuesToMap(keyValues);
         clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }
