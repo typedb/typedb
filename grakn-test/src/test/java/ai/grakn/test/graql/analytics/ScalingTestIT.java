@@ -20,7 +20,6 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
@@ -88,7 +87,6 @@ public class ScalingTestIT {
             {Grakn.DEFAULT_URI};
 
     String keyspace;
-    private GraknGraphFactory factory;
     Logger LOGGER;
 
     // test parameters
@@ -118,7 +116,7 @@ public class ScalingTestIT {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        keyspace = context.getNewGraph().getKeyspace();
+        keyspace = context.graphWithNewKeyspace().getKeyspace();
 
         headers = new ArrayList<>();
         headers.add("Size");
@@ -289,7 +287,9 @@ public class ScalingTestIT {
             }
             loader.waitToFinish(60000);
             LOGGER.info("stop loading data");
-            LOGGER.info("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
+            GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+            LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
+            graph.close();
 
             for (String method : methods) {
                 printers.get(method).print(2 * g * nodesPerStep);
@@ -354,7 +354,9 @@ public class ScalingTestIT {
             printers.get(method).flush();
             printers.get(method).close();
         }
-        factory.getGraph().clear();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph.clear();
+        graph.close();
     }
 
     private double meanOfSequence(long currentG, long nodesPerStep, long totalSteps) {
