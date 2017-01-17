@@ -331,7 +331,7 @@ class GraqlSession {
     private void sendTypes() {
         sendJson(Json.object(
                 ACTION, ACTION_TYPES,
-                TYPES, getTypes(graph).collect(toList())
+                TYPES, getTypes(graph).map(TypeName::getValue).collect(toList())
         ));
     }
 
