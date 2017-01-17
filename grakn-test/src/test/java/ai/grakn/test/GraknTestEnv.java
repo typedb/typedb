@@ -114,10 +114,6 @@ public abstract class GraknTestEnv {
     static void stopHTTP(){
         if(HTTP_RUNNING.compareAndSet(true, false)) {
             GraknEngineServer.stopHTTP();
-            // The Spark framework we are using kicks off a shutdown process in a separate
-            // thread and there is not way to detect when it is finished. The only option
-            // we have is to "wait a while" (Boris).
-            try {Thread.sleep(5000);} catch(InterruptedException ex) { Log.info("Thread sleep interrupted."); }
         }
     }
 
