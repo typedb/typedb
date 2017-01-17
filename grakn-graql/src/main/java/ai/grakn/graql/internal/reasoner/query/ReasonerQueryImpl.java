@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -171,21 +172,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public Set<IdPredicate> getIdPredicates(){
         return getAtoms().stream()
-                .filter(Atomic::isPredicate)
-                .map(at -> (Predicate) at)
-                .filter(Predicate::isIdPredicate)
-                .map(predicate -> (IdPredicate) predicate)
+                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+                .filter(Predicate::isIdPredicate).map(predicate -> (IdPredicate) predicate)
                 .collect(Collectors.toSet());
     }
 
     /**
      * @return set of value predicates contained in this query
      */
-    public Set<Predicate> getValuePredicates(){
+    public Set<ValuePredicate> getValuePredicates(){
         return getAtoms().stream()
-                .filter(Atomic::isPredicate)
-                .map(at -> (Predicate) at)
-                .filter(Predicate::isValuePredicate)
+                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
+                .filter(Predicate::isValuePredicate).map(at -> (ValuePredicate) at)
                 .collect(Collectors.toSet());
     }
 

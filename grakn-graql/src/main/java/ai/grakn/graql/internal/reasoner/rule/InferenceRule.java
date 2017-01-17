@@ -24,10 +24,11 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.HashSet;
 import javafx.util.Pair;
 
 import java.util.Map;
@@ -80,14 +81,14 @@ public class InferenceRule {
             Set<Atom> types = parentAtom.getTypeConstraints().stream()
                     .filter(type -> !body.containsEquivalentAtom(type))
                     .collect(Collectors.toSet());
-            Set<Predicate> predicates = parentAtom.getPredicates();
-            if(parentAtom.isResource()) {
-                predicates.addAll(((Resource) parentAtom).getMultiPredicate());
-            }
+            //get all predicates apart from those that correspond to role players with ambiguous role types
+            Set<VarName> unmappedVars = parentAtom.isRelation()? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
+            Set<Predicate> predicates = parentAtom.getPredicates().stream()
+                    .filter(pred -> !unmappedVars.contains(pred.getVarName()))
+                    .collect(Collectors.toSet());
 
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);
-            head.addAtomConstraints(types);
             body.addAtomConstraints(types);
         }
         head.selectAppend(parentAtom.getParentQuery().getSelectedNames());

@@ -27,17 +27,24 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
+import com.google.common.collect.Maps;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 
 /**
  *
@@ -59,24 +66,35 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
 
+    public QueryAnswers permute(Atom atom){
+        if (!atom.isRelation()) return this;
+        List<VarName> permuteVars = new ArrayList<>(((Relation) atom).getUnmappedRolePlayers());
+        List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
+        Set<Map<VarName, VarName>> unifierSet = getUnifiersFromPermutations(permuteVars, varPermutations);
+        QueryAnswers permutedAnswers = new QueryAnswers();
+        unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
+
+        //filter by checking substitutions
+        Set<IdPredicate> subs = atom.getIdPredicates().stream()
+                .filter(pred -> permuteVars.contains(pred.getVarName()))
+                .collect(Collectors.toSet());
+        QueryAnswers filteredOutAnswers = new QueryAnswers();
+        subs.forEach( sub -> {
+            permutedAnswers.stream()
+                    .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
+                    .forEach(filteredOutAnswers::add);
+        });
+        permutedAnswers.removeAll(filteredOutAnswers);
+        return permutedAnswers;
+    }
+
     /**
      * filter answers by constraining the variable set to the provided one
      * @param vars set of variable names
      * @return filtered answers
      */
     public QueryAnswers filterVars(Set<VarName> vars) {
-        QueryAnswers results = new QueryAnswers();
-        if (this.isEmpty()) return results;
-        this.forEach(answer -> {
-            Map<VarName, Concept> map = new HashMap<>();
-            answer.forEach((var, concept) -> {
-                if (vars.contains(var)) {
-                    map.put(var, concept);
-                }
-            });
-            if (!map.isEmpty()) results.add(map);
-        });
-        return new QueryAnswers(results.stream().distinct().collect(Collectors.toSet()));
+        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result, vars::contains)).collect(Collectors.toSet()));
     }
 
     /**

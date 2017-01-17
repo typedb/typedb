@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import java.util.Set;
 
 /**
@@ -74,8 +73,8 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    public Set<Predicate> getIdPredicates() {
-        Set<Predicate> idPredicates = super.getIdPredicates();
+    public Set<IdPredicate> getIdPredicates() {
+        Set<IdPredicate> idPredicates = super.getIdPredicates();
         if (getPredicate() != null) idPredicates.add(getPredicate());
         return idPredicates;
     }

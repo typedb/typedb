@@ -82,9 +82,6 @@ public class Relation extends TypeAtom {
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
     private Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = null;
 
-    public Relation(VarAdmin pattern, ReasonerQuery par) {
-        this(pattern, null, par);
-    }
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
         this.relationPlayers = getRelationPlayers(pattern);
@@ -390,14 +387,13 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Set<Predicate> getIdPredicates() {
-        Set<Predicate> idPredicates = super.getIdPredicates();
+    public Set<IdPredicate> getIdPredicates() {
+        Set<IdPredicate> idPredicates = super.getIdPredicates();
         //from types
-        getTypeConstraints()
-                .forEach(atom -> {
-                    Predicate predicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable());
-                    if (predicate != null) idPredicates.add(predicate);
-                });
+        getTypeConstraints().stream()
+                .map(atom -> ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable()))
+                .filter(Objects::nonNull)
+                .forEach(idPredicates::add);
         return idPredicates;
     }
 
@@ -435,10 +431,28 @@ public class Relation extends TypeAtom {
         vars.addAll(getRolePlayers());
         return vars;
     }
+
+    /**
+     * @return set consituting the role player var names
+     */
     public Set<VarName> getRolePlayers(){
         Set<VarName> vars = new HashSet<>();
         relationPlayers.forEach(c -> vars.add(c.getRolePlayer().getVarName()));
         return vars;
+    }
+
+    public Set<VarName> getMappedRolePlayers() {
+        return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
+    }
+
+    /**
+     *
+     * @return set constituting the role player var names that do not have a specified role type
+     */
+    public Set<VarName> getUnmappedRolePlayers() {
+        Set<VarName> unmappedVars = getRolePlayers();
+        unmappedVars.removeAll(getMappedRolePlayers());
+        return unmappedVars;
     }
 
     /**
@@ -668,10 +682,9 @@ public class Relation extends TypeAtom {
     /**
      * @return map of pairs: varName - Id predicate (substitution) describing this variable
      */
-    private Map<VarName, Predicate> getVarSubMap() {
-        Map<VarName, Predicate> map = new HashMap<>();
-        getPredicates().stream()
-            .filter(Predicate::isIdPredicate)
+    private Map<VarName, IdPredicate> getVarSubMap() {
+        Map<VarName, IdPredicate> map = new HashMap<>();
+        getIdPredicates()
             .forEach( sub -> {
                 VarName var = sub.getVarName();
                 map.put(var, sub);
@@ -684,7 +697,7 @@ public class Relation extends TypeAtom {
      */
     private Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
-        Map<VarName, Predicate> varSubMap = getVarSubMap();
+        Map<VarName, IdPredicate> varSubMap = getVarSubMap();
         Map<RoleType, Pair<VarName, Type>> roleVarMap = getRoleVarTypeMap();
 
         roleVarMap.forEach( (role, varTypePair) -> {

@@ -131,7 +131,7 @@ public class RecursiveInferenceTest {
                 "{$name value 'a';} or {$name value 'aaa';} or {$name value 'aab';} or {$name value 'aaaa';};select $Y;";
 
         assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        //assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     @Test
@@ -160,21 +160,26 @@ public class RecursiveInferenceTest {
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match $Y isa Person, has name $nameY; $X isa Person, has name $nameX;" +
-                "{$nameX value 'a';$nameY value 'aa';} or {$nameX value 'a';$nameY value 'ab';} or" +
-                "{$nameX value 'a';$nameY value 'aaa';} or {$nameX value 'a';$nameY value 'aab';} or" +
-                "{$nameX value 'a';$nameY value 'aaaa';} or {$nameY value 'a';$nameX value 'aa';} or" +
+                "{$nameX value 'a';$nameY value 'aa';} or " +
+                "{$nameX value 'a';$nameY value 'ab';} or {$nameX value 'a';$nameY value 'aaa';} or" +
+                "{$nameX value 'a';$nameY value 'aab';} or {$nameX value 'a';$nameY value 'aaaa';} or " +
+                "{$nameY value 'a';$nameX value 'aa';} or" +
                 "{$nameY value 'a';$nameX value 'ab';} or {$nameY value 'a';$nameX value 'aaa';} or" +
-                "{$nameY value 'a';$nameX value 'aab';} or {$nameY value 'a';$nameX value 'aaaa';} or " +
+                "{$nameY value 'a';$nameX value 'aab';} or {$nameY value 'a';$nameX value 'aaaa';} or "
+                +
                 "{$nameX value 'aa';$nameY value 'aaa';} or {$nameX value 'aa';$nameY value 'aab';} or" +
-                "{$nameX value 'aa';$nameY value 'aaaa';} or {$nameY value 'aa';$nameX value 'aaa';} or" +
-                "{$nameY value 'aa';$nameX value 'aab';} or {$nameY value 'aa';$nameX value 'aaaa';} or " +
+                "{$nameX value 'aa';$nameY value 'aaaa';} or " +
+                "{$nameY value 'aa';$nameX value 'aaa';} or {$nameY value 'aa';$nameX value 'aab';} or" +
+                "{$nameY value 'aa';$nameX value 'aaaa';} or "
+                +
                 "{$nameX value 'aaa';$nameY value 'aaaa';} or " +
-                "{$nameY value 'aaa';$nameX value 'aaaa';} or " +
+                "{$nameY value 'aaa';$nameX value 'aaaa';} or "
+                +
                 "{$nameX value 'c';$nameY value 'ca';} or " +
                 "{$nameY value 'c';$nameX value 'ca';}; select $X, $Y;";
 
         assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        //assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
