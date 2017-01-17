@@ -22,9 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
@@ -34,7 +32,6 @@ import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
 import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
@@ -48,15 +45,14 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,19 +60,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 /**
  * These tests are used for generating a report of the performance of analytics. In order to run them on a machine use
@@ -87,6 +80,9 @@ import static org.junit.Assert.assertFalse;
  */
 @Ignore
 public class ScalingTestIT {
+
+    @ClassRule
+    public static final EngineContext context = EngineContext.startServer();
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};
@@ -122,18 +118,15 @@ public class ScalingTestIT {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        factory = Grakn.factory(Grakn.DEFAULT_URI, "a" + UUID.randomUUID().toString());
-        GraknGraph graph = factory.getGraph();
-        keyspace = graph.getKeyspace();
+        keyspace = context.getNewGraph().getKeyspace();
 
         headers = new ArrayList<>();
         headers.add("Size");
         headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
 
         // fetch the logger
-        LOGGER = (Logger) org.slf4j.LoggerFactory.getLogger(ScalingTestIT.class);
+        LOGGER = (Logger) LoggerFactory.getLogger(ScalingTestIT.class);
         LOGGER.setLevel(Level.INFO);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.Loader.class)).setLevel(Level.INFO);
     }
 
     @Ignore
@@ -201,142 +194,6 @@ public class ScalingTestIT {
 
         printer.flush();
         printer.close();
-    }
-
-    @Ignore
-    @Test
-    public void persistConstantIncreasingLoadIT() throws InterruptedException, GraknValidationException, ExecutionException, IOException {
-        CSVPrinter printerWrite = createCSVPrinter("persistConstantIncreasingLoadITWrite.txt");
-        CSVPrinter printerMutate = createCSVPrinter("persistConstantIncreasingLoadITMutate.txt");
-
-        for (int graphSize : graphSizes) {
-            Long conceptCount = (long) graphSize * 3 / 2;
-            printerWrite.print(String.valueOf(conceptCount));
-            printerMutate.print(String.valueOf(conceptCount));
-            for (int workerNumber : workerNumbers) {
-                Long degreeAndPersistTimeWrite = 0L;
-                Long degreeAndPersistTimeMutate = 0L;
-
-                // repeat persist
-                for (int i = 0; i < REPEAT; i++) {
-                    LOGGER.info("repeat number: " + i);
-                    String CURRENT_KEYSPACE = keyspace
-                            + "g" + String.valueOf(graphSize)
-                            + "w" + String.valueOf(workerNumber)
-                            + "r" + String.valueOf(i);
-                    simpleOntology(CURRENT_KEYSPACE);
-
-                    // construct graph
-                    LOGGER.info("start generate graph " + System.currentTimeMillis() / 1000L + "s");
-                    addNodes(CURRENT_KEYSPACE, 0, graphSize);
-                    LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
-
-                    GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
-                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
-
-                    LOGGER.info("persist degree");
-                    Long startTime = System.currentTimeMillis();
-                    //TODO: Remove persistence
-//                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
-                    Long stopTime = System.currentTimeMillis();
-                    degreeAndPersistTimeWrite += stopTime - startTime;
-                    LOGGER.info("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
-
-                    // mutate graph
-                    LOGGER.info("start mutate graph " + System.currentTimeMillis() / 1000L + "s");
-
-                    // add edges to force mutation
-                    addEdges(CURRENT_KEYSPACE, graphSize);
-
-                    LOGGER.info("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
-
-                    graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
-                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
-
-                    LOGGER.info("mutate degree");
-                    startTime = System.currentTimeMillis();
-                    //TODO: Remove persistence
-//                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
-                    stopTime = System.currentTimeMillis();
-                    degreeAndPersistTimeMutate += stopTime - startTime;
-                    LOGGER.info("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
-
-                    LOGGER.info("start clean graph" + System.currentTimeMillis() / 1000L + "s");
-                    graph.clear();
-                    LOGGER.info("stop clean graph" + System.currentTimeMillis() / 1000L + "s");
-                }
-
-                degreeAndPersistTimeWrite /= REPEAT * 1000;
-                degreeAndPersistTimeMutate /= REPEAT * 1000;
-                LOGGER.info("time to degreesAndPersistWrite: " + degreeAndPersistTimeWrite);
-                LOGGER.info("time to degreesAndPersistMutate: " + degreeAndPersistTimeMutate);
-
-                printerWrite.print(String.valueOf(degreeAndPersistTimeWrite));
-                printerMutate.print(String.valueOf(degreeAndPersistTimeMutate));
-            }
-            printerWrite.println();
-            printerWrite.flush();
-            printerMutate.println();
-            printerMutate.flush();
-        }
-
-        printerWrite.close();
-        printerMutate.close();
-    }
-
-    @Ignore
-    @Test
-    public void testLargeDegreeMutationResultsInReadableGraphIT() throws Exception {
-
-        simpleOntology(keyspace);
-
-        // construct graph
-        addNodes(keyspace, 0, MAX_SIZE);
-
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        //TODO: Remove persistence
-//        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
-
-        // assert mutated degrees are as expected
-        GraknGraph graph = factory.getGraph();
-        EntityType thing = graph.getEntityType("thing");
-        ResourceType degree = graph.getResourceType("degree");
-        Collection<Entity> things = thing.instances();
-
-        assertFalse(things.isEmpty());
-        things.forEach(thisThing -> {
-            assertEquals(1L, thisThing.resources(degree).size());
-            assertEquals(1L, thisThing.resources(degree).iterator().next().getValue());
-        });
-
-
-        // add edges to force mutation
-        addEdges(keyspace, MAX_SIZE);
-
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        //TODO: Remove persistence
-//        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
-
-        // assert mutated degrees are as expected
-        graph = factory.getGraph();
-        thing = graph.getEntityType("thing");
-        things = thing.instances();
-        ResourceType degreeAlso = graph.getResourceType("degree");
-
-        assertFalse(things.isEmpty());
-        things.forEach(thisThing -> {
-            assertEquals(1L, thisThing.resources(degreeAlso).size());
-            assertEquals(2L, thisThing.resources(degreeAlso).iterator().next().getValue());
-        });
-
-        Collection<Relation> relations = graph.getRelationType("related").instances();
-
-        assertFalse(relations.isEmpty());
-        relations.forEach(thisRelation -> {
-            assertEquals(1L, thisRelation.resources().size());
-            assertEquals(2L, thisRelation.resources().iterator().next().getValue());
-        });
-
     }
 
     /**
@@ -430,7 +287,7 @@ public class ScalingTestIT {
                 v_m--;
                 V_m+=2;
             }
-            loader.waitToFinish();
+            loader.waitToFinish(60000);
             LOGGER.info("stop loading data");
             LOGGER.info("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
 
@@ -521,17 +378,6 @@ public class ScalingTestIT {
 
     }
 
-    private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
-        Loader loader = new Loader(keyspace);
-
-        for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
-            String nodeId = "node-" + nodeIndex;
-            loader.add(insert(var().isa("thing").has("node-id", nodeId)));
-        }
-
-        loader.waitToFinish();
-    }
-
     private void simpleOntology(String keyspace) throws GraknValidationException {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.putEntityType("thing");
@@ -559,29 +405,6 @@ public class ScalingTestIT {
         return superNodes;
     }
 
-    private void addEdges(String keyspace, int graphSize) {
-        // if graph size not even throw error for now
-        if (graphSize%2!=0) {
-            throw new RuntimeException("sorry graphsize has to be even");
-        }
-
-        Loader loader = new Loader(keyspace);
-
-        int startNode = 0;
-        while (startNode<graphSize) {
-
-            String nodeId1 = "node-" + startNode;
-            String nodeId2 = "node-" + ++startNode;
-            loader.add(match(var("node1").has("node-id",nodeId1),var("node2").has("node-id",nodeId2))
-                    .insert(var().isa("related")
-                            .rel("relation1", var("node1"))
-                            .rel("relation2", var("node2"))));
-
-            startNode++;
-        }
-        loader.waitToFinish();
-    }
-
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
         Loader loader = new Loader(keyspace);
@@ -598,19 +421,11 @@ public class ScalingTestIT {
             loader.add(insert(insertQuery));
         }
 
-        loader.waitToFinish();
-    }
-
-    private DegreeQueryImplMock getDegreeQuery(String uri, String keyspace, int numWorkers) {
-        return ((DegreeQueryImplMock) getComputeQueryBuilder(uri, keyspace, numWorkers).degree());
+        loader.waitToFinish(60000);
     }
 
     private CountQueryImplMock getCountQuery(String uri, String keyspace, int numWorkers) {
         return ((CountQueryImplMock) getComputeQueryBuilder(uri, keyspace, numWorkers).count());
-    }
-
-    private MinQueryImplMock getMinQuery(String uri, String keyspace, int numWorkers) {
-        return getMinQuery(getComputeQueryBuilder(uri, keyspace, numWorkers));
     }
 
     private MinQueryImplMock getMinQuery(ComputeQueryBuilderImplMock cqb) {return ((MinQueryImplMock) cqb.min());}
