@@ -154,7 +154,7 @@ public abstract class GraknTestEnv {
     static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
-//        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
+        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
     }
 
     public static boolean usingTinker() {
