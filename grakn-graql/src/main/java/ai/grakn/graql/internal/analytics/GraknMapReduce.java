@@ -21,12 +21,11 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -39,12 +38,12 @@ import java.util.Set;
 public abstract class GraknMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(GraknMapReduce.class);
-
-    static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
+    private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
     public static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
 
-    public GraknMapReduce(Set<TypeName> selectedTypes) {this.selectedTypes = selectedTypes;}
+    public GraknMapReduce(Set<TypeName> selectedTypes) {
+        this.selectedTypes = selectedTypes;
+    }
 
     public GraknMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
         this(selectedTypes);
@@ -110,7 +109,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     @Override
     public final void combine(Serializable key, Iterator<T> values, ReduceEmitter<Serializable, T> emitter) {
-       this.reduce(key, values, emitter);
+        this.reduce(key, values, emitter);
     }
 
     @Override
@@ -123,8 +122,17 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         return isSelected && vertex.<Long>value(DegreeVertexProgram.DEGREE) > 0;
     }
 
-    final <V> V resourceValue(Vertex vertex) {
-        return vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY));
+    final Number resourceValue(Vertex vertex) {
+        return usingLong() ? vertex.value(Schema.ConceptProperty.VALUE_LONG.name()) :
+                vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name());
+    }
+
+    final Number minValue() {
+        return usingLong() ? Long.MIN_VALUE : Double.MIN_VALUE;
+    }
+
+    final Number maxValue() {
+        return usingLong() ? Long.MAX_VALUE : Double.MAX_VALUE;
     }
 
     final boolean usingLong() {

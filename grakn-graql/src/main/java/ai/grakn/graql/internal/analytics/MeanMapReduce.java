@@ -37,7 +37,7 @@ public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
     }
 
     public MeanMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
-        super(selectedTypes, Utility.graknJavaTypeConverter(resourceDataType));
+        super(selectedTypes, resourceDataType);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
         if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(2);
             Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
-            tuple.put(SUM, degree * this.<Double>resourceValue(vertex));
+            tuple.put(SUM, degree * this.<Double>resourceValue(vertex).doubleValue());
             tuple.put(COUNT, degree);
             emitter.emit(NullObject.instance(), tuple);
             return;
