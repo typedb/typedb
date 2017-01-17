@@ -29,7 +29,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class ClusterMemberMapReduce extends StringMapReduce {
+import static ai.grakn.graql.internal.analytics.Utility.reduceString;
+
+public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
     private static final String CLUSTER_SIZE = "clusterSizeMapReduce.clusterSize";
@@ -56,6 +58,13 @@ public class ClusterMemberMapReduce extends StringMapReduce {
             return;
         }
         emitter.emit(NullObject.instance(), Collections.emptySet());
+    }
+
+    @Override
+    public void reduce(final Serializable key, final Iterator<Set<String>> values,
+                       final ReduceEmitter<Serializable, Set<String>> emitter) {
+        Set<String> set = reduceString(values);
+        emitter.emit(key, set);
     }
 
     @Override

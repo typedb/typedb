@@ -33,8 +33,6 @@ import java.util.Set;
 
 public class SumMapReduce extends GraknMapReduce<Number> {
 
-    public static final String MEMORY_KEY = "sum";
-
     public SumMapReduce() {
     }
 
@@ -47,21 +45,21 @@ public class SumMapReduce extends GraknMapReduce<Number> {
         if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
                     ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
-                emitter.emit(MEMORY_KEY,
+                emitter.emit(NullObject.instance(),
                         ((Long) vertex.value(Schema.ConceptProperty.VALUE_LONG.name())) *
                                 ((Long) vertex.value(DegreeVertexProgram.DEGREE)));
                 return;
             }
-            emitter.emit(MEMORY_KEY, 0L);
+            emitter.emit(NullObject.instance(), 0L);
         } else {
             if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
                     ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
-                emitter.emit(MEMORY_KEY,
+                emitter.emit(NullObject.instance(),
                         ((Double) vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name())) *
                                 ((Long) vertex.value(DegreeVertexProgram.DEGREE)));
                 return;
             }
-            emitter.emit(MEMORY_KEY, 0D);
+            emitter.emit(NullObject.instance(), 0D);
         }
     }
 
@@ -75,18 +73,5 @@ public class SumMapReduce extends GraknMapReduce<Number> {
             emitter.emit(key, IteratorUtils.reduce(values, 0D,
                     (a, b) -> a.doubleValue() + b.doubleValue()));
         }
-    }
-
-    @Override
-    public void combine(final Serializable key, final Iterator<Number> values,
-                        final ReduceEmitter<Serializable, Number> emitter) {
-        this.reduce(key, values, emitter);
-    }
-
-    @Override
-    public Map<Serializable, Number> generateFinalResult(Iterator<KeyValue<Serializable, Number>> keyValues) {
-        final Map<Serializable, Number> sum = new HashMap<>();
-        keyValues.forEachRemaining(pair -> sum.put(pair.getKey(), pair.getValue()));
-        return sum;
     }
 }

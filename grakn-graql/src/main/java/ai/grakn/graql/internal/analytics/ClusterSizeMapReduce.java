@@ -64,12 +64,6 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     }
 
     @Override
-    public void combine(final Serializable key, final Iterator<Long> values,
-                        final ReduceEmitter<Serializable, Long> emitter) {
-        this.reduce(key, values, emitter);
-    }
-
-    @Override
     public Map<Serializable, Long> generateFinalResult(Iterator<KeyValue<Serializable, Long>> keyValues) {
         final Map<Serializable, Long> clusterPopulation = new HashMap<>();
         if (this.persistentProperties.containsKey(CLUSTER_SIZE)) {

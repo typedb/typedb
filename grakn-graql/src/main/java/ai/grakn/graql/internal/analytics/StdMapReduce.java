@@ -30,8 +30,6 @@ import java.util.Set;
 
 public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
 
-    public static final String MEMORY_KEY = "std";
-
     public static final String COUNT = "C";
     public static final String SUM = "S";
     public static final String SQUARE_SUM = "SM";
@@ -54,14 +52,14 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
             tuple.put(SUM, value * degree);
             tuple.put(SQUARE_SUM, value * value * degree);
             tuple.put(COUNT, degree);
-            emitter.emit(MEMORY_KEY, tuple);
+            emitter.emit(NullObject.instance(), tuple);
             return;
         }
         Map<String, Double> emptyTuple = new HashMap<>(3);
         emptyTuple.put(SUM, 0D);
         emptyTuple.put(SQUARE_SUM, 0D);
         emptyTuple.put(COUNT, 0D);
-        emitter.emit(MEMORY_KEY, emptyTuple);
+        emitter.emit(NullObject.instance(), emptyTuple);
     }
 
     @Override

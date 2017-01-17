@@ -33,8 +33,6 @@ import java.util.Set;
 
 public class MaxMapReduce extends GraknMapReduce<Number> {
 
-    public static final String MEMORY_KEY = "max";
-
     public MaxMapReduce() {
     }
 
@@ -47,17 +45,17 @@ public class MaxMapReduce extends GraknMapReduce<Number> {
         if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
                     ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
-                emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
+                emitter.emit(NullObject.instance(), vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
                 return;
             }
-            emitter.emit(MEMORY_KEY, Long.MIN_VALUE);
+            emitter.emit(NullObject.instance(), Long.MIN_VALUE);
         } else {
             if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
                     ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
-                emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name()));
+                emitter.emit(NullObject.instance(), vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name()));
                 return;
             }
-            emitter.emit(MEMORY_KEY, Double.MIN_VALUE);
+            emitter.emit(NullObject.instance(), Double.MIN_VALUE);
         }
     }
 
@@ -72,18 +70,4 @@ public class MaxMapReduce extends GraknMapReduce<Number> {
                     (a, b) -> a.doubleValue() > b.doubleValue() ? a : b));
         }
     }
-
-    @Override
-    public void combine(final Serializable key, final Iterator<Number> values,
-                        final ReduceEmitter<Serializable, Number> emitter) {
-        this.reduce(key, values, emitter);
-    }
-
-    @Override
-    public Map<Serializable, Number> generateFinalResult(Iterator<KeyValue<Serializable, Number>> keyValues) {
-        final Map<Serializable, Number> max = new HashMap<>();
-        keyValues.forEachRemaining(pair -> max.put(pair.getKey(), pair.getValue()));
-        return max;
-    }
-
 }

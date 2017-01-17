@@ -30,8 +30,6 @@ import java.util.Set;
 
 public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
 
-    public static final String MEMORY_KEY = "mean";
-
     public static final String COUNT = "C";
     public static final String SUM = "S";
 
@@ -51,13 +49,13 @@ public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
             tuple.put(SUM, degree *
                     ((Number) vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY))).doubleValue());
             tuple.put(COUNT, degree);
-            emitter.emit(MEMORY_KEY, tuple);
+            emitter.emit(NullObject.instance(), tuple);
             return;
         }
         Map<String, Double> emptyTuple = new HashMap<>(2);
         emptyTuple.put(SUM, 0D);
         emptyTuple.put(COUNT, 0D);
-        emitter.emit(MEMORY_KEY, emptyTuple);
+        emitter.emit(NullObject.instance(), emptyTuple);
     }
 
     @Override

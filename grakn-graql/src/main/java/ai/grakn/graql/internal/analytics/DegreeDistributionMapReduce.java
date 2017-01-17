@@ -29,7 +29,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class DegreeDistributionMapReduce extends StringMapReduce {
+import static ai.grakn.graql.internal.analytics.Utility.reduceString;
+
+public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
     public DegreeDistributionMapReduce() {
     }
@@ -46,6 +48,13 @@ public class DegreeDistributionMapReduce extends StringMapReduce {
             return;
         }
         emitter.emit(NullObject.instance(), Collections.emptySet());
+    }
+
+    @Override
+    public void reduce(final Serializable key, final Iterator<Set<String>> values,
+                       final ReduceEmitter<Serializable, Set<String>> emitter) {
+        Set<String> set = reduceString(values);
+        emitter.emit(key, set);
     }
 
     @Override
