@@ -78,7 +78,6 @@ import static org.junit.Assert.assertEquals;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
-@Ignore
 public class ScalingTestIT {
 
     @ClassRule
@@ -88,7 +87,6 @@ public class ScalingTestIT {
             {Grakn.DEFAULT_URI};
 
     String keyspace;
-    private GraknGraphFactory factory;
     Logger LOGGER;
 
     // test parameters
@@ -289,7 +287,9 @@ public class ScalingTestIT {
             }
             loader.waitToFinish(60000);
             LOGGER.info("stop loading data");
-            LOGGER.info("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
+            GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+            LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
+            graph.close();
 
             for (String method : methods) {
                 printers.get(method).print(2 * g * nodesPerStep);
@@ -354,7 +354,9 @@ public class ScalingTestIT {
             printers.get(method).flush();
             printers.get(method).close();
         }
-        factory.getGraph().clear();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph.clear();
+        graph.close();
     }
 
     private double meanOfSequence(long currentG, long nodesPerStep, long totalSteps) {
