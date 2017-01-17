@@ -73,7 +73,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final Integer allowableRunningTasks;
     private final Set<String> runningTasks = new HashSet<>();
     private final String engineID = EngineID.getInstance().id();
-    //private final CountDownLatch startupLatch;
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private StateStorage graknStorage;
@@ -83,9 +82,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private CountDownLatch waitToClose;
     private boolean initialised = false;
 
-    TaskRunner(/*CountDownLatch startupLatch*/) {
+    public TaskRunner() {
         allowableRunningTasks = properties.getAvailableThreads();
-        //this.startupLatch = startupLatch;
         running = false;
     }
 
@@ -137,7 +135,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
             executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
             waitToClose = new CountDownLatch(1);
-//            startupLatch.countDown();
             LOG.info("TaskRunner opened.");
         }
         else {
@@ -188,30 +185,15 @@ public class TaskRunner implements Runnable, AutoCloseable {
             }
 
             String id = record.key();
-            InterProcessMutex mutex = acquireMutex(id);
-            if(mutex == null) {
-                seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
-                break;
-            }
-
-            // Check if its marked as SCHEDULED.
             TaskStatus status = getStatus(id);
-            if(status == null) {
-                seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
-                releaseMutex(mutex, id);
-                break;
-            }
-            else if(status != SCHEDULED) {
-                LOG.debug("Cant schedule this task - "+id+" because\n\t\tstatus: "+status);
-                releaseMutex(mutex, id);
+            if(status != SCHEDULED) {
+                LOG.debug("Cant schedule this task - " + id + " because\n\t\tstatus: "+ status);
                 continue;
             }
 
             // Mark as RUNNING and update task & runner states.
             addRunningTask(id);
             updateTaskState(id, RUNNING, this.getClass().getName(), engineID, null, null);
-
-            releaseMutex(mutex, id);
 
             // Submit to executor
             try {
@@ -236,10 +218,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
      */
     private TaskStatus getStatus(String id) {
         SynchronizedState state = zkStorage.getState(id);
-        if (state == null) {
-            LOG.error("Cant run task - " + id + " - because zkStorage returned null");
-            return null;
-        }
 
         return state.status();
     }
@@ -256,8 +234,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
             // Get full task state.
             TaskState state = graknStorage.getState(id);
 
-            LOG.debug("Got state of " + id + " from storage");
-
             // Instantiate task.
             Class<?> c = Class.forName(state.taskClassName());
             BackgroundTask task = (BackgroundTask) c.newInstance();
@@ -265,54 +241,15 @@ public class TaskRunner implements Runnable, AutoCloseable {
             // Run task.
             task.start(saveCheckpoint(id), configuration);
 
-            LOG.debug("Task - "+id+" completed successfully, updating state in graph");
             updateTaskState(id, COMPLETED, this.getClass().getName(), null, null, null);
         }
         catch(Throwable t) {
             LOG.debug("Failed task - "+id+": "+getFullStackTrace(t));
             updateTaskState(id, FAILED, this.getClass().getName(), null, t, null);
-            LOG.debug("Updated state " + id);
         }
         finally {
             removeRunningTask(id);
             LOG.debug("Finished executing task - " + id);
-        }
-    }
-
-    /**
-     * Returns a new InterProcessMutex object, creating ZNodes if needed
-     * @param id String id of task that this lock should be associated to.
-     * @return InterProcessMutex object
-     */
-    private InterProcessMutex acquireMutex(String id) {
-        InterProcessMutex mutex = null;
-        try {
-            if(zkStorage.connection().checkExists().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_LOCK_SUFFIX) == null) {
-                zkStorage.connection().create().creatingParentContainersIfNeeded().forPath(TASKS_PATH_PREFIX + "/" + id + TASK_LOCK_SUFFIX);
-            }
-
-            mutex = new InterProcessMutex(zkStorage.connection(), TASKS_PATH_PREFIX+"/"+id+TASK_LOCK_SUFFIX);
-
-            if (!mutex.acquire(5000, MILLISECONDS)) {
-                LOG.debug("Could not acquire mutex");
-                mutex = null;
-            }
-        }
-        catch (Exception e) {
-            LOG.debug("Exception whilst trying to get mutex for task - " + id + " - " + getFullStackTrace(e));
-        }
-
-        LOG.debug("<<<<<<<<<<<< Got mutex for - "+id);
-        return mutex;
-    }
-
-    private void releaseMutex(InterProcessMutex mutex, String id) {
-        try {
-            mutex.release();
-            LOG.debug(">>>>>>>>>>>> released mutex for - "+id);
-        }
-        catch (Exception e) {
-            LOG.error("********************************\nCOULD NOT RELEASE MUTEX FOR TASK - " + id + "\n" + getFullStackTrace(e) + "\n********************************");
         }
     }
 
@@ -332,11 +269,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
                                  Throwable failure, String checkpoint) {
         LOG.debug("Updating state of task " + id);
         zkStorage.updateState(id, status, engineID, checkpoint);
-        try {
-            graknStorage.updateState(id, status, statusChangeBy, engineID, failure, checkpoint, null);
-        } catch (Exception ignored) {
-            // TODO: Should we ignore these errors?
-        }
+        graknStorage.updateState(id, status, statusChangeBy, engineID, failure, checkpoint, null);
     }
 
     private void updateOwnState() {
