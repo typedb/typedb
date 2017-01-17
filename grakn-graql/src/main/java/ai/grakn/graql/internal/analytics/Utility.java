@@ -84,8 +84,8 @@ public class Utility {
      * A helper method for set MapReduce. It simply combines sets into one set.
      *
      * @param values the aggregated values associated with the key
-     * @Param <T> the type of the set
      * @return the combined set
+     * @param <T> the type of the set
      */
     static <T> Set<T> reduceSet(Iterator<Set<T>> values) {
         Set<T> set = new HashSet<>();
@@ -99,8 +99,8 @@ public class Utility {
      * Transforms an iterator of key-value pairs into a map
      *
      * @param keyValues an iterator of key-value pairs
-     * @param <K> the type of the keys
-     * @param <V> the type of the values
+     * @param <K>       the type of the keys
+     * @param <V>       the type of the values
      * @return the resulting map
      */
     static <K, V> Map<K, V> keyValuesToMap(Iterator<KeyValue<K, V>> keyValues) {

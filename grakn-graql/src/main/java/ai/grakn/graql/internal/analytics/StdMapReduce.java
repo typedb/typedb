@@ -38,7 +38,7 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
     }
 
     public StdMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
-        super(selectedTypes, Utility.graknJavaTypeConverter(resourceDataType));
+        super(selectedTypes, resourceDataType);
     }
 
     @Override
@@ -46,7 +46,7 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
         if (resourceIsValid(vertex)) {
             Map<String, Double> tuple = new HashMap<>(3);
             Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
-            double value = resourceValue(vertex);
+            double value = resourceValue(vertex).doubleValue();
             tuple.put(SUM, value * degree);
             tuple.put(SQUARE_SUM, value * value * degree);
             tuple.put(COUNT, degree);

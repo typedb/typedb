@@ -37,16 +37,7 @@ public class MaxMapReduce extends GraknMapReduce<Number> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
-        Number value;
-
-        if (resourceIsValid(vertex)) {
-            value = resourceValue(vertex);
-        } else if (usingLong()) {
-            value = Long.MIN_VALUE;
-        } else {
-            value = Double.MIN_VALUE;
-        }
-
+        Number value = resourceIsValid(vertex) ? resourceValue(vertex) : minValue();
         emitter.emit(NullObject.instance(), value);
     }
 
