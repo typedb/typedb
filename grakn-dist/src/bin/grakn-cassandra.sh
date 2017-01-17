@@ -41,7 +41,7 @@ wait_for_cassandra() {
     while [ $now_s -le $stop_s ]; do
         echo -n .
         # The \r\n deletion bit is necessary for Cygwin compatibility
-        status_thrift="`$NODETOOL statusthrift 2>/dev/null | tr -d '\n\r'`"
+        status_thrift="`"$NODETOOL" statusthrift 2>/dev/null | tr -d '\n\r'`"
         if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
             echo
             return 0
