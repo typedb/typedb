@@ -24,7 +24,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;

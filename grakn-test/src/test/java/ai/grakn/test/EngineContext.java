@@ -23,8 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.rules.ExternalResource;
 
 import java.util.UUID;

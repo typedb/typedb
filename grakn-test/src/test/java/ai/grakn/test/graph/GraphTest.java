@@ -8,7 +8,6 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.test.EngineContext;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 

@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;

@@ -21,7 +21,6 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graphs.AbstractGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;

@@ -32,7 +32,6 @@ import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 
 /**
  *

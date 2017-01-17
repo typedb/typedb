@@ -25,9 +25,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
