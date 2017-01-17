@@ -89,6 +89,7 @@ public class InferenceRule {
 
             head.addAtomConstraints(predicates);
             body.addAtomConstraints(predicates);
+            head.addAtomConstraints(types);
             body.addAtomConstraints(types);
         }
         head.selectAppend(parentAtom.getParentQuery().getSelectedNames());

@@ -806,7 +806,7 @@ public class ReasonerTest {
     public void testAmbiguousRolePlayers(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
@@ -818,8 +818,8 @@ public class ReasonerTest {
     @Test
     public void testAmbiguousRolePlayersWithSub(){
         String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
         assertEquals(answers, answers2);

@@ -386,6 +386,7 @@ public class Relation extends TypeAtom {
         return varFound;
     }
 
+    /*
     @Override
     public Set<IdPredicate> getIdPredicates() {
         Set<IdPredicate> idPredicates = super.getIdPredicates();
@@ -396,6 +397,7 @@ public class Relation extends TypeAtom {
                 .forEach(idPredicates::add);
         return idPredicates;
     }
+    */
 
     @Override
     public void unify (Map<VarName, VarName> mappings) {

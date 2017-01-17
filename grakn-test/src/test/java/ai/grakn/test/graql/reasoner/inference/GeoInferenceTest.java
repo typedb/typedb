@@ -40,7 +40,7 @@ public class GeoInferenceTest {
     }
 
     @Rule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
 
     @Test
     public void testQuery() {

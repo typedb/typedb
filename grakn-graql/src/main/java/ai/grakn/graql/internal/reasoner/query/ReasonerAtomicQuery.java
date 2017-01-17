@@ -101,7 +101,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery a2 = (ReasonerAtomicQuery) obj;
         return this.isEquivalent(a2);
     }
-    
+
     /**
      * @return the atom constituting this atomic query
      */
@@ -271,10 +271,24 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         if(answers.isEmpty()) return newAnswers;
 
         Set<VarName> queryVars = getSelectedNames();
+        /*
         Set<VarName> headVars = ruleHead.getSelectedNames();
         Set<IdPredicate> extraSubs = new HashSet<>();
+        if(queryVars.size() > headVars.size()){
+            extraSubs.addAll(ruleHead.getIdPredicates()
+                    .stream().filter(sub -> queryVars.contains(sub.getVarName()))
+                    .collect(Collectors.toSet()));
+        }
 
-        //if(queryVars.size() > headVars.size()){
+        answers.forEach( map -> {
+            Map<VarName, Concept> newAns = new HashMap<>(map);
+            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicate())) );
+            newAnswers.add(newAns);
+        });
+        return newAnswers;
+        */
+
+        Set<IdPredicate> extraSubs = new HashSet<>();
         ruleHead.getIdPredicates()
                 .stream().filter(sub -> queryVars.contains(sub.getVarName()))
                 .forEach(extraSubs::add);
@@ -282,7 +296,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .stream().flatMap(type -> type.getIdPredicates().stream())
                 .filter(sub -> queryVars.contains(sub.getVarName()))
                 .forEach(extraSubs::add);
-        //}
 
         answers.forEach( map -> {
             Map<VarName, Concept> newAns = new HashMap<>(map);
@@ -333,7 +346,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         QueryAnswers filteredAnswers = answers
                 .filterVars(this.getSelectedNames())
-                //.filterIncomplete(this.getSelectedNames());
+                //.filterIncomplete(this.getSelectedNames())
                 .permute(this.getAtom());
 
         this.getAnswers().addAll(filteredAnswers);

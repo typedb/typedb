@@ -171,7 +171,7 @@ public class GenealogyTest {
         String queryString2 = "match (child: $x) isa parentship;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.parse(queryString2));
-        answers.forEach(answer -> assertEquals(answer.size(), 2));
+        answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
