@@ -51,17 +51,11 @@ public class EngineContext extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        try {
-            //TODO remove when Bug #12029 fixed
-            ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
+        //TODO remove when Bug #12029 fixed
+        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
 
-            hideLogs();
-            startEngine();
-        }
-        catch (Exception e) {
-            e.printStackTrace(System.err);
-            throw new RuntimeException("Starting Engine for test", e);
-        }
+        hideLogs();
+        startEngine();
     }
 
     @Override
