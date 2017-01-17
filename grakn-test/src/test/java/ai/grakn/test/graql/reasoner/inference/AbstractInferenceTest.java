@@ -18,12 +18,12 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
+import ai.grakn.graphs.AbstractGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -32,15 +32,17 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 
-public class AbstractInferenceTest extends AbstractGraknTest {
+public class AbstractInferenceTest {
     private static QueryBuilder qb;
     private static QueryBuilder iqb;
 
+    @ClassRule
+    public static GraphContext abstractGraph = GraphContext.preLoad(AbstractGraph.get());
+
     @BeforeClass
     public static void setUpClass() throws Exception {
-        GraknGraph graph = AbstractGraph.getGraph();
-        qb = graph.graql().infer(false);
-        iqb = graph.graql().infer(true).materialise(false);
+        qb = abstractGraph.graph().graql().infer(false);
+        iqb = abstractGraph.graph().graql().infer(true);
     }
 
     /**silently allows multiple isas*/

@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.util.ConfigProperties;
@@ -91,13 +92,13 @@ public class GraphFactoryController {
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeySpaces(Request request, Response response) {
         try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            ResourceType<String> keyspaceName = graph.getResourceType(SystemKeyspace.KEYSPACE_RESOURCE);
+            ResourceType<String> keyspaceName = graph.getType(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
-            if (graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY) == null) {
+            if (graph.getType(SystemKeyspace.KEYSPACE_ENTITY) == null) {
                 LOG.warn("No system ontology in system keyspace, possibly a bug!");
                 return result.toString();
             }
-            for (Entity keyspace : graph.getEntityType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
+            for (Entity keyspace : graph.<EntityType>getType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
                 Collection<Resource<?>> names = keyspace.resources(keyspaceName);
                 if (names.size() != 1) {
                     throw new GraknEngineServerException(500,

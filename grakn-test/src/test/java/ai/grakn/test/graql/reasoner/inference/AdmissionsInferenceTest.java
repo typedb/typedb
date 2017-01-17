@@ -18,12 +18,12 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
+import ai.grakn.graphs.AdmissionsGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.stream.Collectors;
@@ -33,7 +33,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 
-public class AdmissionsInferenceTest extends AbstractGraknTest {
+public class AdmissionsInferenceTest {
+
+    @Rule
+    public final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
 
     @BeforeClass
     public static void onStartup(){
@@ -42,9 +45,8 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testConditionalAdmission() {
-        GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
@@ -55,9 +57,8 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testDeniedAdmission() {
-        GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied';";
         String explicitQuery = "match $x isa applicant, has name 'Alice';";
@@ -68,9 +69,8 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testProvisionalAdmission() {
-        GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional';";
         String explicitQuery = "match $x isa applicant, has name 'Denis';";
@@ -81,9 +81,8 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testWaitForTranscriptAdmission() {
-        GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript';";
         String explicitQuery = "match $x isa applicant, has name 'Frank';";
@@ -94,9 +93,8 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testFullStatusAdmission() {
-        GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has name $name;$x has admissionStatus 'full';";
         String explicitQuery = "match $x isa applicant, has name $name;{$name value 'Charlie';} or {$name value 'Eva';};";
@@ -107,9 +105,8 @@ public class AdmissionsInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testAdmissions() {
-        GraknGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(queryString));

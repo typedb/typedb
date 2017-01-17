@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -25,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.FROM_ROLE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
@@ -33,12 +34,12 @@ import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
 
 class ShortcutFragment extends AbstractFragment {
 
-    private final Optional<String> relationType;
-    private final Optional<String> roleStart;
-    private final Optional<String> roleEnd;
+    private final Optional<TypeName> relationType;
+    private final Optional<TypeName> roleStart;
+    private final Optional<TypeName> roleEnd;
 
     ShortcutFragment(
-            Optional<String> relationType, Optional<String> roleStart, Optional<String> roleEnd,
+            Optional<TypeName> relationType, Optional<TypeName> roleStart, Optional<TypeName> roleEnd,
             VarName start, VarName end
     ) {
         super(start, end);
@@ -50,17 +51,17 @@ class ShortcutFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel());
-        roleStart.ifPresent(rs -> edgeTraversal.has(FROM_ROLE_NAME.name(), rs));
-        roleEnd.ifPresent(re -> edgeTraversal.has(TO_ROLE_NAME.name(), re));
-        relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_NAME.name(), rt));
+        roleStart.ifPresent(rs -> edgeTraversal.has(FROM_ROLE_NAME.name(), rs.getValue()));
+        roleEnd.ifPresent(re -> edgeTraversal.has(TO_ROLE_NAME.name(), re.getValue()));
+        relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_NAME.name(), rt.getValue()));
         edgeTraversal.inV();
     }
 
     @Override
     public String getName() {
-        String start = roleStart.map(rs -> idToString(rs) + " ").orElse("");
-        String type = relationType.map(rt -> ":" + idToString(rt)).orElse("");
-        String end = roleEnd.map(re -> " " + idToString(re)).orElse("");
+        String start = roleStart.map(rs -> typeNameToString(rs) + " ").orElse("");
+        String type = relationType.map(rt -> ":" + typeNameToString(rt)).orElse("");
+        String end = roleEnd.map(re -> " " + typeNameToString(re)).orElse("");
         return "-[" + start + "shortcut" + type + end + "]->";
     }
 

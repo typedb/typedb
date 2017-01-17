@@ -16,19 +16,24 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.reasoner.graphs;
+package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Pattern;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 
+import java.util.function.Consumer;
+
 import static ai.grakn.graql.Graql.and;
 
-public class GeoGraph extends TestGraph{
+public class GeoGraph extends TestGraph {
+
+    private static ResourceType<String> key;
 
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationType isLocatedIn;
@@ -41,76 +46,74 @@ public class GeoGraph extends TestGraph{
     private static Instance Poland, England, Germany, France, Italy;
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
-    public static GraknGraph getGraph() {
-        return new GeoGraph().graph();
+    public static Consumer<GraknGraph> get(){
+        return new GeoGraph().build();
     }
 
     @Override
-    protected void buildOntology() {
-        geoEntity = graknGraph.putRoleType("geo-entity");
-        entityLocation = graknGraph.putRoleType("entity-location");
-        isLocatedIn = graknGraph.putRelationType("is-located-in")
+    public void buildOntology(GraknGraph graph) {
+        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+
+        geoEntity = graph.putRoleType("geo-entity");
+        entityLocation = graph.putRoleType("entity-location");
+        isLocatedIn = graph.putRelationType("is-located-in")
                 .hasRole(geoEntity).hasRole(entityLocation);
 
-        geographicalObject = graknGraph.putEntityType("geoObject")
+        geographicalObject = graph.putEntityType("geoObject")
                 .playsRole(geoEntity)
                 .playsRole(entityLocation);
         geographicalObject.hasResource(key);
 
-        continent = graknGraph.putEntityType("continent")
+        continent = graph.putEntityType("continent")
                 .superType(geographicalObject)
                 .playsRole(entityLocation);
-        country = graknGraph.putEntityType("country")
-                .superType(geographicalObject)
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
-        region = graknGraph.putEntityType("region")
+        country = graph.putEntityType("country")
                 .superType(geographicalObject)
                 .playsRole(geoEntity)
                 .playsRole(entityLocation);
-        city = graknGraph.putEntityType("city")
+        region = graph.putEntityType("region")
                 .superType(geographicalObject)
                 .playsRole(geoEntity)
                 .playsRole(entityLocation);
-        university = graknGraph.putEntityType("university")
+        city = graph.putEntityType("city")
+                .superType(geographicalObject)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
+        university = graph.putEntityType("university")
                         .playsRole(geoEntity);
         university.hasResource(key);
     }
 
     @Override
-    protected void buildInstances() {
-        Europe = putEntity("Europe", continent);
-        NorthAmerica = putEntity("NorthAmerica", continent);
-
-        Poland = putEntity("Poland", country);
-        England = putEntity("England", country);
-        Germany = putEntity("Germany", country);
-        France = putEntity("France", country);
-        Italy = putEntity("Italy", country);
-
-        Masovia = putEntity("Masovia", region);
-        Silesia = putEntity("Silesia", region);
-        GreaterLondon = putEntity("GreaterLondon", region);
-        Bavaria = putEntity("Bavaria", region);
-        IleDeFrance = putEntity("IleDeFrance", region);
-        Lombardy = putEntity("Lombardy", region);
-
-        Warsaw = putEntity("Warsaw", city);
-        Wroclaw = putEntity("Wroclaw", city);
-        London = putEntity("London", city);
-        Munich = putEntity("Munich", city);
-        Paris = putEntity("Paris", city);
-        Milan = putEntity("Milan", city);
-
-        UW = putEntity("University-of-Warsaw", university);
-        PW = putEntity("Warsaw-Polytechnics", university);
-        Imperial = putEntity("Imperial College London", university);
-        UCL = putEntity("University College London", university);
-        UniversityOfMunich = putEntity("University of Munich", university);
+    public void buildInstances(GraknGraph graph) {
+        Europe = putEntity(graph, "Europe", continent, key.getName());
+        NorthAmerica = putEntity(graph, "NorthAmerica", continent, key.getName());
+        Poland = putEntity(graph, "Poland", country, key.getName());
+        England = putEntity(graph, "England", country, key.getName());
+        Germany = putEntity(graph, "Germany", country, key.getName());
+        France = putEntity(graph, "France", country, key.getName());
+        Italy = putEntity(graph, "Italy", country, key.getName());
+        Masovia = putEntity(graph, "Masovia", region, key.getName());
+        Silesia = putEntity(graph, "Silesia", region, key.getName());
+        GreaterLondon = putEntity(graph, "GreaterLondon", region, key.getName());
+        Bavaria = putEntity(graph, "Bavaria", region, key.getName());
+        IleDeFrance = putEntity(graph, "IleDeFrance", region, key.getName());
+        Lombardy = putEntity(graph, "Lombardy", region, key.getName());
+        Warsaw = putEntity(graph, "Warsaw", city, key.getName());
+        Wroclaw = putEntity(graph, "Wroclaw", city, key.getName());
+        London = putEntity(graph, "London", city, key.getName());
+        Munich = putEntity(graph, "Munich", city, key.getName());
+        Paris = putEntity(graph, "Paris", city, key.getName());
+        Milan = putEntity(graph, "Milan", city, key.getName());
+        UW = putEntity(graph, "University-of-Warsaw", university, key.getName());
+        PW = putEntity(graph, "Warsaw-Polytechnics", university, key.getName());
+        Imperial = putEntity(graph, "Imperial College London", university, key.getName());
+        UCL = putEntity(graph, "University College London", university, key.getName());
+        UniversityOfMunich = putEntity(graph, "University of Munich", university, key.getName());
     }
 
     @Override
-    protected void buildRelations() {
+    public void buildRelations(GraknGraph graph) {
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, PW)
                 .putRolePlayer(entityLocation, Warsaw);
@@ -185,12 +188,12 @@ public class GeoGraph extends TestGraph{
     }
 
     @Override
-    protected void buildRules() {
-        RuleType inferenceRule = graknGraph.admin().getMetaRuleInference();
-        Pattern transitivity_LHS = and(graknGraph.graql().parsePatterns(
+    public void buildRules(GraknGraph graph) {
+        RuleType inferenceRule = graph.admin().getMetaRuleInference();
+        Pattern transitivity_LHS = and(graph.graql().parsePatterns(
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
-        Pattern transitivity_RHS = and(graknGraph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
+        Pattern transitivity_RHS = and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
         inferenceRule.addRule(transitivity_LHS, transitivity_RHS);
     }
 }

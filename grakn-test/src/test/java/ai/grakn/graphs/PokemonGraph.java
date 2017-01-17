@@ -16,32 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
-import org.junit.After;
-import org.junit.Before;
+import ai.grakn.example.PokemonGraphFactory;
 
-import static ai.grakn.test.GraknTestEnv.*;
+import java.util.function.Consumer;
 
-/**
- * Abstract test class that provides a new empty graph every test that can be committed to.
- */
-public abstract class AbstractGraphTest extends AbstractGraknTest {
-    protected GraknGraphFactory factory;
-    protected GraknGraph graph;
+public class PokemonGraph extends TestGraph {
 
-    @Before
-    public void createGraph() {
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
-        graph.showImplicitConcepts(true);
+    public static Consumer<GraknGraph> get(){
+        return new MovieGraph().build();
     }
 
-    @After
-    public void closeGraph() throws Exception {
-        graph.clear();
-        graph.close();
+    @Override
+    public void buildOntology(GraknGraph graph) {
+        PokemonGraphFactory.loadGraph(graph);
     }
 }

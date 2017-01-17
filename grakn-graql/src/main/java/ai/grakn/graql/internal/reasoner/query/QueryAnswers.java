@@ -66,20 +66,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @return filtered answers
      */
     public QueryAnswers filterVars(Set<VarName> vars) {
-        /*
-        QueryAnswers results = new QueryAnswers();
-        if (this.isEmpty()) return results;
-        this.forEach(answer -> {
-            Map<VarName, Concept> map = new HashMap<>();
-            answer.forEach((var, concept) -> {
-                if (vars.contains(var)) {
-                    map.put(var, concept);
-                }
-            });
-            if (!map.isEmpty()) results.add(map);
-        });
-        return new QueryAnswers(results.stream().distinct().collect(Collectors.toSet()));
-        */
         return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result, vars::contains)).collect(Collectors.toSet()));
     }
 

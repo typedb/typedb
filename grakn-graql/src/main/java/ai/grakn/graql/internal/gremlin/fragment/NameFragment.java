@@ -18,30 +18,31 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static ai.grakn.util.Schema.ConceptProperty.NAME;
 
 class NameFragment extends AbstractFragment {
 
-    private final String name;
+    private final TypeName name;
 
-    NameFragment(VarName start, String name) {
+    NameFragment(VarName start, TypeName name) {
         super(start);
         this.name = name;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(NAME.name(), name);
+        traversal.has(NAME.name(), name.getValue());
     }
 
     @Override
     public String getName() {
-        return "[name:" + idToString(name) + "]";
+        return "[name:" + typeNameToString(name) + "]";
     }
 
     @Override

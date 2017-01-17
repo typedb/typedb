@@ -20,13 +20,18 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.test.EngineContext;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;
 
-public class ClusterManagerTest { //extends EngineTestBase {
+public class ClusterManagerTest {
     private final ClusterManager clusterManager = ClusterManager.getInstance();
+
+//    @ClassRule
+//    public static final EngineContext engine = EngineContext.startServer();
 
     // There is a strange issue that only shows up when running these tests on Travis; as such this test is being ignored
     // for now in order to get the code into central now, and fix later.

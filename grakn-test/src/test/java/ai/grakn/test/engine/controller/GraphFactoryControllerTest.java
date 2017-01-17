@@ -21,11 +21,12 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST.GraphConfig;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -40,7 +41,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class GraphFactoryControllerTest extends EngineTestBase {
+public class GraphFactoryControllerTest {
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Ignore //TODO: Fix this test. Ignored because low priority and we want to free up Jenkins
 	@Test
 	public void testKeyspaceList() {

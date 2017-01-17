@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.VarAdmin;
 
 /**
@@ -37,7 +38,7 @@ import ai.grakn.graql.admin.VarAdmin;
 public interface Var extends Pattern {
 
     /**
-     * @param id a string that this variable's ID must match
+     * @param id a ConceptId that this variable's ID must match
      * @return this
      */
     Var id(ConceptId id);
@@ -47,6 +48,12 @@ public interface Var extends Pattern {
      * @return this
      */
     Var name(String name);
+
+    /**
+     * @param name a type name that this variable's name must match
+     * @return this
+     */
+    Var name(TypeName name);
 
     /**
      * this variable must have a value
@@ -104,6 +111,15 @@ public interface Var extends Pattern {
      * @return this
      */
     Var has(String type, Var var);
+
+    /**
+     * the variable must have a resource or name of the given type that matches the given atom
+     *
+     * @param type a resource type in the ontology
+     * @param var a variable representing a resource
+     * @return this
+     */
+    Var has(TypeName type, Var var);
 
     /**
      * @param type a concept type id that the variable must be of this type

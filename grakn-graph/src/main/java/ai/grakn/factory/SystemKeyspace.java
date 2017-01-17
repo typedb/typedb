@@ -1,8 +1,10 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.GraknVersion;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -51,11 +53,12 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final String SYSTEM_GRAPH_NAME = "graknSystem";
     public static final String SYSTEM_ONTOLOGY_FILE = "system.gql";
-    public static final String KEYSPACE_ENTITY = "keyspace";
-    public static final String KEYSPACE_RESOURCE = "keyspace-name";
+    public static final TypeName KEYSPACE_ENTITY = TypeName.of("keyspace");
+    public static final TypeName KEYSPACE_RESOURCE = TypeName.of("keyspace-name");
+    public static final TypeName SYSTEM_VERSION = TypeName.of("system-version");
 
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
-    
+
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
     private final InternalFactory<M, T> factory;
 
@@ -69,13 +72,13 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     public SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
         openSpaces.computeIfAbsent(keyspace, name -> {
             try (GraknGraph graph = factory.getGraph(false)) {
-                ResourceType<String> keyspaceName = graph.getResourceType(KEYSPACE_RESOURCE);
+                ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
                 Resource<String> resource = keyspaceName.getResource(keyspace);
                 if (resource == null) {
                     resource = keyspaceName.putResource(keyspace);
                 }
                 if (resource.owner() == null) {
-                    graph.getEntityType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
+                    graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
                 }
                 graph.commit();
             } catch (GraknValidationException e) {
@@ -93,7 +96,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
      */
     public void loadSystemOntology() {
         try (GraknGraph graph = factory.getGraph(false)) {
-            if (graph.getEntityType(KEYSPACE_ENTITY) != null) {
+            if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;
             }
             ClassLoader loader = this.getClass().getClassLoader();

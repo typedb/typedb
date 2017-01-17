@@ -18,20 +18,20 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.graql.reasoner.graphs.MatrixGraph;
-import ai.grakn.test.graql.reasoner.graphs.MatrixGraphII;
-import ai.grakn.test.graql.reasoner.graphs.NguyenGraph;
-import ai.grakn.test.graql.reasoner.graphs.PathGraph;
-import ai.grakn.test.graql.reasoner.graphs.PathGraphII;
-import ai.grakn.test.graql.reasoner.graphs.PathGraphSymmetric;
-import ai.grakn.test.graql.reasoner.graphs.TailRecursionGraph;
-import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import org.junit.BeforeClass;
+import ai.grakn.graphs.MatrixGraph;
+import ai.grakn.graphs.MatrixGraphII;
+import ai.grakn.graphs.NguyenGraph;
+import ai.grakn.graphs.PathGraph;
+import ai.grakn.graphs.PathGraphII;
+import ai.grakn.graphs.PathGraphSymmetric;
+import ai.grakn.graphs.TailRecursionGraph;
+import ai.grakn.test.GraphContext;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.stream.Collectors;
@@ -40,19 +40,52 @@ import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-public class RecursiveInferenceTest extends AbstractGraknTest {
-    @BeforeClass
-    public static void onStartup() throws Exception {
+public class RecursiveInferenceTest {
+
+    // The recursivity graph is loaded to test if possible, but is unused elsewhere
+    @ClassRule
+    public static final GraphContext recursivityContext = GraphContext.preLoad("recursivity-test.gql");
+
+    @ClassRule
+    public static final GraphContext recursivitySGContext = GraphContext.preLoad("recursivity-sg-test.gql");
+
+    @ClassRule
+    public static final GraphContext recursivityTCContext = GraphContext.preLoad("recursivity-tc-test.gql");
+
+    @ClassRule
+    public static final GraphContext recursivityRSGContext = GraphContext.preLoad("recursivity-rsg-test.gql");
+
+    @ClassRule
+    public static final GraphContext ancestorFriendContext = GraphContext.preLoad("ancestor-friend-test.gql");
+
+    @ClassRule
+    public static final GraphContext transitivityContext = GraphContext.preLoad("transitivity-test.gql");
+
+    @ClassRule
+    public static final GraphContext ancestorContext = GraphContext.preLoad("ancestor-test.gql");
+
+    @ClassRule
+    public static final GraphContext reachabilityContext = GraphContext.preLoad("reachability-test.gql");
+
+    @ClassRule
+    public static final GraphContext sameGenerationContext = GraphContext.preLoad("same-generation-test.gql");
+
+    @ClassRule
+    public static final GraphContext reachabilitySymmetricContext = GraphContext.preLoad("reachability-test-symmetric.gql");
+
+    @Rule
+    public final GraphContext graphContext = GraphContext.empty();
+
+    @Before
+    public void onStartup() throws Exception {
         assumeTrue(usingTinker());
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test
     public void testTransitivity() {
-        GraknGraph graph = TestGraph.getGraph("index", "transitivity-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
-        
+        QueryBuilder qb = transitivityContext.graph().graql().infer(false);
+        QueryBuilder iqb = transitivityContext.graph().graql().infer(true);
         String queryString = "match ($x, $y) isa R;$x has index 'i'; select $y;";
         String explicitQuery = "match $y has index $ind;" +
                             "{$ind value 'j';} or {$ind value 's';} or {$ind value 'v';}; select $y;";
@@ -61,18 +94,12 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    @Test
-    public void testRecursivity() {
-        GraknGraph graph = TestGraph.getGraph("name", "recursivity-test.gql");
-            }
-
     /*single-directional*/
     /**from Bancilhon - An Amateur's Introduction to Recursive Query Processing Strategies p. 25*/
     @Test
     public void testAncestor() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = ancestorContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
                             "$Y has name $name;select $Y, $name;";
@@ -86,9 +113,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**as above but both directions*/
     @Test
     public void testAncestorPrime() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = ancestorContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
 
         String queryString = "match ($X, $Y) isa Ancestor;$X has name 'aa'; select $Y;";
         String explicitQuery = "match $Y isa Person, has name $name;" +
@@ -100,9 +126,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testAncestor2() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = ancestorContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;";
         String explicitQuery = "match $Y isa Person, has name $nameY; $X isa Person, has name $nameX;" +
@@ -118,10 +143,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testAncestor2Prime() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
-
+        QueryBuilder qb = ancestorContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
         String queryString = "match ($X, $Y) isa Ancestor;";
         String explicitQuery = "match $Y isa Person, has name $nameY; $X isa Person, has name $nameX;" +
                 "{$nameX value 'a';$nameY value 'aa';} or {$nameX value 'a';$nameY value 'ab';} or" +
@@ -144,9 +167,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
         String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; select $Y, $name;";
         String explicitQuery = "match $Y has name $name;{$name value 'd';} or {$name value 'g';};";
@@ -158,9 +180,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriendPrime() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; select $Y;";
         String explicitQuery = "match $Y has name $name;{$name value 'd';} or {$name value 'g';}; select $Y;";
@@ -172,9 +193,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend2() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
         String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; select $X;";
         String explicitQuery = "match $X has name $name;" +
@@ -187,9 +207,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend2Prime() {
-        GraknGraph graph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
+        QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; select $X;";
         String explicitQuery = "match $X has name $name;" +
@@ -204,9 +223,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     @Ignore
     @Test
     public void testSameGeneration(){
-        GraknGraph graph = TestGraph.getGraph("name", "recursivity-sg-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = recursivitySGContext.graph().graql().infer(false);
+        QueryBuilder iqb = recursivitySGContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; select $y;";
         String explicitQuery = "match $y has name $name;{$name value 'f';} or {$name value 'h';};select $y;";
@@ -218,9 +236,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**from Vieille - Recursive Query Processing: The power of logic p. 18*/
     @Test
     public void testTC() {
-        GraknGraph graph = TestGraph.getGraph("index", "recursivity-tc-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = recursivityTCContext.graph().graql().infer(false);
+        QueryBuilder iqb = recursivityTCContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; select $x;";
         String explicitQuery = "match $x has index 'a2';";
@@ -231,9 +248,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testReachability(){
-        GraknGraph graph = TestGraph.getGraph("index", "reachability-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = reachabilityContext.graph().graql().infer(false);
+        QueryBuilder iqb = reachabilityContext.graph().graql().infer(true);
 
         String queryString = "match (reach-from: $x, reach-to: $y) isa reachable;";
         String explicitQuery = "match $x has index $indX;$y has index $indY;" +
@@ -251,9 +267,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testReachabilitySymmetric(){
-        GraknGraph graph = TestGraph.getGraph("index", "reachability-test-symmetric.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = reachabilitySymmetricContext.graph().graql().infer(false);
+        QueryBuilder iqb = reachabilitySymmetricContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa reachable;$x has index 'a';select $y;";
         String explicitQuery = "match $y has index $indY;" +
@@ -267,9 +282,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     @Test
     public void testMatrix(){
         final int N = 5;
-        GraknGraph graph = MatrixGraph.getGraph(N, N);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        MatrixGraph.get(N, N).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa a-entity or $y isa end;";
@@ -283,9 +298,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     public void testTailRecursion(){
         final int N = 10;
         final int M = 5;
-        GraknGraph graph = TailRecursionGraph.getGraph(N, M);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        TailRecursionGraph.get(N, M).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa b-entity;";
@@ -298,9 +313,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     @Test
     public void testNguyen(){
         final int N = 9;
-        GraknGraph graph = NguyenGraph.getGraph(N);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        NguyenGraph.get(N).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
@@ -314,9 +329,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     @Test
     public void testNguyen2(){
         final int N = 9;
-        GraknGraph graph = NguyenGraph.getGraph(N);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        NguyenGraph.get(N).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match $y isa S;";
         String explicitQuery = "match $y isa a-entity;";
@@ -328,9 +343,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**test 6.6 from Cao p.76*/
     @Test
     public void testSameGenerationCao(){
-        GraknGraph graph = TestGraph.getGraph("name", "same-generation-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = sameGenerationContext.graph().graql().infer(false);
+        QueryBuilder iqb = sameGenerationContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa SameGen;$x has name 'ann';select $y;";
         String explicitQuery = "match $y has name $name;" +
@@ -345,9 +359,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     public void testMatrixII(){
         final int N = 5;
         final int M = 5;
-        GraknGraph graph = MatrixGraphII.getGraph(N, M);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        MatrixGraphII.getGraph(N, M).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
@@ -360,9 +374,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     @Test
     public void testPath(){
         final int N = 3;
-        GraknGraph graph = PathGraph.getGraph(N, 3);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        PathGraph.get(N, 3).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -374,9 +388,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     @Test
     public void testPathPrime(){
         final int N = 3;
-        GraknGraph graph = PathGraph.getGraph(N, 3);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        PathGraph.get(N, 3).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -389,9 +403,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     @Test
     public void testPathSymmetric(){
         final int N = 3;
-        GraknGraph graph = PathGraphSymmetric.getGraph(N, 3);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        PathGraphSymmetric.get(N, 3).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -404,9 +418,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 3;
-        GraknGraph graph = PathGraphII.getGraph(N, N);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        PathGraphII.get(N, N).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -419,9 +433,9 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathIIPrime(){
         final int N = 3;
-        GraknGraph graph = PathGraphII.getGraph(N, N);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        PathGraphII.get(N, N).accept(graphContext.graph());
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -433,9 +447,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
     @Test
     public void testReverseSameGeneration(){
-        GraknGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = recursivityRSGContext.graph().graql().infer(false);
+        QueryBuilder iqb = recursivityRSGContext.graph().graql().infer(true);
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; select $y;";
         String explicitQuery = "match $y isa person, has name $name;" +
@@ -446,9 +459,8 @@ public class RecursiveInferenceTest extends AbstractGraknTest {
     }
     @Test
     public void testReverseSameGeneration2() {
-        GraknGraph graph = TestGraph.getGraph("name", "recursivity-rsg-test.gql");
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = recursivityRSGContext.graph().graql().infer(false);
+        QueryBuilder iqb = recursivityRSGContext.graph().graql().infer(true);
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;";
         String explicitQuery = "match $x has name $nameX;$y has name $nameY;" +

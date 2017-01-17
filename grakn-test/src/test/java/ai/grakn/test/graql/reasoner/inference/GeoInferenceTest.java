@@ -18,37 +18,34 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
-import junit.framework.TestCase;
+import ai.grakn.graphs.GeoGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-public class GeoInferenceTest extends AbstractGraknTest {
+public class GeoInferenceTest {
+
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
     }
 
+    @Rule
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+
     @Test
     public void testQuery() {
-        GraknGraph graph = GeoGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa city;$x has name $name;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -62,9 +59,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testQueryPrime() {
-        GraknGraph graph = GeoGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa city;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -78,9 +74,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testQuery2() {
-        GraknGraph graph = GeoGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -95,9 +90,8 @@ public class GeoInferenceTest extends AbstractGraknTest {
 
     @Test
     public void testQuery2Prime() {
-        GraknGraph graph = GeoGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa university;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";

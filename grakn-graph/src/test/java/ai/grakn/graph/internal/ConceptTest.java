@@ -94,7 +94,7 @@ public class ConceptTest extends GraphTestBase{
     public void testGetType() {
         concept.setType("test_type");
         Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(concept.getType(), conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
+        assertEquals(concept.getType().getValue(), conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
     }
 
     @Test

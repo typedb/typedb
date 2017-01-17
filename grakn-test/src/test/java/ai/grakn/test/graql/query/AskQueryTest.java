@@ -19,8 +19,10 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,15 +32,19 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AskQueryTest extends AbstractMovieGraphTest {
+public class AskQueryTest {
+
+    @ClassRule
+    public static final GraphContext graph = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        qb = graph.graql();
+        qb = graph.graph().graql();
     }
 
     @Test

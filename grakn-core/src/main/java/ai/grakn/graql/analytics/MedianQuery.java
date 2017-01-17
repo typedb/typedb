@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,7 +40,7 @@ public interface MedianQuery extends ComputeQuery<Optional<Number>> {
      * @param resourceTypeNames a collection of types of resources to execute the query on
      * @return a MedianQuery with the subTypeNames set
      */
-    MedianQuery of(Collection<String> resourceTypeNames);
+    MedianQuery of(Collection<TypeName> resourceTypeNames);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
@@ -53,7 +54,7 @@ public interface MedianQuery extends ComputeQuery<Optional<Number>> {
      * @return a MedianQuery with the subTypeNames set
      */
     @Override
-    MedianQuery in(Collection<String> subTypeNames);
+    MedianQuery in(Collection<TypeName> subTypeNames);
 
     /**
      * Execute the query.

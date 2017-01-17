@@ -97,19 +97,19 @@ public class PostprocessingTest extends GraphTestBase{
         Edge tinkerEdge = fromInstance.getVertex().addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
         EdgeImpl edge = new EdgeImpl(tinkerEdge, graknGraph);
 
-        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName());
+        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
         edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
 
         if (fromInstance.getId() != null)
             edge.setProperty(Schema.EdgeProperty.FROM_ID, fromInstance.getId().getValue());
-        edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName());
+        edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
 
         if (toInstance.getId() != null)
             edge.setProperty(Schema.EdgeProperty.TO_ID, toInstance.getId().getValue());
-        edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName());
+        edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
 
-        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.type().getName());
-        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.type().getName());
+        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.type().getName().getValue());
+        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.type().getName().getValue());
     }
 
     @Test

@@ -18,12 +18,11 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.graql.reasoner.graphs.TestGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.stream.Collectors;
@@ -33,21 +32,21 @@ import static org.junit.Assume.assumeTrue;
 
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class WineInferenceTest extends AbstractGraknTest {
+public class WineInferenceTest {
 
-    private static GraknGraph graph;
+    @ClassRule
+    public static final GraphContext wineGraph = GraphContext.preLoad("wines-test.gql", "wines-rules.gql");
 
     @BeforeClass
     public static void setUpClass() {
         assumeTrue(usingTinker());
-        graph = TestGraph.getGraph("name", "wines-test.gql", "wines-rules.gql");
     }
 
     @Test
     public void testRecommendation() {
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;";
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryBuilder iqb = graph.graql().infer(true);
+        QueryBuilder qb = wineGraph.graph().graql().infer(false);
+        QueryBuilder iqb = wineGraph.graph().graql().infer(true);
 
         String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
                             "{$nameP value 'Bob';$nameW value 'White Champagne';} or" +

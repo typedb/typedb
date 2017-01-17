@@ -20,8 +20,9 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -35,7 +36,7 @@ public class Fragments {
     private Fragments() {}
 
     public static Fragment shortcut(
-            Optional<String> relationType, Optional<String> roleStart, Optional<String> roleEnd,
+            Optional<TypeName> relationType, Optional<TypeName> roleStart, Optional<TypeName> roleEnd,
             VarName start, VarName end
     ) {
         return new ShortcutFragment(relationType, roleStart, roleEnd, start, end);
@@ -119,7 +120,7 @@ public class Fragments {
         return new IdFragment(start, id);
     }
 
-    public static Fragment name(VarName start, String name) {
+    public static Fragment name(VarName start, TypeName name) {
         return new NameFragment(start, name);
     }
 

@@ -60,17 +60,17 @@ public class SystemKeyspaceTest {
 
         //Check Plays Roles
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userName.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userName.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userPassword.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userPassword.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userFirstName.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userFirstName.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userLastName.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userLastName.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userEmail.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userEmail.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()).getValue())));
     }
 
 }
