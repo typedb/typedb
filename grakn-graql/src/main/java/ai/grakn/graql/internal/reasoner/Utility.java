@@ -403,22 +403,7 @@ public class Utility {
         Var headVar = var().isa(name(relation.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), var(varNames.peek()));
         return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
-
-    /**
-     * For a given role returns all its non-meta super roles.
-     * @param role in question
-     * @return set of role's non-meta super types
-     */
-    public static Set<RoleType> getNonMetaSuperRoleTypes(RoleType role){
-        Set<RoleType> roles = new HashSet<>();
-        RoleType baseRole = role.superType();
-        while(!Schema.MetaSchema.isMetaName(baseRole.getName())){
-            roles.add(baseRole);
-            baseRole = baseRole.superType();
-        }
-        return roles;
-    }
-
+    
     /**
      * @param role in question
      * @return top non-meta super role of the role
