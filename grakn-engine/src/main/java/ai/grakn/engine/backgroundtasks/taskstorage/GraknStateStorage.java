@@ -310,7 +310,7 @@ public class GraknStateStorage implements StateStorage {
             return state;
         }
 
-    private synchronized <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
+    private <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
         double sleepFor = 100;
         for (int i = 0; i < retries; i++) {
 
