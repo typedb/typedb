@@ -20,7 +20,6 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
-import ai.grakn.graql.internal.shell.GraqlSignalHandler;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Charsets;
@@ -43,7 +42,6 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import sun.misc.Signal;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +74,6 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
@@ -146,7 +143,6 @@ public class GraqlShell {
 
     private Session session;
 
-    private boolean waitingQuery = false;
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
 
     /**
@@ -302,11 +298,6 @@ public class GraqlShell {
         try {
             console = new ConsoleReader(System.in, System.out);
 
-            // Create handler to handle SIGINT (Ctrl-C) interrupts
-            Signal signal = new Signal("INT");
-            GraqlSignalHandler signalHandler = new GraqlSignalHandler(this);
-            Signal.handle(signal, signalHandler);
-
             try {
                 session = client.connect(this, uri).get();
             } catch (ExecutionException e) {
@@ -379,7 +370,6 @@ public class GraqlShell {
 
         // Create history file
         File historyFile = new File(System.getProperty("java.io.tmpdir") + historyFilename);
-        //noinspection ResultOfMethodCallIgnored
         historyFile.createNewFile();
         FileHistory history = new FileHistory(historyFile);
         console.setHistory(history);
@@ -547,7 +537,6 @@ public class GraqlShell {
 
     private void waitForEnd() {
         // Wait until the command is executed before continuing
-        waitingQuery = true;
         synchronized (this) {
             try {
                 wait();
@@ -555,7 +544,6 @@ public class GraqlShell {
                 e.printStackTrace();
             }
         }
-        waitingQuery = false;
     }
 
     private void setDisplayOptions(Set<String> displayOptions) {
@@ -598,19 +586,6 @@ public class GraqlShell {
         }
 
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
-    }
-
-    /**
-     * Interrupt the shell. If the user is waiting for query results, tell the server to stop sending them.
-     * Otherwise, exit normally.
-     */
-    public void interrupt() {
-        if (waitingQuery) {
-            sendJson(Json.object(ACTION, ACTION_QUERY_ABORT));
-            waitingQuery = false;
-        } else {
-            System.exit(0);
-        }
     }
 
     private void sendJson(Json json) {
