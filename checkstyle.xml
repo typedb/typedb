@@ -10,6 +10,12 @@
         <property name="eachLine" value="true"/>
     </module>
 
+    <!-- Make sure every source file has the license at the top -->
+    <module name="RegexpHeader">
+        <property name="headerFile" value="header.txt"/>
+        <property name="fileExtensions" value="java"/>
+    </module>
+
     <module name="TreeWalker">
 
         <!-- Java filename must match name of outer class -->

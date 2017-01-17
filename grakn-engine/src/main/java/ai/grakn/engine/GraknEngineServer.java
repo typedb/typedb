@@ -137,6 +137,19 @@ public class GraknEngineServer {
 
     public static void stopHTTP() {
         Spark.stop();
+
+        // Block until server is truly stopped
+        // This occurs when there is no longer a port assigned to the Spark server
+        boolean running = true;
+        while (running) {
+            try {
+                Spark.port();
+            }
+            catch(IllegalStateException e){
+                LOG.debug("Spark server has been stopped");
+                running = false;
+            }
+        }
     }
 
     public static void stopCluster() {
