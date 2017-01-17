@@ -78,11 +78,9 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
                 .filter(pred -> permuteVars.contains(pred.getVarName()))
                 .collect(Collectors.toSet());
         QueryAnswers filteredOutAnswers = new QueryAnswers();
-        subs.forEach( sub -> {
-            permutedAnswers.stream()
-                    .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
-                    .forEach(filteredOutAnswers::add);
-        });
+        subs.forEach( sub -> permutedAnswers.stream()
+                .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
+                .forEach(filteredOutAnswers::add));
         permutedAnswers.removeAll(filteredOutAnswers);
         return permutedAnswers;
     }
