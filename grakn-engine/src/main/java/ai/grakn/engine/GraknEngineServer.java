@@ -143,7 +143,7 @@ public class GraknEngineServer {
         boolean running = true;
         while (running) {
             try {
-                Spark.port();
+                port();
             }
             catch(IllegalStateException e){
                 LOG.debug("Spark server has been stopped");
