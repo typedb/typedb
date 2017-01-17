@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.admin.Atomic;
 

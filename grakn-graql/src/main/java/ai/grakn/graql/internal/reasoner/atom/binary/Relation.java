@@ -436,7 +436,7 @@ public class Relation extends TypeAtom {
         return vars;
     }
 
-    public Set<VarName> getMappedRolePlayers() {
+    private Set<VarName> getMappedRolePlayers() {
         return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
     }
 

@@ -55,7 +55,7 @@ class MatchQueryInfer extends MatchQueryModifier {
         GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
-        
+
         Reasoner.linkConceptTypes(graph);
         if (!Reasoner.hasRules(graph)) return streamWithVarNames();
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();

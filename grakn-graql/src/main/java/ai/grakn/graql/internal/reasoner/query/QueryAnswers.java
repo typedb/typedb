@@ -122,17 +122,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
     }
 
     /**
-     * filter answers by discarding answers with incomplete set of variables
-     * @param vars variable set considered complete
-     * @return filtered answers
-     */
-    public QueryAnswers filterIncomplete(Set<VarName> vars) {
-        return new QueryAnswers(this.stream()
-                .filter(answer -> answer.keySet().containsAll(vars))
-                .collect(Collectors.toSet()));
-    }
-
-    /**
      * filter answers by applying NonEquals filters
      * @param query query containing filters
      * @return filtered answers
@@ -145,32 +134,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         if(filters.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers(this);
         for (NotEquals filter : filters) results = filter.filter(results);
-        return results;
-    }
-
-    /**
-     * filter answers by discarding answers not adhering to specific types
-     * @param varTypeMap map of variable name - corresponding type pairs
-     * @return filtered vars
-     */
-    public QueryAnswers filterByTypes(Map<VarName, Type> varTypeMap){
-        QueryAnswers results = new QueryAnswers();
-        if(this.isEmpty()) return results;
-        Set<VarName> vars = getVars();
-        Map<VarName, Type> filteredMap = new HashMap<>();
-        varTypeMap.forEach( (v, t) -> {
-            if(vars.contains(v)) filteredMap.put(v, t);
-        });
-        if (filteredMap.isEmpty()) return this;
-        this.forEach(answer -> {
-            boolean isCompatible = true;
-            Iterator<Map.Entry<VarName, Type>> it = filteredMap.entrySet().iterator();
-            while( it.hasNext() && isCompatible){
-                Map.Entry<VarName, Type> entry = it.next();
-                isCompatible = answer.get(entry.getKey()).asInstance().type().equals(entry.getValue());
-            }
-            if (isCompatible) results.add(answer);
-        });
         return results;
     }
 

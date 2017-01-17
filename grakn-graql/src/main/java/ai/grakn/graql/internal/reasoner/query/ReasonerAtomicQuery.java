@@ -329,9 +329,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         QueryAnswers filteredAnswers = answers
                 .filterVars(this.getVarNames())
-                //.filterIncomplete(this.getSelectedNames())
                 .permute(this.getAtom());
-
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
