@@ -66,26 +66,24 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class TaskRunner implements Runnable, AutoCloseable {
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final static KafkaLogger LOG = KafkaLogger.getInstance();
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
+    private final static int EXECUTOR_SIZE = properties.getAvailableThreads();
+    private final static String ENGINE_ID = EngineID.getInstance().id();
 
     private ExecutorService executor;
-    private final Integer allowableRunningTasks;
     private final Set<String> runningTasks = new HashSet<>();
-    private final String engineID = EngineID.getInstance().id();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private StateStorage graknStorage;
     private SynchronizedStateStorage zkStorage;
     private KafkaConsumer<String, String> consumer;
     private volatile boolean running;
-    private CountDownLatch waitToClose;
     private boolean initialised = false;
 
     public TaskRunner() {
-        allowableRunningTasks = properties.getAvailableThreads();
         running = false;
     }
 
@@ -100,7 +98,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 LOG.debug("TaskRunner polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(WORK_QUEUE_TOPIC).stream().map(i -> new TopicPartition(WORK_QUEUE_TOPIC, i.partition())).collect(toSet())));
 
                 // Poll for new tasks only when we know we have space to accept them.
-                if (getRunningTasksCount() < allowableRunningTasks) {
+                if (getRunningTasksCount() < EXECUTOR_SIZE) {
                     processRecords(consumer.poll(POLLING_FREQUENCY));
                 }
             }
@@ -116,7 +114,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
         finally {
             consumer.commitSync();
             consumer.close();
-            waitToClose.countDown();
         }
     }
 
@@ -134,7 +131,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
             updateOwnState();
             executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-            waitToClose = new CountDownLatch(1);
             LOG.info("TaskRunner opened.");
         }
         else {
@@ -151,14 +147,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
             running = false;
-            noThrow(consumer::wakeup, "Could not call wakeup on Kafka Consumer.");
 
-            // Wait for thread calling run() to wakeup and close consumer.
-            try {
-                waitToClose.await(5*POLLING_FREQUENCY, MILLISECONDS);
-            } catch (Throwable t) {
-                LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
-            }
+            // Stop execution of kafka consumer
+            noThrow(consumer::wakeup, "Could not call wakeup on Kafka Consumer.");
 
             // Interrupt all currently running threads - these will be re-allocated to another Engine.
             noThrow(executor::shutdownNow, "Could shutdown executor pool.");
@@ -178,8 +169,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private void processRecords(ConsumerRecords<String, String> records) {
         for(ConsumerRecord<String, String> record: records) {
             LOG.debug("Got a record\n\t\tkey: "+record.key()+"\n\t\toffset "+record.offset()+"\n\t\tvalue "+record.value());
-            LOG.debug("Runner currently has tasks: "+getRunningTasksCount()+" allowed: "+allowableRunningTasks);
-            if(getRunningTasksCount() >= allowableRunningTasks) {
+            LOG.debug("Runner currently has tasks: "+getRunningTasksCount()+" allowed: "+EXECUTOR_SIZE);
+            if(getRunningTasksCount() >= EXECUTOR_SIZE) {
                 seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
                 break;
             }
@@ -193,7 +184,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             // Mark as RUNNING and update task & runner states.
             addRunningTask(id);
-            updateTaskState(id, RUNNING, this.getClass().getName(), engineID, null, null);
+            updateTaskState(id, RUNNING, this.getClass().getName(), ENGINE_ID, null, null);
 
             // Submit to executor
             try {
@@ -262,7 +253,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     private void updateTaskState(String id, TaskStatus status, String statusChangeBy, String engineID,
                                  Throwable failure, String checkpoint) {
-        LOG.debug("Updating state of task " + id);
+        LOG.debug("Marking task " + id + " as " + status.name());
         zkStorage.updateState(id, status, engineID, checkpoint);
         graknStorage.updateState(id, status, statusChangeBy, engineID, failure, checkpoint, null);
     }
@@ -272,7 +263,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         out.put(runningTasks);
 
         try {
-            zkStorage.connection().setData().forPath(RUNNERS_STATE+"/"+ engineID, out.toString().getBytes(StandardCharsets.UTF_8));
+            zkStorage.connection().setData().forPath(RUNNERS_STATE+"/"+ ENGINE_ID, out.toString().getBytes());
         }
         catch (Exception e) {
             LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + e);
@@ -280,16 +271,16 @@ public class TaskRunner implements Runnable, AutoCloseable {
     }
 
     private void registerAsRunning() throws Exception {
-        if(zkStorage.connection().checkExists().forPath(RUNNERS_WATCH + "/" + engineID) == null) {
+        if(zkStorage.connection().checkExists().forPath(RUNNERS_WATCH + "/" + ENGINE_ID) == null) {
             zkStorage.connection().create()
                     .creatingParentContainersIfNeeded()
-                    .withMode(CreateMode.EPHEMERAL).forPath(RUNNERS_WATCH + "/" + engineID);
+                    .withMode(CreateMode.EPHEMERAL).forPath(RUNNERS_WATCH + "/" + ENGINE_ID);
         }
 
-        if(zkStorage.connection().checkExists().forPath(RUNNERS_STATE+"/"+ engineID) == null) {
+        if(zkStorage.connection().checkExists().forPath(RUNNERS_STATE+"/"+ ENGINE_ID) == null) {
             zkStorage.connection().create()
                     .creatingParentContainersIfNeeded()
-                    .forPath(RUNNERS_STATE + "/" + engineID);
+                    .forPath(RUNNERS_STATE + "/" + ENGINE_ID);
         }
 
         LOG.debug("Registered TaskRunner");
