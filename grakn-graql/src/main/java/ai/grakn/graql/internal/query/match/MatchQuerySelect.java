@@ -51,7 +51,11 @@ class MatchQuerySelect extends MatchQueryModifier {
 
     @Override
     public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return inner.stream(graph).map(result -> Maps.filterKeys(result, names::contains));
+        return inner.stream(graph).map(result -> {
+
+            Map<VarName, Concept> filteredResult = Maps.filterKeys(result, names::contains);
+            return filteredResult;
+        });
     }
 
     @Override

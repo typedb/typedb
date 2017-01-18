@@ -18,35 +18,46 @@
 
 package ai.grakn.test.engine.loader;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
+import ai.grakn.util.ErrorMessage;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.UUID;
 
-import static ai.grakn.graql.Graql.parse;
-import static ai.grakn.test.GraknTestEnv.factoryWithNewKeyspace;
+import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-public class LoaderTest extends EngineTestBase {
+public class LoaderTest {
+
     private Loader loader;
     private GraknGraph graph;
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @BeforeClass
     public static void startup() throws Exception {
@@ -58,53 +69,84 @@ public class LoaderTest extends EngineTestBase {
         ((Logger) org.slf4j.LoggerFactory.getLogger(ClusterManager.class)).setLevel(Level.DEBUG);
     }
 
-    //TODO remove this declaration of graph
     @Before
     public void setup() {
-        // this is temporary- will be removed when we do test structure refactor
-        graph = factoryWithNewKeyspace().getGraph();
+        //TODO fix this
+        graph = engine.graphWithNewKeyspace();
         loader = new Loader(graph.getKeyspace());
+        loadOntology(graph.getKeyspace());
     }
 
     @Test
     public void loaderDefaultBatchSizeTest() {
-        loadOntology("dblp-ontology.gql", graph.getKeyspace());
-        loadAndTime();
+        loadAndTime(60000);
     }
 
     @Test
     public void loaderNewBatchSizeTest() {
         loader.setBatchSize(20);
-        loadOntology("dblp-ontology.gql", graph.getKeyspace());
-        loadAndTime();
+        loadAndTime(60000);
     }
 
     @Test
     public void loadWithSmallQueueSizeToBlockTest(){
         loader.setQueueSize(1);
-        loadOntology("dblp-ontology.gql", graph.getKeyspace());
-        loadAndTime();
+        loadAndTime(60000);
     }
 
-    private void loadAndTime(){
-        String toLoad = readFileAsString("small_nametags.gql");
+    @Test(expected=RuntimeException.class)
+    public void loadAndDontWaitForLongEnoughTest(){
+        try {
+            loadAndTime(1);
+        } catch (RuntimeException e) {
+            assertTrue(e.getMessage().equals(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage()));
+            throw e;
+        }
+    }
+
+    public static void loadOntology(String keyspace){
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+
+        EntityType nameTag = graph.putEntityType("name_tag");
+        ResourceType<String> nameTagString = graph.putResourceType("name_tag_string", ResourceType.DataType.STRING);
+        ResourceType<String> nameTagId = graph.putResourceType("name_tag_id", ResourceType.DataType.STRING);
+
+        nameTag.hasResource(nameTagString);
+        nameTag.hasResource(nameTagId);
+
+        try {
+            graph.commit();
+        } catch (GraknValidationException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void loadAndTime(int timeout){
         long startTime = System.currentTimeMillis();
 
-        ((InsertQuery) parse(toLoad)).admin().getVars().stream()
-                .map(Pattern::admin)
-                .map(PatternAdmin::getVars)
-                .map(Graql::insert)
-                .forEach(loader::add);
+        Collection<String> ids = new ArrayList<>();
 
-        loader.waitToFinish(300000);
+        for(int i = 0; i < 50; i++){
+            String id = UUID.randomUUID().toString();
+
+            ids.add(id);
+
+            InsertQuery query = Graql.insert(
+                    var().isa("name_tag")
+                            .has("name_tag_string", UUID.randomUUID().toString())
+                            .has("name_tag_id", id));
+
+            loader.add(query);
+        }
+
+        loader.waitToFinish(timeout);
 
         System.out.println("Time to load:");
         System.out.println(System.currentTimeMillis() - startTime);
 
-        graph = GraphFactory.getInstance().getGraph(graph.getKeyspace());
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
-        assertEquals(100, nameTags.size());
-        assertNotNull(graph.getResourcesByValue("X506965727265204162656c").iterator().next().getId());
+        assertEquals(50, nameTags.size());
+        ids.stream().map(graph::getResourcesByValue).forEach(Assert::assertNotNull);
     }
 }

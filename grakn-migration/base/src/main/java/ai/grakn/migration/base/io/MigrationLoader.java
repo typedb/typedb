@@ -35,7 +35,7 @@ public class MigrationLoader {
         try{
             migrator.migrate().forEach(loader::add);
         } finally {
-            loader.waitToFinish();
+            loader.waitToFinish(60000);
             loader.printLoaderState();
         }
     }

@@ -23,9 +23,10 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -38,6 +39,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
@@ -53,10 +55,13 @@ import static org.junit.Assert.assertTrue;
 /**
  * Each test needs to be run with a clean Kafka to pass
  */
-public class SchedulerTest extends EngineTestBase {
-    private final GraknStateStorage stateStorage = new GraknStateStorage();
+public class SchedulerTest {
+    private GraknStateStorage stateStorage = new GraknStateStorage();
     private SynchronizedStateStorage zkStorage;
     private final ClusterManager clusterManager = ClusterManager.getInstance();
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void setup() throws Exception {
@@ -235,5 +240,16 @@ public class SchedulerTest extends EngineTestBase {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void waitForScheduler(ClusterManager clusterManager, Predicate<Scheduler> fn) throws Exception {
+        int runs = 0;
+
+        while (!fn.test(clusterManager.getScheduler()) && runs < 50 ) {
+            Thread.sleep(100);
+            runs++;
+        }
+
+        System.out.println("wait done, runs " + Integer.toString(runs) + " scheduler " + clusterManager.getScheduler());
     }
 }

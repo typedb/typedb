@@ -25,6 +25,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
@@ -39,11 +40,31 @@ import ai.grakn.util.Schema;
 import javafx.util.Pair;
 import org.json.JSONObject;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.util.SystemOntologyElements.*;
+import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
+import static ai.grakn.engine.util.SystemOntologyElements.ENGINE_ID;
+import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
+import static ai.grakn.engine.util.SystemOntologyElements.RECUR_INTERVAL;
+import static ai.grakn.engine.util.SystemOntologyElements.RUN_AT;
+import static ai.grakn.engine.util.SystemOntologyElements.SCHEDULED_TASK;
+import static ai.grakn.engine.util.SystemOntologyElements.STACK_TRACE;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_BY;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_TIME;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -57,19 +78,21 @@ public class GraknStateStorage implements StateStorage {
     public GraknStateStorage() {}
 
     public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
-        if(taskName == null || createdBy == null || runAt == null || recurring == null)
+        if(taskName == null || createdBy == null || runAt == null || recurring == null) {
             return null;
+        }
 
-        Var state = var(TASK_VAR).isa(SCHEDULED_TASK)
-                                 .has(STATUS, CREATED.toString())
-                                 .has(TASK_CLASS_NAME, taskName)
-                                 .has(CREATED_BY, createdBy)
-                                 .has(RUN_AT, runAt.getTime())
-                                 .has(RECURRING, recurring)
-                                 .has(RECUR_INTERVAL, interval);
+        Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
+                                 .has(STATUS, var().value(CREATED.toString()))
+                                 .has(TASK_CLASS_NAME, var().value(taskName))
+                                 .has(CREATED_BY, var().value(createdBy))
+                                 .has(RUN_AT, var().value(runAt.getTime()))
+                                 .has(RECURRING, var().value(recurring))
+                                 .has(RECUR_INTERVAL, var().value(interval));
 
-        if(configuration != null)
-            state.has(TASK_CONFIGURATION, configuration.toString());
+        if(configuration != null) {
+            state.has(TASK_CONFIGURATION, var().value(configuration.toString()));
+        }
 
         Optional<String> result = attemptCommitToSystemGraph((graph) -> {
             InsertQuery query = graph.graql().insert(state);
@@ -85,47 +108,50 @@ public class GraknStateStorage implements StateStorage {
 
     public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String engineID,
                                Throwable failure, String checkpoint, JSONObject configuration) {
-        if(id == null)
+        if(id == null) {
             return false;
+        }
 
         if(status == null && statusChangeBy == null && engineID == null && failure == null
-                && checkpoint == null && configuration == null)
+                && checkpoint == null && configuration == null) {
             return false;
+        }
 
         // Existing resource relations to remove
-        final Set<String> resourcesToDettach = new HashSet<>();
+        final Set<TypeName> resourcesToDettach = new HashSet<>();
         
         // New resources to add
         Var resources = var(TASK_VAR).id(ConceptId.of(id));
 
         if(status != null) {
-        	resourcesToDettach.add(STATUS);
-        	resourcesToDettach.add(STATUS_CHANGE_TIME);
-            resources.has(STATUS, status.toString())
-                     .has(STATUS_CHANGE_TIME, new Date().getTime());
+            resourcesToDettach.add(STATUS);
+            resourcesToDettach.add(STATUS_CHANGE_TIME);
+            resources.has(STATUS, var().value(status.toString()))
+                     .has(STATUS_CHANGE_TIME, var().value(new Date().getTime()));
         }
         if(statusChangeBy != null) {
             resourcesToDettach.add(STATUS_CHANGE_BY);            
-            resources.has(STATUS_CHANGE_BY, statusChangeBy);
+            resources.has(STATUS_CHANGE_BY, var().value(statusChangeBy));
         }
         if(engineID != null) {
-        	resourcesToDettach.add(ENGINE_ID);        	
-            resources.has(ENGINE_ID, engineID);
+            resourcesToDettach.add(ENGINE_ID);
+            resources.has(ENGINE_ID, var().value(engineID));
         }
         if(failure != null) {
             resourcesToDettach.add(TASK_EXCEPTION);
             resourcesToDettach.add(STACK_TRACE);            
-            resources.has(TASK_EXCEPTION, failure.toString());
-            if(failure.getStackTrace().length > 0)
-                 resources.has(STACK_TRACE, Arrays.toString(failure.getStackTrace()));
+            resources.has(TASK_EXCEPTION, var().value(failure.toString()));
+            if(failure.getStackTrace().length > 0) {
+                resources.has(STACK_TRACE, var().value(Arrays.toString(failure.getStackTrace())));
+            }
         }
         if(checkpoint != null) {
-        	resourcesToDettach.add(TASK_CHECKPOINT);        	
-            resources.has(TASK_CHECKPOINT, checkpoint);
+            resourcesToDettach.add(TASK_CHECKPOINT);
+            resources.has(TASK_CHECKPOINT, var().value(checkpoint));
         }
         if(configuration != null) {
             resourcesToDettach.add(TASK_CONFIGURATION);            
-            resources.has(TASK_CONFIGURATION, configuration.toString());
+            resources.has(TASK_CONFIGURATION, var().value(configuration.toString()));
         }
 
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
@@ -134,10 +160,11 @@ public class GraknStateStorage implements StateStorage {
             final Entity task = graph.getConcept(ConceptId.of(id));
             // Remove relations to any resources we want to currently update
             resourcesToDettach.forEach(typeName -> {
-                RoleType roleType = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(typeName));
-                if (roleType == null)
-                	System.err.println("NO ROLE TYPE FOR RESOURCE " + typeName);
-            	task.relations(roleType).forEach(Concept::delete);            
+                RoleType roleType = graph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(typeName));
+                if (roleType == null) {
+                    System.err.println("NO ROLE TYPE FOR RESOURCE " + typeName);
+                }
+                task.relations(roleType).forEach(Concept::delete);
             });
             // Insert new resources with new values
             graph.graql().insert(resources).execute();
@@ -148,8 +175,9 @@ public class GraknStateStorage implements StateStorage {
     }
 
     public TaskState getState(String id) {
-        if(id == null)
+        if(id == null) {
             return null;
+        }
 
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
             Instance instance = graph.getConcept(ConceptId.of(id));
@@ -160,7 +188,7 @@ public class GraknStateStorage implements StateStorage {
     }
 
     private TaskState instanceToState(GraknGraph graph, Instance instance){
-        Resource<?> name = instance.resources(graph.getResourceType(TASK_CLASS_NAME)).stream().findFirst().orElse(null);
+        Resource<?> name = instance.resources(graph.getType(TASK_CLASS_NAME)).stream().findFirst().orElse(null);
         if (name == null) {
             LOG.error("Could not get 'task-class-name' for " + instance.getId());
             return null;
@@ -188,24 +216,30 @@ public class GraknStateStorage implements StateStorage {
 
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
                                                  int limit, int offset, Boolean recurring) {
-        Var matchVar = var(TASK_VAR).isa(SCHEDULED_TASK);
+        Var matchVar = var(TASK_VAR).isa(name(SCHEDULED_TASK));
 
-        if(taskStatus != null)
-            matchVar.has(STATUS, taskStatus.toString());
-        if(taskClassName != null)
-            matchVar.has(TASK_CLASS_NAME, taskClassName);
-        if(createdBy != null)
-            matchVar.has(CREATED_BY, createdBy);
-        if(recurring != null)
-            matchVar.has(RECURRING, recurring);
+        if(taskStatus != null) {
+            matchVar.has(STATUS, var().value(taskStatus.toString()));
+        }
+        if(taskClassName != null) {
+            matchVar.has(TASK_CLASS_NAME, var().value(taskClassName));
+        }
+        if(createdBy != null) {
+            matchVar.has(CREATED_BY, var().value(createdBy));
+        }
+        if(recurring != null) {
+            matchVar.has(RECURRING, var().value(recurring));
+        }
 
         Optional<Set<Pair<String, TaskState>>> result = attemptCommitToSystemGraph((graph) -> {
             MatchQuery q = graph.graql().match(matchVar);
 
-            if (limit > 0)
+            if (limit > 0) {
                 q.limit(limit);
-            if (offset > 0)
+            }
+            if (offset > 0) {
                 q.offset(offset);
+            }
 
             List<Map<String, Concept>> res = q.execute();
 
@@ -228,56 +262,53 @@ public class GraknStateStorage implements StateStorage {
     /*
     Internal
      */
-    private TaskState buildState(TaskState state, String resourceName, Object resourceValue) {
-        switch (resourceName) {
-            case STATUS:
-                state.status(TaskStatus.valueOf(resourceValue.toString()));
-                break;
-            case STATUS_CHANGE_TIME:
-                state.statusChangeTime(new Date((Long)resourceValue));
-                break;
-            case STATUS_CHANGE_BY:
-                state.statusChangedBy(resourceValue.toString());
-                break;
-            case TASK_CLASS_NAME:
+    private TaskState buildState(TaskState state, TypeName resourceName, Object resourceValue) {
+            if (resourceName.equals(STATUS)) {
+                return state.status(TaskStatus.valueOf(resourceValue.toString()));
+            }
+            if (resourceName.equals(STATUS_CHANGE_TIME)) {
+                return state.statusChangeTime(new Date((Long) resourceValue));
+            }
+            if (resourceName.equals(STATUS_CHANGE_BY)) {
+                return state.statusChangedBy(resourceValue.toString());
+            }
+            if (resourceName.equals(TASK_CLASS_NAME)) {
                 // Set when instantiating TaskState, ignore it now.
-                break;
-            case CREATED_BY:
-                state.creator(resourceValue.toString());
-                break;
-            case ENGINE_ID:
-                state.engineID(resourceValue.toString());
-                break;
-            case RUN_AT:
-                state.runAt(new Date((Long)resourceValue));
-                break;
-            case RECURRING:
-                state.isRecurring((Boolean)resourceValue);
-                break;
-            case RECUR_INTERVAL:
-                state.interval((Long)resourceValue);
-                break;
-            case TASK_EXCEPTION:
-                state.exception(resourceValue.toString());
-                break;
-            case STACK_TRACE:
-                state.stackTrace(resourceValue.toString());
-                break;
-            case TASK_CHECKPOINT:
-                state.checkpoint(resourceValue.toString());
-                break;
-            case TASK_CONFIGURATION:
-                state.configuration(new JSONObject(resourceValue.toString()));
-                break;
-            default:
-                LOG.error("Unknown resource type when deserialising TaskState: "+resourceName);
-                break;
+                return state;
+            }
+            if (resourceName.equals(CREATED_BY)) {
+                return state.creator(resourceValue.toString());
+            }
+            if (resourceName.equals(ENGINE_ID)) {
+                return state.engineID(resourceValue.toString());
+            }
+            if (resourceName.equals(RUN_AT)) {
+                return state.runAt(new Date((Long) resourceValue));
+            }
+            if (resourceName.equals(RECURRING)) {
+                return state.isRecurring((Boolean) resourceValue);
+            }
+            if (resourceName.equals(RECUR_INTERVAL)) {
+                return state.interval((Long) resourceValue);
+            }
+            if (resourceName.equals(TASK_EXCEPTION)) {
+                return state.exception(resourceValue.toString());
+            }
+            if (resourceName.equals(STACK_TRACE)) {
+                return state.stackTrace(resourceValue.toString());
+            }
+            if (resourceName.equals(TASK_CHECKPOINT)) {
+                return state.checkpoint(resourceValue.toString());
+            }
+            if (resourceName.equals(TASK_CONFIGURATION)) {
+                return state.configuration(new JSONObject(resourceValue.toString()));
+            }
+
+            LOG.error("Unknown resource type when deserialising TaskState: " + resourceName);
+            return state;
         }
 
-        return state;
-    }
-
-    private synchronized <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
+    private <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
         double sleepFor = 100;
         for (int i = 0; i < retries; i++) {
 
@@ -293,10 +324,10 @@ public class GraknStateStorage implements StateStorage {
                 return Optional.of(result);
             } 
             catch (GraknBackendException e) {
-            	// retry...
+                // retry...
             }            
             catch (Throwable e) {
-            	e.printStackTrace(System.err);
+                e.printStackTrace(System.err);
                 LOG.error("Failed to validate the graph when updating the state " + getFullStackTrace(e));
                 break;
             } 

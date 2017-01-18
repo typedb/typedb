@@ -25,14 +25,15 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -87,7 +88,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
             if (roleType.isPresent()) {
-                Optional<String> roleTypeName = roleType.get().getTypeName();
+                Optional<TypeName> roleTypeName = roleType.get().getTypeName();
 
                 if (roleTypeName.isPresent()) {
                     shortcutTraversal.addRel(roleTypeName.get(), relationPlayer.getRolePlayer().getVarName());
@@ -204,24 +205,26 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
 
-        Set<String> roleTypes = relationPlayers.stream()
+        Set<TypeName> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
                 .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
-        Optional<String> maybeName =
+        Optional<TypeName> maybeName =
                 var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeName);
 
         maybeName.ifPresent(name -> {
-            RelationType relationType = graph.getRelationType(name);
+            Type type = graph.getType(name);
 
-            if (relationType == null) {
+            if (type == null || !type.isRelationType()) {
                 throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(name));
             }
 
+            RelationType relationType = type.asRelationType();
+
             Collection<RelationType> relationTypes = relationType.subTypes();
 
-            Set<String> validRoles = relationTypes.stream()
+            Set<TypeName> validRoles = relationTypes.stream()
                     .flatMap(r -> r.hasRoles().stream())
                     .map(Type::getName)
                     .collect(toSet());
@@ -237,7 +240,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         // Check all role types exist
         roleTypes.forEach(roleId -> {
-            if (graph.getRoleType(roleId) == null) {
+            Type type = graph.getType(roleId);
+            if (type == null || !type.isRoleType()) {
                 throw new IllegalStateException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
             }
         });
@@ -305,16 +309,16 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             //Isa present
             if (isaProp != null) {
                 VarAdmin isaVar = isaProp.getType();
-                String typeName = isaVar.getTypeName().orElse("");
-                VarName typeVariable = typeName.isEmpty()? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
+                TypeName typeName = isaVar.getTypeName().orElse(null);
+                VarName typeVariable = typeName == null ? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
                 relVar.isa(Graql.var(typeVariable));
-                if (!typeName.isEmpty()) {
+                if (typeName != null) {
                     GraknGraph graph = parent.graph();
                     VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
                     predicate = new IdPredicate(idVar, parent);
-                }
-                else
+                } else {
                     predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+                }
             }
             return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), predicate, parent);
     }

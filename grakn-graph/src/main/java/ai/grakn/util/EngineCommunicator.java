@@ -56,8 +56,9 @@ public class EngineCommunicator {
      * @return The result of the request
      */
     public static String contactEngine(String engineUrl, String restType, String body){
-        if(engineUrl.equals(Grakn.IN_MEMORY))
+        if(engineUrl.equals(Grakn.IN_MEMORY)) {
             return "Engine not contacted due to in memory graph being used";
+        }
 
         for(int i = 0; i < MAX_RETRY; i++) {
             try {

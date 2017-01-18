@@ -24,10 +24,11 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.HashSet;
 import javafx.util.Pair;
 
 import java.util.Map;
@@ -48,11 +49,11 @@ import static ai.grakn.graql.Graql.match;
 public class InferenceRule {
 
     private final ReasonerQueryImpl body;
-    private final AtomicQuery head;
+    private final ReasonerAtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
         body = new ReasonerQueryImpl(match(rule.getLHS()), graph);
-        head = new AtomicQuery(match(rule.getRHS()), graph);
+        head = new ReasonerAtomicQuery(match(rule.getRHS()), graph);
     }
 
     /**
@@ -63,7 +64,7 @@ public class InferenceRule {
     /**
      * @return head of the rule of the form head :- body
      */
-    public AtomicQuery getHead(){return head;}
+    public ReasonerAtomicQuery getHead(){return head;}
 
     /**
      * @return a conclusion atom which parent contains all atoms in the rule
@@ -76,20 +77,19 @@ public class InferenceRule {
     }
 
     private void propagateConstraints(Atom parentAtom){
-        if(parentAtom.isRelation() || parentAtom.isResource()) {
-            Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                    .filter(type -> !body.containsEquivalentAtom(type))
-                    .collect(Collectors.toSet());
-            Set<Predicate> predicates = parentAtom.getPredicates();
-            if(parentAtom.isResource())
-                    predicates.addAll(((Resource) parentAtom).getMultiPredicate());
+        Set<Atom> types = parentAtom.getTypeConstraints().stream()
+                .filter(type -> !body.containsEquivalentAtom(type))
+                .collect(Collectors.toSet());
+        //get all predicates apart from those that correspond to role players with ambiguous role types
+        Set<VarName> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
+        Set<Predicate> predicates = parentAtom.getPredicates().stream()
+                .filter(pred -> !unmappedVars.contains(pred.getVarName()))
+                .collect(Collectors.toSet());
 
-            head.addAtomConstraints(predicates);
-            body.addAtomConstraints(predicates);
-            head.addAtomConstraints(types);
-            body.addAtomConstraints(types);
-        }
-        head.selectAppend(parentAtom.getParentQuery().getSelectedNames());
+        head.addAtomConstraints(predicates);
+        body.addAtomConstraints(predicates);
+        head.addAtomConstraints(types);
+        body.addAtomConstraints(types);
     }
 
     private void rewriteHead(Atom parentAtom){
@@ -103,7 +103,7 @@ public class InferenceRule {
             unify(rewriteUnifiers);
 
             //resolve captures
-            Set<VarName> varIntersection = body.getVarSet();
+            Set<VarName> varIntersection = body.getVarNames();
             varIntersection.retainAll(parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, Patterns.varName()));
@@ -129,6 +129,8 @@ public class InferenceRule {
    public void unify(Atom parentAtom) {
         rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
-        propagateConstraints(parentAtom);
+        if(parentAtom.isRelation() || parentAtom.isResource()) {
+            propagateConstraints(parentAtom);
+        }
     }
 }

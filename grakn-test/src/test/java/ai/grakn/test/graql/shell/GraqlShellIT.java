@@ -18,14 +18,16 @@
 
 package ai.grakn.test.graql.shell;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -49,7 +51,13 @@ import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
 
 @Ignore
-public class GraqlShellIT extends AbstractRollbackGraphTest {
+public class GraqlShellIT {
+
+    @ClassRule
+    public static final GraphContext rule = GraphContext.empty();
+
+    private static final GraknGraph graph = rule.graph();
+
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
@@ -171,7 +179,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testAutocompleteFill() throws Exception {
         String result = testShell("match $x sub concep\t;\n");
-        assertThat(result, containsString(Schema.MetaSchema.RELATION.getName()));
+        assertThat(result, containsString(Schema.MetaSchema.RELATION.getName().getValue()));
     }
 
     @Test
@@ -252,7 +260,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testGraqlOutput() throws Exception {
         String result = testShell("", "-e", "match $x sub concept;", "-o", "graql");
-        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getName())));
+        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getName().getValue())));
     }
 
     @Test

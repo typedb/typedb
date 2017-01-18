@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,13 @@ import javafx.util.Pair;
 import org.json.JSONObject;
 
 import java.lang.ref.SoftReference;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStateStorage implements StateStorage {
@@ -38,14 +44,16 @@ public class InMemoryStateStorage implements StateStorage {
     }
 
     public static synchronized InMemoryStateStorage getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new InMemoryStateStorage();
+        }
         return instance;
     }
 
     public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
-        if(taskName == null || createdBy == null || runAt == null || recurring == null)
+        if(taskName == null || createdBy == null || runAt == null || recurring == null) {
             return null;
+        }
 
         TaskState state = new TaskState(taskName);
         state.creator(createdBy)
@@ -53,10 +61,11 @@ public class InMemoryStateStorage implements StateStorage {
              .isRecurring(recurring)
              .interval(interval);
 
-        if(configuration != null)
-             state.configuration(configuration);
-        else
+        if(configuration != null) {
+            state.configuration(configuration);
+        } else {
             state.configuration(new JSONObject());
+        }
 
         String id = UUID.randomUUID().toString();
         storage.put(id, new SoftReference<>(state));
@@ -66,36 +75,44 @@ public class InMemoryStateStorage implements StateStorage {
 
     public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String engineID,
                                Throwable failure, String checkpoint, JSONObject configuration) {
-        if(id == null)
+        if(id == null) {
             return false;
+        }
 
         if(status == null && statusChangeBy == null && engineID == null && failure == null
-                && checkpoint == null && configuration == null)
+                && checkpoint == null && configuration == null) {
             return false;
+        }
 
         TaskState state = storage.get(id).get();
         synchronized (state) {
             state.status(status);
 
-            if(statusChangeBy != null)
+            if(statusChangeBy != null) {
                 state.statusChangedBy(statusChangeBy);
-            if(engineID != null)
+            }
+            if(engineID != null) {
                 state.engineID(engineID);
-            if(failure != null)
+            }
+            if(failure != null) {
                 state.exception(failure.toString())
-                     .stackTrace(Arrays.toString(failure.getStackTrace()));
-            if(checkpoint != null)
+                        .stackTrace(Arrays.toString(failure.getStackTrace()));
+            }
+            if(checkpoint != null) {
                 state.checkpoint(checkpoint);
-            if(configuration != null)
+            }
+            if(configuration != null) {
                 state.configuration(configuration);
+            }
         }
 
         return true;
     }
 
     public TaskState getState(String id) {
-        if(id == null || !storage.containsKey(id))
+        if(id == null || !storage.containsKey(id)) {
             return null;
+        }
 
         TaskState state = storage.get(id).get();
         TaskState newState = null;
@@ -117,16 +134,20 @@ public class InMemoryStateStorage implements StateStorage {
         int count = 0;
         for(Map.Entry<String, SoftReference<TaskState>> x: storage.entrySet()) {
             TaskState state = x.getValue().get();
-            if(state == null)
+            if(state == null) {
                 continue;
+            }
 
             // AND
-            if(taskStatus != null && state.status() != taskStatus)
+            if(taskStatus != null && state.status() != taskStatus) {
                 continue;
-            if(taskClassName != null && !Objects.equals(state.taskClassName(), taskClassName))
+            }
+            if(taskClassName != null && !Objects.equals(state.taskClassName(), taskClassName)) {
                 continue;
-            if(createdBy != null && !Objects.equals(state.creator(), createdBy))
+            }
+            if(createdBy != null && !Objects.equals(state.creator(), createdBy)) {
                 continue;
+            }
 
             if(count < offset) {
                 count++;

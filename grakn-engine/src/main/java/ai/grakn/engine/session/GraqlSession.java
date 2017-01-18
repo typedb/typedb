@@ -21,6 +21,7 @@ package ai.grakn.engine.session;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Printer;
@@ -54,6 +55,7 @@ import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * A Graql shell session for a single client, running on one graph in one thread
@@ -91,9 +93,14 @@ class GraqlSession {
         this.printer = getPrinter();
 
         queryExecutor.submit(() -> {
-            refreshGraph();
-            sendTypes();
-            sendEnd();
+            try {
+                refreshGraph();
+                sendTypes();
+                sendEnd();
+            } catch (Throwable e) {
+                LOG.error(getFullStackTrace(e));
+                throw e;
+            }
         });
 
         // Begin sending pings
@@ -127,6 +134,11 @@ class GraqlSession {
             case REST.RemoteShell.ACTION_DISPLAY:
                 setDisplayOptions(json);
                 break;
+            case REST.RemoteShell.ACTION_PING:
+                // Ignore
+                break;
+            default:
+                throw new RuntimeException("Unrecognized message: " + json);
         }
     }
 
@@ -263,12 +275,15 @@ class GraqlSession {
         });
     }
 
-    private void attemptRollback() {
+    private boolean attemptRollback() {
         try {
             graph.rollback();
+            return true;
         } catch (UnsupportedOperationException ignored) {
+            return false;
         } catch (Throwable e) {
             LOG.error("Error during rollback", e);
+            return false;
         }
     }
 
@@ -327,7 +342,7 @@ class GraqlSession {
     private void sendTypes() {
         sendJson(Json.object(
                 ACTION, ACTION_TYPES,
-                TYPES, getTypes(graph).collect(toList())
+                TYPES, getTypes(graph).map(TypeName::getValue).collect(toList())
         ));
     }
 
@@ -335,6 +350,7 @@ class GraqlSession {
      * Send the given JSON to the client
      */
     private void sendJson(Json json) {
+        LOG.debug("Sending message: " + json);
         try {
             session.getRemote().sendString(json.toString());
         } catch (IOException e) {
@@ -346,7 +362,7 @@ class GraqlSession {
      * @param graph the graph to find types in
      * @return all type IDs in the ontology
      */
-    private static Stream<String> getTypes(GraknGraph graph) {
+    private static Stream<TypeName> getTypes(GraknGraph graph) {
         return graph.admin().getMetaConcept().subTypes().stream().map(Type::getName);
     }
 

@@ -53,14 +53,14 @@ public class Grakn {
     private static <F extends GraknGraphFactory> F loadImplementation(String className,
                                                                       String location,
                                                                       String keyspace) {
-    	try {
-    		@SuppressWarnings("unchecked")
-			Class<F> cl = (Class<F>)Class.forName(className);
-    		return cl.getConstructor(String.class, String.class).newInstance(keyspace, location);
-    	}
-    	catch (Exception ex) {
-    		throw new RuntimeException(ex);
-    	}
+        try {
+            @SuppressWarnings("unchecked")
+            Class<F> cl = (Class<F>)Class.forName(className);
+            return cl.getConstructor(String.class, String.class).newInstance(keyspace, location);
+        }
+        catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
     
     /**

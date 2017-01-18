@@ -20,18 +20,18 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -61,8 +61,9 @@ public class Resource extends MultiPredicateBinary{
             Predicate childPredicate = childIt.next();
             Iterator<Predicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
-            while(parentIt.hasNext() && !predicateCompatible)
+            while(parentIt.hasNext() && !predicateCompatible) {
                 predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
+            }
             ruleApplicable = predicateCompatible;
         }
         return ruleApplicable;
@@ -71,8 +72,8 @@ public class Resource extends MultiPredicateBinary{
     @Override
     protected ConceptId extractTypeId(VarAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        String typeName = resProp != null? resProp.getType().orElse("") : "";
-        return !typeName.isEmpty()? getParentQuery().graph().getType(typeName).getId() : null;
+        TypeName typeName = resProp != null? resProp.getType().orElse(null) : null;
+        return typeName != null ? getParentQuery().graph().getType(typeName).getId() : null;
     }
 
     @Override
@@ -99,16 +100,9 @@ public class Resource extends MultiPredicateBinary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
-    public Set<Predicate> getValuePredicates(){
-        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getValueVariable()))
-                .collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
-        getMultiPredicate().forEach(pred -> vars.addAll(pred.getSelectedNames()));
-        return vars;
+    public Set<ValuePredicate> getValuePredicates(){
+        Set<ValuePredicate> valuePredicates = super.getValuePredicates();
+        getMultiPredicate().stream().map(p -> (ValuePredicate) p).forEach(valuePredicates::add);
+        return valuePredicates;
     }
 }

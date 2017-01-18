@@ -19,10 +19,14 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.computer.*;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -39,8 +43,12 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
 
-    static final MessageScope.Local<Long> messageScopeIn = MessageScope.Local.of(__::inE);
-    static final MessageScope.Local<Long> messageScopeOut = MessageScope.Local.of(__::outE);
+    static final MessageScope.Local<?> messageScopeIn = MessageScope.Local.of(() -> __.<Vertex>inE(
+            Schema.EdgeLabel.CASTING.getLabel(),
+            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
+    static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(() -> __.<Vertex>outE(
+            Schema.EdgeLabel.CASTING.getLabel(),
+            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
     static final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
 
     @Override

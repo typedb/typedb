@@ -18,23 +18,19 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.util.CommonUtil;
-import ai.grakn.test.AbstractGraknTest;
-import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import ai.grakn.graphs.SNBGraph;
+import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
@@ -42,7 +38,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class SNBInferenceTest extends AbstractGraknTest {
+public class SNBInferenceTest {
+
+    @Rule
+    public final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -53,32 +53,30 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testTransitivity() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa university;$y isa country;(located-subject: $x, subject-location: $y) isa resides;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $x isa university, has name 'University of Cambridge';" +
                 "$y isa country, has name 'UK';";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTransitivityPrime() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa university;$y isa country;($x, $y) isa resides;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $x isa university, has name 'University of Cambridge';" +
                 "$y isa country, has name 'UK';";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -86,45 +84,42 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testTransitivity2() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa company;$y isa country;" +
                 "(located-subject: $x, subject-location: $y) isa resides;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match " +
                 "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK';";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTransitivity2Prime() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa company;$y isa country;" +
                 "($x, $y) isa resides;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match " +
                 "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK';";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testRecommendation() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qbr = graph.graql().infer(true);
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa person;($x, $y) isa recommendation;";
         String limitedQueryString = "match $x isa person;($x, $y) isa recommendation; limit 1;";
-        MatchQuery query = qbr.parse(queryString);
-        MatchQuery limitedQuery = qbr.parse(limitedQueryString);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery limitedQuery = iqb.parse(limitedQueryString);
 
         String explicitQuery = "match $x isa person;" +
                 "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
@@ -139,13 +134,13 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$x has name 'Gary';$y has name 'Pink Floyd';};";
 
         long startTime = System.nanoTime();
-        QueryAnswers limitedAnswers = new QueryAnswers(limitedQuery.admin().results());
+        QueryAnswers limitedAnswers = queryAnswers(limitedQuery);
         System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
 
         startTime = System.nanoTime();
-        QueryAnswers answers = new QueryAnswers(query.admin().results());
+        QueryAnswers answers = queryAnswers(query);
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
-        assertQueriesEqual(answers.stream(), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertEquals(answers, queryAnswers(qb.parse(explicitQuery)));
         assertTrue(answers.containsAll(limitedAnswers));
     }
 
@@ -154,12 +149,11 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testTag() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa person;$y isa tag;($x, $y) isa recommendation;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match " +
                 "$x isa person, has name $xName;$y isa tag, has name $yName;" +
                 "{$xName value 'Charlie';" +
@@ -167,26 +161,25 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};} or " +
                 "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTagVarSub() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "$y isa person;$t isa tag;($y, $t) isa recommendation;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $y isa person, has name $yName;$t isa tag, has name $tName;" +
                 "{$yName value 'Charlie';" +
                 "{$tName value 'Yngwie Malmsteen';} or {$tName value 'Cacophony';} or" +
                 "{$tName value 'Steve Vai';} or {$tName value 'Black Sabbath';};} or " +
                 "{$yName value 'Gary';$tName value 'Pink Floyd';};select $y, $t;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -194,12 +187,11 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testProduct() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa person;$y isa product;($x, $y) isa recommendation;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $x isa person, has name $xName;$y isa product, has name $yName;" +
                 "{$xName value 'Alice';$yName value 'War of the Worlds';} or" +
                 "{$xName value 'Bob';{$yName value 'Ducatti 1299';} or {$yName value 'The Good the Bad the Ugly';};} or" +
@@ -209,18 +201,17 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$xName value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
                 "{$xName value 'Gary';$yName value 'The Wall';};select $x, $y;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testProductVarSub() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "$y isa person;$yy isa product;($y, $yy) isa recommendation;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $y isa person, has name $ny; $yy isa product, has name $nyy;" +
                 "{$ny value 'Alice';$nyy value 'War of the Worlds';} or" +
                 "{$ny value 'Bob';{$nyy value 'Ducatti 1299';} or {$nyy value 'The Good the Bad the Ugly';};} or" +
@@ -230,18 +221,17 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$ny value 'Karl Fischer';{$nyy value 'Faust';} or {$nyy value 'Nocturnes';};} or " +
                 "{$ny value 'Gary';$nyy value 'The Wall';};select $y, $yy;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testCombinedProductTag() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa person;{$y isa product;} or {$y isa tag;};($x, $y) isa recommendation;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $x isa person;" +
                 "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
                 "{$x has name 'Bob';{$y has name 'Ducatti 1299';} or {$y has name 'The Good the Bad the Ugly';};} or" +
@@ -254,19 +244,18 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$y has name 'Yngwie Malmsteen';} or {$y has name 'Cacophony';} or {$y has name 'Steve Vai';} or {$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';};";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testCombinedProductTag2() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match " +
                 "{$p isa person;$r isa product;($p, $r) isa recommendation;} or" +
                 "{$p isa person;$r isa tag;($p, $r) isa recommendation;};";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $p isa person;" +
                 "{$p has name 'Alice';$r has name 'War of the Worlds';} or" +
                 "{$p has name 'Bob';{$r has name 'Ducatti 1299';} or {$r has name 'The Good the Bad the Ugly';};} or" +
@@ -279,45 +268,43 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$r has name 'Yngwie Malmsteen';} or {$r has name 'Cacophony';} or {$r has name 'Steve Vai';} or {$r has name 'Black Sabbath';};} or " +
                 "{$p has name 'Gary';$r has name 'Pink Floyd';};";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testBook() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
                 "$c isa category;$c has name 'book';" +
                 "($y, $c) isa typing; select $x, $y;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $x isa person, has name $nx;$y isa product, has name $ny;" +
                 "{$nx value 'Alice';$ny value 'War of the Worlds';} or" +
                 "{$nx value 'Karl Fischer';$ny value 'Faust';} or " +
                 "{$nx value 'Denis';{$ny value 'Colour of Magic';} or {$ny value 'Dorian Gray';};};select $x, $y;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testBand() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
                 "$c isa category;$c has name 'Band';" +
                 "($y, $c) isa grouping; select $x, $y;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match " +
                 "{$x has name 'Charlie';{$y has name 'Cacophony';} or {$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; select $x, $y;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -325,19 +312,18 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testVarConsistency(){
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa person;$y isa product;" +
-                    "($x, $y) isa recommendation;" +
-                    "$z isa category;$z has name 'motorbike';" +
-                    "($y, $z) isa typing; select $x, $y;";
+                "($x, $y) isa recommendation;" +
+                "$z isa category;$z has name 'motorbike';" +
+                "($y, $z) isa typing; select $x, $y;";
 
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa person;$y isa product;" +
                 "{$x has name 'Bob';$y has name 'Ducatti 1299';};";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -345,34 +331,31 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testVarConsistency2(){
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-                //select people that have Chopin as a recommendation
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        //select people that have Chopin as a recommendation
         String queryString = "match $x isa person; $y isa tag; ($x, $y) isa tagging;" +
-                        "$z isa product;$z has name 'Nocturnes'; ($x, $z) isa recommendation; select $x, $y;";
+                "$z isa product;$z has name 'Nocturnes'; ($x, $z) isa recommendation; select $x, $y;";
 
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match " +
                 "{$x has name 'Frank';$y has name 'Ludwig van Beethoven';} or" +
                 "{$x has name 'Karl Fischer';" +
                 "{$y has name 'Ludwig van Beethoven';} or {$y has name 'Johann Wolfgang von Goethe';} or" +
                 "{$y has name 'Wolfgang Amadeus Mozart';};};";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testVarConsistency3(){
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa person;$pr isa product, has name 'Nocturnes';($x, $pr) isa recommendation; select $x;";
-        MatchQuery query = graph.graql().parse(queryString);
-
         String explicitQuery = "match {$x has name 'Frank';} or {$x has name 'Karl Fischer';};";
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -380,21 +363,17 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testQueryConsistency() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;" +
                         "$z isa person;$z has name 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
-        MatchQuery query2 = qb.parse(queryString2);
         Map<VarName, VarName> unifiers = new HashMap<>();
         unifiers.put(varName("z"), varName("y"));
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()))
-                .unify(unifiers);
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifiers);
         assertEquals(answers, answers2);
     }
 
@@ -405,12 +384,11 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testOrdering() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-                //select recommendationS of Karl Fischer and their types
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        //select recommendationS of Karl Fischer and their types
         String queryString = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
                         "($x, $p) isa recommendation; ($p, $t) isa typing; select $p, $t;";
-        MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match $p isa product;" +
                 "$x isa person;$x has name 'Karl Fischer';{($x, $p) isa recommendation;} or" +
@@ -419,19 +397,18 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$x isa person; $p isa product;$p has name 'Nocturnes'; $tt isa tag; ($tt, $x), isa tagging;};" +
                 "($p, $t) isa typing; select $p, $t;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testOrdering2() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-                //select recommendationS of Karl Fischer and their types
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        //select recommendationS of Karl Fischer and their types
         String queryString = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
                 "($p, $c) isa typing; ($x, $p) isa recommendation; select $p, $c;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $p isa product;" +
                 "$x isa person;$x has name 'Karl Fischer';{($x, $p) isa recommendation;} or" +
                 "{$x isa person;$t isa tag, has name 'Johann Wolfgang von Goethe';" +
@@ -439,8 +416,8 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "{$x isa person; $p isa product;$p has name 'Nocturnes'; $t isa tag; ($t, $x), isa tagging;};" +
                 "($p, $c) isa typing; select $p, $c;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -448,13 +425,12 @@ public class SNBInferenceTest extends AbstractGraknTest {
      */
     @Test
     public void testInverseVars() {
-        GraknGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = graph.graql().infer(false);
-                //select recommendation of Karl Fischer and their types
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        //select recommendation of Karl Fischer and their types
         String queryString = "match $p isa product;" +
                 "$x isa person;$x has name 'Karl Fischer'; ($p, $x) isa recommendation; ($p, $t) isa typing; select $p, $t;";
-        MatchQuery query = qb.parse(queryString);
-
+        
         String explicitQuery = "match $p isa product;" +
                 "$x isa person;$x has name 'Karl Fischer';{($x, $p) isa recommendation;} or" +
                 "{$x isa person; $p isa product;$p has name 'Nocturnes'; $tt isa tag; ($tt, $x), isa tagging;} or" +
@@ -462,11 +438,15 @@ public class SNBInferenceTest extends AbstractGraknTest {
                 "$p isa product;$p has name 'Faust';};" +
                 "($p, $t) isa typing; select $p, $t;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, Stream<Map<String, Concept>> s2) {
-        assertEquals(s1.map(CommonUtil::resultVarNameToString).collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().results());
+    }
+
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }
 }

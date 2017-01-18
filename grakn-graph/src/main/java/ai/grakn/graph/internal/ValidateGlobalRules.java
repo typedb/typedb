@@ -22,6 +22,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -106,10 +107,11 @@ class ValidateGlobalRules {
             currentConcept = (TypeImpl) currentConcept.superType();
         }
 
-        if(satisfiesPlaysRole)
+        if(satisfiesPlaysRole) {
             return Optional.empty();
-        else
+        } else {
             return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
+        }
     }
 
     /**
@@ -118,10 +120,12 @@ class ValidateGlobalRules {
      * @return An error message if the hasRole does not have a single incoming HAS_ROLE edge
      */
     static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
-        if(roleType.isAbstract())
+        if(roleType.isAbstract()) {
             return Optional.empty();
-        if(roleType.relationTypes().isEmpty())
+        }
+        if(roleType.relationTypes().isEmpty()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
+        }
         return Optional.empty();
     }
 
@@ -149,8 +153,9 @@ class ValidateGlobalRules {
         Set<CastingImpl> castings = relation.getMappingCasting();
         Collection<RoleType> roleTypes = relationType.hasRoles();
 
-        if(castings.size() > roleTypes.size())
+        if(castings.size() > roleTypes.size()) {
             return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
+        }
 
         for(CastingImpl casting: castings){
             boolean notFound = true;
@@ -161,8 +166,9 @@ class ValidateGlobalRules {
                 }
             }
 
-            if(notFound)
+            if(notFound) {
                 return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getName(), relationType.getName()));
+            }
         }
 
         return Optional.empty();
@@ -195,12 +201,12 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superHasRoles = superRelationType.hasRoles();
         Collection<RoleType> hasRoles = relationType.hasRoles();
-        Set<String> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
+        Set<TypeName> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
         if(!superRelationType.isAbstract()) {
-            Set<String> allSuperRolesPlayed = new HashSet<>();
+            Set<TypeName> allSuperRolesPlayed = new HashSet<>();
             superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
             for (RoleType hasRole : hasRoles) {

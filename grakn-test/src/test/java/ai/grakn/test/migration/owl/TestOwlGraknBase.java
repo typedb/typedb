@@ -17,6 +17,7 @@
  */
 package ai.grakn.test.migration.owl;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
@@ -24,8 +25,11 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.owl.OWLMigrator;
 import ai.grakn.migration.owl.OwlModel;
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
+import ai.grakn.test.EngineContext;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
@@ -35,6 +39,8 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Optional;
 
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+
 /**
  * Base class for OWL migrator unit tests: create and holds OWL manager and
  * Grakn graph, statically because they don't need to be re-initialised on a per
@@ -43,18 +49,23 @@ import java.util.Optional;
  * @author borislav
  *
  */
-public class TestOwlGraknBase extends AbstractGraknMigratorTest {
+public class TestOwlGraknBase {
     protected OWLOntologyManager manager;
     protected OWLMigrator migrator;
 
+    protected GraknGraph graph;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
+
     @Before
     public void init() {
+        graph = engine.graphWithNewKeyspace();
         manager = OWLManager.createOWLOntologyManager();
-    }
-    
-    @Before
-    public void initMigrator() {
-         migrator = new OWLMigrator();
+        migrator = new OWLMigrator();
     }
 
     OWLOntologyManager owlManager() {

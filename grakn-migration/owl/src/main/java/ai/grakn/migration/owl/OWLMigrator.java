@@ -20,13 +20,14 @@ package ai.grakn.migration.owl;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -102,18 +103,19 @@ public class OWLMigrator {
     }
 
     public ResourceType.DataType<?> owlBuiltInToGraknDatatype(OWL2Datatype propertyType) {
-        if (propertyType == OWL2Datatype.XSD_BOOLEAN)
+        if (propertyType == OWL2Datatype.XSD_BOOLEAN) {
             return ResourceType.DataType.BOOLEAN;
-        else if (propertyType == OWL2Datatype.XSD_FLOAT || 
+        } else if (propertyType == OWL2Datatype.XSD_FLOAT ||
                  propertyType == OWL2Datatype.XSD_DOUBLE ||
                  propertyType == OWL2Datatype.OWL_REAL ||
                  propertyType == OWL2Datatype.OWL_RATIONAL ||
-                 propertyType == OWL2Datatype.XSD_DECIMAL)
+                 propertyType == OWL2Datatype.XSD_DECIMAL) {
             return ResourceType.DataType.DOUBLE;
-        else if (propertyType.isNumeric())
+        } else if (propertyType.isNumeric()) {
             return ResourceType.DataType.LONG;
-        else
+        } else {
             return ResourceType.DataType.STRING;
+        }
     }
     
     public EntityType owlThingEntityType() {
@@ -137,7 +139,7 @@ public class OWLMigrator {
         Entity current = getEntity(id, owlIriResource());
         if(current != null) return current;
 
-        String hasIriResourceId = OwlModel.IRI.owlname();
+        TypeName hasIriResourceId = TypeName.of(OwlModel.IRI.owlname());
         ResourceType<String> iriResource = owlIriResource();
         RoleType hasIriOwner = entityRole(type, iriResource);
         RoleType hasIriValue = resourceRole(iriResource);
@@ -155,16 +157,18 @@ public class OWLMigrator {
     public EntityType entityType(OWLClass owlclass) {
         EntityType type = graph.putEntityType(namer.classEntityTypeName(owlclass.getIRI()));
         EntityType thing = owlThingEntityType();
-        if (Schema.MetaSchema.isMetaName(type.superType().getName()) && !type.equals(thing))
+        if (Schema.MetaSchema.isMetaName(type.superType().getName()) && !type.equals(thing)) {
             type.superType(thing);
+        }
         return type;
     }
 
     public Entity entity(OWLNamedIndividual individual) {
         String id = namer.individualEntityName(individual.getIRI());
         Entity entity = graph.getConcept(ConceptId.of(id));
-        if (entity != null)
+        if (entity != null) {
             return entity;
+        }
         OWLClass owlclass = eval(() -> {
             Optional<OWLClassAssertionAxiom> expr = ontology
                     .classAssertionAxioms(individual)

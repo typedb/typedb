@@ -41,7 +41,6 @@ public abstract class Predicate<T> extends AtomBase {
 
     protected T predicate = null;
 
-    protected Predicate(VarAdmin pattern) { this(pattern, null);}
     protected Predicate(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
@@ -101,11 +100,13 @@ public abstract class Predicate<T> extends AtomBase {
 
     @Override
     public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
-        if (!(parentAtom instanceof Predicate))
+        if (!(parentAtom instanceof Predicate)) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+        }
         Map<VarName, VarName> map = new HashMap<>();
-        if (!this.getVarName().equals(parentAtom.getVarName()))
+        if (!this.getVarName().equals(parentAtom.getVarName())) {
             map.put(this.getVarName(), parentAtom.getVarName());
+        }
         return map;
     }
 

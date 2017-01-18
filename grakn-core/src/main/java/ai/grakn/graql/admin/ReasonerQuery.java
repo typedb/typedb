@@ -47,9 +47,9 @@ public interface ReasonerQuery{
     Conjunction<PatternAdmin> getPattern();
 
     /**
-     * @return set of select variables of this reasoner query
+     * @return set of variable names present in this reasoner query
      */
-    Set<VarName> getSelectedNames();
+    Set<VarName> getVarNames();
 
     /**
      * @return atom set constituting this reasoner query

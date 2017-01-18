@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import ai.grakn.concept.TypeName;
+
 /**
  * A type enum which restricts the types of links/concepts which can be created
  */
@@ -75,20 +77,19 @@ public final class Schema {
         CONSTRAINT_RULE("constraint-rule");
 
 
-        private final String name;
+        private final TypeName name;
 
         MetaSchema(String i) {
-            name = i;
+            name = TypeName.of(i);
         }
 
-        public String getName() {
+        public TypeName getName() {
             return name;
         }
 
-        public static boolean isMetaName(String name) {
+        public static boolean isMetaName(TypeName name) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
-                if (metaSchema.getName().equals(name))
-                    return true;
+                if (metaSchema.getName().equals(name)) return true;
             }
             return false;
         }
@@ -177,8 +178,8 @@ public final class Schema {
             this.name = name;
         }
 
-        public String getName(String resourceTypeName) {
-            return String.format(name, resourceTypeName);
+        public TypeName getName(TypeName resourceType) {
+            return resourceType.map(resource -> String.format(name, resource));
         }
     }
 
@@ -196,8 +197,8 @@ public final class Schema {
             this.name = name;
         }
 
-        public String getName() {
-            return name;
+        public TypeName getName() {
+            return TypeName.of(name);
         }
     }
 }

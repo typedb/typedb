@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -36,6 +37,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.Graql.name;
 
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -53,17 +56,17 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        String resourceTypeName = resourceType.getTypeName().orElseThrow(
+        TypeName resourceTypeName = resourceType.getTypeName().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = Graql.name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName))
-                .sub(Schema.MetaSchema.ROLE.getName()).admin();
-        valueRole = Graql.name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName))
-                .sub(Schema.MetaSchema.ROLE.getName()).admin();
+        ownerRole = name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName))
+                .sub(name(Schema.MetaSchema.ROLE.getName())).admin();
+        valueRole = name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName))
+                .sub(name(Schema.MetaSchema.ROLE.getName())).admin();
 
-        relationType = Graql.name(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName))
-                .sub(Schema.MetaSchema.RELATION.getName())
+        relationType = name(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName))
+                .sub(name(Schema.MetaSchema.RELATION.getName()))
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
         ownerPlaysRole = new PlaysRoleProperty(ownerRole, required);
@@ -142,9 +145,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         VarName varName = var.getVarName();
-        String typeName = this.getResourceType().getTypeName().orElse("");
+        TypeName typeName = this.getResourceType().getTypeName().orElse(null);
         //isa part
-        VarAdmin resVar = Graql.var(varName).hasResource(typeName).admin();
+        VarAdmin resVar = Graql.var(varName).hasResource(name(typeName)).admin();
         return new TypeAtom(resVar, parent);
     }
 }

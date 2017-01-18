@@ -30,7 +30,8 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -38,6 +39,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,21 +66,30 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class InsertQueryTest extends AbstractMovieGraphTest {
+public class InsertQueryTest {
 
     private QueryBuilder qb;
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @ClassRule
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+
     @Before
     public void setUp() {
-        graph.showImplicitConcepts(true);
-        qb = graph.graql();
+        movieGraph.graph().showImplicitConcepts(true);
+        qb = movieGraph.graph().graql();
+    }
+
+    @After
+    public void rollback(){
+        movieGraph.rollback();
     }
 
     @After
     public void tearDown() {
-        if (graph != null) graph.showImplicitConcepts(false);
+        if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
     }
 
     @Test
@@ -184,10 +195,10 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertOntology() {
         qb.insert(
-                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName()),
-                name("evolution").sub(Schema.MetaSchema.RELATION.getName()),
-                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName()),
-                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName()),
+                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
+                name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue()),
+                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
+                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
                 name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
 
@@ -198,10 +209,10 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).execute();
 
-        assertTrue(qb.match(name("pokemon").sub(Schema.MetaSchema.ENTITY.getName())).ask().execute());
-        assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("pokemon").sub(Schema.MetaSchema.ENTITY.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
         assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
@@ -227,8 +238,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertIsAbstract() {
         qb.insert(
-                name("concrete-type").sub(Schema.MetaSchema.ENTITY.getName()),
-                name("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getName())
+                name("concrete-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
+                name("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getName().getValue())
         ).execute();
 
         assertFalse(qb.match(name("concrete-type").isAbstract()).ask().execute());
@@ -238,7 +249,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.LONG)
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName().getValue()).datatype(ResourceType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").name("my-type"));
@@ -250,7 +261,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.STRING),
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName().getValue()).datatype(ResourceType.DataType.STRING),
                 name("sub-type").sub("my-type")
         ).execute();
 
@@ -263,8 +274,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                name("marriage").sub(Schema.MetaSchema.RELATION.getName()).hasRole("spouse1").hasRole("spouse2"),
-                name("spouse").sub(Schema.MetaSchema.ROLE.getName()).isAbstract(),
+                name("marriage").sub(Schema.MetaSchema.RELATION.getName().getValue()).hasRole("spouse1").hasRole("spouse2"),
+                name("spouse").sub(Schema.MetaSchema.ROLE.getName().getValue()).isAbstract(),
                 name("spouse1").sub("spouse"),
                 name("spouse2").sub("spouse")
         ).execute();
@@ -365,7 +376,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertReferenceByName() {
         qb.insert(
-                name("new-type").sub(Schema.MetaSchema.ENTITY.getName()),
+                name("new-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
                 name("new-type").isAbstract(),
                 name("new-type").playsRole("has-title-owner"),
                 var("x").isa("new-type")
@@ -380,14 +391,14 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
         assertTrue(newType.asEntityType().isAbstract());
-        assertTrue(newType.playsRoles().contains(graph.getRoleType("has-title-owner")));
+        assertTrue(newType.playsRoles().contains(movieGraph.graph().getRoleType("has-title-owner")));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
 
     @Test
     public void testInsertRuleType() {
-        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName()));
+        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName().getValue()));
     }
 
     @Test
@@ -398,7 +409,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         Var vars = var("x").isa(ruleTypeId).lhs(lhsPattern).rhs(rhsPattern);
         qb.insert(vars).execute();
 
-        RuleType ruleType = graph.getRuleType(ruleTypeId);
+        RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
         boolean found = false;
         for (ai.grakn.concept.Rule rule : ruleType.instances()) {
             if(lhsPattern.equals(rule.getLHS()) && rhsPattern.equals(rule.getRHS())){
@@ -436,7 +447,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 name("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
         ).execute();
 
-        graph.showImplicitConcepts(true);
+        movieGraph.graph().showImplicitConcepts(true);
 
         // Make sure a-new-type can have the given resource type, but not other resource types
         assertTrue(qb.match(name("a-new-type").sub("entity").hasResource("a-new-resource-type")).ask().execute());
@@ -488,7 +499,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -503,7 +514,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -519,7 +530,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -534,7 +545,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -549,7 +560,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        graph.commit();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -569,7 +580,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         Map<String, Concept> result = results.get(0);
         assertEquals(Sets.newHashSet("x"), result.keySet());
         Entity x = result.get("x").asEntity();
-        assertEquals("movie", x.type().getName());
+        assertEquals("movie", x.type().getName().getValue());
     }
 
     @Test
@@ -590,16 +601,16 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        qb.insert(name("my-resource").sub(Schema.MetaSchema.RESOURCE.getName())).execute();
+        qb.insert(name("my-resource").sub(Schema.MetaSchema.RESOURCE.getName().getValue())).execute();
     }
 
     @Test
     public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getName()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getName().getValue()))
         );
-        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getName())).execute();
+        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getName().getValue())).execute();
     }
 
     @Test

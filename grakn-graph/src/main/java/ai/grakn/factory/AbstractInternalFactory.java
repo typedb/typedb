@@ -43,7 +43,7 @@ import java.util.Properties;
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
 abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<M, G> {
-	
+
     protected final String keyspace;
     protected final String engineUrl;
     protected final Properties properties;
@@ -67,8 +67,9 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.engineUrl = engineUrl;
         this.properties = properties;
 
-        if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME))
+        if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
             systemKeyspace = new SystemKeyspace<>(getSystemFactory());
+        }
     }
 
     InternalFactory<M, G> getSystemFactory(){
@@ -117,8 +118,9 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-            if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace))
+            if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
                 systemKeyspace.keyspaceOpened(this.keyspace);
+            }
         } else {
             if(graknGraph.isClosed()){
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);

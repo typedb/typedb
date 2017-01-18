@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -35,13 +36,13 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     private static final String DEGREE_NAME = "degreeAndPersistVertexProgram.degreeName";
 
     private BulkResourceMutate<Long> bulkResourceMutate;
-    private Set<String> ofTypeNames = new HashSet<>();
+    private Set<TypeName> ofTypeNames = new HashSet<>();
 
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(Set<String> types, Set<String> ofTypeNames,
-                                         String keySpace, String degreeName) {
+    public DegreeAndPersistVertexProgram(Set<TypeName> types, Set<TypeName> ofTypeNames,
+                                         String keySpace, TypeName degreeName) {
         this.persistentProperties.put(KEYSPACE_KEY, keySpace);
         this.persistentProperties.put(DEGREE_NAME, degreeName);
         this.selectedTypes = types;
@@ -58,24 +59,26 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeNames.add((String) configuration.getProperty(OF_TYPE_NAMES + "." + key)));
+                ofTypeNames.add(TypeName.of((String) configuration.getProperty(OF_TYPE_NAMES + "." + key))));
     }
 
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexType(vertex)))
+                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     degreeStep0(vertex, messenger);
+                }
                 break;
 
             case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name()))
+                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
                     degreeStep1(messenger);
+                }
                 break;
 
             case 2:
-                String type = Utility.getVertexType(vertex);
+                TypeName type = Utility.getVertexType(vertex);
                 if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
                     bulkResourceMutate.putValue(vertex, getEdgeCount(messenger));
                 }
@@ -87,7 +90,7 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     public void workerIterationStart(Memory memory) {
         if (memory.getIteration() == 2) {
             bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE_KEY),
-                    (String) persistentProperties.get(DEGREE_NAME));
+                    TypeName.of((String) persistentProperties.get(DEGREE_NAME)));
         }
     }
 

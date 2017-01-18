@@ -103,22 +103,15 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     protected ValuePredicateAdmin extractPredicate(VarAdmin pattern) {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
-        if (properties.hasNext())
+        if (properties.hasNext()) {
             throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
+        }
         return property.getPredicate();
     }
 
     @Override
     public Set<VarName> getVarNames(){
         Set<VarName> vars = super.getVarNames();
-        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
-        return vars;
-    }
-
-    @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
         VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;

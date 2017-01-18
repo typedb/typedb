@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,8 +52,9 @@ public class KafkaLogger {
     }
 
     public static synchronized KafkaLogger getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new KafkaLogger();
+        }
 
         return instance;
     }
@@ -87,10 +88,11 @@ public class KafkaLogger {
     }
     
     public void error(String msg, Throwable ex) {
-        if(logLevel.level() <= LogLevel.ERROR.level())
-        sendMsg(LogLevel.ERROR.toString(), 
-        		Thread.currentThread().getStackTrace()[2].toString(), 
-        		msg + "\n" + ExceptionUtils.getFullStackTrace(ex));
+        if(logLevel.level() <= LogLevel.ERROR.level()) {
+            sendMsg(LogLevel.ERROR.toString(),
+                    Thread.currentThread().getStackTrace()[2].toString(),
+                    msg + "\n" + ExceptionUtils.getFullStackTrace(ex));
+        }
         LOG.error(msg);
     }
 
@@ -99,7 +101,7 @@ public class KafkaLogger {
     }
 
     private void sendMsg(String level, String caller, String msg) {
-//    	System.out.println("LOG from " + caller + ": " + msg);
+        //System.out.println("LOG from " + caller + ": " + msg);
 //        ProducerRecord record = new ProducerRecord(LOG_TOPIC, level + " - " + caller + " - " + msg);
 //        producer.send(record);
     }
