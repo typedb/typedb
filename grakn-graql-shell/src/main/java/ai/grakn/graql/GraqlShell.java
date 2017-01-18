@@ -63,6 +63,8 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -146,6 +148,8 @@ public class GraqlShell {
 
     private boolean waitingQuery = false;
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     /**
      * Run a Graql REPL
@@ -611,8 +615,14 @@ public class GraqlShell {
 
     private void sendJson(Json json) {
         try {
-            session.getRemote().sendString(json.toString());
-        } catch (IOException e) {
+            executor.submit(() -> {
+                try {
+                    session.getRemote().sendString(json.toString());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).get();
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
