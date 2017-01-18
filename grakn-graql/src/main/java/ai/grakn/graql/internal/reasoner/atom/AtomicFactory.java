@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 
 import ai.grakn.graql.admin.VarAdmin;
