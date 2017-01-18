@@ -17,11 +17,9 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 
@@ -41,29 +39,13 @@ public class TypeMapper {
      */
     public static Var map(Type type) {
         Var mapped = formatBase(type);
-        if (type.isEntityType()) {
-            mapped = map(mapped, type.asEntityType());
-        } else if (type.isRelationType()) {
+        if (type.isRelationType()) {
             mapped = map(mapped, type.asRelationType());
-        } else if (type.isRoleType()) {
-            mapped = map(mapped, type.asRoleType());
         } else if (type.isResourceType()) {
             mapped = map(mapped, type.asResourceType());
-        } else if (type.isRuleType()) {
-            mapped = map(mapped, type.asRuleType());
         }
 
         return mapped;
-    }
-
-    /**
-     * Map an EntityType to a Var
-     * @param var holder var with basic information
-     * @param entityType type to be mapped
-     * @return var with EntityType specific metadata
-     */
-    private static Var map(Var var, EntityType entityType) {
-        return var;
     }
 
     /**
@@ -77,16 +59,6 @@ public class TypeMapper {
     }
 
     /**
-     * Map a RoleType to a Var
-     * @param var holder var with basic information
-     * @param roleType type to be mapped
-     * @return var with RoleType specific metadata
-     */
-    private static Var map(Var var, RoleType roleType) {
-        return var;
-    }
-
-    /**
      * Map a ResourceType to a Var with the datatype
      * @param var holder var with basic information
      * @param resourceType type to be mapped
@@ -94,16 +66,6 @@ public class TypeMapper {
      */
     private static Var map(Var var, ResourceType resourceType) {
         return datatype(var, resourceType);
-    }
-
-    /**
-     * Map a RuleType to a Var
-     * @param var holder var with basic information
-     * @param ruleType type to be mapped
-     * @return var with RuleType specific metadata
-     */
-    private static Var map(Var var, RuleType ruleType) {
-        return var;
     }
 
     /**

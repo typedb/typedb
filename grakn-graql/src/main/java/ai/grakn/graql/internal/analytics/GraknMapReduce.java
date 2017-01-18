@@ -18,15 +18,19 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A map reduce task specific to Grakn with common method implementations.
@@ -34,9 +38,21 @@ import java.util.Map;
 public abstract class GraknMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(GraknMapReduce.class);
-
+    private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
     public static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
+
+    public GraknMapReduce(Set<TypeName> selectedTypes) {
+        this.selectedTypes = selectedTypes;
+    }
+
+    public GraknMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
+        this(selectedTypes);
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
+    }
+
+    // Needed internally for OLAP tasks
+    public GraknMapReduce() {
+    }
 
     /**
      * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".
@@ -55,12 +71,19 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     @Override
-    public void map(Vertex vertex, MapEmitter<Serializable, T> emitter) {
+    public final void map(Vertex vertex, MapEmitter<Serializable, T> emitter) {
         // try to deal with ghost vertex issues by ignoring them
         if (Utility.isAlive(vertex)) {
             safeMap(vertex, emitter);
         }
     }
+
+    @Override
+    public final void reduce(Serializable key, Iterator<T> values, ReduceEmitter<Serializable, T> emitter) {
+        emitter.emit(key, reduceValues(values));
+    }
+
+    abstract T reduceValues(Iterator<T> values);
 
     @Override
     public String getMemoryKey() {
@@ -77,5 +100,42 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
             throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),
                     e.getMessage()), e);
         }
+    }
+
+    @Override
+    public boolean doStage(final Stage stage) {
+        return true;
+    }
+
+    @Override
+    public final void combine(Serializable key, Iterator<T> values, ReduceEmitter<Serializable, T> emitter) {
+        this.reduce(key, values, emitter);
+    }
+
+    @Override
+    public Map<Serializable, T> generateFinalResult(Iterator<KeyValue<Serializable, T>> iterator) {
+        return Utility.keyValuesToMap(iterator);
+    }
+
+    final boolean resourceIsValid(Vertex vertex) {
+        boolean isSelected = selectedTypes.contains(Utility.getVertexType(vertex));
+        return isSelected && vertex.<Long>value(DegreeVertexProgram.DEGREE) > 0;
+    }
+
+    final Number resourceValue(Vertex vertex) {
+        return usingLong() ? vertex.value(Schema.ConceptProperty.VALUE_LONG.name()) :
+                vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name());
+    }
+
+    final Number minValue() {
+        return usingLong() ? Long.MIN_VALUE : Double.MIN_VALUE;
+    }
+
+    final Number maxValue() {
+        return usingLong() ? Long.MAX_VALUE : Double.MAX_VALUE;
+    }
+
+    final boolean usingLong() {
+        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName());
     }
 }

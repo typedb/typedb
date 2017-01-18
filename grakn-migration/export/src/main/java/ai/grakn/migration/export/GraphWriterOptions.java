@@ -27,7 +27,7 @@ import ai.grakn.migration.base.io.MigrationOptions;
 public class GraphWriterOptions extends MigrationOptions {
 
     public GraphWriterOptions(String[] args) {
-        super(args);
+        super();
 
         options.addOption("ontology", false, "export ontology");
         options.addOption("data", false, "export data");

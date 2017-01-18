@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<ruleset name="grakn"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd
+http://pmd.sourceforge.net/ruleset/2.0.0 ">
+    <description>Grakn PMD ruleset</description>
+
+    <!-- Avoid general bad practices, e.g. empty `while` statements -->
+    <rule ref="rulesets/java/basic.xml"/>
+
+    <!-- Avoid redundant imports -->
+    <rule ref="rulesets/java/imports.xml">
+
+        <!-- Ignore too many static imports rule
+        we avoid wildcard imports, so you can always tell where an import
+        comes from. This means its not an issue to have lots of static imports.
+        -->
+        <exclude name="TooManyStaticImports"/>
+
+    </rule>
+
+    <!-- Avoid entirely redundant things, such as unnecesary use of `this` -->
+    <rule ref="rulesets/java/unnecessary.xml">
+
+        <!-- Ignore unnecessary parentheses rule
+        Often redundant parentheses can make code easier to understand.
+        -->
+        <exclude name="UselessParentheses"/>
+
+    </rule>
+
+    <!-- Avoid unused code, e.g. methods, classes -->
+    <rule ref="rulesets/java/unusedcode.xml"/>
+
+    <!-- Avoid unused parameters in most cases-->
+    <rule ref="rulesets/java/unusedcode.xml/UnusedFormalParameter">
+
+        <!-- Ignore unused parameter rule for REST API
+        This is because REST API methods always accept a request and a response,
+        even if one of those is not used.
+        -->
+        <properties>
+            <property name="violationSuppressXPath" value="./../../../../../Annotation/NormalAnnotation/Name[@Image='ApiOperation']"/>
+        </properties>
+
+    </rule>
+
+</ruleset>

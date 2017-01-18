@@ -23,7 +23,6 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
 import com.google.common.collect.Sets;

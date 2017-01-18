@@ -47,7 +47,6 @@ class HALConceptOntology {
 
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
-    private final static String ROOT_CONCEPT = "type";
     private final static String ISA_EDGE = "isa";
     private final static String SUB_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
