@@ -69,6 +69,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private static final String SOURCE = "shortestPathVertexProgram.startId";
     private static final String DESTINATION = "shortestPathVertexProgram.endId";
 
+    // Needed internally for OLAP tasks
     public ShortestPathVertexProgram() {
     }
 

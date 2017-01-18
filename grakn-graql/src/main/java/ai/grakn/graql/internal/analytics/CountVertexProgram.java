@@ -38,6 +38,7 @@ public class CountVertexProgram extends GraknVertexProgram {
 
     private static final Set<String> MEMORY_COMPUTE_KEYS = new HashSet<>(Collections.singletonList(COUNT));
 
+    // Needed internally for OLAP tasks
     public CountVertexProgram() {
     }
 

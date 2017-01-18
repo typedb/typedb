@@ -41,6 +41,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     private Set<TypeName> ofTypeNames = new HashSet<>();
 
+    // Needed internally for OLAP tasks
     public DegreeVertexProgram() {
     }
 
@@ -69,7 +70,14 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return memory.getIteration() == 2 ? Collections.emptySet() : messageScopeSet;
+        switch (memory.getIteration()) {
+            case 0:
+                return messageScopeSetInstance;
+            case 1:
+                return messageScopeSetCasting;
+            default:
+                return Collections.emptySet();
+        }
     }
 
     @Override
@@ -78,13 +86,13 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    degreeStep0(vertex, messenger);
+                    degreeStepInstance(vertex, messenger);
                 }
                 break;
 
             case 1:
                 if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    degreeStep1(messenger);
+                    degreeStepCasting(messenger);
                 }
                 break;
 
@@ -101,7 +109,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.info("Finished Iteration " + memory.getIteration());
+        LOGGER.info("Finished Degree Iteration " + memory.getIteration());
         return memory.getIteration() == 2;
     }
 

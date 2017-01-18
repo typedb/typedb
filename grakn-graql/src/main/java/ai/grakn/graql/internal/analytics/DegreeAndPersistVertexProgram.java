@@ -35,6 +35,7 @@ public class DegreeAndPersistVertexProgram extends DegreeVertexProgram {
     private BulkResourceMutate<Long> bulkResourceMutate;
     private Set<TypeName> ofTypeNames = new HashSet<>();
 
+    // Needed internally for OLAP tasks
     public DegreeAndPersistVertexProgram() {
     }
 
