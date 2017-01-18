@@ -36,6 +36,7 @@ import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
@@ -101,7 +102,7 @@ public class DeleteQueryTest {
         assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
         assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
 
-        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name")).execute();
+        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name", var())).execute();
 
         assertFalse(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
         assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
@@ -324,7 +325,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteVariableResource() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("has"), containsString("$y")));
-        qb.match(var("x").isa("movie")).delete(var("x").has(var("y"))).execute();
+        qb.match(var("x").isa("movie")).delete(var("x").has(RESOURCE.getName(), var("y"))).execute();
     }
 
     private boolean exists(MatchQuery query) {

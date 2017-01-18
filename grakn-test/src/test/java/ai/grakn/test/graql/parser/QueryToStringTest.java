@@ -37,6 +37,7 @@ import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -200,7 +201,7 @@ public class QueryToStringTest {
 
     @Test
     public void testResourceWithoutTypeToString() {
-        assertSameResults(qb.match(var("x").has(var("y"))));
+        assertSameResults(qb.match(var("x").has(RESOURCE.getName(), var("y"))));
     }
 
     @Test
