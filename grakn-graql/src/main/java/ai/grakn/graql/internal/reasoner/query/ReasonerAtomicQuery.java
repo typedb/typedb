@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,8 +66,6 @@ import java.util.stream.StreamSupport;
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Atom atom;
-    private ReasonerAtomicQuery parent = null;
-    final private Set<ReasonerAtomicQuery> children = new HashSet<>();
     final private QueryAnswers answers = new QueryAnswers();
     final private QueryAnswers newAnswers = new QueryAnswers();
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
@@ -85,12 +83,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerAtomicQuery(ReasonerAtomicQuery q){
         super(q);
         atom = selectAtoms().stream().findFirst().orElse(null);
-        parent = q.getParent();
-        children.addAll(q.getChildren());
     }
 
-    public ReasonerAtomicQuery(Atom at, Set<VarName> vars) {
-        super(at, vars);
+    public ReasonerAtomicQuery(Atom at) {
+        super(at);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
     
@@ -107,49 +103,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return this.isEquivalent(a2);
     }
 
-    @Override
-    public int hashCode() {
-        return super.hashCode() + 37;
-    }
-
-    private void addChild(ReasonerAtomicQuery q){
-        if (!this.isEquivalent(q) && Objects.equals(atom.getTypeId(), q.getAtom().getTypeId())){
-            children.add(q);
-            q.setParent(this);
-        }
-    }
-    private void setParent(ReasonerAtomicQuery q){ parent = q;}
-
-    /**
-     * @return the parent (more specific related query) of this query
-     */
-    public ReasonerAtomicQuery getParent(){ return parent;}
-
-    /**
-     * establishes parent-child (if there is one) relation between this and aq query
-     * the relation expresses the relative level of specificity between queries with the parent being more specific
-     * @param aq query to compare
-     */
-    public void establishRelation(ReasonerAtomicQuery aq){
-        Atom aqAtom = aq.getAtom();
-        if(Objects.equals(atom.getTypeId(), aq.getAtom().getTypeId())) {
-            if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size()) {
-                aq.addChild(this);
-            } else {
-                this.addChild(aq);
-            }
-        }
-    }
-
     /**
      * @return the atom constituting this atomic query
      */
     public Atom getAtom(){ return atom;}
-
-    /**
-     * @return set of related, more general queries to this query
-     */
-    public Set<ReasonerAtomicQuery> getChildren(){ return children;}
 
     @Override
     public boolean addAtom(Atomic at) {
@@ -222,19 +179,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             answers.addAll(lookup);
             newAnswers.addAll(lookup);
         }
-    }
-
-    /**
-     * propagate answers to relation resolutions in the cache
-     * @param cache container of already performed query resolutions
-     */
-    public void propagateAnswers(QueryCache cache) {
-        getChildren().forEach(childQuery -> {
-            QueryAnswers ans = QueryAnswers.getUnifiedAnswers(childQuery, this, cache.get(this).getAnswers());
-            childQuery.getAnswers().addAll(ans);
-            childQuery.getNewAnswers().addAll(ans);
-            childQuery.propagateAnswers(cache);
-        });
     }
 
     /**
@@ -327,14 +271,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
-        Set<VarName> queryVars = getSelectedNames();
-        Set<VarName> headVars = ruleHead.getSelectedNames();
+        Set<VarName> queryVars = getVarNames();
         Set<IdPredicate> extraSubs = new HashSet<>();
-        if(queryVars.size() > headVars.size()){
-            extraSubs.addAll(ruleHead.getIdPredicates()
-                    .stream().filter(sub -> queryVars.contains(sub.getVarName()))
-                    .collect(Collectors.toSet()));
-        }
+        ruleHead.getIdPredicates()
+                .stream().filter(sub -> queryVars.contains(sub.getVarName()))
+                .forEach(extraSubs::add);
+        ruleHead.getTypeConstraints()
+                .stream().flatMap(type -> type.getIdPredicates().stream())
+                .filter(sub -> queryVars.contains(sub.getVarName()))
+                .forEach(extraSubs::add);
 
         answers.forEach( map -> {
             Map<VarName, Concept> newAns = new HashMap<>(map);
@@ -351,7 +296,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param cache collection of performed query resolutions
      * @param materialise materialisation flag
      */
-    public void resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, QueryCache cache, boolean materialise){
+    private void resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, QueryCache cache, boolean materialise){
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
@@ -362,19 +307,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Iterator<Atom> atIt = atoms.iterator();
 
         subGoals.add(this);
-        ReasonerAtomicQuery childAtomicQuery = new ReasonerAtomicQuery(atIt.next(), this.getSelectedNames());
-        if(!materialise) this.establishRelation(childAtomicQuery);
+        ReasonerAtomicQuery childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
         QueryAnswers subs = childAtomicQuery.answer(subGoals, cache, materialise);
         while(atIt.hasNext()){
-            childAtomicQuery = new ReasonerAtomicQuery(atIt.next(), getSelectedNames());
-            if(!materialise) this.establishRelation(childAtomicQuery);
+            childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
             QueryAnswers localSubs = childAtomicQuery.answer(subGoals, cache, materialise);
             subs = subs.join(localSubs);
         }
 
         QueryAnswers answers = this.propagateHeadIdPredicates(ruleHead, subs)
                 .filterNonEquals(ruleBody)
-                .filterVars(ruleHead.getSelectedNames())
+                .filterVars(ruleHead.getVarNames())
                 .filterKnown(this.getAnswers());
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()){
@@ -385,10 +328,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             }
         }
 
-        //TODO do all combinations if roles missing
         QueryAnswers filteredAnswers = answers
-                .filterVars(this.getSelectedNames())
-                .filterIncomplete(this.getSelectedNames());
+                .filterVars(this.getVarNames())
+                .permute(this.getAtom());
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
@@ -460,7 +402,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + size());
             dAns = size() - dAns;
             iter++;
-            if (!materialise) cache.propagateAnswers();
         }
 
         private void computeNext(){
@@ -470,7 +411,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             LOG.debug("Resolving rule: " + rule.getId() + " answers: " + size());
             outer().resolveViaRule(rule, subGoals, cache, materialise);
             if (!hasNextRule()) completeIteration();
-            answerIterator = outer().newAnswers.iterator();
+            answerIterator = outer().getNewAnswers().iterator();
         }
 
         /**

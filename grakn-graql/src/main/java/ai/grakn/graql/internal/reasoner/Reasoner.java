@@ -19,26 +19,18 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.QueryCache;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +44,7 @@ import static ai.grakn.graql.Graql.var;
 /**
  *
  * <p>
- * Class providing top level reasoning interface and functionalities.
+ * Class providing reasoning utility functions.
  * </p>
  *
  * @author Kasper Piskorski
@@ -97,7 +89,7 @@ public class Reasoner {
      * @param graph to be checked against
      * @return true if at least one inference rule is present in the graph
      */
-    private static boolean hasRules(GraknGraph graph) {
+    public static boolean hasRules(GraknGraph graph) {
         TypeName inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
         return graph.graql().infer(false).match(var("x").isa(name(inferenceRule))).ask().execute();
     }
@@ -142,32 +134,5 @@ public class Reasoner {
             subGoals.addAll(SG);
         });
         commitGraph(graph);
-    }
-
-    /**
-     * Resolve a given general graql query using the knowledge base
-     * @param inputQuery the query string to be resolved
-     * @param materialise materialisation flag
-     * @return stream of answers
-     */
-    public static Stream<Map<VarName, Concept>> resolve(MatchQuery inputQuery, boolean materialise) {
-        GraknGraph graph = inputQuery.admin().getGraph().orElse(null);
-        if (graph == null) {
-            throw new IllegalArgumentException(ErrorMessage.NO_GRAPH.getMessage());
-        }
-
-        linkConceptTypes(graph);
-        if (!Reasoner.hasRules(graph)) {
-            return inputQuery.admin().streamWithVarNames();
-        }
-        Set<VarName> selectVars = inputQuery.admin().getSelectedNames();
-        Iterator<Conjunction<VarAdmin>> conjIt = inputQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        ReasonerQueryImpl conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(selectVars), graph);
-        Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
-        while(conjIt.hasNext()) {
-            conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()).select(selectVars), graph);
-            answerStream = Stream.concat(answerStream, conjunctiveQuery.resolve(materialise));
-        }
-        return answerStream;
     }
 }

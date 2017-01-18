@@ -14,15 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ -z "${GRAKN_HOME}" ]; then
+    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+    GRAKN_BIN=$(cd "$(dirname "${path}")" && pwd -P)
+    GRAKN_HOME=$(cd "${GRAKN_BIN}"/.. && pwd -P)
+fi
+
 if [ $# -lt 1 ];
 then
 	echo "USAGE: $0 [-daemon] server.properties [--override property=value]*"
 	exit 1
 fi
-base_dir=$(dirname $0)
 
 if [ "x$KAFKA_LOG4J_OPTS" = "x" ]; then
-    export KAFKA_LOG4J_OPTS="-Dlog4j.configuration=file:$base_dir/../conf/kafka/log4j.properties"
+    export KAFKA_LOG4J_OPTS="-Dlog4j.configuration=file:${GRAKN_HOME}/conf/kafka/log4j.properties"
 fi
 
 if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
@@ -42,4 +47,4 @@ case $COMMAND in
 esac
 
 echo "Starting kafka"
-exec $base_dir/kafka-run-class.sh $EXTRA_ARGS kafka.Kafka "$@"
+exec "${GRAKN_HOME}"/bin/kafka-run-class.sh $EXTRA_ARGS kafka.Kafka "$@"

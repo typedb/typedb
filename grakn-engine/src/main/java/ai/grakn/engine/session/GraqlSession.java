@@ -58,6 +58,7 @@ import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * A Graql shell session for a single client, running on one graph in one thread
@@ -95,9 +96,14 @@ class GraqlSession {
         this.printer = getPrinter();
 
         queryExecutor.submit(() -> {
-            refreshGraph();
-            sendTypes();
-            sendEnd();
+            try {
+                refreshGraph();
+                sendTypes();
+                sendEnd();
+            } catch (Throwable e) {
+                LOG.error(getFullStackTrace(e));
+                throw e;
+            }
         });
 
         // Begin sending pings
@@ -131,6 +137,11 @@ class GraqlSession {
             case ACTION_DISPLAY:
                 setDisplayOptions(json);
                 break;
+            case REST.RemoteShell.ACTION_PING:
+                // Ignore
+                break;
+            default:
+                throw new RuntimeException("Unrecognized message: " + json);
         }
     }
 
@@ -334,7 +345,7 @@ class GraqlSession {
     private void sendTypes() {
         sendJson(Json.object(
                 ACTION, ACTION_TYPES,
-                TYPES, getTypes(graph).collect(toList())
+                TYPES, getTypes(graph).map(TypeName::getValue).collect(toList())
         ));
     }
 
@@ -342,6 +353,7 @@ class GraqlSession {
      * Send the given JSON to the client
      */
     private void sendJson(Json json) {
+        LOG.debug("Sending message: " + json);
         try {
             session.getRemote().sendString(json.toString());
         } catch (IOException e) {

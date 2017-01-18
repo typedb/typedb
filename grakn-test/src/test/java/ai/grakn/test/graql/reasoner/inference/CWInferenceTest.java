@@ -19,22 +19,18 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.VarName;
 import ai.grakn.graphs.CWGraph;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
@@ -44,6 +40,7 @@ import static ai.grakn.test.GraknTestEnv.*;
 
 public class CWInferenceTest {
     private static QueryBuilder qb;
+    private static QueryBuilder iqb;
 
     @ClassRule
     public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
@@ -55,33 +52,30 @@ public class CWInferenceTest {
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
         qb = cwGraph.graph().graql().infer(false);
+        iqb = cwGraph.graph().graql().infer(true).materialise(false);
     }
 
     @Test
     public void testWeapon() {
         String queryString = "match $x isa weapon;";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
                 "{$x isa weapon;} or {" +
                 "{{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};} or {$x isa rocket;$x has propulsion 'gsp';};" +
                 "};";
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testAlignment() {
         String queryString = "match $z isa country;$z has alignment 'hostile';";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $z isa country, has name 'Nono';";
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTransactionQuery() {
         QueryBuilder qb = cwGraph2.graph().graql().infer(false);
                 String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
-        MatchQuery query = qb.parse(queryString);
-
         String explicitQuery = "match " +
                 "$x isa person;" +
                 "$z isa country;" +
@@ -94,14 +88,12 @@ public class CWInferenceTest {
                 "($x, $z) isa is-paid-by;" +
                 "($z, $y) isa owns;" +
                 "};";
-
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTransactionQuery2() {
         String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction;";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
                 "$x isa person;" +
                 "$z isa country;" +
@@ -117,14 +109,12 @@ public class CWInferenceTest {
                 "($x, $z) isa is-paid-by;" +
                 "($z, $y) isa owns;" +
                 "};";
-
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQuery() {
         String queryString = "match $x isa criminal;";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
                 "{$x isa criminal;} or {" +
                 "$x has nationality 'American';" +
@@ -142,14 +132,12 @@ public class CWInferenceTest {
                 "$x isa person;" +
                 "$z isa country;" +
                 "}; select $x;";
-
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQueryWithOr() {
         String queryString = "match {$x isa criminal;} or {$x has nationality 'American';$x isa person;};";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
             "{{$x isa criminal;} or {$x has nationality 'American';" +
             "{$z has alignment 'hostile';} or {" +
@@ -168,8 +156,7 @@ public class CWInferenceTest {
             "{$y isa weapon;} or {{$y isa missile;} or {$y has propulsion 'gsp';$y isa rocket;};};" +
             "$x isa person;" +
             "$z isa country;};} or {$x has nationality 'American';$x isa person;}; select $x;";
-
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -177,7 +164,6 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$yy isa country;$yyy isa weapon;" +
                 "($y, $yy, $yyy) isa transaction;";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
                 "$y isa person;" +
                 "$yy isa country;" +
@@ -193,8 +179,7 @@ public class CWInferenceTest {
                 "($y, $yy) isa is-paid-by;" +
                 "($yy, $yyy) isa owns;" +
                 "};";
-
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -202,7 +187,6 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$z isa country;$x isa weapon;" +
                 "($y, $z, $x) isa transaction;";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
                 "$y isa person;" +
                 "$z isa country;" +
@@ -218,14 +202,14 @@ public class CWInferenceTest {
                 "($y, $z) isa is-paid-by;" +
                 "($z, $x) isa owns;" +
                 "};";
-
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testGraphCase() {
         GraknGraph localGraph = cwGraph2.graph();
         QueryBuilder lqb = localGraph.graql().infer(false);
+        QueryBuilder ilqb = localGraph.graql().infer(true);
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");
 
         localGraph.putEntityType("region");
@@ -236,7 +220,6 @@ public class CWInferenceTest {
 
         Reasoner.linkConceptTypes(localGraph);
         String queryString = "match $x isa criminal;";
-        MatchQuery query = lqb.parse(queryString);
 
         String explicitQuery = "match " +
                 "{$x isa criminal;} or {" +
@@ -257,10 +240,10 @@ public class CWInferenceTest {
                 "};" +
                 "}; select $x;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), lqb.parse(explicitQuery));
+        assertQueriesEqual(ilqb.parse(queryString), lqb.parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }
 }

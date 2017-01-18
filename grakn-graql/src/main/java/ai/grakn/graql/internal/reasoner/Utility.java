@@ -41,6 +41,9 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -182,6 +185,54 @@ public class Utility {
     }
 
     /**
+     * get unifiers by comparing permutations with original variables
+     * @param originalVars original ordered variables
+     * @param permutations different permutations on the variables
+     * @return set of unifiers
+     */
+    public static Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> originalVars, List<List<VarName>> permutations){
+        Set<Map<VarName, VarName>> unifierSet = new HashSet<>();
+        permutations.forEach(perm -> {
+            Map<VarName, VarName> unifiers = new HashMap<>();
+            Iterator<VarName> pIt = originalVars.iterator();
+            Iterator<VarName> cIt = perm.iterator();
+            while(pIt.hasNext() && cIt.hasNext()){
+                VarName pVar = pIt.next();
+                VarName chVar = cIt.next();
+                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
+            }
+            unifierSet.add(unifiers);
+        });
+        return unifierSet;
+    }
+
+    /**
+     * get all permutations of an entry list
+     * @param entryList entry list to generate permutations of
+     * @param <T> element type
+     * @return set of all possible permutations
+     */
+    public static <T> List<List<T>> getListPermutations(List<T> entryList) {
+        if (entryList.isEmpty()) {
+            List<List<T>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+        List<T> list = new ArrayList<>(entryList);
+        T firstElement = list.remove(0);
+        List<List<T>> returnValue = new ArrayList<>();
+        List<List<T>> permutations = getListPermutations(list);
+        for (List<T> smallerPermuted : permutations) {
+            for (int index = 0; index <= smallerPermuted.size(); index++) {
+                List<T> temp = new ArrayList<>(smallerPermuted);
+                temp.add(index, firstElement);
+                returnValue.add(temp);
+            }
+        }
+        return returnValue;
+    }
+
+    /**
      * Gets roletypes a given type can play in the provided relType relation type by performing
      * type intersection between type's playedRoles and relation's hasRoles.
      * @param type for which we want to obtain compatible roles it plays
@@ -223,7 +274,7 @@ public class Utility {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, VarAdmin> roleMap,
+    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, Var> roleMap,
                                         Set<Map<VarName, Var>> roleMaps){
         Set<VarName> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
@@ -351,22 +402,7 @@ public class Utility {
         Var headVar = var().isa(name(relation.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), var(varNames.peek()));
         return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
-
-    /**
-     * For a given role returns all its non-meta super roles.
-     * @param role in question
-     * @return set of role's non-meta super types
-     */
-    public static Set<RoleType> getNonMetaSuperRoleTypes(RoleType role){
-        Set<RoleType> roles = new HashSet<>();
-        RoleType baseRole = role.superType();
-        while(!Schema.MetaSchema.isMetaName(baseRole.getName())){
-            roles.add(baseRole);
-            baseRole = baseRole.superType();
-        }
-        return roles;
-    }
-
+    
     /**
      * @param role in question
      * @return top non-meta super role of the role
