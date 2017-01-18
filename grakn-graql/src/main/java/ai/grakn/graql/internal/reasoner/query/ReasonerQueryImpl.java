@@ -328,10 +328,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
         //indirect
-        getTypeConstraints().stream()
+        /*getTypeConstraints().stream()
                 .filter(type -> type.getVarName().equals(var))
                 .forEach(type -> type.getPredicates().stream().findFirst().
                         ifPresent(predicate -> relevantSubs.add((IdPredicate) predicate)));
+                        */
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 

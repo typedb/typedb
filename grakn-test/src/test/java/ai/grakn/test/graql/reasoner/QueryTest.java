@@ -135,6 +135,19 @@ public class QueryTest {
     }
 
     @Test
+    public void testQueryEquivalence(){
+        String queryString = "match " +
+                "(entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
+                "$x1 isa $t1; $t1 sub geoObject;";
+        String queryString2 = "match " +
+                "(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
+                "$y1 isa $t2; $t2 sub geoObject;";
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, geoGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, geoGraph.graph());
+        assertTrue(query.isEquivalent(query2));
+    }
+
+    @Test
     public void testUnification(){
         String parentQueryString = "match (entity-location: $y, geo-entity: $y1), isa is-located-in; select $y1, $y;";
         String childQueryString = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
@@ -151,22 +164,6 @@ public class QueryTest {
         childCopy.unify(unifiers);
         Atomic childAtomCopy = childCopy.getAtom();
         assertTrue(!childAtomCopy.equals(childAtom));
-    }
-
-    @Test
-    public void testInverseSub(){
-        String queryString = "match city sub $x;";
-
-        ReasonerQueryImpl parentQuery = new ReasonerQueryImpl(queryString, geoGraph.graph());
-        System.out.println();
-    }
-
-    @Test
-    public void testHasRole(){
-        String queryString = "match is-located-in has-role $x;";
-
-        ReasonerQueryImpl parentQuery = new ReasonerQueryImpl(queryString, geoGraph.graph());
-        System.out.println();
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

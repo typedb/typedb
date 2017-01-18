@@ -345,9 +345,10 @@ public class Relation extends TypeAtom {
         if (getPredicate() == null && getParentQuery() != null) {
             ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
             VarName valueVariable = getValueVariable();
-            HasRole hrAtom = parent.getAtoms().stream()
+            TypeAtom hrAtom = parent.getAtoms().stream()
                     .filter(at -> at.getVarName().equals(valueVariable))
-                    .filter(at -> at instanceof HasRole).map(at -> (HasRole) at)
+                    .filter(Atomic::isAtom).map(at -> (Atom) at)
+                    .filter(Atom::isType).map(at -> (TypeAtom) at)
                     .findFirst().orElse(null);
             if (hrAtom != null) {
                 ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);

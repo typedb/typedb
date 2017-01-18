@@ -402,7 +402,6 @@ public class ReasonerTest {
     }
 
     //TODO loses type variable as non-core types are not unified in rules
-    @Ignore
     @Test
     public void testPlaysRole2(){
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
@@ -686,7 +685,6 @@ public class ReasonerTest {
         MatchQuery query = iqb.parse(queryString2);
         MatchQuery query2 = qb.parse(queryString);
         MatchQuery query3 = iqb.parse(queryString);
-
         query.execute();
         assertQueriesEqual(query2, query3);
     }

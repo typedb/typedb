@@ -151,19 +151,6 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testQueryEquivalence(){
-        String queryString = "match " +
-                "(entity-location: $x2, geo-entity: $xx) isa is-located-in;" +
-                "$x1 isa $t1; $t1 sub geoObject;";
-        String queryString2 = "match " +
-                "(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
-                "$y1 isa $t2; $t2 sub geoObject;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, geoGraph.graph());
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, geoGraph.graph());
-        assertTrue(query.isEquivalent(query2));
-    }
-
-    @Test
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
