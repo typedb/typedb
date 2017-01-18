@@ -32,7 +32,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -149,8 +148,6 @@ public class GraqlShellIT {
         assertThat(barBarInBar, containsString("True"));
     }
 
-    // TODO: Fix this test
-    @Ignore
     @Test
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
