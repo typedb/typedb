@@ -41,16 +41,23 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  */
 public class Main {
 
-    private static final ClusterManager manager = new ClusterManager();
+    public static void main(String[] args) {
+        start(null, args);
+    }
 
-    public static void main(String[] args){
+    public static void start(ClusterManager manager, String[] args){
+        if(manager == null){
+            manager = new ClusterManager();
+        }
+
+        ClusterManager finalManager = manager;
         MigrationCLI.init(args, JsonMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .forEach(Main::runJson);
+                .forEach((options) -> runJson(finalManager, options));
     }
 
-    public static void runJson(JsonMigrationOptions options){
+    public static void runJson(ClusterManager manager, JsonMigrationOptions options){
         File jsonDataFile = new File(options.getInput());
         File jsonTemplateFile = new File(options.getTemplate());
 

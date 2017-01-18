@@ -19,11 +19,9 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.migration.csv.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -32,8 +30,8 @@ import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
+import static ai.grakn.migration.csv.Main.start;
 
-@Ignore
 public class CSVMigratorMainTest {
 
     private GraknGraph graph;
@@ -132,7 +130,7 @@ public class CSVMigratorMainTest {
     }
 
     private void run(String... args){
-        Main.main(args);
+        start(engine.getClusterManager(), args);
     }
 
     private void runAndAssertDataCorrect(String... args){

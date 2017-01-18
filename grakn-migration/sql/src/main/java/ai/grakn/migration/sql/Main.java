@@ -42,16 +42,23 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  */
 public class Main {
 
-    private static final ClusterManager manager = new ClusterManager();
+    public static void main(String[] args) {
+        start(null, args);
+    }
 
-    public static void main(String[] args){
+    public static void start(ClusterManager manager, String[] args){
+        if(manager == null){
+            manager = new ClusterManager();
+        }
+
+        ClusterManager finalManager = manager;
         MigrationCLI.init(args, SQLMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .forEach(Main::runSQL);
+                .forEach((options) -> runSQL(finalManager, options));
     }
 
-    public static void runSQL(SQLMigrationOptions options) {
+    public static void runSQL(ClusterManager manager, SQLMigrationOptions options) {
         File sqlTemplate = new File(options.getTemplate());
 
         if(!sqlTemplate.exists()){
@@ -69,7 +76,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(sqlMigrator.migrate());
             } else {
-                MigrationLoader.load(GraknEngineServer.getClusterManager(), options.getKeyspace(), options.getBatch(), sqlMigrator);
+                MigrationLoader.load(manager, options.getKeyspace(), options.getBatch(), sqlMigrator);
                 printWholeCompletionMessage(options);
             }
 

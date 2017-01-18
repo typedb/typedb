@@ -40,16 +40,23 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  */
 public class Main {
 
-    private static final ClusterManager manager = new ClusterManager();
-
     public static void main(String[] args) {
+        start(null, args);
+    }
+
+    public static void start(ClusterManager manager, String[] args){
+        if(manager == null){
+            manager = new ClusterManager();
+        }
+
+        ClusterManager finalManager = manager;
         MigrationCLI.init(args, CSVMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .forEach(Main::runCSV);
+                .forEach((options) -> runCSV(finalManager, options));
     }
 
-    public static void runCSV(CSVMigrationOptions options){
+    public static void runCSV(ClusterManager manager, CSVMigrationOptions options){
         // get files
         File csvDataFile = new File(options.getInput());
         File csvTemplate = new File(options.getTemplate());

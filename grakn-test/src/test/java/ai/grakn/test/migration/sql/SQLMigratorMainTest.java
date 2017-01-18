@@ -19,7 +19,6 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.migration.sql.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
 import org.junit.Before;
@@ -40,8 +39,8 @@ import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.DRIVER;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
+import static ai.grakn.migration.sql.Main.start;
 
-@Ignore
 public class SQLMigratorMainTest {
 
     private final String templateFile = getFile("sql", "pets/template.gql").getAbsolutePath();
@@ -132,7 +131,7 @@ public class SQLMigratorMainTest {
     }
 
     private void run(String... args){
-        Main.main(args);
+        start(engine.getClusterManager(), args);
     }
 
     private void runAndAssertDataCorrect(String... args){
