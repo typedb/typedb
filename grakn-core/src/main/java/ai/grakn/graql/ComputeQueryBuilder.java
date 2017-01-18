@@ -33,6 +33,9 @@ import ai.grakn.graql.analytics.SumQuery;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Starting point for creating compute queries.
+ */
 public interface ComputeQueryBuilder {
 
     /**

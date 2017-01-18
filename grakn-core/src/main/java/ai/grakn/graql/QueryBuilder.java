@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+/**
+ * Starting point for creating queries
+ */
 public interface QueryBuilder {
 
     /**
@@ -95,8 +98,17 @@ public interface QueryBuilder {
      */
     <T extends Query<?>> T  parseTemplate(String template, Map<String, Object> data);
 
+    /**
+     * Register an aggregate that can be used when parsing a Graql query
+     * @param name the name of the aggregate
+     * @param aggregateMethod a function that will produce an aggregate when passed a list of arguments
+     */
     void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod);
 
+    /**
+     * Register a macro that can be used when parsing a Graql template
+     * @param macro the macro to register
+     */
     void registerMacro(Macro macro);
 
     /**

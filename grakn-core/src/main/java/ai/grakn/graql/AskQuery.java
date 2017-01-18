@@ -32,6 +32,7 @@ public interface AskQuery extends Query<Boolean> {
      * @param graph the graph to execute the query on
      * @return a new AskQuery with the graph set
      */
+    @Override
     AskQuery withGraph(GraknGraph graph);
 
     /**

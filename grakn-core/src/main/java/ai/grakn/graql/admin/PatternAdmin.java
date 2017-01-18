@@ -91,5 +91,9 @@ public interface PatternAdmin extends Pattern {
                 .collect(toSet());
     }
 
+    /**
+     * Create a deep copy of this pattern
+     * @return a copy of this pattern
+     */
     PatternAdmin cloneMe();
 }
