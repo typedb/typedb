@@ -222,7 +222,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     /**
      * Persists a Background Task's checkpoint to ZK and graph.
-     * @param id ID of task
+     * @param id LID of task
      * @return A Consumer<String> function that can be called by the background task on demand to save its checkpoint.
      */
     private Consumer<String> saveCheckpoint(String id) {

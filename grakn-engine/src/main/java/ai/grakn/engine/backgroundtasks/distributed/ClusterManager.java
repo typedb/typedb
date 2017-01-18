@@ -27,7 +27,6 @@ import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**

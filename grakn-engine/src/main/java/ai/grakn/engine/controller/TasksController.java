@@ -71,15 +71,7 @@ public class TasksController {
     private ClusterManager manager;
 
     public TasksController(ClusterManager manager) {
-        String mgr = ConfigProperties.getInstance().getProperty(TASK_MANAGER_INSTANCE, "ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager");
         this.manager = manager;
-//        if(mgr.equals(DistributedTaskManager.class.getName())){
-//            taskManager = manager.getTaskManager();
-//        } else if(mgr.equals(StandaloneTaskManager.class.getName())){
-//            taskManager = StandaloneTaskManager.getInstance();
-//        } else {
-//            throw new RuntimeException("Unrecognized class: " + mgr);
-//        }
 
         get(ALL_TASKS_URI, this::getTasks);
         get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
