@@ -352,18 +352,17 @@ public class Relation extends TypeAtom {
             if (hrAtom != null) {
                 ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
                 hrQuery.DBlookup();
-                if (hrQuery.getAnswers().size() != 1) {
-                    throw new IllegalStateException("ambigious answer to has-role query");
-                }
-                IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
-                        hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
+                if (hrQuery.getAnswers().size() == 1) {
+                    IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
+                            hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
 
-                Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
-                parent.removeAtom(hrAtom.getPredicate());
-                parent.removeAtom(hrAtom);
-                parent.removeAtom(this);
-                parent.addAtom(newRelation);
-                parent.addAtom(newPredicate);
+                    Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
+                    parent.removeAtom(hrAtom.getPredicate());
+                    parent.removeAtom(hrAtom);
+                    parent.removeAtom(this);
+                    parent.addAtom(newRelation);
+                    parent.addAtom(newPredicate);
+                }
             }
         }
     }
@@ -383,19 +382,6 @@ public class Relation extends TypeAtom {
         }
         return varFound;
     }
-
-    /*
-    @Override
-    public Set<IdPredicate> getIdPredicates() {
-        Set<IdPredicate> idPredicates = super.getIdPredicates();
-        //from types
-        getTypeConstraints().stream()
-                .map(atom -> ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable()))
-                .filter(Objects::nonNull)
-                .forEach(idPredicates::add);
-        return idPredicates;
-    }
-    */
 
     @Override
     public void unify (Map<VarName, VarName> mappings) {

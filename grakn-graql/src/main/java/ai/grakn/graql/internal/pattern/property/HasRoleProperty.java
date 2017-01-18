@@ -113,10 +113,9 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
         VarName varName = var.getVarName();
         VarAdmin roleVar = this.getRole();
         VarName roleVariable = roleVar.getVarName();
-        IdPredicate relPredicate = getIdPredicate(varName, var, vars, parent);
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
         VarAdmin hrVar = Graql.var(varName).hasRole(Graql.var(roleVariable)).admin();
-        return new HasRole(hrVar, relPredicate, rolePredicate, parent);
+        return new HasRole(hrVar, rolePredicate, parent);
     }
 }

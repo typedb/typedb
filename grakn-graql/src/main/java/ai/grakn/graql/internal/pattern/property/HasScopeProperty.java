@@ -30,6 +30,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.SelectableTypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
@@ -109,11 +110,11 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
         VarName varName = var.getVarName();
         VarAdmin scopeVar = this.getScope();
         VarName scopeVariable = scopeVar.isUserDefinedName() ?
-                scopeVar.getVarName() : varName.map(name -> name + "-scope-" + UUID.randomUUID().toString());
+                scopeVar.getVarName() : varName.map(name -> name + "-" + getName() + "-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part
         VarAdmin scVar = Graql.var(varName).hasScope(Graql.var(scopeVariable)).admin();
-        return new TypeAtom(scVar, predicate, parent);
+        return new SelectableTypeAtom(scVar, predicate, parent);
     }
 }

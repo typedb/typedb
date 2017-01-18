@@ -28,6 +28,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.SelectableTypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
@@ -120,10 +121,10 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
         VarName varName = var.getVarName();
         VarAdmin typeVar = this.getSuperType();
         VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.map(name -> name + "-sub-" + UUID.randomUUID().toString());
+                typeVar.getVarName() : varName.map(name -> name + "-" + getName() + "-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarAdmin resVar = Graql.var(varName).sub(Graql.var(typeVariable)).admin();
-        return new TypeAtom(resVar, predicate, parent);
+        return new SelectableTypeAtom(resVar, predicate, parent);
     }
 }

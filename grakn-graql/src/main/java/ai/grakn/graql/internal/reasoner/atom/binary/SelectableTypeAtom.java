@@ -18,30 +18,36 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 /**
  *
  * <p>
- * Atom implementation defining a has-role atom.
+ * Atom implementation defining type atoms of the type $varName {sub|plays-role|has-scope} $valueVariable)
+ * that are potentially selectable (can form atomic queries).
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class HasRole extends SelectableTypeAtom {
+public class SelectableTypeAtom extends TypeAtom {
 
-    public HasRole(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
+    public SelectableTypeAtom(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
     }
 
-    private HasRole(HasRole a){
+    protected SelectableTypeAtom(SelectableTypeAtom a){
         super(a);
     }
 
     @Override
-    public Atomic clone(){ return new HasRole(this);}
+    public boolean isSelectable() {
+        return getPredicate() == null;
+    }
+
+    @Override
+    public Atomic clone(){ return new SelectableTypeAtom(this);}
 }

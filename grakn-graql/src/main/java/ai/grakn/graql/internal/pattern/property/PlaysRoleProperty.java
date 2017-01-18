@@ -30,6 +30,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.SelectableTypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
@@ -118,10 +119,10 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
         VarName varName = var.getVarName();
         VarAdmin typeVar = this.getRole();
         VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.map(name -> name + "-plays-role-" + UUID.randomUUID().toString());
+                typeVar.getVarName() : varName.map(name -> name + "-" + getName() + "-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
-        return new TypeAtom(resVar, predicate, parent);
+        return new SelectableTypeAtom(resVar, predicate, parent);
     }
 }

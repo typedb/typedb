@@ -661,6 +661,20 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testHasRole2() {
+        String queryString = "match ($x, $y) isa $rel;$rel has-role $role;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString2);
+        MatchQuery query2 = qb.parse(queryString);
+        MatchQuery query3 = iqb.parse(queryString);
+
+        query.execute();
+        assertQueriesEqual(query2, query3);
+    }
+
+    @Test
     public void testScope(){
         String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
         QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));

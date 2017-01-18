@@ -153,6 +153,22 @@ public class QueryTest {
         assertTrue(!childAtomCopy.equals(childAtom));
     }
 
+    @Test
+    public void testInverseSub(){
+        String queryString = "match city sub $x;";
+
+        ReasonerQueryImpl parentQuery = new ReasonerQueryImpl(queryString, geoGraph.graph());
+        System.out.println();
+    }
+
+    @Test
+    public void testHasRole(){
+        String queryString = "match is-located-in has-role $x;";
+
+        ReasonerQueryImpl parentQuery = new ReasonerQueryImpl(queryString, geoGraph.graph());
+        System.out.println();
+    }
+
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
