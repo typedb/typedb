@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import com.google.common.collect.Maps;
 import mjson.Json;
@@ -41,7 +42,8 @@ class JsonPrinter implements Printer<Json> {
 
         if (concept.isType()) {
             json.set("name", concept.asType().getName().getValue());
-            json.set("sub", concept.asType().superType().getName().getValue());
+            Type superType = concept.asType().superType();
+            if (superType != null) json.set("sub", superType.getName().getValue());
         } else {
             json.set("isa", concept.asInstance().type().getName().getValue());
         }
