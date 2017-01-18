@@ -147,8 +147,8 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
 
         // make sure this role-player is in the subgraph
         if (hasRolePlayer) {
-            messenger.sendMessage(messageScopeIn, 1L);
-            messenger.sendMessage(messageScopeOut, assertionCount);
+            messenger.sendMessage(messageScopeInCasting, 1L);
+            messenger.sendMessage(messageScopeOutRolePlayer, assertionCount);
         }
     }
 
