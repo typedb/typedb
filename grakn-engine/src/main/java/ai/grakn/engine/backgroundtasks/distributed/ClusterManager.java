@@ -35,17 +35,20 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 /**
  * Scheduler will be constantly running on the "Leader" machine. The "takeLeadership"
  * function in this class will be called if it is needed to take over.
+ *
+ * @author Denis Lobanov, alexandraorth
  */
 public class ClusterManager extends LeaderSelectorListenerAdapter {
     private static ClusterManager instance = null;
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
-    private final String engineID;
+
+    private static final KafkaLogger LOG = KafkaLogger.getInstance();
+    private static final String ENGINE_ID = EngineID.getInstance().id();
 
     private LeaderSelector leaderSelector;
     private Scheduler scheduler;
     private TreeCache cache;
     private TaskRunner taskRunner;
-    private Thread taskRunnerThread;
+//    private Thread taskRunnerThread;
     private SynchronizedStateStorage zookeeperStorage;
     private final CountDownLatch leaderInitLatch = new CountDownLatch(1);
     
@@ -57,10 +60,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         return instance;
     }
 
-    private ClusterManager() {
-        this.engineID = EngineID.getInstance().id();
-    }
-
     public void start() {
         try {
             LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
@@ -68,10 +67,8 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
             zookeeperStorage = SynchronizedStateStorage.getInstance();
 
             // Call close() in case there is an exception during open().
-            taskRunner = new TaskRunner();//countDownLatch);
+            taskRunner = new TaskRunner();
             taskRunner.open();
-            taskRunnerThread = new Thread(taskRunner);
-            taskRunnerThread.start();
 
             leaderSelector = new LeaderSelector(zookeeperStorage.connection(), SCHEDULER, this);
             leaderSelector.autoRequeue();
@@ -107,13 +104,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
         noThrow(taskRunner::close, "Could not stop TaskRunner.");
 
-        // Lambdas cant throw exceptions
-        try {
-            taskRunnerThread.join();
-        } catch(Throwable t) {
-            LOG.error("Exception whilst waiting for TaskRunner thread to join - "+getFullStackTrace(t));
-        }
-
         noThrow(zookeeperStorage::close, "Could not close ZK storage.");
         zookeeperStorage = null;
     }
@@ -129,7 +119,8 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         scheduler = new Scheduler();
         scheduler.open();
 
-        LOG.info(engineID + " has taken over the scheduler.");
+        LOG.info(ENGINE_ID + " has taken over the scheduler.");
+        
         Thread schedulerThread = new Thread(scheduler);
         schedulerThread.setDaemon(true);
         schedulerThread.start();
