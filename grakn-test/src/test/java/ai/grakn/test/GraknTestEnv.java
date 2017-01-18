@@ -114,10 +114,6 @@ public abstract class GraknTestEnv {
     static void stopHTTP(){
         if(HTTP_RUNNING.compareAndSet(true, false)) {
             GraknEngineServer.stopHTTP();
-            // The Spark framework we are using kicks off a shutdown process in a separate
-            // thread and there is not way to detect when it is finished. The only option
-            // we have is to "wait a while" (Boris).
-            try {Thread.sleep(5000);} catch(InterruptedException ex) { Log.info("Thread sleep interrupted."); }
         }
     }
 
@@ -155,10 +151,15 @@ public abstract class GraknTestEnv {
         }
     }
 
+    static String randomKeyspace(){
+        // Embedded Casandra has problems dropping keyspaces that start with a number
+        return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
     static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
-        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
+//        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
     }
 
     public static boolean usingTinker() {

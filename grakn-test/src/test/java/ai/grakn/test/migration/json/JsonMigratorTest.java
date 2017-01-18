@@ -55,7 +55,7 @@ public class JsonMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
     }
 
     @Test

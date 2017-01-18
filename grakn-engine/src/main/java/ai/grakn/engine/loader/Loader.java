@@ -22,6 +22,7 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -156,13 +157,6 @@ public class Loader {
     }
 
     /**
-     * Wait for all tasks to finish for one minute.
-     */
-    public void waitToFinish(){
-        waitToFinish(60000);
-    }
-
-    /**
      * Wait for all tasks to finish.
      * @param timeout amount of time (in ms) to wait.
      */
@@ -174,7 +168,7 @@ public class Loader {
         while ((new Date().getTime())-initial < timeout) {
             if(allTasksFinished(currentTasks)) {
                 printLoaderState();
-                break;
+                return;
             }
 
             try {
@@ -183,6 +177,7 @@ public class Loader {
                 LOG.error("Problem sleeping.");
             }
         }
+        throw new RuntimeException(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage());
     }
 
     /**

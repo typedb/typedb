@@ -77,12 +77,10 @@ public class AtomicTest {
     public void testRecursive(){
         String recRelString = "match ($x, $y) isa resides;";
         String nrecRelString = "match ($x, $y) isa recommendation;";
-
         ReasonerAtomicQuery recQuery = new ReasonerAtomicQuery(recRelString, snbGraph.graph());
         ReasonerAtomicQuery nrecQuery = new ReasonerAtomicQuery(nrecRelString, snbGraph.graph());
-
-        assert(recQuery.getAtom().isRecursive());
-        assert(!nrecQuery.getAtom().isRecursive());
+        assertTrue(recQuery.getAtom().isRecursive());
+        assertTrue(!nrecQuery.getAtom().isRecursive());
     }
 
     @Test
@@ -95,9 +93,9 @@ public class AtomicTest {
         Atom relation = new ReasonerAtomicQuery(relString, snbGraph.graph()).getAtom();
         Atom res = new ReasonerAtomicQuery(resString, snbGraph.graph()).getAtom();
 
-        assert(atom.isType());
-        assert(relation.isRelation());
-        assert(res.isResource());
+        assertTrue(atom.isType());
+        assertTrue(relation.isRelation());
+        assertTrue(res.isResource());
     }
 
     @Test

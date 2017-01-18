@@ -34,13 +34,9 @@ ENGINE_PS=/tmp/grakn-engine.pid
 # Define CLASSPATH, exclude slf4j as we use logback
 for jar in "${GRAKN_HOME}"/lib/*.jar; do
     if [[ $jar != *slf4j-log4j12* ]] ; then
-        CLASSPATH="$CLASSPATH:$jar"
+        CLASSPATH="$CLASSPATH":"$jar"
     fi
 done
-
-if [[ ! -z "${GRAKN_ENGINE_CONFIG}" ]]; then
-    ENGINE_OPTS=$ENGINE_OPTS" -Dgrakn.conf=${GRAKN_ENGINE_CONFIG}"
-fi
 
 case "$1" in
 
@@ -52,9 +48,9 @@ start)
         # engine has not already started
         echo -n "Starting engine"
         if [[ $FOREGROUND = true ]]; then
-            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" ${ENGINE_OPTS} ai.grakn.engine.GraknEngineServer
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_ENGINE_CONFIG}" ai.grakn.engine.GraknEngineServer
         else
-            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" ${ENGINE_OPTS} ai.grakn.engine.GraknEngineServer &
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_ENGINE_CONFIG}" ai.grakn.engine.GraknEngineServer &
             echo $!>$ENGINE_PS
         fi
     fi
@@ -74,7 +70,7 @@ status)
     ENGINE_PIDS=$(ps ax | grep -i 'ai\.grakn\.engine\.GraknEngineServer' | grep java | grep -v grep | awk '{print $1}')
     if [ -e $ENGINE_PS ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
         echo "Engine is $(cat $ENGINE_PS)"
-    elif [ -n $ENGINE_PIDS ]; then
+    elif [ -n "$ENGINE_PIDS" ]; then
         echo "Engine is $ENGINE_PIDS (foreground)"
     else
         echo "Engine has stopped"

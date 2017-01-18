@@ -91,8 +91,7 @@ public class TestReasoning extends TestOwlGraknBase {
     }
 
     private QueryAnswers inferRelationGrakn(String relationId, String instanceId) {
-        QueryBuilder qb = migrator.graph().graql();
-
+        QueryBuilder qb = migrator.graph().graql().infer(true).materialise(false);
         long gknStartTime = System.currentTimeMillis();
         String subjectRoleId = "owl-subject-" + relationId;
         String objectRoleId = "owl-object-" + relationId;
@@ -103,7 +102,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 var("x").isa("tPerson"),
                 var("y").has(OwlModel.IRI.owlname(), "e"+instanceId),
                 var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
-        QueryAnswers gknAnswers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
+        QueryAnswers gknAnswers = new QueryAnswers(query.admin().results());
         long gknTime = System.currentTimeMillis() - gknStartTime;
         System.out.println("Grakn Reasoner answers: " + gknAnswers.size() + " in " + gknTime + " ms");
         return gknAnswers;
@@ -112,7 +111,8 @@ public class TestReasoning extends TestOwlGraknBase {
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
     public void testFullReasoning(){
-        QueryBuilder qb = migrator.graph().graql();
+        QueryBuilder qb = migrator.graph().graql().infer(false);
+        QueryBuilder iqb = migrator.graph().graql().infer(true).materialise(false);
         String richardId = "richard_henry_steward_1897";
         String hasGreatUncleId = "op-hasGreatUncle";
         String explicitQuery = "match $x isa tPerson;" +
@@ -127,7 +127,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'ewalter_whitfield_1863';} or" +
                 "{$y has owl-iri 'ewilliam_whitfield_1852';} or" +
                 "{$y has owl-iri 'egeorge_whitfield_1865';};";
-        assertEquals(Reasoner.resolve(qb.parse(queryString2), false), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)).stream());
+        assertEquals(iqb.<MatchQuery>parse(queryString2).stream(), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)).stream());
 
         String queryString3 = "match (owl-subject-op-hasGreatAunt: $x, owl-object-op-hasGreatAunt: $y) isa op-hasGreatAunt;" +
                 "$x has owl-iri 'emary_kate_green_1865'; select $y;";
@@ -136,7 +136,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'esarah_ingelby_1821';} or {$y has owl-iri 'eann_pickard_1809';} or" +
                 "{$y has owl-iri 'esusanna_pickard_1803';} or {$y has owl-iri 'emary_green_1803';} or" +
                 "{$y has owl-iri 'erebecca_green_1800';} or {$y has owl-iri 'eann_green_1806';};";
-        assertEquals(Reasoner.resolve(qb.parse(queryString3), false), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)).stream());
+        assertEquals(iqb.<MatchQuery>parse(queryString3).stream(), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)).stream());
 
         IRI hasAncestor = baseIri.resolve("#hasAncestor");
         String hasAncestorId = "op-hasAncestor";

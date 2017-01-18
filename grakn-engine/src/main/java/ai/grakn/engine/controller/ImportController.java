@@ -146,12 +146,12 @@ public class ImportController {
                 while (var.equals(INSERT_KEYWORD)) {
                     var = consumeInsertEntity(batchIterator, loaderParam);
                 }
-                loaderParam.waitToFinish();
+                loaderParam.waitToFinish(60000);
                 // ---- RELATIONS --- //
                 while (var.equals(MATCH_KEYWORD)) {
                     var = consumeInsertRelation(batchIterator, loaderParam);
                 }
-                loaderParam.waitToFinish();
+                loaderParam.waitToFinish(60000);
             }
 
             PostProcessing.getInstance().run();

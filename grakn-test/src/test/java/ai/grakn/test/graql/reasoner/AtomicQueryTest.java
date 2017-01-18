@@ -24,10 +24,10 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
@@ -163,6 +163,23 @@ public class AtomicQueryTest {
         assertTrue(query.isEquivalent(query2));
     }
 
+    @Test
+    public void testVarPermutation(){
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers fullAnswers = queryAnswers(qb.parse(queryString2));
+        QueryAnswers permutedAnswers = answers.permute(new ReasonerAtomicQuery(queryString, geoGraph.graph()).getAtom());
+        QueryAnswers permutedAnswers2 = answers.permute(new ReasonerAtomicQuery(queryString2, geoGraph.graph()).getAtom());
+        assertEquals(fullAnswers, permutedAnswers2);
+        assertEquals(answers, permutedAnswers);
+    }
+
+
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().results());
+    }
     private Concept getConcept(String id){
         Set<Concept> instances = snbGraph.graph().getResourcesByValue(id)
                 .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());

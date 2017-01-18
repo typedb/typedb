@@ -81,18 +81,6 @@ public abstract class AtomBase implements Atomic {
         return Sets.newHashSet(varName);
     }
 
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = getParentQuery().getSelectedNames();
-        vars.retainAll(getVarNames());
-        return vars;
-    }
-
-    public void resetNames(){
-        Map<VarName, VarName> unifiers = new HashMap<>();
-        getVarNames().forEach(var -> unifiers.put(var, Patterns.varName()));
-        unify(unifiers);
-    }
-
     /**
      * @return true if the value variable is user defined
      */

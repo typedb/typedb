@@ -21,7 +21,6 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -39,7 +38,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
@@ -48,6 +46,7 @@ import static org.junit.Assert.assertTrue;
 public class GenealogyTest {
 
     private static QueryBuilder qb;
+    private static QueryBuilder iqb;
 
     @ClassRule
     public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
@@ -55,6 +54,7 @@ public class GenealogyTest {
     @BeforeClass
     public static void setUpClass() throws Exception {
         qb = genealogyGraph.graph().graql().infer(false);
+        iqb = genealogyGraph.graph().graql().infer(true).materialise(true);
     }
 
     /*
@@ -67,16 +67,16 @@ public class GenealogyTest {
     @Test
     public void testMatchAll(){
         String queryString = "match $x isa document; ($x, $y);";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(answers.isEmpty());
     }
 
     @Test
     public void testMatchAll2(){
         String queryString = "match $x isa document; ($x, $y); $y isa entity;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(answers.isEmpty());
     }
 
@@ -89,8 +89,8 @@ public class GenealogyTest {
                 "$rel2 (happening: $w, protagonist: $s2) isa event-protagonist;" +
                 "$rel2 has event-role 'spouse';" +
                 "$s1 != $s2;select $s1, $s2;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(!hasDuplicates(answers));
     }
 
@@ -100,16 +100,16 @@ public class GenealogyTest {
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 1);
     }
 
     @Test
     public void testFemale() {
         String queryString = "match $x isa person has identifier $id has gender 'female';";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertEquals(answers.size(), 32);
     }
@@ -118,7 +118,7 @@ public class GenealogyTest {
     public void testGender() {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
         assertEquals(answers.size(), qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }
@@ -126,27 +126,24 @@ public class GenealogyTest {
     @Test
     public void testName() {
         String queryString = "match $x isa person, has firstname $n;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testMiddleName() {
         String queryString = "match $x has identifier $i has middlename $mn;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testSurName() {
         String queryString = "match $x isa person has surname $srn;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -158,27 +155,23 @@ public class GenealogyTest {
         "$rel1 has event-role 'parent';" +
         "$rel2 (happening: $b, protagonist: $c) isa event-protagonist;" +
         "$rel2 has event-role 'newborn';select $c, $p;";
-        MatchQuery query = genealogyGraph.graph().graql().infer(true).parse(queryString);
-        MatchQuery query2 = genealogyGraph.graph().graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(query.admin().results());
-        QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertEquals(answer.size(), 2));
         assertEquals(76, answers.size());
         assertEquals(answers, answers2);
     }
 
-    //It is expected that results are different due to how rules are defined
-    @Ignore
     @Test
     public void testParentship2() {
         String queryString = "match (child: $x, $y) isa parentship;select $x;";
         String queryString2 = "match (child: $x) isa parentship;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        answers.forEach(answer -> assertEquals(answer.size(), 2));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.parse(queryString2));
+        answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
@@ -186,8 +179,7 @@ public class GenealogyTest {
     @Test
     public void testParentship3(){
         String queryString = "match ($x, son: $y) isa parentship;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertTrue(answers.isEmpty());
     }
 
@@ -195,8 +187,7 @@ public class GenealogyTest {
     public void testComplexQuery(){
         String queryString = "match $a has firstname 'Ann' has surname 'Niesz';" +
                     "(wife: $a, husband: $w); (husband: $w, wife: $b) isa marriage;$a != $b;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 1);
     }
@@ -204,8 +195,7 @@ public class GenealogyTest {
     @Test
     public void testMarriageNotEquals(){
         String queryString = "match ($x, $y) isa marriage; ($y, $z) isa marriage;$x != $z;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 4);
     }
@@ -214,22 +204,19 @@ public class GenealogyTest {
     public void testMarriageType() {
         String queryString = "match $x isa marriage;";
         String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertTrue(!answers.isEmpty());
         assertEquals(answers, answers2);
     }
 
-    //TODO need to do all combinations for roles missing
-    @Ignore
     @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
@@ -239,9 +226,8 @@ public class GenealogyTest {
     @Test
     public void testMarriageMaterialisation2() {
         String queryString = "match $rel (spouse1: $x, spouse2: $y) isa marriage;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
@@ -250,20 +236,20 @@ public class GenealogyTest {
     @Test
     public void testMarriage() {
         String queryString = "match (spouse1: $x, spouse2: $y) isa marriage;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, answers2);
     }
 
     @Test
     public void testWife(){
         String queryString = "match $r (wife: $x) isa marriage;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         List<Map<String, Concept>> answerList = qb.<MatchQuery>parse(queryString).execute();
-        answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers requeriedAnswers = queryAnswers(iqb.parse(queryString));
+        assertEquals(answers, requeriedAnswers);
         List<Map<String, Concept>> answerList2 = qb.<MatchQuery>parse(queryString).execute();
         assertEquals(answerList, answerList2);
     }
@@ -274,14 +260,12 @@ public class GenealogyTest {
     public void testWife2(){
         String queryString = "match ($r: $x) isa marriage;$r type-name 'wife';select $x;";
         String queryString2 = "match (wife: $x) isa marriage;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        assertEquals(answers2, new QueryAnswers(qb.<MatchQueryAdmin>parse(queryString2).results()));
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers2, queryAnswers(qb.<MatchQueryAdmin>parse(queryString2)));
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(!answers.isEmpty());
-        System.out.println("answers size: " + answers.size());
-        System.out.println("answers2 size: " + answers2.size());
         assertEquals(answers, answers2);
     }
 
@@ -294,30 +278,29 @@ public class GenealogyTest {
     @Test
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
     public void testCousins() {
         String queryString = "match ($x, $y) isa cousins;";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(!answers.isEmpty());
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
     public void testInLaws() {
         String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
-        MatchQuery query = qb.parse(queryString);
-
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers requeriedAnswers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers requeriedAnswers = queryAnswers(query);
         assertTrue(!answers.isEmpty());
         assertEquals(answers.size(), requeriedAnswers.size());
     }
@@ -328,15 +311,15 @@ public class GenealogyTest {
         String queryString2 = "match $x isa in-laws;";
         String queryString3 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;";
         String queryString4 = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
-        MatchQuery query3 = qb.parse(queryString3);
-        MatchQuery query4 = qb.parse(queryString4);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        MatchQuery query3 = iqb.parse(queryString3);
+        MatchQuery query4 = iqb.parse(queryString4);
         
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        QueryAnswers answers4 = new QueryAnswers(Reasoner.resolve(query4, true).collect(Collectors.toSet()));
-        QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        QueryAnswers answers4 = queryAnswers(query4);
+        QueryAnswers answers3 =queryAnswers(query3);
 
         assertEquals(answers.size(), 22);
         assertEquals(answers2.size(), 92);
@@ -348,9 +331,8 @@ public class GenealogyTest {
     public void testMotherInLaw() {
         String queryString = "match (parent-in-law: $x) isa in-laws;" +
                 "$x has gender $g;$g value 'female';$x has identifier $id;";
-        MatchQuery query = qb.parse(queryString);
-
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(checkResource(answers, "g", "female"));
         assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
     }
@@ -360,13 +342,13 @@ public class GenealogyTest {
         String queryString = "match (mother-in-law: $x);$x has identifier $id;$x has gender $g;";
         String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
                 "$x has gender $g;$g value 'female';$x has identifier $id; select $x, $g, $id;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -375,13 +357,13 @@ public class GenealogyTest {
         String queryString = "match (father-in-law: $x); $x has identifier $id;";
         String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
                 "$x has gender 'male';$x has identifier $id; select $x, $id;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -390,13 +372,13 @@ public class GenealogyTest {
         String queryString = "match (son-in-law: $x);$x has gender $g;";
         String queryString2 = "match (child-in-law: $x, $y) isa in-laws;" +
                 "$x has gender $g;$g value 'male';select $x, $g;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -405,13 +387,13 @@ public class GenealogyTest {
         String queryString = "match (daughter-in-law: $x); $x has identifier $id;";
         String queryString2 = "match (child-in-law: $x, $y) isa in-laws;" +
                 "$x has gender 'female';$x has identifier $id; select $x, $id;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -427,13 +409,13 @@ public class GenealogyTest {
         String queryString = "match (son: $x);$x has gender $g;";
         String queryString2 = "match (child: $x, $y) isa parentship;" +
                 "$x has gender $g;$g value 'male'; select $x, $g;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(checkResource(answers, "g", "male"));
         assertTrue(!answers.isEmpty());
     }
@@ -443,13 +425,13 @@ public class GenealogyTest {
         String queryString = "match (daughter: $x);$x has gender $g;";
         String queryString2 = "match (child: $x, $y) isa parentship;" +
                 "$x has gender $g;$g value 'female'; select $x, $g;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(checkResource(answers, "g", "female"));
         assertTrue(!answers.isEmpty());
     }
@@ -459,13 +441,13 @@ public class GenealogyTest {
         String queryString = "match (father: $x);";
         String queryString2 = "match (parent: $x, $y) isa parentship;" +
                 "$x has gender 'male'; select $x;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -474,22 +456,24 @@ public class GenealogyTest {
         String queryString = "match (mother: $x);";
         String queryString2 = "match (parent: $x, $y) isa parentship;" +
                 "$x has gender 'female';select $x;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testFemaleFather() {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g value 'female';";
-        MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 =  queryAnswers(genealogyGraph.graph().graql().infer(true).materialise(false).parse(queryString));
         assertTrue(answers.isEmpty());
+        assertEquals(answers, answers2);
     }
 
 
@@ -500,13 +484,13 @@ public class GenealogyTest {
         String queryString2 = "match (grandparent: $x, $y) isa grandparentship;" +
                 "$x has gender 'female';" +
                 "$x has identifier $pidX; select $pidX;";
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
@@ -514,14 +498,13 @@ public class GenealogyTest {
         String queryString = "match (grandmother: $x) isa grandparentship; $x has gender $g;";
         String queryString2 = "match (grandparent: $x, $y) isa grandparentship;" +
                 "$x has gender $g;$g value 'female';select $x, $g;";
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
-
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
@@ -529,15 +512,14 @@ public class GenealogyTest {
         String queryString = "match (granddaughter: $x); $x has gender $g;";
         String queryString2 = "match (grandchild: $x, $y) isa grandparentship;" +
                 "$x has gender $g;$g value 'female';select $x, $g;";
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
 
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
-
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -545,11 +527,11 @@ public class GenealogyTest {
     public void testGrandParentship(){
         String queryString = "match "+
                 "(grandchild: $x); (granddaughter: $x);$x has gender $g;";
-        MatchQuery query = qb.parse(queryString);
+        MatchQuery query = iqb.parse(queryString);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
     }
 
@@ -586,5 +568,9 @@ public class GenealogyTest {
             if(hasDuplicates) System.out.println(answer.toString());
         }
         return hasDuplicates;
+    }
+
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().results());
     }
 }

@@ -18,7 +18,6 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
@@ -64,7 +63,7 @@ public class TestOwlGraknBase {
 
     @Before
     public void init() {
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
         manager = OWLManager.createOWLOntologyManager();
         migrator = new OWLMigrator();
     }
