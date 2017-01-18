@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 
 /**
  *
@@ -45,7 +46,8 @@ public class SelectableTypeAtom extends TypeAtom {
 
     @Override
     public boolean isSelectable() {
-        return getPredicate() == null;
+        return (getPredicate() == null ||
+                ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(getVarName()) != null && getPredicate() != null);
     }
 
     @Override
