@@ -15,6 +15,7 @@
 
     <properties>
         <grakn.test-profile>tinker</grakn.test-profile>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
     <build>
