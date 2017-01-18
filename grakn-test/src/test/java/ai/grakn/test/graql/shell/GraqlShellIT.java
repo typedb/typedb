@@ -18,13 +18,16 @@
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.Grakn;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import mjson.Json;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -36,27 +39,27 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
-@Ignore
 public class GraqlShellIT {
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.empty();
-
-    private static final GraknGraph graph = rule.graph();
+    public static final EngineContext engine = EngineContext.startServer();
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -69,6 +72,11 @@ public class GraqlShellIT {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
+    }
+
+    @After
+    public void tearDown() throws GraknValidationException {
+        Grakn.factory(Grakn.DEFAULT_URI, GraqlShell.DEFAULT_KEYSPACE).getGraph().clear();
     }
 
     @AfterClass
@@ -146,12 +154,20 @@ public class GraqlShellIT {
 
     @Test
     public void testInsertOutput() throws Exception {
-        String[] result = testShell("insert X sub entity; $thingy isa X;\n").split("\r\n?|\n");
+        String result = testShell("insert X sub entity; $thingy isa X;\n");
+        List<String> resultLines = Lists.newArrayList(result.split("\r\n?|\n"));
 
-        // Expect six lines output - four for the license, one for the query, no results and a new prompt
-        assertEquals(6, result.length);
-        assertEquals(">>> insert X sub entity; $thingy isa X;", result[4]);
-        assertEquals(">>> ", result[5]);
+        // Expect seven lines output - four for the license, one for the query, one results and a new prompt
+        //noinspection unchecked
+        assertThat(resultLines, contains(
+                anything(),
+                anything(),
+                anything(),
+                anything(),
+                is(">>> insert X sub entity; $thingy isa X;"),
+                allOf(containsString("$thingy"), containsString("isa"), containsString("X")),
+                is(">>> ")
+        ));
     }
 
     @Test
@@ -162,7 +178,7 @@ public class GraqlShellIT {
         assertThat(
                 result,
                 allOf(
-                        containsString("type"), containsString("match"),
+                        containsString("concept"), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );
@@ -388,10 +404,6 @@ public class GraqlShellIT {
     }
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
-        String[] newArgs = Arrays.copyOf(args, args.length + 2);
-        newArgs[newArgs.length-2] = "-k";
-        newArgs[newArgs.length-1] = graph.getKeyspace();
-
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -403,7 +415,7 @@ public class GraqlShellIT {
             System.setOut(out);
             System.setErr(err);
             
-            GraqlShell.runShell(newArgs, expectedVersion, historyFile, new GraqlClientImpl());
+            GraqlShell.runShell(args, expectedVersion, historyFile, new GraqlClientImpl());
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
