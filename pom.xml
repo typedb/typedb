@@ -83,6 +83,7 @@
         <kafka-unit.version>0.6</kafka-unit.version>
         <curator.version>2.11.1</curator.version>
         <zookeeper.version>3.4.9</zookeeper.version>
+        <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
 
     <organization>
@@ -304,6 +305,28 @@
                         </configuration>
                         <goals>
                             <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.7</version>
+                <configuration>
+                    <verbose>true</verbose>
+                    <excludes>
+                        <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
+                    </excludes>
+                    <rulesets>
+                        <ruleset>${main.basedir}/pmd-rules.xml</ruleset>
+                    </rulesets>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                            <goal>cpd-check</goal>
                         </goals>
                     </execution>
                 </executions>

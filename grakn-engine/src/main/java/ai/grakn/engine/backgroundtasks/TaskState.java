@@ -146,7 +146,7 @@ public class TaskState implements Cloneable, Serializable {
     }
 
     public Boolean isRecurring() {
-        return recurring != null ? recurring : false;
+        return recurring != null && recurring;
     }
 
     public TaskState interval(long interval) {

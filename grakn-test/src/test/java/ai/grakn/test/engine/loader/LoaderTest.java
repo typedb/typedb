@@ -40,7 +40,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,7 +47,6 @@ import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class LoaderTest {

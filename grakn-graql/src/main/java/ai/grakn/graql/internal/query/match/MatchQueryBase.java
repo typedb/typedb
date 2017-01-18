@@ -166,7 +166,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
                 .flatMap(var -> var.getInnerVars().stream())
                 .filter(VarAdmin::isUserDefinedName)
                 .map(VarAdmin::getVarName)
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     private ImmutableSet<TypeName> getAllTypeNames() {

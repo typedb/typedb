@@ -148,15 +148,6 @@ public class InstanceMapper {
     }
 
     /**
-     * Check if the given relation conforms to the has-resource syntax and requirements
-     * @param relation relation instance to check
-     * @return true if the relation is a has-resource relation
-     */
-    private static boolean isHasResourceRelation(Relation relation){
-        return relation.type().isImplicit();
-    }
-
-    /**
      * Check if the given resource conforms to the has-resource syntax and structural requirements
      * @param resource resource to check
      * @return true if the resource is target of has-resource relation

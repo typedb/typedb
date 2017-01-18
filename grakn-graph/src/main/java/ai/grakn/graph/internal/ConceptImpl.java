@@ -620,7 +620,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         }
     }
 
-    private org.apache.tinkerpop.gremlin.structure.Edge addEdgeFrom(Vertex fromVertex, String type) {
+    private Edge addEdgeFrom(Vertex fromVertex, String type) {
         return fromVertex.addEdge(type, vertex);
     }
 

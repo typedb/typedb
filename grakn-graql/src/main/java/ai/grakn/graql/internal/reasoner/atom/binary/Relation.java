@@ -234,22 +234,20 @@ public class Relation extends TypeAtom {
 
             //check type compatibility
             Type pType = entry.getValue().getValue();
-            if (pType != null && ruleRelevant) {
-                //vars can be matched by role types
-                if (childRoleVarTypeMap.containsKey(parentRole)) {
-                    Type chType = childRoleVarTypeMap.get(parentRole).getValue();
-                    //check type compatibility
-                    if (chType != null) {
-                        ruleRelevant = checkTypesCompatible(pType, chType);
+            //vars can be matched by role types
+            if (pType != null && ruleRelevant && childRoleVarTypeMap.containsKey(parentRole)) {
+                Type chType = childRoleVarTypeMap.get(parentRole).getValue();
+                //check type compatibility
+                if (chType != null) {
+                    ruleRelevant = checkTypesCompatible(pType, chType);
 
-                        //Check for any constraints on the variables
-                        VarName chVar = childRoleVarTypeMap.get(parentRole).getKey();
-                        VarName pVar = entry.getValue().getKey();
-                        Predicate childPredicate = child.getBody().getIdPredicate(chVar);
-                        Predicate parentPredicate = parent.getIdPredicate(pVar);
-                        if (childPredicate != null && parentPredicate != null) {
-                            ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
-                        }
+                    //Check for any constraints on the variables
+                    VarName chVar = childRoleVarTypeMap.get(parentRole).getKey();
+                    VarName pVar = entry.getValue().getKey();
+                    Predicate childPredicate = child.getBody().getIdPredicate(chVar);
+                    Predicate parentPredicate = parent.getIdPredicate(pVar);
+                    if (childPredicate != null && parentPredicate != null) {
+                        ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
                     }
                 }
             }

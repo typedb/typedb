@@ -27,7 +27,7 @@ import ai.grakn.migration.base.io.MigrationOptions;
 public class OwlMigrationOptions extends MigrationOptions {
 
     public OwlMigrationOptions(String[] args){
-        super(args);
+        super();
         options.addOption("i", "input", true, "input csv file");
         parse(args);
     }
