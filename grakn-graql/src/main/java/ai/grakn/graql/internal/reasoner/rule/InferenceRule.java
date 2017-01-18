@@ -36,7 +36,6 @@ import javafx.util.Pair;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -90,12 +89,12 @@ public class InferenceRule {
     private void propagateConstraints(Atom parentAtom){
         Set<Atom> types = parentAtom.getTypeConstraints().stream()
                 .filter(type -> !body.containsEquivalentAtom(type))
-                .collect(Collectors.toSet());
+                .collect(toSet());
         //get all predicates apart from those that correspond to role players with ambiguous role types
         Set<VarName> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
                 .filter(pred -> !unmappedVars.contains(pred.getVarName()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
 
         head.addAtomConstraints(predicates);
         body.addAtomConstraints(predicates);
