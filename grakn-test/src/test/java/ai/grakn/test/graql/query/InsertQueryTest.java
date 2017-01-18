@@ -25,12 +25,13 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -40,7 +41,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -311,7 +311,6 @@ public class InsertQueryTest {
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
-    @Ignore //TODO: Fix this test. Ignored because low priority and we want to free up Jenkins
     @Test
     public void testIterateMatchInsertResults() {
         Var language1 = var().isa("language").has("name", "123");
@@ -329,9 +328,20 @@ public class InsertQueryTest {
 
         Map<String, Concept> result1 = results.next();
         assertEquals(ImmutableSet.of("x"), result1.keySet());
-        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
-        assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
+        AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
+        AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
+
+        //Check if one of the matches have had the insert executed correctly
+        boolean oneExists;
+        if(query123.execute()){
+            oneExists = !query456.execute();
+        } else {
+            oneExists = query456.execute();
+        }
+        assertTrue("A match insert was not executed correctly for only one match", oneExists);
+
+        //Check that both are inserted correctly
         Map<String, Concept> result2 = results.next();
         assertEquals(ImmutableSet.of("x"), result1.keySet());
         assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());

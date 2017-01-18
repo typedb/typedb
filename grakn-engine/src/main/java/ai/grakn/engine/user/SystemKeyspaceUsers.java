@@ -193,20 +193,22 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public boolean removeUser(String username) {
         Var lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-        Var resource = var("property");
         try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            MatchQuery query = graph.graql().match(lookup.has(resource));
-            List<Map<String, Concept>> L = query.execute();
-            boolean existing = !L.isEmpty();
-            L.forEach(map -> {
+            MatchQuery query = graph.graql().match(lookup);
+            List<Map<String, Concept>> results = query.execute();
+            boolean exists = !results.isEmpty();
+            results.forEach(map -> {
                 map.forEach( (k,v) -> {
-                    if ("entity".equals(k)) {
-                        v.asInstance().resources().forEach(Concept::delete);
-                        v.delete();
-                    }
+                    v.asInstance().resources().forEach(Concept::delete);
+                    v.delete();
                 });
             });
-            return existing;
+
+            if(exists){
+                graph.commit();
+            }
+
+            return exists;
         }
         catch (Throwable t) {
             LOG.error("While getting all users.", t);
