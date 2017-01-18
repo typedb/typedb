@@ -27,9 +27,9 @@ import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
 import static ai.grakn.util.REST.WebPath.KEYSPACE_LIST;
@@ -39,14 +39,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class GraphFactoryControllerTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
 
-    @Ignore //TODO: Fix this test. Ignored because low priority and we want to free up Jenkins
 	@Test
 	public void testKeyspaceList() {
 		Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph().close();
