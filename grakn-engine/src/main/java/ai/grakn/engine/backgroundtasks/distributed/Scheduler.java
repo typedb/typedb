@@ -184,7 +184,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param state state of the task
      */
     private void scheduleTask(String id,  String configuration, TaskState state) {
-        long delay = Duration.between(state.runAt(), Instant.now()).toMillis();
+        long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
         markAsScheduled(id);
         if(state.isRecurring()) {
