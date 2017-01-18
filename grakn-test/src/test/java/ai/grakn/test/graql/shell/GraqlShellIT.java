@@ -48,6 +48,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
@@ -171,6 +172,14 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void testAggregateQuery() throws Exception {
+        String result = testShell("match $x sub concept; aggregate count;\n");
+
+        // Expect to see the whole meta-ontology
+        assertThat(result, containsString("\n8\n"));
+    }
+
+    @Test
     public void testAutocomplete() throws Exception {
         String result = testShell("match $x isa \t");
 
@@ -271,6 +280,14 @@ public class GraqlShellIT {
         // Make sure there are no results for match query
         assertEquals(">>> match $x sub entity", result[result.length-2]);
         assertEquals(">>> ", result[result.length-1]);
+    }
+
+    @Test
+    public void testLimit() throws Exception {
+        String result = testShell("match $x sub concept; limit 1;\n");
+
+        // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
+        assertEquals(result, 7, result.split("\n").length);
     }
 
     @Test
@@ -384,6 +401,24 @@ public class GraqlShellIT {
         assertThat(lines[lines.length-3], containsString("$y"));
         assertThat(lines[lines.length-4], containsString("$x"));
         assertThat(lines[lines.length-5], containsString(">>> insert X sub entity"));
+    }
+
+    @Test
+    public void testDuplicateRelation() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        testShell(
+                "insert R sub relation, has-role R1, has-role R2; R1 sub role; R2 sub role;\n" +
+                        "insert X sub entity, plays-role R1, plays-role R2;\n" +
+                        "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
+                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
+                        "commit\n",
+                err
+        );
+
+        assertThat(err.toString().toLowerCase(), allOf(
+                anyOf(containsString("exists"), containsString("one or more")),
+                containsString("relation")
+        ));
     }
 
     private static String randomString(int length) {
