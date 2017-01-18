@@ -18,6 +18,7 @@
 
 package ai.grakn.migration.json;
 
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.base.io.MigrationCLI;
 
@@ -39,6 +40,8 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  * @author alexandraorth
  */
 public class Main {
+
+    private static final ClusterManager manager = new ClusterManager();
 
     public static void main(String[] args){
         MigrationCLI.init(args, JsonMigrationOptions::new).stream()
@@ -67,7 +70,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(jsonMigrator.migrate());
             } else {
-                MigrationLoader.load(options.getKeyspace(), options.getBatch(), jsonMigrator);
+                MigrationLoader.load(manager, options.getKeyspace(), options.getBatch(), jsonMigrator);
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable){

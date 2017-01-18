@@ -71,7 +71,7 @@ public class LoaderTest {
     public void setup() {
         //TODO fix this
         graph = engine.graphWithNewKeyspace();
-        loader = new Loader(graph.getKeyspace());
+        loader = new Loader(engine.getClusterManager(), graph.getKeyspace());
         loadOntology(graph.getKeyspace());
     }
 

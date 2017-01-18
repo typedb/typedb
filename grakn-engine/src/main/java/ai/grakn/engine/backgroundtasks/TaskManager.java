@@ -59,6 +59,4 @@ public interface TaskManager extends AutoCloseable {
      * @return A StateStorage instance.
      */
     StateStorage storage();
-
-    TaskManager open();
 }

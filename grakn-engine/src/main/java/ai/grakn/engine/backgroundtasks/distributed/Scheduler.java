@@ -65,14 +65,19 @@ public class Scheduler implements Runnable, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
+    private final SynchronizedStateStorage zkStorage;
+
     private GraknStateStorage stateStorage;
-    private SynchronizedStateStorage zkStorage;
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
     private boolean initialised = false;
     private volatile boolean running = false;
+
+    public Scheduler(SynchronizedStateStorage zkStorage){
+        this.zkStorage = zkStorage;
+    }
 
     public void run() {
         running = true;
@@ -122,9 +127,6 @@ public class Scheduler implements Runnable, AutoCloseable {
             // Kafka writer
             producer = kafkaProducer();
 
-            // ZooKeeper client
-            zkStorage = SynchronizedStateStorage.getInstance();
-
             waitToClose = new CountDownLatch(1);
 
             schedulingService = Executors.newScheduledThreadPool(1);
@@ -154,11 +156,6 @@ public class Scheduler implements Runnable, AutoCloseable {
 
             noThrow(producer::flush, "Could not flush Kafka producer in scheduler.");
             noThrow(producer::close, "Could not close Kafka producer in scheduler.");
-
-            stateStorage = null;
-
-            // Closed by ClusterManager
-            zkStorage = null;
 
             noThrow(() -> LOG.debug("Scheduler stopped."), "Kafka logging error.");
         }

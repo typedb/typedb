@@ -23,6 +23,9 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
@@ -41,7 +44,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
@@ -69,17 +71,15 @@ public class TasksController {
     private TaskManager taskManager;
     private StateStorage stateStorage;
 
-    public TasksController() {
+    public TasksController(ClusterManager manager) {
         String mgr = ConfigProperties.getInstance().getProperty(TASK_MANAGER_INSTANCE, "ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager");
 
-        try {
-            Class<?> cl = Class.forName(mgr);
-            taskManager = (TaskManager) cl.getMethod("getInstance").invoke(null);
-            taskManager.open();
-        }
-        catch(ClassNotFoundException|IllegalAccessException|NoSuchMethodException|InvocationTargetException e) {
-            LOG.error("Could not start TasksController due to exception (possibly bad configuration) - "+ getFullStackTrace(e));
-            throw new RuntimeException(e);
+        if(mgr.equals(DistributedTaskManager.class.getName())){
+            taskManager = manager.getTaskManager();
+        } else if(mgr.equals(StandaloneTaskManager.class.getName())){
+            taskManager = StandaloneTaskManager.getInstance();
+        } else {
+            throw new RuntimeException("Unrecognized class: " + mgr);
         }
 
         stateStorage = taskManager.storage();

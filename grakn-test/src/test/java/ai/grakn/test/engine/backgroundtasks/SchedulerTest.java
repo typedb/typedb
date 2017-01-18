@@ -67,19 +67,24 @@ import static org.junit.Assert.assertTrue;
  */
 public class SchedulerTest {
     private GraknStateStorage stateStorage = new GraknStateStorage();
-    private SynchronizedStateStorage zkStorage;
-    private final ClusterManager clusterManager = ClusterManager.getInstance();
+    private static ClusterManager clusterManager;
+    private final SynchronizedStateStorage zkStorage = clusterManager.getStorage();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
 
+    @BeforeClass
+    public static void setupCluster(){
+        clusterManager = engine.getClusterManager();
+    }
+
     @Before
     public void setup() throws Exception {
         ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
-        zkStorage = SynchronizedStateStorage.getInstance();
     }
 
     @Test
+    @Ignore
     public void testInstantaneousOneTimeTasks() throws Exception {
         Map<String, TaskState> tasks = createTasks(5);
         sendTasksToNewTasksQueue(tasks);

@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.test.EngineContext;
@@ -66,7 +67,7 @@ public class TasksControllerTest {
     @Before
     public void setUp() throws Exception {
         assumeFalse(usingTinker());
-        DistributedTaskManager manager = DistributedTaskManager.getInstance();
+        DistributedTaskManager manager = engine.getClusterManager().getTaskManager();
         singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0, new JSONObject());
     }
 

@@ -18,6 +18,8 @@
 
 package ai.grakn.migration.sql;
 
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
 
@@ -39,6 +41,8 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  * @author alexandraorth
  */
 public class Main {
+
+    private static final ClusterManager manager = new ClusterManager();
 
     public static void main(String[] args){
         MigrationCLI.init(args, SQLMigrationOptions::new).stream()
@@ -65,7 +69,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(sqlMigrator.migrate());
             } else {
-                MigrationLoader.load(options.getKeyspace(), options.getBatch(), sqlMigrator);
+                MigrationLoader.load(GraknEngineServer.getClusterManager(), options.getKeyspace(), options.getBatch(), sqlMigrator);
                 printWholeCompletionMessage(options);
             }
 
