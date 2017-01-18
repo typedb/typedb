@@ -105,11 +105,4 @@ public class Resource extends MultiPredicateBinary{
         getMultiPredicate().stream().map(p -> (ValuePredicate) p).forEach(valuePredicates::add);
         return valuePredicates;
     }
-
-    @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
-        getMultiPredicate().forEach(pred -> vars.addAll(pred.getSelectedNames()));
-        return vars;
-    }
 }

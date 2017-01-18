@@ -116,12 +116,4 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;
     }
-
-    @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
-        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
-        return vars;
-    }
 }

@@ -59,7 +59,6 @@ public class QueryTest {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
         ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
         ReasonerQueryImpl copy = new ReasonerQueryImpl(query);
-
         assertQueriesEqual(query.getMatchQuery(), copy.getMatchQuery());
     }
 
@@ -70,11 +69,10 @@ public class QueryTest {
         String queryString3 = "match $x isa person, value 'Bob';";
         String queryString4 = "match $x isa person;$x value 'Bob';";
 
-       ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-       ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
-       ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, snbGraph.graph());
-       ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, snbGraph.graph());
-
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
+        ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, snbGraph.graph());
+        ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, snbGraph.graph());
         assertTrue(query.isEquivalent(query2));
         assertTrue(query3.isEquivalent(query4));
     }
@@ -89,9 +87,8 @@ public class QueryTest {
                 "($x, $y) isa tagging;" +
                 "$pr isa product;$pr value 'Michelangelo  The Last Judgement'; select $x, $pr;";
 
-       ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-       ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
-
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
         assertTrue(query.isEquivalent(query2));
     }
 
@@ -99,10 +96,8 @@ public class QueryTest {
     public void testAlphaEquivalence2() {
         String queryString = "match $X id 'a'; (ancestor-friend: $X, person: $Y), isa Ancestor-friend; select $Y;";
         String queryString2 = "match $X id 'a'; (person: $X, ancestor-friend: $Y), isa Ancestor-friend; select $Y;";
-
-       ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, ancestorGraph.graph());
-       ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, ancestorGraph.graph());
-
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, ancestorGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, ancestorGraph.graph());
         assertTrue(!query.isEquivalent(query2));
     }
 
@@ -113,10 +108,10 @@ public class QueryTest {
         String queryString3 = "match $x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in; select $y1, $x;";
         String queryString4 = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
 
-       ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, geoGraph.graph());
-       ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, geoGraph.graph());
-       ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, geoGraph.graph());
-       ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, geoGraph.graph());
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, geoGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, geoGraph.graph());
+        ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, geoGraph.graph());
+        ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, geoGraph.graph());
 
         assertTrue(!query.isEquivalent(query2));
         assertTrue(!query.isEquivalent(query3));
@@ -124,7 +119,6 @@ public class QueryTest {
 
         assertTrue(!query2.isEquivalent(query3));
         assertTrue(!query2.isEquivalent(query4));
-
         assertTrue(!query3.isEquivalent(query4));
 
         String queryString5 = "match (entity-location: $y, geo-entity: $y1), isa is-located-in; select $y1, $y2;";
@@ -132,11 +126,10 @@ public class QueryTest {
         String queryString7 = "match (entity-location: $y, geo-entity: $x), isa is-located-in; $x isa city; select $y1, $x;";
         String queryString8 = "match $x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in; select $y1, $x;";
 
-       ReasonerQueryImpl query5 = new ReasonerQueryImpl(queryString5, geoGraph.graph());
-       ReasonerQueryImpl query6 = new ReasonerQueryImpl(queryString6, geoGraph.graph());
-       ReasonerQueryImpl query7 = new ReasonerQueryImpl(queryString7, geoGraph.graph());
-       ReasonerQueryImpl query8 = new ReasonerQueryImpl(queryString8, geoGraph.graph());
-
+        ReasonerQueryImpl query5 = new ReasonerQueryImpl(queryString5, geoGraph.graph());
+        ReasonerQueryImpl query6 = new ReasonerQueryImpl(queryString6, geoGraph.graph());
+        ReasonerQueryImpl query7 = new ReasonerQueryImpl(queryString7, geoGraph.graph());
+        ReasonerQueryImpl query8 = new ReasonerQueryImpl(queryString8, geoGraph.graph());
         assertTrue(query5.isEquivalent(query6));
         assertTrue(query7.isEquivalent(query8));
     }
@@ -157,7 +150,6 @@ public class QueryTest {
         ReasonerAtomicQuery childCopy = new ReasonerAtomicQuery(childQuery.toString(), snbGraph.graph());
         childCopy.unify(unifiers);
         Atomic childAtomCopy = childCopy.getAtom();
-
         assertTrue(!childAtomCopy.equals(childAtom));
     }
 

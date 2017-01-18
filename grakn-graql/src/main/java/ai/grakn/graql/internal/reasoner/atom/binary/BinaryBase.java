@@ -135,14 +135,6 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
-        if(isUserDefinedName()) vars.add(getVarName());
-        if(isValueUserDefinedName()) vars.add(getValueVariable());
-        return vars;
-    }
-
-    @Override
     public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         VarName var = valueVariable;

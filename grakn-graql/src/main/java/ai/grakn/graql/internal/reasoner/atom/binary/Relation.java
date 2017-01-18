@@ -352,7 +352,7 @@ public class Relation extends TypeAtom {
                     .filter(at -> at instanceof HasRole).map(at -> (HasRole) at)
                     .findFirst().orElse(null);
             if (hrAtom != null) {
-                ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom, Sets.newHashSet(hrAtom.getVarName()));
+                ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
                 hrQuery.DBlookup();
                 if (hrQuery.getAnswers().size() != 1) {
                     throw new IllegalStateException("ambigious answer to has-role query");
@@ -386,6 +386,7 @@ public class Relation extends TypeAtom {
         return varFound;
     }
 
+    /*
     @Override
     public Set<IdPredicate> getIdPredicates() {
         Set<IdPredicate> idPredicates = super.getIdPredicates();
@@ -396,6 +397,7 @@ public class Relation extends TypeAtom {
                 .forEach(idPredicates::add);
         return idPredicates;
     }
+    */
 
     @Override
     public void unify (Map<VarName, VarName> mappings) {
@@ -425,13 +427,6 @@ public class Relation extends TypeAtom {
         return vars;
     }
 
-    @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
-        vars.addAll(getRolePlayers());
-        return vars;
-    }
-
     /**
      * @return set consituting the role player var names
      */
@@ -441,7 +436,7 @@ public class Relation extends TypeAtom {
         return vars;
     }
 
-    public Set<VarName> getMappedRolePlayers() {
+    private Set<VarName> getMappedRolePlayers() {
         return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
     }
 
