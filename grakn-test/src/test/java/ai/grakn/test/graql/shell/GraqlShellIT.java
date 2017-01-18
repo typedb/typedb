@@ -369,7 +369,6 @@ public class GraqlShellIT {
     public void fuzzTest() throws Exception {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
-            System.out.println(i);
             testShell(randomString(i));
         }
     }
