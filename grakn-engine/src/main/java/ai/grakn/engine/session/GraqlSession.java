@@ -137,7 +137,7 @@ class GraqlSession {
             case ACTION_DISPLAY:
                 setDisplayOptions(json);
                 break;
-            case REST.RemoteShell.ACTION_PING:
+            case ACTION_PING:
                 // Ignore
                 break;
             default:
