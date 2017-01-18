@@ -196,6 +196,7 @@ final class ElementFactory {
                 concept = buildRuleType(v, Optional.empty());
                 break;
         }
+
         //noinspection unchecked
         return (X) concept;
     }
