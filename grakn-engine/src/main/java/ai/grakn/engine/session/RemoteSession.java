@@ -40,6 +40,7 @@ import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
 import static ai.grakn.util.REST.RemoteShell.PASSWORD;
 import static ai.grakn.util.REST.RemoteShell.USERNAME;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Web socket for running a Graql shell
@@ -80,6 +81,8 @@ public class RemoteSession {
     @OnWebSocketMessage
     public void onMessage(Session session, String message) {
         try {
+            LOG.debug("Received message: " + message);
+
             Json json = Json.read(message);
 
             if (json.is(ACTION, ACTION_INIT)) {
@@ -88,7 +91,7 @@ public class RemoteSession {
                 sessions.get(session).handleMessage(json);
             }
         } catch (Throwable e) {
-            LOG.error("Exception",e);
+            LOG.error("Exception",getFullStackTrace(e));
             throw e;
         }
     }
