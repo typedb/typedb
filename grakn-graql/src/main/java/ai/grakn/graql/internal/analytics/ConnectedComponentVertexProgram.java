@@ -169,10 +169,9 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 break;
             default:
                 if (memory.get(IS_LAST_ITERATION)) {
-                    if (withoutHasResource.contains(Utility.getVertexType(vertex))) {
-                        if (selectedLabels.isEmpty() || selectedLabels.contains(vertex.<String>value(CLUSTER_LABEL))) {
-                            bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
-                        }
+                    boolean clusterSelected = selectedLabels.isEmpty() || selectedLabels.contains(vertex.<String>value(CLUSTER_LABEL));
+                    if (withoutHasResource.contains(Utility.getVertexType(vertex)) && clusterSelected) {
+                        bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
                     }
                 } else {
                     // split the default case because shortcut edges cannot be filtered out

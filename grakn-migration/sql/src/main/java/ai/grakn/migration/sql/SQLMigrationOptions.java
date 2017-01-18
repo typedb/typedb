@@ -33,7 +33,7 @@ public class SQLMigrationOptions extends MigrationOptions {
     private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
 
     public SQLMigrationOptions(String[] args){
-        super(args);
+        super();
 
         options.addOption("driver", true, "JDBC driver");
         options.addOption("location", true, "JDBC url (location of DB)");

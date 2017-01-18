@@ -20,8 +20,6 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
-import ai.grakn.test.EngineContext;
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 

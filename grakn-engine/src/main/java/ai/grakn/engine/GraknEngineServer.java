@@ -39,7 +39,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
-import spark.Response;
 import spark.Spark;
 
 import java.io.IOException;
@@ -108,7 +107,7 @@ public class GraknEngineServer {
         new UserController();
         
         //Register filter to check authentication token in each request
-        before(GraknEngineServer::checkAuthorization);
+        before((req, res) -> checkAuthorization(req));
 
         //Register Exception Handler
         exception(GraknEngineServerException.class, (e, request, response) -> {
@@ -144,7 +143,7 @@ public class GraknEngineServer {
         boolean running = true;
         while (running) {
             try {
-                Spark.port();
+                port();
             }
             catch(IllegalStateException e){
                 LOG.debug("Spark server has been stopped");
@@ -185,7 +184,7 @@ public class GraknEngineServer {
     }
 
 
-    private static void checkAuthorization(Request request, Response response) {
+    private static void checkAuthorization(Request request) {
         if(!isPasswordProtected) return;
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones

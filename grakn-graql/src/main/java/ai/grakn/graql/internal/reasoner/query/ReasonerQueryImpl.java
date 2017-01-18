@@ -250,13 +250,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         for (Map.Entry<VarName, VarName> mapping: mappings.entrySet()) {
             VarName varToReplace = mapping.getKey();
             VarName replacementVar = mapping.getValue();
-            if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
-                //bidirectional mapping
-                if (mappings.containsKey(replacementVar) && mappings.get(replacementVar).equals(varToReplace)) {
-                    exchangeRelVarNames(varToReplace, replacementVar);
-                    appliedMappings.put(varToReplace, replacementVar);
-                    appliedMappings.put(replacementVar, varToReplace);
-                }
+            //bidirectional mapping
+            if (!replacementVar.equals(appliedMappings.get(varToReplace)) && varToReplace.equals(mappings.get(replacementVar))) {
+                exchangeRelVarNames(varToReplace, replacementVar);
+                appliedMappings.put(varToReplace, replacementVar);
+                appliedMappings.put(replacementVar, varToReplace);
             }
         }
         mappings.entrySet().removeIf(e ->

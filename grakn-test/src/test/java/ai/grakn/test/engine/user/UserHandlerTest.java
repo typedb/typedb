@@ -23,11 +23,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
