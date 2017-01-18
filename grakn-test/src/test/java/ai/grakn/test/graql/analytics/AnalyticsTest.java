@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -26,8 +25,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
-import ai.grakn.engine.postprocessing.Cache;
-import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -36,19 +33,15 @@ import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
@@ -122,61 +115,5 @@ public class AnalyticsTest {
             e.printStackTrace();
             fail();
         }
-    }
-
-    @Ignore //TODO: Fix remotely. Failing on Jenkins only
-    @Test
-    public void testResourcesMergedOnBulkMutate() throws GraknValidationException, InterruptedException {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-        Cache cache = Cache.getInstance();
-
-        //Clear Cache
-        cache.getKeyspaces().forEach(keyspace -> {
-            cache.getResourceJobs(keyspace).clear();
-            cache.getCastingJobs(keyspace).clear();
-        });
-
-        RoleType friend1 = context.graph().putRoleType("friend1");
-        RoleType friend2 = context.graph().putRoleType("friend2");
-        RelationType friendship = context.graph().putRelationType("friendship");
-        friendship.hasRole(friend1).hasRole(friend2);
-
-        EntityType person = context.graph().putEntityType("person");
-        person.playsRole(friend1).playsRole(friend2);
-
-        for (int i = 0; i < 10; i++) {
-            friendship.addRelation()
-                    .putRolePlayer(friend1, person.addEntity())
-                    .putRolePlayer(friend2, person.addEntity());
-        }
-
-        context.graph().commit();
-        String keyspace = context.graph().getKeyspace();
-
-        //TODO: Replace the following persistence behaviour
-//        graph.graql().compute().degree().persist().execute();
-
-        Collection<Resource<Object>> degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
-                .getResourceType(Schema.Analytics.DEGREE.getName().getValue()).instances();
-        assertTrue(degrees.size() > 1);
-
-        //Wait for cache to be updated
-        int failCount = 0;
-        while (cache.getResourceJobs(keyspace).size() < 4) {
-            Thread.sleep(1000);
-            failCount++;
-            assertFalse("Failed to update cache with resources to merge", failCount < 10);
-        }
-
-        //Force Post Processing
-        PostProcessing postProcessing = PostProcessing.getInstance();
-        postProcessing.run();
-
-        //Check all is good
-        context.graph().close();
-        degrees = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
-                .getResourceType("degree").instances();
-        assertEquals(2, degrees.size());
     }
 }
