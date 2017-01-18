@@ -66,8 +66,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         ComputerResult result;
         try {
             result = getGraphComputer().compute(
-                    //TODO: Look into passing sourceId and destinationId as ConceptId. Not possible right now because it's not serializable
-                    new ShortestPathVertexProgram(subTypeNames, sourceId.getValue(), destinationId.getValue()),
+                    new ShortestPathVertexProgram(subTypeNames, sourceId, destinationId),
                     new ClusterMemberMapReduce(subTypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         } catch (IllegalStateException e) {
             if (e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) {
