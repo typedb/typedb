@@ -18,6 +18,7 @@
 
 package ai.grakn.migration.csv;
 
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
 
@@ -38,6 +39,8 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  * @author alexandraorth
  */
 public class Main {
+
+    private static final ClusterManager manager = new ClusterManager();
 
     public static void main(String[] args) {
         MigrationCLI.init(args, CSVMigrationOptions::new).stream()
@@ -73,7 +76,7 @@ public class Main {
             if (options.isNo()) {
                 writeToSout(csvMigrator.migrate());
             } else {
-                MigrationLoader.load(options.getKeyspace(), options.getBatch(), csvMigrator);
+                MigrationLoader.load(manager, options.getKeyspace(), options.getBatch(), csvMigrator);
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable) {

@@ -21,10 +21,10 @@ package ai.grakn.test;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.rules.ExternalResource;
 
 import java.util.UUID;
@@ -47,6 +47,10 @@ public class EngineContext extends ExternalResource {
 
     public GraknGraph getNewGraph(){
         return factoryWithNewKeyspace().getGraph();
+    }
+
+    public ClusterManager getClusterManager(){
+        return GraknEngineServer.getClusterManager();
     }
 
     @Override

@@ -42,33 +42,22 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class SynchronizedStateStorage {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
-    private static SynchronizedStateStorage instance = null;
 
-    private final CuratorFramework zookeeperConnection;
+    private final CuratorFramework zookeeperConnection = ConfigHelper.client();
 
-    private SynchronizedStateStorage() throws Exception {
-        zookeeperConnection = ConfigHelper.client();
+    public SynchronizedStateStorage() throws Exception {
         zookeeperConnection.start();
         zookeeperConnection.blockUntilConnected();
 
         createZKPaths();
     }
 
-    public static synchronized SynchronizedStateStorage getInstance() throws Exception {
-        if(instance == null){
-            instance = new SynchronizedStateStorage();
-        }
-
-        return instance;
+    public void close() {
+        zookeeperConnection.close();
     }
 
     public CuratorFramework connection(){
         return zookeeperConnection;
-    }
-
-    public void close() {
-        zookeeperConnection.close();
-        instance = null;
     }
 
     public void newState(String id, TaskStatus status, String engineID, String checkpoint) throws Exception {

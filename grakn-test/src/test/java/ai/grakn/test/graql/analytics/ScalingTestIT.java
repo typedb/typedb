@@ -28,6 +28,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
@@ -417,7 +418,7 @@ public class ScalingTestIT {
         // create the ontology
         simpleOntology(keyspace);
 
-        Loader loader = new Loader(keyspace);
+        Loader loader = new Loader(GraknEngineServer.getClusterManager(), keyspace);
 
         for (int g=1; g<totalSteps+1; g++) {
             LOGGER.info("starting step: " + g);
@@ -522,7 +523,7 @@ public class ScalingTestIT {
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
-        Loader loader = new Loader(keyspace);
+        Loader loader = new Loader(GraknEngineServer.getClusterManager(), keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
@@ -565,7 +566,7 @@ public class ScalingTestIT {
             throw new RuntimeException("sorry graphsize has to be even");
         }
 
-        Loader loader = new Loader(keyspace);
+        Loader loader = new Loader(GraknEngineServer.getClusterManager(), keyspace);
 
         int startNode = 0;
         while (startNode<graphSize) {
@@ -584,7 +585,7 @@ public class ScalingTestIT {
 
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
-        Loader loader = new Loader(keyspace);
+        Loader loader = new Loader(GraknEngineServer.getClusterManager(), keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<Var> insertQuery = new ArrayList<>();

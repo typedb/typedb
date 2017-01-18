@@ -39,7 +39,7 @@ public class ClusterManagerTest {
 
     @BeforeClass
     public static void instantiate(){
-        clusterManager = ClusterManager.getInstance();
+        clusterManager = engine.getClusterManager();
     }
 
     @Test

@@ -20,6 +20,7 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.StateStorage;
@@ -63,7 +64,7 @@ public class TaskRunnerTest {
         stateStorage = new GraknStateStorage();
 
         // ZooKeeper client
-        zkStorage = SynchronizedStateStorage.getInstance();
+        zkStorage = engine.getClusterManager().getStorage();
         assumeFalse(usingTinker());
     }
 

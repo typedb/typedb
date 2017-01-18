@@ -47,7 +47,7 @@ public class TaskManagerTest {
     @Before
     public void setup() throws Exception {
         assumeFalse(usingTinker());
-        manager = DistributedTaskManager.getInstance();
+        manager = engine.getClusterManager().getTaskManager();
         Thread.sleep(5000);
     }
 
@@ -59,7 +59,7 @@ public class TaskManagerTest {
                 break;
             }
 
-            System.out.println("Checking " + id);
+            System.out.println("Checking " + id + " " + status);
 
             try {
                 Thread.sleep(5000);

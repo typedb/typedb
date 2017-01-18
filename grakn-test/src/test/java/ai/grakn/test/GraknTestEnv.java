@@ -13,12 +13,12 @@ import info.batey.kafka.unit.KafkaUnit;
 import jline.internal.Log;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ai.grakn.engine.GraknEngineServer.startPostprocessing;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.graql.Graql.var;
 
@@ -33,6 +33,8 @@ import static ai.grakn.graql.Graql.var;
  */
 public abstract class GraknTestEnv {
 
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
+
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static AtomicBoolean ENGINE_RUNNING = new AtomicBoolean(false);
@@ -46,7 +48,7 @@ public abstract class GraknTestEnv {
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
             startEmbeddedCassandra();
-            System.out.println("CASSANDRA RUNNING.");
+            LOG.info("CASSANDRA RUNNING.");
         }
     }
 
@@ -74,7 +76,7 @@ public abstract class GraknTestEnv {
     	// we end up wanting to use the TitanFactory but without starting Cassandra first.
 
         if(ENGINE_RUNNING.compareAndSet(false, true)) {
-            System.out.println("STARTING ENGINE...");
+            LOG.info("STARTING ENGINE...");
 
             ensureCassandraRunning();
 
@@ -83,27 +85,28 @@ public abstract class GraknTestEnv {
             kafkaUnit.startup();
 
             // start engine
-            ensureHTTPRunning();
             GraknEngineServer.startCluster();
+            ensureHTTPRunning();
+            startPostprocessing();
 
             try {Thread.sleep(5000);} catch(InterruptedException ex) { Log.info("Thread sleep interrupted."); }
-            
-            System.out.println("ENGINE STARTED.");
+
+            LOG.info("ENGINE STARTED.");
         }
     }
 
-    static void stopEngine() throws IOException {
+    static void stopEngine() throws Exception {
         if(ENGINE_RUNNING.compareAndSet(true, false)) {
-            System.out.println("STOPPING ENGINE...");
+            LOG.info("STOPPING ENGINE...");
 
-            noThrow(GraknEngineServer::stopCluster, "Problem while shutting down Zookeeper cluster.");
+            GraknEngineServer.stopCluster();
             noThrow(kafkaUnit::shutdown, "Problem while shutting down Kafka Unit.");
             noThrow(GraknTestEnv::clearGraphs, "Problem while clearing graphs.");
             noThrow(GraknTestEnv::stopHTTP, "Problem while shutting down Engine");
 
             FileUtils.deleteDirectory(tempDirectory.toFile());
 
-            System.out.println("ENGINE STOPPED.");
+            LOG.info("ENGINE STOPPED.");
         }
 
         // There is no way to stop the embedded Casssandra, no such API offered.

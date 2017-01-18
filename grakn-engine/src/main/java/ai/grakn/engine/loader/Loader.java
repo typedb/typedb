@@ -19,6 +19,7 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
@@ -62,11 +63,11 @@ public class Loader {
     private final Collection<InsertQuery> queries;
     private final String keyspace;
 
-    public Loader(String keyspace){
+    public Loader(ClusterManager manager, String keyspace){
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
 
-        this.manager = DistributedTaskManager.getInstance().open();
+        this.manager = manager.getTaskManager();
         setBatchSize(properties.getPropertyAsInt(BATCH_SIZE_PROPERTY));
     }
 

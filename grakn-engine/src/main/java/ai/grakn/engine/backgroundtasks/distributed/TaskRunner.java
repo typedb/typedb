@@ -39,7 +39,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -71,12 +70,14 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private StateStorage graknStorage;
-    private SynchronizedStateStorage zkStorage;
+    private final SynchronizedStateStorage zkStorage;
     private KafkaConsumer<String, String> consumer;
     private volatile boolean running;
     private boolean initialised = false;
 
-    public TaskRunner() {
+    public TaskRunner(SynchronizedStateStorage zkStorage) {
+        this.zkStorage = zkStorage;
+
         running = false;
     }
 
@@ -117,8 +118,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
             consumer = kafkaConsumer(TASK_RUNNER_GROUP);
             consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new RebalanceListener(consumer));
 
-            zkStorage = SynchronizedStateStorage.getInstance();
-
             // Create initial entries in ZK for TaskFailover to watch.
             registerAsRunning();
             updateOwnState();
@@ -136,7 +135,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
     /**
      * Stop the main loop, causing run() to exit.
      */
-    @Override
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
             running = false;
@@ -146,11 +144,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             // Interrupt all currently running threads - these will be re-allocated to another Engine.
             noThrow(executor::shutdownNow, "Could shutdown executor pool.");
-
-            graknStorage = null;
-
-            // Closed by ClusterManager
-            zkStorage = null;
 
             LOG.debug("TaskRunner stopped");
         }
@@ -174,13 +167,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             TaskStatus status = getStatus(id);
             if(status != SCHEDULED) {
-                LOG.debug("Cant schedule this task - " + id + " because\n\t\tstatus: "+ status);
+                LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: "+ status);
                 continue;
             }
-
-            // Mark as RUNNING and update task & runner states.
-            addRunningTask(id);
-            updateTaskState(id, RUNNING, this.getClass().getName(), ENGINE_ID, null, null);
 
             // Submit to executor
             executor.submit(() -> executeTask(id, configuration));
@@ -206,6 +195,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
      */
     private void executeTask(String id, JSONObject configuration) {
         try {
+            // Mark as RUNNING and update task & runner states.
+            addRunningTask(id);
+            updateTaskState(id, RUNNING, this.getClass().getName(), ENGINE_ID, null, null);
+
             LOG.debug("Executing task " + id);
 
             // Get full task state.
