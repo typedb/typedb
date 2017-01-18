@@ -107,7 +107,7 @@ public class GraqlShell {
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    private static final String DEFAULT_KEYSPACE = "grakn";
+    public static final String DEFAULT_KEYSPACE = "grakn";
     private static final String DEFAULT_URI = "localhost:4567";
     private static final String DEFAULT_OUTPUT_FORMAT = "graql";
 

@@ -25,6 +25,7 @@ import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import mjson.Json;
 import org.junit.After;
@@ -68,6 +69,8 @@ public class GraqlShellIT {
     private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
+    private static final ImmutableList<String> keyspaces = ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar");
+
     @BeforeClass
     public static void setUpClass() throws Exception {
         trueIn = System.in;
@@ -77,7 +80,9 @@ public class GraqlShellIT {
 
     @After
     public void tearDown() throws GraknValidationException {
-        Grakn.factory(Grakn.DEFAULT_URI, GraqlShell.DEFAULT_KEYSPACE).getGraph().clear();
+        for (String keyspace : keyspaces){
+            Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().clear();
+        }
     }
 
     @AfterClass
@@ -119,6 +124,29 @@ public class GraqlShellIT {
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
+    }
+
+    @Test
+    public void testDefaultKeyspace() throws Exception {
+        testShell("insert im-in-the-default-keyspace sub entity;\ncommit\n");
+
+        String result = testShell("match im-in-the-default-keyspace sub entity; ask;\n", "-k", "grakn");
+        assertThat(result, containsString("True"));
+    }
+
+    @Test
+    public void testSpecificKeyspace() throws Exception {
+        testShell("insert foo-foo sub entity;\ncommit\n", "-k", "foo");
+        testShell("insert bar-bar sub entity;\ncommit\n", "-k", "bar");
+
+        String fooFooinFoo = testShell("match foo-foo sub entity; ask;\n", "-k", "foo");
+        String fooFooInBar = testShell("match foo-foo sub entity; ask;\n", "-k", "bar");
+        String barBarInFoo = testShell("match bar-bar sub entity; ask;\n", "-k", "foo");
+        String barBarInBar = testShell("match bar-bar sub entity; ask;\n", "-k", "bar");
+        assertThat(fooFooinFoo, containsString("True"));
+        assertThat(fooFooInBar, containsString("False"));
+        assertThat(barBarInFoo, containsString("False"));
+        assertThat(barBarInBar, containsString("True"));
     }
 
     // TODO: Fix this test
