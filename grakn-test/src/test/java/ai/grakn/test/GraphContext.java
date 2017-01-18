@@ -33,7 +33,6 @@ import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 
 /**
  *
