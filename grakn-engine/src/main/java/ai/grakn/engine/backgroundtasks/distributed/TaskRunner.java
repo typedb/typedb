@@ -75,8 +75,26 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private volatile boolean running;
     private boolean initialised = false;
 
-    public TaskRunner(SynchronizedStateStorage zkStorage) {
+    public TaskRunner(SynchronizedStateStorage zkStorage) throws Exception {
         this.zkStorage = zkStorage;
+
+        if(OPENED.compareAndSet(false, true)) {
+            graknStorage = new GraknStateStorage();
+
+            consumer = kafkaConsumer(TASK_RUNNER_GROUP);
+            consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new RebalanceListener(consumer));
+
+            // Create initial entries in ZK for TaskFailover to watch.
+            registerAsRunning();
+            updateOwnState();
+            executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
+
+            LOG.info("TaskRunner opened.");
+        }
+        else {
+            LOG.error("TaskRunner already opened!");
+        }
+
 
         running = false;
     }
@@ -109,27 +127,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
             consumer.commitSync();
             consumer.close();
         }
-    }
-
-    public TaskRunner open() throws Exception {
-        if(OPENED.compareAndSet(false, true)) {
-            graknStorage = new GraknStateStorage();
-
-            consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-            consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new RebalanceListener(consumer));
-
-            // Create initial entries in ZK for TaskFailover to watch.
-            registerAsRunning();
-            updateOwnState();
-            executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
-
-            LOG.info("TaskRunner opened.");
-        }
-        else {
-            LOG.error("TaskRunner already opened!");
-        }
-
-        return this;
     }
 
     /**

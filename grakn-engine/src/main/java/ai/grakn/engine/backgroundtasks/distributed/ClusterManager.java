@@ -92,8 +92,8 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      *  3. Shutdown Zookeeper storage connection on this machine
      */
     public void stop() throws Exception {
-        noThrow(leaderSelector::interruptLeadership, "Could not interrupt leadership.");
-        noThrow(leaderSelector::close, "Could not close leaderSelector.");
+        leaderSelector.interruptLeadership();
+        leaderSelector.close();
 
         stopScheduler();
         stopTaskManager();
@@ -175,7 +175,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      */
     private void startTaskRunner() throws Exception {
         taskRunner = new TaskRunner(zookeeperStorage);
-        taskRunner.open();
 
         taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
         taskRunnerThread.start();

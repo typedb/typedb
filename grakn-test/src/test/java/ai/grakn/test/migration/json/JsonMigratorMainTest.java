@@ -28,6 +28,7 @@ import ai.grakn.migration.json.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -41,6 +42,7 @@ import static ai.grakn.test.migration.MigratorTestUtils.getResource;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 import static junit.framework.TestCase.assertEquals;
 
+@Ignore
 public class JsonMigratorMainTest {
 
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();

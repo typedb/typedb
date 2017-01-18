@@ -68,21 +68,18 @@ import static spark.Spark.put;
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
     private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
-    private TaskManager taskManager;
-    private StateStorage stateStorage;
+    private ClusterManager manager;
 
     public TasksController(ClusterManager manager) {
         String mgr = ConfigProperties.getInstance().getProperty(TASK_MANAGER_INSTANCE, "ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager");
-
-        if(mgr.equals(DistributedTaskManager.class.getName())){
-            taskManager = manager.getTaskManager();
-        } else if(mgr.equals(StandaloneTaskManager.class.getName())){
-            taskManager = StandaloneTaskManager.getInstance();
-        } else {
-            throw new RuntimeException("Unrecognized class: " + mgr);
-        }
-
-        stateStorage = taskManager.storage();
+        this.manager = manager;
+//        if(mgr.equals(DistributedTaskManager.class.getName())){
+//            taskManager = manager.getTaskManager();
+//        } else if(mgr.equals(StandaloneTaskManager.class.getName())){
+//            taskManager = StandaloneTaskManager.getInstance();
+//        } else {
+//            throw new RuntimeException("Unrecognized class: " + mgr);
+//        }
 
         get(ALL_TASKS_URI, this::getTasks);
         get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
@@ -120,7 +117,7 @@ public class TasksController {
         }
 
         JSONArray result = new JSONArray();
-        for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
+        for (Pair<String, TaskState> pair : manager.getTaskManager().storage().getTasks(status, className, creator, limit, offset)) {
             result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
         }
 
@@ -135,7 +132,7 @@ public class TasksController {
     private String getTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            JSONObject result = serialiseStateFull(id, stateStorage.getState(id));
+            JSONObject result = serialiseStateFull(id, manager.getTaskManager().storage().getState(id));
             response.type("application/json");
 
             return result.toString();
@@ -151,7 +148,7 @@ public class TasksController {
     private String stopTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            taskManager.stopTask(id, this.getClass().getName());
+            manager.getTaskManager().stopTask(id, this.getClass().getName());
             return "";
         }
         catch (Exception e) {
@@ -195,7 +192,7 @@ public class TasksController {
             Class<?> clazz = Class.forName(className);
             BackgroundTask task = (BackgroundTask)clazz.newInstance();
 
-            String id = taskManager.scheduleTask(task, createdBy, runAtInstant, interval, configuration);
+            String id = manager.getTaskManager().scheduleTask(task, createdBy, runAtInstant, interval, configuration);
             JSONObject resp = new JSONObject()
                     .put("id", id);
 

@@ -152,7 +152,7 @@ public class Scheduler implements Runnable, AutoCloseable {
                 LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
             }
 
-            noThrow(schedulingService::shutdown, "Could not shutdown scheduling service.");
+            noThrow(schedulingService::shutdownNow, "Could not shutdown scheduling service.");
 
             noThrow(producer::flush, "Could not flush Kafka producer in scheduler.");
             noThrow(producer::close, "Could not close Kafka producer in scheduler.");

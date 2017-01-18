@@ -23,6 +23,7 @@ import ai.grakn.migration.csv.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -32,6 +33,7 @@ import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrec
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 
+@Ignore
 public class CSVMigratorMainTest {
 
     private GraknGraph graph;

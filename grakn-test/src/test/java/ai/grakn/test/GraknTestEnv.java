@@ -84,8 +84,8 @@ public abstract class GraknTestEnv {
             kafkaUnit.startup();
 
             // start engine
-            GraknEngineServer.startCluster();
             ensureHTTPRunning();
+            GraknEngineServer.startCluster();
             startPostprocessing();
 
             try {Thread.sleep(5000);} catch(InterruptedException ex) { LOG.info("Thread sleep interrupted."); }
