@@ -95,9 +95,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         noThrow(leaderSelector::interruptLeadership, "Could not interrupt leadership.");
         noThrow(leaderSelector::close, "Could not close leaderSelector.");
 
-        // wait for failover to be completed
-        Thread.sleep(10000);
-
         stopScheduler();
         stopTaskManager();
         stopTaskRunner();
