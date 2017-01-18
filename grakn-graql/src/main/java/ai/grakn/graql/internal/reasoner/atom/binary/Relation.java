@@ -285,7 +285,7 @@ public class Relation extends TypeAtom {
             return rules.stream()
                     .flatMap(rule -> rule.getConclusionTypes().stream())
                     .filter(Type::isRelationType).count() != 0
-                    & !this.getApplicableRules().isEmpty();
+                    && !this.getApplicableRules().isEmpty();
         }
     }
 
@@ -383,19 +383,6 @@ public class Relation extends TypeAtom {
         }
         return varFound;
     }
-
-    /*
-    @Override
-    public Set<IdPredicate> getIdPredicates() {
-        Set<IdPredicate> idPredicates = super.getIdPredicates();
-        //from types
-        getTypeConstraints().stream()
-                .map(atom -> ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable()))
-                .filter(Objects::nonNull)
-                .forEach(idPredicates::add);
-        return idPredicates;
-    }
-    */
 
     @Override
     public void unify (Map<VarName, VarName> mappings) {

@@ -21,6 +21,9 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
@@ -36,6 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.match;
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -52,19 +56,27 @@ public class InferenceRule {
     private final ReasonerAtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
-        body = new ReasonerQueryImpl(match(rule.getLHS()), graph);
-        head = new ReasonerAtomicQuery(match(rule.getRHS()), graph);
+        //TODO simplify once changes propagated to rule objects
+        body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
+        head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
+    }
+
+    private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
+        Set<VarAdmin> vars = pattern
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Patterns.conjunction(vars);
     }
 
     /**
      * @return body of the rule of the form head :- body
      */
-    public ReasonerQueryImpl getBody(){return body;}
+    public ReasonerQueryImpl getBody(){ return body;}
 
     /**
      * @return head of the rule of the form head :- body
      */
-    public ReasonerAtomicQuery getHead(){return head;}
+    public ReasonerAtomicQuery getHead(){ return head;}
 
     /**
      * @return a conclusion atom which parent contains all atoms in the rule

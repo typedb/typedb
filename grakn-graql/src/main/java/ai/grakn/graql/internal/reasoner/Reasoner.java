@@ -121,7 +121,7 @@ public class Reasoner {
         Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
-            ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead(), new QueryAnswers());
+            ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead());
             int dAns;
             Set<ReasonerAtomicQuery> SG;
             do {
