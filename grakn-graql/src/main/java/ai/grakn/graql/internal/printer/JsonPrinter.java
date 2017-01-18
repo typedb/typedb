@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.printer;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
-import com.google.common.collect.Maps;
+import ai.grakn.graql.VarName;
 import mjson.Json;
 
 import java.util.Collection;
@@ -77,7 +77,14 @@ class JsonPrinter implements Printer<Json> {
 
     @Override
     public final Json graqlString(boolean inner, Map<?, ?> map) {
-        return Json.make(Maps.transformValues(map, value -> graqlString(true, value)));
+        Json json = Json.object();
+
+        map.forEach((Object key, Object value) -> {
+            if (key instanceof VarName) key = ((VarName) key).getValue();
+            json.set(key.toString(), graqlString(true, value));
+        });
+
+        return json;
     }
 
     @Override
