@@ -30,7 +30,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -112,7 +111,7 @@ public class Relation extends TypeAtom {
     @Override
     protected VarName extractValueVariableName(VarAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Patterns.varName("");
+        return isaProp != null ? isaProp.getType().getVarName() : VarName.of("");
     }
 
     @Override
@@ -309,7 +308,7 @@ public class Relation extends TypeAtom {
 
     private void addType(Type type) {
         typeId = type.getId();
-        VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
+        VarName typeVariable = VarName.of("rel-" + UUID.randomUUID().toString());
         addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
@@ -562,7 +561,7 @@ public class Relation extends TypeAtom {
                 .forEach( var -> roleMap.put(var, null));
 
         //pattern mutation!
-        atomPattern = constructRelationVar(isUserDefinedName()? varName : Patterns.varName(""), getValueVariable(), roleMap);
+        atomPattern = constructRelationVar(isUserDefinedName()? varName : VarName.of(""), getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
         return roleTypeMap;
     }
@@ -604,10 +603,10 @@ public class Relation extends TypeAtom {
             if(!varsToAllocate.isEmpty()) {
                 RoleType role = childMap.get(chVar);
                 //map to empty if no var matching
-                VarName pVar = Patterns.varName("");
+                VarName pVar = VarName.of("");
                 while(role != null && pVar.getValue().isEmpty()
                         && !Schema.MetaSchema.isMetaName(role.getName())) {
-                    pVar = parentMap.getOrDefault(role, Patterns.varName(""));
+                    pVar = parentMap.getOrDefault(role, VarName.of(""));
                     role = role.superType();
                 }
                 if (!pVar.getValue().isEmpty() && !chVar.equals(pVar)){
@@ -697,7 +696,7 @@ public class Relation extends TypeAtom {
             relationPlayers
                     .forEach(c -> {
                         VarAdmin rolePlayer = c.getRolePlayer();
-                        VarName rolePlayerVarName = Patterns.varName();
+                        VarName rolePlayerVarName = VarName.anon();
                         unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
                         VarAdmin roleType = c.getRoleType().orElse(null);
                         if (roleType != null) {

@@ -43,7 +43,6 @@ import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 
 public class AggregateTest {
@@ -78,8 +77,8 @@ public class AggregateTest {
 
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
-                assertEquals(movie, result.get(varName("x")));
-                assertEquals(rule.graph().getEntityType("person"), result.get(varName("y")).asInstance().type());
+                assertEquals(movie, result.get(VarName.of("x")));
+                assertEquals(rule.graph().getEntityType("person"), result.get(VarName.of("y")).asInstance().type());
             });
         });
     }

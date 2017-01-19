@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -370,7 +369,7 @@ public class SNBInferenceTest {
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
         Map<VarName, VarName> unifiers = new HashMap<>();
-        unifiers.put(varName("z"), varName("y"));
+        unifiers.put(VarName.of("z"), VarName.of("y"));
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifiers);

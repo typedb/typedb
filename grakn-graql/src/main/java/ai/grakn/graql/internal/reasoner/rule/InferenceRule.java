@@ -116,7 +116,7 @@ public class InferenceRule {
             Set<VarName> varIntersection = body.getVarNames();
             varIntersection.retainAll(parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
-            varIntersection.forEach(var -> body.unify(var, Patterns.varName()));
+            varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
     }
 
