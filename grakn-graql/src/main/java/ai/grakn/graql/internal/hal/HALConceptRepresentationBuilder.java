@@ -48,6 +48,9 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 
+/**
+ * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
+ */
 public class HALConceptRepresentationBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);

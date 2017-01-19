@@ -52,6 +52,19 @@ import static ai.grakn.graql.internal.reasoner.Utility.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static java.util.stream.Collectors.joining;
 
+/**
+ * Represents the {@code has} property on an {@link Instance}.
+ *
+ * This property can be queried, inserted or deleted.
+ *
+ * The property is defined as a relationship between an {@link Instance} and a {@link Resource}, where the
+ * {@link Resource} is of a particular type.
+ *
+ * When matching, shortcut edges are used to speed up the traversal. The type of the relationship does not matter.
+ *
+ * When inserting, an implicit relation is created between the instance and the resource, using type names derived from
+ * the name of the resource type.
+ */
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
     private final Optional<TypeName> resourceType;

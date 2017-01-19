@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -41,6 +42,13 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
+/**
+ * Represents the {@code has-scope} property on a {@link Relation}.
+ *
+ * This property can be queried, inserted or deleted.
+ *
+ * This property relates a {@link Relation} and an {@link Instance}, where the instance behaves as the "scope".
+ */
 public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin scope;

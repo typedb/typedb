@@ -27,6 +27,11 @@ import ai.grakn.graql.VarName;
 import java.util.Collection;
 import java.util.Set;
 
+/**
+ * Factory for instances of {@link ai.grakn.graql.Pattern}.
+ *
+ * Also includes helper methods to operate on a {@link ai.grakn.graql.Pattern} or {@link ai.grakn.graql.Var}.
+ */
 public class Patterns {
 
     private Patterns() {}

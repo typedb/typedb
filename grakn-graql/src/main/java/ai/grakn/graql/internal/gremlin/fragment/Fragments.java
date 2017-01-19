@@ -31,6 +31,9 @@ import java.util.Optional;
 
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 
+/**
+ * Factory for creating instances of {@link Fragment}.
+ */
 public class Fragments {
 
     private Fragments() {}

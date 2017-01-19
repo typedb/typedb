@@ -26,6 +26,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * ANTLR error listener that listens for syntax errors.
+ *
+ * When a syntax error occurs, it is recorded. Call {@link GraqlErrorListener#hasErrors()} to see if there were errors.
+ * View the errors with {@link GraqlErrorListener#toString()}.
+ */
 public class GraqlErrorListener extends BaseErrorListener {
 
     private final String[] query;
