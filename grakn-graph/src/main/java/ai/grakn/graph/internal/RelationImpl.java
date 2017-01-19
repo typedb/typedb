@@ -82,16 +82,17 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
-        String hash = "RelationType_" + relationType.getId().getValue().replace("_", "\\_") + "_Relation";
+        StringBuilder hash = new StringBuilder();
+        hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
 
         for(RoleType role: sortedRoleIds){
-            hash = hash + "_" + role.getId().getValue().replace("_", "\\_") ;
+            hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
             Instance instance = roleMap.get(role);
             if(instance != null){
-                hash = hash + "_" + instance.getId().getValue().replace("_", "\\_") ;
+                hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
             }
         }
-        return hash;
+        return hash.toString();
     }
 
     /**
@@ -239,14 +240,15 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     @Override
     public String toString(){
-        String description = "ID [" + getId() +  "] Type [" + type().getName() + "] Roles and Role Players: \n";
+        StringBuilder description = new StringBuilder();
+        description.append("ID [").append(getId()).append("] Type [").append(type().getName()).append("] Roles and Role Players: \n");
         for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
             if(entry.getValue() == null){
-                description += "    Role [" + entry.getKey().getName() + "] not played by any instance \n";
+                description.append("    Role [").append(entry.getKey().getName()).append("] not played by any instance \n");
             } else {
-                description += "    Role [" + entry.getKey().getName() + "] played by [" + entry.getValue().getId() + "] \n";
+                description.append("    Role [").append(entry.getKey().getName()).append("] played by [").append(entry.getValue().getId()).append("] \n");
             }
         }
-        return description;
+        return description.toString();
     }
 }

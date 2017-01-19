@@ -27,6 +27,8 @@ import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -34,18 +36,26 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
-import org.junit.*;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import java.util.*;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.function.Predicate;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static java.util.Collections.singletonMap;
@@ -166,7 +176,7 @@ public class SchedulerTest {
         String taskId = stateStorage.newState(
                 TestTask.class.getName(),
                 SchedulerTest.class.getName(),
-                new Date(), recurring, interval, new JSONObject(singletonMap("name", "task"+i)));
+                Instant.now(), recurring, interval, new JSONObject(singletonMap("name", "task"+i)));
 
         stateStorage.updateState(taskId, status, null, null, null, null, null);
 

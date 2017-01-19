@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -60,7 +61,7 @@ import java.util.stream.Collectors;
  * what's inside the config, which is residing remotely at the engine!
  * </p>
  * 
- * @author borislav
+ * @author borislav, fppt
  *
  * @param <M>
  * @param <T>
@@ -119,7 +120,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
             }
             ClassLoader loader = this.getClass().getClassLoader();
             String query;
-            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE)))) {
+            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE), StandardCharsets.UTF_8))) {
                 query = buffer.lines().collect(Collectors.joining("\n"));
             }
             LOG.info("System ontology is " + query);

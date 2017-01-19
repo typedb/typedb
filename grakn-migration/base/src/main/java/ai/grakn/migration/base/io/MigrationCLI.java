@@ -22,20 +22,22 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
-import ai.grakn.util.Schema;
-import com.google.common.io.Files;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.util.Schema;
+import com.google.common.io.Files;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,7 +103,7 @@ public class MigrationCLI {
     }
 
     public static void writeToSout(Stream<InsertQuery> queries){
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
 
         queries.map(InsertQuery::toString).forEach((str) -> {
             try {
@@ -119,7 +121,7 @@ public class MigrationCLI {
     }
 
     public static void writeToSout(String string){
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
         try{
             writer.write(string);
             writer.flush();
@@ -187,7 +189,8 @@ public class MigrationCLI {
 
     public static void printHelpMessage(MigrationOptions options){
         HelpFormatter helpFormatter = new HelpFormatter();
-        PrintWriter printWriter = new PrintWriter(System.out);
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
+        PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
@@ -202,7 +205,7 @@ public class MigrationCLI {
             throw new RuntimeException("Could not find configuration file "+ path);
         }
 
-        try (FileReader reader = new FileReader(configuration)){
+        try (InputStreamReader reader = new InputStreamReader(new FileInputStream(configuration), Charset.defaultCharset())){
             List<Map<String, String>> config = (List<Map<String, String>>) new Yaml().load(reader);
 
             List<String[]> options = new ArrayList<>();

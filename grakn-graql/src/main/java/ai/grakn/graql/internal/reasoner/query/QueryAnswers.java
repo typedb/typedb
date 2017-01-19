@@ -182,10 +182,11 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         this.forEach(entry -> {
             Map<VarName, Concept> answer = new HashMap<>(subVars);
             boolean isCompatible = true;
-            Iterator<VarName> it = entry.keySet().iterator();
+            Iterator<Map.Entry<VarName, Concept>> it = entry.entrySet().iterator();
             while (it.hasNext() && isCompatible) {
-                VarName var = it.next();
-                Concept con = entry.get(var);
+                Map.Entry<VarName, Concept> elem = it.next();
+                VarName var = elem.getKey();
+                Concept con = elem.getValue();
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
                         ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId().getValue()) ) ) {

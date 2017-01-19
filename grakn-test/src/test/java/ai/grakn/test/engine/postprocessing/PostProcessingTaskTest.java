@@ -21,8 +21,11 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.test.EngineContext;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Date;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
@@ -37,7 +40,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStart() throws Exception {
-        String id= taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), new Date(), 0, null);
+        String id= taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), Instant.now(), 0, null);
         Assert.assertNotEquals(CREATED, taskManager.storage().getState(id).status());
 
         // Wait for supervisor thread to mark task as completed
@@ -56,7 +59,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStop() {
-        String id = taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), new Date(), 10000, null);
+        String id = taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), Instant.now(), 10000, null);
         taskManager.stopTask(id, this.getClass().getName());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(id).status());
     }
