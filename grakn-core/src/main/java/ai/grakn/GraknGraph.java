@@ -20,6 +20,7 @@ package ai.grakn;
 
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.BaseGraknGraph;
+import ai.grakn.graph.GraknAdmin;
 
 /**
  * <p>

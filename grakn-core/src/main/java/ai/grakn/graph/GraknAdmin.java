@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn;
+package ai.grakn.graph;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
