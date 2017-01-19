@@ -499,7 +499,6 @@ public class GraqlShell {
 
     @OnWebSocketMessage
     public void onMessage(String msg) {
-        System.out.println(msg);
         Json json = Json.read(msg);
         messages.add(json);
     }
