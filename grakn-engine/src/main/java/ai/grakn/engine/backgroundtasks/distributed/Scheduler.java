@@ -72,50 +72,11 @@ public class Scheduler implements Runnable, AutoCloseable {
     private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
-    private boolean initialised = false;
     private volatile boolean running = false;
 
     public Scheduler(SynchronizedStateStorage zkStorage){
         this.zkStorage = zkStorage;
-    }
 
-    public void run() {
-        running = true;
-
-        // restart any recurring tasks in the graph
-        restartRecurringTasks();
-
-        try {
-            while (running) {
-                printInitialization();
-                LOG.debug("Scheduler polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(NEW_TASKS_TOPIC).stream().map(i -> new TopicPartition(NEW_TASKS_TOPIC, i.partition())).collect(toSet())));
-
-                ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(SCHEDULER_POLLING_FREQ));
-
-                for(ConsumerRecord<String, String> record:records) {
-                    LOG.debug(String.format("Scheduler received topic = %s, partition = %s, offset = %s, taskid = %s, value = %s%n",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value()));
-
-                    scheduleTask(record.key(), record.value());
-
-                    //acknowledge that the record was read to the consumer
-                    LOG.debug("Scheduler acknowledging " + record.key() + " OFFSET " + (record.offset()+1) + " topic " + record.topic());
-                    consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
-                }
-            }
-        }
-        catch (WakeupException e) {
-            // do nothing to shutdown
-            LOG.debug("Shutting down scheduler consumer");
-        }
-        finally {
-            consumer.commitSync();
-            consumer.close();
-            waitToClose.countDown();
-        }
-    }
-
-    public Scheduler open() throws Exception {
         if(OPENED.compareAndSet(false, true)) {
             // Init task storage
             stateStorage = new GraknStateStorage();
@@ -136,8 +97,37 @@ public class Scheduler implements Runnable, AutoCloseable {
         else {
             LOG.error("Scheduled already opened!");
         }
+    }
 
-        return this;
+    public void run() {
+        running = true;
+
+        // restart any recurring tasks in the graph
+        restartRecurringTasks();
+
+        try {
+            while (running) {
+                LOG.debug("Scheduler polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(NEW_TASKS_TOPIC).stream().map(i -> new TopicPartition(NEW_TASKS_TOPIC, i.partition())).collect(toSet())));
+
+                ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(SCHEDULER_POLLING_FREQ));
+
+                for(ConsumerRecord<String, String> record:records) {
+                    scheduleTask(record.key(), record.value());
+
+                    //acknowledge that the record was read to the consumer
+                    consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+                }
+            }
+        }
+        catch (WakeupException e) {
+            // do nothing to shutdown
+            LOG.debug("Shutting down scheduler consumer");
+        }
+        finally {
+            consumer.commitSync();
+            consumer.close();
+            waitToClose.countDown();
+        }
     }
 
     public void close() {
@@ -244,13 +234,6 @@ public class Scheduler implements Runnable, AutoCloseable {
             if(exception != null) {
                 LOG.debug(getFullStackTrace(exception));
             }
-        }
-    }
-
-    private void printInitialization() {
-        if(!initialised) {
-            initialised = true;
-            LOG.info("Scheduler initialised");
         }
     }
 }

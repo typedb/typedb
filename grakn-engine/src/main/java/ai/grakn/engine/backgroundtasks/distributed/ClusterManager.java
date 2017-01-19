@@ -213,7 +213,6 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         LOG.info(ENGINE_ID + " has taken over the scheduler");
 
         scheduler = new Scheduler(zookeeperStorage);
-        scheduler.open();
 
         schedulerThread = new Thread(scheduler, SCHEDULER_THREAD_NAME + scheduler.hashCode());
         schedulerThread.setDaemon(true);

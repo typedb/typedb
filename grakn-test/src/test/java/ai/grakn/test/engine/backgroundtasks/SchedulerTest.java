@@ -37,9 +37,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -48,7 +46,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Predicate;
 
@@ -68,16 +65,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class SchedulerTest {
     private GraknStateStorage stateStorage = new GraknStateStorage();
-    private static ClusterManager clusterManager;
-    private final SynchronizedStateStorage zkStorage = clusterManager.getStorage();
 
-    @ClassRule
+    @Rule
     public static final EngineContext engine = EngineContext.startServer();
-
-    @BeforeClass
-    public static void setupCluster(){
-        clusterManager = engine.getClusterManager();
-    }
 
     @Before
     public void setup() throws Exception {
@@ -98,7 +88,7 @@ public class SchedulerTest {
         String taskId = task.getKey();
 
         // force scheduler restart
-        clusterManager.getScheduler().close();
+        engine.getClusterManager().getScheduler().close();
 
         // sleep a bit and stop scheduler
         waitUntilScheduled(taskId);
@@ -124,7 +114,7 @@ public class SchedulerTest {
         System.out.println(taskId2 + "   " + state2);
 
         // force scheduler to stop
-        clusterManager.getScheduler().close();
+        engine.getClusterManager().getScheduler().close();
 
         waitUntilScheduled(taskId1);
 
@@ -157,7 +147,7 @@ public class SchedulerTest {
 
         TaskState state = stateStorage.getState(taskId);
 
-        zkStorage.newState(taskId, status, null, null);
+        engine.getClusterManager().getStorage().newState(taskId, status, null, null);
 
         assertNotNull(taskId);
         assertNotNull(state);
@@ -205,7 +195,7 @@ public class SchedulerTest {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
-            TaskStatus status = zkStorage.getState(taskId).status();
+            TaskStatus status = engine.getClusterManager().getStorage().getState(taskId).status();
             System.out.println(taskId + "  -->>  " + status);
             if(status == SCHEDULED || status == RUNNING || status == COMPLETED) {
                 try {
