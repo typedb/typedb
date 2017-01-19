@@ -42,7 +42,8 @@ import java.util.Map;
  * </p>
  *
  * <p>
- *     Provides common method for interacting with a Grakn Graph.
+ *     Provides common methods for interacting with a Grakn Graph.
+ *     These methods are shared by {@link ai.grakn.GraknGraph} and {@link EngineGraknGraph}
  * </p>
  *
  * @author fppt
@@ -241,6 +242,14 @@ public interface BaseGraknGraph extends AutoCloseable {
     Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
     //------------------------------------- Utilities ----------------------------------
+    /**
+     * Returns access to the low-level details of the graph via GraknAdmin
+     * @see GraknAdmin
+     *
+     * @return The admin interface which allows you to access more low level details of the graph.
+     */
+    GraknAdmin admin();
+
     /**
      * Utility function to specify whether implicit and system-generated types should be returned.
      * @param flag Specifies if implicit and system-generated types should be returned.

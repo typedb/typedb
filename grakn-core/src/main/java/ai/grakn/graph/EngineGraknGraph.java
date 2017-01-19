@@ -16,31 +16,46 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn;
+package ai.grakn.graph;
+
 
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graph.BaseGraknGraph;
+
+import java.util.Set;
 
 /**
  * <p>
- *     A Grakn Graph
+ *     The Engine Specific Graph Interface
  * </p>
  *
  * <p>
- *     This is produced by {@link Grakn#factory(String, String)} and allows the user to construct and perform
- *     basic look ups to a Grakn Graph. This also allows the execution of Graql queries.
+ *     Provides common methods for advanced inteaction with the graph.
+ *     This is used internally by Engine
  * </p>
  *
  * @author fppt
  *
  */
-public interface GraknGraph extends BaseGraknGraph {
+public interface EngineGraknGraph extends BaseGraknGraph {
 
     /**
-     * Validates and attempts to commit the graph. Also submits commit logs for post processing
-     * An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
+     * Commits the transaction without submitting any commit logs
      *
      * @throws GraknValidationException is thrown when a structural validation fails.
      */
-    void commit() throws GraknValidationException;
+    void commitTx() throws GraknValidationException;
+
+    /**
+     * Merges duplicate castings if one is found.
+     * @param castingId The id of the casting to check for duplicates
+     * @return true if some castings were merged
+     */
+    boolean fixDuplicateCasting(Object castingId);
+
+    /**
+     *
+     * @param resourceIds The resourceIDs which possible contain duplicates.
+     * @return True if a commit is required.
+     */
+    boolean fixDuplicateResources(Set<Object> resourceIds);
 }

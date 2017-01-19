@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graph.GraknAdmin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
@@ -82,7 +83,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  */
-public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
+public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin, EngineGraknGraph {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private final ElementFactory elementFactory;
     private final String keyspace;
@@ -692,6 +693,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public void commit() throws GraknValidationException {
         commit(true);
     }
+
+    @Override
+    public void commitTx() throws GraknValidationException{
+        commit(false);
+    }
+
     public void commit(boolean submitLogs) throws GraknValidationException {
         validateGraph();
 
@@ -707,7 +714,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         LOG.debug("Graph is valid. Committing graph . . . ");
-        commitTx();
+        commitTransaction();
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
@@ -715,7 +722,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             submitCommitLogs(modifiedConcepts);
         }
     }
-    protected void commitTx(){
+    protected void commitTransaction(){
         try {
             getTinkerPopGraph().tx().commit();
         } catch (UnsupportedOperationException e){
@@ -771,6 +778,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param castingId The id of the casting to check for duplicates
      * @return true if some castings were merged
      */
+    @Override
     public boolean fixDuplicateCasting(Object castingId){
         //Get the Casting
         ConceptImpl concept = getConceptByBaseIdentifier(castingId);
@@ -882,6 +890,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param resourceIds The resourceIDs which possible contain duplicates.
      * @return True if a commit is required.
      */
+    @Override
     public boolean fixDuplicateResources(Set<Object> resourceIds){
         boolean commitRequired = false;
 
