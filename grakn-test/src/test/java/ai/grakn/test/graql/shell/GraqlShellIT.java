@@ -300,10 +300,10 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x sub entity;\n").split("\n");
+        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x type-name E;\n").split("\n");
 
         // Make sure there are no results for match query
-        assertEquals(">>> match $x sub entity", result[result.length-2]);
+        assertEquals(">>> match $x type-name E;", result[result.length-2]);
         assertEquals(">>> ", result[result.length-1]);
     }
 
