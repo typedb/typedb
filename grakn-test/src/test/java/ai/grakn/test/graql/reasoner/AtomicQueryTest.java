@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -96,8 +95,8 @@ public class AtomicQueryTest {
         QueryAnswers answers = new QueryAnswers();
 
         answers.add(ImmutableMap.of(
-                varName("x"), getConcept("Bob"),
-                varName("y"), getConcept("Colour of Magic")));
+                VarName.of("x"), getConcept("Bob"),
+                VarName.of("y"), getConcept("Colour of Magic")));
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, snbGraph.graph());
         atomicQuery.getAnswers().addAll(answers);
         atomicQuery.materialise();
@@ -115,7 +114,7 @@ public class AtomicQueryTest {
         Atomic childAtom = childQuery.getAtom();
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("X"), varName("z"));
+        correctUnifiers.put(VarName.of("X"), VarName.of("z"));
         assertTrue(unifiers.equals(correctUnifiers));
     }
 

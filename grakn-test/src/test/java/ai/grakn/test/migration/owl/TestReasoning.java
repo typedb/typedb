@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 
 public class TestReasoning extends TestOwlGraknBase {
@@ -81,7 +80,7 @@ public class TestReasoning extends TestOwlGraknBase {
         Set<Map<VarName, Concept>> OWLanswers = new HashSet<>();
         owlResult.forEach(result -> {
             Map<VarName, Concept> resultMap = new HashMap<>();
-            resultMap.put(varName("x"), migrator.entity(result));
+            resultMap.put(VarName.of("x"), migrator.entity(result));
             OWLanswers.add(resultMap);
         });
 

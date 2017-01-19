@@ -311,7 +311,7 @@ public class Utility {
             int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
             fresh = fresh.replaceAll("\\d+", "") + (++value);
         }
-        return Patterns.varName(fresh);
+        return VarName.of(fresh);
     }
 
     /**
@@ -368,7 +368,7 @@ public class Utility {
         Set<VarName> vars = new HashSet<>();
 
         roleMappings.forEach( (parentRoleName, childRoleName) -> {
-            VarName varName = createFreshVariable(vars, Patterns.varName("x"));
+            VarName varName = createFreshVariable(vars, VarName.of("x"));
             parentVar.rel(name(parentRoleName), var(varName));
             childVar.rel(name(childRoleName), var(varName));
             vars.add(varName);
@@ -388,10 +388,10 @@ public class Utility {
     public static Rule createPropertyChainRule(RelationType relation, TypeName fromRoleName, TypeName toRoleName,
                                              LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain, GraknGraph graph){
         Stack<VarName> varNames = new Stack<>();
-        varNames.push(Patterns.varName("x"));
+        varNames.push(VarName.of("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            VarName varName = createFreshVariable(Sets.newHashSet(varNames), Patterns.varName("x"));
+            VarName varName = createFreshVariable(Sets.newHashSet(varNames), VarName.of("x"));
             VarAdmin var = var().isa(name(relType.getName()))
                     .rel(name(rolePair.getKey()), var(varNames.peek()))
                     .rel(name(rolePair.getValue()), var(varName)).admin();
