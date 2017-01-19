@@ -26,17 +26,17 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class TaskManagerTest {
     private DistributedTaskManager manager;
@@ -80,7 +80,7 @@ public class TaskManagerTest {
 
         for(int i = 0; i < 20; i++) {
             String taskId = manager.scheduleTask(new TestTask(), TaskManagerTest.class.getName(),
-                    new Date(), 0, new JSONObject(singletonMap("name", "task"+i)));
+                    Instant.now(), 0, new JSONObject(singletonMap("name", "task"+i)));
 
             ids.add(taskId);
         }

@@ -64,6 +64,11 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
         return configureGraph(super.keyspace, super.engineUrl);
     }
 
+    @Override
+    protected OrientGraph getGraphWithNewTransaction(OrientGraph graph) {
+        return graph;
+    }
+
     private OrientGraph configureGraph(String name, String address){
         boolean schemaDefinitionRequired = false;
         OrientGraphFactory factory = getFactory(name, address);

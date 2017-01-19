@@ -32,7 +32,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -96,7 +96,7 @@ public class DistributedTaskManager implements TaskManager{
     }
 
     @Override
-    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
         Boolean recurring = period > 0;
 
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);

@@ -41,6 +41,7 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -79,9 +80,11 @@ public class GraphFactoryController {
                     case REST.GraphConfig.COMPUTER:
                         graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
                         break;
+                    default:
+                        throw new RuntimeException("Unrecognised graph config: " + graphConfig);
                 }
             }
-            return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
+            return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new GraknEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
         }

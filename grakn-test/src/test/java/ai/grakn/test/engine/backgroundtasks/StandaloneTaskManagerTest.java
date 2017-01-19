@@ -32,6 +32,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -39,9 +40,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class StandaloneTaskManagerTest {
     private TaskManager taskManager;
@@ -58,7 +64,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testRunSingle() {
         TestTask task = new TestTask();
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0,
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 0,
                 new JSONObject(singletonMap("name", "task" + 1)));
 
         // Wait for task to be executed.
@@ -93,7 +99,7 @@ public class StandaloneTaskManagerTest {
         // Schedule tasks
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
-            ids.add(taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0,
+            ids.add(taskManager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0,
                     new JSONObject(singletonMap("name", "task" + i))));
         }
 
@@ -120,7 +126,7 @@ public class StandaloneTaskManagerTest {
     public void testRunRecurring() throws Exception {
         TestTask task = new TestTask();
 
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 100,
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 100,
                 new JSONObject(singletonMap("name", "task" + 1)));
         Thread.sleep(2000);
 
@@ -133,7 +139,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testStopSingle() {
         BackgroundTask task = new LongRunningTask();
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0,
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 0,
                 new JSONObject(singletonMap("name", "task" + 1)));
 
         TaskStatus status = taskManager.storage().getState(id).status();

@@ -45,8 +45,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -129,7 +129,7 @@ public class GraknEngineServer {
         manager.open();
         manager.scheduleTask(new PostProcessingTask(),
                              GraknEngineServer.class.getName(),
-                             new Date(),
+                             Instant.now(),
                              prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
                              new JSONObject());
 

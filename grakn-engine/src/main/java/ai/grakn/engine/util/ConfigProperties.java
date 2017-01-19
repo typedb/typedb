@@ -115,8 +115,8 @@ public class ConfigProperties {
     private ConfigProperties() {
         getProjectPath();
         prop = new Properties();
-        try {
-            prop.load(new FileInputStream(getConfigFilePath()));
+        try (FileInputStream inputStream = new FileInputStream(getConfigFilePath())){
+            prop.load(inputStream);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -284,10 +284,10 @@ public class ConfigProperties {
 
 
     public static final String GRAKN_ASCII =
-                      "     ___  ___  ___  _  __ _  _     ___  ___     \n" +
-                    "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    \n" +
-                    "   | (_ ||   /| - || ' < | .` | _ | - | | |     \n" +
-                    "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   \n\n" +
+                      "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
+                    "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +
+                    "   | (_ ||   /| - || ' < | .` | _ | - | | |     %n" +
+                    "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   %n%n" +
                       " Web Dashboard available at [%s]";
 
 }

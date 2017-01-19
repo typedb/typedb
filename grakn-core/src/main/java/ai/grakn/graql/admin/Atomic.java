@@ -32,9 +32,9 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public interface Atomic extends Cloneable{
+public interface Atomic {
 
-    Atomic clone();
+    Atomic copy();
 
     default boolean isAtom(){ return false;}
     default boolean isPredicate(){ return false;}

@@ -30,6 +30,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -44,7 +45,7 @@ import java.util.Set;
  */
 public class Resource extends MultiPredicateBinary{
 
-    public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
+    public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
     public Resource(VarAdmin pattern, Set<Predicate> p, ReasonerQuery par){ super(pattern, p, par);}
     private Resource(Resource a) { super(a);}
 
@@ -90,7 +91,7 @@ public class Resource extends MultiPredicateBinary{
     }
 
     @Override
-    public Atomic clone(){ return new Resource(this);}
+    public Atomic copy(){ return new Resource(this);}
 
     @Override
     public boolean isResource(){ return true;}
