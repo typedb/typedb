@@ -72,7 +72,7 @@ public class DataTypeAtom extends AtomBase {
     }
 
     @Override
-    public Atomic clone() { return new DataTypeAtom(this);}
+    public Atomic copy() { return new DataTypeAtom(this);}
 
     public ResourceType.DataType<?> getDataType(){ return datatype;}
 }

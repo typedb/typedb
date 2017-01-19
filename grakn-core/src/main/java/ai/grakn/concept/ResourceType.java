@@ -20,10 +20,9 @@ package ai.grakn.concept;
 
 
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A ResourceType is a schema element which represents the category of resources in the graph.
@@ -154,15 +153,14 @@ public interface ResourceType<D> extends Type {
         public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class.getName(), Schema.ConceptProperty.VALUE_BOOLEAN);
         public static final DataType<Long> LONG = new DataType<>(Long.class.getName(), Schema.ConceptProperty.VALUE_LONG);
         public static final DataType<Double> DOUBLE = new DataType<>(Double.class.getName(), Schema.ConceptProperty.VALUE_DOUBLE);
-        public static final Map<String, DataType<?>> SUPPORTED_TYPES = new HashMap<>();
 
-        static {
-            SUPPORTED_TYPES.put(STRING.getName(), STRING);
-            SUPPORTED_TYPES.put(BOOLEAN.getName(), BOOLEAN);
-            SUPPORTED_TYPES.put(LONG.getName(), LONG);
-            SUPPORTED_TYPES.put(DOUBLE.getName(), DOUBLE);
-            SUPPORTED_TYPES.put(Integer.class.getName(), LONG);
-        }
+        public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.of(
+                STRING.getName(), STRING,
+                BOOLEAN.getName(), BOOLEAN,
+                LONG.getName(), LONG,
+                DOUBLE.getName(), DOUBLE,
+                Integer.class.getName(), LONG
+        );
 
         private final String dataType;
         private final Schema.ConceptProperty conceptProperty;

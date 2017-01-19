@@ -18,17 +18,19 @@
 
 package ai.grakn.migration.json;
 
-import com.google.common.collect.Sets;
-import com.google.common.io.CharStreams;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.migration.base.AbstractMigrator;
+import com.google.common.collect.Sets;
+import com.google.common.io.CharStreams;
 import mjson.Json;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -127,9 +129,9 @@ public class JsonMigrator extends AbstractMigrator {
      * @param file file to be converted
      * @return Json object representing the file, empty if problem reading file
      */
-    private FileReader asReader(File file){
+    private InputStreamReader asReader(File file){
         try {
-            return new FileReader(file);
+            return new InputStreamReader(new FileInputStream(file), Charset.defaultCharset());
         } catch (IOException e){
             throw new RuntimeException("Problem reading input");
         }
