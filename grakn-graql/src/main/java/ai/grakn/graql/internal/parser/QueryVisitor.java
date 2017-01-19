@@ -49,7 +49,6 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -706,7 +705,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private VarName getVariable(TerminalNode variable) {
         // Remove '$' prefix
-        return Patterns.varName(variable.getText().substring(1));
+        return VarName.of(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {
@@ -739,7 +738,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private long getInteger(TerminalNode integer) {
-        return Long.valueOf(integer.getText());
+        return Long.parseLong(integer.getText());
     }
 
     private Order getOrder(TerminalNode order) {

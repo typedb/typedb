@@ -80,8 +80,8 @@ public class Scope {
                 prefix = prefix + ".";
             }
 
-            for(String key: map.keySet()) {
-                assign(prefix  + key, map.get(key));
+            for(Map.Entry<String, Object> entry: map.entrySet()) {
+                assign(prefix + entry.getKey(), entry.getValue());
             }
         }
         else {

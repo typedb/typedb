@@ -36,7 +36,6 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.CommonUtil;
@@ -107,7 +106,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers.stream().flatMap(relationPlayer -> {
 
-            VarName castingName = Patterns.varName();
+            VarName castingName = VarName.anon();
             castingNames.add(castingName);
 
             return equivalentFragmentSetFromCasting(start, castingName, relationPlayer);
@@ -309,7 +308,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             if (isaProp != null) {
                 VarAdmin isaVar = isaProp.getType();
                 TypeName typeName = isaVar.getTypeName().orElse(null);
-                VarName typeVariable = typeName == null ? isaVar.getVarName() : Patterns.varName("rel-" + UUID.randomUUID().toString());
+                VarName typeVariable = typeName == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
                 relVar.isa(Graql.var(typeVariable));
                 if (typeName != null) {
                     GraknGraph graph = parent.graph();

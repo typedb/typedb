@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknEngineServerException;
@@ -41,6 +42,7 @@ import javax.ws.rs.Produces;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -51,11 +53,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.controller.Utilities.getAsString;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
+import static ai.grakn.util.REST.Request.PATH_FIELD;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static spark.Spark.before;
 import static spark.Spark.halt;
 import static spark.Spark.post;
-import static ai.grakn.util.REST.Request.PATH_FIELD;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Api(value = "/import", description = "Endpoints to import Graql data from a file.")
 @Path("/import")
@@ -64,11 +66,14 @@ public class ImportController {
 
     private final Logger LOG = LoggerFactory.getLogger(ImportController.class);
     private final AtomicBoolean loadingInProgress = new AtomicBoolean(false);
+    private final ClusterManager manager;
 
     private static final String INSERT_KEYWORD = "insert";
     private static final String MATCH_KEYWORD = "match";
 
-    public ImportController() {
+    public ImportController(ClusterManager manager) {
+        this.manager = manager;
+
         before(REST.WebPath.IMPORT_DATA_URI, (req, res) -> {
             if (loadingInProgress.get()) {
                 halt(423, "Another loading process is still running.\n");
@@ -119,7 +124,7 @@ public class ImportController {
      * @return Loader configured to the provided keyspace
      */
     private Loader getLoader(String keyspace){
-        return new Loader(keyspace);
+        return new Loader(manager, keyspace);
     }
 
     /**
@@ -137,8 +142,8 @@ public class ImportController {
     private void importDataFromFile(File file, Loader loaderParam, Future statusPrinter) {
         LOG.info("Data loading started.");
         loadingInProgress.set(true);
-        try {
-            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(new FileInputStream(file)).iterator();
+        try (InputStream inputStream = new FileInputStream(file)) {
+            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(inputStream).iterator();
             if (batchIterator.hasNext()) {
                 Object var = batchIterator.next();
                 // -- ENTITIES --

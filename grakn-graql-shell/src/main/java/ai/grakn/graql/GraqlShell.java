@@ -20,11 +20,11 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
-import ai.grakn.graql.internal.shell.GraqlSignalHandler;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import jline.console.ConsoleReader;
@@ -42,18 +42,20 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import sun.misc.Signal;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -62,7 +64,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,7 +82,6 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
@@ -94,6 +100,7 @@ import static ai.grakn.util.REST.WebPath.IMPORT_DATA_URI;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -107,7 +114,7 @@ public class GraqlShell {
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    private static final String DEFAULT_KEYSPACE = "grakn";
+    public static final String DEFAULT_KEYSPACE = "grakn";
     private static final String DEFAULT_URI = "localhost:4567";
     private static final String DEFAULT_OUTPUT_FORMAT = "graql";
 
@@ -128,9 +135,10 @@ public class GraqlShell {
     /**
      * Array of available commands in shell
      */
-    public static final String[] COMMANDS = {
-        EDIT_COMMAND, ROLLBACK_COMMAND, COMMIT_COMMAND, LOAD_COMMAND, CLEAR_COMMAND, EXIT_COMMAND
-    };
+    public static final ImmutableList<String> COMMANDS = ImmutableList.of(
+            EDIT_COMMAND, COMMIT_COMMAND, ROLLBACK_COMMAND, LOAD_COMMAND, DISPLAY_COMMAND, CLEAR_COMMAND, EXIT_COMMAND,
+            LICENSE_COMMAND
+    );
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
     private static final String HISTORY_FILENAME = "/graql-history";
@@ -144,8 +152,11 @@ public class GraqlShell {
 
     private Session session;
 
-    private boolean waitingQuery = false;
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
+
+    private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     /**
      * Run a Graql REPL
@@ -188,7 +199,8 @@ public class GraqlShell {
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            PrintWriter printWriter = new PrintWriter(System.out);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
+            PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
             int width = helpFormatter.getWidth();
             int leftPadding = helpFormatter.getLeftPadding();
             int descPadding = helpFormatter.getDescPadding();
@@ -236,7 +248,7 @@ public class GraqlShell {
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
-            System.err.println(e.toString());
+            System.err.println(getFullStackTrace(e));
         }
     }
 
@@ -300,11 +312,6 @@ public class GraqlShell {
         try {
             console = new ConsoleReader(System.in, System.out);
 
-            // Create handler to handle SIGINT (Ctrl-C) interrupts
-            Signal signal = new Signal("INT");
-            GraqlSignalHandler signalHandler = new GraqlSignalHandler(this);
-            Signal.handle(signal, signalHandler);
-
             try {
                 session = client.connect(this, uri).get();
             } catch (ExecutionException e) {
@@ -325,7 +332,7 @@ public class GraqlShell {
             sendJson(initJson);
 
             // Wait to receive confirmation
-            waitForEnd();
+            handleMessagesFromServer();
 
             // If session has closed, then we couldn't authorise
             if (!session.isOpen()) {
@@ -375,12 +382,7 @@ public class GraqlShell {
             if (!success) print(ErrorMessage.COULD_NOT_CREATE_TEMP_FILE.getMessage());
         }
 
-        // Create history file
-        File historyFile = new File(System.getProperty("java.io.tmpdir") + historyFilename);
-        //noinspection ResultOfMethodCallIgnored
-        historyFile.createNewFile();
-        FileHistory history = new FileHistory(historyFile);
-        console.setHistory(history);
+        setupHistory();
 
         // Add all autocompleters
         console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
@@ -390,8 +392,6 @@ public class GraqlShell {
         java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
 
         while ((queryString = console.readLine()) != null) {
-            history.flush();
-
             Matcher matcher = commandPattern.matcher(queryString);
 
             if (matcher.matches()) {
@@ -449,6 +449,25 @@ public class GraqlShell {
         }
     }
 
+    private boolean setupHistory() throws IOException {
+        // Create history file
+        File historyFile = new File(System.getProperty("java.io.tmpdir") + historyFilename);
+        boolean fileCreated = historyFile.createNewFile();
+        FileHistory history = new FileHistory(historyFile);
+        console.setHistory(history);
+
+        // Make sure history is saved on shutdown
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                history.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+
+        return fileCreated;
+    }
+
     private void printLicense(){
         StringBuilder result = new StringBuilder("");
 
@@ -456,7 +475,7 @@ public class GraqlShell {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream(LICENSE_LOCATION);
 
-        Scanner scanner = new Scanner(is);
+        Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name());
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();
             result.append(line).append("\n");
@@ -474,35 +493,14 @@ public class GraqlShell {
             System.err.println("Websocket closed, code: " + statusCode + ", reason: " + reason);
         }
 
-        // Alert anyone waiting for a response that the connection has closed
-        synchronized (this) {
-            notifyAll();
-        }
+        // Add dummy end message from server
+        messages.add(Json.object(ACTION, ACTION_END));
     }
 
     @OnWebSocketMessage
     public void onMessage(String msg) {
         Json json = Json.read(msg);
-
-        switch (json.at(ACTION).asString()) {
-            case ACTION_QUERY:
-                String result = json.at(QUERY_RESULT).asString();
-                print(result);
-                break;
-            case ACTION_END:
-                // Alert the shell that the query has finished, so it can prompt for another query
-                synchronized (this) {
-                    notifyAll();
-                }
-                break;
-            case ACTION_TYPES:
-                Set<String> types = json.at(TYPES).asJsonList().stream().map(Json::asString).collect(toSet());
-                graqlCompleter.setTypes(types);
-                break;
-            case ACTION_ERROR:
-                System.err.print(json.at(ERROR).asString());
-                break;
-        }
+        messages.add(json);
     }
 
     private void ping() {
@@ -538,20 +536,52 @@ public class GraqlShell {
         }
 
         sendJson(Json.object(ACTION, ACTION_END));
-        waitForEnd();
+        handleMessagesFromServer();
     }
 
-    private void waitForEnd() {
-        // Wait until the command is executed before continuing
-        waitingQuery = true;
-        synchronized (this) {
+    private void handleMessagesFromServer() {
+        boolean isEndMessage;
+
+        do {
+            Json message;
             try {
-                wait();
+                message = messages.poll(5, TimeUnit.MINUTES);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.err.println(e.getMessage());
+                return;
             }
+            isEndMessage = handleMessage(message);
+        } while (!isEndMessage);
+    }
+
+    /**
+     * Handle the given server message
+     * @param message the message to handle
+     * @return whether this is an end message
+     */
+    private boolean handleMessage(Json message) {
+        switch (message.at(ACTION).asString()) {
+            case ACTION_QUERY:
+                String result = message.at(QUERY_RESULT).asString();
+                print(result);
+                break;
+            case ACTION_END:
+                return true;
+            case ACTION_TYPES:
+                Set<String> types = message.at(TYPES).asJsonList().stream().map(Json::asString).collect(toSet());
+                graqlCompleter.setTypes(types);
+                break;
+            case ACTION_ERROR:
+                System.err.print(message.at(ERROR).asString());
+                break;
+            case ACTION_PING:
+                // Ignore
+                break;
+            default:
+                throw new RuntimeException("Unrecognized message: " + message);
         }
-        waitingQuery = false;
+
+        return false;
     }
 
     private void setDisplayOptions(Set<String> displayOptions) {
@@ -563,7 +593,7 @@ public class GraqlShell {
 
     private void commit() {
         sendJson(Json.object(ACTION, ACTION_COMMIT));
-        waitForEnd();
+        handleMessagesFromServer();
     }
 
     private void rollback() {
@@ -596,23 +626,16 @@ public class GraqlShell {
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
 
-    /**
-     * Interrupt the shell. If the user is waiting for query results, tell the server to stop sending them.
-     * Otherwise, exit normally.
-     */
-    public void interrupt() {
-        if (waitingQuery) {
-            sendJson(Json.object(ACTION, ACTION_QUERY_ABORT));
-            waitingQuery = false;
-        } else {
-            System.exit(0);
-        }
-    }
-
     private void sendJson(Json json) {
         try {
-            session.getRemote().sendString(json.toString());
-        } catch (IOException e) {
+            executor.submit(() -> {
+                try {
+                    session.getRemote().sendString(json.toString());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).get();
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }

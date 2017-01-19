@@ -94,6 +94,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                     vertex.property(DEGREE, getEdgeCount(messenger));
                 }
                 break;
+            default:
+                throw new RuntimeException("unreachable");
         }
     }
 
