@@ -24,10 +24,10 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeName;
-import ai.grakn.migration.json.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,6 +39,7 @@ import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
 import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
 import static ai.grakn.test.migration.MigratorTestUtils.getResource;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
+import static ai.grakn.migration.json.Main.start;
 import static junit.framework.TestCase.assertEquals;
 
 public class JsonMigratorMainTest {
@@ -113,7 +114,7 @@ public class JsonMigratorMainTest {
     }
 
     private void run(String... args){
-        Main.main(args);
+        start(engine.getClusterManager(), args);
     }
 
     private void runAndAssertDataCorrect(String... args){

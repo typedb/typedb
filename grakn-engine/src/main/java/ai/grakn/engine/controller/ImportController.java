@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknEngineServerException;
@@ -65,11 +66,14 @@ public class ImportController {
 
     private final Logger LOG = LoggerFactory.getLogger(ImportController.class);
     private final AtomicBoolean loadingInProgress = new AtomicBoolean(false);
+    private final ClusterManager manager;
 
     private static final String INSERT_KEYWORD = "insert";
     private static final String MATCH_KEYWORD = "match";
 
-    public ImportController() {
+    public ImportController(ClusterManager manager) {
+        this.manager = manager;
+
         before(REST.WebPath.IMPORT_DATA_URI, (req, res) -> {
             if (loadingInProgress.get()) {
                 halt(423, "Another loading process is still running.\n");
@@ -120,7 +124,7 @@ public class ImportController {
      * @return Loader configured to the provided keyspace
      */
     private Loader getLoader(String keyspace){
-        return new Loader(keyspace);
+        return new Loader(manager, keyspace);
     }
 
     /**
