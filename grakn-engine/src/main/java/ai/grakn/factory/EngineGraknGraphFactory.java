@@ -51,12 +51,20 @@ public class EngineGraknGraphFactory {
     }
 
     public synchronized EngineGraknGraph getGraph(String keyspace) {
-        //TODO: Get rid of ugly casting
-        return (EngineGraknGraph) FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
+        return getGraph(keyspace, false);
+    }
+
+    public synchronized EngineGraknGraph getGraphBatchLoading(String keyspace) {
+        return getGraph(keyspace, true);
     }
 
     public synchronized void refreshConnections(){
         FactoryBuilder.refresh();
+    }
+
+    private EngineGraknGraph getGraph(String keyspace, boolean batchLoading){
+        //TODO: Get rid of ugly casting
+        return (EngineGraknGraph) FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(batchLoading);
     }
 }
 

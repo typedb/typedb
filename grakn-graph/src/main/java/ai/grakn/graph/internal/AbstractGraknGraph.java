@@ -161,6 +161,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return committed;
     }
 
+    @Override
     public boolean isBatchLoadingEnabled(){
         return batchLoadingEnabled;
     }

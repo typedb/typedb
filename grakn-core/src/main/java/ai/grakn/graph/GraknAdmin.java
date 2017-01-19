@@ -45,6 +45,13 @@ public interface GraknAdmin {
      */
     GraphTraversal<Vertex, Vertex> getTinkerTraversal();
 
+    /**
+     * A flag to check if batch loading is enabled and consistency checks are switched off
+     *
+     * @return true if batch loading is enabled
+     */
+    boolean isBatchLoadingEnabled();
+
     //------------------------------------- Meta Types ----------------------------------
     /**
      * Get the root of all Types.

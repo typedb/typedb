@@ -9,6 +9,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class EngineGraknGraphFactoryTest {
     @ClassRule
@@ -22,5 +24,15 @@ public class EngineGraknGraphFactoryTest {
         EngineGraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 
         assertEquals(graph1, graph2);
+    }
+
+    @Test
+    public void testBatchLoading(){
+        String keyspace = "mykeyspace";
+        EngineGraknGraph graph1 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
+        EngineGraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraphBatchLoading(keyspace);
+
+        assertFalse(graph1.admin().isBatchLoadingEnabled());
+        assertTrue(graph2.admin().isBatchLoadingEnabled());
     }
 }
