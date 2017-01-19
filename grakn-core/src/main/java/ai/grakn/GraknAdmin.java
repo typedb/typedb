@@ -28,6 +28,9 @@ import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+/**
+ * Admin interface for {@link GraknGraph}.
+ */
 public interface GraknAdmin {
 
     /**

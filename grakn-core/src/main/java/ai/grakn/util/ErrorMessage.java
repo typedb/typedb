@@ -18,6 +18,12 @@
 
 package ai.grakn.util;
 
+/**
+ * Enum containing error messages.
+ *
+ * Each error message contains a single format string, with a method {@link ErrorMessage#getMessage(Object...)} that
+ * accepts arguments to be passed to the format string.
+ */
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     NO_EDGE("Concept [%s] does not have any edges to a [%s]"),

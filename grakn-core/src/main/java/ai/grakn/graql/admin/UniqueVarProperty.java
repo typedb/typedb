@@ -19,8 +19,10 @@
 package ai.grakn.graql.admin;
 
 /**
- * A {@code VarProperty}, with the added requirement that every {@code Var} will have zero or one instances.
- * For example, you cannot specify two type names on a single variable.
+ * A unique property of a {@link ai.grakn.graql.Var}.
+ *
+ * This property is unique in that each {@link ai.grakn.graql.Var} may have exactly zero or one of each
+ * {@link UniqueVarProperty}.
  */
 public interface UniqueVarProperty extends VarProperty {
 
