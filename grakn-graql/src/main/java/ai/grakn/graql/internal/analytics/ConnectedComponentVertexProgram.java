@@ -168,7 +168,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 }
                 break;
             default:
-                if (memory.get(IS_LAST_ITERATION)) {
+                if ((Boolean)memory.get(IS_LAST_ITERATION)) {
                     boolean clusterSelected = selectedLabels.isEmpty() || selectedLabels.contains(vertex.<String>value(CLUSTER_LABEL));
                     if (withoutHasResource.contains(Utility.getVertexType(vertex)) && clusterSelected) {
                         bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
@@ -206,7 +206,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() < 3) return false;
-        if (memory.get(IS_LAST_ITERATION)) return true;
+        if ((Boolean)memory.get(IS_LAST_ITERATION)) return true;
 
         final boolean voteToHalt = memory.<Boolean>get(VOTE_TO_HALT);
         if (voteToHalt) {
