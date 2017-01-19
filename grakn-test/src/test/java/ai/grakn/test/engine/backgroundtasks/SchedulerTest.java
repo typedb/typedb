@@ -21,39 +21,32 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
-import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
+import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
-import java.util.function.Predicate;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Each test needs to be run with a clean Kafka to pass
@@ -64,54 +57,16 @@ public class SchedulerTest {
     @Rule
     public final EngineContext engine = EngineContext.startServer();
 
+    @BeforeClass
+    public static void setup(){
+        ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
+    }
+
     @Test
     public void testInstantaneousOneTimeTasks() throws Exception {
         Map<String, TaskState> tasks = createTasks(5);
         sendTasksToNewTasksQueue(tasks);
         waitUntilScheduled(tasks.keySet());
-    }
-
-    @Test
-    public void testRecurringTasksStarted() throws Exception {
-        // persist a recurring task in system graph
-        Pair<String, TaskState> task = createTask(0, CREATED, true, 3000);
-        String taskId = task.getKey();
-
-        // force scheduler restart
-        engine.getClusterManager().getScheduler().close();
-
-        // sleep a bit and stop scheduler
-        waitUntilScheduled(taskId);
-
-        // check recurring task in work queue
-        Map<String, String> recurringTasks = getMessagesInWorkQueue();
-        assertTrue(recurringTasks.containsKey(taskId));
-    }
-
-    @Test
-    public void testRecurringTasksThatAreStoppedNotStarted() throws Exception{
-        // persist a recurring task in system graph
-        Pair<String, TaskState> task1 = createTask(0, CREATED, true, 3000);
-        String taskId1 = task1.getKey();
-        TaskState state1 = task1.getValue();
-
-        // persist a recurring task in system graph
-        Pair<String, TaskState> task2 = createTask(1, STOPPED, true, 3000);
-        String taskId2 = task2.getKey();
-        TaskState state2 = task2.getValue();
-
-        System.out.println(taskId1 + "   " + state1);
-        System.out.println(taskId2 + "   " + state2);
-
-        // force scheduler to stop
-        engine.getClusterManager().getScheduler().close();
-
-        waitUntilScheduled(taskId1);
-
-        // check CREATED task in work queue and not stopped
-        Map<String, String> recurringTasks = getMessagesInWorkQueue();
-        assertTrue(recurringTasks.containsKey(taskId1));
-        assertTrue(!recurringTasks.containsKey(taskId2));
     }
 
     private Map<String, TaskState> createTasks(int n) throws Exception {
@@ -156,27 +111,6 @@ public class SchedulerTest {
         producer.close();
     }
 
-    private Map<String, String> getMessagesInWorkQueue() {
-        // Create a consumer in a new group to read all messages
-        Properties properties = Utilities.testConsumer();
-        properties.put("group.id", "workQueue");
-        properties.put("auto.offset.reset", "earliest");
-
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
-        consumer.subscribe(Collections.singletonList(WORK_QUEUE_TOPIC));
-
-        ConsumerRecords<String, String> records = consumer.poll(1000);
-        Map<String, String> recordsInMap = new HashMap<>();
-        for(ConsumerRecord<String, String> record:records) {
-            recordsInMap.put(record.key(), record.value());
-        }
-
-        System.out.println("test received total count: " + records.count());
-
-        consumer.close();
-        return recordsInMap;
-    }
-
     private void waitUntilScheduled(Collection<String> tasks) {
         tasks.forEach(this::waitUntilScheduled);
     }
@@ -205,16 +139,5 @@ public class SchedulerTest {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    private void waitForScheduler(ClusterManager clusterManager, Predicate<Scheduler> fn) throws Exception {
-        int runs = 0;
-
-        while (!fn.test(clusterManager.getScheduler()) && runs < 50 ) {
-            Thread.sleep(100);
-            runs++;
-        }
-
-        System.out.println("wait done, runs " + Integer.toString(runs) + " scheduler " + clusterManager.getScheduler());
     }
 }
