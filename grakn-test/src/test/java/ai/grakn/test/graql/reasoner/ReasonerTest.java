@@ -22,11 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -36,6 +38,7 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
+import java.util.Set;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -46,12 +49,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.graql.internal.pattern.Patterns.varName;
+import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -83,7 +85,7 @@ public class ReasonerTest {
 
     @Test
     public void testSubPropertyRule() {
-        Map<String, String> roleMap = new HashMap<>();
+        Map<TypeName, TypeName> roleMap = new HashMap<>();
         RelationType parent = snbGraph.graph().getRelationType("sublocate");
         RelationType child = snbGraph.graph().getRelationType("resides");
 
@@ -135,7 +137,7 @@ public class ReasonerTest {
         RelationType resides = snbGraph.graph().getRelationType("resides");
         RelationType sublocate = snbGraph.graph().getRelationType("sublocate");
 
-        LinkedHashMap<RelationType, Pair<String, String>> chain = new LinkedHashMap<>();
+        LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain = new LinkedHashMap<>();
 
         chain.put(resides, new Pair<>(snbGraph.graph().getRoleType("located-subject").getName(), snbGraph.graph().getRoleType("subject-location").getName()));
         chain.put(sublocate, new Pair<>(snbGraph.graph().getRoleType("member-location").getName(), snbGraph.graph().getRoleType("container-location").getName()));
@@ -154,18 +156,12 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testIdComma(){
-        String queryString = "match $x isa person, has name 'Bob';";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-        assertEquals(query.getAtoms().size(), 2);
-    }
-
-    @Test
     public void testComma(){
         String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', value 'Bob', has age <21;";
         String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x value 'Bob';$x has age <21;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().parse(queryString2);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
         assertEquals(query.execute(), query2.execute());
     }
 
@@ -173,24 +169,25 @@ public class ReasonerTest {
     public void testComma2(){
         String queryString = "match $x isa person, value <21, value >18;";
         String queryString2 = "match $x isa person;$x value <21;$x value >18;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().parse(queryString2);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
         assertEquals(query.execute(), query2.execute());
     }
 
     @Test
     public void testResourceAsVar(){
-        String queryString = "match $x isa person, has firstname $y;";
-        String queryString2 = "match $x isa person;$x has firstname $y;";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
+        String patternString = "{$x isa person, has firstname $y;}";
+        String patternString2 = "{$x isa person;$x has firstname $y;}";
+        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.isEquivalent(query2));
     }
 
     @Test
     public void testResourceAsVar2(){
         String queryString = "match $x has firstname $y;";
-        QueryBuilder qb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = qb.parse(queryString);
         Pattern body = and(snbGraph.graph().graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(snbGraph.graph().graql().parsePatterns("$x has firstname 'Bob';"));
@@ -202,32 +199,33 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar3(){
-        String queryString = "match $x isa person;$x has age <10;";
-        String queryString2 = "match $x isa person;$x has age $y;$y value <10;select $x;";
-        ReasonerQueryImpl query = new ReasonerAtomicQuery(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(queryString2, snbGraph.graph());
+        String patternString = "{$x isa person;$x has age <10;}";
+        String patternString2 = "{$x isa person;$x has age $y;$y value <10;}";
+        ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
     }
 
     @Test
     public void testResourceAsVar4(){
-        String queryString = "match $x has firstname 'Bob';";
-        String queryString2 = "match $x has firstname $y;$y value 'Bob';select $x;";
-        ReasonerQueryImpl query = new ReasonerAtomicQuery(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(queryString2, snbGraph.graph());
+        String patternString = "{$x has firstname 'Bob';}";
+        String patternString2 = "{$x has firstname $y;$y value 'Bob';}";
+        ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
     }
 
     @Test
     public void testResourceAsVar5(){
-        String queryString = "match $x has firstname 'Bob', has lastname 'Geldof';";
-        String queryString2 = "match $x has firstname 'Bob';$x has lastname 'Geldof';";
-        String queryString3 = "match $x has firstname $x1;$x has lastname $x2;$x1 value 'Bob';$x2 value 'Geldof';";
-        String queryString4 = "match $x has firstname $x2;$x has lastname $x1;$x2 value 'Bob';$x1 value 'Geldof';";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
-        ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, snbGraph.graph());
-        ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, snbGraph.graph());
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
+        String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
+        String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 value 'Bob';$x2 value 'Geldof';}";
+        String patternString4 = "{$x has firstname $x2;$x has lastname $x1;$x2 value 'Bob';$x1 value 'Geldof';}";
+        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
+        ReasonerQueryImpl query4 = new ReasonerQueryImpl(conjunction(patternString4, graph), graph);
 
         assertTrue(query.equals(query3));
         assertTrue(query.equals(query4));
@@ -240,9 +238,10 @@ public class ReasonerTest {
         String queryString = "match $x isa city;$y isa country;($x, $y);$y has name 'Poland';$x has name $name;";
         String queryString2 = "match $x isa city;$y isa country;$y has name 'Poland';$x has name $name;" +
                 "($x, $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -250,9 +249,10 @@ public class ReasonerTest {
         String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);$y has name 'Poland';";
         String queryString2 = "match $x isa city;$y isa country;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;$y has name 'Poland';";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -260,9 +260,10 @@ public class ReasonerTest {
         String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);";
         String queryString2 = "match $x isa city;$y isa country;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     //TODO need to unify types in rules potentially
@@ -271,25 +272,29 @@ public class ReasonerTest {
         String queryString = "match $x isa person;$y isa $type;($x, $y) isa recommendation;";
         String explicitQuery = "match $y isa $type;" +
                 "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
-                "{$x has name 'Bob';{$y has name 'Ducatti 1299';} or " +
+                "{$x has name 'Bob';" +
+                    "{$y has name 'Ducatti 1299';} or " +
                     "{$y has name 'The Good the Bad the Ugly';};} or" +
-                "{$x has name 'Charlie';{$y has name 'Blizzard of Ozz';} or " +
+                "{$x has name 'Charlie';" +
+                    "{$y has name 'Blizzard of Ozz';} or " +
                     "{$y has name 'Stratocaster';};} or " +
-                "{$x has name 'Denis';{$y has name 'Colour of Magic';} or " +
+                "{$x has name 'Denis';" +
+                    "{$y has name 'Colour of Magic';} or " +
                     "{$y has name 'Dorian Gray';};} or"+
                 "{$x has name 'Frank';$y has name 'Nocturnes';} or" +
-                "{$x has name 'Karl Fischer';{$y has name 'Faust';} or " +
-                        "{$y has name 'Nocturnes';};} or " +
+                "{$x has name 'Karl Fischer';" +
+                    "{$y has name 'Faust';} or " +
+                    "{$y has name 'Nocturnes';};} or " +
                 "{$x has name 'Gary';$y has name 'The Wall';} or" +
-                "{$x has name 'Charlie';{$y has name 'Yngwie Malmsteen';} or " +
+                "{$x has name 'Charlie';"+
+                    "{$y has name 'Yngwie Malmsteen';} or " +
                     "{$y has name 'Cacophony';} or " +
                     "{$y has name 'Steve Vai';} or " +
                     "{$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';};";
-
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -307,10 +312,9 @@ public class ReasonerTest {
                 "{$name value 'Masovia' or $name value 'Silesia';};" +
                 "{$type type-name 'region' or $type type-name 'geoObject' or $type type-name 'entity' or $type type-name 'concept';};" +
                 "}; select $x, $y, $type;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
-
-                assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -320,9 +324,9 @@ public class ReasonerTest {
         String explicitQuery = "match $y has name 'Poland';" +
                 "{$x isa $type;$type type-name 'university';$x has name 'Warsaw-Polytechnics';} or" +
                 "{$x isa $type;$type type-name 'university';$x has name 'University-of-Warsaw';};";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -331,9 +335,10 @@ public class ReasonerTest {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';$x has name $name;";
         String queryString2 = "match $x isa $type;{$type type-name 'region';} or {$type type-name 'city';} or {$type type-name 'geoObject';};" +
                 "$y isa country;$y has name 'Poland';(geo-entity: $x, entity-location: $y) isa is-located-in;$x has name $name;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -351,13 +356,11 @@ public class ReasonerTest {
                 "{$xName value 'Charlie';" +
                 "{$yName value 'Yngwie Malmsteen';} or {$yName value 'Cacophony';} or {$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};} or " +
                 "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y, $type;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-
-                assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
-    //TODO BUG: getRulesOfConclusion on geo-entity returns a rule!
     @Test
     public void testPlaysRole(){
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
@@ -376,22 +379,21 @@ public class ReasonerTest {
                 "{$name value 'Masovia' or $name value 'Silesia';};" +
                 "{$type type-name 'region' or $type type-name 'geoObject';};" +
                 "}; select $x, $y, $type;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
-
-                assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     //TODO loses type variable as non-core types are not unified in rules
-    @Test
     @Ignore
+    @Test
     public void testPlaysRole2(){
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
         String queryString2 = "match $x isa person;$y isa $type;{$type type-name 'product';} or {$type type-name 'tag';};($x, $y) isa recommendation;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().parse(queryString2);
-
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -400,10 +402,10 @@ public class ReasonerTest {
                 "($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -419,41 +421,43 @@ public class ReasonerTest {
                 "{$xName value 'Frank';$yName value 'Nocturnes';} or" +
                 "{$xName value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
                 "{$xName value 'Gary';$yName value 'The Wall';};select $x, $y, $type;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testRegex(){
         String queryString = "match $y isa country;$y has name $name;"+
                 "$name value  /.*(.*)land(.*).*/;($x, $y) isa is-located-in;select $x, $y;";
-        String explicitQuery = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
+        String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testContains(){
         String queryString = "match $y isa country;$y has name $name;"+
                 "$name value contains 'land';($x, $y) isa is-located-in;select $x, $y;";
-        String explicitQuery = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
+        String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testIndirectRelation(){
         String queryString = "match ($x, $y) isa $rel;$rel type-name is-located-in;select $x, $y;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -461,9 +465,9 @@ public class ReasonerTest {
         Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Ignore
@@ -473,9 +477,9 @@ public class ReasonerTest {
         Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Ignore
@@ -488,9 +492,9 @@ public class ReasonerTest {
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -499,9 +503,10 @@ public class ReasonerTest {
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;select $x, $y;";
         String queryString2 = "match $x isa city;"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -510,41 +515,35 @@ public class ReasonerTest {
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;$y has name 'Poland';select $x, $y;";
         String queryString2 = "match $x isa city;"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in;$y has name 'Poland'; $y isa country;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testRelationVariable(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match $r(geo-entity: $x, entity-location: $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
-        answers2.forEach(answer -> {
-            assertEquals(answer.size(), 3);
-        });
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers = new QueryAnswers(query.admin().results());
+        QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
+        answers2.forEach(answer -> assertEquals(answer.size(), 3));
         assertEquals(answers.size(), answers2.size());
     }
 
-    //TODO need answer extrapolation
-    @Ignore
     @Test
     public void testRelationVariable2(){
         String queryString = "match ($x, $y) isa is-located-in;";
         String queryString2 = "match $r($x, $y) isa is-located-in;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
-
-        answers2.forEach(answer -> {
-            assertEquals(answer.size(), 3);
-        });
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers = new QueryAnswers(query.admin().results());
+        QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
+        answers2.forEach(answer -> assertEquals(answer.size(), 3));
         assertEquals(answers.size(), answers2.size());
     }
 
@@ -552,37 +551,41 @@ public class ReasonerTest {
     public void testUnspecifiedCastings(){
         String queryString = "match (geo-entity: $x) isa is-located-in;";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testUnspecifiedCastings2(){
         String queryString = "match (geo-entity: $x);";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testRelationTypeVar(){
         String queryString = "match (geo-entity: $x) isa $type;$type type-name 'is-located-in'; select $x;";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testRelationTypeVar2(){
         String queryString = "match (geo-entity: $x) isa $type;$type type-name 'is-located-in';";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers.filterVars(Sets.newHashSet(varName("x"))), answers2);
     }
 
@@ -602,7 +605,7 @@ public class ReasonerTest {
     @Test
     public void testOrder(){
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a;";
-        MatchQuery query = snbGraph.graph().graql().infer(true).parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
         List<Map<String, Concept>> answers = query.execute();
         assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("19"));
@@ -612,8 +615,8 @@ public class ReasonerTest {
     public void testOrderAndOffset(){
         String fullQueryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;";
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; offset 3;";
-        MatchQuery fullQuery = snbGraph.graph().graql().infer(true).parse(fullQueryString);
-        MatchQuery query = snbGraph.graph().graql().infer(true).parse(queryString);
+        MatchQuery fullQuery = snbGraph.graph().graql().infer(true).materialise(false).parse(fullQueryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
         List<Map<String, Concept>> fullAnswers = fullQuery.execute();
         List<Map<String, Concept>> answers = query.execute();
@@ -624,45 +627,43 @@ public class ReasonerTest {
     @Test
     public void testIsAbstract(){
         String queryString = "match $x is-abstract;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        QueryAnswers answers = queryAnswers(query);
-        QueryAnswers expAnswers= queryAnswers(snbGraph.graph().graql().parse(queryString));
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
     @Test
     public void testTypeRegex(){
         String queryString = " match $x sub resource, regex /name/;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        QueryAnswers answers = queryAnswers(query);
-        QueryAnswers expAnswers= queryAnswers(snbGraph.graph().graql().parse(queryString));
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
     @Test
     public void testDataType(){
         String queryString = " match $x sub resource, datatype string;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        QueryAnswers answers = queryAnswers(query);
-        QueryAnswers expAnswers= queryAnswers(snbGraph.graph().graql().parse(queryString));
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
         assertEquals(answers, expAnswers);
     }
 
     @Test
     public void testHasRole() {
         String queryString = "match ($x, $y) isa $rel-type;$rel-type has-role geo-entity;" +
-                "$y isa country;$y has name 'Poland';select $x;";
+            "$y isa country;$y has name 'Poland';select $x;";
         String queryString2 = "match $y isa country;" +
-                "($x, $y) isa is-located-in;$y has name 'Poland'; select $x;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph.graph().graql().parse(queryString2);
-        assertQueriesEqual(Reasoner.resolve(query, false), Reasoner.resolve(query2, false));
+            "($x, $y) isa is-located-in;$y has name 'Poland'; select $x;";
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
     public void testScope(){
         String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
     }
 
     @Test
@@ -674,9 +675,9 @@ public class ReasonerTest {
                 "{$name value 'Frank';$yName value 'Nocturnes';} or" +
                 "{$name value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
                 "{$name value 'Gary';$yName value 'The Wall';};select $p, $pr, $y, $name;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -688,9 +689,9 @@ public class ReasonerTest {
                 "{$name value 'Charlie';" +
                 "{$yName value 'Yngwie Malmsteen';} or {$yName value 'Cacophony';} or" +
                 "{$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};};select $p, $name, $x, $t;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(Reasoner.resolve(query, false), query2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -698,13 +699,13 @@ public class ReasonerTest {
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
         String queryString3 = "match $x ($x1, $x2) isa is-located-in; select $x;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph2.graph().graql().parse(queryString2);
-        MatchQuery query3 = geoGraph3.graph().graql().parse(queryString3);
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = geoGraph2.graph().graql().infer(true).materialise(false).parse(queryString2);
+        MatchQuery query3 = geoGraph3.graph().graql().infer(true).materialise(false).parse(queryString3);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
-        QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, false).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        QueryAnswers answers3 = queryAnswers(query3);
         assertEquals(answers, answers2);
         assertEquals(answers2, answers3);
     }
@@ -714,16 +715,16 @@ public class ReasonerTest {
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
         String queryString3 = "match $x ($x1, $x2) isa is-located-in; select $x;";
-        MatchQuery query = geoGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = geoGraph2.graph().graql().parse(queryString2);
-        MatchQuery query3 = geoGraph3.graph().graql().parse(queryString3);
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(true).parse(queryString);
+        MatchQuery query2 = geoGraph2.graph().graql().infer(true).materialise(true).parse(queryString2);
+        MatchQuery query3 = geoGraph3.graph().graql().infer(true).materialise(true).parse(queryString3);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers requeriedAnswers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        QueryAnswers requeriedAnswers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
-        QueryAnswers requeriedAnswers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers requeriedAnswers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        QueryAnswers requeriedAnswers2 = queryAnswers(query2);
+        QueryAnswers answers3 = queryAnswers(query3);
+        QueryAnswers requeriedAnswers3 = queryAnswers(query3);
 
         assertEquals(answers.size(), answers2.size());
         assertEquals(answers2.size(), answers3.size());
@@ -736,12 +737,14 @@ public class ReasonerTest {
     public void testTypeRelation2(){
         String queryString = "match $x isa recommendation;";
         String queryString2 = "match $x($x1, $x2) isa recommendation;select $x;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, false).collect(Collectors.toSet()));
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
-        QueryAnswers requeriedAnswers = new QueryAnswers(Reasoner.resolve(query, false).collect(Collectors.toSet()));
+
+        QueryAnswers requeriedAnswers = queryAnswers(query);
         assertEquals(requeriedAnswers.size(), answers.size());
     }
 
@@ -750,16 +753,16 @@ public class ReasonerTest {
         String queryString = "match $x isa recommendation;";
         String queryString2 = "match $x(recommended-product: $x1, recommended-customer: $x2) isa recommendation; select $x;";
         String queryString3 = "match $x($x1, $x2) isa recommendation; select $x;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = snbGraph2.graph().graql().parse(queryString2);
-        MatchQuery query3 = snbGraph3.graph().graql().parse(queryString3);
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(true).parse(queryString);
+        MatchQuery query2 = snbGraph2.graph().graql().infer(true).materialise(true).parse(queryString2);
+        MatchQuery query3 = snbGraph3.graph().graql().infer(true).materialise(true).parse(queryString3);
 
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers requeriedAnswers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        QueryAnswers requeriedAnswers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        QueryAnswers answers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
-        QueryAnswers requeriedAnswers3 = new QueryAnswers(Reasoner.resolve(query3, true).collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers requeriedAnswers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        QueryAnswers requeriedAnswers2 = queryAnswers(query2);
+        QueryAnswers answers3 = queryAnswers(query3);
+        QueryAnswers requeriedAnswers3 = queryAnswers(query3);
 
         assertEquals(answers.size(), answers2.size());
         assertEquals(answers2.size(), answers3.size());
@@ -772,11 +775,10 @@ public class ReasonerTest {
     public void testHas(){
         String queryString = "match $x isa person has name $y;";
         String queryString2 = "match $x isa person has $y; $y isa name;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
-        assertEquals(answers, answers2);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test
@@ -785,23 +787,48 @@ public class ReasonerTest {
                 "($p, $pr) isa recommendation; select $p, $pr;";
         String queryString2 = "match $p isa person, has age >23, has age <27;$pr isa product;" +
                 "($p, $pr) isa recommendation;";
-        MatchQuery query = snbGraph.graph().graql().parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(Reasoner.resolve(query, true).collect(Collectors.toSet()));
-        QueryAnswers answers2 = new QueryAnswers(Reasoner.resolve(query2, true).collect(Collectors.toSet()));
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testAmbiguousRolePlayers(){
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        assertTrue(answers2.containsAll(answers));
+        assertTrue(2*answers.size() == answers2.size());
+    }
+
+    @Test
+    public void testAmbiguousRolePlayersWithSub(){
+        String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
         assertEquals(answers, answers2);
     }
 
+    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Patterns.conjunction(vars);
+    }
     private QueryAnswers queryAnswers(MatchQuery query) {
         return new QueryAnswers(query.admin().results());
     }
-
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, Stream<Map<VarName, Concept>> s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
-    }
-
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        QueryAnswers answers = queryAnswers(q1);
+        QueryAnswers answers2 = queryAnswers(q2);
+        assertEquals(answers, answers2);
     }
 }
 

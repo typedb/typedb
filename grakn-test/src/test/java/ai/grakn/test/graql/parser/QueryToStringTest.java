@@ -19,12 +19,12 @@
 package ai.grakn.test.graql.parser;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;

@@ -92,8 +92,8 @@ public class PokemonGraphFactory{
 
     private static void buildGraph(GraknGraph graph) {
         buildOntology(graph);
-        buildRelations(graph);
-        buildInstances(graph);
+        buildRelations();
+        buildInstances();
     }
 
     private static void buildOntology(GraknGraph graph) {
@@ -141,74 +141,74 @@ public class PokemonGraphFactory{
         pokemonType.hasResource(name);
     }
 
-    private static void buildInstances(GraknGraph graph) {
+    private static void buildInstances() {
         Entity bulbasaur = pokemon.addEntity();
-        addResource(graph, bulbasaur, "Bulbasaur", name);
-        addResource(graph,bulbasaur,1L,pokedexNo);
-        addResource(graph,bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
-        addResource(graph,bulbasaur,7L,height);
-        addResource(graph,bulbasaur,69d,weight);
-        putTypes(graph,bulbasaur, poison, grass);
+        addResource(bulbasaur, "Bulbasaur", name);
+        addResource(bulbasaur,1L,pokedexNo);
+        addResource(bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
+        addResource(bulbasaur,7L,height);
+        addResource(bulbasaur,69d,weight);
+        putTypes(bulbasaur, poison, grass);
 
         Entity ivysaur = pokemon.addEntity();
-        addResource(graph, ivysaur, "Ivysaur", name);
-        addResource(graph,ivysaur,2L,pokedexNo);
-        addResource(graph,ivysaur,"When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",description);
-        addResource(graph,ivysaur,10L,height);
-        addResource(graph,ivysaur,130d,weight);
-        putTypes(graph,ivysaur, poison, grass);
+        addResource(ivysaur, "Ivysaur", name);
+        addResource(ivysaur,2L,pokedexNo);
+        addResource(ivysaur,"When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",description);
+        addResource(ivysaur,10L,height);
+        addResource(ivysaur,130d,weight);
+        putTypes(ivysaur, poison, grass);
         evolution.addRelation()
                 .putRolePlayer(descendent,ivysaur)
                 .putRolePlayer(ancestor,bulbasaur);
 
         Entity venusaur = pokemon.addEntity();
-        addResource(graph, venusaur, "Venusaur", name);
-        addResource(graph,venusaur,3L,pokedexNo);
-        addResource(graph,venusaur,"The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",description);
-        addResource(graph,venusaur,20L,height);
-        addResource(graph,venusaur,1000d,weight);
-        putTypes(graph,venusaur, poison, grass);
+        addResource(venusaur, "Venusaur", name);
+        addResource(venusaur,3L,pokedexNo);
+        addResource(venusaur,"The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",description);
+        addResource(venusaur,20L,height);
+        addResource(venusaur,1000d,weight);
+        putTypes(venusaur, poison, grass);
         evolution.addRelation()
                 .putRolePlayer(descendent,venusaur)
                 .putRolePlayer(ancestor,ivysaur);
 
         Entity charmander = pokemon.addEntity();
-        addResource(graph, charmander, "Charmander", name);
-        addResource(graph,charmander,4L,pokedexNo);
-        addResource(graph,charmander,"Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",description);
-        addResource(graph,charmander,6L,height);
-        addResource(graph,charmander,85d,weight);
-        putTypes(graph,charmander, fire);
+        addResource(charmander, "Charmander", name);
+        addResource(charmander,4L,pokedexNo);
+        addResource(charmander,"Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",description);
+        addResource(charmander,6L,height);
+        addResource(charmander,85d,weight);
+        putTypes(charmander, fire);
 
         Entity charmeleon = pokemon.addEntity();
-        addResource(graph, charmeleon, "Charmeleon", name);
-        addResource(graph,charmeleon,5L,pokedexNo);
-        addResource(graph,charmeleon,"When it swings its burning tail, it elevates the temperature to unbearably high levels.",description);
-        addResource(graph,charmeleon,11L,height);
-        addResource(graph,charmeleon,190d,weight);
-        putTypes(graph,charmeleon, fire);
+        addResource(charmeleon, "Charmeleon", name);
+        addResource(charmeleon,5L,pokedexNo);
+        addResource(charmeleon,"When it swings its burning tail, it elevates the temperature to unbearably high levels.",description);
+        addResource(charmeleon,11L,height);
+        addResource(charmeleon,190d,weight);
+        putTypes(charmeleon, fire);
         evolution.addRelation()
                 .putRolePlayer(descendent,charmeleon)
                 .putRolePlayer(ancestor, charmander);
 
         Entity charizard = pokemon.addEntity();
-        addResource(graph, charizard, "Charizard", name);
-        addResource(graph,charizard,6L,pokedexNo);
-        addResource(graph,charizard,"Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",description);
-        addResource(graph,charizard,17L,height);
-        addResource(graph,charizard,905d,weight);
-        putTypes(graph,charizard, fire, flying);
+        addResource(charizard, "Charizard", name);
+        addResource(charizard,6L,pokedexNo);
+        addResource(charizard,"Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",description);
+        addResource(charizard,17L,height);
+        addResource(charizard,905d,weight);
+        putTypes(charizard, fire, flying);
         evolution.addRelation()
                 .putRolePlayer(descendent,charizard)
                 .putRolePlayer(ancestor, charmeleon);
     }
 
-    private static <T> void addResource(GraknGraph graph, Entity entity, T s, ResourceType<T> type) {
+    private static <T> void addResource(Entity entity, T s, ResourceType<T> type) {
         Resource<T> resource = type.putResource(s);
         entity.hasResource(resource);
     }
 
-    private static void putTypes(GraknGraph graph, Entity pokemon, Entity... entities) {
+    private static void putTypes(Entity pokemon, Entity... entities) {
         for (Entity entity : entities) {
             hasType.addRelation()
                     .putRolePlayer(pokemonWithType,pokemon)
@@ -216,67 +216,67 @@ public class PokemonGraphFactory{
         }
     }
 
-    private static void buildRelations(GraknGraph graph) {
+    private static void buildRelations() {
         normal = pokemonType.addEntity();
-        addResource(graph, normal, "normal", name);
+        addResource(normal, "normal", name);
         fighting = pokemonType.addEntity();
-        addResource(graph, fighting, "fighting", name);
+        addResource(fighting, "fighting", name);
         flying = pokemonType.addEntity();
-        addResource(graph, flying, "flying", name);
+        addResource(flying, "flying", name);
         poison = pokemonType.addEntity();
-        addResource(graph, poison, "poison", name);
+        addResource(poison, "poison", name);
         ground = pokemonType.addEntity();
-        addResource(graph, ground, "ground", name);
+        addResource(ground, "ground", name);
         rock = pokemonType.addEntity();
-        addResource(graph, rock, "rock", name);
+        addResource(rock, "rock", name);
         bug = pokemonType.addEntity();
-        addResource(graph, bug, "bug", name);
+        addResource(bug, "bug", name);
         ghost = pokemonType.addEntity();
-        addResource(graph, ghost, "ghost", name);
+        addResource(ghost, "ghost", name);
         steel = pokemonType.addEntity();
-        addResource(graph, steel, "steel", name);
+        addResource(steel, "steel", name);
         fire = pokemonType.addEntity();
-        addResource(graph, fire, "fire", name);
+        addResource(fire, "fire", name);
         water = pokemonType.addEntity();
-        addResource(graph, water, "water", name);
+        addResource(water, "water", name);
         grass = pokemonType.addEntity();
-        addResource(graph, grass, "grass", name);
+        addResource(grass, "grass", name);
         electric = pokemonType.addEntity();
-        addResource(graph, electric, "electric", name);
+        addResource(electric, "electric", name);
         psychic = pokemonType.addEntity();
-        addResource(graph, psychic, "psychic", name);
+        addResource(psychic, "psychic", name);
         ice = pokemonType.addEntity();
-        addResource(graph, ice, "ice", name);
+        addResource(ice, "ice", name);
         dragon = pokemonType.addEntity();
-        addResource(graph, dragon, "dragon", name);
+        addResource(dragon, "dragon", name);
         dark = pokemonType.addEntity();
-        addResource(graph, dark, "dark", name);
+        addResource(dark, "dark", name);
         fairy = pokemonType.addEntity();
-        addResource(graph, fairy, "fairy", name);
+        addResource(fairy, "fairy", name);
         unknown = pokemonType.addEntity();
-        addResource(graph, unknown, "unknown", name);
+        addResource(unknown, "unknown", name);
         shadow = pokemonType.addEntity();
-        addResource(graph, shadow, "shadow", name);
+        addResource(shadow, "shadow", name);
 
-        putSuper(graph,normal,fighting);
-        putSuper(graph,rock,fighting);
-        putSuper(graph,fighting,flying);
-        putSuper(graph,bug,flying);
-        putSuper(graph,grass,flying);
-        putSuper(graph,grass,poison);
-        putSuper(graph,grass,bug);
-        putSuper(graph,grass,fire);
-        putSuper(graph,fairy,poison);
-        putSuper(graph,poison,ground);
-        putSuper(graph,ice,steel);
-        putSuper(graph,poison,psychic);
-        putSuper(graph,ground,grass);
-        putSuper(graph,rock,grass);
-        putSuper(graph,water,grass);
-        putSuper(graph,grass,ice);
+        putSuper(normal,fighting);
+        putSuper(rock,fighting);
+        putSuper(fighting,flying);
+        putSuper(bug,flying);
+        putSuper(grass,flying);
+        putSuper(grass,poison);
+        putSuper(grass,bug);
+        putSuper(grass,fire);
+        putSuper(fairy,poison);
+        putSuper(poison,ground);
+        putSuper(ice,steel);
+        putSuper(poison,psychic);
+        putSuper(ground,grass);
+        putSuper(rock,grass);
+        putSuper(water,grass);
+        putSuper(grass,ice);
     }
 
-    private static void putSuper(GraknGraph graph, Entity defend, Entity attack) {
+    private static void putSuper(Entity defend, Entity attack) {
         superEffective.addRelation()
                 .putRolePlayer(defendingType,defend)
                 .putRolePlayer(attackingType,attack);

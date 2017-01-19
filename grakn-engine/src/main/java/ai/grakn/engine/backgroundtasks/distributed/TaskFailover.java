@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONArray;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -146,7 +147,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         byte[] b = client.getData().forPath(RUNNERS_STATE+"/"+engineID);
 
         // Re-queue all of the IDs.
-        JSONArray ids = new JSONArray(new String(b));
+        JSONArray ids = new JSONArray(new String(b, StandardCharsets.UTF_8));
         for(Object o: ids) {
             String id = (String)o;
 

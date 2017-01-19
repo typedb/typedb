@@ -25,12 +25,13 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -40,7 +41,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -195,10 +195,10 @@ public class InsertQueryTest {
     @Test
     public void testInsertOntology() {
         qb.insert(
-                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName()),
-                name("evolution").sub(Schema.MetaSchema.RELATION.getName()),
-                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName()),
-                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName()),
+                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
+                name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue()),
+                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
+                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
                 name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
 
@@ -209,10 +209,10 @@ public class InsertQueryTest {
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).execute();
 
-        assertTrue(qb.match(name("pokemon").sub(Schema.MetaSchema.ENTITY.getName())).ask().execute());
-        assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
-        assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName())).ask().execute());
+        assertTrue(qb.match(name("pokemon").sub(Schema.MetaSchema.ENTITY.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
+        assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
         assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
@@ -238,8 +238,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertIsAbstract() {
         qb.insert(
-                name("concrete-type").sub(Schema.MetaSchema.ENTITY.getName()),
-                name("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getName())
+                name("concrete-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
+                name("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getName().getValue())
         ).execute();
 
         assertFalse(qb.match(name("concrete-type").isAbstract()).ask().execute());
@@ -249,7 +249,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.LONG)
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName().getValue()).datatype(ResourceType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").name("my-type"));
@@ -261,7 +261,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName()).datatype(ResourceType.DataType.STRING),
+                name("my-type").sub(Schema.MetaSchema.RESOURCE.getName().getValue()).datatype(ResourceType.DataType.STRING),
                 name("sub-type").sub("my-type")
         ).execute();
 
@@ -274,8 +274,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                name("marriage").sub(Schema.MetaSchema.RELATION.getName()).hasRole("spouse1").hasRole("spouse2"),
-                name("spouse").sub(Schema.MetaSchema.ROLE.getName()).isAbstract(),
+                name("marriage").sub(Schema.MetaSchema.RELATION.getName().getValue()).hasRole("spouse1").hasRole("spouse2"),
+                name("spouse").sub(Schema.MetaSchema.ROLE.getName().getValue()).isAbstract(),
                 name("spouse1").sub("spouse"),
                 name("spouse2").sub("spouse")
         ).execute();
@@ -311,7 +311,6 @@ public class InsertQueryTest {
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
-    @Ignore //TODO: Fix this test. Ignored because low priority and we want to free up Jenkins
     @Test
     public void testIterateMatchInsertResults() {
         Var language1 = var().isa("language").has("name", "123");
@@ -329,9 +328,20 @@ public class InsertQueryTest {
 
         Map<String, Concept> result1 = results.next();
         assertEquals(ImmutableSet.of("x"), result1.keySet());
-        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
-        assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
+        AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
+        AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
+
+        //Check if one of the matches have had the insert executed correctly
+        boolean oneExists;
+        if(query123.execute()){
+            oneExists = !query456.execute();
+        } else {
+            oneExists = query456.execute();
+        }
+        assertTrue("A match insert was not executed correctly for only one match", oneExists);
+
+        //Check that both are inserted correctly
         Map<String, Concept> result2 = results.next();
         assertEquals(ImmutableSet.of("x"), result1.keySet());
         assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
@@ -376,7 +386,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertReferenceByName() {
         qb.insert(
-                name("new-type").sub(Schema.MetaSchema.ENTITY.getName()),
+                name("new-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
                 name("new-type").isAbstract(),
                 name("new-type").playsRole("has-title-owner"),
                 var("x").isa("new-type")
@@ -398,7 +408,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertRuleType() {
-        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName()));
+        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName().getValue()));
     }
 
     @Test
@@ -580,7 +590,7 @@ public class InsertQueryTest {
         Map<String, Concept> result = results.get(0);
         assertEquals(Sets.newHashSet("x"), result.keySet());
         Entity x = result.get("x").asEntity();
-        assertEquals("movie", x.type().getName());
+        assertEquals("movie", x.type().getName().getValue());
     }
 
     @Test
@@ -601,16 +611,16 @@ public class InsertQueryTest {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        qb.insert(name("my-resource").sub(Schema.MetaSchema.RESOURCE.getName())).execute();
+        qb.insert(name("my-resource").sub(Schema.MetaSchema.RESOURCE.getName().getValue())).execute();
     }
 
     @Test
     public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
-                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getName()))
+                allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.CONCEPT.getName().getValue()))
         );
-        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getName())).execute();
+        qb.insert(var("my-thing").isa(Schema.MetaSchema.CONCEPT.getName().getValue())).execute();
     }
 
     @Test

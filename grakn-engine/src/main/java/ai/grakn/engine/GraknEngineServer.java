@@ -18,18 +18,18 @@
 package ai.grakn.engine;
 
 
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
-import ai.grakn.engine.postprocessing.PostProcessing;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.AuthController;
-import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.ImportController;
 import ai.grakn.engine.controller.StatusController;
+import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.controller.VisualiserController;
+import ai.grakn.engine.postprocessing.PostProcessing;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
@@ -39,15 +39,14 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
-import spark.Response;
 import spark.Spark;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -108,7 +107,7 @@ public class GraknEngineServer {
         new UserController();
         
         //Register filter to check authentication token in each request
-        before(GraknEngineServer::checkAuthorization);
+        before((req, res) -> checkAuthorization(req));
 
         //Register Exception Handler
         exception(GraknEngineServerException.class, (e, request, response) -> {
@@ -130,7 +129,7 @@ public class GraknEngineServer {
         manager.open();
         manager.scheduleTask(new PostProcessingTask(),
                              GraknEngineServer.class.getName(),
-                             new Date(),
+                             Instant.now(),
                              prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
                              new JSONObject());
 
@@ -138,6 +137,19 @@ public class GraknEngineServer {
 
     public static void stopHTTP() {
         Spark.stop();
+
+        // Block until server is truly stopped
+        // This occurs when there is no longer a port assigned to the Spark server
+        boolean running = true;
+        while (running) {
+            try {
+                port();
+            }
+            catch(IllegalStateException e){
+                LOG.debug("Spark server has been stopped");
+                running = false;
+            }
+        }
     }
 
     public static void stopCluster() {
@@ -172,7 +184,7 @@ public class GraknEngineServer {
     }
 
 
-    private static void checkAuthorization(Request request, Response response) {
+    private static void checkAuthorization(Request request) {
         if(!isPasswordProtected) return;
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones

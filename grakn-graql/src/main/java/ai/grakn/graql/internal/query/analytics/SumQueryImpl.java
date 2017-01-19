@@ -19,12 +19,15 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -42,14 +45,14 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new SumMapReduce(statisticsResourceTypeNames, dataType));
-        Map<String, Number> sum = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<Serializable, Number> sum = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("SumMapReduce is done");
-        return Optional.of(sum.get(SumMapReduce.MEMORY_KEY));
+        return Optional.of(sum.get(MapReduce.NullObject.instance()));
     }
 
     @Override
@@ -58,7 +61,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery of(Collection<String> resourceTypeNames) {
+    public SumQuery of(Collection<TypeName> resourceTypeNames) {
         return (SumQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
@@ -68,7 +71,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery in(Collection<String> subTypeNames) {
+    public SumQuery in(Collection<TypeName> subTypeNames) {
         return (SumQuery) super.in(subTypeNames);
     }
 

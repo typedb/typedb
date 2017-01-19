@@ -62,7 +62,7 @@ public abstract class AtomBase implements Atomic {
     }
 
     @Override
-    public abstract Atomic clone();
+    public abstract Atomic copy();
 
     @Override
     public String toString(){ return atomPattern.toString(); }
@@ -79,18 +79,6 @@ public abstract class AtomBase implements Atomic {
     @Override
     public Set<VarName> getVarNames(){
         return Sets.newHashSet(varName);
-    }
-
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = getParentQuery().getSelectedNames();
-        vars.retainAll(getVarNames());
-        return vars;
-    }
-
-    public void resetNames(){
-        Map<VarName, VarName> unifiers = new HashMap<>();
-        getVarNames().forEach(var -> unifiers.put(var, Patterns.varName()));
-        unify(unifiers);
     }
 
     /**

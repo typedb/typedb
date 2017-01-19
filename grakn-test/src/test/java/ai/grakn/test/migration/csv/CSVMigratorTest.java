@@ -53,7 +53,7 @@ public class CSVMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
     }
 
     @Test
@@ -114,8 +114,8 @@ public class CSVMigratorTest {
         assertEquals(1, fluffy.resources(death).size());
     }
 
+    @Ignore //Ignored because this feature is not yet supported
     @Test
-    @Ignore
     public void multipleEntitiesInOneFileTest() throws IOException {
         load(graph, getFile("csv", "single-file/schema.gql"));
         assertNotNull(graph.getEntityType("make"));

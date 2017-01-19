@@ -23,6 +23,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.TypeName;
 import ai.grakn.migration.json.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
@@ -55,7 +56,7 @@ public class JsonMigratorMainTest {
 
     @Before
     public void setup() {
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
         load(graph, getFile("json", "simple-schema/schema.gql"));
     }
 
@@ -125,7 +126,7 @@ public class JsonMigratorMainTest {
         Entity address = getProperty(graph, person, "has-address").asEntity();
         Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-        Resource number = getResource(graph, streetAddress, "number").asResource();
+        Resource number = getResource(graph, streetAddress, TypeName.of("number")).asResource();
         assertEquals(21L, number.getValue());
 
         Collection<Instance> phoneNumbers = getProperties(graph, person, "has-phone");

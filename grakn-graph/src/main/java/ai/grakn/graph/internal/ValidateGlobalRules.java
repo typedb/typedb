@@ -22,6 +22,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -200,12 +201,12 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superHasRoles = superRelationType.hasRoles();
         Collection<RoleType> hasRoles = relationType.hasRoles();
-        Set<String> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
+        Set<TypeName> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
         if(!superRelationType.isAbstract()) {
-            Set<String> allSuperRolesPlayed = new HashSet<>();
+            Set<TypeName> allSuperRolesPlayed = new HashSet<>();
             superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
             for (RoleType hasRole : hasRoles) {

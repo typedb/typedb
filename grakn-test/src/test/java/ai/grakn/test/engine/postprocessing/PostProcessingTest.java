@@ -59,7 +59,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
     }
 
     @After

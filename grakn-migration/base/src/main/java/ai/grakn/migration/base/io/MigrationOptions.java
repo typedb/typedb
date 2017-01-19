@@ -45,7 +45,7 @@ public class MigrationOptions {
     protected final Options options = new Options();
     protected CommandLine command;
 
-    public MigrationOptions(String[] args){
+    public MigrationOptions(){
         options.addOption("v", "verbose", false, "Print counts of migrated data.");
         options.addOption("h", "help", false, "Print usage message.");
         options.addOption("k", "keyspace", true, "Grakn graph.");

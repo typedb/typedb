@@ -49,7 +49,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
     @Override
-    public Atomic clone() {
+    public Atomic copy() {
         return new ValuePredicate(this);
     }
 
@@ -112,14 +112,6 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     @Override
     public Set<VarName> getVarNames(){
         Set<VarName> vars = super.getVarNames();
-        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
-        return vars;
-    }
-
-    @Override
-    public Set<VarName> getSelectedNames(){
-        Set<VarName> vars = super.getSelectedNames();
         VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;

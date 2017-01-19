@@ -19,12 +19,15 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.MaxMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -42,14 +45,14 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new MaxMapReduce(statisticsResourceTypeNames, dataType));
-        Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<Serializable, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("MaxMapReduce is done");
-        return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
+        return Optional.of(max.get(MapReduce.NullObject.instance()));
     }
 
     @Override
@@ -58,7 +61,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery of(Collection<String> resourceTypeNames) {
+    public MaxQuery of(Collection<TypeName> resourceTypeNames) {
         return (MaxQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
@@ -68,7 +71,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery in(Collection<String> subTypeNames) {
+    public MaxQuery in(Collection<TypeName> subTypeNames) {
         return (MaxQuery) super.in(subTypeNames);
     }
 

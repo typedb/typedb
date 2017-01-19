@@ -60,6 +60,6 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     @Override
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
-        return new IsAbstractAtom(var.getVarName(), this, parent);
+        return new IsAbstractAtom(var.getVarName(), parent);
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +26,7 @@ public class KafkaLogger {
     private final static Logger LOG = LoggerFactory.getLogger(KafkaLogger.class);
     private final LogLevel logLevel;
     private static KafkaLogger instance = null;
-    private KafkaProducer<String, String> producer;
+//    private KafkaProducer<String, String> producer;
 
     private enum LogLevel {
         DEBUG("DEBUG", 0),
@@ -100,6 +99,8 @@ public class KafkaLogger {
         logLevel = LogLevel.DEBUG;//LogLevel.valueOf(ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_LEVEL));
     }
 
+    // TODO: Make KafkaLogger operational
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void sendMsg(String level, String caller, String msg) {
         //System.out.println("LOG from " + caller + ": " + msg);
 //        ProducerRecord record = new ProducerRecord(LOG_TOPIC, level + " - " + caller + " - " + msg);

@@ -58,7 +58,7 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testRoleTypeName(){
         RoleType roleType = graknGraph.putRoleType("test");
-        assertEquals("test", roleType.getName());
+        assertEquals("test", roleType.getName().getValue());
     }
 
     @Test

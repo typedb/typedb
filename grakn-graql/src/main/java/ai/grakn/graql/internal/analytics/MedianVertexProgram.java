@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -65,13 +66,13 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
             INDEX_START, INDEX_END, INDEX_MEDIAN, PIVOT, PIVOT_POSITIVE, PIVOT_NEGATIVE,
             POSITIVE_COUNT, NEGATIVE_COUNT, LABEL_SELECTED);
 
-    private Set<String> statisticsResourceTypes = new HashSet<>();
+    private Set<TypeName> statisticsResourceTypes = new HashSet<>();
 
     public MedianVertexProgram() {
     }
 
-    public MedianVertexProgram(Set<String> selectedTypes,
-                               Set<String> statisticsResourceTypes, String resourceDataType) {
+    public MedianVertexProgram(Set<TypeName> selectedTypes,
+                               Set<TypeName> statisticsResourceTypes, String resourceDataType) {
         this.selectedTypes = selectedTypes;
         this.statisticsResourceTypes = statisticsResourceTypes;
 
@@ -100,14 +101,14 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
         statisticsResourceTypes.forEach(
-                typeId -> configuration.addProperty(RESOURCE_TYPE + "." + typeId, typeId));
+                typeName -> configuration.addProperty(RESOURCE_TYPE + "." + typeName.getValue(), typeName.getValue()));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(RESOURCE_TYPE).getKeys().forEachRemaining(key ->
-                statisticsResourceTypes.add((String) configuration.getProperty(RESOURCE_TYPE + "." + key)));
+                statisticsResourceTypes.add(TypeName.of((String) configuration.getProperty(RESOURCE_TYPE + "." + key))));
     }
 
     @Override
@@ -164,13 +165,9 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                         (long) vertex.value(DEGREE) > 0) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
-                        vertex.property(LABEL, -memory.getIteration());
-                        memory.incr(NEGATIVE_COUNT, vertex.value(DEGREE));
-                        memory.set(PIVOT_NEGATIVE, value);
+                        updateMemoryNegative(vertex, memory, value);
                     } else if (value.doubleValue() > memory.<Number>get(PIVOT).doubleValue()) {
-                        vertex.property(LABEL, memory.getIteration());
-                        memory.incr(POSITIVE_COUNT, vertex.value(DEGREE));
-                        memory.set(PIVOT_POSITIVE, value);
+                        updateMemoryPositive(vertex, memory, value);
                     } else {
                         // also assign a label to pivot, so all the selected resources have LABEL
                         vertex.property(LABEL, 0);
@@ -185,17 +182,25 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                         (int) vertex.value(LABEL) == memory.<Integer>get(LABEL_SELECTED)) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
-                        vertex.property(LABEL, -memory.getIteration());
-                        memory.incr(NEGATIVE_COUNT, vertex.value(DEGREE));
-                        memory.set(PIVOT_NEGATIVE, value);
+                        updateMemoryNegative(vertex, memory, value);
                     } else if (value.doubleValue() > memory.<Number>get(PIVOT).doubleValue()) {
-                        vertex.property(LABEL, memory.getIteration());
-                        memory.incr(POSITIVE_COUNT, vertex.value(DEGREE));
-                        memory.set(PIVOT_POSITIVE, value);
+                        updateMemoryPositive(vertex, memory, value);
                     }
                 }
                 break;
         }
+    }
+
+    private void updateMemoryPositive(Vertex vertex, Memory memory, Number value) {
+        vertex.property(LABEL, memory.getIteration());
+        memory.incr(POSITIVE_COUNT, vertex.value(DEGREE));
+        memory.set(PIVOT_POSITIVE, value);
+    }
+
+    private void updateMemoryNegative(Vertex vertex, Memory memory, Number value) {
+        vertex.property(LABEL, -memory.getIteration());
+        memory.incr(NEGATIVE_COUNT, vertex.value(DEGREE));
+        memory.set(PIVOT_NEGATIVE, value);
     }
 
     @Override

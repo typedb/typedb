@@ -1,3 +1,21 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.engine.user;
 
 import mjson.Json;
@@ -29,7 +47,7 @@ public class UsersHandler {
     }
 
     public boolean addUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME))) {
+        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
             return false;
         }
         usersMap.put(user.at(USER_NAME).asString(), user);
@@ -37,7 +55,7 @@ public class UsersHandler {
     }
 
     public boolean updateUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME))) {
+        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
             return false;
         }
         usersMap.put(user.at(USER_NAME).asString(), user);

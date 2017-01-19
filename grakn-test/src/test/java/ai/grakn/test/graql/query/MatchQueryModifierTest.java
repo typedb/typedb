@@ -176,7 +176,7 @@ public class MatchQueryModifierTest {
                 String foundTitle = result.asEntity().resources(title).iterator().next().asResource().getValue().toString();
                 assertEquals(expectedTitle, foundTitle);
             }
-            if (expectedType != null) assertEquals(expectedType, result.asInstance().type().getName());
+            if (expectedType != null) assertEquals(expectedType, result.asInstance().type().getName().getValue());
         });
 
         assertTrue("expected titles not found: " + expectedQueue, expectedQueue.isEmpty());

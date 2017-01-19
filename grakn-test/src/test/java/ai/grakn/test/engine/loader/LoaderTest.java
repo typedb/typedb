@@ -32,6 +32,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.ErrorMessage;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Assert;
@@ -46,7 +47,7 @@ import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class LoaderTest {
 
@@ -69,26 +70,36 @@ public class LoaderTest {
     @Before
     public void setup() {
         //TODO fix this
-        graph = engine.getNewGraph();
+        graph = engine.graphWithNewKeyspace();
         loader = new Loader(graph.getKeyspace());
         loadOntology(graph.getKeyspace());
     }
 
     @Test
     public void loaderDefaultBatchSizeTest() {
-        loadAndTime();
+        loadAndTime(60000);
     }
 
     @Test
     public void loaderNewBatchSizeTest() {
         loader.setBatchSize(20);
-        loadAndTime();
+        loadAndTime(60000);
     }
 
     @Test
     public void loadWithSmallQueueSizeToBlockTest(){
         loader.setQueueSize(1);
-        loadAndTime();
+        loadAndTime(60000);
+    }
+
+    @Test(expected=RuntimeException.class)
+    public void loadAndDontWaitForLongEnoughTest(){
+        try {
+            loadAndTime(1);
+        } catch (RuntimeException e) {
+            assertTrue(e.getMessage().equals(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage()));
+            throw e;
+        }
     }
 
     public static void loadOntology(String keyspace){
@@ -108,7 +119,7 @@ public class LoaderTest {
         }
     }
 
-    private void loadAndTime(){
+    private void loadAndTime(int timeout){
         long startTime = System.currentTimeMillis();
 
         Collection<String> ids = new ArrayList<>();
@@ -126,7 +137,7 @@ public class LoaderTest {
             loader.add(query);
         }
 
-        loader.waitToFinish(300000);
+        loader.waitToFinish(timeout);
 
         System.out.println("Time to load:");
         System.out.println(System.currentTimeMillis() - startTime);

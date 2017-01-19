@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import org.apache.curator.framework.CuratorFramework;
+
+import java.nio.charset.StandardCharsets;
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
@@ -68,6 +70,10 @@ public class SynchronizedStateStorage {
 
     public void close() {
         zookeeperConnection.close();
+        removeInstance();
+    }
+
+    private static void removeInstance() {
         instance = null;
     }
 
@@ -87,7 +93,7 @@ public class SynchronizedStateStorage {
 
         zookeeperConnection.create()
               .creatingParentContainersIfNeeded()
-              .forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
+              .forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes(StandardCharsets.UTF_8));
     }
 
     public Boolean updateState(String id, TaskStatus status, String engineID, String checkpoint) {
@@ -117,7 +123,7 @@ public class SynchronizedStateStorage {
             }
 
             // Save to ZK
-            zookeeperConnection.setData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
+            zookeeperConnection.setData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes(StandardCharsets.UTF_8));
         }
         catch (Exception e) {
             LOG.error("Could not write to ZooKeeper! - "+e);
@@ -130,7 +136,7 @@ public class SynchronizedStateStorage {
     public SynchronizedState getState(String id) {
         try {
             byte[] b = zookeeperConnection.getData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX);
-            return SynchronizedState.deserialize(new String(b));
+            return SynchronizedState.deserialize(new String(b, StandardCharsets.UTF_8));
         }
         catch (Exception e) {
             LOG.error(" Could not read from ZooKeeper! " + getFullStackTrace(e));

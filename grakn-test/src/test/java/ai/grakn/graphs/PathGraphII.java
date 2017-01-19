@@ -22,12 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 
 import java.util.function.Consumer;
 
 public class PathGraphII extends TestGraph {
 
-    final static String key = "index";
+    private final static TypeName key = TypeName.of("index");
     final static String gqlFile = "path-test.gql";
 
     private final int n;

@@ -18,20 +18,15 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
@@ -44,42 +39,43 @@ public class GeoInferenceTest {
         assumeTrue(usingTinker());
     }
 
-    @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    @Rule
+    public final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
 
     @Test
     public void testQuery() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa city;$x has name $name;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQueryPrime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa city;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQuery2() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -88,13 +84,14 @@ public class GeoInferenceTest {
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
 
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQuery2Prime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa university;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
@@ -102,11 +99,15 @@ public class GeoInferenceTest {
         String explicitQuery = "match " +
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
-        assertQueriesEqual(Reasoner.resolve(query, false), qb.parse(explicitQuery));
-        assertQueriesEqual(Reasoner.resolve(query, true), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    private void assertQueriesEqual(Stream<Map<VarName, Concept>> s1, MatchQuery s2) {
-        assertEquals(s1.collect(Collectors.toSet()), s2.admin().streamWithVarNames().collect(Collectors.toSet()));
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().results());
+    }
+
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        assertEquals(queryAnswers(q1), queryAnswers(q2));
     }
 }

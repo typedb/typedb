@@ -35,15 +35,6 @@ public class QueryCache extends HashMap<ReasonerAtomicQuery, ReasonerAtomicQuery
     public boolean contains(ReasonerAtomicQuery query){ return this.containsKey(query);}
 
     /**
-     * propagates answers among related queries in the cache
-     */
-    public void propagateAnswers(){
-        this.keySet().forEach(aq -> {
-            if (aq.getParent() == null) aq.propagateAnswers(this);
-        });
-    }
-
-    /**
      * updates the cache by the specified query
      * @param atomicQuery query to be added/updated
      */

@@ -31,6 +31,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.InvalidConceptTypeException;
@@ -515,8 +516,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public String getType(){
-        return getProperty(Schema.ConceptProperty.TYPE);
+    public TypeName getType(){
+        return TypeName.of(getProperty(Schema.ConceptProperty.TYPE));
     }
 
     /**
@@ -553,7 +554,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The grakn graph this concept is bound to.
      */
-    protected AbstractGraknGraph getGraknGraph() {return graknGraph;}
+    protected AbstractGraknGraph<?> getGraknGraph() {return graknGraph;}
 
     //--------- Create Links -------//
     /**
@@ -619,7 +620,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         }
     }
 
-    private org.apache.tinkerpop.gremlin.structure.Edge addEdgeFrom(Vertex fromVertex, String type) {
+    private Edge addEdgeFrom(Vertex fromVertex, String type) {
         return fromVertex.addEdge(type, vertex);
     }
 
@@ -640,7 +641,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     @Override
     public String toString(){
-        String message = "[Base Type [" + getBaseType() + "] ";
+        String message = "Base Type [" + getBaseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";
         }

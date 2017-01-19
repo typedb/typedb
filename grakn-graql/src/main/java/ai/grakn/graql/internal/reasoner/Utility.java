@@ -24,7 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -41,6 +41,9 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -52,6 +55,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
@@ -181,6 +185,54 @@ public class Utility {
     }
 
     /**
+     * get unifiers by comparing permutations with original variables
+     * @param originalVars original ordered variables
+     * @param permutations different permutations on the variables
+     * @return set of unifiers
+     */
+    public static Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> originalVars, List<List<VarName>> permutations){
+        Set<Map<VarName, VarName>> unifierSet = new HashSet<>();
+        permutations.forEach(perm -> {
+            Map<VarName, VarName> unifiers = new HashMap<>();
+            Iterator<VarName> pIt = originalVars.iterator();
+            Iterator<VarName> cIt = perm.iterator();
+            while(pIt.hasNext() && cIt.hasNext()){
+                VarName pVar = pIt.next();
+                VarName chVar = cIt.next();
+                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
+            }
+            unifierSet.add(unifiers);
+        });
+        return unifierSet;
+    }
+
+    /**
+     * get all permutations of an entry list
+     * @param entryList entry list to generate permutations of
+     * @param <T> element type
+     * @return set of all possible permutations
+     */
+    public static <T> List<List<T>> getListPermutations(List<T> entryList) {
+        if (entryList.isEmpty()) {
+            List<List<T>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+        List<T> list = new ArrayList<>(entryList);
+        T firstElement = list.remove(0);
+        List<List<T>> returnValue = new ArrayList<>();
+        List<List<T>> permutations = getListPermutations(list);
+        for (List<T> smallerPermuted : permutations) {
+            for (int index = 0; index <= smallerPermuted.size(); index++) {
+                List<T> temp = new ArrayList<>(smallerPermuted);
+                temp.add(index, firstElement);
+                returnValue.add(temp);
+            }
+        }
+        return returnValue;
+    }
+
+    /**
      * Gets roletypes a given type can play in the provided relType relation type by performing
      * type intersection between type's playedRoles and relation's hasRoles.
      * @param type for which we want to obtain compatible roles it plays
@@ -222,7 +274,7 @@ public class Utility {
      * @param roleMap initial rolePlayer-roleType roleMap to be complemented
      * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
      */
-    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, VarAdmin> roleMap,
+    public static void computeRoleCombinations(Set<VarName> vars, Set<RoleType> roles, Map<VarName, Var> roleMap,
                                         Set<Map<VarName, Var>> roleMaps){
         Set<VarName> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
@@ -231,7 +283,7 @@ public class Utility {
         roles.forEach(role -> {
             tempVars.remove(var);
             tempRoles.remove(role);
-            roleMap.put(var, Graql.var().name(role.getName()).admin());
+            roleMap.put(var, var().name(role.getName()).admin());
             if (!tempVars.isEmpty() && !tempRoles.isEmpty()) {
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
             } else {
@@ -270,13 +322,13 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, String fromRoleName, String toRoleName, GraknGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        VarAdmin startVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "z").admin();
-        VarAdmin endVar = var().isa(relType.getName()).rel(fromRoleName, "z").rel(toRoleName, "y").admin();
-        VarAdmin headVar = var().isa(relType.getName()).rel(fromRoleName, "x").rel(toRoleName, "y").admin();
+        VarAdmin startVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "z").admin();
+        VarAdmin endVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "z").rel(name(toRoleName), "y").admin();
+        VarAdmin headVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
         return graph.admin().getMetaRuleInference().addRule(body, headVar);
     }
@@ -291,8 +343,8 @@ public class Utility {
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var body = var().isa(relType.getName()).rel("x").rel("y");
-        Var head = var().isa(relType.getName()).rel("x").rel("x");
+        Var body = var().isa(name(relType.getName())).rel("x").rel("y");
+        Var head = var().isa(name(relType.getName())).rel("x").rel("x");
         return graph.admin().getMetaRuleInference().addRule(body, head);
     }
 
@@ -304,21 +356,21 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<String, String> roleMappings,
+    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeName, TypeName> roleMappings,
                                              GraknGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
         }
-        Var parentVar = var().isa(parent.getName());
-        Var childVar = var().isa(child.getName());
+        Var parentVar = var().isa(name(parent.getName()));
+        Var childVar = var().isa(name(child.getName()));
         Set<VarName> vars = new HashSet<>();
 
         roleMappings.forEach( (parentRoleName, childRoleName) -> {
             VarName varName = createFreshVariable(vars, Patterns.varName("x"));
-            parentVar.rel(parentRoleName, var(varName));
-            childVar.rel(childRoleName, var(varName));
+            parentVar.rel(name(parentRoleName), var(varName));
+            childVar.rel(name(childRoleName), var(varName));
             vars.add(varName);
         });
         return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
@@ -333,39 +385,24 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createPropertyChainRule(RelationType relation, String fromRoleName, String toRoleName,
-                                             LinkedHashMap<RelationType, Pair<String, String>> chain, GraknGraph graph){
+    public static Rule createPropertyChainRule(RelationType relation, TypeName fromRoleName, TypeName toRoleName,
+                                             LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain, GraknGraph graph){
         Stack<VarName> varNames = new Stack<>();
         varNames.push(Patterns.varName("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
             VarName varName = createFreshVariable(Sets.newHashSet(varNames), Patterns.varName("x"));
-            VarAdmin var = var().isa(relType.getName())
-                    .rel(rolePair.getKey(), var(varNames.peek()))
-                    .rel(rolePair.getValue(), var(varName)).admin();
+            VarAdmin var = var().isa(name(relType.getName()))
+                    .rel(name(rolePair.getKey()), var(varNames.peek()))
+                    .rel(name(rolePair.getValue()), var(varName)).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        Var headVar = var().isa(relation.getName()).rel(fromRoleName, "x").rel(toRoleName, var(varNames.peek()));
+        Var headVar = var().isa(name(relation.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), var(varNames.peek()));
         return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
     }
-
-    /**
-     * For a given role returns all its non-meta super roles.
-     * @param role in question
-     * @return set of role's non-meta super types
-     */
-    public static Set<RoleType> getNonMetaSuperRoleTypes(RoleType role){
-        Set<RoleType> roles = new HashSet<>();
-        RoleType baseRole = role.superType();
-        while(!Schema.MetaSchema.isMetaName(baseRole.getName())){
-            roles.add(baseRole);
-            baseRole = baseRole.superType();
-        }
-        return roles;
-    }
-
+    
     /**
      * @param role in question
      * @return top non-meta super role of the role

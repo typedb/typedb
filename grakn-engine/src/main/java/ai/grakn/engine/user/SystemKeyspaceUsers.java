@@ -1,7 +1,26 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.engine.user;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.TypeName;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
@@ -95,9 +114,9 @@ public class SystemKeyspaceUsers extends UsersHandler {
             }
             Json user = Json.object();
             L.forEach(property -> {
-                String name = property.get("property").asInstance().type().getName();
+                TypeName name = property.get("property").asInstance().type().getName();
                 Object value = property.get("property").asResource().getValue();
-                user.set(name, value);
+                user.set(name.getValue(), value);
             });
             return user;
         }
@@ -174,20 +193,22 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public boolean removeUser(String username) {
         Var lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-        Var resource = var("property");
         try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-            MatchQuery query = graph.graql().match(lookup.has(resource));
-            List<Map<String, Concept>> L = query.execute();
-            boolean existing = !L.isEmpty();
-            L.forEach(map -> {
+            MatchQuery query = graph.graql().match(lookup);
+            List<Map<String, Concept>> results = query.execute();
+            boolean exists = !results.isEmpty();
+            results.forEach(map -> {
                 map.forEach( (k,v) -> {
-                    if ("entity".equals(k)) {
-                        v.asInstance().resources().forEach(Concept::delete);
-                        v.delete();
-                    }
+                    v.asInstance().resources().forEach(Concept::delete);
+                    v.delete();
                 });
             });
-            return existing;
+
+            if(exists){
+                graph.commit();
+            }
+
+            return exists;
         }
         catch (Throwable t) {
             LOG.error("While getting all users.", t);

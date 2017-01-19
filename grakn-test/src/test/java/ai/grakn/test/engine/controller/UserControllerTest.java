@@ -22,7 +22,6 @@ import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.test.EngineContext;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import static com.jayway.restassured.RestAssured.get;
