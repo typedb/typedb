@@ -38,6 +38,7 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.MoreThanOneConceptException;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
@@ -710,7 +711,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        if(submitLogs && modifiedConcepts.size() > 0) {
+        if(getKeyspace().equals(SystemKeyspace.SYSTEM_GRAPH_NAME) && submitLogs && modifiedConcepts.size() > 0) {
             submitCommitLogs(modifiedConcepts);
         }
     }
