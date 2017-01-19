@@ -82,7 +82,7 @@ public class InferenceRule {
     public Atom getRuleConclusionAtom() {
         ReasonerQueryImpl ruleQuery = new ReasonerQueryImpl(head);
         Atom atom = ruleQuery.selectAtoms().iterator().next();
-        body.getAtoms().forEach(at -> ruleQuery.addAtom(at.clone()));
+        body.getAtoms().forEach(at -> ruleQuery.addAtom(at.copy()));
         return atom;
     }
 

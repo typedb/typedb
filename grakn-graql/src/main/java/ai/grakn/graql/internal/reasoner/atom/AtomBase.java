@@ -62,7 +62,7 @@ public abstract class AtomBase implements Atomic {
     }
 
     @Override
-    public abstract Atomic clone();
+    public abstract Atomic copy();
 
     @Override
     public String toString(){ return atomPattern.toString(); }

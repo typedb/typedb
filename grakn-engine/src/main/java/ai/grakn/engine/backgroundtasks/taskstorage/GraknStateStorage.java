@@ -40,6 +40,7 @@ import ai.grakn.util.Schema;
 import javafx.util.Pair;
 import org.json.JSONObject;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -77,7 +78,8 @@ public class GraknStateStorage implements StateStorage {
 
     public GraknStateStorage() {}
 
-    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
+    @Override
+    public String newState(String taskName, String createdBy, Instant runAt, Boolean recurring, long interval, JSONObject configuration) {
         if(taskName == null || createdBy == null || runAt == null || recurring == null) {
             return null;
         }
@@ -86,7 +88,7 @@ public class GraknStateStorage implements StateStorage {
                                  .has(STATUS, var().value(CREATED.toString()))
                                  .has(TASK_CLASS_NAME, var().value(taskName))
                                  .has(CREATED_BY, var().value(createdBy))
-                                 .has(RUN_AT, var().value(runAt.getTime()))
+                                 .has(RUN_AT, var().value(runAt.toEpochMilli()))
                                  .has(RECURRING, var().value(recurring))
                                  .has(RECUR_INTERVAL, var().value(interval));
 
@@ -267,7 +269,7 @@ public class GraknStateStorage implements StateStorage {
                 return state.status(TaskStatus.valueOf(resourceValue.toString()));
             }
             if (resourceName.equals(STATUS_CHANGE_TIME)) {
-                return state.statusChangeTime(new Date((Long) resourceValue));
+                return state.statusChangeTime(Instant.ofEpochMilli((Long)resourceValue));
             }
             if (resourceName.equals(STATUS_CHANGE_BY)) {
                 return state.statusChangedBy(resourceValue.toString());
@@ -283,7 +285,7 @@ public class GraknStateStorage implements StateStorage {
                 return state.engineID(resourceValue.toString());
             }
             if (resourceName.equals(RUN_AT)) {
-                return state.runAt(new Date((Long) resourceValue));
+                return state.runAt(Instant.ofEpochMilli((Long)resourceValue));
             }
             if (resourceName.equals(RECURRING)) {
                 return state.isRecurring((Boolean) resourceValue);

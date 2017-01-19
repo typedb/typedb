@@ -71,6 +71,6 @@ public class RegexAtom extends AtomBase {
     }
 
     @Override
-    public Atomic clone() { return new RegexAtom(this);}
+    public Atomic copy() { return new RegexAtom(this);}
     public String getRegex(){ return regex;}
 }
