@@ -37,7 +37,7 @@ public final class VarName {
         return new VarName(UUID.randomUUID().toString());
     }
 
-    private VarNameImpl(String value) {
+    private VarName(String value) {
         this.value = value;
     }
 
