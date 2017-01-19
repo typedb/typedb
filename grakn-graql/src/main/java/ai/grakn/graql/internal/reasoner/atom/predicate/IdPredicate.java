@@ -60,7 +60,7 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
-    public Atomic clone(){
+    public Atomic copy(){
         return new IdPredicate(this);
     }
 

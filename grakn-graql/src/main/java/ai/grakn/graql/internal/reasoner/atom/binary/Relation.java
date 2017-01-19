@@ -125,7 +125,7 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Atomic clone() {
+    public Atomic copy() {
         return new Relation(this);
     }
 
@@ -285,7 +285,7 @@ public class Relation extends TypeAtom {
             return rules.stream()
                     .flatMap(rule -> rule.getConclusionTypes().stream())
                     .filter(Type::isRelationType).count() != 0
-                    & !this.getApplicableRules().isEmpty();
+                    && !this.getApplicableRules().isEmpty();
         }
     }
 

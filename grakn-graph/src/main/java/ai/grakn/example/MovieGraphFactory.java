@@ -65,7 +65,9 @@ public class MovieGraphFactory {
     private static Instance neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
     private static Instance cluster0, cluster1;
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
+    private static SimpleDateFormat dateFormat() {
+        return new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
+    }
 
     private MovieGraphFactory(){
         throw new UnsupportedOperationException();
@@ -168,13 +170,13 @@ public class MovieGraphFactory {
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
         putResource(godfather, tmdbVoteAverage, 8.6);
-        putResource(godfather, releaseDate, DATE_FORMAT.parse("Sun Jan 01 00:00:00 GMT 1984").getTime());
+        putResource(godfather, releaseDate, dateFormat().parse("Sun Jan 01 00:00:00 GMT 1984").getTime());
 
         theMuppets = movie.addEntity();
         putResource(theMuppets, title, "The Muppets");
         putResource(theMuppets, tmdbVoteCount, 100L);
         putResource(theMuppets, tmdbVoteAverage, 7.6);
-        putResource(theMuppets, releaseDate, DATE_FORMAT.parse("Sat Feb 02 00:00:00 GMT 1985").getTime());
+        putResource(theMuppets, releaseDate, dateFormat().parse("Sat Feb 02 00:00:00 GMT 1985").getTime());
 
         apocalypseNow = movie.addEntity();
         putResource(apocalypseNow, title, "Apocalypse Now");
@@ -190,13 +192,13 @@ public class MovieGraphFactory {
 
         spy = movie.addEntity();
         putResource(spy, title, "Spy");
-        putResource(spy, releaseDate, DATE_FORMAT.parse("Mon Mar 03 00:00:00 BST 1986").getTime());
+        putResource(spy, releaseDate, dateFormat().parse("Mon Mar 03 00:00:00 BST 1986").getTime());
 
         chineseCoffee = movie.addEntity();
         putResource(chineseCoffee, title, "Chinese Coffee");
         putResource(chineseCoffee, tmdbVoteCount, 5L);
         putResource(chineseCoffee, tmdbVoteAverage, 3.1d);
-        putResource(chineseCoffee, releaseDate, DATE_FORMAT.parse("Sat Sep 02 00:00:00 GMT 2000").getTime());
+        putResource(chineseCoffee, releaseDate, dateFormat().parse("Sat Sep 02 00:00:00 GMT 2000").getTime());
 
         marlonBrando = person.addEntity();
         putResource(marlonBrando, name, "Marlon Brando");

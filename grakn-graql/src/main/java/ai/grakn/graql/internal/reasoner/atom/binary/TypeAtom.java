@@ -58,7 +58,7 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    public Atomic clone(){
+    public Atomic copy(){
         return new TypeAtom(this);
     }
 

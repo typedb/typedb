@@ -53,6 +53,6 @@ public class IsAbstractAtom extends AtomBase {
     public int equivalenceHashCode() { return 1;}
 
     @Override
-    public Atomic clone() { return new IsAbstractAtom(this); }
+    public Atomic copy() { return new IsAbstractAtom(this); }
 
 }
