@@ -49,12 +49,6 @@ public class ExamplesTest {
     }
 
     @Test
-    public void testPhilosophers() throws IOException {
-        runInsertQuery("src/examples/philosophers.gql");
-        assertTrue(qb.match(var().has("name", "Alexander").has("title", "Shah of Persia")).ask().execute());
-    }
-
-    @Test
     public void testPokemon() throws IOException {
         runInsertQuery("src/examples/pokemon.gql");
         assertTrue(qb.match(var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type")).ask().execute());
