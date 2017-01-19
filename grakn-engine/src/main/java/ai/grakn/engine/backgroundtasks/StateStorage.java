@@ -21,7 +21,7 @@ package ai.grakn.engine.backgroundtasks;
 import javafx.util.Pair;
 import org.json.JSONObject;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Set;
 
 public interface StateStorage {
@@ -29,7 +29,7 @@ public interface StateStorage {
      * Create a new task state and store it, returning an ID to later access this task state.
      * @param taskName String class name of object implementing the BackgroundTask interface. This must not be null.
      * @param createdBy String of who is creating this new state. This must not be null.
-     * @param runAt Date when should this task be executed. This must not be null.
+     * @param runAt Instant when should this task be executed. This must not be null.
      * @param recurring Boolean marking if this task should be run again after it has finished executing successfully.
      *                  This must not be null.
      * @param interval If a task is marked as recurring, this represents the time delay between the next executing of this task.
@@ -42,7 +42,7 @@ public interface StateStorage {
      */
     String newState(String taskName,
                     String createdBy,
-                    Date runAt,
+                    Instant runAt,
                     Boolean recurring,
                     long interval,
                     JSONObject configuration);

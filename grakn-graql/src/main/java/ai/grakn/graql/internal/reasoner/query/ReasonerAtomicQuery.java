@@ -28,29 +28,30 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import javafx.util.Pair;
 
+import javafx.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  *
@@ -97,9 +98,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public boolean equals(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        ReasonerAtomicQuery a2 = (ReasonerAtomicQuery) obj;
-        return this.isEquivalent(a2);
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode() + 37;
     }
 
     /**

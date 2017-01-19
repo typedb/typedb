@@ -47,7 +47,7 @@ public class UsersHandler {
     }
 
     public boolean addUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME))) {
+        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
             return false;
         }
         usersMap.put(user.at(USER_NAME).asString(), user);
@@ -55,7 +55,7 @@ public class UsersHandler {
     }
 
     public boolean updateUser(Json user) {
-        if (usersMap.containsKey(user.at(USER_NAME))) {
+        if (usersMap.containsKey(user.at(USER_NAME).asString())) {
             return false;
         }
         usersMap.put(user.at(USER_NAME).asString(), user);

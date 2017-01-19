@@ -19,31 +19,20 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.TypeName;
-import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 public class CountMapReduce extends GraknMapReduce<Long> {
 
-    public static final String MEMORY_KEY = "count";
-
-    //Needed internally for OLAP tasks
     public CountMapReduce() {
     }
 
     public CountMapReduce(Set<TypeName> types) {
-        selectedTypes = types;
-    }
-
-    @Override
-    public boolean doStage(final Stage stage) {
-        return true;
+        super(types);
     }
 
     @Override
@@ -51,32 +40,20 @@ public class CountMapReduce extends GraknMapReduce<Long> {
         // use the ghost node detector here again
         if (!selectedTypes.isEmpty()) {
             if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                emitter.emit(MEMORY_KEY, 1L);
+                emitter.emit(NullObject.instance(), 1L);
                 return;
             }
         } else if (baseTypes.contains(vertex.label())) {
-            emitter.emit(MEMORY_KEY, 1L);
+            emitter.emit(NullObject.instance(), 1L);
             return;
         }
 
         // TODO: this is a bug with hasNext implementation - must send a message
-        emitter.emit(MEMORY_KEY, 0L);
+        emitter.emit(NullObject.instance(), 0L);
     }
 
     @Override
-    public void combine(final Serializable key, final Iterator<Long> values, final ReduceEmitter<Serializable, Long> emitter) {
-        this.reduce(key, values, emitter);
-    }
-
-    @Override
-    public void reduce(final Serializable key, final Iterator<Long> values, final ReduceEmitter<Serializable, Long> emitter) {
-        emitter.emit(key, IteratorUtils.reduce(values, 0L, (a, b) -> a + b));
-    }
-
-    @Override
-    public Map<Serializable, Long> generateFinalResult(final Iterator<KeyValue<Serializable, Long>> keyValues) {
-        final Map<Serializable, Long> count = new HashMap<>();
-        keyValues.forEachRemaining(pair -> count.put(pair.getKey(), pair.getValue()));
-        return count;
+    Long reduceValues(Iterator<Long> values) {
+        return IteratorUtils.reduce(values, 0L, (a, b) -> a + b);
     }
 }

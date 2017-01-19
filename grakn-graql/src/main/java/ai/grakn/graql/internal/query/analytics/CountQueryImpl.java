@@ -24,6 +24,7 @@ import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
 import java.util.Collection;
 import java.util.Map;
@@ -44,7 +45,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
         ComputerResult result = getGraphComputer().compute(new CountMapReduce(subTypeNames));
         Map<String, Long> count = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         LOGGER.info("CountMapReduce is done");
-        return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
+        return count.getOrDefault(MapReduce.NullObject.instance(), 0L);
     }
 
     @Override

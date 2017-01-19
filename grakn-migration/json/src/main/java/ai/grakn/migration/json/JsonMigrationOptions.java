@@ -32,7 +32,7 @@ public class JsonMigrationOptions extends MigrationOptions {
     private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
 
     public JsonMigrationOptions(String[] args){
-        super(args);
+        super();
 
         options.addOption("i", "input", true, "input json data file");
         options.addOption("t", "template", true, "graql template to apply over data");

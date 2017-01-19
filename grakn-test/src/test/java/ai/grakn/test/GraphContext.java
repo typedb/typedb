@@ -24,14 +24,12 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import org.junit.rules.ExternalResource;
 
-import java.util.UUID;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
-import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 
 /**

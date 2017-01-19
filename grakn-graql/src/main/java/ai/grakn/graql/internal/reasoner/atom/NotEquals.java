@@ -77,7 +77,7 @@ public class NotEquals extends AtomBase {
     public int equivalenceHashCode() { return 1;}
 
     @Override
-    public Atomic clone() { return new NotEquals(this);}
+    public Atomic copy() { return new NotEquals(this);}
 
     private void setRefVarName(VarName var){
         refVarName = var;

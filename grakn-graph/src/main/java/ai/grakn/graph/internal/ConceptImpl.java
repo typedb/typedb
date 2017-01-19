@@ -620,7 +620,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         }
     }
 
-    private org.apache.tinkerpop.gremlin.structure.Edge addEdgeFrom(Vertex fromVertex, String type) {
+    private Edge addEdgeFrom(Vertex fromVertex, String type) {
         return fromVertex.addEdge(type, vertex);
     }
 
@@ -641,7 +641,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     @Override
     public String toString(){
-        String message = "[Base Type [" + getBaseType() + "] ";
+        String message = "Base Type [" + getBaseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";
         }

@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.admin.Atomic;
 
 public class IsAbstractAtom extends AtomBase {
 
@@ -53,6 +53,6 @@ public class IsAbstractAtom extends AtomBase {
     public int equivalenceHashCode() { return 1;}
 
     @Override
-    public Atomic clone() { return new IsAbstractAtom(this); }
+    public Atomic copy() { return new IsAbstractAtom(this); }
 
 }

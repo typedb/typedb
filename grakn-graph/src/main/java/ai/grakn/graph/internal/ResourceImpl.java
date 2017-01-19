@@ -99,10 +99,8 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
 
             //Not checking the datatype because the regex will always be null for non strings.
             String regex = resourceType.getRegex();
-            if(regex != null){
-                if(!Pattern.matches(regex, (String) value)){
-                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, toString()));
-                }
+            if (regex != null && !Pattern.matches(regex, (String) value)) {
+                throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, toString()));
             }
 
             Schema.ConceptProperty property = dataType().getConceptProperty();

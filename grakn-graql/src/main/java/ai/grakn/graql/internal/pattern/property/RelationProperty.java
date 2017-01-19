@@ -50,7 +50,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
@@ -295,7 +294,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
             Var relVar = var.isUserDefinedName()? Graql.var(var.getVarName()) : Graql.var();
-            Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(Collectors.toSet());
+            Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
             relationPlayers.forEach(rp -> {
                 VarAdmin role = rp.getRoleType().orElse(null);
                 VarAdmin rolePlayer = rp.getRolePlayer();
