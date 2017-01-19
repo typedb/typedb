@@ -171,8 +171,9 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 } else {
                     if (selectedTypes.contains(Utility.getVertexType(vertex)) ||
                             (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
-                                    (boolean) vertex.value(IS_ACTIVE_CASTING)))
+                                    (boolean) vertex.value(IS_ACTIVE_CASTING))) {
                         update(vertex, messenger, memory);
+                    }
                 }
                 break;
         }

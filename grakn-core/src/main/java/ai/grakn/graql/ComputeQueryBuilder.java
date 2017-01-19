@@ -31,7 +31,6 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 
 import java.util.Map;
-import java.util.Set;
 
 public interface ComputeQueryBuilder {
 
@@ -89,5 +88,5 @@ public interface ComputeQueryBuilder {
     /**
      * @return a degree query that will compute the degree of instances
      */
-    DegreeQuery<Map<Long, Set<String>>> degree();
+    DegreeQuery degree();
 }

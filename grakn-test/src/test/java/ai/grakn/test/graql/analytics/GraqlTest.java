@@ -113,7 +113,7 @@ public class GraqlTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        Map<Long, Set<String>> degrees = qb.<DegreeQuery<Map<Long, Set<String>>>>parse("compute degrees;").execute();
+        Map<Long, Set<String>> degrees = qb.<DegreeQuery>parse("compute degrees;").execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entityId1, 1L);
