@@ -1,10 +1,10 @@
 package ai.grakn.test;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graph.EngineGraknGraph;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
@@ -121,12 +121,12 @@ public abstract class GraknTestEnv {
         // Drop all keyspaces
         GraphFactory graphFactory = GraphFactory.getInstance();
 
-        GraknGraph systemGraph = graphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
+        EngineGraknGraph systemGraph = graphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         systemGraph.graql().match(var("x").isa("keyspace-name"))
                 .execute()
                 .forEach(x -> x.values().forEach(y -> {
                     String name = y.asResource().getValue().toString();
-                    GraknGraph graph = graphFactory.getGraph(name);
+                    EngineGraknGraph graph = graphFactory.getGraph(name);
                     graph.clear();
                 }));
 

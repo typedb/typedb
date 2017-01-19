@@ -19,8 +19,8 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.util.ErrorMessage;
 
 import java.io.FileInputStream;
@@ -50,8 +50,9 @@ public class GraphFactory {
         }
     }
 
-    public synchronized GraknGraph getGraph(String keyspace) {
-        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
+    public synchronized EngineGraknGraph getGraph(String keyspace) {
+        //TODO: Get rid of ugly casting
+        return (EngineGraknGraph) FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
     }
 
     public synchronized void refreshConnections(){
