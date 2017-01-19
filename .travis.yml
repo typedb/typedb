@@ -11,7 +11,7 @@ cache:
    - grakn-engine/npm
 
 env:
-  - TESTS=**/**Test*
+  - TESTS=**/*Test*
   - TESTS=**/*IT*
 
 notifications:
