@@ -711,7 +711,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        if(getKeyspace().equals(SystemKeyspace.SYSTEM_GRAPH_NAME) && submitLogs && modifiedConcepts.size() > 0) {
+        if(!getKeyspace().equals(SystemKeyspace.SYSTEM_GRAPH_NAME) && submitLogs && modifiedConcepts.size() > 0) {
             submitCommitLogs(modifiedConcepts);
         }
     }
