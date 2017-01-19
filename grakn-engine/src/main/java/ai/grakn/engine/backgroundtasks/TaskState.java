@@ -20,13 +20,12 @@ package ai.grakn.engine.backgroundtasks;
 
 import org.json.JSONObject;
 
-import java.io.Serializable;
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
  */
-public class TaskState implements Cloneable, Serializable {
+public class TaskState implements Cloneable {
     /**
      * Task status, @see TaskStatus.
      */
@@ -34,7 +33,7 @@ public class TaskState implements Cloneable, Serializable {
     /**
      * Time when task status was last updated.
      */
-    private Date statusChangeTime;
+    private Instant statusChangeTime;
     /**
      * String identifying who last updated task status.
      */
@@ -54,7 +53,7 @@ public class TaskState implements Cloneable, Serializable {
     /**
      * When this task should be executed.
      */
-    private Date runAt;
+    private Instant runAt;
     /**
      * Should this task be run again after it has finished executing successfully.
      */
@@ -91,12 +90,12 @@ public class TaskState implements Cloneable, Serializable {
         return status;
     }
 
-    public TaskState statusChangeTime(Date statusChangeTime) {
+    public TaskState statusChangeTime(Instant statusChangeTime) {
         this.statusChangeTime = statusChangeTime;
         return this;
     }
 
-    public Date statusChangeTime() {
+    public Instant statusChangeTime() {
         return statusChangeTime;
     }
 
@@ -131,12 +130,12 @@ public class TaskState implements Cloneable, Serializable {
         return engineID;
     }
 
-    public TaskState runAt(Date runAt) {
+    public TaskState runAt(Instant runAt) {
         this.runAt = runAt;
         return this;
     }
 
-    public Date runAt() {
+    public Instant runAt() {
         return runAt;
     }
 

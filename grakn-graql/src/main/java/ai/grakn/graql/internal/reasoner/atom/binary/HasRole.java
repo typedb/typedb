@@ -83,6 +83,6 @@ public class HasRole extends TypeAtom {
     }
 
     @Override
-    public Atomic clone(){ return new HasRole(this);}
+    public Atomic copy(){ return new HasRole(this);}
     public Predicate getRelationPredicate(){ return relationPredicate;}
 }

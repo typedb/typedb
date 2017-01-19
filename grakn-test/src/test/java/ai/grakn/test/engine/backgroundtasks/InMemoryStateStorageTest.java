@@ -27,13 +27,17 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class InMemoryStateStorageTest {
     private StateStorage stateStorage;
@@ -50,7 +54,7 @@ public class InMemoryStateStorageTest {
     public void testNewState() {
         TestTask task = new TestTask();
 
-        Date runAt = new Date();
+        Instant runAt = Instant.now();
         String id = stateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, null);
         assertNotNull(id);
 
@@ -65,7 +69,7 @@ public class InMemoryStateStorageTest {
     @Test
     public void testUpdateState() {
         TestTask task = new TestTask();
-        Date runAt = new Date();
+        Instant runAt = Instant.now();
 
         String id = stateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, null);
         assertNotNull(id);
@@ -88,7 +92,7 @@ public class InMemoryStateStorageTest {
 
     @Test
     public void testGetByStatus() {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
+        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), Instant.now(), false, 0, null);
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
@@ -100,7 +104,7 @@ public class InMemoryStateStorageTest {
 
     @Test
     public void testGetByCreator() {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
+        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), Instant.now(), false, 0, null);
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
 
         assertTrue(res.parallelStream()
@@ -112,7 +116,7 @@ public class InMemoryStateStorageTest {
 
     @Test
     public void testGetByClassName() {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
+        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), Instant.now(), false, 0, null);
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
 
         assertTrue(res.parallelStream()
@@ -124,7 +128,7 @@ public class InMemoryStateStorageTest {
 
     @Test
     public void testGetAll() {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
+        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), Instant.now(), false, 0, null);
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
@@ -137,7 +141,7 @@ public class InMemoryStateStorageTest {
     @Test
     public void testPagination() {
         for (int i = 0; i < 20; i++) {
-            stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
+            stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), Instant.now(), false, 0, null);
         }
 
         Set<Pair<String, TaskState>> setA = stateStorage.getTasks(null, null, null, 10, 0);

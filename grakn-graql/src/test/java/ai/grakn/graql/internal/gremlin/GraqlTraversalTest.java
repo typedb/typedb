@@ -54,7 +54,6 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.value;
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -66,9 +65,9 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalTest {
 
-    private static final VarName x = varName("x");
-    private static final VarName y = varName("y");
-    private static final VarName z = varName("z");
+    private static final VarName x = VarName.of("x");
+    private static final VarName y = VarName.of("y");
+    private static final VarName z = VarName.of("z");
     private static final Fragment xId = id(x, ConceptId.of("Titanic"));
     private static final Fragment xValue = value(x, eq("hello").admin());
     private static final Fragment yId = id(y, ConceptId.of("movie"));
@@ -123,9 +122,9 @@ public class GraqlTraversalTest {
 
     @Test
     public void testCheckDistinctCastingEarlyFaster() {
-        VarName c1 = varName("c1");
-        VarName c2 = varName("c2");
-        VarName r = varName("r");
+        VarName c1 = VarName.of("c1");
+        VarName c2 = VarName.of("c2");
+        VarName r = VarName.of("r");
 
         Fragment distinctCasting = distinctCasting(c2, c1);
         Fragment inRolePlayer = inRolePlayer(x, c1);
@@ -218,7 +217,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testShortcutOptimisationWithType() {
-        VarName marriageName = Patterns.varName("m");
+        VarName marriageName = VarName.of("m");
 
         Var marriage = var(marriageName).name("marriage");
 
@@ -240,7 +239,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testShortcutOptimisationWithRoles() {
-        VarName wifeName = Patterns.varName("w");
+        VarName wifeName = VarName.of("w");
 
         Var wife = var(wifeName).name("wife");
 

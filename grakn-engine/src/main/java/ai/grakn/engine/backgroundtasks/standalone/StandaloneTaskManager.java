@@ -29,7 +29,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,16 +91,20 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
+        removeInstance();
+    }
+
+    private static void removeInstance() {
         instance = null;
     }
 
-    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
         Boolean recurring = (period != 0);
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
 
         // Schedule task to run.
-        Date now = new Date();
-        long delay = now.getTime() - runAt.getTime();
+        Instant now = Instant.now();
+        long delay = Duration.between(runAt, now).toMillis();
 
         try {
             stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
@@ -150,37 +155,38 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     public TaskManager stopTask(String id, String requesterName) {
-        stateUpdateLock.lock();
+        try {
+            stateUpdateLock.lock();
 
-        TaskState state = stateStorage.getState(id);
-        if(state == null) {
-            return this;
-        }
-
-        Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
-        String name = this.getClass().getName();
-
-        synchronized (pair) {
-            if(state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
-                LOG.info("Stopping a currently scheduled task "+id);
-                pair.getKey().cancel(true);
-                stateStorage.updateState(id, STOPPED, name,null, null, null, null);
+            TaskState state = stateStorage.getState(id);
+            if (state == null) {
+                return this;
             }
-            else if(state.status() == RUNNING) {
-                LOG.info("Stopping running task "+id);
 
-                BackgroundTask task = pair.getValue();
-                if(task != null) {
-                    task.stop();
+            Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
+            String name = this.getClass().getName();
+
+            synchronized (pair) {
+                if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
+                    LOG.info("Stopping a currently scheduled task " + id);
+                    pair.getKey().cancel(true);
+                    stateStorage.updateState(id, STOPPED, name, null, null, null, null);
+                } else if (state.status() == RUNNING) {
+                    LOG.info("Stopping running task " + id);
+
+                    BackgroundTask task = pair.getValue();
+                    if (task != null) {
+                        task.stop();
+                    }
+
+                    stateStorage.updateState(id, STOPPED, name, null, null, null, null);
+                } else {
+                    LOG.warn("Task not running - " + id);
                 }
-
-                stateStorage.updateState(id, STOPPED, name, null, null, null, null);
             }
-            else {
-                LOG.warn("Task not running - "+id);
-            }
+        } finally {
+            stateUpdateLock.unlock();
         }
-        stateUpdateLock.unlock();
 
         return this;
     }

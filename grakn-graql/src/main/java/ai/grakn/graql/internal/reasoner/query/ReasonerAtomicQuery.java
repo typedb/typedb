@@ -27,10 +27,11 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -70,19 +71,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     final private QueryAnswers newAnswers = new QueryAnswers();
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    public ReasonerAtomicQuery(String rhs, GraknGraph graph){
-        super(rhs, graph);
+
+    public ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph){
+        super(pattern, graph);
         atom = selectAtoms().iterator().next();
     }
 
-    public ReasonerAtomicQuery(MatchQuery query, GraknGraph graph){
-        super(query, graph);
-        atom = selectAtoms().iterator().next();
+    public ReasonerAtomicQuery(ReasonerAtomicQuery query){
+        this(query, new QueryAnswers());
     }
 
-    public ReasonerAtomicQuery(ReasonerAtomicQuery q){
-        super(q);
-        atom = selectAtoms().stream().findFirst().orElse(null);
+    public ReasonerAtomicQuery(ReasonerAtomicQuery query, QueryAnswers ans){
+        super(query);
+        answers.addAll(ans);
     }
 
     public ReasonerAtomicQuery(Atom at) {
@@ -90,11 +91,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
     
-    public ReasonerAtomicQuery(ReasonerAtomicQuery query, QueryAnswers ans){
-        super(query);
-        answers.addAll(ans);
-    }
-
     @Override
     public boolean equals(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
