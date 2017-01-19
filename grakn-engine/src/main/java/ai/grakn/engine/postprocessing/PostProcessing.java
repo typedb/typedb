@@ -46,7 +46,7 @@ public class PostProcessing {
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
-    private Cache cache;
+    private final Cache cache;
 
     private PostProcessing() {
         postpool = Executors.newFixedThreadPool(1);
@@ -57,8 +57,9 @@ public class PostProcessing {
     }
 
     public static synchronized PostProcessing getInstance() {
-        if (instance == null)
+        if (instance == null) {
             instance = new PostProcessing();
+        }
         return instance;
     }
 

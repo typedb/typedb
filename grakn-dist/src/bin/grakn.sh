@@ -102,8 +102,8 @@ clean)
 status)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
-    "${GRAKN_HOME}/bin/kafka-server-stop.sh"
-    "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
+    "${GRAKN_HOME}/bin/kafka-server-status.sh"
+    "${GRAKN_HOME}/bin/zookeeper-server-status.sh"
     if [ $USE_CASSANDRA ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" status
     fi

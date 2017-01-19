@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -62,4 +63,13 @@ public interface VarProperty {
     default boolean isUnique() {
         return false;
     }
+
+    /**
+     * maps this var property to a reasoner atom
+     * @param var VarAdmin this property belongs to
+     * @param vars VarAdmins constituting the pattern this property belongs to
+     * @param parent reasoner query this atom should belong to
+     * @return created atom
+     */
+    Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent);
 }

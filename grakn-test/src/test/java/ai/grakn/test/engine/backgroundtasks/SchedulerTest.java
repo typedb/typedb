@@ -23,9 +23,12 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -33,17 +36,26 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
-import org.junit.*;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import java.util.*;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.function.Predicate;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static java.util.Collections.singletonMap;
@@ -53,10 +65,13 @@ import static org.junit.Assert.assertTrue;
 /**
  * Each test needs to be run with a clean Kafka to pass
  */
-public class SchedulerTest extends EngineTestBase {
+public class SchedulerTest {
     private GraknStateStorage stateStorage = new GraknStateStorage();
     private SynchronizedStateStorage zkStorage;
     private final ClusterManager clusterManager = ClusterManager.getInstance();
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void setup() throws Exception {
@@ -161,7 +176,7 @@ public class SchedulerTest extends EngineTestBase {
         String taskId = stateStorage.newState(
                 TestTask.class.getName(),
                 SchedulerTest.class.getName(),
-                new Date(), recurring, interval, new JSONObject(singletonMap("name", "task"+i)));
+                Instant.now(), recurring, interval, new JSONObject(singletonMap("name", "task"+i)));
 
         stateStorage.updateState(taskId, status, null, null, null, null, null);
 
@@ -235,5 +250,16 @@ public class SchedulerTest extends EngineTestBase {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void waitForScheduler(ClusterManager clusterManager, Predicate<Scheduler> fn) throws Exception {
+        int runs = 0;
+
+        while (!fn.test(clusterManager.getScheduler()) && runs < 50 ) {
+            Thread.sleep(100);
+            runs++;
+        }
+
+        System.out.println("wait done, runs " + Integer.toString(runs) + " scheduler " + clusterManager.getScheduler());
     }
 }

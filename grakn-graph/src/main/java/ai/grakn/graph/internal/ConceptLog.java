@@ -41,9 +41,9 @@ import java.util.stream.Collectors;
  */
 public class ConceptLog {
     private Set<ConceptImpl> modifiedConcepts;
-    private Set<CastingImpl> modifiedCastings;
-    private Set<ResourceImpl> modifiedResources;
-    private Map<String, RelationImpl> modifiedRelations;
+    private final Set<CastingImpl> modifiedCastings;
+    private final Set<ResourceImpl> modifiedResources;
+    private final Map<String, RelationImpl> modifiedRelations;
 
 
     ConceptLog() {
@@ -71,10 +71,12 @@ public class ConceptLog {
         if(!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
 
-            if(concept.isCasting())
+            if(concept.isCasting()) {
                 modifiedCastings.add(concept.asCasting());
-            if(concept.isResource())
+            }
+            if(concept.isResource()) {
                 modifiedResources.add((ResourceImpl) concept);
+            }
         }
 
         //Caching of relations in memory so they can be retrieved without needing a commit

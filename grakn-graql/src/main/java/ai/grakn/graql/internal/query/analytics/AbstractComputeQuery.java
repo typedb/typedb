@@ -21,12 +21,14 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
@@ -39,6 +41,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +51,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
@@ -59,7 +63,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Optional<GraknGraph> graph = Optional.empty();
     String keySpace;
-    Set<String> subTypeNames = new HashSet<>();
+    Set<TypeName> subTypeNames = new HashSet<>();
 
     @Override
     public ComputeQuery<T> withGraph(GraknGraph graph) {
@@ -69,12 +73,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     @Override
     public ComputeQuery<T> in(String... subTypeNames) {
-        this.subTypeNames = Sets.newHashSet(subTypeNames);
+        this.subTypeNames = Arrays.stream(subTypeNames).map(TypeName::of).collect(Collectors.toSet());
         return this;
     }
 
     @Override
-    public ComputeQuery<T> in(Collection<String> subTypeNames) {
+    public ComputeQuery<T> in(Collection<TypeName> subTypeNames) {
         this.subTypeNames = Sets.newHashSet(subTypeNames);
         return this;
     }
@@ -83,8 +87,9 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     public Stream<String> resultsString(Printer printer) {
         Object computeResult = execute();
         if (computeResult instanceof Map) {
-            if (((Map) computeResult).isEmpty())
+            if (((Map) computeResult).isEmpty()) {
                 return Stream.of("There are no instances of the selected type(s).");
+            }
             if (((Map) computeResult).values().iterator().next() instanceof Set) {
                 Map<?, ?> map = (Map) computeResult;
                 return map.entrySet().stream().map(entry -> {
@@ -105,10 +110,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         keySpace = theGraph.getKeyspace();
 
         // make sure we don't accidentally commit anything
-        // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
         try {
             theGraph.rollback();
         } catch (UnsupportedOperationException ignored) {
+            // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
         }
         getAllSubTypes(theGraph);
     }
@@ -148,23 +153,23 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         if (subTypeNames.isEmpty()) return false;
 
         List<Pattern> checkSubtypes = subTypeNames.stream()
-                .map(type -> var("x").isa(type)).collect(Collectors.toList());
+                .map(type -> var("x").isa(name(type))).collect(Collectors.toList());
         return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
     }
 
-    boolean verticesExistInSubgraph(String... ids) {
-        for (String id : ids) {
+    boolean verticesExistInSubgraph(ConceptId... ids) {
+        for (ConceptId id : ids) {
             Instance instance = this.graph.get().getConcept(id);
             if (instance == null || !subTypeNames.contains(instance.type().getName())) return false;
         }
         return true;
     }
 
-    void mutateResourceOntology(String resourceTypeName, ResourceType.DataType<?> resourceDataType) {
+    void mutateResourceOntology(TypeName resourceTypeName, ResourceType.DataType<?> resourceDataType) {
         GraknGraph theGraph = this.graph.get();
 
         ResourceType resource = theGraph.putResourceType(resourceTypeName, resourceDataType);
-        for (String type : subTypeNames) {
+        for (TypeName type : subTypeNames) {
             theGraph.getType(type).hasResource(resource);
         }
 
@@ -175,28 +180,28 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         }
     }
 
-    void waitOnMutateResourceOntology(String resourceTypeId) {
+    void waitOnMutateResourceOntology(TypeName resourceTypeName) {
         GraknGraph theGraph = this.graph.get();
         theGraph.showImplicitConcepts(true);
 
         for (int i = 0; i < numberOfOntologyChecks; i++) {
             boolean isOntologyComplete = true;
-            // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             try {
                 theGraph.rollback();
             } catch (UnsupportedOperationException ignored) {
+                // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
             }
 
-            ResourceType resource = theGraph.getResourceType(resourceTypeId);
+            ResourceType resource = theGraph.getType(resourceTypeName);
             if (resource == null) continue;
-            RoleType degreeOwner = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+            RoleType degreeOwner = theGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
             if (degreeOwner == null) continue;
-            RoleType degreeValue = theGraph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+            RoleType degreeValue = theGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
             if (degreeValue == null) continue;
-            RelationType relationType = theGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId));
+            RelationType relationType = theGraph.getType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
             if (relationType == null) continue;
 
-            for (String type : subTypeNames) {
+            for (TypeName type : subTypeNames) {
                 Collection<RoleType> roles = theGraph.getType(type).playsRoles();
                 if (!roles.contains(degreeOwner)) {
                     isOntologyComplete = false;
@@ -222,7 +227,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             return ";";
         } else {
             return " in "
-                    + subTypeNames.stream().map(StringConverter::idToString).collect(joining(", ")) + ";";
+                    + subTypeNames.stream().map(StringConverter::typeNameToString).collect(joining(", ")) + ";";
         }
     }
 
@@ -231,7 +236,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return "compute " + graqlString();
     }
 
-    Set<String> getHasResourceRelationTypes() {
+    Set<TypeName> getHasResourceRelationTypes() {
         return subTypeNames.stream()
                 .filter(type -> graph.get().getType(type).isResourceType())
                 .map(Schema.Resource.HAS_RESOURCE::getName)

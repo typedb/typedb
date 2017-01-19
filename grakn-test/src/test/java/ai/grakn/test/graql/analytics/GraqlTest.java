@@ -19,13 +19,15 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
@@ -38,16 +40,16 @@ import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,14 +59,16 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestEnv.usingOrientDB;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
-public class GraqlTest extends AbstractGraphTest {
+public class GraqlTest {
 
+    public GraknGraph graph;
     private QueryBuilder qb;
 
     private static final String thing = "thing";
@@ -78,14 +82,16 @@ public class GraqlTest extends AbstractGraphTest {
     private String relationId12;
     private String relationId24;
 
-    private String keyspace;
+    @Rule
+    public final GraphContext context = GraphContext.empty();
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
+
+        graph = context.graph();
         qb = graph.graql();
-        keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -126,33 +132,6 @@ public class GraqlTest extends AbstractGraphTest {
         ));
     }
 
-    @Test
-    public void testDegreesAndPersist() throws Exception {
-        // TODO: Fix on TinkerGraphComputer
-        assumeFalse(usingTinker());
-
-        addOntologyAndEntities();
-        qb.parse("compute degrees; persist;").execute();
-
-        Map<String, Long> correctDegrees = new HashMap<>();
-        correctDegrees.put(entityId1, 1L);
-        correctDegrees.put(entityId2, 2L);
-        correctDegrees.put(entityId3, 0L);
-        correctDegrees.put(entityId4, 1L);
-        correctDegrees.put(relationId12, 2L);
-        correctDegrees.put(relationId24, 2L);
-
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
-        correctDegrees.entrySet().forEach(entry -> {
-            Collection<Resource<?>> resources =
-                    graph.getConcept(entry.getKey()).asInstance()
-                            .resources(graph.getResourceType(Schema.Analytics.DEGREE.getName()));
-            assertEquals(1, resources.size());
-            assertEquals(entry.getValue(), resources.iterator().next().getValue());
-        });
-    }
-
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidIdWithAnalytics() {
         qb.parse("compute sum of thing;").execute();
@@ -163,7 +142,7 @@ public class GraqlTest extends AbstractGraphTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        String resourceTypeId = "my-resource";
+        TypeName resourceTypeId = TypeName.of("my-resource");
 
         RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
         RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
@@ -213,9 +192,6 @@ public class GraqlTest extends AbstractGraphTest {
         Map<String, Set<String>> memberMap =
                 qb.<ClusterQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
         assertTrue(memberMap.isEmpty());
-        Map<String, Long> sizeMapPersist =
-                qb.<ClusterQuery<Map<String, Long>>>parse("compute cluster; persist;").execute();
-        assertTrue(sizeMapPersist.isEmpty());
     }
 
     @Test
@@ -229,7 +205,7 @@ public class GraqlTest extends AbstractGraphTest {
 
         Optional<List<Concept>> path = query.execute();
         assert path.isPresent();
-        List<String> result = path.get().stream().map(Concept::getId).collect(Collectors.toList());
+        List<String> result = path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
 
         List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
@@ -286,10 +262,10 @@ public class GraqlTest extends AbstractGraphTest {
         Entity entity3 = entityType1.addEntity();
         Entity entity4 = entityType2.addEntity();
 
-        entityId1 = entity1.getId();
-        entityId2 = entity2.getId();
-        entityId3 = entity3.getId();
-        entityId4 = entity4.getId();
+        entityId1 = entity1.getId().getValue();
+        entityId2 = entity2.getId().getValue();
+        entityId3 = entity3.getId().getValue();
+        entityId4 = entity4.getId().getValue();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -299,12 +275,12 @@ public class GraqlTest extends AbstractGraphTest {
 
         relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
-                .putRolePlayer(role2, entity2).getId();
+                .putRolePlayer(role2, entity2).getId().getValue();
         relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
-                .putRolePlayer(role2, entity4).getId();
+                .putRolePlayer(role2, entity4).getId().getValue();
 
         graph.commit();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 }

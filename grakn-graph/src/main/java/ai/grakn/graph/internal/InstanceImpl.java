@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -26,6 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.util.ErrorMessage;
@@ -97,7 +99,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return All the {@link Resource} that this Instance is linked with
      */
     public Collection<Resource<?>> resources(ResourceType... resourceTypes) {
-        Set<String> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
+        Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
 
         Set<Resource<?>> resources = new HashSet<>();
         this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
@@ -129,15 +131,16 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<String> roleTypeNames = Arrays.stream(roleTypes).map(RoleType::getName).collect(Collectors.toSet());
+        Set<TypeName> roleTypeNames = Arrays.stream(roleTypes).map(RoleType::getName).collect(Collectors.toSet());
 
         InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
             CastingImpl casting = c.asCasting();
             if (roleTypeNames.size() != 0) {
-                if (roleTypeNames.contains(casting.getType()))
+                if (roleTypeNames.contains(casting.getType())) {
                     relations.addAll(casting.getRelations());
+                }
             } else {
                 relations.addAll(casting.getRelations());
             }
@@ -166,10 +169,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     @Override
     public Relation hasResource(Resource resource){
-        String name = resource.type().getName();
-        RelationType hasResource = getGraknGraph().getRelationType(Schema.Resource.HAS_RESOURCE.getName(name));
-        RoleType hasResourceTarget = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
-        RoleType hasResourceValue = getGraknGraph().getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
+        TypeName name = resource.type().getName();
+        RelationType hasResource = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE.getName(name));
+        RoleType hasResourceTarget = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
+        RoleType hasResourceValue = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getName(), resource.type().getName()));

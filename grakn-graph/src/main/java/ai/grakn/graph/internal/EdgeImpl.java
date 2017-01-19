@@ -23,9 +23,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
- * Wraps a tinkerpop edge constraining it to our object concept
- */
-/**
  * <p>
  *     Represent an Edge in a Grakn Graph
  * </p>
@@ -40,7 +37,7 @@ class EdgeImpl {
     private Edge edge;
     private final AbstractGraknGraph graknGraph;
 
-    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, AbstractGraknGraph graknGraph){
+    EdgeImpl(Edge e, AbstractGraknGraph graknGraph){
         edge = e;
         this.graknGraph = graknGraph;
     }
@@ -97,16 +94,18 @@ class EdgeImpl {
      */
     <X> X getProperty(Schema.EdgeProperty type){
         org.apache.tinkerpop.gremlin.structure.Property<X> property = edge.property(type.name());
-        if(property != null && property.isPresent())
+        if(property != null && property.isPresent()) {
             return property.value();
-        else
+        } else {
             return null;
+        }
     }
 
     Boolean getPropertyBoolean(Schema.EdgeProperty key){
         Boolean value = getProperty(key);
-        if(value == null)
+        if(value == null) {
             return false;
+        }
         return value;
     }
 
@@ -115,11 +114,14 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @param value The value of the property
      */
-    void setProperty(Schema.EdgeProperty type, Object value){
+    void setProperty(Schema.EdgeProperty type, String value){
+        edge.property(type.name(), value);
+    }
+    void setProperty(Schema.EdgeProperty type, boolean value){
         edge.property(type.name(), value);
     }
 
-    private boolean edgeEquals(org.apache.tinkerpop.gremlin.structure.Edge toEdge) {
+    private boolean edgeEquals(Edge toEdge) {
         return edge.equals(toEdge);
     }
 }

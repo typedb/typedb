@@ -19,6 +19,7 @@
 package ai.grakn;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -28,6 +29,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilder;
 
@@ -37,9 +39,6 @@ import java.util.Map;
 /**
  * A GraknGraph instance which connects to a specific graph keyspace.
  * Through this object, transactions are automatically opened, which enable the graph to be queried and mutated.
- *
- *
- * @version
  */
 
 public interface GraknGraph extends AutoCloseable{
@@ -54,6 +53,14 @@ public interface GraknGraph extends AutoCloseable{
     EntityType putEntityType(String name);
 
     /**
+     * Create a new Entity Type, or return a pre-existing Entity Type, with the specified name.
+     *
+     * @param name A unique name for the Entity Type
+     * @return A new or existing Entity Type with the provided name
+     */
+    EntityType putEntityType(TypeName name);
+
+    /**
      * Create a Resource Type, or return a pre-existing Resource Type, with the specified name.
      *
      * @param name A unique name for the Resource Type
@@ -64,6 +71,18 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing Resource Type with the provided name.
      */
     <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType);
+
+    /**
+     * Create a Resource Type, or return a pre-existing Resource Type, with the specified name.
+     *
+     * @param name A unique name for the Resource Type
+     * @param dataType The data type of the resource type.
+     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
+     *           This should match the parameter type
+     * @return A new or existing Resource Type with the provided name.
+     */
+    <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType);
 
     /**
      * Create a unique Resource Type, or return a pre-existing Resource Type, with the specified name.
@@ -77,6 +96,18 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing Resource Type with the provided name.
      */
     <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType);
+    /**
+     * Create a unique Resource Type, or return a pre-existing Resource Type, with the specified name.
+     * The Resource Type is guaranteed to be unique, in that its instances can be connected to one entity.
+     *
+     * @param name A unique name for the Resource Type
+     * @param dataType The data type of the resource type.
+     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
+     *           This should match the parameter type
+     * @return A new or existing Resource Type with the provided name.
+     */
+    <V> ResourceType <V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType);
 
     /**
      * Create a Rule Type, or return a pre-existing Rule Type, with the specified name.
@@ -87,12 +118,28 @@ public interface GraknGraph extends AutoCloseable{
     RuleType putRuleType(String name);
 
     /**
+     * Create a Rule Type, or return a pre-existing Rule Type, with the specified name.
+     *
+     * @param name A unique name for the Rule Type
+     * @return new or existing Rule Type with the provided Id.
+     */
+    RuleType putRuleType(TypeName name);
+
+    /**
      * Create a Relation Type, or return a pre-existing Relation Type, with the specified name.
      *
      * @param name A unique name for the Relation Type
      * @return A new or existing Relation Type with the provided Id.
      */
     RelationType putRelationType(String name);
+
+    /**
+     * Create a Relation Type, or return a pre-existing Relation Type, with the specified name.
+     *
+     * @param name A unique name for the Relation Type
+     * @return A new or existing Relation Type with the provided Id.
+     */
+    RelationType putRelationType(TypeName name);
 
     /**
      * Create a Role Type, or return a pre-existing Role Type, with the specified name.
@@ -102,6 +149,14 @@ public interface GraknGraph extends AutoCloseable{
      */
     RoleType putRoleType(String name);
 
+    /**
+     * Create a Role Type, or return a pre-existing Role Type, with the specified name.
+     *
+     * @param name A unique name for the Role Type
+     * @return new or existing Role Type with the provided Id.
+     */
+    RoleType putRoleType(TypeName name);
+
     //------------------------------------- Concept Lookup ----------------------------------
     /**
      * Get the Concept with identifier provided, if it exists.
@@ -109,7 +164,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param id A unique identifier for the Concept in the graph.
      * @return The Concept with the provided id or null if no such Concept exists.
      */
-    <T extends Concept> T getConcept(String id);
+    <T extends Concept> T getConcept(ConceptId id);
 
     /**
      * Get the Type with the name provided, if it exists.
@@ -117,7 +172,7 @@ public interface GraknGraph extends AutoCloseable{
      * @param name A unique name which identifies the Type in the graph.
      * @return The Type with the provided name or null if no such Type exists.
      */
-    Type getType(String name);
+    <T extends Type> T getType(TypeName name);
 
     /**
      * Get the Resources holding the value provided, if they exist.

@@ -18,76 +18,40 @@
 
 package ai.grakn.test.graql.analytics;
 
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.var;
-import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import ai.grakn.engine.loader.Loader;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
-import ai.grakn.concept.Entity;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
+import ai.grakn.engine.loader.Loader;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
 import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
-import ai.grakn.test.AbstractScalingTest;
+import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -101,12 +65,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 /**
  * These tests are used for generating a report of the performance of analytics. In order to run them on a machine use
@@ -115,22 +77,25 @@ import static org.junit.Assert.assertFalse;
  * NB: Grakn must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
  */
-public class ScalingTestIT extends AbstractScalingTest {
+@Ignore
+public class ScalingTestIT {
+
+    @ClassRule
+    public static final EngineContext context = EngineContext.startServer();
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};
 
     String keyspace;
-    private GraknGraphFactory factory;
     Logger LOGGER;
 
     // test parameters
-    int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 24; // the maximum number of non super nodes to add to the test graph
-    int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
-    int REPEAT = 3; // the number of times to repeat at each size for average runtimes
-    int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
-    int WORKER_DIVS = 4; // the number of divisions of MAX_WORKERS to use for testing
+    final int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
+    final int MAX_SIZE = 24; // the maximum number of non super nodes to add to the test graph
+    final int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
+    final int REPEAT = 3; // the number of times to repeat at each size for average runtimes
+    final int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
+    final int WORKER_DIVS = 4; // the number of divisions of MAX_WORKERS to use for testing
 
     // test variables
     int STEP_SIZE;
@@ -138,6 +103,7 @@ public class ScalingTestIT extends AbstractScalingTest {
     List<Integer> workerNumbers;
     List<String> headers;
 
+    @Ignore
     @Before
     public void setUp() {
         // compute the sample of graph sizes
@@ -150,26 +116,25 @@ public class ScalingTestIT extends AbstractScalingTest {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        factory = factoryWithNewKeyspace();
-        GraknGraph graph = factory.getGraph();
-        keyspace = graph.getKeyspace();
+        keyspace = context.graphWithNewKeyspace().getKeyspace();
 
         headers = new ArrayList<>();
         headers.add("Size");
         headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
 
         // fetch the logger
-        LOGGER = (Logger) org.slf4j.LoggerFactory.getLogger(ScalingTestIT.class);
+        LOGGER = (Logger) LoggerFactory.getLogger(ScalingTestIT.class);
         LOGGER.setLevel(Level.INFO);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ai.grakn.engine.loader.Loader.class)).setLevel(Level.INFO);
     }
 
+    @Ignore
     @After
     public void cleanGraph() {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         graph.clear();
     }
 
+    @Ignore
     @Test
     public void countIT() throws InterruptedException, ExecutionException, GraknValidationException, IOException {
         CSVPrinter printer = createCSVPrinter("countIT.txt");
@@ -187,7 +152,7 @@ public class ScalingTestIT extends AbstractScalingTest {
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
             LOGGER.info("current scale - super " + NUM_SUPER_NODES + " - nodes " + graphSize);
-            Long conceptCount = Long.valueOf(NUM_SUPER_NODES * (graphSize + 1) + graphSize);
+            Long conceptCount = (long) (NUM_SUPER_NODES * (graphSize + 1) + graphSize);
             printer.print(String.valueOf(conceptCount));
 
             LOGGER.info("start generate graph " + System.currentTimeMillis() / 1000L + "s");
@@ -195,7 +160,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             previousGraphSize = graphSize;
             LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
 
-            Long gremlinCount = Long.valueOf(NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
+            Long gremlinCount = (long) (NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
             LOGGER.info("gremlin count is: " +
                     Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().admin().getTinkerTraversal().count().next());
             gremlinCount += emptyCount;
@@ -227,137 +192,6 @@ public class ScalingTestIT extends AbstractScalingTest {
 
         printer.flush();
         printer.close();
-    }
-
-
-    @Test
-    public void persistConstantIncreasingLoadIT() throws InterruptedException, GraknValidationException, ExecutionException, IOException {
-        CSVPrinter printerWrite = createCSVPrinter("persistConstantIncreasingLoadITWrite.txt");
-        CSVPrinter printerMutate = createCSVPrinter("persistConstantIncreasingLoadITMutate.txt");
-
-        for (int graphSize : graphSizes) {
-            Long conceptCount = Long.valueOf(graphSize) * 3 / 2;
-            printerWrite.print(String.valueOf(conceptCount));
-            printerMutate.print(String.valueOf(conceptCount));
-            for (int workerNumber : workerNumbers) {
-                Long degreeAndPersistTimeWrite = 0L;
-                Long degreeAndPersistTimeMutate = 0L;
-
-                // repeat persist
-                for (int i = 0; i < REPEAT; i++) {
-                    LOGGER.info("repeat number: " + i);
-                    String CURRENT_KEYSPACE = keyspace
-                            + "g" + String.valueOf(graphSize)
-                            + "w" + String.valueOf(workerNumber)
-                            + "r" + String.valueOf(i);
-                    simpleOntology(CURRENT_KEYSPACE);
-
-                    // construct graph
-                    LOGGER.info("start generate graph " + System.currentTimeMillis() / 1000L + "s");
-                    addNodes(CURRENT_KEYSPACE, 0, graphSize);
-                    LOGGER.info("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
-
-                    GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
-                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
-
-                    LOGGER.info("persist degree");
-                    Long startTime = System.currentTimeMillis();
-                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
-                    Long stopTime = System.currentTimeMillis();
-                    degreeAndPersistTimeWrite += stopTime - startTime;
-                    LOGGER.info("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
-
-                    // mutate graph
-                    LOGGER.info("start mutate graph " + System.currentTimeMillis() / 1000L + "s");
-
-                    // add edges to force mutation
-                    addEdges(CURRENT_KEYSPACE, graphSize);
-
-                    LOGGER.info("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
-
-                    graph = Grakn.factory(Grakn.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
-                    LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
-
-                    LOGGER.info("mutate degree");
-                    startTime = System.currentTimeMillis();
-                    getDegreeQuery(Grakn.DEFAULT_URI,CURRENT_KEYSPACE, workerNumber).persist().execute();
-                    stopTime = System.currentTimeMillis();
-                    degreeAndPersistTimeMutate += stopTime - startTime;
-                    LOGGER.info("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
-
-                    LOGGER.info("start clean graph" + System.currentTimeMillis() / 1000L + "s");
-                    graph.clear();
-                    LOGGER.info("stop clean graph" + System.currentTimeMillis() / 1000L + "s");
-                }
-
-                degreeAndPersistTimeWrite /= REPEAT * 1000;
-                degreeAndPersistTimeMutate /= REPEAT * 1000;
-                LOGGER.info("time to degreesAndPersistWrite: " + degreeAndPersistTimeWrite);
-                LOGGER.info("time to degreesAndPersistMutate: " + degreeAndPersistTimeMutate);
-
-                printerWrite.print(String.valueOf(degreeAndPersistTimeWrite));
-                printerMutate.print(String.valueOf(degreeAndPersistTimeMutate));
-            }
-            printerWrite.println();
-            printerWrite.flush();
-            printerMutate.println();
-            printerMutate.flush();
-        }
-
-        printerWrite.close();
-        printerMutate.close();
-    }
-
-    @Test
-    public void testLargeDegreeMutationResultsInReadableGraphIT() throws Exception {
-
-        simpleOntology(keyspace);
-
-        // construct graph
-        addNodes(keyspace, 0, MAX_SIZE);
-
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
-
-        // assert mutated degrees are as expected
-        GraknGraph graph = factory.getGraph();
-        EntityType thing = graph.getEntityType("thing");
-        ResourceType degree = graph.getResourceType("degree");
-        Collection<Entity> things = thing.instances();
-
-        assertFalse(things.isEmpty());
-        things.forEach(thisThing -> {
-            assertEquals(1L, thisThing.resources(degree).size());
-            assertEquals(1L, thisThing.resources(degree).iterator().next().getValue());
-        });
-
-
-        // add edges to force mutation
-        addEdges(keyspace, MAX_SIZE);
-
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().showImplicitConcepts(true);
-        Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().graql().compute().degree().persist().execute();
-
-        // assert mutated degrees are as expected
-        graph = factory.getGraph();
-        thing = graph.getEntityType("thing");
-        things = thing.instances();
-        ResourceType degreeAlso = graph.getResourceType("degree");
-
-        assertFalse(things.isEmpty());
-        things.forEach(thisThing -> {
-            assertEquals(1L, thisThing.resources(degreeAlso).size());
-            assertEquals(2L, thisThing.resources(degreeAlso).iterator().next().getValue());
-        });
-
-        Collection<Relation> relations = graph.getRelationType("related").instances();
-
-        assertFalse(relations.isEmpty());
-        relations.forEach(thisRelation -> {
-            assertEquals(1L, thisRelation.resources().size());
-            assertEquals(2L, thisRelation.resources().iterator().next().getValue());
-        });
-
     }
 
     /**
@@ -404,6 +238,7 @@ public class ScalingTestIT extends AbstractScalingTest {
      *
      * median(g) = S*N
      */
+    @Ignore
     @Test
     public void testStatisticsWithConstantDegree() throws IOException, GraknValidationException {
         int totalSteps = NUM_DIVS;
@@ -416,17 +251,17 @@ public class ScalingTestIT extends AbstractScalingTest {
         Map<String,Function<ComputeQueryBuilderImplMock,Optional>> statisticsMethods = new HashMap<>();
         Map<String,Consumer<Number>> statisticsAssertions = new HashMap<>();
         methods.add("testStatisticsWithConstantDegreeSum.txt");
-        statisticsMethods.put(methods.get(0), queryBuilder -> getSumQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(0), queryBuilder -> getSumQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMin.txt");
-        statisticsMethods.put(methods.get(1), queryBuilder -> getMinQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(1), queryBuilder -> getMinQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMax.txt");
-        statisticsMethods.put(methods.get(2), queryBuilder -> getMaxQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(2), queryBuilder -> getMaxQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMean.txt");
-        statisticsMethods.put(methods.get(3), queryBuilder -> getMeanQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(3), queryBuilder -> getMeanQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeStd.txt");
-        statisticsMethods.put(methods.get(4), queryBuilder -> getStdQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(4), queryBuilder -> getStdQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
         methods.add("testStatisticsWithConstantDegreeMedian.txt");
-        statisticsMethods.put(methods.get(5), queryBuilder -> getMedianQuery(queryBuilder).of(Collections.singleton("degree")).execute());
+        statisticsMethods.put(methods.get(5), queryBuilder -> getMedianQuery(queryBuilder).of(Collections.singleton(TypeName.of("degree"))).execute());
 
         // load up the result files
         Map<String,CSVPrinter> printers = new HashMap<>();
@@ -450,9 +285,11 @@ public class ScalingTestIT extends AbstractScalingTest {
                 v_m--;
                 V_m+=2;
             }
-            loader.waitToFinish();
+            loader.waitToFinish(60000);
             LOGGER.info("stop loading data");
-            LOGGER.info("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
+            GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+            LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
+            graph.close();
 
             for (String method : methods) {
                 printers.get(method).print(2 * g * nodesPerStep);
@@ -461,9 +298,9 @@ public class ScalingTestIT extends AbstractScalingTest {
                     LOGGER.info("starting with: " + workerNumber + " threads");
 
                     // configure assertions
-                    final long currentG = Long.valueOf(g);
-                    final long N = Long.valueOf(nodesPerStep);
-                    final long S = Long.valueOf(totalSteps);
+                    final long currentG = (long) g;
+                    final long N = (long) nodesPerStep;
+                    final long S = (long) totalSteps;
                     statisticsAssertions.put(methods.get(0), number -> {
                         Number sum = currentG * N * (1L + currentG * N + 6L * S * N + 2L) / 2L;
                         assertEquals(sum.doubleValue(),
@@ -517,7 +354,9 @@ public class ScalingTestIT extends AbstractScalingTest {
             printers.get(method).flush();
             printers.get(method).close();
         }
-        factory.getGraph().clear();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph.clear();
+        graph.close();
     }
 
     private double meanOfSequence(long currentG, long nodesPerStep, long totalSteps) {
@@ -541,17 +380,6 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     }
 
-    private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
-        Loader loader = new Loader(keyspace);
-
-        for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
-            String nodeId = "node-" + nodeIndex;
-            loader.add(insert(var().isa("thing").has("node-id", nodeId)));
-        }
-
-        loader.waitToFinish();
-    }
-
     private void simpleOntology(String keyspace) throws GraknValidationException {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.putEntityType("thing");
@@ -572,34 +400,11 @@ public class ScalingTestIT extends AbstractScalingTest {
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
-            superNodes.add(thing.addEntity().getId());
+            superNodes.add(thing.addEntity().getId().getValue());
         }
         graph.commit();
         graph.close();
         return superNodes;
-    }
-
-    private void addEdges(String keyspace, int graphSize) {
-        // if graph size not even throw error for now
-        if (graphSize%2!=0) {
-            throw new RuntimeException("sorry graphsize has to be even");
-        }
-
-        Loader loader = new Loader(keyspace);
-
-        int startNode = 0;
-        while (startNode<graphSize) {
-
-            String nodeId1 = "node-" + startNode;
-            String nodeId2 = "node-" + ++startNode;
-            loader.add(match(var("node1").has("node-id",nodeId1),var("node2").has("node-id",nodeId2))
-                    .insert(var().isa("related")
-                            .rel("relation1", var("node1"))
-                            .rel("relation2", var("node2"))));
-
-            startNode++;
-        }
-        loader.waitToFinish();
     }
 
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
@@ -610,7 +415,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             List<Var> insertQuery = new ArrayList<>();
             insertQuery.add(var("node"+String.valueOf(nodeIndex)).isa("thing"));
             for (String supernodeId : superNodes) {
-                insertQuery.add(var(supernodeId).id(supernodeId));
+                insertQuery.add(var(supernodeId).id(ConceptId.of(supernodeId)));
                 insertQuery.add(var().isa("related")
                         .rel("relation1", "node"+String.valueOf(nodeIndex))
                         .rel("relation2", supernodeId));
@@ -618,19 +423,11 @@ public class ScalingTestIT extends AbstractScalingTest {
             loader.add(insert(insertQuery));
         }
 
-        loader.waitToFinish();
-    }
-
-    private DegreeQueryImplMock getDegreeQuery(String uri, String keyspace, int numWorkers) {
-        return ((DegreeQueryImplMock) getComputeQueryBuilder(uri, keyspace, numWorkers).degree());
+        loader.waitToFinish(60000);
     }
 
     private CountQueryImplMock getCountQuery(String uri, String keyspace, int numWorkers) {
         return ((CountQueryImplMock) getComputeQueryBuilder(uri, keyspace, numWorkers).count());
-    }
-
-    private MinQueryImplMock getMinQuery(String uri, String keyspace, int numWorkers) {
-        return getMinQuery(getComputeQueryBuilder(uri, keyspace, numWorkers));
     }
 
     private MinQueryImplMock getMinQuery(ComputeQueryBuilderImplMock cqb) {return ((MinQueryImplMock) cqb.min());}

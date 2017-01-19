@@ -18,34 +18,31 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.util.Schema;
+import ai.grakn.concept.TypeName;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
-import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
+public class DegreeAndPersistVertexProgram extends DegreeVertexProgram {
 
     private static final String KEYSPACE_KEY = "degreeAndPersistVertexProgram.keyspace";
     private static final String OF_TYPE_NAMES = "degreeAndPersistVertexProgram.ofTypeNames";
     private static final String DEGREE_NAME = "degreeAndPersistVertexProgram.degreeName";
 
     private BulkResourceMutate<Long> bulkResourceMutate;
-    private Set<String> ofTypeNames = new HashSet<>();
+    private Set<TypeName> ofTypeNames = new HashSet<>();
 
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(Set<String> types, Set<String> ofTypeNames,
-                                         String keySpace, String degreeName) {
+    public DegreeAndPersistVertexProgram(Set<TypeName> types, Set<TypeName> ofTypeNames,
+                                         String keySpace, TypeName degreeName) {
+        super(types, ofTypeNames);
         this.persistentProperties.put(KEYSPACE_KEY, keySpace);
         this.persistentProperties.put(DEGREE_NAME, degreeName);
-        this.selectedTypes = types;
-        this.ofTypeNames = ofTypeNames;
     }
 
     @Override
@@ -58,36 +55,14 @@ public class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeNames.add((String) configuration.getProperty(OF_TYPE_NAMES + "." + key)));
-    }
-
-    @Override
-    public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
-        switch (memory.getIteration()) {
-            case 0:
-                if (selectedTypes.contains(Utility.getVertexType(vertex)))
-                    degreeStep0(vertex, messenger);
-                break;
-
-            case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name()))
-                    degreeStep1(messenger);
-                break;
-
-            case 2:
-                String type = Utility.getVertexType(vertex);
-                if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
-                    bulkResourceMutate.putValue(vertex, getEdgeCount(messenger));
-                }
-                break;
-        }
+                ofTypeNames.add(TypeName.of((String) configuration.getProperty(OF_TYPE_NAMES + "." + key))));
     }
 
     @Override
     public void workerIterationStart(Memory memory) {
         if (memory.getIteration() == 2) {
             bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE_KEY),
-                    (String) persistentProperties.get(DEGREE_NAME));
+                    TypeName.of((String) persistentProperties.get(DEGREE_NAME)));
         }
     }
 

@@ -18,10 +18,6 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Resource;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;

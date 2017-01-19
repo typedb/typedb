@@ -1,20 +1,25 @@
 package ai.grakn.test;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
+import com.jayway.restassured.RestAssured;
+import info.batey.kafka.unit.KafkaUnit;
 import jline.internal.Log;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -26,17 +31,38 @@ import static ai.grakn.graql.Graql.var;
  * @author borislav
  *
  */
-public interface GraknTestEnv {
-    String CONFIG = System.getProperty("grakn.test-profile");
-    AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
-    AtomicBoolean HTTP_RUNNING = new AtomicBoolean(false);
-    
-    static void hideLogs() {
-        Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
+public abstract class GraknTestEnv {
+
+    private static String CONFIG = System.getProperty("grakn.test-profile");
+    private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
+    private static AtomicBoolean ENGINE_RUNNING = new AtomicBoolean(false);
+    private static AtomicBoolean HTTP_RUNNING = new AtomicBoolean(false);
+
+    private static final ConfigProperties properties = ConfigProperties.getInstance();
+
+    private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
+    private static Path tempDirectory;
+
+    public static void ensureCassandraRunning() throws Exception {
+        if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
+            startEmbeddedCassandra();
+            System.out.println("CASSANDRA RUNNING.");
+        }
     }
 
-    static void ensureEngineRunning() throws Exception {
+    //TODO :: This will be removed when we fix BUG #12029. We will be able to run AbstractGraphTest classes
+    //TODO :: without touching any engine component. Starting the HTTP server will move into startEngine()
+    public static void ensureHTTPRunning(){
+        if(HTTP_RUNNING.compareAndSet(false, true)) {
+            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
+            GraknEngineServer.startHTTP();
+        }
+    }
+
+    /**
+     * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
+     */
+    static void startEngine() throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -46,16 +72,48 @@ public interface GraknTestEnv {
     	// The reason is that the default configuration of Grakn uses the Titan factory while the default
     	// test profile is tinker: so when running a unit test within an IDE without any extra parameters,
     	// we end up wanting to use the TitanFactory but without starting Cassandra first.
-    	
-//        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
-    	
-        if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
-            startEmbeddedCassandra();
-            System.out.println("CASSANDRA RUNNING.");
+
+        if(ENGINE_RUNNING.compareAndSet(false, true)) {
+            System.out.println("STARTING ENGINE...");
+
+            ensureCassandraRunning();
+
+            tempDirectory = Files.createTempDirectory("graknKafkaUnit " + UUID.randomUUID());
+            kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
+            kafkaUnit.startup();
+
+            // start engine
+            ensureHTTPRunning();
+            GraknEngineServer.startCluster();
+
+            try {Thread.sleep(5000);} catch(InterruptedException ex) { Log.info("Thread sleep interrupted."); }
+            
+            System.out.println("ENGINE STARTED.");
         }
-        
-        if(HTTP_RUNNING.compareAndSet(false, true)) {
-            GraknEngineServer.startHTTP();
+    }
+
+    static void stopEngine() throws IOException {
+        if(ENGINE_RUNNING.compareAndSet(true, false)) {
+            System.out.println("STOPPING ENGINE...");
+
+            noThrow(GraknEngineServer::stopCluster, "Problem while shutting down Zookeeper cluster.");
+            noThrow(kafkaUnit::shutdown, "Problem while shutting down Kafka Unit.");
+            noThrow(GraknTestEnv::clearGraphs, "Problem while clearing graphs.");
+            noThrow(GraknTestEnv::stopHTTP, "Problem while shutting down Engine");
+
+            FileUtils.deleteDirectory(tempDirectory.toFile());
+
+            System.out.println("ENGINE STOPPED.");
+        }
+
+        // There is no way to stop the embedded Casssandra, no such API offered.
+    }
+
+    //TODO :: This will be removed when we fix BUG #12029. We will be able to run AbstractGraphTest classes
+    //TODO :: without touching any engine component. Stopping the HTTP server will move into stopEngine()
+    static void stopHTTP(){
+        if(HTTP_RUNNING.compareAndSet(true, false)) {
+            GraknEngineServer.stopHTTP();
         }
     }
 
@@ -77,28 +135,6 @@ public interface GraknTestEnv {
 
         graphFactory.refershConnections();
     }
-    
-    static void shutdownEngine()  {
-        if(HTTP_RUNNING.compareAndSet(true, false)) {
-            GraknEngineServer.stopHTTP();
-            // The Spark framework we are using kicks off a shutdown process in a separate
-            // thread and there is not way to detect when it is finished. The only option
-            // we have is to "wait a while" (Boris).
-            try {Thread.sleep(5000);} catch(InterruptedException ex) { Log.info("Thread sleep interrupted."); }
-        }
-        // There is no way to stop the embedded Casssandra, no such API offered.
-    }
-
-    static GraknGraphFactory factoryWithNewKeyspace() {
-        String keyspace;
-        if (usingOrientDB()) {
-            keyspace = "memory";
-        } else {
-            // Embedded Casandra has problems dropping keyspaces that start with a number
-            keyspace = "a"+UUID.randomUUID().toString().replaceAll("-", "");
-        }
-        return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
-    }
 
     static void startEmbeddedCassandra() {
         try {
@@ -115,15 +151,26 @@ public interface GraknTestEnv {
         }
     }
 
-    static boolean usingTinker() {
+    static String randomKeyspace(){
+        // Embedded Casandra has problems dropping keyspaces that start with a number
+        return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+    }
+
+    static void hideLogs() {
+        Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.OFF);
+//        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
+    }
+
+    public static boolean usingTinker() {
         return "tinker".equals(CONFIG);
     }
 
-    static boolean usingTitan() {
+    public static boolean usingTitan() {
         return "titan".equals(CONFIG);
     }
 
-    static boolean usingOrientDB() {
+    public static boolean usingOrientDB() {
         return "orientdb".equals(CONFIG);
     }
 }

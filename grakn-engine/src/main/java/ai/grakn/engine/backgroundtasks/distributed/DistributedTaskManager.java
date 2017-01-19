@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,8 +48,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * Class to manage tasks distributed using Kafka.
  */
 public class DistributedTaskManager implements TaskManager{
-	private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
-	private final AtomicBoolean OPENED = new AtomicBoolean(false);
+    private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
+    private final AtomicBoolean OPENED = new AtomicBoolean(false);
     private static DistributedTaskManager instance = null;
 
     private KafkaProducer<String, String> producer;
@@ -57,8 +57,9 @@ public class DistributedTaskManager implements TaskManager{
     private SynchronizedStateStorage zkStorage;
 
     public static synchronized DistributedTaskManager getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new DistributedTaskManager();
+        }
         return instance;
     }
 
@@ -95,7 +96,7 @@ public class DistributedTaskManager implements TaskManager{
     }
 
     @Override
-    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
         Boolean recurring = period > 0;
 
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);

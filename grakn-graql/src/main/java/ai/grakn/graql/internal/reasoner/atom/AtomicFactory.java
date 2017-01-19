@@ -18,12 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.admin.ReasonerQuery;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -42,8 +43,8 @@ public class AtomicFactory {
      * @param parent query the copied atom should belong to
      * @return atom copy
      */
-    public static Atomic create(Atomic atom, Query parent) {
-        Atomic copy = atom.clone();
+    public static Atomic create(Atomic atom, ReasonerQuery parent) {
+        Atomic copy = atom.copy();
         copy.setParentQuery(parent);
         return copy;
     }
@@ -51,14 +52,14 @@ public class AtomicFactory {
     /**
      * @param pattern conjunction of patterns to be converted to atoms
      * @param parent query the created atoms should belong to
-     * @param graph graph of interest
      * @return set of atoms
      */
-    public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent, GraknGraph graph) {
+    public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()
                 .flatMap(var -> var.getProperties()
-                        .flatMap(prop -> PropertyMapper.map(prop, var, pattern.getVars(), parent, graph).stream()))
+                        .map(vp -> vp.mapToAtom(var, pattern.getVars(), parent))
+                        .filter(Objects::nonNull))
                 .forEach(atoms::add);
         return atoms;
     }

@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,23 +40,6 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<Map<String, Set<String>>> members();
 
     /**
-     * Persist the result in the graph after executing the query. Be default, the cluster label is saved as a resource
-     * of the vertex, with resource type name "cluster".
-     *
-     * @return a ClusterQuery with persist flag set
-     */
-    ClusterQuery<T> persist();
-
-    /**
-     * Persist the result in the graph after executing the query. The cluster label is saved as a resource of
-     * the vertex.
-     *
-     * @param resourceTypeName the name of the resource type to save the cluster label
-     * @return a ClusterQuery with persist flag and customised resource type name set
-     */
-    ClusterQuery<T> persist(String resourceTypeName);
-
-    /**
      * @param clusterSize the size of the clusters returned and/or persisted
      * @return a ClusterQuery with cluster set
      */
@@ -73,7 +57,7 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      * @return a ClusterQuery with the subTypeNames set
      */
     @Override
-    ClusterQuery<T> in(Collection<String> subTypeNames);
+    ClusterQuery<T> in(Collection<TypeName> subTypeNames);
 
     /**
      * @param graph the graph to execute the query on

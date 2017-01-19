@@ -56,10 +56,11 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      */
     public RoleType getRole() {
         Concept concept = type();
-        if(concept != null)
+        if(concept != null) {
             return concept.asRoleType();
-        else
+        } else {
             throw new NoEdgeException(toString(), Schema.BaseType.ROLE_TYPE.name());
+        }
     }
 
     /**
@@ -68,10 +69,11 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      */
     public InstanceImpl getRolePlayer() {
         Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.ROLE_PLAYER);
-        if(concept != null)
+        if(concept != null) {
             return (InstanceImpl) concept;
-        else
+        } else {
             return null;
+        }
     }
 
     /**
@@ -82,10 +84,11 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      */
     public CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         String hash;
-        if(getGraknGraph().isBatchLoadingEnabled())
+        if(getGraknGraph().isBatchLoadingEnabled()) {
             hash = "CastingBaseId_" + this.getBaseIdentifier() + UUID.randomUUID().toString();
-        else
+        } else {
             hash = generateNewHash(role, rolePlayer);
+        }
         setUniqueProperty(Schema.ConceptProperty.INDEX, hash);
         return this;
     }

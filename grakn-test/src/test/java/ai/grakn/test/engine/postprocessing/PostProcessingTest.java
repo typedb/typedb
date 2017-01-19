@@ -20,6 +20,7 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -31,57 +32,55 @@ import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 
-import java.util.UUID;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static ai.grakn.test.GraknTestEnv.*;
 
-public class PostProcessingTest extends EngineTestBase {
-    private PostProcessing postProcessing;
-    private GraknGraph graknGraph;
-    private Cache cache;
-    private String keyspace;
+public class PostProcessingTest {
+    private PostProcessing postProcessing = PostProcessing.getInstance();
+    private Cache cache = Cache.getInstance();
+
+    private GraknGraph graph;
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @BeforeClass
-    public static void startEngine() throws Exception{
+    public static void onlyRunOnTinker(){
         assumeTrue(usingTinker());
     }
 
     @Before
     public void setUp() throws Exception {
-        cache = Cache.getInstance();
-        keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        postProcessing = PostProcessing.getInstance();
-        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = engine.graphWithNewKeyspace();
     }
 
     @After
     public void takeDown() throws InterruptedException {
-        cache.getCastingJobs(keyspace).clear();
-        cache.getResourceJobs(keyspace).clear();
+        cache.getCastingJobs(graph.getKeyspace()).clear();
+        cache.getResourceJobs(graph.getKeyspace()).clear();
     }
 
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
-        RoleType roleType1 = graknGraph.putRoleType("role 1");
-        RoleType roleType2 = graknGraph.putRoleType("role 2");
-        graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        RoleType roleType1 = graph.putRoleType("role 1");
+        RoleType roleType2 = graph.putRoleType("role 2");
+        graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
-        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
-        roleType1 = graknGraph.getRoleType("role 1");
-        roleType2 = graknGraph.getRoleType("role 2");
-        RelationType relationType = graknGraph.getRelationType("rel type");
-        EntityType thing = graknGraph.getEntityType("thing");
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraphBatchLoading();
+        roleType1 = graph.getRoleType("role 1");
+        roleType2 = graph.getRoleType("role 2");
+        RelationType relationType = graph.getRelationType("rel type");
+        EntityType thing = graph.getEntityType("thing");
 
         Instance instance1 = thing.addEntity();
         Instance instance2 = thing.addEntity();
@@ -91,54 +90,54 @@ public class PostProcessingTest extends EngineTestBase {
         relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
         //Record Needed Ids
-        String relationTypeId = relationType.getId();
-        String mainRoleTypeId = roleType1.getId();
-        String mainInstanceId = instance1.getId();
-        String otherRoleTypeId = roleType2.getId();
-        String otherInstanceId3 = instance3.getId();
-        String otherInstanceId4 = instance4.getId();
+        ConceptId relationTypeId = relationType.getId();
+        ConceptId mainRoleTypeId = roleType1.getId();
+        ConceptId mainInstanceId = instance1.getId();
+        ConceptId otherRoleTypeId = roleType2.getId();
+        ConceptId otherInstanceId3 = instance3.getId();
+        ConceptId otherInstanceId4 = instance4.getId();
 
-        graknGraph.commit();
+        graph.commit();
 
         //Check Number of castings is as expected
-        Assert.assertEquals(2, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
-        waitForCache(true, keyspace, 4);
+        waitForCache(true, graph.getKeyspace(), 4);
         //Now fix everything
         postProcessing.run();
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
     }
 
-    private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
+    private void buildDuplicateCasting(ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
         //Get Needed Grakn Objects
-        RelationType relationType = graknGraph.getConcept(relationTypeId);
-        Instance otherInstance = graknGraph.getConcept(otherInstanceId);
-        RoleType otherRoleType = graknGraph.getConcept(otherRoleTypeId);
+        RelationType relationType = graph.getConcept(relationTypeId);
+        Instance otherInstance = graph.getConcept(otherInstanceId);
+        RoleType otherRoleType = graph.getConcept(otherRoleTypeId);
         Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
-        String relationId = relation.getId();
+        ConceptId relationId = relation.getId();
 
-        graknGraph.commit();
+        graph.commit();
 
-        Graph rawGraph = ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph();
+        Graph rawGraph = ((AbstractGraknGraph) this.graph).getTinkerPopGraph();
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().
-                hasId(mainRoleTypeId).next();
+                hasId(mainRoleTypeId.getValue()).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
-                hasId(relationId).next();
+                hasId(relationId.getValue()).next();
 
         Vertex mainInstanceVertex = rawGraph.traversal().V().
-                hasId(mainInstanceId).next();
+                hasId(mainInstanceId.getValue()).next();
 
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
@@ -187,9 +186,9 @@ public class PostProcessingTest extends EngineTestBase {
     private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
         AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;
         Vertex originalResource = (Vertex) graph.getTinkerTraversal()
-                .hasId(resource.getId()).next();
+                .hasId(resource.getId().getValue()).next();
         Vertex vertexResourceType = (Vertex) graph.getTinkerTraversal()
-                .hasId(resourceType.getId()).next();
+                .hasId(resourceType.getId().getValue()).next();
 
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));

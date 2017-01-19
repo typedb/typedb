@@ -18,16 +18,21 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -48,14 +53,13 @@ import java.util.Set;
 public abstract class Atom extends AtomBase {
 
     protected Type type = null;
-    protected String typeId = null;
+    protected ConceptId typeId = null;
 
-    protected Atom(VarAdmin pattern) { this(pattern, null);}
-    protected Atom(VarAdmin pattern, Query par) { super(pattern, par);}
+    protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
-        this.typeId = a.typeId;
+        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
     @Override
@@ -102,18 +106,15 @@ public abstract class Atom extends AtomBase {
 
     @Override
     public boolean isRecursive(){
-        if (isResource()) return false;
+        if (isResource() || getType() == null) return false;
         boolean atomRecursive = false;
 
-        String typeId = getTypeId();
-        if (typeId.isEmpty()) return false;
         Type type = getType();
         Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
         Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
 
         for(Rule rule : presentInConclusion)
             atomRecursive |= presentInHypothesis.contains(rule);
-
         return atomRecursive;
     }
 
@@ -126,15 +127,16 @@ public abstract class Atom extends AtomBase {
      * @return corresponding type if any
      */
     public Type getType(){
-        if (type == null)
-            type = getParentQuery().graph().getType(typeId);
+        if (type == null && typeId != null) {
+            type = getParentQuery().graph().getConcept(typeId).asType();
+        }
         return type;
     }
 
     /**
      * @return type id of the corresponding type if any
      */
-    public String getTypeId(){ return typeId;}
+    public ConceptId getTypeId(){ return typeId;}
 
     /**
      * @return value variable name
@@ -146,18 +148,30 @@ public abstract class Atom extends AtomBase {
     /**
      * @return set of predicates relevant to this atom
      */
-    public abstract Set<Predicate> getPredicates();
+    public Set<Predicate> getPredicates() {
+        Set<Predicate> predicates = new HashSet<>();
+        predicates.addAll(getValuePredicates());
+        predicates.addAll(getIdPredicates());
+        return predicates;
+    }
 
     /**
      * @return set of id predicates relevant to this atom
      */
-    public abstract Set<Predicate> getIdPredicates();
+    public Set<IdPredicate> getIdPredicates() {
+        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+    }
 
     /**
      * @return set of value predicates relevant to this atom
      */
-    public abstract Set<Predicate> getValuePredicates();
-
+    public Set<ValuePredicate> getValuePredicates(){
+        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
+            .filter(atom -> atom.getVarName().equals(getValueVariable()))
+            .collect(Collectors.toSet());
+    }
 
     /**
      * @return set of types relevant to this atom
@@ -165,7 +179,7 @@ public abstract class Atom extends AtomBase {
     public Set<Atom> getTypeConstraints(){
         Set<Atom> relevantTypes = new HashSet<>();
         //ids from indirect types
-        getParentQuery().getTypeConstraints().stream()
+        ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(atom -> {
                     relevantTypes.add(atom);
@@ -206,5 +220,5 @@ public abstract class Atom extends AtomBase {
      * @param q query the rewritten atom should belong to
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parent, Query q){ return new Pair<>(this, new HashMap<>());}
+    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parent, ReasonerQuery q){ return new Pair<>(this, new HashMap<>());}
 }

@@ -26,7 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import com.jayway.restassured.http.ContentType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
@@ -43,9 +43,12 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CommitLogControllerTest extends EngineTestBase {
+public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
-    private Cache cache = Cache.getInstance();
+    private final Cache cache = Cache.getInstance();
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void setUp() throws Exception {
@@ -114,6 +117,8 @@ public class CommitLogControllerTest extends EngineTestBase {
             assertTrue(concept.isResource());
         });
 
+        bob.close();
+        tim.close();
     }
 
     private void addSomeData(GraknGraph graph) throws GraknValidationException {

@@ -2,10 +2,13 @@ package ai.grakn.test.graph;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.test.EngineContext;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -18,10 +21,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-public class GraphTest extends AbstractRollbackGraphTest {
+public class GraphTest {
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Test
     public void testSwitchingBetweenNormalAndBatchGraphCleanly() throws Exception {
+        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        GraknGraph graph = factory.getGraph();
+
         String thing = "thing";
         graph.putEntityType(thing);
         graph.commit();
@@ -40,11 +49,11 @@ public class GraphTest extends AbstractRollbackGraphTest {
         assertNotNull(graph.getRoleType(related2));
         assertNotNull(graph.getRelationType(related));
 
-        String e1 = graph.getEntityType(thing).addEntity().getId();
+        ConceptId e1 = graph.getEntityType(thing).addEntity().getId();
         graph.commit();
 
         graph = factory.getGraphBatchLoading();
-        String e2 = graph.getEntityType(thing).addEntity().getId();
+        ConceptId e2 = graph.getEntityType(thing).addEntity().getId();
         graph.commit();
 
         graph = factory.getGraph();
@@ -52,7 +61,7 @@ public class GraphTest extends AbstractRollbackGraphTest {
         graph.commit();
 
         graph = factory.getGraphBatchLoading();
-        String r1 = graph.getRelationType(related).addRelation()
+        ConceptId r1 = graph.getRelationType(related).addRelation()
                 .putRolePlayer(graph.getRoleType(related1),graph.getConcept(e1))
                 .putRolePlayer(graph.getRoleType(related2),graph.getConcept(e2)).getId();
         graph.commit();
@@ -73,14 +82,15 @@ public class GraphTest extends AbstractRollbackGraphTest {
 
     @Test
     public void isClosedTest() throws Exception {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, "isitclosed").getGraph();
+        GraknGraph graph = engine.graphWithNewKeyspace();
+        String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
         graph.commit();
 
         assertFalse(graph.isClosed());
 
         HashSet<Future> futures = new HashSet<>();
-        futures.add(Executors.newCachedThreadPool().submit(this::addThingToBatch));
+        futures.add(Executors.newCachedThreadPool().submit(() -> addThingToBatch(keyspace)));
 
         for (Future future : futures) {
             future.get();
@@ -88,10 +98,12 @@ public class GraphTest extends AbstractRollbackGraphTest {
 
         assertFalse(graph.isClosed());
         assertFalse(graph.getEntityType("thing").instances().isEmpty());
+
+        graph.close();
     }
 
-    private void addThingToBatch(){
-        try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, "isitclosed").getGraph()) {
+    private void addThingToBatch(String keyspace){
+        try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
             graphBatchLoading.getEntityType("thing").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
@@ -105,5 +117,7 @@ public class GraphTest extends AbstractRollbackGraphTest {
         GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).getGraph();
         GraknGraph graph2 = GraphFactory.getInstance().getGraph(key);
         assertEquals(graph1, graph2);
+        graph1.close();
+        graph2.close();
     }
 }

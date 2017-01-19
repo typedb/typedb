@@ -20,8 +20,6 @@ package ai.grakn.migration.owl;
 
 import ai.grakn.migration.base.io.MigrationOptions;
 
-import static ai.grakn.migration.base.io.MigrationCLI.die;
-
 /**
  * Configure the default OWL migration options and access arguments passed by the user
  * @author alexandraorth
@@ -29,7 +27,7 @@ import static ai.grakn.migration.base.io.MigrationCLI.die;
 public class OwlMigrationOptions extends MigrationOptions {
 
     public OwlMigrationOptions(String[] args){
-        super(args);
+        super();
         options.addOption("i", "input", true, "input csv file");
         parse(args);
     }

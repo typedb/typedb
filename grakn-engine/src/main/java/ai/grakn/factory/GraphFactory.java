@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class GraphFactory {
-    private Properties properties;
+    private final Properties properties;
     private static GraphFactory instance = null;
 
 
@@ -45,8 +45,6 @@ public class GraphFactory {
 
         try(FileInputStream input = new FileInputStream(pathToConfig)){
             properties.load(input);
-            System.out.println("Path to graph config is: " + pathToConfig);
-            System.out.println("Properties are: " + properties);
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
         }

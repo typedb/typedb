@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,7 +40,7 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
      * @param resourceTypeNames a collection of types of resources to execute the query on
      * @return a MeanQuery with the subTypeNames set
      */
-    MeanQuery of(Collection<String> resourceTypeNames);
+    MeanQuery of(Collection<TypeName> resourceTypeNames);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
@@ -53,7 +54,7 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
      * @return a MeanQuery with the subTypeNames set
      */
     @Override
-    MeanQuery in(Collection<String> subTypeNames);
+    MeanQuery in(Collection<TypeName> subTypeNames);
 
     /**
      * Execute the query.

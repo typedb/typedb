@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 
@@ -84,12 +86,12 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
      */
-    Optional<String> getId();
+    Optional<ConceptId> getId();
 
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
-    Optional<String> getTypeName();
+    Optional<TypeName> getTypeName();
 
     /**
      * @return all variables that this variable references
@@ -105,7 +107,7 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return all type names that this variable refers to
      */
-    Set<String> getTypeNames();
+    Set<TypeName> getTypeNames();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')

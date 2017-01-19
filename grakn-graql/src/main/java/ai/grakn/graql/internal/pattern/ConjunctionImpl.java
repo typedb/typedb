@@ -27,7 +27,9 @@ import ai.grakn.graql.admin.VarAdmin;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 

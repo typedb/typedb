@@ -130,8 +130,9 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     private static void makeEdgeLabels(TitanManagement management){
         for (Schema.EdgeLabel edgeLabel : Schema.EdgeLabel.values()) {
             EdgeLabel label = management.getEdgeLabel(edgeLabel.getLabel());
-            if(label == null)
+            if(label == null) {
                 management.makeEdgeLabel(edgeLabel.getLabel()).make();
+            }
         }
     }
 
@@ -153,8 +154,9 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
                 String[] propertyKey = keys.getString(edgeLabel).split(",");
                 for (String aPropertyKey : propertyKey) {
                     PropertyKey key = management.getPropertyKey(aPropertyKey);
-                    if (key == null)
+                    if (key == null) {
                         throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + aPropertyKey + "] does not exist");
+                    }
 
                     RelationType relationType = management.getRelationType(edgeLabel);
                     if (management.getRelationIndex(relationType, edgeLabel + "by" + aPropertyKey) == null) {
@@ -190,8 +192,9 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
                 boolean isUnique = Boolean.parseBoolean(keys.getString(propertyKeyLabel));
                 PropertyKey key = management.getPropertyKey(propertyKeyLabel);
                 TitanManagement.IndexBuilder indexBuilder = management.buildIndex(indexLabel, Vertex.class).addKey(key);
-                if (isUnique)
+                if (isUnique) {
                     indexBuilder.unique();
+                }
                 indexBuilder.buildCompositeIndex();
             }
         }

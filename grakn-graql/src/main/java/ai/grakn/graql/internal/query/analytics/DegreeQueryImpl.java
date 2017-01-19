@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeAndPersistVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
@@ -32,22 +33,24 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static java.util.stream.Collectors.joining;
 
 class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
 
     private boolean persist = false;
     private boolean ofTypeNamesSet = false;
-    private Set<String> ofTypeNames = new HashSet<>();
-    private String degreeName = Schema.Analytics.DEGREE.getName();
+    private Set<TypeName> ofTypeNames = new HashSet<>();
+    private TypeName degreeName = Schema.Analytics.DEGREE.getName();
 
     DegreeQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
@@ -60,15 +63,16 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
         initSubGraph();
         if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
         ofTypeNames.forEach(type -> {
-            if (!subTypeNames.contains(type))
+            if (!subTypeNames.contains(type)) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(type));
+            }
         });
 
         ComputerResult result;
         GraknComputer computer = getGraphComputer();
 
-        Set<String> withResourceRelationTypes = getHasResourceRelationTypes();
+        Set<TypeName> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeNames);
 
         if (ofTypeNames.isEmpty()) {
@@ -103,24 +107,12 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     }
 
     @Override
-    public DegreeQuery<String> persist() {
-        this.persist = true;
-        return (DegreeQuery<String>) this;
-    }
-
-    @Override
-    public DegreeQuery<String> persist(String resourceTypeName) {
-        this.degreeName = resourceTypeName;
-        return this.persist();
-    }
-
-    @Override
     public DegreeQuery<T> in(String... subTypeNames) {
         return (DegreeQuery<T>) super.in(subTypeNames);
     }
 
     @Override
-    public DegreeQuery<T> in(Collection<String> subTypeNames) {
+    public DegreeQuery<T> in(Collection<TypeName> subTypeNames) {
         return (DegreeQuery<T>) super.in(subTypeNames);
     }
 
@@ -128,13 +120,13 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     public DegreeQuery<T> of(String... ofTypeNames) {
         if (ofTypeNames.length > 0) {
             ofTypeNamesSet = true;
-            this.ofTypeNames = Sets.newHashSet(ofTypeNames);
+            this.ofTypeNames = Arrays.stream(ofTypeNames).map(TypeName::of).collect(Collectors.toSet());
         }
         return this;
     }
 
     @Override
-    public DegreeQuery<T> of(Collection<String> ofTypeNames) {
+    public DegreeQuery<T> of(Collection<TypeName> ofTypeNames) {
         if (!ofTypeNames.isEmpty()) {
             ofTypeNamesSet = true;
             this.ofTypeNames = Sets.newHashSet(ofTypeNames);
@@ -146,15 +138,16 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     String graqlString() {
         String string = "degrees";
 
-        if (ofTypeNamesSet) string += " of " + ofTypeNames.stream()
-                .map(StringConverter::idToString).collect(joining(", "));
+        if (ofTypeNamesSet) {
+            string += " of " + ofTypeNames.stream().map(StringConverter::typeNameToString).collect(joining(", "));
+        }
 
         string += subtypeString();
 
         if (persist) {
             string += " persist";
             if (!degreeName.equals(Schema.Analytics.DEGREE.getName())) {
-                string += " " + idToString(degreeName);
+                string += " " + typeNameToString(degreeName);
             }
             string += ";";
         }

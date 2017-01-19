@@ -20,7 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.backgroundtasks.LongRunningTask;
 import ai.grakn.test.engine.backgroundtasks.TestTask;
 import ch.qos.logback.classic.Level;
@@ -29,12 +29,19 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Date;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
@@ -44,10 +51,12 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
-public class TasksControllerTest extends EngineTestBase {
+public class TasksControllerTest {
     private String singleTask;
+
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @BeforeClass
     public static void startEngine() throws Exception{
@@ -58,11 +67,7 @@ public class TasksControllerTest extends EngineTestBase {
     public void setUp() throws Exception {
         assumeFalse(usingTinker());
         DistributedTaskManager manager = DistributedTaskManager.getInstance();
-        singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
-
-        // Stopping tasks is not currently supported by the DistributedTaskManager.
-//        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
-//        taskManager.stopTask(singleTask, this.getClass().getName());
+        singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0, new JSONObject());
     }
 
     @Test

@@ -19,14 +19,16 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
+import java.io.Serializable;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -43,13 +45,13 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<String> allSubTypes = getCombinedSubTypes();
+        Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new StdMapReduce(statisticsResourceTypeNames, dataType));
-        Map<String, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
-        Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
+        Map<Serializable, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
         double count = stdTuple.get(StdMapReduce.COUNT);
@@ -63,7 +65,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery of(Collection<String> resourceTypeNames) {
+    public StdQuery of(Collection<TypeName> resourceTypeNames) {
         return (StdQuery) setStatisticsResourceType(resourceTypeNames);
     }
 
@@ -73,7 +75,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery in(Collection<String> subTypeNames) {
+    public StdQuery in(Collection<TypeName> subTypeNames) {
         return (StdQuery) super.in(subTypeNames);
     }
 

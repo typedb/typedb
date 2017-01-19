@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -30,6 +31,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.InvalidConceptTypeException;
@@ -86,9 +88,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The concept itself casted to the correct interface itself
      */
     private T setProperty(String key, Object value){
-        if(value == null)
+        if(value == null) {
             vertex.property(key).remove();
-        else {
+        } else {
             VertexProperty<Object> foundProperty = vertex.property(key);
             if(foundProperty.isPresent() && foundProperty.value().equals(value)){
                return getThis();
@@ -124,10 +126,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The concept itself casted to the correct interface itself
      */
     T setUniqueProperty(Schema.ConceptProperty key, String id){
-        if(graknGraph.isBatchLoadingEnabled() || updateAllowed(key, id))
+        if(graknGraph.isBatchLoadingEnabled() || updateAllowed(key, id)) {
             return setProperty(key, id);
-        else
+        } else {
             throw new ConceptNotUniqueException(this, key, id);
+        }
     }
 
     /**
@@ -454,14 +457,16 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     public <X> X getProperty(Schema.ConceptProperty key){
         VertexProperty<X> property = vertex.property(key.name());
-        if(property != null && property.isPresent())
+        if(property != null && property.isPresent()) {
             return property.value();
+        }
         return null;
     }
     public Boolean getPropertyBoolean(Schema.ConceptProperty key){
         Boolean value = getProperty(key);
-        if(value == null)
+        if(value == null) {
             return false;
+        }
         return value;
     }
 
@@ -503,16 +508,16 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return A string representing the concept's unique id.
      */
     @Override
-    public String getId(){
-        return getProperty(Schema.ConceptProperty.ID);
+    public ConceptId getId(){
+        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
     }
 
     /**
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public String getType(){
-        return getProperty(Schema.ConceptProperty.TYPE);
+    public TypeName getType(){
+        return TypeName.of(getProperty(Schema.ConceptProperty.TYPE));
     }
 
     /**
@@ -536,19 +541,20 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     public EdgeImpl getEdgeOutgoingOfType(Schema.EdgeLabel type) {
         Set<EdgeImpl> edges = getEdgesOfType(Direction.OUT, type);
-        if(edges.size() == 1)
+        if(edges.size() == 1) {
             return edges.iterator().next();
-        else if(edges.size() > 1)
+        } else if(edges.size() > 1) {
             throw new MoreThanOneEdgeException(this, type);
-        else
+        } else {
             return null;
+        }
     }
 
     /**
      *
      * @return The grakn graph this concept is bound to.
      */
-    protected AbstractGraknGraph getGraknGraph() {return graknGraph;}
+    protected AbstractGraknGraph<?> getGraknGraph() {return graknGraph;}
 
     //--------- Create Links -------//
     /**
@@ -558,10 +564,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     EdgeImpl putEdge(Concept to, Schema.EdgeLabel type){
         ConceptImpl toConcept = (ConceptImpl) to;
         GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
-        if(!traversal.hasNext())
+        if(!traversal.hasNext()) {
             return addEdge(toConcept, type);
-        else
+        } else {
             return graknGraph.getElementFactory().buildEdge(traversal.next(), graknGraph);
+        }
     }
 
     /**
@@ -608,11 +615,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
         GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
                 outE(type.getLabel()).as("edge").otherV().hasId(((ConceptImpl) toConcept).getBaseIdentifier()).select("edge");
-        if(traversal.hasNext())
+        if(traversal.hasNext()) {
             traversal.next().remove();
+        }
     }
 
-    private org.apache.tinkerpop.gremlin.structure.Edge addEdgeFrom(Vertex fromVertex, String type) {
+    private Edge addEdgeFrom(Vertex fromVertex, String type) {
         return fromVertex.addEdge(type, vertex);
     }
 
@@ -633,9 +641,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     @Override
     public String toString(){
-        String message = "[Base Type [" + getBaseType() + "] ";
-        if(getId() != null)
+        String message = "Base Type [" + getBaseType() + "] ";
+        if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";
+        }
 
         return message;
     }
@@ -646,8 +655,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return true if the underlying vertex has not been removed.
      */
     boolean isAlive() {
-        if(vertex == null)
+        if(vertex == null) {
             return false;
+        }
 
         try {
             return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();

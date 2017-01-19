@@ -53,7 +53,7 @@ public class GraqlShellTest {
     private PrintStream trueErr;
 
     private GraqlClientMock client;
-    private String expectedVersion = "graql-9.9.9";
+    private final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
     @Before
@@ -180,7 +180,7 @@ public class GraqlShellTest {
         assertThat(
                 result,
                 allOf(
-                        containsString(Schema.MetaSchema.RELATION.getName()), containsString("match"),
+                        containsString(Schema.MetaSchema.RELATION.getName().getValue()), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );

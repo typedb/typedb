@@ -18,7 +18,9 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
@@ -331,14 +333,6 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.MEMBERS() != null) cluster = cluster.members();
 
-        if (ctx.PERSIST() != null) {
-            if (ctx.id() != null) {
-                cluster = cluster.persist(visitId(ctx.id()));
-            } else {
-                cluster = cluster.persist();
-            }
-        }
-
         if (ctx.SIZE() != null) cluster = cluster.clusterSize(getInteger(ctx.INTEGER()));
 
         if (ctx.inList() != null) {
@@ -351,14 +345,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public DegreeQuery<?> visitDegrees(GraqlParser.DegreesContext ctx) {
         DegreeQuery<?> degree = queryBuilder.compute().degree();
-
-        if (ctx.PERSIST() != null) {
-            if (ctx.id() != null) {
-                degree = degree.persist(visitId(ctx.id()));
-            } else {
-                degree = degree.persist();
-            }
-        }
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));
@@ -377,17 +363,17 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Set<String> visitInList(GraqlParser.InListContext ctx) {
+    public Set<TypeName> visitInList(GraqlParser.InListContext ctx) {
         return visitNameList(ctx.nameList());
     }
 
     @Override
-    public Set<String> visitOfList(GraqlParser.OfListContext ctx) {
+    public Set<TypeName> visitOfList(GraqlParser.OfListContext ctx) {
         return visitNameList(ctx.nameList());
     }
 
     @Override
-    public Set<String> visitNameList(GraqlParser.NameListContext ctx) {
+    public Set<TypeName> visitNameList(GraqlParser.NameListContext ctx) {
         return ctx.name().stream().map(this::visitName).collect(toSet());
     }
 
@@ -498,7 +484,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         Var resource = var(getVariable(ctx.VARIABLE()));
 
         if (ctx.name() != null) {
-            String type = visitName(ctx.name());
+            TypeName type = visitName(ctx.name());
             return var -> var.has(type, resource);
         } else {
             return var -> var.has(resource);
@@ -507,10 +493,10 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
-        String type = visitName(ctx.name());
+        TypeName type = visitName(ctx.name());
 
         if (ctx.predicate() != null) {
-            return var -> var.has(type, visitPredicate(ctx.predicate()));
+            return var -> var.has(type, var().value(visitPredicate(ctx.predicate())));
         } else {
             return var -> var.has(type, var(getVariable(ctx.VARIABLE())));
         }
@@ -591,13 +577,13 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public String visitName(GraqlParser.NameContext ctx) {
-        return visitIdentifier(ctx.identifier());
+    public TypeName visitName(GraqlParser.NameContext ctx) {
+        return TypeName.of(visitIdentifier(ctx.identifier()));
     }
 
     @Override
-    public String visitId(GraqlParser.IdContext ctx) {
-        return visitIdentifier(ctx.identifier());
+    public ConceptId visitId(GraqlParser.IdContext ctx) {
+        return ConceptId.of(visitIdentifier(ctx.identifier()));
     }
 
     @Override
@@ -758,7 +744,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private long getInteger(TerminalNode integer) {
-        return Long.valueOf(integer.getText());
+        return Long.parseLong(integer.getText());
     }
 
     private Order getOrder(TerminalNode order) {

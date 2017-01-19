@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public class LongRunningTask implements BackgroundTask {
-    private AtomicBoolean isRunning = new AtomicBoolean(true);
+    private final AtomicBoolean isRunning = new AtomicBoolean(true);
 
     public void start(Consumer<String> saveCheckpoint, JSONObject config) {
         long initial = new Date().getTime();

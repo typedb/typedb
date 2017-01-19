@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.TypeName;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -70,7 +71,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public ShortestPathVertexProgram() {
     }
 
-    public ShortestPathVertexProgram(Set<String> selectedTypes, String sourceId, String destinationId) {
+    public ShortestPathVertexProgram(Set<TypeName> selectedTypes, String sourceId, String destinationId) {
         this.selectedTypes = selectedTypes;
         this.persistentProperties.put(SOURCE, sourceId);
         this.persistentProperties.put(DESTINATION, destinationId);
@@ -239,7 +240,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         while (iterator.hasNext()) {
             Tuple message = iterator.next();
             LOGGER.debug("Message " + i++ + ": " + message.getValue(0));
-            messageMap.put((int) message.getValue(1), message);
+            messageMap.put((Integer) message.getValue(1), message);
         }
         sendMessagesFromCasting(messenger, memory, messageMap);
     }
@@ -286,6 +287,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     memory.set(PREDECESSORS, messageMap.get(1).getValue(0) + DIVIDER +
                             messageMap.get(-2).getValue(0));
                     break;
+                default:
+                    throw new RuntimeException("unreachable");
             }
         } else if (messageMap.size() == 1) {
             LOGGER.debug("1 message received, message sum = " + sum);
@@ -302,6 +305,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 case -2:
                     messenger.sendMessage(messageScopeOut, messageMap.get(-2));
                     break;
+                default:
+                    throw new RuntimeException("unreachable");
             }
         }
     }

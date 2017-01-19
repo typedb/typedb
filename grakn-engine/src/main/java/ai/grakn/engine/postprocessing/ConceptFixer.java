@@ -67,9 +67,9 @@ class ConceptFixer {
             } catch (Exception e) {
                 LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage("resource", e.getMessage()), e);
                 if (retry++ > MAX_RETRY) {
-                    String message = "";
+                    StringBuilder message = new StringBuilder();
                     for (String resourceId : resourceIds) {
-                        message += resourceId;
+                        message.append(resourceId);
                     }
                     LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(message, e.getMessage()), e);
                     notDone = false;

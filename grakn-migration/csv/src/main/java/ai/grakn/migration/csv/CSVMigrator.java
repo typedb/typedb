@@ -25,9 +25,11 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -59,7 +61,7 @@ public class CSVMigrator extends AbstractMigrator {
      */
     public CSVMigrator(String template, File file) {
         try {
-            this.reader = new FileReader(file);
+            this.reader = new InputStreamReader(new FileInputStream(file), Charset.defaultCharset());
             this.template = template;
         } catch (IOException e){
             throw new RuntimeException(e);

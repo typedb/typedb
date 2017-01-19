@@ -20,8 +20,9 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
 import java.util.Map;
@@ -44,7 +45,7 @@ public class NotEquals extends AtomBase {
 
     private VarName refVarName;
 
-    public NotEquals(VarName varName, NeqProperty prop, Query parent){
+    public NotEquals(VarName varName, NeqProperty prop, ReasonerQuery parent){
         super(var(varName).neq(var(prop.getVar().getVarName())).admin(), parent);
         this.refVarName = prop.getVar().getVarName();
     }
@@ -76,7 +77,7 @@ public class NotEquals extends AtomBase {
     public int equivalenceHashCode() { return 1;}
 
     @Override
-    public Atomic clone() { return new NotEquals(this);}
+    public Atomic copy() { return new NotEquals(this);}
 
     private void setRefVarName(VarName var){
         refVarName = var;
@@ -87,10 +88,11 @@ public class NotEquals extends AtomBase {
     public void unify(Map<VarName, VarName> unifiers){
         super.unify(unifiers);
         VarName var = getReferenceVarName();
-        if (unifiers.containsKey(var))
+        if (unifiers.containsKey(var)) {
             setRefVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var))
+        } else if (unifiers.containsValue(var)) {
             setRefVarName(capture(var));
+        }
     }
 
     public VarName getReferenceVarName(){ return refVarName;}

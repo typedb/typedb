@@ -12,7 +12,7 @@ import java.util.Optional;
  */
 public class CountQueryImplMock extends CountQueryImpl {
 
-    int numberOfWorkers;
+    final int numberOfWorkers;
 
     public CountQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);

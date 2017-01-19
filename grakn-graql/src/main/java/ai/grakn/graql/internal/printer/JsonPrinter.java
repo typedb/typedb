@@ -31,19 +31,19 @@ import static java.util.stream.Collectors.toList;
 
 class JsonPrinter implements Printer<Json> {
     @Override
-    public String build(Json builder) {
+    public final String build(Json builder) {
         return builder.toString();
     }
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
-        Json json = Json.object("id", concept.getId());
+        Json json = Json.object("id", concept.getId().getValue());
 
         if (concept.isType()) {
-            json.set("name", concept.asType().getName());
-            json.set("sub", concept.asType().superType().getName());
+            json.set("name", concept.asType().getName().getValue());
+            json.set("sub", concept.asType().superType().getName().getValue());
         } else {
-            json.set("isa", concept.asInstance().type().getName());
+            json.set("isa", concept.asInstance().type().getName().getValue());
         }
 
         if (concept.isResource()) {
@@ -59,27 +59,27 @@ class JsonPrinter implements Printer<Json> {
     }
 
     @Override
-    public Json graqlString(boolean inner, boolean bool) {
+    public final Json graqlString(boolean inner, boolean bool) {
         return Json.make(bool);
     }
 
     @Override
-    public Json graqlString(boolean inner, Optional<?> optional) {
+    public final Json graqlString(boolean inner, Optional<?> optional) {
         return optional.map(item -> graqlString(inner, item)).orElse(null);
     }
 
     @Override
-    public Json graqlString(boolean inner, Collection<?> collection) {
+    public final Json graqlString(boolean inner, Collection<?> collection) {
         return Json.make(collection.stream().map(item -> graqlString(inner, item)).collect(toList()));
     }
 
     @Override
-    public Json graqlString(boolean inner, Map<?, ?> map) {
+    public final Json graqlString(boolean inner, Map<?, ?> map) {
         return Json.make(Maps.transformValues(map, value -> graqlString(true, value)));
     }
 
     @Override
-    public Json graqlStringDefault(boolean inner, Object object) {
+    public final Json graqlStringDefault(boolean inner, Object object) {
         return Json.make(object);
     }
 }

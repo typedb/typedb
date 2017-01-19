@@ -72,8 +72,9 @@ public class QueryAnswerStream {
         if(atoms.isEmpty()) return false;
         boolean filter = false;
         Iterator<NotEquals> it = atoms.iterator();
-        while (it.hasNext() && !filter)
+        while (it.hasNext() && !filter) {
             filter = NotEquals.notEqualsOperator(answer, it.next());
+        }
         return filter;
     }
 
@@ -123,7 +124,7 @@ public class QueryAnswerStream {
      * @param query query containing filters
      * @return filtered answers
      */
-    public QueryAnswerStream filterNonEquals(Query query){
+    public QueryAnswerStream filterNonEquals(ReasonerQueryImpl query){
         Set<NotEquals> filters = query.getFilters();
         if(filters.isEmpty()) return new QueryAnswerStream(this.stream);
         return new QueryAnswerStream(this.stream.flatMap(a -> nonEqualsFilterFunction.apply(a, filters)));

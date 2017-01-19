@@ -18,16 +18,20 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -42,13 +46,16 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class AdminTest extends AbstractMovieGraphTest {
+public class AdminTest {
+
+    @ClassRule
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        qb = graph.graql();
+        qb = rule.graph().graql();
     }
 
     @Test
@@ -61,7 +68,7 @@ public class AdminTest extends AbstractMovieGraphTest {
 
         Set<Type> types = Stream.of(
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(graph::getType).collect(toSet());
+        ).map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }
@@ -103,19 +110,19 @@ public class AdminTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertQueryMatchPatternEmpty() {
-        InsertQuery query = qb.insert(var().id("123").isa("movie"));
+        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"));
         assertFalse(query.admin().getMatchQuery().isPresent());
     }
 
     @Test
     public void testInsertQueryWithMatchQuery() {
-        InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
+        InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
         assertEquals(Optional.of("match $x isa movie;"), query.admin().getMatchQuery().map(Object::toString));
     }
 
     @Test
     public void testInsertQueryGetVars() {
-        InsertQuery query = qb.insert(var().id("123").isa("movie"), var().id("123").value("Hi"));
+        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).value("Hi"));
         // Should not merge variables
         assertEquals(2, query.admin().getVars().size());
     }
@@ -135,7 +142,7 @@ public class AdminTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertQueryGetTypes() {
         InsertQuery query = qb.insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
-        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(graph::getType).collect(toSet());
+        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
         assertEquals(types, query.admin().getTypes());
     }
 
@@ -145,7 +152,7 @@ public class AdminTest extends AbstractMovieGraphTest {
                         .insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
 
         Set<Type> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(graph::getType).collect(toSet());
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }

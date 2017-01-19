@@ -42,7 +42,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Date;
+import java.time.Instant;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
@@ -107,14 +107,17 @@ public class TasksController {
         int limit = 0;
         int offset = 0;
 
-        if(request.queryParams(LIMIT_PARAM) != null)
-            limit = Integer.valueOf(request.queryParams(LIMIT_PARAM));
+        if(request.queryParams(LIMIT_PARAM) != null) {
+            limit = Integer.parseInt(request.queryParams(LIMIT_PARAM));
+        }
 
-        if(request.queryParams(OFFSET_PARAM) != null)
-            offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
+        if(request.queryParams(OFFSET_PARAM) != null) {
+            offset = Integer.parseInt(request.queryParams(OFFSET_PARAM));
+        }
 
-        if(request.queryParams(TASK_STATUS_PARAMETER) != null)
+        if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
             status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
+        }
 
         JSONArray result = new JSONArray();
         for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
@@ -175,21 +178,24 @@ public class TasksController {
         Long interval = 0L;
         JSONObject configuration = new JSONObject();
 
-        if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null)
+        if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null) {
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
-        if(className == null || createdBy == null || runAt == null)
+        }
+        if(className == null || createdBy == null || runAt == null) {
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
+        }
 
         try {
-            if(request.body() != null && (!request.body().isEmpty()))
+            if(request.body() != null && (!request.body().isEmpty())) {
                 configuration = new JSONObject(request.body());
+            }
 
-            Date runAtDate = new Date(Long.valueOf(runAt));
+            Instant runAtInstant = Instant.ofEpochMilli(Long.parseLong(runAt));
 
             Class<?> clazz = Class.forName(className);
             BackgroundTask task = (BackgroundTask)clazz.newInstance();
 
-            String id = taskManager.scheduleTask(task, createdBy, runAtDate, interval, configuration);
+            String id = taskManager.scheduleTask(task, createdBy, runAtInstant, interval, configuration);
             JSONObject resp = new JSONObject()
                     .put("id", id);
 

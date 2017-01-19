@@ -18,11 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -42,13 +44,13 @@ import static ai.grakn.graql.internal.reasoner.Utility.capture;
  * @author Kasper Piskorski
  *
  */
-public abstract class AtomBase implements Atomic{
+public abstract class AtomBase implements Atomic {
 
     protected VarName varName = null;
     protected PatternAdmin atomPattern = null;
-    private Query parent = null;
+    private ReasonerQuery parent = null;
 
-    protected AtomBase(VarAdmin pattern, Query par) {
+    protected AtomBase(VarAdmin pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
         this.varName = pattern.getVarName();
         this.parent = par;
@@ -60,7 +62,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public abstract Atomic clone();
+    public abstract Atomic copy();
 
     @Override
     public String toString(){ return atomPattern.toString(); }
@@ -79,18 +81,6 @@ public abstract class AtomBase implements Atomic{
         return Sets.newHashSet(varName);
     }
 
-    public Set<VarName> getSelectedNames(){
-         Set<VarName> vars = getParentQuery().getSelectedNames();
-        vars.retainAll(getVarNames());
-        return vars;
-    }
-
-    public void resetNames(){
-        Map<VarName, VarName> unifiers = new HashMap<>();
-        getVarNames().forEach(var -> unifiers.put(var, Patterns.varName()));
-        unify(unifiers);
-    }
-
     /**
      * @return true if the value variable is user defined
      */
@@ -100,18 +90,18 @@ public abstract class AtomBase implements Atomic{
      * @return pattern corresponding to this atom
      */
     public PatternAdmin getPattern(){ return atomPattern;}
+    public PatternAdmin getCombinedPattern(){ return getPattern();}
 
     /**
      * @return the query the atom is contained in
      */
-    public Query getParentQuery(){
-        return parent;
-    }
+    public ReasonerQuery getParentQuery(){ return parent;}
 
     /**
      * @param q query this atom is supposed to belong to
      */
-    public void setParentQuery(Query q){ parent = q;}
+    public void setParentQuery(ReasonerQuery q){ parent = q;}
+    public GraknGraph graph(){ return getParentQuery().graph();}
 
     private void setVarName(VarName var){
         varName = var;
@@ -124,8 +114,11 @@ public abstract class AtomBase implements Atomic{
      */
     public void unify(Map<VarName, VarName> unifiers){
         VarName var = getVarName();
-        if (unifiers.containsKey(var)) setVarName(unifiers.get(var));
-        else if (unifiers.containsValue(var)) setVarName(capture(var));
+        if (unifiers.containsKey(var)) {
+            setVarName(unifiers.get(var));
+        } else if (unifiers.containsValue(var)) {
+            setVarName(capture(var));
+        }
     }
 
     /**
@@ -134,11 +127,13 @@ public abstract class AtomBase implements Atomic{
      * @return map of unifiers
      */
     public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
-        if (parentAtom.getClass() != this.getClass())
+        if (parentAtom.getClass() != this.getClass()) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+        }
         Map<VarName, VarName> map = new HashMap<>();
-        if (!this.getVarName().equals(parentAtom.getVarName()))
+        if (!this.getVarName().equals(parentAtom.getVarName())) {
             map.put(this.getVarName(), parentAtom.getVarName());
+        }
         return map;
     }
 }

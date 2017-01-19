@@ -76,4 +76,9 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
         LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
         return (HadoopGraph) GraphFactory.open(properties);
     }
+
+    @Override
+    protected HadoopGraph getGraphWithNewTransaction(HadoopGraph graph) {
+        return graph;
+    }
 }

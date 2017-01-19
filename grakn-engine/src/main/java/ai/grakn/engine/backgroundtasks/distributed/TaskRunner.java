@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,35 @@
  */
 
 package ai.grakn.engine.backgroundtasks.distributed;
+
+import ai.grakn.engine.backgroundtasks.BackgroundTask;
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
+import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.EngineID;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
+import org.apache.zookeeper.CreateMode;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
@@ -35,35 +64,6 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.WakeupException;
-import org.apache.zookeeper.CreateMode;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.engine.util.EngineID;
 
 public class TaskRunner implements Runnable, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
@@ -109,10 +109,11 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
         }
         catch (WakeupException|InterruptedException e) {
-        	if (running)
-        		LOG.error("TaskRunner interrupted unexpectedly (without clearing 'running' flag first", e);
-        	else 
-        		LOG.debug("TaskRunner exiting gracefully.");
+            if (running) {
+                LOG.error("TaskRunner interrupted unexpectedly (without clearing 'running' flag first", e);
+            } else {
+                LOG.debug("TaskRunner exiting gracefully.");
+            }
         }
         finally {
             consumer.commitSync();
@@ -152,7 +153,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     @Override
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
-        	running = false;
+            running = false;
             noThrow(consumer::wakeup, "Could not call wakeup on Kafka Consumer.");
 
             // Wait for thread calling run() to wakeup and close consumer.
@@ -286,8 +287,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private InterProcessMutex acquireMutex(String id) {
         InterProcessMutex mutex = null;
         try {
-            if(zkStorage.connection().checkExists().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_LOCK_SUFFIX) == null)
-                zkStorage.connection().create().creatingParentContainersIfNeeded().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_LOCK_SUFFIX);
+            if(zkStorage.connection().checkExists().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_LOCK_SUFFIX) == null) {
+                zkStorage.connection().create().creatingParentContainersIfNeeded().forPath(TASKS_PATH_PREFIX + "/" + id + TASK_LOCK_SUFFIX);
+            }
 
             mutex = new InterProcessMutex(zkStorage.connection(), TASKS_PATH_PREFIX+"/"+id+TASK_LOCK_SUFFIX);
 
@@ -332,7 +334,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
         zkStorage.updateState(id, status, engineID, checkpoint);
         try {
             graknStorage.updateState(id, status, statusChangeBy, engineID, failure, checkpoint, null);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // TODO: Should we ignore these errors?
+        }
     }
 
     private void updateOwnState() {
@@ -340,7 +344,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         out.put(runningTasks);
 
         try {
-            zkStorage.connection().setData().forPath(RUNNERS_STATE+"/"+ engineID, out.toString().getBytes());
+            zkStorage.connection().setData().forPath(RUNNERS_STATE+"/"+ engineID, out.toString().getBytes(StandardCharsets.UTF_8));
         }
         catch (Exception e) {
             LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + e);

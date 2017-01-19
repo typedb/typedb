@@ -18,58 +18,26 @@
 
 package ai.grakn.test.migration.export;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
-import ai.grakn.engine.loader.Loader;
-import ai.grakn.example.PokemonGraphFactory;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.migration.export.Main;
-import ai.grakn.test.EngineTestBase;
-import ai.grakn.test.GraknTestEnv;
-import ai.grakn.test.migration.AbstractGraknMigratorTest;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 
-import java.util.UUID;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import ai.grakn.test.GraphContext;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class GraphWriterMainTest {
-	private String keyspace;
-	
-	@BeforeClass
-	public static void startup() {
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(Loader.class);
-        logger.setLevel(Level.DEBUG);
 
-        // We will be submitting tasks to Engine, and checking if they have completed.
-        EngineTestBase.startTestEngine();		
-	}
+    @ClassRule
+    public static final GraphContext movieContext = GraphContext.preLoad(MovieGraph.get());
 
-	@AfterClass
-	public static void shutdown() throws Exception {
-        EngineTestBase.stopTestEngine();		
-	}
-	
-	@Before
-	public void init() {
-        if (GraknTestEnv.usingOrientDB()) {
-            this.keyspace = "memory";
-        } else {
-            this.keyspace = "a"+UUID.randomUUID().toString().replaceAll("-", "");
-        }		
-	}
-	
     @Test
     public void exportOntologyToSystemOutTest(){
-        runAndAssertDataCorrect("export", "-ontology", "-keyspace", this.keyspace);
+        runAndAssertDataCorrect("export", "-ontology", "-keyspace", movieContext.graph().getKeyspace());
     }
 
     @Test
     public void exportDataToSystemOutTest(){
-        runAndAssertDataCorrect("export", "-data", "-keyspace", this.keyspace);
+        runAndAssertDataCorrect("export", "-data", "-keyspace", movieContext.graph().getKeyspace());
     }
     
     @Test
@@ -84,7 +52,7 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportEngineURLProvidedTest(){
-        runAndAssertDataCorrect("export", "-data", "-uri", "localhost:4567", "-keyspace", this.keyspace);
+        runAndAssertDataCorrect("export", "-data", "-uri", "localhost:4567", "-keyspace", movieContext.graph().getKeyspace());
     }
 
     private void runAndAssertDataCorrect(String... args){

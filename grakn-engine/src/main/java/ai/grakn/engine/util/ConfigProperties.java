@@ -102,7 +102,7 @@ public class ConfigProperties {
     private Logger LOG;
 
     private final int MAX_NUMBER_OF_THREADS = 120;
-    private Properties prop;
+    private final Properties prop;
     private static ConfigProperties instance = null;
     private String configFilePath = null;
     private int numOfThreads = -1;
@@ -115,8 +115,8 @@ public class ConfigProperties {
     private ConfigProperties() {
         getProjectPath();
         prop = new Properties();
-        try {
-            prop.load(new FileInputStream(getConfigFilePath()));
+        try (FileInputStream inputStream = new FileInputStream(getConfigFilePath())){
+            prop.load(inputStream);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -138,8 +138,9 @@ public class ConfigProperties {
      */
     private void setConfigFilePath() {
         configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.DEFAULT_CONFIG_FILE;
-        if (!Paths.get(configFilePath).isAbsolute())
+        if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
+        }
 
     }
 
@@ -150,8 +151,9 @@ public class ConfigProperties {
      * The grakn.log.file property will be used by logback.xml
      */
     private void initialiseLogger() {
-        if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
+        if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null) {
             System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
+        }
 
         System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN, getPath(LOGGING_FILE_PATH_MAIN));
         System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING, getPath(LOGGING_FILE_PATH_POST_PROCESSING));
@@ -173,8 +175,9 @@ public class ConfigProperties {
      * otherwise it will be used the one specified in the config file.
      */
     private void setLogLevel() {
-        if (System.getProperty(LOG_LEVEL_SYSTEM_PROPERTY) == null)
+        if (System.getProperty(LOG_LEVEL_SYSTEM_PROPERTY) == null) {
             System.setProperty(LOG_LEVEL_SYSTEM_PROPERTY, prop.getProperty(LOGGING_LEVEL));
+        }
     }
 
     /**
@@ -186,11 +189,13 @@ public class ConfigProperties {
 
         numOfThreads = Integer.parseInt(prop.getProperty(NUM_THREADS_PROPERTY));
 
-        if (numOfThreads == 0)
+        if (numOfThreads == 0) {
             numOfThreads = Runtime.getRuntime().availableProcessors();
+        }
 
-        if (numOfThreads > MAX_NUMBER_OF_THREADS)
+        if (numOfThreads > MAX_NUMBER_OF_THREADS) {
             numOfThreads = MAX_NUMBER_OF_THREADS;
+        }
     }
 
 
@@ -207,8 +212,9 @@ public class ConfigProperties {
      * @return Number of available threads to be used to instantiate new threadpools.
      */
     public int getAvailableThreads() {
-        if (numOfThreads == -1)
+        if (numOfThreads == -1) {
             computeThreadsNumber();
+        }
 
         return numOfThreads;
     }
@@ -220,8 +226,9 @@ public class ConfigProperties {
      */
     public String getPath(String path) {
         String propertyPath = prop.getProperty(path);
-        if (Paths.get(propertyPath).isAbsolute())
+        if (Paths.get(propertyPath).isAbsolute()) {
             return propertyPath;
+        }
 
         return getProjectPath() + propertyPath;
     }
@@ -231,8 +238,9 @@ public class ConfigProperties {
      * user.dir folder.
      */
     private static String getProjectPath() {
-        if (System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) == null)
+        if (System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) == null) {
             System.setProperty(CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir"));
+        }
 
         return System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) + "/";
     }
@@ -255,8 +263,9 @@ public class ConfigProperties {
 
     public String getProperty(String property, String defaultValue) {
         String res = prop.getProperty(property);
-        if(res != null)
+        if(res != null) {
             return res;
+        }
 
         return defaultValue;
     }
@@ -275,10 +284,10 @@ public class ConfigProperties {
 
 
     public static final String GRAKN_ASCII =
-                      "     ___  ___  ___  _  __ _  _     ___  ___     \n" +
-                    "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    \n" +
-                    "   | (_ ||   /| - || ' < | .` | _ | - | | |     \n" +
-                    "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   \n\n" +
+                      "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
+                    "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +
+                    "   | (_ ||   /| - || ' < | .` | _ | - | | |     %n" +
+                    "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   %n%n" +
                       " Web Dashboard available at [%s]";
 
 }

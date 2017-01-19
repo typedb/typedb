@@ -20,7 +20,9 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.GraknMapReduce;
@@ -42,8 +44,8 @@ import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
 class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
 
-    private String sourceId = null;
-    private String destinationId = null;
+    private ConceptId sourceId = null;
+    private ConceptId destinationId = null;
 
     PathQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
@@ -55,14 +57,17 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         if (sourceId == null) throw new IllegalStateException(ErrorMessage.NO_SOURCE.getMessage());
         if (destinationId == null) throw new IllegalStateException(ErrorMessage.NO_DESTINATION.getMessage());
         initSubGraph();
-        if (!verticesExistInSubgraph(sourceId, destinationId))
+        if (!verticesExistInSubgraph(sourceId, destinationId)) {
             throw new IllegalStateException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
-        if (sourceId.equals(destinationId))
+        }
+        if (sourceId.equals(destinationId)) {
             return Optional.of(Collections.singletonList(graph.get().getConcept(sourceId)));
+        }
         ComputerResult result;
         try {
             result = getGraphComputer().compute(
-                    new ShortestPathVertexProgram(subTypeNames, sourceId, destinationId),
+                    //TODO: Look into passing sourceId and destinationId as ConceptId. Not possible right now because it's not serializable
+                    new ShortestPathVertexProgram(subTypeNames, sourceId.getValue(), destinationId.getValue()),
                     new ClusterMemberMapReduce(subTypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         } catch (IllegalStateException e) {
             if (e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) {
@@ -74,11 +79,11 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         String middlePoint = result.memory().get(ShortestPathVertexProgram.MIDDLE);
         if (!middlePoint.equals("")) map.put(0, Collections.singleton(middlePoint));
 
-        List<String> path = new ArrayList<>();
+        List<ConceptId> path = new ArrayList<>();
         path.add(sourceId);
         path.addAll(map.entrySet().stream()
                 .sorted(Comparator.comparingInt(Map.Entry::getKey))
-                .map(pair -> pair.getValue().iterator().next())
+                .map(pair -> ConceptId.of(pair.getValue().iterator().next()))
                 .collect(Collectors.toList()));
         path.add(destinationId);
         LOGGER.debug("The path found is: " + path);
@@ -87,13 +92,13 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery from(String sourceId) {
+    public PathQuery from(ConceptId sourceId) {
         this.sourceId = sourceId;
         return this;
     }
 
     @Override
-    public PathQuery to(String destinationId) {
+    public PathQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
     }
@@ -109,7 +114,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery in(Collection<String> subTypeNames) {
+    public PathQuery in(Collection<TypeName> subTypeNames) {
         return (PathQuery) super.in(subTypeNames);
     }
 

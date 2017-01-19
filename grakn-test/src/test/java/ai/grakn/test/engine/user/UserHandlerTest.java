@@ -18,16 +18,16 @@
 
 package ai.grakn.test.engine.user;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
+import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.EngineTestBase;
+import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -38,15 +38,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class UserHandlerTest extends EngineTestBase {
-    private static UsersHandler users;
+public class UserHandlerTest {
+
+    private static UsersHandler users = UsersHandler.getInstance();
     private static String userName = "geralt";
     private static String password = "witcher";
 
-    @BeforeClass
-    public static void setup(){
-        users = UsersHandler.getInstance();
-    }
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void addUser(){
@@ -61,7 +60,6 @@ public class UserHandlerTest extends EngineTestBase {
         assertFalse(users.userExists(userName));
     }
 
-    @Ignore //TODO: Fix this test. Ignored because low priority and we want to free up Jenkins
     @Test
     public void testGetUser(){
         Map<String, Json> retrevedData = users.getUser(userName).asJsonMap();
@@ -77,14 +75,12 @@ public class UserHandlerTest extends EngineTestBase {
         assertTrue("Stored password does not match hashed one", Password.isExpectedPassword(password.toCharArray(), salt, expectedHash));
     }
 
-    @Ignore //TODO: Fix this test. Ignored because low priority and we want to free up Jenkins
     @Test
     public void testUserInGraph(){
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph();
-        assertNotNull(graph.getResourceType("user-name").getResource(userName));
+        GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
+        assertNotNull(graph.getResourceType(UsersHandler.USER_NAME).getResource(userName));
     }
 
-    @Ignore //TODO: Fix this test. Ignored because low priority and we want to free up Jenkins
     @Test
     public void testValidateUser(){
         assertFalse(users.validateUser("bob", password));
@@ -92,7 +88,7 @@ public class UserHandlerTest extends EngineTestBase {
         assertTrue(users.validateUser(userName, password));
     }
 
-    @Ignore
+    @Ignore // Not Supported Yet
     @Test
     public void testUpdateUser(){
         assertFalse(users.getUser(userName).has(UsersHandler.USER_IS_ADMIN));

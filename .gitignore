@@ -35,4 +35,3 @@ logs/
 grakn-test/db/
 grakn-test/output/
 grakn-test/*.txt
-grakn-test/output/

@@ -36,9 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 /**
- * Internal factory to produce different types of concepts
- */
-/**
  * <p>
  *     Constructs Concepts And Edges
  * </p>
@@ -127,11 +124,13 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Rules
     RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
-        if(lhs == null)
+        if(lhs == null) {
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS.name()));
+        }
 
-        if(rhs == null)
+        if(rhs == null) {
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
+        }
 
         return trackConcept(buildRule(v, Optional.of(type), Optional.of(lhs), Optional.of(rhs)));
     }
@@ -197,6 +196,7 @@ final class ElementFactory {
                 concept = buildRuleType(v, Optional.empty());
                 break;
         }
+
         //noinspection unchecked
         return (X) concept;
     }

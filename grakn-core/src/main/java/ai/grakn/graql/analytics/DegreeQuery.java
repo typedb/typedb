@@ -19,6 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -27,22 +28,6 @@ import java.util.Collection;
  * Compute the number of relations that each instance takes part in.
  */
 public interface DegreeQuery<T> extends ComputeQuery<T> {
-
-    /**
-     * Persist the result in the graph after executing the query.  Be default, the degree is saved as a resource
-     * of the vertex, with resource type name "degree".
-     *
-     * @return a DegreeQuery with persist flag set
-     */
-    DegreeQuery<String> persist();
-
-    /**
-     * Persist the result in the graph after executing the query.  The degree is saved as a resource of the vertex.
-     *
-     * @param resourceTypeName the name of the resource type to save the degree
-     * @return a DegreeQuery with persist flag and customised resource type name set
-     */
-    DegreeQuery<String> persist(String resourceTypeName);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
@@ -56,7 +41,7 @@ public interface DegreeQuery<T> extends ComputeQuery<T> {
      * @return a DegreeQuery with the subTypeNames set
      */
     @Override
-    DegreeQuery<T> in(Collection<String> subTypeNames);
+    DegreeQuery<T> in(Collection<TypeName> subTypeNames);
 
     /**
      * @param ofTypeNames an array of types in the subgraph to compute degree of. By default the degrees of all the
@@ -70,7 +55,7 @@ public interface DegreeQuery<T> extends ComputeQuery<T> {
      *                    types in the graph will be computed
      * @return a DegreeQuery with the subTypeNames set
      */
-    DegreeQuery<T> of(Collection<String> ofTypeNames);
+    DegreeQuery<T> of(Collection<TypeName> ofTypeNames);
 
     /**
      * @param graph the graph to execute the query on

@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  */
 public class MaxQueryImplMock extends MaxQueryImpl{
-    int numberOfWorkers;
+    final int numberOfWorkers;
 
     public MaxQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);

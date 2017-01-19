@@ -23,7 +23,10 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Properties;
+
+import static javax.annotation.meta.When.MAYBE;
 
 /**
  * <p>
@@ -43,7 +46,7 @@ import java.util.Properties;
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
 abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<M, G> {
-	
+
     protected final String keyspace;
     protected final String engineUrl;
     protected final Properties properties;
@@ -67,8 +70,9 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         this.engineUrl = engineUrl;
         this.properties = properties;
 
-        if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME))
-            systemKeyspace = new SystemKeyspace<M, G>(getSystemFactory());
+        if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            systemKeyspace = new SystemKeyspace<>(getSystemFactory());
+        }
     }
 
     InternalFactory<M, G> getSystemFactory(){
@@ -98,7 +102,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         //This checks if the previous graph built with this factory is the same as the one we trying to build now.
         if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
             //This then checks if the previous graph built has undergone a commit
-            boolean hasCommitted = false;
+            boolean hasCommitted;
             if(lastGraphBuiltBatchLoading) {
                 hasCommitted = batchLoadingGraknGraph.hasCommitted();
             } else {
@@ -117,8 +121,9 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
 
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-            if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace))
+            if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
                 systemKeyspace.keyspaceOpened(this.keyspace);
+            }
         } else {
             if(graknGraph.isClosed()){
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
@@ -161,8 +166,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             }
         }
     }
-    protected G getGraphWithNewTransaction(G graph){
-        return graph;
-    }
+
+    @CheckReturnValue(when=MAYBE)
+    protected abstract G getGraphWithNewTransaction(G graph);
 
 }

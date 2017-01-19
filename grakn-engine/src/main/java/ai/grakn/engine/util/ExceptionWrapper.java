@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Igorevich Lobanov
  */
 public class ExceptionWrapper {
-    private static Logger LOG = LoggerFactory.getLogger(ExceptionWrapper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExceptionWrapper.class);
 
     public static void noThrow(Runnable fn, String errorMessage) {
         try {

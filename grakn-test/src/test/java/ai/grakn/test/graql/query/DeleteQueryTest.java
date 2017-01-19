@@ -18,14 +18,18 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -41,11 +45,16 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class DeleteQueryTest extends AbstractMovieGraphTest {
+public class DeleteQueryTest {
 
     private QueryBuilder qb;
+
+    @ClassRule
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
     private MatchQuery kurtz;
     private MatchQuery marlonBrando;
     private MatchQuery apocalypseNow;
@@ -53,7 +62,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     @Before
     public void setUp() {
-        qb = graph.graql();
+        qb = movieGraph.graph().graql();
 
         kurtz = qb.match(var("x").has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = qb.match(var("x").has("name", "Marlon Brando"));
@@ -62,9 +71,14 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
                 qb.match(var("a").rel("character-being-played", var().has("name", "Colonel Walter E. Kurtz")));
     }
 
+    @After
+    public void rollback(){
+        movieGraph.rollback();
+    }
+
     @Test
     public void testDeleteMultiple() {
-        qb.insert(name("fake-type").sub(Schema.MetaSchema.ENTITY.getName())).execute();
+        qb.insert(name("fake-type").sub(Schema.MetaSchema.ENTITY.getName().getValue())).execute();
         qb.insert(var("x").isa("fake-type"), var("y").isa("fake-type")).execute();
 
         assertEquals(2, qb.match(var("x").isa("fake-type")).stream().count());
@@ -183,7 +197,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     // TODO: Fix this scenario (test is fine, implementation is wrong!)
     @Test
     public void testDeleteAllRolePlayers() {
-        String id = kurtzCastRelation.get("a").findFirst().get().getId();
+        ConceptId id = kurtzCastRelation.get("a").findFirst().get().getId();
         MatchQuery relation = qb.match(var().id(id));
 
         assertTrue(exists(kurtz));
@@ -216,7 +230,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testDeleteResource() {
         MatchQuery godfather = qb.match(var().has("title", "Godfather"));
-        String id = qb.match(
+        ConceptId id = qb.match(
                 var("x").has("title", "Godfather"),
                 var("a").rel("x").rel("y").isa("has-tmdb-vote-count")
         ).get("a").findFirst().get().getId();
@@ -251,17 +265,17 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     public void testDeleteEntityTypeAfterInstances() {
         MatchQuery movie = qb.match(var("x").isa("movie"));
 
-        assertNotNull(graph.getEntityType("movie"));
+        assertNotNull(movieGraph.graph().getEntityType("movie"));
         assertTrue(exists(movie));
 
         movie.delete("x").execute();
 
-        assertNotNull(graph.getEntityType("movie"));
+        assertNotNull(movieGraph.graph().getEntityType("movie"));
         assertFalse(exists(movie));
 
         qb.match(var("x").name("movie").sub("entity")).delete("x").execute();
 
-        assertNull(graph.getEntityType("movie"));
+        assertNull(movieGraph.graph().getEntityType("movie"));
     }
 
     @Test

@@ -19,22 +19,12 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder;
-import com.google.common.collect.Maps;
 import mjson.Json;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
 
-import static java.util.stream.Collectors.toList;
 
-class HALPrinter implements Printer<Json> {
-    @Override
-    public String build(Json builder) {
-        return builder.toString();
-    }
+class HALPrinter extends JsonPrinter {
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
@@ -43,28 +33,4 @@ class HALPrinter implements Printer<Json> {
         return Json.read(json);
     }
 
-    @Override
-    public Json graqlString(boolean inner, boolean bool) {
-        return Json.make(bool);
-    }
-
-    @Override
-    public Json graqlString(boolean inner, Optional<?> optional) {
-        return optional.map(item -> graqlString(inner, item)).orElse(null);
-    }
-
-    @Override
-    public Json graqlString(boolean inner, Collection<?> collection) {
-        return Json.make(collection.stream().map(item -> graqlString(inner, item)).collect(toList()));
-    }
-
-    @Override
-    public Json graqlString(boolean inner, Map<?, ?> map) {
-        return Json.make(Maps.transformValues(map, value -> graqlString(true, value)));
-    }
-
-    @Override
-    public Json graqlStringDefault(boolean inner, Object object) {
-        return Json.make(object);
-    }
 }

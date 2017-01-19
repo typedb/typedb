@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  */
 public class StdQueryImplMock extends StdQueryImpl{
-    int numberOfWorkers;
+    final int numberOfWorkers;
 
     public StdQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {
         super(graph);

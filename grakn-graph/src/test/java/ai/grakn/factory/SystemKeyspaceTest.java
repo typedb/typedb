@@ -17,9 +17,9 @@ import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
 
-	private String space1 = "SystemKeyspaceTest.space1".toLowerCase();
-	private String space2 = "SystemKeyspaceTest.space2";
-	private String space3 = "SystemKeyspaceTest.space3";
+	private final String space1 = "SystemKeyspaceTest.space1".toLowerCase();
+	private final String space2 = "SystemKeyspaceTest.space2";
+	private final String space3 = "SystemKeyspaceTest.space3";
 	
     @Test
     public void testCollectKeyspaces() { 
@@ -60,17 +60,17 @@ public class SystemKeyspaceTest {
 
         //Check Plays Roles
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userName.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userName.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userPassword.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userPassword.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userFirstName.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userFirstName.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userLastName.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userLastName.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userEmail.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userEmail.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
-                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()))));
+                graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()).getValue())));
     }
 
 }
