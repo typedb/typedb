@@ -384,19 +384,6 @@ public class Relation extends TypeAtom {
         return varFound;
     }
 
-    /*
-    @Override
-    public Set<IdPredicate> getIdPredicates() {
-        Set<IdPredicate> idPredicates = super.getIdPredicates();
-        //from types
-        getTypeConstraints().stream()
-                .map(atom -> ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable()))
-                .filter(Objects::nonNull)
-                .forEach(idPredicates::add);
-        return idPredicates;
-    }
-    */
-
     @Override
     public void unify (Map<VarName, VarName> mappings) {
         super.unify(mappings);
