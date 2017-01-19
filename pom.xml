@@ -41,9 +41,11 @@
         <module>grakn-test</module>
         <module>grakn-core</module>
         <module>grakn-orientdb-factory</module>
+        <module>grakn-test-profiles</module>
     </modules>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
         <tinkerpop.version>3.1.1-incubating</tinkerpop.version>
         <junit.version>4.12</junit.version>
