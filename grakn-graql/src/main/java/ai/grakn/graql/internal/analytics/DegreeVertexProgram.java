@@ -34,7 +34,7 @@ import java.util.Set;
 public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
-    public static final String DEGREE = "medianVertexProgram.degree";
+    static final String DEGREE = "medianVertexProgram.degree";
     private static final String OF_TYPE_NAMES = "degreeAndPersistVertexProgram.ofTypeNames";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);

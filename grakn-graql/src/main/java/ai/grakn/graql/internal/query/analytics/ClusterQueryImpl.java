@@ -94,7 +94,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         return (ClusterQuery<Map<String, Set<String>>>) this;
     }
 
-
     @Override
     public ClusterQuery<T> clusterSize(long clusterSize) {
         this.anySize = false;
