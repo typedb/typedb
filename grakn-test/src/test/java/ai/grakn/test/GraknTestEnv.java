@@ -133,7 +133,7 @@ public abstract class GraknTestEnv {
         // Drop the system keyspaces too
         systemGraph.clear();
 
-        graphFactory.refershConnections();
+        graphFactory.refreshConnections();
     }
 
     static void startEmbeddedCassandra() {

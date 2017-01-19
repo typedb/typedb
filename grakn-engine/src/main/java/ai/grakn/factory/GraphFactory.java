@@ -54,7 +54,7 @@ public class GraphFactory {
         return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
     }
 
-    public synchronized void refershConnections(){
+    public synchronized void refreshConnections(){
         FactoryBuilder.refresh();
     }
 }
