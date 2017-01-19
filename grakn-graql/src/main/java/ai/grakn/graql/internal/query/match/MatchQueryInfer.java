@@ -57,10 +57,10 @@ class MatchQueryInfer extends MatchQueryModifier {
         Reasoner.linkConceptTypes(graph);
         if (!Reasoner.hasRules(graph)) return streamWithVarNames();
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
+        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
         Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
         while(conjIt.hasNext()) {
-            conjunctiveQuery = new ReasonerQueryImpl(graph.graql().match(conjIt.next()), graph);
+            conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
             Stream<Map<VarName, Concept>> localStream = conjunctiveQuery.resolve(materialise);
             answerStream = Stream.concat(answerStream, localStream);
         }
