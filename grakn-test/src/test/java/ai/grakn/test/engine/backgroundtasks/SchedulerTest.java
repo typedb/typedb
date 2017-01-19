@@ -37,6 +37,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -84,16 +85,12 @@ public class SchedulerTest {
     }
 
     @Test
-    @Ignore
     public void testInstantaneousOneTimeTasks() throws Exception {
         Map<String, TaskState> tasks = createTasks(5);
         sendTasksToNewTasksQueue(tasks);
         waitUntilScheduled(tasks.keySet());
     }
 
-    // There is a strange issue that only shows up when running these tests on Travis; as such this test is being ignored
-    // for now in order to get the code into central now, and fix later.
-    @Ignore
     @Test
     public void testRecurringTasksStarted() throws Exception {
         // persist a recurring task in system graph
@@ -101,19 +98,7 @@ public class SchedulerTest {
         String taskId = task.getKey();
 
         // force scheduler restart
-        synchronized (clusterManager.getScheduler()) {
-            waitForScheduler(clusterManager, Objects::nonNull);
-            System.out.println("scheduler is not null");
-
-            clusterManager.getScheduler().close();
-            System.out.println("closed scheduler");
-
-            waitForScheduler(clusterManager, Objects::isNull);
-            System.out.println("scheduler now null");
-
-            waitForScheduler(clusterManager, Objects::nonNull);
-            System.out.println("scheduler not null again");
-        }
+        clusterManager.getScheduler().close();
 
         // sleep a bit and stop scheduler
         waitUntilScheduled(taskId);
@@ -123,9 +108,6 @@ public class SchedulerTest {
         assertTrue(recurringTasks.containsKey(taskId));
     }
 
-    // There is a strange issue that only shows up when running these tests on Travis; as such this test is being ignored
-    // for now in order to get the code into central now, and fix later.
-    @Ignore
     @Test
     public void testRecurringTasksThatAreStoppedNotStarted() throws Exception{
         // persist a recurring task in system graph
@@ -142,19 +124,7 @@ public class SchedulerTest {
         System.out.println(taskId2 + "   " + state2);
 
         // force scheduler to stop
-        synchronized (clusterManager.getScheduler()) {
-            waitForScheduler(clusterManager, Objects::nonNull);
-            System.out.println("2 scheduler is not null");
-
-            clusterManager.getScheduler().close();
-            System.out.println("2 closed scheduler");
-
-            waitForScheduler(clusterManager, Objects::isNull);
-            System.out.println("2 scheduler now null");
-
-            waitForScheduler(clusterManager, Objects::nonNull);
-            System.out.println("2 scheduler not null again");
-        }
+        clusterManager.getScheduler().close();
 
         waitUntilScheduled(taskId1);
 
