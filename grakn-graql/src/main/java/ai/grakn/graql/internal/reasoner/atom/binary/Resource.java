@@ -22,7 +22,6 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
@@ -81,7 +80,7 @@ public class Resource extends MultiPredicateBinary{
     protected VarName extractValueVariableName(VarAdmin var){
         HasResourceProperty prop = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         VarAdmin resVar = prop.getResource();
-        return resVar.isUserDefinedName()? resVar.getVarName() : Patterns.varName("");
+        return resVar.isUserDefinedName()? resVar.getVarName() : VarName.of("");
     }
 
     @Override

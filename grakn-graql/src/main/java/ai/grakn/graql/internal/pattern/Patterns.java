@@ -57,11 +57,4 @@ public class Patterns {
         return new VarImpl(vars);
     }
 
-    public static VarName varName() {
-        return VarName.anon();
-    }
-
-    public static VarName varName(String name) {
-        return VarName.of(name);
-    }
 }

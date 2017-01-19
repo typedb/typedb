@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -106,7 +105,7 @@ public class InferenceRule {
             Set<VarName> varIntersection = body.getVarNames();
             varIntersection.retainAll(parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
-            varIntersection.forEach(var -> body.unify(var, Patterns.varName()));
+            varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
     }
 

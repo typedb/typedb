@@ -46,7 +46,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -175,11 +174,11 @@ public class AtomicTest {
         Map<VarName, VarName> unifiers = specialisedAtom.getUnifiers(atom);
         Map<VarName, VarName> unifiers2 = specialisedAtom2.getUnifiers(atom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("p"), varName("y"));
-        correctUnifiers.put(varName("c"), varName("x"));
+        correctUnifiers.put(VarName.of("p"), VarName.of("y"));
+        correctUnifiers.put(VarName.of("c"), VarName.of("x"));
         Map<VarName, VarName> correctUnifiers2 = new HashMap<>();
-        correctUnifiers2.put(varName("p"), varName("x"));
-        correctUnifiers2.put(varName("c"), varName("y"));
+        correctUnifiers2.put(VarName.of("p"), VarName.of("x"));
+        correctUnifiers2.put(VarName.of("c"), VarName.of("y"));
         assertTrue(unifiers.toString(), unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
         assertTrue(unifiers2.toString(), unifiers2.entrySet().containsAll(correctUnifiers2.entrySet()));
     }
@@ -194,12 +193,12 @@ public class AtomicTest {
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("5b7a70db-2256-4d03-8fa4-2621a354899e"), varName("x"));
+        correctUnifiers.put(VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"), VarName.of("x"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
 
         Map<VarName, VarName> reverseUnifiers = parentAtom.getUnifiers(childAtom);
         Map<VarName, VarName> correctReverseUnifiers = new HashMap<>();
-        correctReverseUnifiers.put(varName("x"), varName("5b7a70db-2256-4d03-8fa4-2621a354899e"));
+        correctReverseUnifiers.put(VarName.of("x"), VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"));
         assertTrue(reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet()));
     }
 
@@ -217,7 +216,7 @@ public class AtomicTest {
         testRule.unify(parentAtom);
         Atom headAtom = testRule.getHead().getAtom();
         Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
-        assertTrue(varTypeRoleMap.get(varName("x")).getValue().equals(graph.getRoleType("wife")));
+        assertTrue(varTypeRoleMap.get(VarName.of("x")).getValue().equals(graph.getRoleType("wife")));
     }
 
     @Test
@@ -232,7 +231,7 @@ public class AtomicTest {
         Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, childQuery);
         Atom rewrittenAtom = rewrite.getKey();
         Map<VarName, VarName> unifiers = rewrite.getValue();
-        Set<VarName> unifiedVariables = Sets.newHashSet(varName("x1"), varName("x2"));
+        Set<VarName> unifiedVariables = Sets.newHashSet(VarName.of("x1"), VarName.of("x2"));
         assertTrue(rewrittenAtom.isUserDefinedName());
         assertTrue(unifiedVariables.containsAll(unifiers.keySet()));
     }
@@ -247,10 +246,10 @@ public class AtomicTest {
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("x1"), varName("x"));
-        correctUnifiers.put(varName("x2"), varName("y"));
-        correctUnifiers.put(varName("r1"), varName("R1"));
-        correctUnifiers.put(varName("r2"), varName("R2"));
+        correctUnifiers.put(VarName.of("x1"), VarName.of("x"));
+        correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
+        correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
+        correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 
@@ -264,10 +263,10 @@ public class AtomicTest {
         Atom parentAtom = new ReasonerAtomicQuery(parentRelation, graph).getAtom();
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("x1"), varName("x"));
-        correctUnifiers.put(varName("x2"), varName("y"));
-        correctUnifiers.put(varName("r1"), varName("R1"));
-        correctUnifiers.put(varName("r2"), varName("R2"));
+        correctUnifiers.put(VarName.of("x1"), VarName.of("x"));
+        correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
+        correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
+        correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 
@@ -280,9 +279,9 @@ public class AtomicTest {
         assertEquals(unifiers.size(), 2);
         Set<VarName> vars = relation.getVarNames();
         Set<VarName> correctVars = new HashSet<>();
-        correctVars.add(varName("a"));
-        correctVars.add(varName("x"));
-        assertTrue(!vars.contains(varName("")));
+        correctVars.add(VarName.of("a"));
+        correctVars.add(VarName.of("x"));
+        assertTrue(!vars.contains(VarName.of("")));
         assertTrue(vars.containsAll(correctVars));
     }
 
@@ -296,10 +295,10 @@ public class AtomicTest {
         rule.unify(parent);
         Set<VarName> vars = rule.getHead().getAtom().getVarNames();
         Set<VarName> correctVars = new HashSet<>();
-        correctVars.add(varName("r"));
-        correctVars.add(varName("a"));
-        correctVars.add(varName("x"));
-        assertTrue(!vars.contains(varName("")));
+        correctVars.add(VarName.of("r"));
+        correctVars.add(VarName.of("a"));
+        correctVars.add(VarName.of("x"));
+        assertTrue(!vars.contains(VarName.of("")));
         assertTrue(vars.toString(), vars.containsAll(correctVars));
     }
 

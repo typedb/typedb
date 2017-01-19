@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -549,7 +548,7 @@ public class GenealogyTest {
         boolean isOk = true;
         Iterator<Map<VarName, Concept>> it =  answers.iterator();
         while (it.hasNext() && isOk){
-            Concept c = it.next().get(varName(var));
+            Concept c = it.next().get(VarName.of(var));
             isOk = c.asResource().getValue().equals(value);
         }
         return isOk;
