@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.experimental.theories.suppliers.TestedOn;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -358,6 +359,29 @@ public class ReasonerTest {
                 "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y, $type;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testPlays(){
+        String queryString = "match $x plays geo-entity;$y isa country;$y has name 'Poland';" +
+                "($x, $y) isa is-located-in;";
+        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has $name;" +
+                "{" +
+                "{$name value 'Europe';};" +
+                "{$type type-name 'continent' or $type type-name 'geoObject';};" +
+                "} or {" +
+                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw';};" +
+                "{$type type-name 'university';};" +
+                "} or {" +
+                "{$name value 'Warsaw' or $name value 'Wroclaw';};" +
+                "{$type type-name 'city' or $type type-name 'geoObject';};" +
+                "} or {" +
+                "{$name value 'Masovia' or $name value 'Silesia';};" +
+                "{$type type-name 'region' or $type type-name 'geoObject';};" +
+                "}; select $x, $y, $type;";
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
     }
 
