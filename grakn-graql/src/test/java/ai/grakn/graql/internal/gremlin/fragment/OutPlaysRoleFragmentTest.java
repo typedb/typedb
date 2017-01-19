@@ -1,15 +1,39 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import com.pholser.junit.quickcheck.From;
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.generator.Ctor;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.runner.RunWith;
+import ai.grakn.Mocks;
+import ai.grakn.graql.VarName;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Test;
+import org.mockito.InOrder;
 
-@RunWith(JUnitQuickcheck.class)
+import static ai.grakn.util.Schema.EdgeLabel.PLAYS_ROLE;
+import static ai.grakn.util.Schema.EdgeLabel.SUB;
+import static org.mockito.Mockito.inOrder;
+
 public class OutPlaysRoleFragmentTest {
 
-    @Property
-    public void testApplyTraversalDoesNotTraverseSubs(@From(Ctor.class) OutPlaysRoleFragment fragment) {
+    private final VarName start = VarName.anon();
+    private final VarName end = VarName.anon();
+    private final OutPlaysRoleFragment fragment = new OutPlaysRoleFragment(start, end, false);
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testApplyTraversalFollowsSubsUpwards() {
+        GraphTraversal<Vertex, Vertex> mockTraversal = Mocks.traversal();
+        fragment.applyTraversal(mockTraversal);
+
+        InOrder order = inOrder(mockTraversal);
+
+        // Make sure we follow subs upwards
+        order.verify(mockTraversal).union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit());
+        order.verify(mockTraversal).unfold();
+
+        // Make sure we traverse plays role
+        order.verify(mockTraversal).out(PLAYS_ROLE.getLabel());
+
+        // Make sure we DO NOT traverse subs downwards
+        order.verifyNoMoreInteractions();
     }
 }
