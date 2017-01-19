@@ -23,7 +23,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.test.GraphContext;
@@ -532,16 +531,6 @@ public class GenealogyTest {
         assertTrue(checkResource(answers, "g", "female"));
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertTrue(!answers.isEmpty());
-    }
-
-    //Bug #11150 Relations with resources as single VarAdmin
-    @Test
-    public void testRelationResources(){
-        String queryString = "match $rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';";
-        String queryString2 = "match $rel (happening: $b, protagonist: $p) isa event-protagonist; $rel has event-role 'parent';";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, genealogyGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, genealogyGraph.graph());
-        assertTrue(query.equals(query2));
     }
 
     private boolean checkResource(QueryAnswers answers, String var, String value){
