@@ -1,3 +1,21 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.graql.Graql;
@@ -25,6 +43,10 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     public PlaysProperty(VarAdmin role) {
         this.role = role;
+    }
+
+    public VarAdmin getRole() {
+        return role;
     }
 
     @Override
@@ -70,7 +92,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
                 typeVar.getVarName() : varName.map(name -> name + "-" + getName() + "-" + UUID.randomUUID().toString());
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
+        VarAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }
