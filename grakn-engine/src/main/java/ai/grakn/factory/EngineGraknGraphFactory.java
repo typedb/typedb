@@ -27,19 +27,19 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
-public class GraphFactory {
+public class EngineGraknGraphFactory {
     private final Properties properties;
-    private static GraphFactory instance = null;
+    private static EngineGraknGraphFactory instance = null;
 
 
-    public static synchronized GraphFactory getInstance() {
+    public static synchronized EngineGraknGraphFactory getInstance() {
         if (instance == null) {
-            instance = new GraphFactory();
+            instance = new EngineGraknGraphFactory();
         }
         return instance;
     }
 
-    private GraphFactory() {
+    private EngineGraknGraphFactory() {
         properties = new Properties();
         String pathToConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
 

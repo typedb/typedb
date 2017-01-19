@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
-import static ai.grakn.factory.GraphFactory.getInstance;
+import static ai.grakn.factory.EngineGraknGraphFactory.getInstance;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;

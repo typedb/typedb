@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
@@ -82,7 +82,7 @@ public class ImportControllerTest {
 
         waitToFinish();
 
-        EngineGraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
+        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
         assertEquals(nameTags.size(), 10);

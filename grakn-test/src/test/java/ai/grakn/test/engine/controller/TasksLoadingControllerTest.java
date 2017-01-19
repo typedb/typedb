@@ -20,7 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.engine.loader.LoaderTask;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -77,7 +77,7 @@ public class TasksLoadingControllerTest {
 
         waitToFinish(taskID);
 
-        EngineGraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
+        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
         assertEquals(NUMBER_TO_TEST, nameTags.size());

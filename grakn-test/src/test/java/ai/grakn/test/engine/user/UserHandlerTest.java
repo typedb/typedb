@@ -20,7 +20,7 @@ package ai.grakn.test.engine.user;
 
 import ai.grakn.engine.user.Password;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.test.EngineContext;
@@ -77,7 +77,7 @@ public class UserHandlerTest {
 
     @Test
     public void testUserInGraph(){
-        EngineGraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
+        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         assertNotNull(graph.getResourceType(UsersHandler.USER_NAME).getResource(userName));
     }
 

@@ -21,7 +21,7 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
 
 import java.util.function.Consumer;
@@ -101,7 +101,7 @@ public class GraphContext extends ExternalResource {
 
     private void loadGraph() {
         //TODO: get rid of another ugly cast
-        graph = (GraknGraph) GraphFactory.getInstance().getGraph(randomKeyspace());
+        graph = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace());
 
         // if data should be pre-loaded, load
         if(preLoad != null){
