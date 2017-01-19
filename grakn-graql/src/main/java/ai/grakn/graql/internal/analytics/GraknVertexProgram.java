@@ -141,7 +141,6 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
             long message = iterator.next();
             // count number of assertions connected
             if (message < 0) assertionCount++;
-                // check if a message is received from the role-player
             else hasRolePlayer = true;
         }
 

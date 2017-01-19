@@ -50,7 +50,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new MinMapReduce(statisticsResourceTypeNames, dataType));
-        Map<Serializable, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
         LOGGER.info("MinMapReduce is done");
         return Optional.of(min.get(MapReduce.NullObject.instance()));
     }

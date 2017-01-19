@@ -38,7 +38,6 @@ import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
@@ -94,9 +93,6 @@ public class GraqlTest {
         qb = graph.graql();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
     }
 

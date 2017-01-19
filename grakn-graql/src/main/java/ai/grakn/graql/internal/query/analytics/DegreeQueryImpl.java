@@ -24,7 +24,6 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
@@ -76,7 +75,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
                 new DegreeDistributionMapReduce(ofTypeNames));
 
         LOGGER.info("DegreeVertexProgram is done");
-        return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 
     @Override

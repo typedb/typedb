@@ -25,7 +25,6 @@ import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
@@ -67,6 +66,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
                         new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                 clusterSize));
             }
+            LOGGER.info("ConnectedComponentsVertexProgram is done");
+            return result.memory().get(ClusterMemberMapReduce.class.getName());
         } else {
             if (anySize) {
                 result = computer.compute(
@@ -78,9 +79,9 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
                         new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                 clusterSize));
             }
+            LOGGER.info("ConnectedComponentsVertexProgram is done");
+            return result.memory().get(ClusterSizeMapReduce.class.getName());
         }
-        LOGGER.info("ConnectedComponentsVertexProgram is done");
-        return (T) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
     @Override
