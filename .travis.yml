@@ -10,7 +10,7 @@ cache:
    - grakn-dashboard/node_modules
 
 env:
-  - TESTS=**/**Test*
+  - TESTS=**/*Test*
   - TESTS=**/*IT*
 
 notifications:
