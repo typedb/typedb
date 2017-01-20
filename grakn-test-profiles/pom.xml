@@ -110,7 +110,7 @@
             <dependencies>
                 <dependency>
                     <groupId>ai.grakn</groupId>
-                    <artifactId>grakn-orientdb-factory</artifactId>
+                    <artifactId>orientdb-factory</artifactId>
                     <version>${project.version}</version>
                     <scope>test</scope>
                 </dependency>
