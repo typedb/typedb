@@ -109,14 +109,14 @@
                         <executions>
                             <execution>
                                 <id>install-shunit2</id>
-                                <phase>test</phase>
+                                <phase>integration-test</phase>
                                 <goals>
                                     <goal>wget</goal>
                                 </goals>
                                 <configuration>
                                     <url>https://github.com/burukuru/shunit2/archive/master.zip</url>
                                     <unpack>true</unpack>
-                                    <outputDirectory>${project.basedir}/target/lib</outputDirectory>
+                                    <outputDirectory>${main.basedir}/grakn-dist/target/lib</outputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
@@ -128,7 +128,7 @@
                         <executions>
                             <execution>
                                 <id>bash-tests</id>
-                                <phase>test</phase>
+                                <phase>integration-test</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
@@ -136,8 +136,8 @@
                         </executions>
                         <configuration>
                             <skip>${skipTests}</skip>
-                            <workingDirectory>${project.basedir}/src/test/bash</workingDirectory>
-                            <executable>${project.basedir}/src/test/bash/bash-startup-test.sh</executable>
+                            <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
+                            <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
                         </configuration>
                     </plugin>
                 </plugins>
