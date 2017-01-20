@@ -107,12 +107,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
         VarAdmin scopeVar = this.getScope();
-<<<<<<< HEAD
-        VarName scopeVariable = scopeVar.isUserDefinedName() ?
-                scopeVar.getVarName() : varName.map(name -> name + "-" + getName() + "-" + UUID.randomUUID().toString());
-=======
         VarName scopeVariable = scopeVar.getVarName();
->>>>>>> ab71b81a25390f4111f6b7371a809abb314762a0
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part

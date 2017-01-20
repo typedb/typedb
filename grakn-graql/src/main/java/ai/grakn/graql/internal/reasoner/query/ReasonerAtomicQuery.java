@@ -191,7 +191,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             insert.stream()
                     .map( m ->
                         m.entrySet().stream()
-                        .collect(Collectors.toMap(k -> Patterns.varName(k.getKey()), Map.Entry::getValue)))
+                        .collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
                     .forEach(insertAnswers::add);
        }
        return insertAnswers;

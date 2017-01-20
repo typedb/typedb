@@ -116,12 +116,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
         VarAdmin typeVar = this.getRole();
-<<<<<<< HEAD
-        VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.map(name -> name + "-" + getName() + "-" + UUID.randomUUID().toString());
-=======
         VarName typeVariable = typeVar.getVarName();
->>>>>>> ab71b81a25390f4111f6b7371a809abb314762a0
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
