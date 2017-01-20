@@ -98,7 +98,7 @@ public class RoleTypeTest extends GraphTestBase {
     public void testPlayedByTypes(){
         RoleType crewMember = graknGraph.putRoleType("crew-member").setAbstract(true);
         EntityType human = graknGraph.putEntityType("human").playsRole(crewMember);
-        EntityType person = graknGraph.putEntityType("person");
+        EntityType person = graknGraph.putEntityType("person").superType(human);
 
         assertEquals(2, crewMember.playedByTypes().size());
         assertTrue(crewMember.playedByTypes().contains(human));
