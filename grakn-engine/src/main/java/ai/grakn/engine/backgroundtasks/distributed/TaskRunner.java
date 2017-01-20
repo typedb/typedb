@@ -82,7 +82,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         if(OPENED.compareAndSet(false, true)) {
             graknStorage = new GraknStateStorage();
 
-            consumer = kafkaConsumer(TASK_RUNNER_GROUP);
+            consumer = kafkaConsumer(TASK_RUNNER_GROUP, WORK_QUEUE_TOPIC);
             consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new RebalanceListener(consumer));
 
             // Create initial entries in ZK for TaskFailover to watch.

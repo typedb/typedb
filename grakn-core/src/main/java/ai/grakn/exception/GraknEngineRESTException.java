@@ -18,20 +18,28 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.ErrorMessage;
+import org.slf4j.LoggerFactory;
 
 /**
- * <p>
- * An exception which indicates a failure starting Grakn engine
- * </p>
- *
- * @author alexandraorth
+ * This Exception is thrown by Grakn Engine web server when operations accessible through APIs go wrong.
  */
-public class GraknEngineServerException extends RuntimeException {
-    public GraknEngineServerException(String engineID, String message, Exception e) {
-        super(ErrorMessage.ENGINE_STARTUP_ERROR.getMessage(engineID, message), e);
+public class GraknEngineRESTException extends RuntimeException {
+
+    final int status;
+
+    public GraknEngineRESTException(int status, String message) {
+        super(message);
+        LoggerFactory.getLogger(GraknEngineRESTException.class).error("New Grakn Engine Server exception {}", message);
+        this.status = status;
     }
-    public GraknEngineServerException(String engineID, String message) {
-        super(ErrorMessage.ENGINE_STARTUP_ERROR.getMessage(engineID, message));
+
+    public GraknEngineRESTException(int status, Exception e) {
+        super(e.toString());
+        LoggerFactory.getLogger(GraknEngineRESTException.class).error("New Grakn Engine Server exception", e);
+        this.status = status;
+    }
+
+    public int getStatus() {
+        return this.status;
     }
 }

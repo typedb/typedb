@@ -82,11 +82,11 @@ public class Scheduler implements Runnable, AutoCloseable {
             stateStorage = new GraknStateStorage();
 
             // Kafka listener
-            consumer = kafkaConsumer(SCHEDULERS_GROUP);
+            consumer = kafkaConsumer(SCHEDULERS_GROUP, NEW_TASKS_TOPIC);
             consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new RebalanceListener(consumer));
 
             // Kafka writer
-            producer = kafkaProducer();
+            producer = kafkaProducer(WORK_QUEUE_TOPIC);
 
             waitToClose = new CountDownLatch(1);
 

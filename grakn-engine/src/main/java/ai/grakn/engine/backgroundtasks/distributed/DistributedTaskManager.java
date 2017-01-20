@@ -26,6 +26,7 @@ import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.GraknEngineServerException;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
@@ -58,15 +59,12 @@ public class DistributedTaskManager implements TaskManager {
     public DistributedTaskManager(SynchronizedStateStorage zkStorage) {
         if(OPENED.compareAndSet(false, true)) {
             try {
-                noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");
-                noThrow(() -> stateStorage = new GraknStateStorage(), "Could not instantiate grakn state storage");
-
+                this.producer = ConfigHelper.kafkaProducer(NEW_TASKS_TOPIC);
+                this.stateStorage = new GraknStateStorage();
                 this.zkStorage = zkStorage;
             }
             catch (Exception e) {
-                e.printStackTrace(System.err);
-                LOG.error("While trying to start the DistributedTaskManager", e);
-                throw new RuntimeException("Could not start task manager : "+e);
+                throw new GraknEngineServerException(EngineID.getInstance().id(), "Could not connect to Kafka.", e);
             }
         }
         else {
@@ -106,7 +104,7 @@ public class DistributedTaskManager implements TaskManager {
 
     @Override
     public TaskManager stopTask(String id, String requesterName) {
-        throw new UnsupportedOperationException(this.getClass().getName()+" currently doesnt support stopping tasks");
+        throw new UnsupportedOperationException(this.getClass().getName()+" currently doesn't support stopping tasks");
     }
 
     @Override

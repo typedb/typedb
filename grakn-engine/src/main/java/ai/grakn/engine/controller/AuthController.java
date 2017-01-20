@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknEngineRESTException;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -70,13 +70,13 @@ public class AuthController {
             user = jsonBody.at(USERNAME_KEY).asString();
             password = jsonBody.at(PASSWORD_KEY).asString();
         } catch (Exception e) {
-            throw new GraknEngineServerException(400, e);
+            throw new GraknEngineRESTException(400, e);
         }
 
         if (usersHandler.validateUser(user, password)) {
             return JWTHandler.signJWT(user);
         } else {
-            throw new GraknEngineServerException(401,"Wrong authentication parameters have been provided.");
+            throw new GraknEngineRESTException(401,"Wrong authentication parameters have been provided.");
         }
 
 

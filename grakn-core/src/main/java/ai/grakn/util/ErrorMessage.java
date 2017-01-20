@@ -167,6 +167,8 @@ public enum ErrorMessage {
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     LOADER_WAIT_TIMEOUT("Exception thrown due to timeout being exceeded while waiting for loading to complete"),
 
+    ENGINE_STARTUP_ERROR("Error while starting engine [%s]. Message: [%s]"),
+
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     GRAPH_MISSING("Provided query does not have an associated graph"),
     NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),

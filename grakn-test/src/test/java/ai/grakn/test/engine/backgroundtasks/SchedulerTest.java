@@ -101,7 +101,7 @@ public class SchedulerTest {
     }
 
     private void sendTasksToNewTasksQueue(Map<String, TaskState> tasks) {
-        KafkaProducer<String, String> producer = ConfigHelper.kafkaProducer();
+        KafkaProducer<String, String> producer = ConfigHelper.kafkaProducer(NEW_TASKS_TOPIC);
 
         for(String taskId:tasks.keySet()){
             producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskId, tasks.get(taskId).configuration().toString()));

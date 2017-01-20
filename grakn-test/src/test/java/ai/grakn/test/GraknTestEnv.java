@@ -63,7 +63,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static void startEngine() throws Exception {
+    public static void startEngine() throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -94,7 +94,7 @@ public abstract class GraknTestEnv {
         }
     }
 
-    static void stopEngine() throws Exception {
+    public static void stopEngine() throws Exception {
         if(ENGINE_RUNNING.compareAndSet(true, false)) {
             LOG.info("STOPPING ENGINE...");
 
@@ -113,7 +113,7 @@ public abstract class GraknTestEnv {
 
     //TODO :: This will be removed when we fix BUG #12029. We will be able to run AbstractGraphTest classes
     //TODO :: without touching any engine component. Stopping the HTTP server will move into stopEngine()
-    static void stopHTTP(){
+    public static void stopHTTP(){
         if(HTTP_RUNNING.compareAndSet(true, false)) {
             GraknEngineServer.stopHTTP();
         }
@@ -158,7 +158,7 @@ public abstract class GraknTestEnv {
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-    static void hideLogs() {
+    public static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);

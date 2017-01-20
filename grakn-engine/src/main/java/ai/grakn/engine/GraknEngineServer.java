@@ -33,7 +33,7 @@ import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknEngineRESTException;
 import ai.grakn.util.REST;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -112,8 +112,8 @@ public class GraknEngineServer {
         before((req, res) -> checkAuthorization(req));
 
         //Register Exception Handler
-        exception(GraknEngineServerException.class, (e, request, response) -> {
-            response.status(((GraknEngineServerException) e).getStatus());
+        exception(GraknEngineRESTException.class, (e, request, response) -> {
+            response.status(((GraknEngineRESTException) e).getStatus());
             response.body("New exception: " + e.getMessage() + " - Please refer to grakn.log file for full stack trace.");
         });
 
@@ -124,6 +124,15 @@ public class GraknEngineServer {
     public static void startCluster() {
         // Start background task cluster.
         clusterManager = new ClusterManager();
+    }
+
+    public static ClusterManager getClusterManager(){
+        return clusterManager;
+    }
+
+    public static void stopCluster() throws Exception {
+        PostProcessing.getInstance().stop();
+        clusterManager.stop();
     }
 
     public static void startPostprocessing(){
@@ -153,15 +162,6 @@ public class GraknEngineServer {
                 running = false;
             }
         }
-    }
-
-    public static ClusterManager getClusterManager(){
-        return clusterManager;
-    }
-
-    public static void stopCluster() throws Exception {
-        PostProcessing.getInstance().stop();
-        clusterManager.stop();
     }
 
     /**
@@ -199,14 +199,14 @@ public class GraknEngineServer {
             boolean authenticated;
             try {
                 if (request.headers("Authorization") == null || !request.headers("Authorization").startsWith("Bearer ")) {
-                    throw new GraknEngineServerException(400, "Authorization field in header corrupted or absent.");
+                    throw new GraknEngineRESTException(400, "Authorization field in header corrupted or absent.");
                 }
 
                 String token = request.headers("Authorization").substring(7);
                 authenticated = JWTHandler.verifyJWT(token);
             } catch (Exception e) {
                 //request is malformed, return 400
-                throw new GraknEngineServerException(400, e);
+                throw new GraknEngineRESTException(400, e);
             }
             if (!authenticated) {
                 halt(401, "User not authenticated.");

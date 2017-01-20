@@ -24,6 +24,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.errors.TimeoutException;
 
 import java.util.Properties;
 
@@ -39,6 +40,13 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
 import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
 import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 
+/**
+ * <p>
+ * Class containing default configuration information for connections to Zookeeper & Kafka
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class ConfigHelper {
 
     public static CuratorFramework client() {
@@ -54,7 +62,14 @@ public class ConfigHelper {
                     .build();
     }
 
-    public static <K,V> KafkaConsumer<K, V> kafkaConsumer(String groupId) {
+    /**
+     * Configure and create a kafka consumer with the default properties
+     * @param groupId
+     * @param topic Topic to check if the consumer can connect to
+     * @return Created consumer with the default properties
+     * @throws TimeoutException When the created consumer cannot connect to kafka
+     */
+    public static <K,V> KafkaConsumer<K, V> kafkaConsumer(String groupId, String topic) throws TimeoutException {
         Properties properties = new Properties();
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("group.id", groupId);
@@ -63,10 +78,19 @@ public class ConfigHelper {
         properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
-        return new KafkaConsumer<>(properties);
+        KafkaConsumer<K,V> consumer = new KafkaConsumer<>(properties);
+        consumer.partitionsFor(topic);
+
+        return consumer;
     }
 
-    public static <K,V> KafkaProducer<K, V> kafkaProducer() {
+    /**
+     * Configure and create a kafka producer with the default properties
+     * @param topic Topic to check if the consumer can connect to
+     * @return Created producer with the default properties
+     * @throws TimeoutException When the created producer cannot connect to kafka
+     */
+    public static <K,V> KafkaProducer<K, V> kafkaProducer(String topic) throws TimeoutException {
         Properties properties = new Properties();
 
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
@@ -78,6 +102,9 @@ public class ConfigHelper {
         properties.put("key.serializer",  "org.apache.kafka.common.serialization.StringSerializer");
         properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
-        return new KafkaProducer<>(properties);
+        KafkaProducer<K,V> producer = new KafkaProducer<>(properties);
+        producer.partitionsFor(topic);
+
+        return producer;
     }
 }

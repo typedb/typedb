@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknEngineRESTException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -114,7 +114,7 @@ public class CommitLogController {
 
             return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
         } catch(Exception e){
-            throw new GraknEngineServerException(500,e);
+            throw new GraknEngineRESTException(500,e);
         }
     }
     private long getJobCount(Set jobs){
