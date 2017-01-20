@@ -327,9 +327,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             }
         }
 
+        if(answers.iterator().hasNext() && this.answers.iterator().hasNext()
+            && answers.iterator().next().size() != this.answers.iterator().next().size()) {
+            //LOG.debug("");
+        }
         QueryAnswers filteredAnswers = answers
                 .filterVars(this.getVarNames())
-                .permute(this.getAtom());
+                .permute(this.getAtom(), ruleHead.getAtom());
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
@@ -376,6 +380,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         public QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
             this.rules = outer().getAtom().getApplicableRules();
+            LOG.debug("applicable rules: " + rules.size());
             lookup(cache);
             this.answerIterator = outer().newAnswers.iterator();
         }

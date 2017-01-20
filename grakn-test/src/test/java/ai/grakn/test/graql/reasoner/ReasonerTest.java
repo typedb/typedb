@@ -803,25 +803,13 @@ public class ReasonerTest {
 
     @Test
     public void testMatchAll(){
-        String queryString = "match $x isa person;($x, $y);$y isa entity;";
-        String queryString2 = "match (recommended-customer: $x, recommended-product: $y);$x has name $n;";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString2);
-        QueryAnswers answers = queryAnswers(query);
-        QueryAnswers answers2 = queryAnswers(query2);
-        System.out.println();
-    }
-
-    @Test
-    public void testMatchAll2(){
-        String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
+        String queryString = "match $y isa product;$r($x, $y);$x isa entity;$y has name $yn;$x has name $xn;";
         String queryString2 = "match $y isa product;{$r(recommended-customer: $x, recommended-product: $y) or " +
-                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};";
-        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString2);
-        QueryAnswers answers = queryAnswers(query);
-        //QueryAnswers answers2 = queryAnswers(query2);
-        System.out.println();
+                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};$y has name $yn;$x has name $xn;";
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test

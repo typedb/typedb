@@ -24,6 +24,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -65,9 +66,15 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
 
-    public QueryAnswers permute(Atom atom){
-        if (!atom.isRelation()) return this;
-        List<VarName> permuteVars = new ArrayList<>(((Relation) atom).getUnmappedRolePlayers());
+    public QueryAnswers permute(Atom atom, Atom headAtom){
+        if (!(atom.isRelation() && headAtom.isRelation())) return this;
+        List<VarName> permuteVars = new ArrayList<>();
+        //if atom is match all atom, add type from rule head and find unmapped roles
+        Relation relAtom = atom.getValueVariable().getValue().isEmpty()?
+                ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
+                (Relation) atom;
+        relAtom.getUnmappedRolePlayers().forEach(permuteVars::add);
+
         List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
         Set<Map<VarName, VarName>> unifierSet = getUnifiersFromPermutations(permuteVars, varPermutations);
         QueryAnswers permutedAnswers = new QueryAnswers();

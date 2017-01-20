@@ -95,8 +95,8 @@ public class Relation extends TypeAtom {
     private Relation(Relation a) {
         super(a);
         this.relationPlayers = getRelationPlayers();
-        this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
-        this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
+        //this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
+        //this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
     }
 
     private Set<RelationPlayer> getRelationPlayers() {
@@ -306,12 +306,13 @@ public class Relation extends TypeAtom {
         return roleTypes;
     }
 
-    private void addType(Type type) {
+    public Relation addType(Type type) {
         typeId = type.getId();
         VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
         setPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
+        return this;
     }
 
     private void inferTypeFromRoles() {
@@ -421,7 +422,7 @@ public class Relation extends TypeAtom {
     }
 
     private Set<VarName> getMappedRolePlayers() {
-        return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
+        return computeRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
     }
 
     /**
@@ -483,7 +484,7 @@ public class Relation extends TypeAtom {
      * Attempts to infer the implicit roleTypes and matching types based on contents of the parent query
      * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
-    private Map<RoleType, Pair<VarName, Type>> computeRoleVarTypeMap() {
+    public Map<RoleType, Pair<VarName, Type>> computeRoleVarTypeMap() {
         Map<Var, Pair<VarName, Type>> roleVarTypeMap = new HashMap<>();
         Map<RoleType, Pair<VarName, Type>> roleTypeMap = new HashMap<>();
         if (getParentQuery() == null || getType() == null) return roleTypeMap;
