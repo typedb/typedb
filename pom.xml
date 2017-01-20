@@ -42,6 +42,7 @@
         <module>grakn-core</module>
         <module>grakn-orientdb-factory</module>
         <module>grakn-test-profiles</module>
+        <module>grakn-factory</module>
     </modules>
 
     <properties>
