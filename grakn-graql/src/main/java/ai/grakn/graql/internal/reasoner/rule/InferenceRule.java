@@ -87,9 +87,7 @@ public class InferenceRule {
     }
 
     private void propagateConstraints(Atom parentAtom){
-        Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                .filter(type -> !body.containsEquivalentAtom(type))
-                .collect(toSet());
+        Set<Atom> types = parentAtom.getTypeConstraints().stream().collect(toSet());
         //get all predicates apart from those that correspond to role players with ambiguous role types
         Set<VarName> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
@@ -98,8 +96,8 @@ public class InferenceRule {
 
         head.addAtomConstraints(predicates);
         body.addAtomConstraints(predicates);
-        head.addAtomConstraints(types);
-        body.addAtomConstraints(types);
+        head.addAtomConstraints(types.stream().filter(type -> !head.containsEquivalentAtom(type)).collect(toSet()));
+        body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
     }
 
     private void rewriteHead(Atom parentAtom){
