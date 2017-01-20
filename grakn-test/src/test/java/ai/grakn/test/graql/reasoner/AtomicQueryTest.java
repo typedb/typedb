@@ -20,17 +20,18 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.GeoGraph;
+import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graphs.AdmissionsGraph;
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
@@ -42,7 +43,6 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
@@ -100,8 +100,8 @@ public class AtomicQueryTest {
         QueryAnswers answers = new QueryAnswers();
 
         answers.add(ImmutableMap.of(
-                varName("x"), getConcept("Bob"),
-                varName("y"), getConcept("Colour of Magic")));
+                VarName.of("x"), getConcept("Bob"),
+                VarName.of("y"), getConcept("Colour of Magic")));
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, snbGraph.graph());
         atomicQuery.getAnswers().addAll(answers);
         atomicQuery.materialise();
@@ -139,19 +139,6 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern2, admissionsGraph.graph());
         assertEquals(parentQuery, childQuery);
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
-    }
-
-    @Test
-    public void testQueryEquivalence(){
-        String patternString = "{(entity-location: $x2, geo-entity: $xx) isa is-located-in;" +
-                "$x1 isa $t1; $t1 sub geoObject;}";
-        String patternString2 = "{(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
-                "$y1 isa $t2; $t2 sub geoObject;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, geoGraph.graph());
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, geoGraph.graph());
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, geoGraph.graph());
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, geoGraph.graph());
-        assertTrue(query.isEquivalent(query2));
     }
 
     @Test

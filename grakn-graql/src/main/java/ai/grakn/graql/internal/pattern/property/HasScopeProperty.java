@@ -36,7 +36,6 @@ import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
@@ -108,8 +107,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
         VarAdmin scopeVar = this.getScope();
-        VarName scopeVariable = scopeVar.isUserDefinedName() ?
-                scopeVar.getVarName() : varName.map(name -> name + "-scope-" + UUID.randomUUID().toString());
+        VarName scopeVariable = scopeVar.getVarName();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part

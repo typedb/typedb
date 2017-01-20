@@ -20,9 +20,7 @@ import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  *
@@ -50,22 +48,22 @@ public class ComputeQueryBuilderImplMock extends ComputeQueryBuilderImpl {
 
     @Override
     public CountQuery count() {
-        return new CountQueryImplMock(graph,numWorkers);
+        return new CountQueryImplMock(graph, numWorkers);
     }
 
     @Override
-    public DegreeQuery<Map<Long, Set<String>>> degree() {
-        return new DegreeQueryImplMock<>(graph,numWorkers);
+    public DegreeQuery degree() {
+        return new DegreeQueryImplMock(graph, numWorkers);
     }
 
     @Override
     public MinQuery min() {
-        return new MinQueryImplMock(graph,numWorkers);
+        return new MinQueryImplMock(graph, numWorkers);
     }
 
     @Override
     public MaxQuery max() {
-        return new MaxQueryImplMock(graph,numWorkers);
+        return new MaxQueryImplMock(graph, numWorkers);
     }
 
     @Override
@@ -75,17 +73,17 @@ public class ComputeQueryBuilderImplMock extends ComputeQueryBuilderImpl {
 
     @Override
     public SumQuery sum() {
-        return new SumQueryImplMock(graph,numWorkers);
+        return new SumQueryImplMock(graph, numWorkers);
     }
 
     @Override
     public StdQuery std() {
-        return new StdQueryImplMock(graph,numWorkers);
+        return new StdQueryImplMock(graph, numWorkers);
     }
 
     @Override
     public MedianQuery median() {
-        return new MedianQueryImplMock(graph,numWorkers);
+        return new MedianQueryImplMock(graph, numWorkers);
     }
 
 }

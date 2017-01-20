@@ -18,17 +18,20 @@
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.Grakn;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import mjson.Json;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -36,27 +39,28 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
-@Ignore
 public class GraqlShellIT {
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.empty();
-
-    private static final GraknGraph graph = rule.graph();
+    public static final EngineContext engine = EngineContext.startServer();
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -64,11 +68,20 @@ public class GraqlShellIT {
     private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
+    private static final ImmutableList<String> keyspaces = ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar");
+
     @BeforeClass
     public static void setUpClass() throws Exception {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
+    }
+
+    @After
+    public void tearDown() throws GraknValidationException {
+        for (String keyspace : keyspaces){
+            Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().clear();
+        }
     }
 
     @AfterClass
@@ -112,8 +125,29 @@ public class GraqlShellIT {
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
     }
 
-    // TODO: Fix this test
-    @Ignore
+    @Test
+    public void testDefaultKeyspace() throws Exception {
+        testShell("insert im-in-the-default-keyspace sub entity;\ncommit\n");
+
+        String result = testShell("match im-in-the-default-keyspace sub entity; ask;\n", "-k", "grakn");
+        assertThat(result, containsString("True"));
+    }
+
+    @Test
+    public void testSpecificKeyspace() throws Exception {
+        testShell("insert foo-foo sub entity;\ncommit\n", "-k", "foo");
+        testShell("insert bar-bar sub entity;\ncommit\n", "-k", "bar");
+
+        String fooFooinFoo = testShell("match foo-foo sub entity; ask;\n", "-k", "foo");
+        String fooFooInBar = testShell("match foo-foo sub entity; ask;\n", "-k", "bar");
+        String barBarInFoo = testShell("match bar-bar sub entity; ask;\n", "-k", "foo");
+        String barBarInBar = testShell("match bar-bar sub entity; ask;\n", "-k", "bar");
+        assertThat(fooFooinFoo, containsString("True"));
+        assertThat(fooFooInBar, containsString("False"));
+        assertThat(barBarInFoo, containsString("False"));
+        assertThat(barBarInBar, containsString("True"));
+    }
+
     @Test
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -146,12 +180,28 @@ public class GraqlShellIT {
 
     @Test
     public void testInsertOutput() throws Exception {
-        String[] result = testShell("insert X sub entity; $thingy isa X;\n").split("\r\n?|\n");
+        String result = testShell("insert X sub entity; $thingy isa X;\n");
+        List<String> resultLines = Lists.newArrayList(result.split("\r\n?|\n"));
 
-        // Expect six lines output - four for the license, one for the query, no results and a new prompt
-        assertEquals(6, result.length);
-        assertEquals(">>> insert X sub entity; $thingy isa X;", result[4]);
-        assertEquals(">>> ", result[5]);
+        // Expect seven lines output - four for the license, one for the query, one results and a new prompt
+        //noinspection unchecked
+        assertThat(resultLines, contains(
+                anything(),
+                anything(),
+                anything(),
+                anything(),
+                is(">>> insert X sub entity; $thingy isa X;"),
+                allOf(containsString("$thingy"), containsString("isa"), containsString("X")),
+                is(">>> ")
+        ));
+    }
+
+    @Test
+    public void testAggregateQuery() throws Exception {
+        String result = testShell("match $x sub concept; aggregate count;\n");
+
+        // Expect to see the whole meta-ontology
+        assertThat(result, containsString("\n8\n"));
     }
 
     @Test
@@ -162,7 +212,7 @@ public class GraqlShellIT {
         assertThat(
                 result,
                 allOf(
-                        containsString("type"), containsString("match"),
+                        containsString("concept"), containsString("match"),
                         not(containsString("exit")), containsString("$x")
                 )
         );
@@ -250,11 +300,19 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x sub entity;\n").split("\n");
+        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x type-name E;\n").split("\n");
 
         // Make sure there are no results for match query
-        assertEquals(">>> match $x sub entity", result[result.length-2]);
+        assertEquals(">>> match $x type-name E;", result[result.length-2]);
         assertEquals(">>> ", result[result.length-1]);
+    }
+
+    @Test
+    public void testLimit() throws Exception {
+        String result = testShell("match $x sub concept; limit 1;\n");
+
+        // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
+        assertEquals(result, 7, result.split("\n").length);
     }
 
     @Test
@@ -308,7 +366,6 @@ public class GraqlShellIT {
     public void fuzzTest() throws Exception {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
-            System.out.println(i);
             testShell(randomString(i));
         }
     }
@@ -370,6 +427,24 @@ public class GraqlShellIT {
         assertThat(lines[lines.length-5], containsString(">>> insert X sub entity"));
     }
 
+    @Test
+    public void testDuplicateRelation() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        testShell(
+                "insert R sub relation, has-role R1, has-role R2; R1 sub role; R2 sub role;\n" +
+                        "insert X sub entity, plays-role R1, plays-role R2;\n" +
+                        "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
+                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
+                        "commit\n",
+                err
+        );
+
+        assertThat(err.toString().toLowerCase(), allOf(
+                anyOf(containsString("exists"), containsString("one or more")),
+                containsString("relation")
+        ));
+    }
+
     private static String randomString(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
@@ -388,10 +463,6 @@ public class GraqlShellIT {
     }
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
-        String[] newArgs = Arrays.copyOf(args, args.length + 2);
-        newArgs[newArgs.length-2] = "-k";
-        newArgs[newArgs.length-1] = graph.getKeyspace();
-
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -403,7 +474,7 @@ public class GraqlShellIT {
             System.setOut(out);
             System.setErr(err);
             
-            GraqlShell.runShell(newArgs, expectedVersion, historyFile, new GraqlClientImpl());
+            GraqlShell.runShell(args, expectedVersion, historyFile, new GraqlClientImpl());
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();

@@ -76,7 +76,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     abstract String getName();
 
-    final String resourcesString() {
+    private String resourcesString() {
         return " of " + statisticsResourceTypeNames.stream()
                 .map(StringConverter::typeNameToString).collect(joining(", "));
     }
@@ -103,7 +103,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     String checkSelectedResourceTypesHaveCorrectDataType(Set<TypeName> types) {
-        if (types == null || types.isEmpty()){
+        if (types == null || types.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }

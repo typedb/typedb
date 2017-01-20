@@ -18,11 +18,11 @@
 
 package ai.grakn.test.engine;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -51,7 +51,7 @@ public class GraknEngineRunningTest {
         assertTrue(running);
 
         // Check that we've loaded the ontology
-        GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
+        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
     }
     

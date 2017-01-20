@@ -36,6 +36,7 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
     private static final String CLUSTER_SIZE = "clusterSizeMapReduce.clusterSize";
 
+    // Needed internally for OLAP tasks
     public ClusterMemberMapReduce() {
     }
 

@@ -26,6 +26,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -52,7 +53,6 @@ import java.util.Map;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -362,6 +362,23 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testTautology(){
+        String queryString = "match ($x, $y) isa is-located-in;city sub geoObject;";
+        String queryString2 = "match ($x, $y) isa is-located-in;geoObject sub city;";
+        String queryString3 = "match ($x, $y) isa is-located-in;";
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString3);
+        MatchQuery query2 = qb.parse(queryString);
+        MatchQuery query3 = iqb.parse(queryString);
+        MatchQuery query4 = iqb.parse(queryString2);
+
+        query.execute();
+        assertQueriesEqual(query2, query3);
+        assertTrue(query4.execute().isEmpty());
+    }
+
+    @Test
     public void testPlaysRole(){
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
              "($x, $y) isa is-located-in;";
@@ -385,7 +402,6 @@ public class ReasonerTest {
     }
 
     //TODO loses type variable as non-core types are not unified in rules
-    @Ignore
     @Test
     public void testPlaysRole2(){
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
@@ -586,7 +602,7 @@ public class ReasonerTest {
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
-        assertEquals(answers.filterVars(Sets.newHashSet(varName("x"))), answers2);
+        assertEquals(answers.filterVars(Sets.newHashSet(VarName.of("x"))), answers2);
     }
 
     @Test
@@ -658,6 +674,19 @@ public class ReasonerTest {
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
         assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testHasRole2() {
+        String queryString = "match ($x, $y) isa $rel;$rel has-role $role;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString2);
+        MatchQuery query2 = qb.parse(queryString);
+        MatchQuery query3 = iqb.parse(queryString);
+        query.execute();
+        assertQueriesEqual(query2, query3);
     }
 
     @Test

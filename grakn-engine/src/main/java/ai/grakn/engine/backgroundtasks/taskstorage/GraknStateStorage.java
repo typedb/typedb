@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.backgroundtasks.taskstorage;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -31,8 +30,9 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -189,7 +189,7 @@ public class GraknStateStorage implements StateStorage {
         return result.get();
     }
 
-    private TaskState instanceToState(GraknGraph graph, Instance instance){
+    private TaskState instanceToState(EngineGraknGraph graph, Instance instance){
         Resource<?> name = instance.resources(graph.getType(TASK_CLASS_NAME)).stream().findFirst().orElse(null);
         if (name == null) {
             LOG.error("Could not get 'task-class-name' for " + instance.getId());
@@ -310,17 +310,17 @@ public class GraknStateStorage implements StateStorage {
             return state;
         }
 
-    private <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
+    private <T> Optional<T> attemptCommitToSystemGraph(Function<EngineGraknGraph, T> function, boolean commit){
         double sleepFor = 100;
         for (int i = 0; i < retries; i++) {
 
             LOG.debug("Attempting "  + (commit ? "commit" : "query") + " on system graph @ t"+Thread.currentThread().getId());
             long time = System.currentTimeMillis();
 
-            try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            try (EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
                 T result = function.apply(graph);
                 if (commit) {
-                    graph.commit();
+                    graph.commitTx();
                 }
 
                 return Optional.of(result);
