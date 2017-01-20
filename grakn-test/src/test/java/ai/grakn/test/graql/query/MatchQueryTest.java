@@ -739,7 +739,7 @@ public class MatchQueryTest {
     @Test
     public void testPlaysQueryVariable() {
         MatchQuery query = qb.match(var().has("title", "Godfather").plays(var("x")));
-        Set<String> roles = query.get("x").map(concept -> concept.asType().getName()).collect(toSet());
+        Set<String> roles = query.get("x").map(concept -> concept.asType().getName().getValue()).collect(toSet());
 
         assertEquals(
                 Sets.newHashSet("production-with-cast", "production-with-genre", "production-with-cluster", "concept", "role"),
