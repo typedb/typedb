@@ -60,7 +60,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         if(OPENED.compareAndSet(false, true)) {
             this.cache = cache;
             current = cache.getCurrentChildren(RUNNERS_WATCH);
-            producer = kafkaProducer();
+            producer = kafkaProducer(WORK_QUEUE_TOPIC);
 
             stateStorage = new GraknStateStorage();
 

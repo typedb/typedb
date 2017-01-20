@@ -66,7 +66,7 @@ public class TaskRunnerTest {
 
     @Before
     public void setup() throws Exception {
-        producer = ConfigHelper.kafkaProducer();
+        producer = ConfigHelper.kafkaProducer(WORK_QUEUE_TOPIC);
         stateStorage = new GraknStateStorage();
 
         // ZooKeeper client

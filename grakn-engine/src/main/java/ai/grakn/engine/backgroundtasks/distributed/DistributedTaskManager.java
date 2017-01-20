@@ -59,11 +59,7 @@ public class DistributedTaskManager implements TaskManager {
     public DistributedTaskManager(SynchronizedStateStorage zkStorage) {
         if(OPENED.compareAndSet(false, true)) {
             try {
-                this.producer = ConfigHelper.kafkaProducer();
-
-                // getting the partition will throw an exception if the producer cannot connect to kafka
-                producer.partitionsFor(NEW_TASKS_TOPIC);
-
+                this.producer = ConfigHelper.kafkaProducer(NEW_TASKS_TOPIC);
                 this.stateStorage = new GraknStateStorage();
                 this.zkStorage = zkStorage;
             }
