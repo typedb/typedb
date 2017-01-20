@@ -27,7 +27,7 @@ public class EngineGraknGraphFactoryTest {
     }
 
     @Test
-    public void testBatchLoading(){
+    public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
         EngineGraknGraph graph1 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
         EngineGraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraphBatchLoading(keyspace);

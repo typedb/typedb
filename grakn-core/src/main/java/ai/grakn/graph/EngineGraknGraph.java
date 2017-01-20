@@ -39,7 +39,7 @@ import java.util.Set;
 public interface EngineGraknGraph extends BaseGraknGraph {
 
     /**
-     * Commits the transaction without submitting any commit logs
+     * Commits the transaction without submitting any commit logs through the REST API
      *
      * @throws GraknValidationException is thrown when a structural validation fails.
      */
