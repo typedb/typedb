@@ -8,6 +8,7 @@ cache:
    directories:
    - $HOME/.m2
    - grakn-dashboard/node_modules
+   - grakn-engine/npm
 
 env:
   - TESTS=**/*Test*
