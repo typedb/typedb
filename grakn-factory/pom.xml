@@ -36,4 +36,8 @@
         <module>orientdb-factory</module>
     </modules>
 
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
+
 </project>
