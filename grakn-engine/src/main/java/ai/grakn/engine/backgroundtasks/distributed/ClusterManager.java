@@ -20,6 +20,8 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.GraknEngineRESTException;
+import ai.grakn.exception.GraknEngineServerException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
@@ -75,7 +77,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
             startTaskRunner();
         }
         catch (Exception e) {
-            throw new RuntimeException("Could not start ClusterManager on " + ENGINE_ID + getFullStackTrace(e));
+            throw new GraknEngineServerException(ENGINE_ID, e.getMessage(), e);
         }
 
         LOG.debug("ClusterManager started & a leader elected on " + ENGINE_ID);

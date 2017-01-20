@@ -22,7 +22,7 @@ import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknEngineRESTException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -123,7 +123,7 @@ public class TasksController {
 
             return result.toString();
         } catch(Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 
@@ -138,7 +138,7 @@ public class TasksController {
             return "";
         }
         catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 
@@ -165,7 +165,7 @@ public class TasksController {
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
         }
         if(className == null || createdBy == null || runAt == null) {
-            throw new GraknEngineServerException(400, "Missing mandatory parameters");
+            throw new GraknEngineRESTException(400, "Missing mandatory parameters");
         }
 
         try {
@@ -187,14 +187,14 @@ public class TasksController {
 
         }
         catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new GraknEngineServerException(400, e);
+            throw new GraknEngineRESTException(400, e);
         }
         catch (NullPointerException e) {
-            throw new GraknEngineServerException(400, "Missing mandatory parameters");
+            throw new GraknEngineRESTException(400, "Missing mandatory parameters");
         }
         catch (Exception e) {
             LOG.error(getFullStackTrace(e));
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 

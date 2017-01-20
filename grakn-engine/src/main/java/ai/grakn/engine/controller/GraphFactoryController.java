@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknEngineRESTException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
@@ -86,7 +86,7 @@ public class GraphFactoryController {
             }
             return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new GraknEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
+            throw new GraknEngineRESTException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
         }
     }
 
@@ -104,7 +104,7 @@ public class GraphFactoryController {
             for (Entity keyspace : graph.<EntityType>getType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
                 Collection<Resource<?>> names = keyspace.resources(keyspaceName);
                 if (names.size() != 1) {
-                    throw new GraknEngineServerException(500,
+                    throw new GraknEngineRESTException(500,
                             ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " hos no unique name."));
                 }
                 result.add(names.iterator().next().getValue());

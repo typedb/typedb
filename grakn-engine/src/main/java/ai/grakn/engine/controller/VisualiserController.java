@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknEngineRESTException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
@@ -110,13 +110,13 @@ public class VisualiserController {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
             if(concept==null) {
-                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
+                throw new GraknEngineRESTException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
             }
 
 
             return renderHALConceptData(concept, separationDegree, keyspace);
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 
@@ -135,7 +135,7 @@ public class VisualiserController {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
             return renderHALConceptOntology(concept, keyspace);
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 
@@ -157,7 +157,7 @@ public class VisualiserController {
             responseObj.put(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
             return responseObj.toString();
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 
@@ -189,10 +189,10 @@ public class VisualiserController {
                         return formatAsHAL((MatchQuery)parsedQuery, keyspace);
                 }
             } else {
-                throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
+                throw new GraknEngineRESTException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
             }
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 
@@ -231,7 +231,7 @@ public class VisualiserController {
             }
             return response.toString();
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 
@@ -244,7 +244,7 @@ public class VisualiserController {
             Reasoner.precomputeInferences(graph);
             return "Done.";
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
     }
 

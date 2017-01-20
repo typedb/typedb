@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.postprocessing.PostProcessing;
-import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.exception.GraknEngineRESTException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.parser.QueryParser;
@@ -110,9 +110,9 @@ public class ImportController {
             Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(file, loader, scheduledFuture));
 
         } catch (FileNotFoundException j) {
-            throw new GraknEngineServerException(400, j);
+            throw new GraknEngineRESTException(400, j);
         } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            throw new GraknEngineRESTException(500, e);
         }
 
         return "Loading successfully STARTED.\n";
@@ -196,7 +196,7 @@ public class ImportController {
         }
         List<Var> insertQuery;
         if (!var.equals(INSERT_KEYWORD)) {
-            throw new GraknEngineServerException(500, "Match statement not followed by any Insert.");
+            throw new GraknEngineRESTException(500, "Match statement not followed by any Insert.");
         }
 
         insertQuery = new ArrayList<>();
