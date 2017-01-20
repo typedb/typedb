@@ -22,7 +22,6 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;

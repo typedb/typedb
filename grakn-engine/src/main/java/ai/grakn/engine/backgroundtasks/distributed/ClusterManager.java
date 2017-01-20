@@ -20,7 +20,6 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.exception.GraknEngineRESTException;
 import ai.grakn.exception.GraknEngineServerException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -29,7 +28,6 @@ import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  *
