@@ -23,7 +23,10 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
@@ -46,11 +49,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+
 
 public class AtomicTest {
 
@@ -75,23 +79,25 @@ public class AtomicTest {
 
     @Test
     public void testRecursive(){
-        String recRelString = "match ($x, $y) isa resides;";
-        String nrecRelString = "match ($x, $y) isa recommendation;";
-        ReasonerAtomicQuery recQuery = new ReasonerAtomicQuery(recRelString, snbGraph.graph());
-        ReasonerAtomicQuery nrecQuery = new ReasonerAtomicQuery(nrecRelString, snbGraph.graph());
+        GraknGraph graph = snbGraph.graph();
+        String recRelString = "{($x, $y) isa resides;}";
+        String nrecRelString = "{($x, $y) isa recommendation;}";
+        ReasonerAtomicQuery recQuery = new ReasonerAtomicQuery(conjunction(recRelString, graph), graph);
+        ReasonerAtomicQuery nrecQuery = new ReasonerAtomicQuery(conjunction(nrecRelString, graph), graph);
         assertTrue(recQuery.getAtom().isRecursive());
         assertTrue(!nrecQuery.getAtom().isRecursive());
     }
 
     @Test
     public void testFactory(){
-        String atomString = "match $x isa person;";
-        String relString = "match ($x, $y) isa recommendation;";
-        String resString = "match $x has gender 'male';";
+        GraknGraph graph = snbGraph.graph();
+        String atomString = "{$x isa person;}";
+        String relString = "{($x, $y) isa recommendation;}";
+        String resString = "{$x has gender 'male';}";
 
-        Atom atom = new ReasonerAtomicQuery(atomString, snbGraph.graph()).getAtom();
-        Atom relation = new ReasonerAtomicQuery(relString, snbGraph.graph()).getAtom();
-        Atom res = new ReasonerAtomicQuery(resString, snbGraph.graph()).getAtom();
+        Atom atom = new ReasonerAtomicQuery(conjunction(atomString, graph), graph).getAtom();
+        Atom relation = new ReasonerAtomicQuery(conjunction(relString, graph), graph).getAtom();
+        Atom res = new ReasonerAtomicQuery(conjunction(resString, graph), graph).getAtom();
 
         assertTrue(atom.isType());
         assertTrue(relation.isRelation());
@@ -100,13 +106,14 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference(){
-        String queryString = "match ($z, $y) isa owns; $z isa country; $y isa rocket; select $y, $z;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, cwGraph.graph());
+        GraknGraph graph = cwGraph.graph();
+        String patternString = "{($z, $y) isa owns; $z isa country; $y isa rocket;}";
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
         Atom atom = query.getAtom();
         Map<RoleType, Pair<VarName, Type>> roleMap = atom.getRoleVarTypeMap();
 
-        String queryString2 = "match isa owns, ($z, $y); $z isa country; select $y, $z;";
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, cwGraph.graph());
+        String patternString2 = "{isa owns, ($z, $y); $z isa country;}";
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
         Atom atom2 = query2.getAtom();
 
         Map<RoleType, Pair<VarName, Type>> roleMap2 = atom2.getRoleVarTypeMap();
@@ -117,13 +124,14 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference2(){
-        String queryString = "match ($z, $y, $x), isa transaction;$z isa country;$x isa person; select $x, $y, $z;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, cwGraph.graph());
+        GraknGraph graph = cwGraph.graph();
+        String patternString = "{($z, $y, $x), isa transaction;$z isa country;$x isa person;}";
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
         Atom atom = query.getAtom();
         Map<RoleType, Pair<VarName, Type>> roleMap = atom.getRoleVarTypeMap();
 
-        String queryString2 = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa rocket; select $x, $y, $z;";
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, cwGraph.graph());
+        String patternString2 = "{($z, $y, seller: $x), isa transaction;$z isa country;$y isa rocket;}";
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
         Atom atom2 = query2.getAtom();
         Map<RoleType, Pair<VarName, Type>> roleMap2 = atom2.getRoleVarTypeMap();
         assertEquals(3, roleMap.size());
@@ -134,10 +142,14 @@ public class AtomicTest {
     @Test
     public void testRoleInference3(){
         GraknGraph graph = genealogyOntology.graph();
-        Relation relation = (Relation) new ReasonerAtomicQuery("match ($p, son: $gc) isa parentship;", graph).getAtom();
-        Relation correctFullRelation = (Relation) new ReasonerAtomicQuery("match (parent: $p, son: $gc) isa parentship;", graph).getAtom();
-        Relation relation2 = (Relation) new ReasonerAtomicQuery("match (father: $gp, $p) isa parentship;", graph).getAtom();
-        Relation correctFullRelation2 = (Relation) new ReasonerAtomicQuery("match (father: $gp, child: $p) isa parentship;", graph).getAtom();
+        String relationString = "{($p, son: $gc) isa parentship;}";
+        String fullRelationString = "{(parent: $p, son: $gc) isa parentship;}";
+        String relationString2 = "{(father: $gp, $p) isa parentship;}";
+        String fullRelationString2 = "{(father: $gp, child: $p) isa parentship;}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        Relation correctFullRelation = (Relation) new ReasonerAtomicQuery(conjunction(fullRelationString, graph), graph).getAtom();
+        Relation relation2 = (Relation) new ReasonerAtomicQuery(conjunction(relationString2, graph), graph).getAtom();
+        Relation correctFullRelation2 = (Relation) new ReasonerAtomicQuery(conjunction(fullRelationString2, graph), graph).getAtom();
 
         assertTrue(relation.getRoleVarTypeMap().equals(correctFullRelation.getRoleVarTypeMap()));
         assertTrue(relation2.getRoleVarTypeMap().equals(correctFullRelation2.getRoleVarTypeMap()));
@@ -146,8 +158,8 @@ public class AtomicTest {
     @Test
     public void testTypeInference(){
         String typeId = snbGraph.graph().getType(TypeName.of("recommendation")).getId().getValue();
-        String queryString = "match ($x, $y); $x isa person; $y isa product;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, snbGraph.graph());
+        String patternString = "{($x, $y); $x isa person; $y isa product;}";
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         Atom atom = query.getAtom();
         assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
@@ -155,8 +167,8 @@ public class AtomicTest {
     @Test
     public void testTypeInference2(){
         String typeId = cwGraph.graph().getType(TypeName.of("transaction")).getId().getValue();
-        String queryString = "match ($z, $y, $x);$z isa country;$x isa rocket;$y isa person;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, cwGraph.graph());
+        String patternString = "{($z, $y, $x);$z isa country;$x isa rocket;$y isa person;}";
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, cwGraph.graph()), cwGraph.graph());
         Atom atom = query.getAtom();
         assertTrue(atom.getTypeId().getValue().equals(typeId));
     }
@@ -164,22 +176,22 @@ public class AtomicTest {
     @Test
     public void testUnification(){
         GraknGraph graph = genealogyOntology.graph();
-        String relation = "match (parent: $y, child: $x);";
-        String specialisedRelation = "match (father: $p, daughter: $c);";
-        String specialisedRelation2 = "match (daughter: $p, father: $c);";
+        String relation = "{(parent: $y, child: $x);}";
+        String specialisedRelation = "{(father: $p, daughter: $c);}";
+        String specialisedRelation2 = "{(daughter: $p, father: $c);}";
 
-        Atomic atom = new ReasonerAtomicQuery(relation, graph).getAtom();
-        Atomic specialisedAtom = new ReasonerAtomicQuery(specialisedRelation, graph).getAtom();
-        Atomic specialisedAtom2 = new ReasonerAtomicQuery(specialisedRelation2, graph).getAtom();
+        Atomic atom = new ReasonerAtomicQuery(conjunction(relation, graph), graph).getAtom();
+        Atomic specialisedAtom = new ReasonerAtomicQuery(conjunction(specialisedRelation, graph), graph).getAtom();
+        Atomic specialisedAtom2 = new ReasonerAtomicQuery(conjunction(specialisedRelation2, graph), graph).getAtom();
 
         Map<VarName, VarName> unifiers = specialisedAtom.getUnifiers(atom);
         Map<VarName, VarName> unifiers2 = specialisedAtom2.getUnifiers(atom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("p"), varName("y"));
-        correctUnifiers.put(varName("c"), varName("x"));
+        correctUnifiers.put(VarName.of("p"), VarName.of("y"));
+        correctUnifiers.put(VarName.of("c"), VarName.of("x"));
         Map<VarName, VarName> correctUnifiers2 = new HashMap<>();
-        correctUnifiers2.put(varName("p"), varName("x"));
-        correctUnifiers2.put(varName("c"), varName("y"));
+        correctUnifiers2.put(VarName.of("p"), VarName.of("x"));
+        correctUnifiers2.put(VarName.of("c"), VarName.of("y"));
         assertTrue(unifiers.toString(), unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
         assertTrue(unifiers2.toString(), unifiers2.entrySet().containsAll(correctUnifiers2.entrySet()));
     }
@@ -187,27 +199,27 @@ public class AtomicTest {
     @Test
     public void testUnification2() {
         GraknGraph graph = genealogyOntology.graph();
-        String childString = "match (wife: $5b7a70db-2256-4d03-8fa4-2621a354899e, husband: $0f93f968-873a-43fa-b42f-f674c224ac04) isa marriage;";
-        String parentString = "match (wife: $x) isa marriage;";
-        Atom childAtom = new ReasonerAtomicQuery(childString, graph).getAtom();
-        Atom parentAtom = new ReasonerAtomicQuery(parentString, graph).getAtom();
+        String childString = "{(wife: $5b7a70db-2256-4d03-8fa4-2621a354899e, husband: $0f93f968-873a-43fa-b42f-f674c224ac04) isa marriage;}";
+        String parentString = "{(wife: $x) isa marriage;}";
+        Atom childAtom = new ReasonerAtomicQuery(conjunction(childString, graph), graph).getAtom();
+        Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("5b7a70db-2256-4d03-8fa4-2621a354899e"), varName("x"));
+        correctUnifiers.put(VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"), VarName.of("x"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
 
         Map<VarName, VarName> reverseUnifiers = parentAtom.getUnifiers(childAtom);
         Map<VarName, VarName> correctReverseUnifiers = new HashMap<>();
-        correctReverseUnifiers.put(varName("x"), varName("5b7a70db-2256-4d03-8fa4-2621a354899e"));
+        correctReverseUnifiers.put(VarName.of("x"), VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"));
         assertTrue(reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet()));
     }
 
     @Test
     public void testRewriteAndUnification(){
         GraknGraph graph = genealogyOntology.graph();
-        String parentString = "match $r (wife: $x) isa marriage;";
-        Atom parentAtom = new ReasonerAtomicQuery(parentString, graph).getAtom();
+        String parentString = "{$r (wife: $x) isa marriage;}";
+        Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
 
         String childPatternString = "(wife: $x, husband: $y) isa marriage";
         InferenceRule testRule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(
@@ -217,22 +229,22 @@ public class AtomicTest {
         testRule.unify(parentAtom);
         Atom headAtom = testRule.getHead().getAtom();
         Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
-        assertTrue(varTypeRoleMap.get(varName("x")).getValue().equals(graph.getRoleType("wife")));
+        assertTrue(varTypeRoleMap.get(VarName.of("x")).getValue().equals(graph.getRoleType("wife")));
     }
 
     @Test
     public void testRewrite(){
         GraknGraph graph = genealogyOntology.graph();
-        String childRelation = "match (father: $x1, daughter: $x2) isa parentship;";
-        String parentRelation = "match $r (father: $x, daughter: $y) isa parentship;";
-        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(childRelation, graph);
+        String childRelation = "{(father: $x1, daughter: $x2) isa parentship;}";
+        String parentRelation = "{$r (father: $x, daughter: $y) isa parentship;}";
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph);
         Atom childAtom = childQuery.getAtom();
-        Atom parentAtom = new ReasonerAtomicQuery(parentRelation, graph).getAtom();
+        Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
 
         Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, childQuery);
         Atom rewrittenAtom = rewrite.getKey();
         Map<VarName, VarName> unifiers = rewrite.getValue();
-        Set<VarName> unifiedVariables = Sets.newHashSet(varName("x1"), varName("x2"));
+        Set<VarName> unifiedVariables = Sets.newHashSet(VarName.of("x1"), VarName.of("x2"));
         assertTrue(rewrittenAtom.isUserDefinedName());
         assertTrue(unifiedVariables.containsAll(unifiers.keySet()));
     }
@@ -240,82 +252,99 @@ public class AtomicTest {
     @Test
     public void testIndirectRoleUnification(){
         GraknGraph graph = genealogyOntology.graph();
-        String childRelation = "match ($r1: $x1, $r2: $x2) isa parentship;$r1 type-name 'father';$r2 type-name 'daughter';";
-        String parentRelation = "match ($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';";
-        Atom childAtom = new ReasonerAtomicQuery(childRelation, graph).getAtom();
-        Atom parentAtom = new ReasonerAtomicQuery(parentRelation, graph).getAtom();
+        String childRelation = "{($r1: $x1, $r2: $x2) isa parentship;$r1 type-name 'father';$r2 type-name 'daughter';}";
+        String parentRelation = "{($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';}";
+        Atom childAtom = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph).getAtom();
+        Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("x1"), varName("x"));
-        correctUnifiers.put(varName("x2"), varName("y"));
-        correctUnifiers.put(varName("r1"), varName("R1"));
-        correctUnifiers.put(varName("r2"), varName("R2"));
+        correctUnifiers.put(VarName.of("x1"), VarName.of("x"));
+        correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
+        correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
+        correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 
     @Test
     public void testIndirectRoleUnification2(){
         GraknGraph graph = genealogyOntology.graph();
-        String childRelation = "match ($r1: $x1, $r2: $x2);$r1 type-name 'father';$r2 type-name 'daughter';";
-        String parentRelation = "match ($R1: $x, $R2: $y);$R1 type-name 'father';$R2 type-name 'daughter';";
+        String childRelation = "{($r1: $x1, $r2: $x2);$r1 type-name 'father';$r2 type-name 'daughter';}";
+        String parentRelation = "{($R1: $x, $R2: $y);$R1 type-name 'father';$R2 type-name 'daughter';}";
 
-        Atom childAtom = new ReasonerAtomicQuery(childRelation, graph).getAtom();
-        Atom parentAtom = new ReasonerAtomicQuery(parentRelation, graph).getAtom();
+        Atom childAtom = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph).getAtom();
+        Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
         Map<VarName, VarName> correctUnifiers = new HashMap<>();
-        correctUnifiers.put(varName("x1"), varName("x"));
-        correctUnifiers.put(varName("x2"), varName("y"));
-        correctUnifiers.put(varName("r1"), varName("R1"));
-        correctUnifiers.put(varName("r2"), varName("R2"));
+        correctUnifiers.put(VarName.of("x1"), VarName.of("x"));
+        correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
+        correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
+        correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
         assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
     }
 
     @Test
     public void testMatchAllUnification(){
-        Relation relation = (Relation) new ReasonerAtomicQuery("match ($z, $b) isa recommendation;", snbGraph.graph()).getAtom();
-        Relation parentRelation = (Relation) new ReasonerAtomicQuery("match ($a, $x);", snbGraph.graph()).getAtom();
+        GraknGraph graph = snbGraph.graph();
+        String childString = "{($z, $b) isa recommendation;}";
+        String parentString = "{($a, $x);}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(childString, graph), graph).getAtom();
+        Relation parentRelation = (Relation) new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
         Map<VarName, VarName> unifiers = relation.getUnifiers(parentRelation);
         relation.unify(unifiers);
         assertEquals(unifiers.size(), 2);
         Set<VarName> vars = relation.getVarNames();
         Set<VarName> correctVars = new HashSet<>();
-        correctVars.add(varName("a"));
-        correctVars.add(varName("x"));
-        assertTrue(!vars.contains(varName("")));
+        correctVars.add(VarName.of("a"));
+        correctVars.add(VarName.of("x"));
+        assertTrue(!vars.contains(VarName.of("")));
         assertTrue(vars.containsAll(correctVars));
     }
 
     @Test
     public void testMatchAllUnification2(){
-        Relation parent = (Relation) new ReasonerAtomicQuery("match $r($a, $x);", snbGraph.graph()).getAtom();
-        PatternAdmin body = snbGraph.graph().graql().parsePattern("($z, $b) isa recommendation").admin();
-        PatternAdmin head = snbGraph.graph().graql().parsePattern("($z, $b) isa recommendation").admin();
-        InferenceRule rule = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
+        GraknGraph graph = snbGraph.graph();
+        String parentString = "{$r($a, $x);}";
+        Relation parent = (Relation) new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
+        PatternAdmin body = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
+        PatternAdmin head = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
+        InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
 
         rule.unify(parent);
         Set<VarName> vars = rule.getHead().getAtom().getVarNames();
         Set<VarName> correctVars = new HashSet<>();
-        correctVars.add(varName("r"));
-        correctVars.add(varName("a"));
-        correctVars.add(varName("x"));
-        assertTrue(!vars.contains(varName("")));
+        correctVars.add(VarName.of("r"));
+        correctVars.add(VarName.of("a"));
+        correctVars.add(VarName.of("x"));
+        assertTrue(!vars.contains(VarName.of("")));
         assertTrue(vars.toString(), vars.containsAll(correctVars));
     }
 
     @Test
     public void testValuePredicateComparison(){
-        Atomic atom = new ReasonerQueryImpl("match $x value '0';", snbGraph.graph()).getAtoms().iterator().next();
-        Atomic atom2 =new ReasonerQueryImpl("match $x value != '0';", snbGraph.graph()).getAtoms().iterator().next();
+        GraknGraph graph = snbGraph.graph();
+        String valueString = "{$x value '0';}";
+        String valueString2 = "{$x value != 0;}";
+        Atomic atom = new ReasonerQueryImpl(conjunction(valueString, graph), graph).getAtoms().iterator().next();
+        Atomic atom2 =new ReasonerQueryImpl(conjunction(valueString2, graph), graph).getAtoms().iterator().next();
         assertTrue(!atom.isEquivalent(atom2));
     }
 
     @Test
     public void testMultiPredResourceEquivalence(){
-        String queryString = "match $x has age $a;$a value >23; $a value <27;";
-        String queryString2 = "match $p has age $a;$a value >23;";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, snbGraph.graph());
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, snbGraph.graph());
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{$x has age $a;$a value >23; $a value <27;}";
+        String patternString2 = "{$p has age $a;$a value >23;}";
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
         assertTrue(!query.getAtom().isEquivalent(query2.getAtom()));
     }
+
+    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Patterns.conjunction(vars);
+    }
 }
+

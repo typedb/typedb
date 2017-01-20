@@ -19,11 +19,11 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.migration.sql.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,6 +39,7 @@ import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.DRIVER;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
+import static ai.grakn.migration.sql.Main.start;
 
 public class SQLMigratorMainTest {
 
@@ -130,7 +131,7 @@ public class SQLMigratorMainTest {
     }
 
     private void run(String... args){
-        Main.main(args);
+        start(engine.getClusterManager(), args);
     }
 
     private void runAndAssertDataCorrect(String... args){

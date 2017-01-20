@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.reasoner;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
@@ -25,6 +26,10 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -34,6 +39,7 @@ import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
+import java.util.Set;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -47,7 +53,7 @@ import java.util.Map;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
+import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -150,13 +156,6 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testIdComma(){
-        String queryString = "match $x isa person, has name 'Bob';";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-        assertEquals(query.getAtoms().size(), 2);
-    }
-
-    @Test
     public void testComma(){
         String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', value 'Bob', has age <21;";
         String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x value 'Bob';$x has age <21;";
@@ -178,10 +177,10 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar(){
-        String queryString = "match $x isa person, has firstname $y;";
-        String queryString2 = "match $x isa person;$x has firstname $y;";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
+        String patternString = "{$x isa person, has firstname $y;}";
+        String patternString2 = "{$x isa person;$x has firstname $y;}";
+        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.isEquivalent(query2));
     }
 
@@ -200,32 +199,33 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar3(){
-        String queryString = "match $x isa person;$x has age <10;";
-        String queryString2 = "match $x isa person;$x has age $y;$y value <10;select $x;";
-        ReasonerQueryImpl query = new ReasonerAtomicQuery(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(queryString2, snbGraph.graph());
+        String patternString = "{$x isa person;$x has age <10;}";
+        String patternString2 = "{$x isa person;$x has age $y;$y value <10;}";
+        ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
     }
 
     @Test
     public void testResourceAsVar4(){
-        String queryString = "match $x has firstname 'Bob';";
-        String queryString2 = "match $x has firstname $y;$y value 'Bob';select $x;";
-        ReasonerQueryImpl query = new ReasonerAtomicQuery(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(queryString2, snbGraph.graph());
+        String patternString = "{$x has firstname 'Bob';}";
+        String patternString2 = "{$x has firstname $y;$y value 'Bob';}";
+        ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
     }
 
     @Test
     public void testResourceAsVar5(){
-        String queryString = "match $x has firstname 'Bob', has lastname 'Geldof';";
-        String queryString2 = "match $x has firstname 'Bob';$x has lastname 'Geldof';";
-        String queryString3 = "match $x has firstname $x1;$x has lastname $x2;$x1 value 'Bob';$x2 value 'Geldof';";
-        String queryString4 = "match $x has firstname $x2;$x has lastname $x1;$x2 value 'Bob';$x1 value 'Geldof';";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, snbGraph.graph());
-        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, snbGraph.graph());
-        ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, snbGraph.graph());
-        ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, snbGraph.graph());
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
+        String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
+        String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 value 'Bob';$x2 value 'Geldof';}";
+        String patternString4 = "{$x has firstname $x2;$x has lastname $x1;$x2 value 'Bob';$x1 value 'Geldof';}";
+        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
+        ReasonerQueryImpl query4 = new ReasonerQueryImpl(conjunction(patternString4, graph), graph);
 
         assertTrue(query.equals(query3));
         assertTrue(query.equals(query4));
@@ -586,7 +586,7 @@ public class ReasonerTest {
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
-        assertEquals(answers.filterVars(Sets.newHashSet(varName("x"))), answers2);
+        assertEquals(answers.filterVars(Sets.newHashSet(VarName.of("x"))), answers2);
     }
 
     @Test
@@ -816,6 +816,12 @@ public class ReasonerTest {
         assertEquals(answers, answers2);
     }
 
+    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Patterns.conjunction(vars);
+    }
     private QueryAnswers queryAnswers(MatchQuery query) {
         return new QueryAnswers(query.admin().results());
     }
