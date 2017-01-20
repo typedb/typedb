@@ -113,7 +113,7 @@ public abstract class GraknTestEnv {
 
     //TODO :: This will be removed when we fix BUG #12029. We will be able to run AbstractGraphTest classes
     //TODO :: without touching any engine component. Stopping the HTTP server will move into stopEngine()
-    static void stopHTTP(){
+    public static void stopHTTP(){
         if(HTTP_RUNNING.compareAndSet(true, false)) {
             GraknEngineServer.stopHTTP();
         }

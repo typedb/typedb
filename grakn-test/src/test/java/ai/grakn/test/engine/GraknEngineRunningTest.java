@@ -40,6 +40,7 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
+import static ai.grakn.test.GraknTestEnv.stopHTTP;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -72,6 +73,8 @@ public class GraknEngineRunningTest {
     
     @Test
     public void graknEngineNotRunning() throws Exception {
+        stopHTTP();
+
         boolean running = GraknEngineServer.isRunning();
         assertFalse(running);
     }
