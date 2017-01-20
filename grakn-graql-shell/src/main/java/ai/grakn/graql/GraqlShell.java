@@ -66,6 +66,8 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -112,7 +114,7 @@ public class GraqlShell {
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    private static final String DEFAULT_KEYSPACE = "grakn";
+    public static final String DEFAULT_KEYSPACE = "grakn";
     private static final String DEFAULT_URI = "localhost:4567";
     private static final String DEFAULT_OUTPUT_FORMAT = "graql";
 
@@ -153,6 +155,8 @@ public class GraqlShell {
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
 
     private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     /**
      * Run a Graql REPL
@@ -495,7 +499,6 @@ public class GraqlShell {
 
     @OnWebSocketMessage
     public void onMessage(String msg) {
-        System.out.println(msg);
         Json json = Json.read(msg);
         messages.add(json);
     }
@@ -625,8 +628,14 @@ public class GraqlShell {
 
     private void sendJson(Json json) {
         try {
-            session.getRemote().sendString(json.toString());
-        } catch (IOException e) {
+            executor.submit(() -> {
+                try {
+                    session.getRemote().sendString(json.toString());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).get();
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }

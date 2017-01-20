@@ -27,6 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
@@ -61,7 +62,7 @@ public class MigratorTestUtils {
     }
 
     public static void migrate(GraknGraph graph, Migrator migrator){
-        MigrationLoader.load(graph.getKeyspace(), migrator);
+        MigrationLoader.load(GraknEngineServer.getClusterManager(), graph.getKeyspace(), migrator);
     }
 
     public static void load(GraknGraph graph, File ontology) {

@@ -18,27 +18,68 @@
 
 package ai.grakn.graql;
 
+import org.apache.commons.lang.StringUtils;
+
+import java.util.UUID;
 import java.util.function.Function;
 
 /**
  * A variable name in a Graql query
  */
-public interface VarName {
+public final class VarName {
+    private final String value;
+
+    public static VarName of(String value) {
+        return new VarName(value);
+    }
+
+    public static VarName anon() {
+        return new VarName(UUID.randomUUID().toString());
+    }
+
+    private VarName(String value) {
+        this.value = value;
+    }
 
     /**
      * Get the string name of the variable (without prefixed "$")
      */
-    String getValue();
+    public String getValue() {
+        return value;
+    }
 
     /**
      * Rename a variable (does not modify the original {@code VarName})
      * @param mapper a function to apply to the underlying variable name
      * @return the new variable name
      */
-    VarName map(Function<String, String> mapper);
+    public VarName map(Function<String, String> mapper) {
+        return VarName.of(mapper.apply(value));
+    }
 
     /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
-    String shortName();
+    public String shortName() {
+        return "$" + StringUtils.left(value, 3);
+    }
+
+    public String toString() {
+        return "$" + value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        VarName varName = (VarName) o;
+
+        return value.equals(varName.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }

@@ -80,7 +80,7 @@ class VarImpl implements VarAdmin {
      * Create a variable with a random variable name
      */
     VarImpl() {
-        this.name = new VarNameImpl();
+        this.name = VarName.anon();
         this.userDefinedName = false;
     }
 
