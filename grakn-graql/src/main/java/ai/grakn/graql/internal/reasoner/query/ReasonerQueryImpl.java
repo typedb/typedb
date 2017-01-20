@@ -215,9 +215,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private void exchangeRelVarNames(VarName from, VarName to){
-        unify(to, Patterns.varName("temp"));
+        unify(to, VarName.of("temp"));
         unify(from, to);
-        unify(Patterns.varName("temp"), from);
+        unify(VarName.of("temp"), from);
     }
 
     /**

@@ -39,8 +39,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.pattern.Patterns.varName;
-
 public class Graql {
 
     private Graql() {}
@@ -143,7 +141,7 @@ public class Graql {
      * @return a new query variable
      */
     public static Var var(String name) {
-        return var(varName(name));
+        return var(VarName.of(name));
     }
 
     /**
@@ -225,7 +223,7 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     public static Aggregate<Map<VarName, Concept>, Number> sum(String name) {
-        return Aggregates.sum(varName(name));
+        return Aggregates.sum(VarName.of(name));
     }
 
     /**
@@ -233,7 +231,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> max(String name) {
-        return Aggregates.max(varName(name));
+        return Aggregates.max(VarName.of(name));
     }
 
     /**
@@ -241,7 +239,7 @@ public class Graql {
      * @param name the variable to find the maximum of
      */
     public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> min(String name) {
-        return Aggregates.min(varName(name));
+        return Aggregates.min(VarName.of(name));
     }
 
     /**
@@ -249,7 +247,7 @@ public class Graql {
      * @param name the variable to find the mean of
      */
     public static Aggregate<Map<VarName, Concept>, Optional<Double>> average(String name) {
-        return Aggregates.average(varName(name));
+        return Aggregates.average(VarName.of(name));
     }
 
     /**
@@ -257,7 +255,7 @@ public class Graql {
      * @param name the variable to find the median of
      */
     public static Aggregate<Map<VarName, Concept>, Optional<Number>> median(String name) {
-        return Aggregates.median(varName(name));
+        return Aggregates.median(VarName.of(name));
     }
 
     /**
@@ -276,7 +274,7 @@ public class Graql {
      */
     public static <T> Aggregate<Map<VarName, Concept>, Map<Concept, T>> group(
             String varName, Aggregate<? super Map<VarName, Concept>, T> aggregate) {
-        return Aggregates.group(varName(varName), aggregate);
+        return Aggregates.group(VarName.of(varName), aggregate);
     }
 
     /**

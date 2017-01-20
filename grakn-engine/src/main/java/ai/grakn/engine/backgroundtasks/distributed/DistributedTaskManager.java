@@ -47,28 +47,21 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 /**
  * Class to manage tasks distributed using Kafka.
  */
-public class DistributedTaskManager implements TaskManager{
+public class DistributedTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
-    private static DistributedTaskManager instance = null;
 
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
     private SynchronizedStateStorage zkStorage;
 
-    public static synchronized DistributedTaskManager getInstance() {
-        if(instance == null) {
-            instance = new DistributedTaskManager();
-        }
-        return instance;
-    }
-
-    public DistributedTaskManager open() {
+    public DistributedTaskManager(SynchronizedStateStorage zkStorage) {
         if(OPENED.compareAndSet(false, true)) {
             try {
                 noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");
                 noThrow(() -> stateStorage = new GraknStateStorage(), "Could not instantiate grakn state storage");
-                zkStorage = SynchronizedStateStorage.getInstance();
+
+                this.zkStorage = zkStorage;
             }
             catch (Exception e) {
                 e.printStackTrace(System.err);
@@ -79,16 +72,12 @@ public class DistributedTaskManager implements TaskManager{
         else {
             LOG.error("DistributedTaskManager open() called multiple times!");
         }
-
-        return this;
     }
 
     @Override
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
             noThrow(producer::close, "Could not close Kafka Producer.");
-            stateStorage = null;
-            zkStorage = null;
         }
         else {
             LOG.error("DistributedTaskManager close() called before open()!");

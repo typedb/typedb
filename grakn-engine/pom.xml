@@ -168,6 +168,7 @@
                         </goals>
                         <phase>process-classes</phase>
                         <configuration>
+                            <skip>${maven.javadoc.skip}</skip>
                             <executable>npm</executable>
                             <arguments>
                                 <argument>install</argument>
@@ -184,7 +185,8 @@
                         </goals>
                         <phase>process-classes</phase>
                         <configuration>
-                          <executable>npm/bin/raml2html</executable>
+                            <skip>${maven.javadoc.skip}</skip>
+                            <executable>npm/bin/raml2html</executable>
                             <arguments>
                                 <argument>-i</argument>
                                 <argument>${project.build.directory}/jaxrs-raml/engine-apis.raml</argument>

@@ -26,7 +26,6 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import java.util.Set;
 
 /**
  *

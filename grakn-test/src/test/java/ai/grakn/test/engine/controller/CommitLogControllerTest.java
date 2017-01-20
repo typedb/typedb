@@ -20,21 +20,25 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.Cache;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
-import com.jayway.restassured.http.ContentType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import org.junit.*;
+import com.jayway.restassured.http.ContentType;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import java.util.UUID;
 
@@ -158,5 +162,17 @@ public class CommitLogControllerTest {
                 flag = false;
             }
         }
+    }
+
+    @Test
+    public void testSystemKeyspaceNotSubmittingLogs() throws GraknValidationException {
+        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph();
+        ResourceType<String> resourceType = graph1.putResourceType("New Resource Type", ResourceType.DataType.STRING);
+        resourceType.putResource("a");
+        resourceType.putResource("b");
+        resourceType.putResource("c");
+        graph1.commit();
+
+        assertEquals(0, cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME).size());
     }
 }

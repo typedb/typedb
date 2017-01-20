@@ -33,7 +33,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.graql.internal.util.CommonUtil;
@@ -124,7 +123,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map(Patterns::varName).collect(toSet()));
+        return select(Stream.of(names).map((name) -> VarName.of(name)).collect(toSet()));
     }
 
     @Override
@@ -181,7 +180,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery orderBy(String varName, Order order) {
-        return orderBy(Patterns.varName(varName), order);
+        return orderBy(VarName.of(varName), order);
     }
 
     @Override

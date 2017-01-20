@@ -44,7 +44,6 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
@@ -113,7 +112,7 @@ public class Relation extends TypeAtom {
     @Override
     protected VarName extractValueVariableName(VarAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Patterns.varName("");
+        return isaProp != null ? isaProp.getType().getVarName() : VarName.of("");
     }
 
     @Override
@@ -310,7 +309,7 @@ public class Relation extends TypeAtom {
     public Relation addType(Type type) {
         typeId = type.getId();
         VarName typeVariable = getValueVariable().getValue().isEmpty()?
-                Patterns.varName("rel-" + UUID.randomUUID().toString()) : getValueVariable();
+                VarName.of("rel-" + UUID.randomUUID().toString()) : getValueVariable();
         setPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
@@ -560,7 +559,7 @@ public class Relation extends TypeAtom {
                 .forEach( var -> roleMap.put(var, null));
 
         //pattern mutation!
-        atomPattern = constructRelationVar(isUserDefinedName()? varName : Patterns.varName(""), getValueVariable(), roleMap);
+        atomPattern = constructRelationVar(isUserDefinedName()? varName : VarName.of(""), getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
         return roleTypeMap;
     }
@@ -591,7 +590,8 @@ public class Relation extends TypeAtom {
                 .flatMap(CommonUtil::optionalToStream)
                 .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicate())));
+                .collect(Collectors.<AbstractMap.SimpleEntry<VarAdmin,IdPredicate>, VarName, RoleType>toMap(
+                        e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicate())));
     }
 
     private Map<VarName, VarName> getUnifiers(Map<VarName, RoleType> childMap, Map<RoleType, VarName> parentMap,
@@ -602,10 +602,10 @@ public class Relation extends TypeAtom {
             if(!varsToAllocate.isEmpty()) {
                 RoleType role = childMap.get(chVar);
                 //map to empty if no var matching
-                VarName pVar = Patterns.varName("");
+                VarName pVar = VarName.of("");
                 while(role != null && pVar.getValue().isEmpty()
                         && !Schema.MetaSchema.isMetaName(role.getName())) {
-                    pVar = parentMap.getOrDefault(role, Patterns.varName(""));
+                    pVar = parentMap.getOrDefault(role, VarName.of(""));
                     role = role.superType();
                 }
                 if (!pVar.getValue().isEmpty() && !chVar.equals(pVar)){
@@ -695,7 +695,7 @@ public class Relation extends TypeAtom {
             relationPlayers
                     .forEach(c -> {
                         VarAdmin rolePlayer = c.getRolePlayer();
-                        VarName rolePlayerVarName = Patterns.varName();
+                        VarName rolePlayerVarName = VarName.anon();
                         unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
                         VarAdmin roleType = c.getRoleType().orElse(null);
                         if (roleType != null) {

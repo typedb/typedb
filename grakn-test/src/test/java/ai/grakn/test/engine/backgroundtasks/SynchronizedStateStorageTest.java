@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.test.EngineContext;
@@ -39,7 +40,7 @@ public class SynchronizedStateStorageTest {
 
     @Before
     public void setUp() throws Exception {
-        stateStorage = SynchronizedStateStorage.getInstance();
+        stateStorage = engine.getClusterManager().getStorage();
     }
 
     @Test
