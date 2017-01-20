@@ -59,7 +59,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -147,7 +146,7 @@ public class GraqlShell {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClientImpl());
+        runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClient());
     }
 
     public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {
@@ -295,12 +294,7 @@ public class GraqlShell {
 
         try {
             console = new ConsoleReader(System.in, System.out);
-
-            try {
-                session = new JsonSession(client.connect(this, uri).get());
-            } catch (ExecutionException e) {
-                throw e.getCause();
-            }
+            session = new JsonSession(client, uri);
 
             // Send the requested keyspace and output format to the server once connected
             Json initJson = Json.object(
@@ -335,7 +329,7 @@ public class GraqlShell {
     private void start(Optional<List<String>> queryStrings) throws IOException {
 
         // Begin sending pings
-        Thread thread = new Thread(() -> WebsocketPing.ping(session));
+        Thread thread = new Thread(() -> WebSocketPing.ping(session));
         thread.setDaemon(true);
         thread.start();
 

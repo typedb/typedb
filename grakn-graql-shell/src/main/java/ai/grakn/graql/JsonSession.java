@@ -1,12 +1,33 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
+ */
+
 package ai.grakn.graql;
 
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.BlockingQueue;
@@ -35,8 +56,14 @@ class JsonSession {
 
     private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
 
-    JsonSession(Session session) {
-        this.session = session;
+    JsonSession(GraqlClient client, URI uri) {
+        try {
+            this.session = client.connect(this, uri).get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw (RuntimeException) e.getCause();
+        }
     }
 
     boolean isOpen() {
@@ -74,7 +101,7 @@ class JsonSession {
         }
     }
 
-    void sendJson(Json json) {
+    void sendJson(Json json) throws WebSocketException {
         try {
             executor.submit(() -> {
                 try {
