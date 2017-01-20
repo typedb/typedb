@@ -21,20 +21,19 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import info.batey.kafka.unit.Zookeeper;
-import org.hamcrest.Matchers;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
 import static ai.grakn.engine.GraknEngineServer.startCluster;
 import static ai.grakn.engine.GraknEngineServer.stopCluster;
 import static ai.grakn.graql.Graql.var;
@@ -79,14 +78,18 @@ public class GraknEngineRunningTest {
 
     @Test
     public void failWhenCannotConnectToKafka() throws Exception {
-        Zookeeper zookeeper = new Zookeeper(2181);
-        zookeeper.startup();
-
         exception.expect(GraknEngineServerException.class);
         exception.expectMessage(containsString("Could not connect to Kafka."));
 
+        ConfigProperties.getInstance().setConfigProperty(ZK_SERVERS, "127.0.0.1:2180");
+        Zookeeper zookeeper = new Zookeeper(2180);
+        zookeeper.startup();
+
         startCluster();
         stopCluster();
+
+        zookeeper.shutdown();
+        ConfigProperties.getInstance().setConfigProperty(ZK_SERVERS, "127.0.0.1:2181");
     }
 
     @Test
