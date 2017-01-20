@@ -37,7 +37,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.capture;
 /**
  *
  * <p>
- * Base implementationfor binary atoms of the type ($varName, $valueVariable), where value variable
+ * Base implementation for binary atoms of the type ($varName, $valueVariable), where value variable
  * references predicates.
  * </p>
  *

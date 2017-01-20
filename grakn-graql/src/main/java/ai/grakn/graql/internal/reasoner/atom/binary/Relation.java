@@ -195,16 +195,20 @@ public class Relation extends TypeAtom {
         return true;
     }
 
-    private boolean isRuleApplicableViaType(RelationType relType) {
+    //TODO
+    private boolean isRuleApplicableViaType(Atom childAtom) {
         boolean ruleRelevant = true;
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
-        Iterator<Map.Entry<VarName, Type>> it = varTypeMap.entrySet().stream()
-                .filter(entry -> containsVar(entry.getKey())).iterator();
+        Iterator<Type> it = varTypeMap.entrySet().stream()
+                .filter(entry -> containsVar(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .filter(Objects::nonNull)
+                .iterator();
+        Set<RoleType> roles = childAtom.getRoleVarTypeMap().keySet();
         while (it.hasNext() && ruleRelevant) {
-            Map.Entry<VarName, Type> entry = it.next();
-            Type type = entry.getValue();
-            if (type != null) {
-                Collection<RoleType> roleIntersection = relType.hasRoles();
+            Type type = it.next();
+            if (!Schema.MetaSchema.isMetaName(type.getName())) {
+                Set<RoleType> roleIntersection = new HashSet<>(roles);
                 roleIntersection.retainAll(type.playsRoles());
                 ruleRelevant = !roleIntersection.isEmpty();
             }
@@ -267,7 +271,7 @@ public class Relation extends TypeAtom {
         Type type = getType();
         //Case: relation without type - match all
         if (type == null) {
-            return isRuleApplicableViaType((RelationType) childAtom.getType());
+            return isRuleApplicableViaType(childAtom);
         } else {
             return isRuleApplicableViaAtom(childAtom, child);
         }
@@ -302,15 +306,10 @@ public class Relation extends TypeAtom {
         return roleTypes;
     }
 
-    private void addPredicate(IdPredicate pred) {
-        setPredicate(pred);
-        ((ReasonerQueryImpl) getParentQuery()).addAtom(pred);
-    }
-
     private void addType(Type type) {
         typeId = type.getId();
         VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
-        addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
+        setPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
     }

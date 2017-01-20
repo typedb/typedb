@@ -80,6 +80,14 @@ public class GenealogyTest {
     }
 
     @Test
+    public void testMatchAll3() {
+        String queryString = "match $x isa person; $r ($x, $y); $y has name";
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
+        System.out.println();
+    }
+
+    @Test
     public void testNonEquals(){
         String queryString= "match " +
                 "$w isa wedding has confidence 'high';" +

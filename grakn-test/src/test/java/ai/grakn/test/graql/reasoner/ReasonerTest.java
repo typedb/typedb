@@ -378,6 +378,7 @@ public class ReasonerTest {
         assertTrue(query4.execute().isEmpty());
     }
 
+    //TODO BUG: getRulesOfConclusion on geo-entity returns a rule!
     @Test
     public void testPlaysRole(){
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
@@ -798,6 +799,29 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers.size(), answers.size());
         assertEquals(requeriedAnswers.size(), requeriedAnswers2.size());
         assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
+    }
+
+    @Test
+    public void testMatchAll(){
+        String queryString = "match $x isa person;($x, $y);$y isa entity;";
+        String queryString2 = "match (recommended-customer: $x, recommended-product: $y);$x has name $n;";
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        System.out.println();
+    }
+
+    @Test
+    public void testMatchAll2(){
+        String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
+        String queryString2 = "match $y isa product;{$r(recommended-customer: $x, recommended-product: $y) or " +
+                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};";
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString2);
+        QueryAnswers answers = queryAnswers(query);
+        //QueryAnswers answers2 = queryAnswers(query2);
+        System.out.println();
     }
 
     @Test
