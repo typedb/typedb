@@ -78,14 +78,5 @@ public class TypeAtom extends Binary{
         return getPredicate() != null ?
                 getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }
-
-    /*
-    @Override
-    public Set<IdPredicate> getIdPredicates() {
-        Set<IdPredicate> idPredicates = super.getIdPredicates();
-        if (getPredicate() != null) idPredicates.add(getPredicate());
-        return idPredicates;
-    }
-    */
 }
 

@@ -802,10 +802,19 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testRelationTypeVariable(){
+        String queryString = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;";
+        String queryString2 = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;$rel type-name recommendation;";
+        MatchQuery query = snbGraph.graph().graql().infer(true).materialise(true).parse(queryString);
+        MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(queryString2);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test
     public void testMatchAll(){
-        String queryString = "match $y isa product;$r($x, $y);$x isa entity;$y has name $yn;$x has name $xn;";
+        String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
         String queryString2 = "match $y isa product;{$r(recommended-customer: $x, recommended-product: $y) or " +
-                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};$y has name $yn;$x has name $xn;";
+                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);

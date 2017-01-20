@@ -32,6 +32,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -186,33 +187,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private QueryAnswers insert() {
         QueryAnswers insertAnswers = new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
         if(insertAnswers.isEmpty()){
-            Atom atom = getAtom();
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
-            Set<Concept> insertedConcepts = insert.stream().flatMap(result -> result.values().stream()).collect(Collectors.toSet());
-            //extract resource/relation id if needed
-            if (atom.isUserDefinedName()) {
-                insertedConcepts.stream()
-                        .filter(c -> c.isResource() || c.isRelation())
-                        .forEach(c -> {
-                            Map<VarName, Concept> answer = new HashMap<>();
-                            if (c.isResource()) {
-                                answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicate()));
-                                answer.put(atom.getValueVariable(), c);
-                            } else if (c.isRelation()) {
-                                answer.put(atom.getVarName(), c);
-                                Map<RoleType, Pair<VarName, Type>> roleMap = atom.getRoleVarTypeMap();
-                                Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers()
-                                        .entrySet().stream()
-                                        .filter(entry -> entry.getValue() != null)
-                                        .filter(entry -> roleMap.containsKey(entry.getKey()))
-                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                                roleplayers.entrySet().forEach(entry ->
-                                        answer.put(roleMap.get(entry.getKey()).getKey(), entry.getValue()));
-                            }
-                            insertAnswers.add(answer);
-                        });
-            }
+            insert.stream()
+                    .map( m ->
+                        m.entrySet().stream()
+                        .collect(Collectors.toMap(k -> Patterns.varName(k.getKey()), Map.Entry::getValue)))
+                    .forEach(insertAnswers::add);
        }
        return insertAnswers;
     }
@@ -320,17 +300,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .filterKnown(this.getAnswers());
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()){
-            QueryAnswers newAnswers = new ReasonerAtomicQuery(ruleHead, answers).materialise();
-            if (!newAnswers.isEmpty()) {
-                if (materialise) answers = newAnswers;
-                else answers = answers.join(newAnswers);
-            }
+            answers = new ReasonerAtomicQuery(ruleHead, answers).materialise();
         }
 
-        if(answers.iterator().hasNext() && this.answers.iterator().hasNext()
-            && answers.iterator().next().size() != this.answers.iterator().next().size()) {
-            //LOG.debug("");
-        }
         QueryAnswers filteredAnswers = answers
                 .filterVars(this.getVarNames())
                 .permute(this.getAtom(), ruleHead.getAtom());
