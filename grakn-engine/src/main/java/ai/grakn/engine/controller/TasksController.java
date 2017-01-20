@@ -19,11 +19,9 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
-import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -41,10 +39,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Date;
+import java.time.Instant;
 
-import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 import static ai.grakn.util.REST.Request.OFFSET_PARAM;
@@ -66,23 +62,10 @@ import static spark.Spark.put;
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
     private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
-    private TaskManager taskManager;
-    private StateStorage stateStorage;
+    private ClusterManager manager;
 
-    public TasksController() {
-        String mgr = ConfigProperties.getInstance().getProperty(TASK_MANAGER_INSTANCE, "ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager");
-
-        try {
-            Class<?> cl = Class.forName(mgr);
-            taskManager = (TaskManager) cl.getMethod("getInstance").invoke(null);
-            taskManager.open();
-        }
-        catch(ClassNotFoundException|IllegalAccessException|NoSuchMethodException|InvocationTargetException e) {
-            LOG.error("Could not start TasksController due to exception (possibly bad configuration) - "+ getFullStackTrace(e));
-            throw new RuntimeException(e);
-        }
-
-        stateStorage = taskManager.storage();
+    public TasksController(ClusterManager manager) {
+        this.manager = manager;
 
         get(ALL_TASKS_URI, this::getTasks);
         get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
@@ -108,11 +91,11 @@ public class TasksController {
         int offset = 0;
 
         if(request.queryParams(LIMIT_PARAM) != null) {
-            limit = Integer.valueOf(request.queryParams(LIMIT_PARAM));
+            limit = Integer.parseInt(request.queryParams(LIMIT_PARAM));
         }
 
         if(request.queryParams(OFFSET_PARAM) != null) {
-            offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
+            offset = Integer.parseInt(request.queryParams(OFFSET_PARAM));
         }
 
         if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
@@ -120,7 +103,7 @@ public class TasksController {
         }
 
         JSONArray result = new JSONArray();
-        for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
+        for (Pair<String, TaskState> pair : manager.getTaskManager().storage().getTasks(status, className, creator, limit, offset)) {
             result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
         }
 
@@ -135,7 +118,7 @@ public class TasksController {
     private String getTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            JSONObject result = serialiseStateFull(id, stateStorage.getState(id));
+            JSONObject result = serialiseStateFull(id, manager.getTaskManager().storage().getState(id));
             response.type("application/json");
 
             return result.toString();
@@ -151,7 +134,7 @@ public class TasksController {
     private String stopTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            taskManager.stopTask(id, this.getClass().getName());
+            manager.getTaskManager().stopTask(id, this.getClass().getName());
             return "";
         }
         catch (Exception e) {
@@ -190,12 +173,12 @@ public class TasksController {
                 configuration = new JSONObject(request.body());
             }
 
-            Date runAtDate = new Date(Long.valueOf(runAt));
+            Instant runAtInstant = Instant.ofEpochMilli(Long.parseLong(runAt));
 
             Class<?> clazz = Class.forName(className);
             BackgroundTask task = (BackgroundTask)clazz.newInstance();
 
-            String id = taskManager.scheduleTask(task, createdBy, runAtDate, interval, configuration);
+            String id = manager.getTaskManager().scheduleTask(task, createdBy, runAtInstant, interval, configuration);
             JSONObject resp = new JSONObject()
                     .put("id", id);
 

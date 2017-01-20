@@ -18,6 +18,7 @@
 
 package ai.grakn.migration.base.io;
 
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.Migrator;
@@ -28,8 +29,8 @@ import ai.grakn.migration.base.Migrator;
  */
 public class MigrationLoader {
 
-    public static void load(String keyspace, int batchSize, Migrator migrator){
-        Loader loader = new Loader(keyspace);
+    public static void load(ClusterManager manager, String keyspace, int batchSize, Migrator migrator){
+        Loader loader = new Loader(manager, keyspace);
         loader.setBatchSize(batchSize);
 
         try{
@@ -40,7 +41,7 @@ public class MigrationLoader {
         }
     }
 
-    public static void load(String keyspace, Migrator migrator) {
-        load(keyspace, AbstractMigrator.BATCH_SIZE, migrator);
+    public static void load(ClusterManager manager, String keyspace, Migrator migrator) {
+        load(manager, keyspace, AbstractMigrator.BATCH_SIZE, migrator);
     }
 }

@@ -25,8 +25,8 @@ import javafx.util.Pair;
 import org.json.JSONObject;
 
 import java.lang.ref.SoftReference;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -50,7 +50,7 @@ public class InMemoryStateStorage implements StateStorage {
         return instance;
     }
 
-    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
+    public String newState(String taskName, String createdBy, Instant runAt, Boolean recurring, long interval, JSONObject configuration) {
         if(taskName == null || createdBy == null || runAt == null || recurring == null) {
             return null;
         }
@@ -85,6 +85,9 @@ public class InMemoryStateStorage implements StateStorage {
         }
 
         TaskState state = storage.get(id).get();
+
+        if (state == null) return false;
+
         synchronized (state) {
             state.status(status);
 
@@ -115,6 +118,9 @@ public class InMemoryStateStorage implements StateStorage {
         }
 
         TaskState state = storage.get(id).get();
+
+        if (state == null) return null;
+
         TaskState newState = null;
 
         synchronized (state) {

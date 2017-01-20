@@ -18,31 +18,38 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
+import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.StateStorage;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
-import org.junit.*;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
-import static ai.grakn.test.GraknTestEnv.*;
 
 public class TaskRunnerTest {
     private KafkaProducer<String, String> producer;
@@ -63,7 +70,7 @@ public class TaskRunnerTest {
         stateStorage = new GraknStateStorage();
 
         // ZooKeeper client
-        zkStorage = SynchronizedStateStorage.getInstance();
+        zkStorage = engine.getClusterManager().getStorage();
         assumeFalse(usingTinker());
     }
 
@@ -108,7 +115,7 @@ public class TaskRunnerTest {
         for (int i = 0; i < count; i++) {
             String id = stateStorage.newState(TestTask.class.getName(),
                         this.getClass().getName(),
-                        new Date(), false, 0,
+                        Instant.now(), false, 0,
                         new JSONObject(singletonMap("name", "task "+i)));
 
             TaskState state = stateStorage.getState(id);

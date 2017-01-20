@@ -45,8 +45,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -75,10 +75,12 @@ public class GraknEngineServer {
             REST.WebPath.IS_PASSWORD_PROTECTED_URI));
 
     public static final boolean isPasswordProtected = prop.getPropertyAsBool(ConfigProperties.PASSWORD_PROTECTED_PROPERTY);
+    private static ClusterManager clusterManager;
 
     public static void main(String[] args) {
         startHTTP();
         startCluster();
+        startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
@@ -99,13 +101,13 @@ public class GraknEngineServer {
         // Start all the controllers
         new VisualiserController();
         new GraphFactoryController();
-        new ImportController();
         new CommitLogController();
         new StatusController();
-        new TasksController();
         new AuthController();
         new UserController();
-        
+        new TasksController(clusterManager);
+        new ImportController(clusterManager);
+
         //Register filter to check authentication token in each request
         before((req, res) -> checkAuthorization(req));
 
@@ -121,15 +123,16 @@ public class GraknEngineServer {
 
     public static void startCluster() {
         // Start background task cluster.
-        ClusterManager.getInstance().start();
+        clusterManager = new ClusterManager();
+    }
 
+    public static void startPostprocessing(){
         // Submit a recurring post processing task
         //FIXME: other things open and close this too
-        DistributedTaskManager manager = DistributedTaskManager.getInstance();
-        manager.open();
+        DistributedTaskManager manager = clusterManager.getTaskManager();
         manager.scheduleTask(new PostProcessingTask(),
                              GraknEngineServer.class.getName(),
-                             new Date(),
+                             Instant.now(),
                              prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
                              new JSONObject());
 
@@ -152,10 +155,13 @@ public class GraknEngineServer {
         }
     }
 
-    public static void stopCluster() {
-        DistributedTaskManager.getInstance().close();
+    public static ClusterManager getClusterManager(){
+        return clusterManager;
+    }
+
+    public static void stopCluster() throws Exception {
         PostProcessing.getInstance().stop();
-        ClusterManager.getInstance().stop();
+        clusterManager.stop();
     }
 
     /**

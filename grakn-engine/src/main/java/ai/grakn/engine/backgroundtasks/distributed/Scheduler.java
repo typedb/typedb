@@ -33,8 +33,9 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -64,14 +65,39 @@ public class Scheduler implements Runnable, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
+    private final SynchronizedStateStorage zkStorage;
+
     private GraknStateStorage stateStorage;
-    private SynchronizedStateStorage zkStorage;
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
-    private boolean initialised = false;
     private volatile boolean running = false;
+
+    public Scheduler(SynchronizedStateStorage zkStorage){
+        this.zkStorage = zkStorage;
+
+        if(OPENED.compareAndSet(false, true)) {
+            // Init task storage
+            stateStorage = new GraknStateStorage();
+
+            // Kafka listener
+            consumer = kafkaConsumer(SCHEDULERS_GROUP);
+            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new RebalanceListener(consumer));
+
+            // Kafka writer
+            producer = kafkaProducer();
+
+            waitToClose = new CountDownLatch(1);
+
+            schedulingService = Executors.newScheduledThreadPool(1);
+
+            LOG.debug("Scheduler started");
+        }
+        else {
+            LOG.error("Scheduled already opened!");
+        }
+    }
 
     public void run() {
         running = true;
@@ -81,19 +107,14 @@ public class Scheduler implements Runnable, AutoCloseable {
 
         try {
             while (running) {
-                printInitialization();
                 LOG.debug("Scheduler polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(NEW_TASKS_TOPIC).stream().map(i -> new TopicPartition(NEW_TASKS_TOPIC, i.partition())).collect(toSet())));
 
                 ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(SCHEDULER_POLLING_FREQ));
 
                 for(ConsumerRecord<String, String> record:records) {
-                    LOG.debug(String.format("Scheduler received topic = %s, partition = %s, offset = %s, taskid = %s, value = %s\n",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value()));
-
                     scheduleTask(record.key(), record.value());
 
                     //acknowledge that the record was read to the consumer
-                    LOG.debug("Scheduler acknowledging " + record.key() + " OFFSET " + (record.offset()+1) + " topic " + record.topic());
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                 }
             }
@@ -109,34 +130,6 @@ public class Scheduler implements Runnable, AutoCloseable {
         }
     }
 
-    public Scheduler open() throws Exception {
-        if(OPENED.compareAndSet(false, true)) {
-            // Init task storage
-            stateStorage = new GraknStateStorage();
-
-            // Kafka listener
-            consumer = kafkaConsumer(SCHEDULERS_GROUP);
-            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new RebalanceListener(consumer));
-
-            // Kafka writer
-            producer = kafkaProducer();
-
-            // ZooKeeper client
-            zkStorage = SynchronizedStateStorage.getInstance();
-
-            waitToClose = new CountDownLatch(1);
-
-            schedulingService = Executors.newScheduledThreadPool(1);
-
-            LOG.debug("Scheduler started");
-        }
-        else {
-            LOG.error("Scheduled already opened!");
-        }
-
-        return this;
-    }
-
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
             running = false;
@@ -149,15 +142,10 @@ public class Scheduler implements Runnable, AutoCloseable {
                 LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
             }
 
-            noThrow(schedulingService::shutdown, "Could not shutdown scheduling service.");
+            noThrow(schedulingService::shutdownNow, "Could not shutdown scheduling service.");
 
             noThrow(producer::flush, "Could not flush Kafka producer in scheduler.");
             noThrow(producer::close, "Could not close Kafka producer in scheduler.");
-
-            stateStorage = null;
-
-            // Closed by ClusterManager
-            zkStorage = null;
 
             noThrow(() -> LOG.debug("Scheduler stopped."), "Kafka logging error.");
         }
@@ -183,7 +171,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param state state of the task
      */
     private void scheduleTask(String id,  String configuration, TaskState state) {
-        long delay = state.runAt().getTime() - new Date().getTime();
+        long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
         markAsScheduled(id);
         if(state.isRecurring()) {
@@ -246,13 +234,6 @@ public class Scheduler implements Runnable, AutoCloseable {
             if(exception != null) {
                 LOG.debug(getFullStackTrace(exception));
             }
-        }
-    }
-
-    private void printInitialization() {
-        if(!initialised) {
-            initialised = true;
-            LOG.info("Scheduler initialised");
         }
     }
 }

@@ -31,6 +31,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONArray;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -46,8 +47,6 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_P
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
-    private static TaskFailover instance = null;
-
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
@@ -57,30 +56,21 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private StateStorage stateStorage;
     private SynchronizedStateStorage synchronizedStateStorage;
 
-    public static synchronized TaskFailover getInstance() {
-        if(instance == null) {
-            instance = new TaskFailover();
-        }
-
-        return instance;
-    }
-
-    public TaskFailover open(CuratorFramework client, TreeCache cache) throws Exception {
+    public TaskFailover(CuratorFramework client, TreeCache cache, SynchronizedStateStorage synchronizedStateStorage) throws Exception {
         if(OPENED.compareAndSet(false, true)) {
             this.cache = cache;
             current = cache.getCurrentChildren(RUNNERS_WATCH);
             producer = kafkaProducer();
 
             stateStorage = new GraknStateStorage();
-            synchronizedStateStorage = SynchronizedStateStorage.getInstance();
+
+            this.synchronizedStateStorage = synchronizedStateStorage;
 
             scanStaleStates(client);
         }
         else {
             LOG.error("TaskFailover already opened!");
         }
-
-        return this;
     }
 
     @Override
@@ -88,10 +78,6 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         if(OPENED.compareAndSet(true, false)) {
             noThrow(producer::flush, "Could not flush Kafka Producer.");
             noThrow(producer::close, "Could not close Kafka Producer.");
-
-            current = null;
-            stateStorage = null;
-            synchronizedStateStorage = null;
         }
         else {
             LOG.error("TaskFailover close() called before open().");
@@ -146,7 +132,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         byte[] b = client.getData().forPath(RUNNERS_STATE+"/"+engineID);
 
         // Re-queue all of the IDs.
-        JSONArray ids = new JSONArray(new String(b));
+        JSONArray ids = new JSONArray(new String(b, StandardCharsets.UTF_8));
         for(Object o: ids) {
             String id = (String)o;
 

@@ -23,6 +23,8 @@ import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import org.apache.curator.framework.CuratorFramework;
 
+import java.nio.charset.StandardCharsets;
+
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
@@ -42,33 +44,22 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class SynchronizedStateStorage {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
-    private static SynchronizedStateStorage instance = null;
 
-    private final CuratorFramework zookeeperConnection;
+    private final CuratorFramework zookeeperConnection = ConfigHelper.client();
 
-    private SynchronizedStateStorage() throws Exception {
-        zookeeperConnection = ConfigHelper.client();
+    public SynchronizedStateStorage() throws Exception {
         zookeeperConnection.start();
         zookeeperConnection.blockUntilConnected();
 
         createZKPaths();
     }
 
-    public static synchronized SynchronizedStateStorage getInstance() throws Exception {
-        if(instance == null){
-            instance = new SynchronizedStateStorage();
-        }
-
-        return instance;
+    public void close() {
+        zookeeperConnection.close();
     }
 
     public CuratorFramework connection(){
         return zookeeperConnection;
-    }
-
-    public void close() {
-        zookeeperConnection.close();
-        instance = null;
     }
 
     public void newState(String id, TaskStatus status, String engineID, String checkpoint) throws Exception {
@@ -87,7 +78,7 @@ public class SynchronizedStateStorage {
 
         zookeeperConnection.create()
               .creatingParentContainersIfNeeded()
-              .forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
+              .forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes(StandardCharsets.UTF_8));
     }
 
     public Boolean updateState(String id, TaskStatus status, String engineID, String checkpoint) {
@@ -117,7 +108,7 @@ public class SynchronizedStateStorage {
             }
 
             // Save to ZK
-            zookeeperConnection.setData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
+            zookeeperConnection.setData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes(StandardCharsets.UTF_8));
         }
         catch (Exception e) {
             LOG.error("Could not write to ZooKeeper! - "+e);
@@ -130,7 +121,7 @@ public class SynchronizedStateStorage {
     public SynchronizedState getState(String id) {
         try {
             byte[] b = zookeeperConnection.getData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX);
-            return SynchronizedState.deserialize(new String(b));
+            return SynchronizedState.deserialize(new String(b, StandardCharsets.UTF_8));
         }
         catch (Exception e) {
             LOG.error(" Could not read from ZooKeeper! " + getFullStackTrace(e));

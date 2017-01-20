@@ -20,7 +20,7 @@ package ai.grakn.engine.backgroundtasks;
 
 import org.json.JSONObject;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 public interface TaskManager extends AutoCloseable {
@@ -28,7 +28,7 @@ public interface TaskManager extends AutoCloseable {
      * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds. All parameters must not be
      * null unless stated otherwise.
      * @param task Any object implementing the BackgroundTask interface that is to be scheduled for later execution.
-     * @param runAt Date when task should run.
+     * @param runAt Instant when task should run.
      * @param period A non-zero value indicates that this should be a recurring task and period indicates the delay between
      *               subsequent runs of the task after successful execution.
      * @param configuration A JSONObject instance containing configuration and optionally data for the task. This is an
@@ -36,7 +36,7 @@ public interface TaskManager extends AutoCloseable {
      *                      get an initialised but empty JSONObject).
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration);
+    String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration);
 
     /**
      * Return a future that allows registering asynchronous callbacks triggered when a task is completed.
@@ -59,6 +59,4 @@ public interface TaskManager extends AutoCloseable {
      * @return A StateStorage instance.
      */
     StateStorage storage();
-
-    TaskManager open();
 }

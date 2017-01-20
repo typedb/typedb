@@ -78,26 +78,37 @@ class FactoryBuilder {
         if (factory != null) {
             return factory;
         }
-        synchronized (openFactories) {
-            InternalFactory<?, ?> internalFactory;
-            try {
-                //internalFactory = (InternalFactory) Class.forName(factoryType).newInstance();
-                internalFactory = (InternalFactory) Class.forName(factoryType)
-                        .getDeclaredConstructor(String.class, String.class, Properties.class)
-                        .newInstance(keyspace, engineUrl, properties);
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
-            }
-            openFactories.put(key, internalFactory);
-            Log.debug("New factory created " + internalFactory);
-            if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-                Log.debug("This is a system factory, loading system ontology.");
-                new SystemKeyspace<>(internalFactory).loadSystemOntology();
-            } else {
-                Log.debug("This is not a system factory, not loading system ontology.");
-            }
-            return internalFactory;
+
+       return newFactory(key, factoryType, keyspace, engineUrl, properties);
+    }
+
+    /**
+     *
+     * @param key A unique string identifying this factory
+     * @param factoryType The type of the factory to initlaise. Any factory which implements {@link InternalFactory}
+     * @param keyspace The keyspace of the graph
+     * @param engineUrl The location of the running engine instance
+     * @param properties Additional properties to apply to the graph
+     * @return A new factory bound to a specific keyspace
+     */
+    private static synchronized InternalFactory newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
+        InternalFactory<?, ?> internalFactory;
+        try {
+            internalFactory = (InternalFactory) Class.forName(factoryType)
+                    .getDeclaredConstructor(String.class, String.class, Properties.class)
+                    .newInstance(keyspace, engineUrl, properties);
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
         }
+        openFactories.put(key, internalFactory);
+        Log.debug("New factory created " + internalFactory);
+        if (keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            Log.debug("This is a system factory, loading system ontology.");
+            new SystemKeyspace<>(internalFactory).loadSystemOntology();
+        } else {
+            Log.debug("This is not a system factory, not loading system ontology.");
+        }
+        return internalFactory;
     }
 
     /**

@@ -30,7 +30,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -112,7 +111,7 @@ public class Relation extends TypeAtom {
     @Override
     protected VarName extractValueVariableName(VarAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-        return isaProp != null ? isaProp.getType().getVarName() : Patterns.varName("");
+        return isaProp != null ? isaProp.getType().getVarName() : VarName.of("");
     }
 
     @Override
@@ -125,7 +124,7 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Atomic clone() {
+    public Atomic copy() {
         return new Relation(this);
     }
 
@@ -285,7 +284,7 @@ public class Relation extends TypeAtom {
             return rules.stream()
                     .flatMap(rule -> rule.getConclusionTypes().stream())
                     .filter(Type::isRelationType).count() != 0
-                    & !this.getApplicableRules().isEmpty();
+                    && !this.getApplicableRules().isEmpty();
         }
     }
 
@@ -309,7 +308,7 @@ public class Relation extends TypeAtom {
 
     private void addType(Type type) {
         typeId = type.getId();
-        VarName typeVariable = Patterns.varName("rel-" + UUID.randomUUID().toString());
+        VarName typeVariable = VarName.of("rel-" + UUID.randomUUID().toString());
         addPredicate(new IdPredicate(Graql.var(typeVariable).id(typeId).admin(), getParentQuery()));
         atomPattern = atomPattern.asVar().isa(Graql.var(typeVariable)).admin();
         setValueVariable(typeVariable);
@@ -345,25 +344,25 @@ public class Relation extends TypeAtom {
         if (getPredicate() == null && getParentQuery() != null) {
             ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
             VarName valueVariable = getValueVariable();
-            HasRole hrAtom = parent.getAtoms().stream()
+            TypeAtom hrAtom = parent.getAtoms().stream()
                     .filter(at -> at.getVarName().equals(valueVariable))
-                    .filter(at -> at instanceof HasRole).map(at -> (HasRole) at)
+                    .filter(Atomic::isAtom).map(at -> (Atom) at)
+                    .filter(Atom::isType).map(at -> (TypeAtom) at)
                     .findFirst().orElse(null);
             if (hrAtom != null) {
                 ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
                 hrQuery.DBlookup();
-                if (hrQuery.getAnswers().size() != 1) {
-                    throw new IllegalStateException("ambigious answer to has-role query");
-                }
-                IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
-                        hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
+                if (hrQuery.getAnswers().size() == 1) {
+                    IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
+                            hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
 
-                Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
-                parent.removeAtom(hrAtom.getPredicate());
-                parent.removeAtom(hrAtom);
-                parent.removeAtom(this);
-                parent.addAtom(newRelation);
-                parent.addAtom(newPredicate);
+                    Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
+                    parent.removeAtom(hrAtom.getPredicate());
+                    parent.removeAtom(hrAtom);
+                    parent.removeAtom(this);
+                    parent.addAtom(newRelation);
+                    parent.addAtom(newPredicate);
+                }
             }
         }
     }
@@ -383,19 +382,6 @@ public class Relation extends TypeAtom {
         }
         return varFound;
     }
-
-    /*
-    @Override
-    public Set<IdPredicate> getIdPredicates() {
-        Set<IdPredicate> idPredicates = super.getIdPredicates();
-        //from types
-        getTypeConstraints().stream()
-                .map(atom -> ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(atom.getValueVariable()))
-                .filter(Objects::nonNull)
-                .forEach(idPredicates::add);
-        return idPredicates;
-    }
-    */
 
     @Override
     public void unify (Map<VarName, VarName> mappings) {
@@ -575,7 +561,7 @@ public class Relation extends TypeAtom {
                 .forEach( var -> roleMap.put(var, null));
 
         //pattern mutation!
-        atomPattern = constructRelationVar(isUserDefinedName()? varName : Patterns.varName(""), getValueVariable(), roleMap);
+        atomPattern = constructRelationVar(isUserDefinedName()? varName : VarName.of(""), getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
         return roleTypeMap;
     }
@@ -606,7 +592,8 @@ public class Relation extends TypeAtom {
                 .flatMap(CommonUtil::optionalToStream)
                 .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicate())));
+                .collect(Collectors.<AbstractMap.SimpleEntry<VarAdmin,IdPredicate>, VarName, RoleType>toMap(
+                        e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicate())));
     }
 
     private Map<VarName, VarName> getUnifiers(Map<VarName, RoleType> childMap, Map<RoleType, VarName> parentMap,
@@ -617,10 +604,10 @@ public class Relation extends TypeAtom {
             if(!varsToAllocate.isEmpty()) {
                 RoleType role = childMap.get(chVar);
                 //map to empty if no var matching
-                VarName pVar = Patterns.varName("");
+                VarName pVar = VarName.of("");
                 while(role != null && pVar.getValue().isEmpty()
                         && !Schema.MetaSchema.isMetaName(role.getName())) {
-                    pVar = parentMap.getOrDefault(role, Patterns.varName(""));
+                    pVar = parentMap.getOrDefault(role, VarName.of(""));
                     role = role.superType();
                 }
                 if (!pVar.getValue().isEmpty() && !chVar.equals(pVar)){
@@ -710,7 +697,7 @@ public class Relation extends TypeAtom {
             relationPlayers
                     .forEach(c -> {
                         VarAdmin rolePlayer = c.getRolePlayer();
-                        VarName rolePlayerVarName = Patterns.varName();
+                        VarName rolePlayerVarName = VarName.anon();
                         unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
                         VarAdmin roleType = c.getRoleType().orElse(null);
                         if (roleType != null) {

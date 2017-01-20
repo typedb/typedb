@@ -22,7 +22,6 @@ import ai.grakn.graql.GraqlShell;
 import jline.console.completer.Completer;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Completer that complete Graql shell commands
@@ -31,7 +30,7 @@ public class ShellCommandCompleter implements Completer {
 
     @Override
     public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        Stream.of(GraqlShell.COMMANDS)
+        GraqlShell.COMMANDS.stream()
                 .filter(command -> command.startsWith(buffer))
                 .forEach(candidates::add);
 

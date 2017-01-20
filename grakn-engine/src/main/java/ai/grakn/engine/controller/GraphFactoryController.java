@@ -19,15 +19,15 @@
 package ai.grakn.engine.controller;
 
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
@@ -41,6 +41,7 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -79,9 +80,11 @@ public class GraphFactoryController {
                     case REST.GraphConfig.COMPUTER:
                         graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
                         break;
+                    default:
+                        throw new RuntimeException("Unrecognised graph config: " + graphConfig);
                 }
             }
-            return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
+            return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new GraknEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
         }
@@ -91,7 +94,7 @@ public class GraphFactoryController {
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeySpaces(Request request, Response response) {
-        try (GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+        try (EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
             ResourceType<String> keyspaceName = graph.getType(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
             if (graph.getType(SystemKeyspace.KEYSPACE_ENTITY) == null) {

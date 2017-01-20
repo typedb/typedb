@@ -19,7 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ class ConceptFixer {
         boolean notDone = true;
         int retry = 0;
         while (notDone) {
-            try (AbstractGraknGraph graph = (AbstractGraknGraph) GraphFactory.getInstance().getGraph(keyspace)) {
+            try (AbstractGraknGraph graph = (AbstractGraknGraph) EngineGraknGraphFactory.getInstance().getGraph(keyspace)) {
                 if (graph.fixDuplicateCasting(castingId)) {
                     graph.commit(false);
                 }
@@ -58,7 +58,7 @@ class ConceptFixer {
         int retry = 0;
 
         while (notDone) {
-            try(AbstractGraknGraph graph = (AbstractGraknGraph) GraphFactory.getInstance().getGraph(keyspace))  {
+            try(AbstractGraknGraph graph = (AbstractGraknGraph) EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
                 if (graph.fixDuplicateResources(resourceIds)) {
                     graph.commit(false);
                 }
@@ -67,9 +67,9 @@ class ConceptFixer {
             } catch (Exception e) {
                 LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage("resource", e.getMessage()), e);
                 if (retry++ > MAX_RETRY) {
-                    String message = "";
+                    StringBuilder message = new StringBuilder();
                     for (String resourceId : resourceIds) {
-                        message += resourceId;
+                        message.append(resourceId);
                     }
                     LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(message, e.getMessage()), e);
                     notDone = false;
