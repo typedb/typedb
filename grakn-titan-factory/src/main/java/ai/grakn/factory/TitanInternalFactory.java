@@ -175,6 +175,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
                 makePropertyKey(management, property.name(), property.getDataType()));
     }
+
     private static void makePropertyKey(TitanManagement management, String propertyKey, Class type){
         if (management.getPropertyKey(propertyKey) == null) {
             management.makePropertyKey(propertyKey).dataType(type).make();

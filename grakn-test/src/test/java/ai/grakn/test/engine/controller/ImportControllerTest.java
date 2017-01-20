@@ -18,12 +18,12 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.test.EngineContext;
-import com.jayway.restassured.response.Response;
 import ai.grakn.util.REST;
+import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.apache.commons.io.IOUtils;
 import org.junit.ClassRule;
@@ -35,8 +35,8 @@ import java.util.Collection;
 import java.util.Date;
 
 import static ai.grakn.test.engine.loader.LoaderTest.loadOntology;
-import static com.jayway.restassured.RestAssured.given;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.post;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -82,7 +82,7 @@ public class ImportControllerTest {
 
         waitToFinish();
 
-        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
+        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
         assertEquals(nameTags.size(), 10);

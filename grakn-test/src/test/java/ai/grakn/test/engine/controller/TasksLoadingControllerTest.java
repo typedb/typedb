@@ -18,10 +18,10 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.engine.loader.LoaderTask;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
@@ -45,9 +45,8 @@ import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
-
+import static ai.grakn.util.REST.WebPath.TASKS_URI;
 import static com.jayway.restassured.RestAssured.given;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -78,7 +77,7 @@ public class TasksLoadingControllerTest {
 
         waitToFinish(taskID);
 
-        GraknGraph graph = GraphFactory.getInstance().getGraph(keyspace);
+        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
         assertEquals(NUMBER_TO_TEST, nameTags.size());

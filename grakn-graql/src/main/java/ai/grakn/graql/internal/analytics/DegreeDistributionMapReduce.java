@@ -32,6 +32,7 @@ import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
 
 public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
+    // Needed internally for OLAP tasks
     public DegreeDistributionMapReduce() {
     }
 

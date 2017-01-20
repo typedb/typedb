@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 
 /**
  *
@@ -64,6 +65,12 @@ public class TypeAtom extends Binary{
 
     @Override
     public boolean isType(){ return true;}
+
+    @Override
+    public boolean isSelectable() {
+        return (getPredicate() == null ||
+                ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(getVarName()) != null && getPredicate() != null);
+    }
 
     @Override
     public Type getType() {

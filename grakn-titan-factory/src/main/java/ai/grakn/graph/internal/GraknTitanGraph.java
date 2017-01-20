@@ -68,9 +68,9 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public void commitTx(){
+    public void commitTransaction(){
         try {
-            super.commitTx();
+            super.commitTransaction();
         } catch (TitanException e){
             throw new GraknBackendException(e);
         }

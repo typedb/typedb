@@ -49,7 +49,20 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
     static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(() -> __.<Vertex>outE(
             Schema.EdgeLabel.CASTING.getLabel(),
             Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
-    static final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
+    private static final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
+
+    static final MessageScope.Local<?> messageScopeInCasting = MessageScope.Local.of(() -> __.<Vertex>inE(
+            Schema.EdgeLabel.CASTING.getLabel()));
+    static final MessageScope.Local<?> messageScopeOutCasting = MessageScope.Local.of(() -> __.<Vertex>outE(
+            Schema.EdgeLabel.CASTING.getLabel()));
+    static final MessageScope.Local<?> messageScopeInRolePlayer = MessageScope.Local.of(() -> __.<Vertex>inE(
+            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
+    static final MessageScope.Local<?> messageScopeOutRolePlayer = MessageScope.Local.of(() -> __.<Vertex>outE(
+            Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
+    static final Set<MessageScope> messageScopeSetInstance =
+            Sets.newHashSet(messageScopeInRolePlayer, messageScopeOutCasting);
+    static final Set<MessageScope> messageScopeSetCasting =
+            Sets.newHashSet(messageScopeInCasting, messageScopeOutRolePlayer);
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
@@ -106,21 +119,21 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         }
     }
 
-    void degreeStep0(Vertex vertex, Messenger<Long> messenger) {
+    void degreeStepInstance(Vertex vertex, Messenger<Long> messenger) {
         // check if vertex is in the subgraph
         String type = vertex.label();
         if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
             // each role-player sends 1 to castings following incoming edges
-            messenger.sendMessage(messageScopeIn, 1L);
+            messenger.sendMessage(messageScopeInRolePlayer, 1L);
         } else if (type.equals(Schema.BaseType.RELATION.name())) {
             // the assertion can also be role-player, so sending 1 to castings following incoming edges
-            messenger.sendMessage(messageScopeIn, 1L);
+            messenger.sendMessage(messageScopeInRolePlayer, 1L);
             // send -1 to castings following outgoing edges
-            messenger.sendMessage(messageScopeOut, -1L);
+            messenger.sendMessage(messageScopeOutCasting, -1L);
         }
     }
 
-    void degreeStep1(Messenger<Long> messenger) {
+    void degreeStepCasting(Messenger<Long> messenger) {
         boolean hasRolePlayer = false;
         long assertionCount = 0;
         Iterator<Long> iterator = messenger.receiveMessages();
@@ -128,14 +141,13 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
             long message = iterator.next();
             // count number of assertions connected
             if (message < 0) assertionCount++;
-                // check if a message is received from the role-player
             else hasRolePlayer = true;
         }
 
         // make sure this role-player is in the subgraph
         if (hasRolePlayer) {
-            messenger.sendMessage(messageScopeIn, 1L);
-            messenger.sendMessage(messageScopeOut, assertionCount);
+            messenger.sendMessage(messageScopeInCasting, 1L);
+            messenger.sendMessage(messageScopeOutRolePlayer, assertionCount);
         }
     }
 

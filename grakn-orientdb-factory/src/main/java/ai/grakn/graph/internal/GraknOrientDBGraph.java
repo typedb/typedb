@@ -33,7 +33,7 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
 
 
     @Override
-    protected void commitTx(){
+    protected void commitTransaction(){
         getTinkerPopGraph().commit();
     }
 

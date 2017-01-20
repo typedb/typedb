@@ -69,6 +69,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private static final String SOURCE = "shortestPathVertexProgram.startId";
     private static final String DESTINATION = "shortestPathVertexProgram.endId";
 
+    // Needed internally for OLAP tasks
     public ShortestPathVertexProgram() {
     }
 
@@ -90,8 +91,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        if ((Boolean)memory.get(FOUND_PATH)) return Collections.emptySet();
-        return messageScopeSet;
+        if (memory.<Boolean>get(FOUND_PATH)) return Collections.emptySet();
+        return memory.getIteration() % 2 == 0 ? messageScopeSetInstance : messageScopeSetCasting;
     }
 
     @Override
@@ -109,27 +110,30 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Tuple> messenger, final Memory memory) {
         switch (memory.getIteration()) {
+            // the first two iterations mark castings in subgraph active
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-                        messenger.sendMessage(messageScopeIn, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
+                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
-                        messenger.sendMessage(messageScopeIn, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
-                        messenger.sendMessage(messageScopeOut, Pair.with(MESSAGE_FROM_ASSERTION, 0));
+                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(MESSAGE_FROM_ROLE_PLAYER, 0));
+                        messenger.sendMessage(messageScopeOutCasting, Pair.with(MESSAGE_FROM_ASSERTION, 0));
                     }
                     // send message from both source and destination vertex
+                    // message 1/-1 from role player to casting
+                    // message 2/-2 from assertion to casting
                     String id = vertex.id().toString();
                     if (persistentProperties.get(SOURCE).equals(id)) {
                         LOGGER.debug("Found source vertex");
                         vertex.property(PREDECESSOR, "");
-                        messenger.sendMessage(messageScopeIn, Pair.with(id, 1));
-                        messenger.sendMessage(messageScopeOut, Pair.with(id, 2));
+                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, 1));
+                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, 2));
                     } else if (persistentProperties.get(DESTINATION).equals(id)) {
                         LOGGER.debug("Found destination vertex");
                         vertex.property(PREDECESSOR, "");
-                        messenger.sendMessage(messageScopeIn, Pair.with(id, -1));
-                        messenger.sendMessage(messageScopeOut, Pair.with(id, -2));
+                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, -1));
+                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, -2));
                     }
                 }
                 break;
@@ -157,7 +161,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 }
                 break;
             default:
-                if ((Boolean)memory.get(FOUND_PATH)) {
+                if (memory.<Boolean>get(FOUND_PATH)) {
                     //This will likely have to change as we support more and more vendors.
                     String id = vertex.id().toString();
                     if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
@@ -206,8 +210,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         LOGGER.debug("Received a message from source vertex");
                         hasMessageSource = true;
                         predecessorFromSource = (String) message.getValue(0);
-                        messenger.sendMessage(messageScopeIn, Pair.with(id, 1));
-                        messenger.sendMessage(messageScopeOut, Pair.with(id, 2));
+                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, 1));
+                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, 2));
                         vertex.property(PREDECESSOR, predecessorFromSource);
                         memory.and(VOTE_TO_HALT_SOURCE, false);
                     }
@@ -216,8 +220,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         LOGGER.debug("Received a message from destination vertex");
                         hasMessageDestination = true;
                         predecessorFromDestination = (String) message.getValue(0);
-                        messenger.sendMessage(messageScopeIn, Pair.with(id, -1));
-                        messenger.sendMessage(messageScopeOut, Pair.with(id, -2));
+                        messenger.sendMessage(messageScopeInRolePlayer, Pair.with(id, -1));
+                        messenger.sendMessage(messageScopeOutCasting, Pair.with(id, -2));
                         vertex.property(PREDECESSOR, predecessorFromDestination);
                         memory.and(VOTE_TO_HALT_DESTINATION, false);
                     }
@@ -264,17 +268,17 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         if (messageMap.size() == 2) {
             LOGGER.debug("2 messages received, message sum = " + sum);
             switch (sum) {
-                case 0:
-                    messenger.sendMessage(messageScopeOut, messageMap.get(2));
-                    messenger.sendMessage(messageScopeOut, messageMap.get(-2));
+                case 0: // -2 and 2
+                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(2));
+                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(-2));
                     break;
-                case 3:
-                    messenger.sendMessage(messageScopeIn, messageMap.get(1));
-                    messenger.sendMessage(messageScopeOut, messageMap.get(2));
+                case 3: // 1 and 2
+                    messenger.sendMessage(messageScopeInCasting, messageMap.get(1));
+                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(2));
                     break;
-                case -3:
-                    messenger.sendMessage(messageScopeIn, messageMap.get(-1));
-                    messenger.sendMessage(messageScopeOut, messageMap.get(-2));
+                case -3: // -1 and -2
+                    messenger.sendMessage(messageScopeInCasting, messageMap.get(-1));
+                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(-2));
                     break;
                 case 1:
                     LOGGER.debug("Found path");
@@ -295,16 +299,16 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             LOGGER.debug("1 message received, message sum = " + sum);
             switch (sum) {
                 case 1:
-                    messenger.sendMessage(messageScopeIn, messageMap.get(1));
+                    messenger.sendMessage(messageScopeInCasting, messageMap.get(1));
                     break;
                 case -1:
-                    messenger.sendMessage(messageScopeIn, messageMap.get(-1));
+                    messenger.sendMessage(messageScopeInCasting, messageMap.get(-1));
                     break;
                 case 2:
-                    messenger.sendMessage(messageScopeOut, messageMap.get(2));
+                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(2));
                     break;
                 case -2:
-                    messenger.sendMessage(messageScopeOut, messageMap.get(-2));
+                    messenger.sendMessage(messageScopeOutRolePlayer, messageMap.get(-2));
                     break;
                 default:
                     throw new RuntimeException("unreachable");
@@ -317,7 +321,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.getIteration() == 0) return false;
 
-        if ((Boolean)memory.get(FOUND_PATH)) {
+        if (memory.<Boolean>get(FOUND_PATH)) {
             if (!memory.get(PREDECESSORS).equals("")) {
                 String[] predecessors = ((String) memory.get(PREDECESSORS)).split(DIVIDER);
                 memory.set(PREDECESSORS, "");
