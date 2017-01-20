@@ -21,17 +21,6 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * Type is an ontological element which represents the categories concepts can fall within.
- *
- * @see EntityType
- * @see RoleType
- * @see RelationType
- * @see ResourceType
- * @see RuleType
- */
-
-
-/**
  * <p>
  *     A Type represents any ontological element in the graph.
  * </p>
