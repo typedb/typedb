@@ -30,6 +30,14 @@ import ai.grakn.util.ErrorMessage;
 import java.util.Collection;
 import java.util.Set;
 
+/**
+ * Represents the {@code lhs} (left-hand side) property on a {@link ai.grakn.concept.Rule}.
+ *
+ * This property can be inserted and not queried.
+ *
+ * The left-hand side describes the left-hand of an implication, stating that when the left-hand side of a rule is true
+ * the right-hand side must hold.
+ */
 public class LhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty{
 
     private final Pattern lhs;
