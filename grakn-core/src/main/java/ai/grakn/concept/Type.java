@@ -29,6 +29,27 @@ import java.util.Collection;
  * @see ResourceType
  * @see RuleType
  */
+
+
+/**
+ * <p>
+ *     A Type represents any ontological element in the graph.
+ * </p>
+ *
+ * <p>
+ *     Types are used to model the behaviour of {@link Instance} and how they relate to each other.
+ *     They also aid in categorising {@link Instance} to different types.
+ * </p>
+ *
+ * @see EntityType
+ * @see RoleType
+ * @see RelationType
+ * @see ResourceType
+ * @see RuleType
+ *
+ * @author fppt
+ *
+ */
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
     /**
