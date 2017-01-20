@@ -72,8 +72,8 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
             LOG.debug("Starting Cluster manager on " + ENGINE_ID);
 
             startZookeeperConnection();
-            electLeader();
             startTaskManager();
+            electLeader();
             startTaskRunner();
         }
         catch (Exception e) {

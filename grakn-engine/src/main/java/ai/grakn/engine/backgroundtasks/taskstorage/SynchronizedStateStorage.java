@@ -21,6 +21,8 @@ package ai.grakn.engine.backgroundtasks.taskstorage;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.GraknEngineServerException;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.nio.charset.StandardCharsets;
@@ -51,7 +53,7 @@ public class SynchronizedStateStorage {
     public SynchronizedStateStorage() throws Exception {
         zookeeperConnection.start();
         if(!zookeeperConnection.blockUntilConnected(30, TimeUnit.SECONDS)){
-            throw new RuntimeException("Could not connect to Zookeeper.");
+            throw new GraknEngineServerException(EngineID.getInstance().id(), "Could not connect to Zookeeper.");
         }
 
         createZKPaths();

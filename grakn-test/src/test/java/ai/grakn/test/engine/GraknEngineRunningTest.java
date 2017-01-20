@@ -39,6 +39,8 @@ import static ai.grakn.engine.GraknEngineServer.startCluster;
 import static ai.grakn.engine.GraknEngineServer.stopCluster;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
+import static ai.grakn.test.GraknTestEnv.startEngine;
+import static ai.grakn.test.GraknTestEnv.stopEngine;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -57,7 +59,7 @@ public class GraknEngineRunningTest {
 
     @Test
     public void graknEngineRunning() throws Exception {
-        startCluster();
+        startEngine();
 
         boolean running = GraknEngineServer.isRunning();
         assertTrue(running);
@@ -66,7 +68,7 @@ public class GraknEngineRunningTest {
         GraknGraph graph = GraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
 
-        stopCluster();
+        stopEngine();
     }
     
     @Test

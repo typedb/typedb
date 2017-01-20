@@ -31,4 +31,7 @@ public class GraknEngineServerException extends RuntimeException {
     public GraknEngineServerException(String engineID, String message, Exception e) {
         super(ErrorMessage.ENGINE_STARTUP_ERROR.getMessage(engineID, message), e);
     }
+    public GraknEngineServerException(String engineID, String message) {
+        super(ErrorMessage.ENGINE_STARTUP_ERROR.getMessage(engineID, message));
+    }
 }

@@ -63,7 +63,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static void startEngine() throws Exception {
+    public static void startEngine() throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -94,7 +94,7 @@ public abstract class GraknTestEnv {
         }
     }
 
-    static void stopEngine() throws Exception {
+    public static void stopEngine() throws Exception {
         if(ENGINE_RUNNING.compareAndSet(true, false)) {
             LOG.info("STOPPING ENGINE...");
 
