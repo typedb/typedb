@@ -158,7 +158,7 @@ public abstract class GraknTestEnv {
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-    static void hideLogs() {
+    public static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
