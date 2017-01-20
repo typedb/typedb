@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn;
+package ai.grakn.graph;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
@@ -44,6 +44,13 @@ public interface GraknAdmin {
      * @return A read-only Tinkerpop traversal for manually traversing the graph
      */
     GraphTraversal<Vertex, Vertex> getTinkerTraversal();
+
+    /**
+     * A flag to check if batch loading is enabled and consistency checks are switched off
+     *
+     * @return true if batch loading is enabled
+     */
+    boolean isBatchLoadingEnabled();
 
     //------------------------------------- Meta Types ----------------------------------
     /**

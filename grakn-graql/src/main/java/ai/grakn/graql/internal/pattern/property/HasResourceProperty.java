@@ -44,7 +44,6 @@ import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
@@ -180,8 +179,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         VarName varName = var.getVarName();
         Optional<TypeName> type = this.getType();
         VarAdmin valueVar = this.getResource();
-        VarName valueVariable = valueVar.isUserDefinedName() ?
-                valueVar.getVarName() : varName.map(name -> name + "-" + type.orElse(null) + "-" + UUID.randomUUID().toString());
+        VarName valueVariable = valueVar.getVarName();
         Set<Predicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom

@@ -183,7 +183,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
      * @return a map of concepts where the key is the variable name
      */
     private Map<VarName, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
-        return getSelectedNames().stream().collect(Collectors.toMap(
+        return getSelectedNames().stream().collect(Collectors.<VarName, VarName, Concept>toMap(
                 Function.identity(),
                 name -> graph.admin().buildConcept(vertices.get(name.getValue()))
         ));

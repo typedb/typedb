@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -70,14 +71,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
 
-    public ReasonerQueryImpl(MatchQuery query, GraknGraph graph) {
+    public ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
         this.graph = graph;
-        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern(), this));
+        atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();
-    }
-
-    public ReasonerQueryImpl(String query, GraknGraph graph) {
-        this(graph.graql().infer(false).<MatchQuery>parse(query), graph);
     }
 
     public ReasonerQueryImpl(ReasonerQueryImpl q) {
@@ -323,15 +320,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return id predicate for the specified var name if any
      */
     public IdPredicate getIdPredicate(VarName var) {
-        //direct
         Set<IdPredicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
-        //indirect
-        getTypeConstraints().stream()
-                .filter(type -> type.getVarName().equals(var))
-                .forEach(type -> type.getPredicates().stream().findFirst().
-                        ifPresent(predicate -> relevantSubs.add((IdPredicate) predicate)));
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 

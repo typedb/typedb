@@ -25,132 +25,211 @@ import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 
-import java.util.concurrent.CountDownLatch;
-
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
- * Scheduler will be constantly running on the "Leader" machine. The "takeLeadership"
- * function in this class will be called if it is needed to take over.
+ *
+ * ClusterManager controls the behaviour of the entire Grakn Engine cluster.
+ *
+ * There is one "Scheduler" that will be constantly running on the "Leader" machine.
+ *
+ * This class begins the TaskRunner instance that will be running on this machine.
+ * This class registers this instance of Engine with Zookeeper & the Leader election process.
+ *
+ * If this machine is required to take over the Scheduler, the "takeLeadership" function will be called.
+ * If this machine controls the Scheduler and leadership is relinquished/lost, the "stateChanged" function is called
+ * and the Scheduler is stopped before a error is thrown.
+ *
+ * The Scheduler thread is a daemon thread
+ *
+ * @author Denis Lobanov, alexandraorth
  */
 public class ClusterManager extends LeaderSelectorListenerAdapter {
-    private static ClusterManager instance = null;
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
-    private final String engineID;
+    private static final String SCHEDULER_THREAD_NAME = "scheduler-";
+    private static final String TASKRUNNER_THREAD_NAME = "taskrunner-";
 
+    private static final KafkaLogger LOG = KafkaLogger.getInstance();
+    private static final String ENGINE_ID = EngineID.getInstance().id();
+
+    // Threads in which to run task manager & scheduler
+    private Thread taskRunnerThread;
+    private Thread schedulerThread;
+
+    private DistributedTaskManager taskManager;
+    private SynchronizedStateStorage zookeeperStorage;
     private LeaderSelector leaderSelector;
     private Scheduler scheduler;
     private TreeCache cache;
     private TaskRunner taskRunner;
-    private Thread taskRunnerThread;
-    private SynchronizedStateStorage zookeeperStorage;
-    private final CountDownLatch leaderInitLatch = new CountDownLatch(1);
-    
-    public static synchronized ClusterManager getInstance() {
-        if(instance == null) {
-            instance = new ClusterManager();
-        }
+    private TaskFailover failover;
 
-        return instance;
-    }
-
-    private ClusterManager() {
-        this.engineID = EngineID.getInstance().id();
-    }
-
-    public void start() {
+    public ClusterManager() {
         try {
-            LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
+            LOG.debug("Starting Cluster manager on " + ENGINE_ID);
 
-            zookeeperStorage = SynchronizedStateStorage.getInstance();
-
-            // Call close() in case there is an exception during open().
-            taskRunner = new TaskRunner();//countDownLatch);
-            taskRunner.open();
-            taskRunnerThread = new Thread(taskRunner);
-            taskRunnerThread.start();
-
-            leaderSelector = new LeaderSelector(zookeeperStorage.connection(), SCHEDULER, this);
-            leaderSelector.autoRequeue();
-
-            // the selection for this instance doesn't start until the leader selector is started
-            // leader selection is done in the background so this call to leaderSelector.start() returns immediately
-            leaderSelector.start();
-            while (!leaderSelector.getLeader().isLeader()) {
-                Thread.sleep(1000);
-            }
-            if (leaderSelector.hasLeadership()) {
-                leaderInitLatch.await();
-            }
+            startZookeeperConnection();
+            electLeader();
+            startTaskManager();
+            startTaskRunner();
         }
         catch (Exception e) {
-            LOG.error(getFullStackTrace(e));
-            throw new RuntimeException(e);
+            throw new RuntimeException("Could not start ClusterManager on " + ENGINE_ID + getFullStackTrace(e));
         }
 
-        LOG.debug("ClusterManager started, a leader has been elected.");
-    }
-
-    public void stop() {
-        noThrow(leaderSelector::interruptLeadership, "Could not interrupt leadership.");
-        noThrow(leaderSelector::close, "Could not close leaderSelector.");
-        if(scheduler != null) {
-            noThrow(scheduler::close, "Could not stop scheduler.");
-        }
-
-        if(cache != null) {
-            noThrow(cache::close, "Could not close ZK Tree Cache.");
-        }
-
-        noThrow(taskRunner::close, "Could not stop TaskRunner.");
-
-        // Lambdas cant throw exceptions
-        try {
-            taskRunnerThread.join();
-        } catch(Throwable t) {
-            LOG.error("Exception whilst waiting for TaskRunner thread to join - "+getFullStackTrace(t));
-        }
-
-        noThrow(zookeeperStorage::close, "Could not close ZK storage.");
-        zookeeperStorage = null;
+        LOG.debug("ClusterManager started & a leader elected on " + ENGINE_ID);
     }
 
     /**
-     * When you take over leadership start a new Scheduler instance and wait for it to complete.
+     * When stopping the ClusterManager we must:
+     *  1. Interrupt the Scheduler on whichever machine it is running on. We do this by interrupting the leadership.
+     *      When leadership is interrupted it will shut down the Scheduler on that machine.
+     *
+     *  2. Shutdown the TaskRunner on this machine.
+     *
+     *  3. Shutdown Zookeeper storage connection on this machine
+     */
+    public void stop() throws Exception {
+        leaderSelector.interruptLeadership();
+        leaderSelector.close();
+
+        stopScheduler();
+        stopTaskManager();
+        stopTaskRunner();
+        stopZookeeperConnection();
+    }
+
+    /**
+     * On leadership takeover, start a new Scheduler instance and wait for it to complete.
+     * The method should not return until leadership is relinquished.
      * @throws Exception
      */
+    @Override
     public void takeLeadership(CuratorFramework client) throws Exception {
         registerFailover(client);
-        
-        // Call close() in case of exceptions during open()
-        scheduler = new Scheduler();
-        scheduler.open();
 
-        LOG.info(engineID + " has taken over the scheduler.");
-        Thread schedulerThread = new Thread(scheduler);
-        schedulerThread.setDaemon(true);
-        schedulerThread.start();
-        leaderInitLatch.countDown();        
+        // start the scheduler
+        startScheduler();
+
+        // wait for scheduler to fail
         schedulerThread.join();
     }
 
     /**
-     * Get the scheduler object
-     * @return scheduler
+     * Get the scheduler object that is running on this machine
      */
     public Scheduler getScheduler() {
         return scheduler;
     }
 
+    /**
+     * Get the Zookeeper storage connection for this machine
+     */
+    public SynchronizedStateStorage getStorage(){
+        return zookeeperStorage;
+    }
+
+    /**
+     * Get the task manager for this machine
+     */
+    public DistributedTaskManager getTaskManager(){
+        return taskManager;
+    }
+
+    /**
+     *
+     * This method blocks until the leader has been elected.
+     * @throws Exception Any error connecting to Zookeeper while waiting for Leader
+     */
+    private void electLeader() throws Exception {
+        leaderSelector = new LeaderSelector(zookeeperStorage.connection(), SCHEDULER, this);
+        leaderSelector.autoRequeue();
+
+        // the selection for this instance doesn't start until the leader selector is started
+        // leader selection is done in the background so this call to leaderSelector.start() returns immediately
+        leaderSelector.start();
+        while (!leaderSelector.getLeader().isLeader()) {
+            Thread.sleep(1000);
+        }
+    }
+
+    /**
+     * Instantiate an instance of the distributed task manager to accept and run tasks
+     */
+    private void startTaskManager() {
+        taskManager = new DistributedTaskManager(zookeeperStorage);
+    }
+
+    /**
+     * Close this instance of the distributed task manager
+     */
+    private void stopTaskManager(){
+        taskManager.close();
+    }
+
+    /**
+     * Instantiate an instance of task runner and start running it in a thread.
+     * @throws Exception If an exception is thrown opening the TaskRunner
+     */
+    private void startTaskRunner() throws Exception {
+        taskRunner = new TaskRunner(zookeeperStorage);
+
+        taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
+        taskRunnerThread.start();
+    }
+
+    /**
+     * Close the instance of TaskRunner on this machine and wait for the TaskRunner thread to die
+     * @throws InterruptedException If any thread has interrupted the shutting down of the TaskRunner thread
+     */
+    private void stopTaskRunner() throws InterruptedException {
+        taskRunner.close();
+        taskRunnerThread.join();
+    }
+
+    /**
+     * Return the connection to Zookeeper for this machine
+     * @throws Exception If there was a problem instantiating connection to Zookeeper
+     */
+    private void startZookeeperConnection() throws Exception{
+        zookeeperStorage = new SynchronizedStateStorage();
+    }
+
+    /**
+     * Close all connections to Zookeeper
+     */
+    private void stopZookeeperConnection(){
+        cache.close();
+        failover.close();
+        zookeeperStorage.close();
+    }
+
+    /**
+     * Instantiate a Scheduler object and start running it in a daemon thread
+     * @throws Exception If an exception is thrown opening the Scheduler
+     */
+    private void startScheduler() throws Exception {
+        LOG.info(ENGINE_ID + " has taken over the scheduler");
+
+        scheduler = new Scheduler(zookeeperStorage);
+
+        schedulerThread = new Thread(scheduler, SCHEDULER_THREAD_NAME + scheduler.hashCode());
+        schedulerThread.setDaemon(true);
+        schedulerThread.start();
+    }
+
+    /**
+     * Close this instance of the Scheduler.
+     */
+    private void stopScheduler(){
+        scheduler.close();
+    }
+
     private void registerFailover(CuratorFramework client) throws Exception {
         cache = new TreeCache(client, RUNNERS_WATCH);
-        try(TaskFailover failover = TaskFailover.getInstance().open(client, cache)) {
-            cache.getListenable().addListener(failover);
-        }
-
+        failover = new TaskFailover(client, cache, zookeeperStorage);
+        cache.getListenable().addListener(failover);
         cache.start();
     }
 }

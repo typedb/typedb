@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
@@ -57,7 +58,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
-import static ai.grakn.factory.GraphFactory.getInstance;
+import static ai.grakn.factory.EngineGraknGraphFactory.getInstance;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
@@ -106,7 +107,7 @@ public class VisualiserController {
     private String conceptById(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
             if(concept==null) {
@@ -131,7 +132,7 @@ public class VisualiserController {
     private String conceptByIdOntology(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
             return renderHALConceptOntology(concept, keyspace);
         } catch (Exception e) {
@@ -149,7 +150,7 @@ public class VisualiserController {
     private String ontology(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
             JSONObject responseObj = new JSONObject();
             responseObj.put(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
             responseObj.put(ENTITIES_JSON_FIELD, instances(graph.admin().getMetaEntityType()));
@@ -176,7 +177,7 @@ public class VisualiserController {
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
         boolean materialise = parseBoolean(req.queryParams("materialise"));
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
             QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
@@ -205,7 +206,7 @@ public class VisualiserController {
             @ApiImplicitParam(name = "query", value = "Compute query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String compute(Request req, Response res) {
-        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
+        try (EngineGraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
 
             ComputeQuery computeQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
             JSONObject response = new JSONObject();
@@ -240,8 +241,9 @@ public class VisualiserController {
     @ApiOperation(value = "Pre materialise all the rules on the graph.")
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String preMaterialiseAll(Request req, Response res) {
-        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
-            Reasoner.precomputeInferences(graph);
+        try (EngineGraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
+            //TODO: Fix ugly casting here
+            Reasoner.precomputeInferences((GraknGraph) graph);
             return "Done.";
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
