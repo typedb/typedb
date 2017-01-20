@@ -48,11 +48,20 @@ import java.util.Collection;
 
 import static spark.Spark.get;
 
-
 /**
- * REST controller used by GraknGraphFactoryImpl to retrieve graph configuration for a given graph name.
+ * <p>
+ *     Controller Providing Configs for building Grakn Graphs
+ * </p>
+ *
+ * <p>
+ *     When calling {@link ai.grakn.Grakn#factory(String, String)} and using the non memory location this controller
+ *     is accessed. The controller provides the necessary config needed in order to build a {@link ai.grakn.GraknGraph}.
+ *
+ *     This controller also allows the retrieval of all keyspaces opened so far.
+ * </p>
+ *
+ * @author fppt
  */
-
 public class GraphFactoryController {
     private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
 
