@@ -149,6 +149,10 @@ public class GraqlShell {
         runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClient());
     }
 
+    public static void runShell(String[] args, String version, String historyFilename) {
+        runShell(args, version, historyFilename, new GraqlClient());
+    }
+
     public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {
 
         Options options = new Options();

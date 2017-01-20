@@ -20,7 +20,6 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.Grakn;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -473,8 +472,8 @@ public class GraqlShellIT {
             System.setIn(in);
             System.setOut(out);
             System.setErr(err);
-            
-            GraqlShell.runShell(args, expectedVersion, historyFile, new GraqlClientImpl());
+
+            GraqlShell.runShell(args, expectedVersion, historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
