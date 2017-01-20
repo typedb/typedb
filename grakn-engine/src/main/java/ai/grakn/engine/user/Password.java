@@ -18,8 +18,8 @@
 
 package ai.grakn.engine.user;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graph.EngineGraknGraph;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -56,7 +56,7 @@ public class Password {
      *
      * @return a 16 bytes random salt
      */
-    public static byte[] getNextSalt(GraknGraph graph) {
+    static byte[] getNextSalt(EngineGraknGraph graph) {
         ResourceType<String> saltResourceType = graph.getResourceType(UsersHandler.USER_SALT);
 
         String saltString;
@@ -112,7 +112,7 @@ public class Password {
         return true;
     }
 
-    public static String getString(byte [] bytes){
+    static String getString(byte[] bytes){
         return new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
     }
 

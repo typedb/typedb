@@ -49,7 +49,6 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -343,8 +342,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public DegreeQuery<?> visitDegrees(GraqlParser.DegreesContext ctx) {
-        DegreeQuery<?> degree = queryBuilder.compute().degree();
+    public DegreeQuery visitDegrees(GraqlParser.DegreesContext ctx) {
+        DegreeQuery degree = queryBuilder.compute().degree();
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));
@@ -711,7 +710,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private VarName getVariable(TerminalNode variable) {
         // Remove '$' prefix
-        return Patterns.varName(variable.getText().substring(1));
+        return VarName.of(variable.getText().substring(1));
     }
 
     private String getRegex(TerminalNode string) {

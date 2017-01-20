@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
@@ -70,7 +69,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        VarName casting = Patterns.varName();
+        VarName casting = VarName.anon();
 
         return Sets.newHashSet(
                 EquivalentFragmentSet.create(

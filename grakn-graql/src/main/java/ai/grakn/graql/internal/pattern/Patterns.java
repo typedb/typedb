@@ -57,11 +57,4 @@ public class Patterns {
         return new VarImpl(vars);
     }
 
-    public static VarName varName() {
-        return new VarNameImpl();
-    }
-
-    public static VarName varName(String name) {
-        return new VarNameImpl(name);
-    }
 }

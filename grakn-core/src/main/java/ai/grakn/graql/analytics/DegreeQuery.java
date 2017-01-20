@@ -23,44 +23,46 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Compute the number of relations that each instance takes part in.
  */
-public interface DegreeQuery<T> extends ComputeQuery<T> {
+public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
      * @return a DegreeQuery with the subTypeNames set
      */
     @Override
-    DegreeQuery<T> in(String... subTypeNames);
+    DegreeQuery in(String... subTypeNames);
 
     /**
      * @param subTypeNames a collection of types to include in the subgraph
      * @return a DegreeQuery with the subTypeNames set
      */
     @Override
-    DegreeQuery<T> in(Collection<TypeName> subTypeNames);
+    DegreeQuery in(Collection<TypeName> subTypeNames);
 
     /**
      * @param ofTypeNames an array of types in the subgraph to compute degree of. By default the degrees of all the
      *                    types in the graph will be computed
      * @return a DegreeQuery with the subTypeNames set
      */
-    DegreeQuery<T> of(String... ofTypeNames);
+    DegreeQuery of(String... ofTypeNames);
 
     /**
      * @param ofTypeNames a collection of types in the subgraph to compute degree of. By default the degrees of all the
      *                    types in the graph will be computed
      * @return a DegreeQuery with the subTypeNames set
      */
-    DegreeQuery<T> of(Collection<TypeName> ofTypeNames);
+    DegreeQuery of(Collection<TypeName> ofTypeNames);
 
     /**
      * @param graph the graph to execute the query on
      * @return a DegreeQuery with the graph set
      */
     @Override
-    DegreeQuery<T> withGraph(GraknGraph graph);
+    DegreeQuery withGraph(GraknGraph graph);
 }

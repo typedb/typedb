@@ -28,6 +28,7 @@ import java.util.Set;
 
 public class MaxMapReduce extends GraknMapReduce<Number> {
 
+    // Needed internally for OLAP tasks
     public MaxMapReduce() {
     }
 

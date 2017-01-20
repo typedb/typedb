@@ -25,7 +25,6 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -66,8 +65,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         ComputerResult result;
         try {
             result = getGraphComputer().compute(
-                    //TODO: Look into passing sourceId and destinationId as ConceptId. Not possible right now because it's not serializable
-                    new ShortestPathVertexProgram(subTypeNames, sourceId.getValue(), destinationId.getValue()),
+                    new ShortestPathVertexProgram(subTypeNames, sourceId, destinationId),
                     new ClusterMemberMapReduce(subTypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         } catch (IllegalStateException e) {
             if (e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) {
@@ -75,7 +73,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
             }
             throw e;
         }
-        Map<Integer, Set<String>> map = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<Integer, Set<String>> map = result.memory().get(ClusterMemberMapReduce.class.getName());
         String middlePoint = result.memory().get(ShortestPathVertexProgram.MIDDLE);
         if (!middlePoint.equals("")) map.put(0, Collections.singleton(middlePoint));
 
