@@ -1,10 +1,10 @@
 package ai.grakn.test;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graph.EngineGraknGraph;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
@@ -121,21 +121,21 @@ public abstract class GraknTestEnv {
 
     static void clearGraphs() {
         // Drop all keyspaces
-        GraphFactory graphFactory = GraphFactory.getInstance();
+        EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
 
-        GraknGraph systemGraph = graphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
+        EngineGraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         systemGraph.graql().match(var("x").isa("keyspace-name"))
                 .execute()
                 .forEach(x -> x.values().forEach(y -> {
                     String name = y.asResource().getValue().toString();
-                    GraknGraph graph = graphFactory.getGraph(name);
+                    EngineGraknGraph graph = engineGraknGraphFactory.getGraph(name);
                     graph.clear();
                 }));
 
         // Drop the system keyspaces too
         systemGraph.clear();
 
-        graphFactory.refershConnections();
+        engineGraknGraphFactory.refreshConnections();
     }
 
     static void startEmbeddedCassandra() {
