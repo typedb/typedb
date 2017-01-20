@@ -29,6 +29,7 @@ import java.util.Set;
 
 public class SumMapReduce extends GraknMapReduce<Number> {
 
+    // Needed internally for OLAP tasks
     public SumMapReduce() {
     }
 

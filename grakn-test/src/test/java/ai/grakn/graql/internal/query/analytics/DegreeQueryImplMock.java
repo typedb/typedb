@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  *
  */
-public class DegreeQueryImplMock<T> extends DegreeQueryImpl<T> {
+public class DegreeQueryImplMock extends DegreeQueryImpl {
     final int numberOfWorkers;
 
     public DegreeQueryImplMock(Optional<GraknGraph> graph, int numberOfWorkers) {

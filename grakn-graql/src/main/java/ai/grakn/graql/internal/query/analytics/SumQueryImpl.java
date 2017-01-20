@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -50,7 +49,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new SumMapReduce(statisticsResourceTypeNames, dataType));
-        Map<Serializable, Number> sum = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
         LOGGER.info("SumMapReduce is done");
         return Optional.of(sum.get(MapReduce.NullObject.instance()));
     }

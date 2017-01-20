@@ -28,6 +28,7 @@ import java.util.Set;
 
 public class CountMapReduce extends GraknMapReduce<Long> {
 
+    // Needed internally for OLAP tasks
     public CountMapReduce() {
     }
 
