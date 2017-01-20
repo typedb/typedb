@@ -38,7 +38,6 @@ import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
@@ -126,8 +125,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
         VarName varName = var.getVarName();
         VarAdmin typeVar = this.getType();
-        VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.map(name -> name + "-type-" + UUID.randomUUID().toString());
+        VarName typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part
