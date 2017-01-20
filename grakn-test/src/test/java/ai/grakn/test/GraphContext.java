@@ -21,16 +21,16 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
 
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
+import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
-import static ai.grakn.graphs.TestGraph.loadFromFile;
 
 /**
  *
@@ -100,7 +100,8 @@ public class GraphContext extends ExternalResource {
     }
 
     private void loadGraph() {
-        graph = GraphFactory.getInstance().getGraph(randomKeyspace());
+        //TODO: get rid of another ugly cast
+        graph = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace());
 
         // if data should be pre-loaded, load
         if(preLoad != null){

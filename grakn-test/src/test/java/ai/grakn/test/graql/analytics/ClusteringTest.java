@@ -17,6 +17,7 @@
  */
 
 package ai.grakn.test.graql.analytics;
+
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -28,7 +29,6 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
@@ -41,7 +41,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,9 +84,6 @@ public class ClusteringTest {
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
     }
 
@@ -228,19 +224,6 @@ public class ClusteringTest {
         assertEquals(1L, sizeMap.get(id).longValue());
     }
 
-    private void checkConnectedComponent(ConceptId id, String expectedClusterLabel) {
-        Collection<Resource<?>> resources = context.graph().getConcept(id).asInstance()
-                .resources(context.graph().getResourceType(Schema.Analytics.CLUSTER.getName().getValue()));
-        assertEquals(1, resources.size());
-        assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
-    }
-
-    private void checkConnectedComponent(ConceptId id, String expectedClusterLabel, String resourceTypeName) {
-        Collection<Resource<?>> resources = context.graph().getConcept(id).asInstance()
-                .resources(context.graph().getResourceType(resourceTypeName));
-        assertEquals(1, resources.size());
-        assertEquals(expectedClusterLabel, resources.iterator().next().getValue());
-    }
 
     private void addOntologyAndEntities() throws GraknValidationException {
         EntityType entityType1 = context.graph().putEntityType(thing);

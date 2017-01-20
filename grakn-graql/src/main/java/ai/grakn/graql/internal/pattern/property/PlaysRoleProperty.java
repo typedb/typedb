@@ -36,7 +36,6 @@ import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
@@ -117,8 +116,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
         VarAdmin typeVar = this.getRole();
-        VarName typeVariable = typeVar.isUserDefinedName() ?
-                typeVar.getVarName() : varName.map(name -> name + "-plays-role-" + UUID.randomUUID().toString());
+        VarName typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();

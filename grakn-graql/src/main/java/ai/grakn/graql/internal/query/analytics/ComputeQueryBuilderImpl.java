@@ -33,7 +33,6 @@ import ai.grakn.graql.analytics.SumQuery;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
@@ -95,7 +94,7 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public DegreeQuery<Map<Long, Set<String>>> degree() {
-        return new DegreeQueryImpl<>(graph);
+    public DegreeQuery degree() {
+        return new DegreeQueryImpl(graph);
     }
 }

@@ -145,6 +145,17 @@ public class QueryTest {
     }
 
     @Test
+    public void testQueryEquivalence(){
+        String patternString = "{(entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
+                "$x1 isa $t1; $t1 sub geoObject;}";
+        String patternString2 = "{(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
+                "$y1 isa $t2; $t2 sub geoObject;}";
+        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, geoGraph.graph()), geoGraph.graph());
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, geoGraph.graph()), geoGraph.graph());
+        assertTrue(query.isEquivalent(query2));
+    }
+
+    @Test
     public void testUnification(){
         String parentString = "{(entity-location: $y, geo-entity: $y1), isa is-located-in;}";
         String childString = "{(geo-entity: $y1, entity-location: $y2), isa is-located-in;}";

@@ -19,27 +19,27 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.util.ErrorMessage;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
-public class GraphFactory {
+public class EngineGraknGraphFactory {
     private final Properties properties;
-    private static GraphFactory instance = null;
+    private static EngineGraknGraphFactory instance = null;
 
 
-    public static synchronized GraphFactory getInstance() {
+    public static synchronized EngineGraknGraphFactory getInstance() {
         if (instance == null) {
-            instance = new GraphFactory();
+            instance = new EngineGraknGraphFactory();
         }
         return instance;
     }
 
-    private GraphFactory() {
+    private EngineGraknGraphFactory() {
         properties = new Properties();
         String pathToConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
 
@@ -50,12 +50,21 @@ public class GraphFactory {
         }
     }
 
-    public synchronized GraknGraph getGraph(String keyspace) {
-        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(false);
+    public synchronized EngineGraknGraph getGraph(String keyspace) {
+        return getGraph(keyspace, false);
     }
 
-    public synchronized void refershConnections(){
+    public synchronized EngineGraknGraph getGraphBatchLoading(String keyspace) {
+        return getGraph(keyspace, true);
+    }
+
+    public synchronized void refreshConnections(){
         FactoryBuilder.refresh();
+    }
+
+    private EngineGraknGraph getGraph(String keyspace, boolean batchLoading){
+        //TODO: Get rid of ugly casting
+        return (EngineGraknGraph) FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(batchLoading);
     }
 }
 

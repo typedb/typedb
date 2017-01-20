@@ -50,4 +50,6 @@ interface InternalFactory<M extends GraknGraph, T extends Graph> {
      * @return An instance of a tinker graph
      */
     T getTinkerPopGraph(boolean batchLoading);
+
+
 }

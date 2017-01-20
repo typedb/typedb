@@ -34,6 +34,7 @@ public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
     public static final String SUM = "S";
     public static final String SQUARE_SUM = "SM";
 
+    // Needed internally for OLAP tasks
     public StdMapReduce() {
     }
 
