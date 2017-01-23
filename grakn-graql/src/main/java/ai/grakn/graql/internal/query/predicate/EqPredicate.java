@@ -64,15 +64,11 @@ class EqPredicate extends ComparatorPredicate {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
-        EqPredicate that = (EqPredicate) o;
-
-        return value != null ? value.equals(that.value) : that.value == null;
-
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return value != null ? value.hashCode() : 0;
+        return super.hashCode() + 37;
     }
 }

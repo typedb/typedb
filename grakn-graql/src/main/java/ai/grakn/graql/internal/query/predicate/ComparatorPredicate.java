@@ -57,6 +57,11 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             this.value = Optional.empty();
             this.var = Optional.of((VarAdmin) value);
         } else {
+            // Convert integers to longs for consistency
+            if (value instanceof Integer) {
+                value = ((Integer) value).longValue();
+            }
+
             this.value = Optional.of(value);
             this.var = Optional.empty();
         }
