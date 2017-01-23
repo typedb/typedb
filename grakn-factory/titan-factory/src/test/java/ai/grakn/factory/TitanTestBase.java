@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public abstract class TitanTestBase {
+    private final static String CONFIG_LOCATION = "../../conf/main/grakn.properties";
     final static boolean TEST_BATCH_LOADING = false;
     private final static String TEST_SHARED = "shared";
     static TitanInternalFactory titanGraphFactory;
@@ -33,10 +34,10 @@ public abstract class TitanTestBase {
             throw new RuntimeException(e);
         }
 
-        try (InputStream in = new FileInputStream("../conf/main/grakn.properties")){
+        try (InputStream in = new FileInputStream(CONFIG_LOCATION)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage("../conf/main/grakn.properties"), e);
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(CONFIG_LOCATION), e);
         }
 
         titanGraphFactory = new TitanInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);

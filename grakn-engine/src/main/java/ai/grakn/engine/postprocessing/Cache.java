@@ -25,6 +25,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * <p>
+ *     Engine's internal Concept ID cache
+ * </p>
+ *
+ * <p>
+ *    This is a cache which houses {@link org.apache.tinkerpop.gremlin.structure.Vertex} ids. It keeps these ids
+ *    so that we can lookup the vertices in need of postprocessing directly.
+ *
+ *    We cannot relay on {@link ai.grakn.concept.ConceptId}s because the indexed lookup maybe faulty with
+ *    vertices in need of post processing.
+ * </p>
+ *
+ * @author fppt
+ */
 public class Cache {
     private final Map<String, Set<String>> castings;
     private final Map<String, Set<String>> resources;
