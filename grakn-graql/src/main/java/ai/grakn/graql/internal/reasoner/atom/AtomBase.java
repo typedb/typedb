@@ -82,11 +82,6 @@ public abstract class AtomBase implements Atomic {
     }
 
     /**
-     * @return true if the value variable is user defined
-     */
-    public boolean isValueUserDefinedName(){ return false;}
-
-    /**
      * @return pattern corresponding to this atom
      */
     public PatternAdmin getPattern(){ return atomPattern;}
