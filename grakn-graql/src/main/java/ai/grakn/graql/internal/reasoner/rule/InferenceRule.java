@@ -134,7 +134,7 @@ public class InferenceRule {
         else{
             Relation extendedParent = ((Relation) AtomicFactory.create(parentAtom, parentAtom.getParentQuery()))
                     .addType(childAtom.getType());
-            //extendedParent.computeRoleVarTypeMap();
+            extendedParent.computeRoleVarTypeMap();
             childAtom.getUnifiers(extendedParent).forEach(unifiers::put);
         }
         unify(unifiers);
