@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.util.ErrorMessage;
@@ -27,6 +28,22 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+/**
+ * <p>
+ *     Engine's internal Graph Factory
+ * </p>
+ *
+ * <p>
+ *     This internal factory is used to produce {@link EngineGraknGraph}s. These are different from {@link GraknGraph}s
+ *     in that they provide more low level functionality. Also these graphs do not submit commit logs via the REST API.
+ *
+ *     It is also worth noting that both this class and {@link Grakn#factory(String, String)} us the same
+ *     {@link FactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
+ *     are actually the same graphs.
+ * </p>
+ *
+ * @author fppt
+ */
 public class EngineGraknGraphFactory {
     private final Properties properties;
     private static EngineGraknGraphFactory instance = null;
