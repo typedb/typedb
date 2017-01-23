@@ -33,6 +33,7 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -138,7 +139,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         boolean ruleResolvable = false;
         Iterator<Atomic> it = atomSet.iterator();
         while(it.hasNext() && !ruleResolvable) {
-            ruleResolvable = it.next().isRuleResolvable();
+            Atomic at = it.next();
+            ruleResolvable = at.isRuleResolvable();
         }
         return ruleResolvable;
     }
@@ -171,11 +173,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return set of atoms constituting constraints (by means of types) for this atom
      */
-    public Set<Atom> getTypeConstraints(){
+    public Set<TypeAtom> getTypeConstraints(){
         return getAtoms().stream()
-                .filter(Atomic::isAtom)
-                .map(at -> (Atom) at)
-                .filter(Atom::isType)
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(Atom::isType).map(at -> (TypeAtom) at)
                 .collect(Collectors.toSet());
     }
 

@@ -30,8 +30,9 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
@@ -150,8 +151,10 @@ public class AtomicQueryTest {
         MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers fullAnswers = queryAnswers(query2);
-        QueryAnswers permutedAnswers = answers.permute(new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), geoGraph.graph()).getAtom());
-        QueryAnswers permutedAnswers2 = answers.permute(new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), geoGraph.graph()).getAtom());
+        Atom atom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), geoGraph.graph()).getAtom();
+        Atom atom2 = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), geoGraph.graph()).getAtom();
+        QueryAnswers permutedAnswers = answers.permute(atom, atom);
+        QueryAnswers permutedAnswers2 = answers.permute(atom2, atom2);
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }
