@@ -20,6 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
+import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
@@ -29,7 +30,6 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
-import static ai.grakn.test.GraknTestEnv.ensureHTTPRunning;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 
 /**
@@ -41,6 +41,7 @@ public class GraphContext extends ExternalResource {
     private GraknGraph graph;
     private Consumer<GraknGraph> preLoad;
     private String[] files;
+
 
     private GraphContext(Consumer<GraknGraph> build, String[] files){
         this.preLoad = build;
@@ -79,7 +80,7 @@ public class GraphContext extends ExternalResource {
 
         //TODO remove when Bug #12029 fixed
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, StandaloneTaskManager.class.getName());
-        ensureHTTPRunning();
+        new CommitLogController();
         //TODO finish remove
 
         // create the graph
