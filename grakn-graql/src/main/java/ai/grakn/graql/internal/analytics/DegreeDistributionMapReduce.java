@@ -30,6 +30,17 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
 
+/**
+ * The MapReduce program for collecting the result of a degree query.
+ * <p>
+ * It returns a map, the key being the degree, the value being a vertex id set containing all the vertices
+ * with the given degree.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
     // Needed internally for OLAP tasks
