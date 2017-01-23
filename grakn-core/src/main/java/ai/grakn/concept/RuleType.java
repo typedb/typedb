@@ -18,13 +18,23 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.graph.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
 import java.util.Collection;
 
 /**
- * A RuleType is a schema element used to define different types of reasoner rules.
- * Currently supported rules include Constraint Rules and Inference Rules.
+ * <p>
+ *     An ontological element used to model and categorise different types of {@link Rule}.
+ * </p>
+ *
+ * <p>
+ *     An ontological element used to define different types of {@link Rule}.
+ *     Currently supported rules include {@link GraknAdmin#getMetaRuleInference()}
+ *     and {@link GraknAdmin#getMetaRuleConstraint()}
+ * </p>
+ *
+ * @author fppt
  */
 public interface RuleType extends Type {
     //------------------------------------- Modifiers ----------------------------------

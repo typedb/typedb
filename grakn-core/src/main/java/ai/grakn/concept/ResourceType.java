@@ -25,11 +25,22 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 
 /**
- * A ResourceType is a schema element which represents the category of resources in the graph.
  * <p>
- * For the methods below, @param <D> is the data type of this resource represented by the Resource Type.
- * Supported Types include: String, Long, Double, and Boolean
+ *     An ontological element which models and categorises the various {@link Resource} in the graph.
  * </p>
+ *
+ * <p>
+ *     This ontological element behaves similarly to {@link ai.grakn.concept.Type} when defining how it relates to other
+ *     types. It has two additional functions to be aware of:
+ *     1. It has a {@link DataType} constraining the data types of the values it's instances may take.
+ *     2. Any of it's instances are unique to the type.
+ *     For example if you have a ResourceType modelling month throughout the year there can only be one January.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <D> The data type of this resource type.
+ *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------

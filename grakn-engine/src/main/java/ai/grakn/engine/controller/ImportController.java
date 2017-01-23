@@ -72,6 +72,9 @@ public class ImportController {
     private static final String MATCH_KEYWORD = "match";
 
     public ImportController(ClusterManager manager) {
+        if (manager==null) {
+            throw new GraknEngineServerException(500,"Cluster manager has not been instantiated.");
+        }
         this.manager = manager;
 
         before(REST.WebPath.IMPORT_DATA_URI, (req, res) -> {

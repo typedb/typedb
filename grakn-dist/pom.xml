@@ -78,7 +78,7 @@
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-titan-factory</artifactId>
+            <artifactId>titan-factory</artifactId>
             <version>${project.version}</version>
         </dependency>
 
