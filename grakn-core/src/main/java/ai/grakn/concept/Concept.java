@@ -19,11 +19,24 @@
 package ai.grakn.concept;
 
 import ai.grakn.exception.ConceptException;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
 
 /**
- * A Concept represents anything in the graph.
- * It provides methods to retrieve information about the Concept, and determine if it is a Type (Entity Type, Role Type,
- * Relation Type, Rule Type or Resource Type) or Instance (Entity, Relation, Resource, Rule).
+ * <p>
+ *     The base concept implementation.
+ * </p>
+ *
+ * <p>
+ *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
+ *     This class forms the basis of assuring the graph follows the Grakn object model.
+ *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
+ *     ({@link EntityType}, {@link RoleType}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
+ *     or an {@link Instance} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
+ * </p>
+ *
+ * @author fppt
+ *
  */
 public interface Concept extends Comparable<Concept>{
     //------------------------------------- Accessors ----------------------------------

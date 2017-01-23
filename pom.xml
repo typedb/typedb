@@ -31,7 +31,6 @@
     <url>https://grakn.ai/pages/platform/index.html</url>
     <modules>
         <module>grakn-graph</module>
-        <module>grakn-titan-factory</module>
         <module>grakn-graql</module>
         <module>grakn-graql-shell</module>
         <module>grakn-engine</module>
@@ -40,8 +39,8 @@
         <module>grakn-dist</module>
         <module>grakn-test</module>
         <module>grakn-core</module>
-        <module>grakn-orientdb-factory</module>
         <module>grakn-test-profiles</module>
+        <module>grakn-factory</module>
     </modules>
 
     <properties>
