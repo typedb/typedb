@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 /**
  * <p>
- *     A Name
+ *     A Type Name
  * </p>
  *
  * <p>
