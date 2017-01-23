@@ -30,7 +30,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.Reasoner;

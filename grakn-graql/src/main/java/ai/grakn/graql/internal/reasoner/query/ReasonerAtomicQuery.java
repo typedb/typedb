@@ -20,11 +20,9 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Var;
@@ -32,7 +30,6 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -43,7 +40,6 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Objects;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

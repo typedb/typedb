@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;

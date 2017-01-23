@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -135,7 +134,7 @@ public class InferenceRule {
         else{
             Relation extendedParent = ((Relation) AtomicFactory.create(parentAtom, parentAtom.getParentQuery()))
                     .addType(childAtom.getType());
-            extendedParent.computeRoleVarTypeMap();
+            //extendedParent.computeRoleVarTypeMap();
             childAtom.getUnifiers(extendedParent).forEach(unifiers::put);
         }
         unify(unifiers);
