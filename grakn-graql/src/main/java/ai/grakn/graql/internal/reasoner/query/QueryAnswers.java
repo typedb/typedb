@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
@@ -229,7 +230,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         Map<VarName, String> typeConstraints = new HashMap<>();
 
         //find extra type constraints
-        Set<Atom> extraTypes =  Utility.subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
+        Set<TypeAtom> extraTypes =  Utility.subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
         extraTypes.removeAll(childQuery.getTypeConstraints());
         extraTypes.stream().map(t -> (Binary) t).forEach(type -> {
             Predicate predicate = parentQuery.getIdPredicate(type.getValueVariable());

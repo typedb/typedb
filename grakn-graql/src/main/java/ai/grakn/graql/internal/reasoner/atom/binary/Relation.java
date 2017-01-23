@@ -44,6 +44,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
@@ -94,9 +95,8 @@ public class Relation extends TypeAtom {
     private Relation(Relation a) {
         super(a);
         this.relationPlayers = getRelationPlayers();
-        //TODO check whether affects performance
-        //this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
-        //this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
+        this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
+        this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
     }
 
     private Set<RelationPlayer> getRelationPlayers() {
@@ -195,7 +195,6 @@ public class Relation extends TypeAtom {
         return true;
     }
 
-    //TODO
     private boolean isRuleApplicableViaType(Atom childAtom) {
         boolean ruleRelevant = true;
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -484,7 +483,10 @@ public class Relation extends TypeAtom {
     public Map<RoleType, Pair<VarName, Type>> computeRoleVarTypeMap() {
         Map<Var, Pair<VarName, Type>> roleVarTypeMap = new HashMap<>();
         Map<RoleType, Pair<VarName, Type>> roleTypeMap = new HashMap<>();
-        if (getParentQuery() == null || getType() == null) return roleTypeMap;
+        if (getParentQuery() == null || getType() == null){
+            this.roleVarTypeMap = roleTypeMap;
+            return roleTypeMap;
+        }
         GraknGraph graph =  getParentQuery().graph();
 
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -561,6 +563,7 @@ public class Relation extends TypeAtom {
         //pattern mutation!
         atomPattern = constructRelationVar(isUserDefinedName()? varName : VarName.of(""), getValueVariable(), roleMap);
         relationPlayers = getRelationPlayers(getPattern().asVar());
+        this.roleVarTypeMap = roleTypeMap;
         return roleTypeMap;
     }
 
@@ -574,7 +577,7 @@ public class Relation extends TypeAtom {
                     if (rt != null) roleVarTypeMap.put(rt, new Pair<>(var, tpair.getKey()));
                 });
             } else {
-                roleVarTypeMap = computeRoleVarTypeMap();
+                computeRoleVarTypeMap();
             }
         }
         return roleVarTypeMap;

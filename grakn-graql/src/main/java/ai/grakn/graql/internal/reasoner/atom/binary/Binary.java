@@ -91,11 +91,6 @@ public abstract class Binary extends BinaryBase {
     }
 
     @Override
-    public boolean isValueUserDefinedName() {
-        return predicate == null && !getValueVariable().getValue().isEmpty();
-    }
-
-    @Override
     public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         if (predicate != null) predicate.unify(unifiers);

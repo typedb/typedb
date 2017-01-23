@@ -36,11 +36,13 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
+import java.util.Objects;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -246,18 +248,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return fullAnswers;
     }
     
-    private QueryAnswers propagateHeadIdPredicates(ReasonerQueryImpl ruleHead, QueryAnswers answers){
+    private QueryAnswers propagateIdPredicates(QueryAnswers answers){
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
-        Set<VarName> queryVars = getVarNames();
         Set<IdPredicate> extraSubs = new HashSet<>();
-        ruleHead.getIdPredicates()
-                .stream().filter(sub -> queryVars.contains(sub.getVarName()))
-                .forEach(extraSubs::add);
-        ruleHead.getTypeConstraints()
-                .stream().flatMap(type -> type.getIdPredicates().stream())
-                .filter(sub -> queryVars.contains(sub.getVarName()))
+        this.getTypeConstraints().stream()
+                .map(TypeAtom::getPredicate).filter(Objects::nonNull)
                 .forEach(extraSubs::add);
 
         answers.forEach( map -> {
@@ -294,7 +291,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subs = subs.join(localSubs);
         }
 
-        QueryAnswers answers = this.propagateHeadIdPredicates(ruleHead, subs)
+        QueryAnswers answers = subs
                 .filterNonEquals(ruleBody)
                 .filterVars(ruleHead.getVarNames())
                 .filterKnown(this.getAnswers());
@@ -303,7 +300,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             answers = new ReasonerAtomicQuery(ruleHead, answers).materialise();
         }
 
-        QueryAnswers filteredAnswers = answers
+        QueryAnswers filteredAnswers = this.propagateIdPredicates(answers)
                 .filterVars(this.getVarNames())
                 .permute(this.getAtom(), ruleHead.getAtom());
         this.getAnswers().addAll(filteredAnswers);

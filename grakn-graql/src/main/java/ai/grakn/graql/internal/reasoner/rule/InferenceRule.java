@@ -98,7 +98,6 @@ public class InferenceRule {
 
         head.addAtomConstraints(predicates);
         body.addAtomConstraints(predicates);
-        head.addAtomConstraints(types.stream().filter(type -> !head.containsEquivalentAtom(type)).collect(toSet()));
         body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
     }
 
