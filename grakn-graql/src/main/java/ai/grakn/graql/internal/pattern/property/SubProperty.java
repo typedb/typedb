@@ -39,6 +39,14 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
+/**
+ * Represents the {@code sub} property on a {@link ai.grakn.concept.Type}.
+ *
+ * This property can be queried or inserted.
+ *
+ * This property relates a {@link ai.grakn.concept.Type} and another {@link ai.grakn.concept.Type}. It indicates
+ * that every instance of the left type is also an instance of the right type.
+ */
 public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     private final VarAdmin superType;

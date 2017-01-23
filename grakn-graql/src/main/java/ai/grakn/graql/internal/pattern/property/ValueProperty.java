@@ -32,6 +32,13 @@ import ai.grakn.util.ErrorMessage;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Represents the {@code value} property on a {@link ai.grakn.concept.Resource}.
+ *
+ * This property can be queried or inserted.
+ *
+ * This property matches only resources whose value matches the given {@link ValuePredicate}.
+ */
 public class ValueProperty extends AbstractVarProperty implements NamedProperty, SingleFragmentProperty {
 
     private final ValuePredicateAdmin predicate;

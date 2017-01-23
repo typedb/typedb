@@ -30,6 +30,9 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+/**
+ * Internal interface for {@link VarProperty}, providing additional methods to match, insert or delete the property.
+ */
 public interface VarPropertyInternal extends VarProperty {
 
     default void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {

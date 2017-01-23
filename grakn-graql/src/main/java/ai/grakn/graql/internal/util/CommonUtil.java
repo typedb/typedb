@@ -37,6 +37,11 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 
+/**
+ * Common utility methods used within Graql.
+ *
+ * Some of these methods are Graql-specific, others add important "missing" methods to Java/Guava classes.
+ */
 public class CommonUtil {
 
     private CommonUtil() {}

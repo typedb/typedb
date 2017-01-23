@@ -21,6 +21,9 @@ package ai.grakn.graql.internal.query.predicate;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.admin.VarAdmin;
 
+/**
+ * Factory method for {@link ValuePredicate} implementations.
+ */
 public class Predicates {
 
     private Predicates() {}
