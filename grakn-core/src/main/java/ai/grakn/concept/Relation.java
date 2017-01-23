@@ -25,10 +25,18 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A Relation represents an instance of a Relation Type, which is a concept
- * that represents how different entities relate to one another.
- * Relations are used to model n-ary relationships between instances.
-
+ * <p>
+ *     Encapsulates relationships between {@link Instance}
+ * </p>
+ *
+ * <p>
+ *     A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
+ *     It represents how different entities relate to one another.
+ *     Relations are used to model n-ary relationships between instances.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 public interface Relation extends Instance {
     //------------------------------------- Modifiers ----------------------------------
