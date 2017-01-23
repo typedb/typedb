@@ -27,20 +27,33 @@ import org.junit.Test;
 
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class MatchQueryBaseTest {
 
+    private final Conjunction<PatternAdmin> pattern1 = Patterns.conjunction(Sets.newHashSet(
+            var("x").isa("movie").admin(),
+            var().rel("x").rel("y").admin()
+    ));
+
+    private final Conjunction<PatternAdmin> pattern2 = Patterns.conjunction(Sets.newHashSet(
+            var("x").isa("movie").has("title", var("y")).admin()
+    ));
+
     @Test
     public void matchQueriesContainingTheSamePatternAreEqual() {
-        Conjunction<PatternAdmin> pattern = Patterns.conjunction(Sets.newHashSet(
-                var("x").isa("movie").admin(),
-                var().rel("x").rel("y").admin()
-        ));
-
-        MatchQueryBase query1 = new MatchQueryBase(pattern);
-        MatchQueryBase query2 = new MatchQueryBase(pattern);
+        MatchQueryBase query1 = new MatchQueryBase(pattern1);
+        MatchQueryBase query2 = new MatchQueryBase(pattern1);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
+    }
+
+    @Test
+    public void matchQueriesContainingDifferentPatternsAreNotEqual() {
+        MatchQueryBase query1 = new MatchQueryBase(pattern1);
+        MatchQueryBase query2 = new MatchQueryBase(pattern2);
+
+        assertNotEquals(query1, query2);
     }
 }
