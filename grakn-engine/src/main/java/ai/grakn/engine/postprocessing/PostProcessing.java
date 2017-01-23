@@ -33,6 +33,20 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+/**
+ * <p>
+ *     Post Processing Manager
+ * </p>
+ *
+ * <p>
+ *     This organises post processing jobs and divides them out into mutually exclusive jobs.
+ *     I.e. jobs which are unlikely to affect each other.
+ *     It then calls {@link ConceptFixer} which performs the actual fix.
+ *
+ * </p>
+ *
+ * @author fppt
+ */
 public class PostProcessing {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";

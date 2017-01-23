@@ -21,11 +21,23 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * Represents an Instance of a particular schema Type.
- * For example an Entity is an Instance of an EntityType just as a Resource is an Instance of a ResourceType.
  * <p>
- * It represents data in the graph, and allows retrieval of the Relations, RoleTypes and Resources associated
- * with the Instance.</p>
+ *     A data instance in the graph belonging to a specific {@link Type}
+ * </p>
+ *
+ * <p>
+ *     Instances represent data in the graph.
+ *     Every instance belongs to a {@link Type} which serves as a way of categorising them.
+ *     Instances can relate to one another via {@link Relation}
+ * </p>
+ *
+ * @see Entity
+ * @see Relation
+ * @see Resource
+ * @see Rule
+ *
+ * @author fppt
+ *
  */
 public interface Instance extends Concept{
     //------------------------------------- Accessors ----------------------------------
