@@ -80,7 +80,7 @@ public class StandaloneTaskManager implements TaskManager {
 
     private StandaloneTaskManager() {
         instantiatedTasks = new ConcurrentHashMap<>();
-        stateStorage = InMemoryStateStorage.getInstance();
+        stateStorage = new InMemoryStateStorage();
         stateUpdateLock = new ReentrantLock();
 
         ConfigProperties properties = ConfigProperties.getInstance();

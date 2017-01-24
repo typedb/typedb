@@ -42,12 +42,9 @@ import static org.junit.Assert.assertTrue;
 public class InMemoryStateStorageTest {
     private StateStorage stateStorage;
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
-
     @Before
     public void setUp() {
-        stateStorage = InMemoryStateStorage.getInstance();
+        stateStorage = new InMemoryStateStorage();
     }
 
     @Test

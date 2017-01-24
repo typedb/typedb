@@ -43,19 +43,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Denis Lobanov, alexandraorth
  */
 public class InMemoryStateStorage implements StateStorage {
-    private static InMemoryStateStorage instance = null;
-
     private final Map<String, SoftReference<TaskState>> storage;
 
-    private InMemoryStateStorage() {
+    public InMemoryStateStorage() {
         storage = new ConcurrentHashMap<>();
-    }
-
-    public static synchronized InMemoryStateStorage getInstance() {
-        if(instance == null) {
-            instance = new InMemoryStateStorage();
-        }
-        return instance;
     }
 
     public String newState(String taskName, String createdBy, Instant runAt, Boolean recurring, long interval, JSONObject configuration) {
