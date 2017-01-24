@@ -24,6 +24,7 @@ import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
+import spark.Spark;
 
 import java.util.function.Consumer;
 
@@ -90,6 +91,7 @@ public class GraphContext extends ExternalResource {
     @Override
     protected void after() {
         closeGraph();
+        Spark.stop();
     }
 
     private void closeGraph(){
