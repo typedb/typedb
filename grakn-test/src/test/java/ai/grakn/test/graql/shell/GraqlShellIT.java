@@ -27,6 +27,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import mjson.Json;
+import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -472,7 +473,9 @@ public class GraqlShellIT {
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintStream out = new PrintStream(bout);
-        PrintStream err = new PrintStream(berr);
+
+        // Intercept stderr, but make sure it is still printed using the TeeOutputStream
+        PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
 
         try {
             System.setIn(in);
