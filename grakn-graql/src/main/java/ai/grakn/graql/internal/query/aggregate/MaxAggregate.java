@@ -51,4 +51,19 @@ class MaxAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<VarNam
     private T getValue(Map<VarName, Concept> result) {
         return result.get(varName).<T>asResource().getValue();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MaxAggregate<?> that = (MaxAggregate<?>) o;
+
+        return varName.equals(that.varName);
+    }
+
+    @Override
+    public int hashCode() {
+        return varName.hashCode();
+    }
 }

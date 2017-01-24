@@ -59,4 +59,19 @@ class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> {
     public String toString() {
         return "(" + aggregates.stream().map(Object::toString).collect(Collectors.joining(", ")) + ")";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SelectAggregate<?, ?> that = (SelectAggregate<?, ?>) o;
+
+        return aggregates.equals(that.aggregates);
+    }
+
+    @Override
+    public int hashCode() {
+        return aggregates.hashCode();
+    }
 }
