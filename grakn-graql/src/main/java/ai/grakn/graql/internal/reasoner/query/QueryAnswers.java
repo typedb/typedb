@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -40,6 +41,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -139,6 +141,27 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         if(filters.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers(this);
         for (NotEquals filter : filters) results = filter.filter(results);
+        return results;
+    }
+
+    public QueryAnswers filterByEntityTypes(Set<VarName> vars, Map<VarName, Type> varTypeMap){
+        QueryAnswers results = new QueryAnswers();
+        if(this.isEmpty()) return results;
+        Map<VarName, Type> filteredMap = varTypeMap.entrySet().stream()
+                .filter(e -> vars.contains(e.getKey()))
+                .filter(e -> Objects.nonNull(e.getValue()))
+                .filter(e -> e.getValue().isEntityType())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (filteredMap.isEmpty()) return this;
+        this.forEach(answer -> {
+            boolean isCompatible = true;
+            Iterator<Map.Entry<VarName, Type>> it = filteredMap.entrySet().iterator();
+            while( it.hasNext() && isCompatible){
+                Map.Entry<VarName, Type> entry = it.next();
+                isCompatible = answer.get(entry.getKey()).asInstance().type().equals(entry.getValue());
+            }
+            if (isCompatible) results.add(answer);
+        });
         return results;
     }
 

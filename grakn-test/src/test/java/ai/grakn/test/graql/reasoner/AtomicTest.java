@@ -142,7 +142,7 @@ public class AtomicTest {
     @Test
     public void testRoleInference3(){
         GraknGraph graph = cwGraph.graph();
-        String patternString = "{(buyer: $y, $y, transaction-item: $x), isa transaction;}";
+        String patternString = "{(buyer: $y, seller: $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
         Map<RoleType, Pair<VarName, Type>> roleMap = query.getAtom().getRoleVarTypeMap();
 
@@ -150,14 +150,15 @@ public class AtomicTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
         Map<RoleType, Pair<VarName, Type>> roleMap2 = query2.getAtom().getRoleVarTypeMap();
 
-        String patternString3 = "{(buyer: $y, seller: $y, transaction-item: $x), isa transaction;}";
+        String patternString3 = "{(buyer: $y, $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(conjunction(patternString3, graph), graph);
         Map<RoleType, Pair<VarName, Type>> roleMap3 = query3.getAtom().getRoleVarTypeMap();
 
         assertEquals(3, roleMap.size());
         assertEquals(3, roleMap2.size());
         assertEquals(3, roleMap3.size());
-        assertEquals(roleMap.keySet(), roleMap2.keySet());
+        assertEquals(roleMap, roleMap2);
+        assertEquals(roleMap2, roleMap3);
     }
 
     @Test
