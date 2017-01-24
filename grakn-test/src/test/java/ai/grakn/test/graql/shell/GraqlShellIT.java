@@ -372,7 +372,7 @@ public class GraqlShellIT {
     public void fuzzTest() throws Exception {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
-            testShell(randomString(i));
+            testShellAllowErrors(randomString(i));
         }
     }
 
@@ -466,6 +466,11 @@ public class GraqlShellIT {
         String errMessage = err.toString();
         assertTrue("Error: \"" + errMessage + "\"", errMessage.isEmpty());
         return result;
+    }
+
+    private String testShellAllowErrors(String input, String... args) throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        return testShell(input, err, args);
     }
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
