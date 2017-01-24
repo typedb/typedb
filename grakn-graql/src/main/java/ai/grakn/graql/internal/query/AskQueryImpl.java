@@ -74,4 +74,19 @@ class AskQueryImpl implements AskQueryAdmin {
     public MatchQuery getMatchQuery() {
         return matchQuery;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AskQueryImpl askQuery = (AskQueryImpl) o;
+
+        return matchQuery.equals(askQuery.matchQuery);
+    }
+
+    @Override
+    public int hashCode() {
+        return matchQuery.hashCode();
+    }
 }
