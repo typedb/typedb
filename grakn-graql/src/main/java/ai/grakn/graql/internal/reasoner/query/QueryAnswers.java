@@ -62,7 +62,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
     public QueryAnswers(){super();}
     public QueryAnswers(Collection<? extends Map<VarName, Concept>> ans){ super(ans);}
 
-    public Set<VarName> getVars(){
+    private Set<VarName> getVars(){
         Optional<Map<VarName, Concept>> map = this.stream().findFirst();
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
