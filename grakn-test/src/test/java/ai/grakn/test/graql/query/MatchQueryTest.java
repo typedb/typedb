@@ -18,13 +18,13 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
@@ -797,7 +797,7 @@ public class MatchQueryTest {
 
         assertThat(types, allOf(hasItem("movie"), not(hasItem("has-title"))));
 
-        GraknGraph graph2 = Grakn.factory(Grakn.DEFAULT_URI, movieGraph.graph().getKeyspace()).getGraph();
+        GraknGraph graph2 = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(movieGraph.graph().getKeyspace());
         Set<String> typesAgain = graph2.graql().match(var("x").sub("concept")).get("x").map(type -> type.asType().getName().getValue()).collect(toSet());
 
         assertEquals(types, typesAgain);
