@@ -50,7 +50,7 @@ public class DeleteQueryImplTest {
     }
 
     @Test
-    public void askQueriesWithDifferentMatchQueriesAreDifferent() {
+    public void deleteQueriesWithDifferentMatchQueriesAreDifferent() {
         DeleteQuery query1 = new DeleteQueryImpl(deleters1, match1);
         DeleteQuery query2 = new DeleteQueryImpl(deleters1, match2);
 
