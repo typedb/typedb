@@ -19,7 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.GraphFactory;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
@@ -27,6 +27,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
+/**
+ * <p>
+ *     Post processing concept fixer
+ * </p>
+ *
+ * <p>
+ *     Executes the post processing protocols. At the moment this includes merging duplicate castings and duplicate
+ *     resources.
+ * </p>
+ *
+ * @author fppt
+ */
 class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final int MAX_RETRY = 10;
@@ -35,7 +47,7 @@ class ConceptFixer {
         boolean notDone = true;
         int retry = 0;
         while (notDone) {
-            try (AbstractGraknGraph graph = (AbstractGraknGraph) GraphFactory.getInstance().getGraph(keyspace)) {
+            try (AbstractGraknGraph graph = (AbstractGraknGraph) EngineGraknGraphFactory.getInstance().getGraph(keyspace)) {
                 if (graph.fixDuplicateCasting(castingId)) {
                     graph.commit(false);
                 }
@@ -58,7 +70,7 @@ class ConceptFixer {
         int retry = 0;
 
         while (notDone) {
-            try(AbstractGraknGraph graph = (AbstractGraknGraph) GraphFactory.getInstance().getGraph(keyspace))  {
+            try(AbstractGraknGraph graph = (AbstractGraknGraph) EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
                 if (graph.fixDuplicateResources(resourceIds)) {
                     graph.commit(false);
                 }

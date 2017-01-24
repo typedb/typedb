@@ -26,10 +26,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
@@ -57,7 +55,6 @@ import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
-    private static final int numberOfOntologyChecks = 10;
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
@@ -163,61 +160,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             if (instance == null || !subTypeNames.contains(instance.type().getName())) return false;
         }
         return true;
-    }
-
-    void mutateResourceOntology(TypeName resourceTypeName, ResourceType.DataType<?> resourceDataType) {
-        GraknGraph theGraph = this.graph.get();
-
-        ResourceType resource = theGraph.putResourceType(resourceTypeName, resourceDataType);
-        for (TypeName type : subTypeNames) {
-            theGraph.getType(type).hasResource(resource);
-        }
-
-        try {
-            theGraph.commit();
-        } catch (GraknValidationException e) {
-            throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()), e);
-        }
-    }
-
-    void waitOnMutateResourceOntology(TypeName resourceTypeName) {
-        GraknGraph theGraph = this.graph.get();
-        theGraph.showImplicitConcepts(true);
-
-        for (int i = 0; i < numberOfOntologyChecks; i++) {
-            boolean isOntologyComplete = true;
-            try {
-                theGraph.rollback();
-            } catch (UnsupportedOperationException ignored) {
-                // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
-            }
-
-            ResourceType resource = theGraph.getType(resourceTypeName);
-            if (resource == null) continue;
-            RoleType degreeOwner = theGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
-            if (degreeOwner == null) continue;
-            RoleType degreeValue = theGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
-            if (degreeValue == null) continue;
-            RelationType relationType = theGraph.getType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName));
-            if (relationType == null) continue;
-
-            for (TypeName type : subTypeNames) {
-                Collection<RoleType> roles = theGraph.getType(type).playsRoles();
-                if (!roles.contains(degreeOwner)) {
-                    isOntologyComplete = false;
-                    break;
-                }
-            }
-
-            if (isOntologyComplete) {
-                theGraph.showImplicitConcepts(false);
-                return;
-            }
-        }
-        theGraph.showImplicitConcepts(false);
-        throw new RuntimeException(
-                ErrorMessage.ONTOLOGY_MUTATION
-                        .getMessage("Failed to confirm ontology is present after mutation."));
     }
 
     abstract String graqlString();

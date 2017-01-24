@@ -20,16 +20,12 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.DegreeQuery;
-import ai.grakn.graql.internal.analytics.DegreeAndPersistVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
@@ -37,31 +33,27 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.analytics.CommonOLAP.analyticsElements;
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static java.util.stream.Collectors.joining;
 
-class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<T> {
+class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> implements DegreeQuery {
 
-    private boolean persist = false;
     private boolean ofTypeNamesSet = false;
     private Set<TypeName> ofTypeNames = new HashSet<>();
-    private TypeName degreeName = Schema.Analytics.DEGREE.getName();
 
     DegreeQueryImpl(Optional<GraknGraph> graph) {
         this.graph = graph;
     }
 
     @Override
-    public T execute() {
-        if (persist) LOGGER.info("DegreeAndPersistVertexProgram is called");
-        else LOGGER.info("DegreeVertexProgram is called");
+    public Map<Long, Set<String>> execute() {
+        LOGGER.info("DegreeVertexProgram is called");
         initSubGraph();
-        if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
+        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         ofTypeNames.forEach(type -> {
             if (!subTypeNames.contains(type)) {
                 throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
@@ -79,45 +71,30 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
             ofTypeNames.addAll(subTypeNames);
         }
 
-        if (persist) {
-            if (!Sets.intersection(subTypeNames, analyticsElements).isEmpty()) {
-                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                        .getMessage(this.getClass().toString()));
-            }
-            mutateResourceOntology(degreeName, ResourceType.DataType.LONG);
-            waitOnMutateResourceOntology(degreeName);
-            computer.compute(new DegreeAndPersistVertexProgram(withResourceRelationTypes, ofTypeNames,
-                    keySpace, degreeName));
+        result = computer.compute(new DegreeVertexProgram(withResourceRelationTypes, ofTypeNames),
+                new DegreeDistributionMapReduce(ofTypeNames));
 
-            LOGGER.info("DegreeAndPersistVertexProgram is done");
-            return (T) "Degrees have been persisted";
-
-        } else {
-            result = computer.compute(new DegreeVertexProgram(withResourceRelationTypes, ofTypeNames),
-                    new DegreeDistributionMapReduce(ofTypeNames));
-
-            LOGGER.info("DegreeVertexProgram is done");
-            return (T) result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
-        }
+        LOGGER.info("DegreeVertexProgram is done");
+        return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 
     @Override
     public boolean isReadOnly() {
-        return !persist;
+        return true;
     }
 
     @Override
-    public DegreeQuery<T> in(String... subTypeNames) {
-        return (DegreeQuery<T>) super.in(subTypeNames);
+    public DegreeQuery in(String... subTypeNames) {
+        return (DegreeQuery) super.in(subTypeNames);
     }
 
     @Override
-    public DegreeQuery<T> in(Collection<TypeName> subTypeNames) {
-        return (DegreeQuery<T>) super.in(subTypeNames);
+    public DegreeQuery in(Collection<TypeName> subTypeNames) {
+        return (DegreeQuery) super.in(subTypeNames);
     }
 
     @Override
-    public DegreeQuery<T> of(String... ofTypeNames) {
+    public DegreeQuery of(String... ofTypeNames) {
         if (ofTypeNames.length > 0) {
             ofTypeNamesSet = true;
             this.ofTypeNames = Arrays.stream(ofTypeNames).map(TypeName::of).collect(Collectors.toSet());
@@ -126,7 +103,7 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     }
 
     @Override
-    public DegreeQuery<T> of(Collection<TypeName> ofTypeNames) {
+    public DegreeQuery of(Collection<TypeName> ofTypeNames) {
         if (!ofTypeNames.isEmpty()) {
             ofTypeNamesSet = true;
             this.ofTypeNames = Sets.newHashSet(ofTypeNames);
@@ -137,27 +114,17 @@ class DegreeQueryImpl<T> extends AbstractComputeQuery<T> implements DegreeQuery<
     @Override
     String graqlString() {
         String string = "degrees";
-
         if (ofTypeNamesSet) {
-            string += " of " + ofTypeNames.stream().map(StringConverter::typeNameToString).collect(joining(", "));
+            string += " of " + ofTypeNames.stream()
+                    .map(StringConverter::typeNameToString)
+                    .collect(joining(", "));
         }
-
         string += subtypeString();
-
-        if (persist) {
-            string += " persist";
-            if (!degreeName.equals(Schema.Analytics.DEGREE.getName())) {
-                string += " " + typeNameToString(degreeName);
-            }
-            string += ";";
-        }
-
         return string;
     }
 
     @Override
-    public DegreeQuery<T> withGraph(GraknGraph graph) {
-        return (DegreeQuery<T>) super.withGraph(graph);
+    public DegreeQuery withGraph(GraknGraph graph) {
+        return (DegreeQuery) super.withGraph(graph);
     }
-
 }

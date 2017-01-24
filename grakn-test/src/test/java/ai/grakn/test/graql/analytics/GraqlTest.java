@@ -38,7 +38,6 @@ import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
@@ -95,9 +94,6 @@ public class GraqlTest {
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
-        logger.setLevel(Level.DEBUG);
     }
 
     @Test
@@ -113,7 +109,7 @@ public class GraqlTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        Map<Long, Set<String>> degrees = qb.<DegreeQuery<Map<Long, Set<String>>>>parse("compute degrees;").execute();
+        Map<Long, Set<String>> degrees = qb.<DegreeQuery>parse("compute degrees;").execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entityId1, 1L);

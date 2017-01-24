@@ -30,7 +30,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.HasRole;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
 
@@ -113,10 +113,9 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
         VarName varName = var.getVarName();
         VarAdmin roleVar = this.getRole();
         VarName roleVariable = roleVar.getVarName();
-        IdPredicate relPredicate = getIdPredicate(varName, var, vars, parent);
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
         VarAdmin hrVar = Graql.var(varName).hasRole(Graql.var(roleVariable)).admin();
-        return new HasRole(hrVar, relPredicate, rolePredicate, parent);
+        return new TypeAtom(hrVar, rolePredicate, parent);
     }
 }

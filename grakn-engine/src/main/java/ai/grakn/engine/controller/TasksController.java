@@ -65,6 +65,9 @@ public class TasksController {
     private ClusterManager manager;
 
     public TasksController(ClusterManager manager) {
+        if (manager==null) {
+            throw new GraknEngineServerException(500,"Cluster manager has not been instantiated.");
+        }
         this.manager = manager;
 
         get(ALL_TASKS_URI, this::getTasks);

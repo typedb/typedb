@@ -49,9 +49,8 @@
                 <include>grakn-graql/**</include>
                 <include>grakn-graql-shell/**</include>
                 <include>grakn-migration/**</include>
-                <include>grakn-orientdb-factory/**</include>
                 <include>grakn-test/**</include>
-                <include>grakn-titan-factory/**</include>
+                <include>grakn-factory/**</include>
             </includes>
             <excludes>
                 <exclude>**/target/</exclude>

@@ -29,7 +29,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.GraphContext;
 import ch.qos.logback.classic.Level;
@@ -66,9 +65,6 @@ public class DegreeTest {
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
     }
 

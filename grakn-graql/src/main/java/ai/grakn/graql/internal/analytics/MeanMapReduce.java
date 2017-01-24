@@ -33,6 +33,7 @@ public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
     public static final String COUNT = "C";
     public static final String SUM = "S";
 
+    // Needed internally for OLAP tasks
     public MeanMapReduce() {
     }
 

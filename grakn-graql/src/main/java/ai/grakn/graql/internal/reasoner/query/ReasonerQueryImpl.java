@@ -320,15 +320,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return id predicate for the specified var name if any
      */
     public IdPredicate getIdPredicate(VarName var) {
-        //direct
         Set<IdPredicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
-        //indirect
-        getTypeConstraints().stream()
-                .filter(type -> type.getVarName().equals(var))
-                .forEach(type -> type.getPredicates().stream().findFirst().
-                        ifPresent(predicate -> relevantSubs.add((IdPredicate) predicate)));
         return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
     }
 

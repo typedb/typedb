@@ -344,25 +344,25 @@ public class Relation extends TypeAtom {
         if (getPredicate() == null && getParentQuery() != null) {
             ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
             VarName valueVariable = getValueVariable();
-            HasRole hrAtom = parent.getAtoms().stream()
+            TypeAtom hrAtom = parent.getAtoms().stream()
                     .filter(at -> at.getVarName().equals(valueVariable))
-                    .filter(at -> at instanceof HasRole).map(at -> (HasRole) at)
+                    .filter(Atomic::isAtom).map(at -> (Atom) at)
+                    .filter(Atom::isType).map(at -> (TypeAtom) at)
                     .findFirst().orElse(null);
             if (hrAtom != null) {
                 ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
                 hrQuery.DBlookup();
-                if (hrQuery.getAnswers().size() != 1) {
-                    throw new IllegalStateException("ambigious answer to has-role query");
-                }
-                IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
-                        hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
+                if (hrQuery.getAnswers().size() == 1) {
+                    IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
+                            hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
 
-                Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
-                parent.removeAtom(hrAtom.getPredicate());
-                parent.removeAtom(hrAtom);
-                parent.removeAtom(this);
-                parent.addAtom(newRelation);
-                parent.addAtom(newPredicate);
+                    Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
+                    parent.removeAtom(hrAtom.getPredicate());
+                    parent.removeAtom(hrAtom);
+                    parent.removeAtom(this);
+                    parent.addAtom(newRelation);
+                    parent.addAtom(newPredicate);
+                }
             }
         }
     }

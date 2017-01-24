@@ -39,7 +39,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
 
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
-    public static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
 
     public GraknMapReduce(Set<TypeName> selectedTypes) {
         this.selectedTypes = selectedTypes;
@@ -87,7 +86,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     @Override
     public String getMemoryKey() {
-        return MAP_REDUCE_MEMORY_KEY;
+        return this.getClass().getName();
     }
 
     // super.clone() will always return something of the correct type

@@ -23,8 +23,20 @@ package ai.grakn.concept;
 import java.util.Collection;
 
 /**
- * A Resource is the Concept that represents a resource associated with one or more Instances. 
- * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
+ * <p>
+ *     Represent a literal resource in the graph.
+ * </p>
+ *
+ * <p>
+ *     Acts as an {@link Instance} when relating to other instances except it has the added functionality of:
+ *     1. It is unique to its {@link ResourceType} based on it's value.
+ *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
+ * </p>
+ *
+ * @author fppt
+ *
+ * @param <D> The data type of this resource type.
+ *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public interface Resource<D> extends Instance{
     //------------------------------------- Accessors ----------------------------------
