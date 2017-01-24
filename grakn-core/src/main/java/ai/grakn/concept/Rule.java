@@ -23,7 +23,18 @@ import ai.grakn.graql.Pattern;
 import java.util.Collection;
 
 /**
- * A Rule represents an instance of a Rule-Type, which is used to make inferences over the data.
+ * <p>
+ *     A rule which defines how implicit knowledge can extracted.
+ * </p>
+ *
+ * <p>
+ *     It can behave like any other {@link Instance} but primarily serves as a way of extracting
+ *     implicit data from the graph. By defining the LHS (if statment) and RHS (then conclusion) it is possible to
+ *     automatically materialise new concepts based on these rules.
+ * </p>
+ *
+ * @author fppt
+ *
  */
 public interface Rule extends Instance{
     //------------------------------------- Modifiers ----------------------------------

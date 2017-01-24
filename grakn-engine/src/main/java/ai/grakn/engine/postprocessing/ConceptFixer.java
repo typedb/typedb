@@ -27,6 +27,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
+/**
+ * <p>
+ *     Post processing concept fixer
+ * </p>
+ *
+ * <p>
+ *     Executes the post processing protocols. At the moment this includes merging duplicate castings and duplicate
+ *     resources.
+ * </p>
+ *
+ * @author fppt
+ */
 class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final int MAX_RETRY = 10;

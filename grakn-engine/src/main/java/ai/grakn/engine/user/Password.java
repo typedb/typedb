@@ -32,12 +32,17 @@ import java.util.Base64;
 import java.util.Random;
 
 /**
- * A helper class for generating secure passwords based on random salts
- * The algorithm used is PBKDF2WithHmacSHA1 <a href="http://security.stackexchange.com/a/6415/12614"> recommended by NIST </a>.
- * The hashed value has 256 bits.
+ * <p>
+ *     A utility class for hashing user passwords
+ * </p>
+ *
+ * <p>
+ *     A helper class for generating secure passwords based on random salts
+ *     The algorithm used is PBKDF2WithHmacSHA1 <a href="http://security.stackexchange.com/a/6415/12614"> recommended by NIST </a>.
+ *     The hashed value has 256 bits.
+ * </p>
  *
  * @author fppt
- *
  */
 public class Password {
     private static final Random RANDOM = new SecureRandom();

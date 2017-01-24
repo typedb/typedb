@@ -78,8 +78,8 @@ public class GraknEngineServer {
     private static ClusterManager clusterManager;
 
     public static void main(String[] args) {
-        startHTTP();
         startCluster();
+        startHTTP();
         startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
