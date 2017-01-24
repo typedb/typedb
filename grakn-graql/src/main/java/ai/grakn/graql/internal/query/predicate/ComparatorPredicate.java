@@ -35,7 +35,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_CLASSES;
 import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
+import static ai.grakn.util.ErrorMessage.UNSUPPORTED_RESOURCE_VALUE;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
@@ -57,6 +59,11 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             this.value = Optional.empty();
             this.var = Optional.of((VarAdmin) value);
         } else {
+            if (SUPPORTED_CLASSES.stream().noneMatch(type -> type.isInstance(value))) {
+                String message = UNSUPPORTED_RESOURCE_VALUE.getMessage(value, value.getClass().getName());
+                throw new IllegalArgumentException(message);
+            }
+
             this.value = Optional.of(value);
             this.var = Optional.empty();
         }
@@ -68,6 +75,14 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     ComparatorPredicate(Var var) {
         this.value = Optional.empty();
         this.var = Optional.of(var.admin());
+    }
+
+    protected Optional<Object> getValue() {
+        return value;
+    }
+
+    protected Optional<VarAdmin> getVar() {
+        return var;
     }
 
     protected abstract String getSymbol();

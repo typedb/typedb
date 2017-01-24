@@ -68,6 +68,7 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
+import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -389,7 +390,7 @@ public class MatchQueryTest {
 
     @Test
     public void testHasReleaseDate() {
-        MatchQuery query = qb.match(var("x").has("release-date"));
+        MatchQuery query = qb.match(var("x").has("release-date", var()));
         assertEquals(4, query.stream().count());
         assertTrue(query.stream().map(results -> results.get("x")).allMatch(
                 x -> x.asEntity().resources().stream().anyMatch(
@@ -668,7 +669,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchAllResources() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").has(var("x")));
+        MatchQuery query = qb.match(var().has("title", "Godfather").has(RESOURCE.getName(), var("x")));
 
         Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());

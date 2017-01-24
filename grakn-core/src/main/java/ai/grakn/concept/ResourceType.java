@@ -21,6 +21,7 @@ package ai.grakn.concept;
 
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
@@ -160,10 +161,18 @@ public interface ResourceType<D> extends Type {
      * @param <D> The data type.
      */
     class DataType<D> {
-        public static final DataType<String> STRING = new DataType<>(String.class.getName(), Schema.ConceptProperty.VALUE_STRING);
-        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class.getName(), Schema.ConceptProperty.VALUE_BOOLEAN);
-        public static final DataType<Long> LONG = new DataType<>(Long.class.getName(), Schema.ConceptProperty.VALUE_LONG);
-        public static final DataType<Double> DOUBLE = new DataType<>(Double.class.getName(), Schema.ConceptProperty.VALUE_DOUBLE);
+        public static final DataType<String> STRING = new DataType<>(String.class, Schema.ConceptProperty.VALUE_STRING);
+        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class, Schema.ConceptProperty.VALUE_BOOLEAN);
+        public static final DataType<Long> LONG = new DataType<>(Long.class, Schema.ConceptProperty.VALUE_LONG);
+        public static final DataType<Double> DOUBLE = new DataType<>(Double.class, Schema.ConceptProperty.VALUE_DOUBLE);
+
+        public static final ImmutableSet<Class<?>> SUPPORTED_CLASSES = ImmutableSet.of(
+                STRING.getType(),
+                BOOLEAN.getType(),
+                LONG.getType(),
+                DOUBLE.getType(),
+                Integer.class
+        );
 
         public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.of(
                 STRING.getName(), STRING,
@@ -173,16 +182,20 @@ public interface ResourceType<D> extends Type {
                 Integer.class.getName(), LONG
         );
 
-        private final String dataType;
+        private final Class<?> clazz;
         private final Schema.ConceptProperty conceptProperty;
 
-        private DataType(String dataType, Schema.ConceptProperty conceptProperty){
-            this.dataType = dataType;
+        private DataType(Class<?> clazz, Schema.ConceptProperty conceptProperty){
+            this.clazz = clazz;
             this.conceptProperty = conceptProperty;
         }
 
+        public Class<?> getType() {
+            return clazz;
+        }
+
         public String getName(){
-            return dataType;
+            return clazz.getName();
         }
 
         public Schema.ConceptProperty getConceptProperty(){
