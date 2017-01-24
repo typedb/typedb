@@ -19,6 +19,7 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.util.ConfigProperties;
@@ -26,6 +27,7 @@ import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
 import spark.Spark;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
@@ -43,6 +45,7 @@ public class GraphContext extends ExternalResource {
     private Consumer<GraknGraph> preLoad;
     private String[] files;
 
+    private final static AtomicInteger numberActiveContexts = new AtomicInteger(0);
 
     private GraphContext(Consumer<GraknGraph> build, String[] files){
         this.preLoad = build;
@@ -81,7 +84,10 @@ public class GraphContext extends ExternalResource {
 
         //TODO remove when Bug #12029 fixed
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, StandaloneTaskManager.class.getName());
-        new CommitLogController();
+        if (numberActiveContexts.getAndIncrement() == 0) {
+            new CommitLogController();
+            Spark.awaitInitialization();
+        }
         //TODO finish remove
 
         // create the graph
@@ -91,7 +97,9 @@ public class GraphContext extends ExternalResource {
     @Override
     protected void after() {
         closeGraph();
-        Spark.stop();
+        if (numberActiveContexts.decrementAndGet() == 0) {
+            GraknEngineServer.stopHTTP();
+        }
     }
 
     private void closeGraph(){
