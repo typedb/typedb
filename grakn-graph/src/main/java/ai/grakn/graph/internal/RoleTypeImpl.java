@@ -70,7 +70,10 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<Type> playedByTypes() {
-        return getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE);
+        Set<Type> playedBy = new HashSet<>();
+        getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).
+                forEach(concept -> playedBy.addAll(concept.asType().subTypes()));
+        return playedBy;
     }
 
     /**

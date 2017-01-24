@@ -71,7 +71,6 @@
         <orientdb.version>3.2.3.0</orientdb.version>
         <orientdb-gremlin-core.version>3.2.1</orientdb-gremlin-core.version>
         <logback.version>1.1.7</logback.version>
-        <junit.version>4.11</junit.version>
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
         <cassandra-unit.version>2.1.9.2</cassandra-unit.version>

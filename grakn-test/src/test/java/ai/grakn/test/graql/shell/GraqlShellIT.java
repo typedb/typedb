@@ -374,7 +374,7 @@ public class GraqlShellIT {
         for (int i = 0; i < repeats; i ++) {
             String input = randomString(i);
             try {
-                testShell(input);
+                testShellAllowErrors(input);
             } catch (Throwable e) {
                 // We catch all exceptions so we can report exactly what input caused the error
                 throw new RuntimeException("Error when providing the following input to shell: [" + input + "]", e);
@@ -472,6 +472,11 @@ public class GraqlShellIT {
         String errMessage = err.toString();
         assertTrue("Error: \"" + errMessage + "\"", errMessage.isEmpty());
         return result;
+    }
+
+    private String testShellAllowErrors(String input, String... args) throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        return testShell(input, err, args);
     }
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
