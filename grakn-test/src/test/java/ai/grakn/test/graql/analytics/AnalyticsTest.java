@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -28,12 +29,12 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Map;
@@ -47,13 +48,16 @@ import static org.junit.Assume.assumeFalse;
 
 public class AnalyticsTest {
 
-    @Rule
-    public final GraphContext context = GraphContext.empty();
+    @ClassRule
+    public static final EngineContext context = EngineContext.startServer();
+    private GraknGraph graph;
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
+
+        graph = context.graphWithNewKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -68,21 +72,21 @@ public class AnalyticsTest {
         assumeFalse(usingTinker());
 
         TypeName resourceTypeName = TypeName.of("degree");
-        ResourceType<Long> degree = context.graph().putResourceType(resourceTypeName, ResourceType.DataType.LONG);
-        EntityType thing = context.graph().putEntityType("thing");
+        ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
+        EntityType thing = graph.putEntityType("thing");
         thing.hasResource(degree);
 
         Entity thisThing = thing.addEntity();
         Resource thisResource = degree.putResource(1L);
         thisThing.hasResource(thisResource);
-        context.graph().commit();
+        graph.commit();
 
         Map<Long, Set<String>> degrees;
-        degrees = context.graph().graql().compute().degree().of("thing").in("thing", "degree").execute();
+        degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
         assertEquals(1, degrees.size());
         assertEquals(1, degrees.get(1L).size());
 
-        degrees = context.graph().graql().compute().degree().in("thing", "degree").execute();
+        degrees = graph.graql().compute().degree().in("thing", "degree").execute();
         assertEquals(1, degrees.size());
         assertEquals(2, degrees.get(1L).size());
     }
@@ -94,23 +98,23 @@ public class AnalyticsTest {
 
         // make slightly odd graph
         TypeName resourceTypeId = TypeName.of("degree");
-        EntityType thing = context.graph().putEntityType("thing");
+        EntityType thing = graph.putEntityType("thing");
 
-        context.graph().putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-        RoleType degreeOwner = context.graph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
-        RoleType degreeValue = context.graph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
-        RelationType relationType = context.graph().putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
+        graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
         thing.playsRole(degreeOwner);
 
         Entity thisThing = thing.addEntity();
         relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
-        context.graph().commit();
+        graph.commit();
 
         // the null role-player caused analytics to fail at some stage
         try {
-            context.graph().graql().compute().degree().execute();
+            graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();

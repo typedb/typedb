@@ -372,7 +372,13 @@ public class GraqlShellIT {
     public void fuzzTest() throws Exception {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
-            testShellAllowErrors(randomString(i));
+            String input = randomString(i);
+            try {
+                testShellAllowErrors(input);
+            } catch (Throwable e) {
+                // We catch all exceptions so we can report exactly what input caused the error
+                throw new RuntimeException("Error when providing the following input to shell: [" + input + "]", e);
+            }
         }
     }
 
