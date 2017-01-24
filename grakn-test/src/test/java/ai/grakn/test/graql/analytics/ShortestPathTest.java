@@ -11,12 +11,12 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -53,15 +53,15 @@ public class ShortestPathTest {
 
     public GraknGraph graph;
 
-    @Rule
-    public GraphContext rule = GraphContext.empty();
+    @ClassRule
+    public static EngineContext rule = EngineContext.startServer();
 
     @Before
     public void setUp() {
         // TODO: Fix tests in orientdb
         assumeFalse(usingOrientDB());
 
-        graph = rule.graph();
+        graph = rule.graphWithNewKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
