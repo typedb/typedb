@@ -42,12 +42,12 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov, Alexandra Orth
  *
  */
-public class SynchronizedStateStorage {
+public class ZookeeperStateStorage {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
 
     private final CuratorFramework zookeeperConnection = ConfigHelper.client();
 
-    public SynchronizedStateStorage() throws Exception {
+    public ZookeeperStateStorage() throws Exception {
         zookeeperConnection.start();
         zookeeperConnection.blockUntilConnected();
 

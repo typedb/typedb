@@ -24,7 +24,7 @@ import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -55,9 +55,9 @@ public class DistributedTaskManager implements TaskManager {
 
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
-    private SynchronizedStateStorage zkStorage;
+    private ZookeeperStateStorage zkStorage;
 
-    public DistributedTaskManager(SynchronizedStateStorage zkStorage) {
+    public DistributedTaskManager(ZookeeperStateStorage zkStorage) {
         if(OPENED.compareAndSet(false, true)) {
             try {
                 noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");

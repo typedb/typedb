@@ -21,7 +21,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -61,9 +61,9 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private TreeCache cache;
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
-    private SynchronizedStateStorage synchronizedStateStorage;
+    private ZookeeperStateStorage zookeeperStateStorage;
 
-    public TaskFailover(CuratorFramework client, TreeCache cache, SynchronizedStateStorage synchronizedStateStorage) throws Exception {
+    public TaskFailover(CuratorFramework client, TreeCache cache, ZookeeperStateStorage zookeeperStateStorage) throws Exception {
         if(OPENED.compareAndSet(false, true)) {
             this.cache = cache;
             current = cache.getCurrentChildren(RUNNERS_WATCH);
@@ -71,7 +71,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
 
             stateStorage = new GraknStateStorage();
 
-            this.synchronizedStateStorage = synchronizedStateStorage;
+            this.zookeeperStateStorage = zookeeperStateStorage;
 
             scanStaleStates(client);
         }
@@ -144,7 +144,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             String id = (String)o;
 
             // Mark task as SCHEDULED again.
-            synchronizedStateStorage.updateState(id, SCHEDULED, "", null);
+            zookeeperStateStorage.updateState(id, SCHEDULED, "", null);
 
             String configuration = stateStorage.getState(id)
                                                .configuration()
@@ -163,7 +163,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         Set<String> deadRunners = new HashSet<>();
 
         for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
-            SynchronizedState state = synchronizedStateStorage.getState(id);
+            SynchronizedState state = zookeeperStateStorage.getState(id);
 
             if(state.status() != RUNNING) {
                 break;

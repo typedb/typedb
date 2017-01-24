@@ -23,7 +23,7 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -83,12 +83,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private StateStorage graknStorage;
-    private final SynchronizedStateStorage zkStorage;
+    private final ZookeeperStateStorage zkStorage;
     private KafkaConsumer<String, String> consumer;
     private volatile boolean running;
     private boolean initialised = false;
 
-    public TaskRunner(SynchronizedStateStorage zkStorage) throws Exception {
+    public TaskRunner(ZookeeperStateStorage zkStorage) throws Exception {
         this.zkStorage = zkStorage;
 
         if(OPENED.compareAndSet(false, true)) {
