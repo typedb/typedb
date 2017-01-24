@@ -24,7 +24,7 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -54,7 +54,7 @@ import static org.junit.Assume.assumeFalse;
 public class TaskRunnerTest {
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
-    private SynchronizedStateStorage zkStorage;
+    private ZookeeperStateStorage zkStorage;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();

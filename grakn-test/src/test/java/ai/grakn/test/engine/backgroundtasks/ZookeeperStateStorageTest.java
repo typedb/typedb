@@ -18,9 +18,8 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -32,8 +31,8 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static org.junit.Assert.*;
 
-public class SynchronizedStateStorageTest {
-    private SynchronizedStateStorage stateStorage;
+public class ZookeeperStateStorageTest {
+    private ZookeeperStateStorage stateStorage;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();

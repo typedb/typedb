@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.EngineID;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -58,7 +58,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private Thread schedulerThread;
 
     private DistributedTaskManager taskManager;
-    private SynchronizedStateStorage zookeeperStorage;
+    private ZookeeperStateStorage zookeeperStorage;
     private LeaderSelector leaderSelector;
     private Scheduler scheduler;
     private TreeCache cache;
@@ -128,7 +128,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     /**
      * Get the Zookeeper storage connection for this machine
      */
-    public SynchronizedStateStorage getStorage(){
+    public ZookeeperStateStorage getStorage(){
         return zookeeperStorage;
     }
 
@@ -195,7 +195,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      * @throws Exception If there was a problem instantiating connection to Zookeeper
      */
     private void startZookeeperConnection() throws Exception{
-        zookeeperStorage = new SynchronizedStateStorage();
+        zookeeperStorage = new ZookeeperStateStorage();
     }
 
     /**
