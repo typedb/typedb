@@ -345,7 +345,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         public QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
             this.rules = outer().getAtom().getApplicableRules();
-            LOG.debug("applicable rules: " + rules.size());
+            LOG.debug("Atom: " + outer().getAtom() + " applicable rules: " + rules.size());
             lookup(cache);
             this.answerIterator = outer().newAnswers.iterator();
         }

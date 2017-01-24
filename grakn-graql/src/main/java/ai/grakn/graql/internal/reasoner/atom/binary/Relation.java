@@ -45,6 +45,8 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
@@ -77,33 +79,26 @@ import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
  */
 public class Relation extends TypeAtom {
 
-    private Set<RelationPlayer> relationPlayers;
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
     private Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = null;
 
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
-        this.relationPlayers = getRelationPlayers(pattern);
     }
 
     public Relation(VarName name, VarName typeVariable, Map<VarName, Var> roleMap, IdPredicate pred, ReasonerQuery par) {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
-        this.relationPlayers = getRelationPlayers(getPattern().asVar());
     }
 
     private Relation(Relation a) {
         super(a);
-        this.relationPlayers = getRelationPlayers();
         this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
         this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
     }
 
     private Set<RelationPlayer> getRelationPlayers() {
-        return getRelationPlayers(this.atomPattern.asVar());
-    }
-    private Set<RelationPlayer> getRelationPlayers(VarAdmin pattern) {
         Set<RelationPlayer> rps = new HashSet<>();
-        pattern.getProperty(RelationProperty.class)
+        this.atomPattern.asVar().getProperty(RelationProperty.class)
                 .ifPresent(prop -> prop.getRelationPlayers().forEach(rps::add));
         return rps;
     }
@@ -147,6 +142,20 @@ public class Relation extends TypeAtom {
         return var.admin().asVar();
     }
 
+    private static VarAdmin constructRelationVar(VarName varName, VarName typeVariable, List<Pair<VarName, Var>> rolePlayerMappings) {
+        Var var;
+        if (!varName.getValue().isEmpty()) var = Graql.var(varName);
+        else var = Graql.var();
+        rolePlayerMappings.forEach(mapping -> {
+            VarName rp = mapping.getKey();
+            Var role = mapping.getValue();
+            if (role == null) var.rel(Graql.var(rp));
+            else var.rel(role, Graql.var(rp));
+        });
+        var.isa(Graql.var(typeVariable));
+        return var.admin().asVar();
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
@@ -154,7 +163,7 @@ public class Relation extends TypeAtom {
         Relation a2 = (Relation) obj;
         return Objects.equals(this.typeId, a2.getTypeId())
                 && this.getVarNames().equals(a2.getVarNames())
-                && relationPlayers.equals(a2.relationPlayers);
+                && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
     @Override
@@ -294,7 +303,7 @@ public class Relation extends TypeAtom {
     private Set<RoleType> getExplicitRoleTypes() {
         Set<RoleType> roleTypes = new HashSet<>();
         GraknGraph graph = getParentQuery().graph();
-        relationPlayers.stream()
+        getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(VarAdmin::getTypeName)
@@ -372,7 +381,7 @@ public class Relation extends TypeAtom {
     @Override
     public boolean containsVar(VarName name) {
         boolean varFound = false;
-        Iterator<RelationPlayer> it = relationPlayers.iterator();
+        Iterator<RelationPlayer> it = getRelationPlayers().iterator();
         while(it.hasNext() && !varFound) {
             varFound = it.next().getRolePlayer().getVarName().equals(name);
         }
@@ -382,7 +391,7 @@ public class Relation extends TypeAtom {
     @Override
     public void unify (Map<VarName, VarName> mappings) {
         super.unify(mappings);
-        relationPlayers.forEach(c -> {
+        getRelationPlayers().forEach(c -> {
             VarName var = c.getRolePlayer().getVarName();
             if (mappings.containsKey(var) ) {
                 VarName target = mappings.get(var);
@@ -399,7 +408,7 @@ public class Relation extends TypeAtom {
         Set<VarName> vars = super.getVarNames();
         vars.addAll(getRolePlayers());
         //add user specified role type vars
-        relationPlayers.stream()
+        getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(VarAdmin::isUserDefinedName)
@@ -412,7 +421,7 @@ public class Relation extends TypeAtom {
      */
     public Set<VarName> getRolePlayers(){
         Set<VarName> vars = new HashSet<>();
-        relationPlayers.forEach(c -> vars.add(c.getRolePlayer().getVarName()));
+        getRelationPlayers().forEach(c -> vars.add(c.getRolePlayer().getVarName()));
         return vars;
     }
 
@@ -446,6 +455,7 @@ public class Relation extends TypeAtom {
         for (VarName var : vars) {
             Type type = varTypeMap.get(var);
             TypeName roleTypeName = null;
+            Set<RelationPlayer> relationPlayers = getRelationPlayers();
             for(RelationPlayer c : relationPlayers) {
                 if (c.getRolePlayer().getVarName().equals(var)) {
                     roleTypeName = c.getRoleType().flatMap(VarAdmin::getTypeName).orElse(null);
@@ -493,7 +503,7 @@ public class Relation extends TypeAtom {
         Set<RoleType> allocatedRoles = new HashSet<>();
 
         //explicit role types from castings
-        relationPlayers.forEach(c -> {
+        getRelationPlayers().forEach(c -> {
             VarName var = c.getRolePlayer().getVarName();
             VarAdmin role = c.getRoleType().orElse(null);
             if (role != null) {
@@ -549,19 +559,22 @@ public class Relation extends TypeAtom {
             Type type = varTypeMap.get(var);
             roleTypeMap.put(topRole, new Pair<>(var, type));
             roleVarTypeMap.put(Graql.var().name(topRole.getName()).admin(), new Pair<>(var, type));
+            varsToAllocate.remove(var);
         }
 
         //update pattern and castings
+        List<Pair<VarName, Var>> rolePlayerMappings = new ArrayList<>();
+
+        roleVarTypeMap.forEach( (r, tp) -> rolePlayerMappings.add(new Pair<>(tp.getKey(), r)));
+        varsToAllocate.forEach(var -> rolePlayerMappings.add(new Pair<>(var, null)));
+
         Map<VarName, Var> roleMap = new HashMap<>();
         roleVarTypeMap.forEach( (r, tp) -> roleMap.put(tp.getKey(), r));
-        getRolePlayers().stream()
-                .filter(var -> !var.equals(getVarName()))
-                .filter(var -> !roleMap.containsKey(var))
-                .forEach( var -> roleMap.put(var, null));
+        varsToAllocate.forEach(var -> roleMap.put(var, null));
 
         //pattern mutation!
         atomPattern = constructRelationVar(isUserDefinedName()? varName : VarName.of(""), getValueVariable(), roleMap);
-        relationPlayers = getRelationPlayers(getPattern().asVar());
+        //atomPattern = constructRelationVar(isUserDefinedName()? varName : VarName.of(""), getValueVariable(), rolePlayerMappings);
         this.roleVarTypeMap = roleTypeMap;
         return roleTypeMap;
     }
@@ -694,7 +707,7 @@ public class Relation extends TypeAtom {
             Var relVar = Graql.var(UUID.randomUUID().toString());
             getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
 
-            relationPlayers
+            getRelationPlayers()
                     .forEach(c -> {
                         VarAdmin rolePlayer = c.getRolePlayer();
                         VarName rolePlayerVarName = VarName.anon();
