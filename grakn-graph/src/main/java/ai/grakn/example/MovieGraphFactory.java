@@ -49,21 +49,21 @@ import java.util.Locale;
  */
 public class MovieGraphFactory {
     private static GraknGraph graknGraph;
-    private static EntityType movie, person, genre, character, cluster, language;
-    private static ResourceType<String> title, gender, realName, name;
-    private static ResourceType<Long> tmdbVoteCount, releaseDate, runtime;
-    private static ResourceType<Double> tmdbVoteAverage;
-    private static RelationType hasCast, directedBy, hasGenre, hasCluster;
-    private static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
-    private static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
+    public static EntityType production, movie, person, genre, character, cluster, language;
+    public static ResourceType<String> title, gender, realName, name;
+    public static ResourceType<Long> tmdbVoteCount, releaseDate, runtime;
+    public static ResourceType<Double> tmdbVoteAverage;
+    public static RelationType hasCast, directedBy, hasGenre, hasCluster;
+    public static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
+    public static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
 
-    private static Instance godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
-    private static Instance marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
-    private static Instance mirandaHeart, betteMidler, sarahJessicaParker;
-    private static Instance crime, drama, war, action, comedy, family, musical, fantasy;
-    private static Instance donVitoCorleone, michaelCorleone, colonelWalterEKurtz, benjaminLWillard, ltVincentHanna;
-    private static Instance neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
-    private static Instance cluster0, cluster1;
+    public static Instance godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
+    public static Instance marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
+    public static Instance mirandaHeart, betteMidler, sarahJessicaParker;
+    public static Instance crime, drama, war, action, comedy, family, musical, fantasy;
+    public static Instance donVitoCorleone, michaelCorleone, colonelWalterEKurtz, benjaminLWillard, ltVincentHanna;
+    public static Instance neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
+    public static Instance cluster0, cluster1;
 
     private static SimpleDateFormat dateFormat() {
         return new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
@@ -126,7 +126,7 @@ public class MovieGraphFactory {
         realName = graknGraph.putResourceType("real-name", ResourceType.DataType.STRING);
         name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
 
-        EntityType production = graknGraph.putEntityType("production")
+        production = graknGraph.putEntityType("production")
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
                 .playsRole(productionWithGenre);
 
