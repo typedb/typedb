@@ -27,7 +27,6 @@ import java.util.Optional;
 
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
-import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
 import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
