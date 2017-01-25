@@ -468,6 +468,36 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testParseSumAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate sum $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseMaxAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate max $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseMinAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate min $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseAverageAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate average $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseMedianAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate median $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
     public void testCustomAggregate() {
         QueryBuilder qb = graph.graql();
 
@@ -487,6 +517,16 @@ public class QueryParserTest {
         Concept result = query.execute();
 
         assertEquals("movie", result.asInstance().type().getName().getValue());
+    }
+
+    @Test
+    public void testParsePlaysName() {
+        assertParseEquivalence("match $x plays actor;");
+    }
+
+    @Test
+    public void testParsePlaysVariables() {
+        assertParseEquivalence("match $x plays $y;");
     }
 
     @Test

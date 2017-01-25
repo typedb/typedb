@@ -571,6 +571,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public UnaryOperator<Var> visitPlays(GraqlParser.PlaysContext ctx) {
+        return var -> var.plays(visitVariable(ctx.variable()));
+    }
+
+    @Override
     public TypeName visitName(GraqlParser.NameContext ctx) {
         return TypeName.of(visitIdentifier(ctx.identifier()));
     }

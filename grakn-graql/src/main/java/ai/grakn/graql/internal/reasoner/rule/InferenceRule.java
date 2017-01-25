@@ -26,11 +26,12 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.HashMap;
 import java.util.HashSet;
 import javafx.util.Pair;
 
@@ -87,9 +88,7 @@ public class InferenceRule {
     }
 
     private void propagateConstraints(Atom parentAtom){
-        Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                .filter(type -> !body.containsEquivalentAtom(type))
-                .collect(toSet());
+        Set<Atom> types = parentAtom.getTypeConstraints().stream().collect(toSet());
         //get all predicates apart from those that correspond to role players with ambiguous role types
         Set<VarName> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
@@ -98,8 +97,7 @@ public class InferenceRule {
 
         head.addAtomConstraints(predicates);
         body.addAtomConstraints(predicates);
-        head.addAtomConstraints(types);
-        body.addAtomConstraints(types);
+        body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
     }
 
     private void rewriteHead(Atom parentAtom){
@@ -127,8 +125,18 @@ public class InferenceRule {
     }
 
     private void unifyViaAtom(Atom parentAtom) {
-        Atomic childAtom = getRuleConclusionAtom();
-        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
+        Atom childAtom = getRuleConclusionAtom();
+        Map<VarName, VarName> unifiers = new HashMap<>();
+        if (!parentAtom.getValueVariable().getValue().isEmpty()){
+            childAtom.getUnifiers(parentAtom).forEach(unifiers::put);
+        }
+        //case of match all relation atom
+        else{
+            Relation extendedParent = ((Relation) AtomicFactory.create(parentAtom, parentAtom.getParentQuery()))
+                    .addType(childAtom.getType());
+            extendedParent.computeRoleVarTypeMap();
+            childAtom.getUnifiers(extendedParent).forEach(unifiers::put);
+        }
         unify(unifiers);
     }
 
