@@ -43,13 +43,13 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov, Alexandra Orth
  *
  */
-public class ZookeeperStateStorage implements TaskStateStorage {
+public class TaskStateZookeeperStore implements TaskStateStorage {
     private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s" + TASK_STATE_SUFFIX;
 
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final CuratorFramework zookeeperConnection;
 
-    public ZookeeperStateStorage(ZookeeperConnection connection) throws Exception {
+    public TaskStateZookeeperStore(ZookeeperConnection connection) throws Exception {
         zookeeperConnection = connection.connection();
     }
 
