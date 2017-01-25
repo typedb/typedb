@@ -18,10 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -66,7 +64,7 @@ public class Scheduler implements Runnable, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
-    private final StateStorage storage;
+    private final TaskStateStorage storage;
 
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
@@ -74,7 +72,7 @@ public class Scheduler implements Runnable, AutoCloseable {
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
 
-    public Scheduler(StateStorage storage){
+    public Scheduler(TaskStateStorage storage){
         this.storage = storage;
 
         if(OPENED.compareAndSet(false, true)) {

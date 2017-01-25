@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.test.EngineContext;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class GraknStateStorageTest {
-    private StateStorage stateStorage;
+    private TaskStateStorage stateStorage;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
@@ -114,10 +114,10 @@ public class GraknStateStorageTest {
 
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
         assertTrue(res.parallelStream()
-                        .map(Pair::getKey)
-                        .filter(x -> x.equals(id))
-                        .collect(Collectors.toList())
-                        .size() == 1);
+                .map(Pair::getKey)
+                .filter(x -> x.equals(id))
+                .collect(Collectors.toList())
+                .size() == 1);
     }
 
     @Test

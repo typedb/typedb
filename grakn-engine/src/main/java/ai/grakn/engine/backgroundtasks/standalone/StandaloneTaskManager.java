@@ -19,7 +19,7 @@
 package ai.grakn.engine.backgroundtasks.standalone;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.InMemoryStateStorage;
@@ -60,7 +60,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
     private final Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
-    private final StateStorage stateStorage;
+    private final TaskStateStorage stateStorage;
     private final ReentrantLock stateUpdateLock;
 
     private final ExecutorService executorService;
@@ -199,7 +199,7 @@ public class StandaloneTaskManager implements TaskManager {
         return this;
     }
 
-    public StateStorage storage() {
+    public TaskStateStorage storage() {
         return stateStorage;
     }
 

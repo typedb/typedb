@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
@@ -74,7 +74,7 @@ public class StandaloneTaskManagerTest {
     }
 
     private void waitToFinish(String id) {
-        StateStorage storage = taskManager.storage();
+        TaskStateStorage storage = taskManager.storage();
         final long initial = new Date().getTime();
 
         while ((new Date().getTime())-initial < 10000) {
