@@ -24,7 +24,7 @@ import org.json.JSONObject;
 import java.time.Instant;
 import java.util.Set;
 
-public interface StateStorage {
+public interface TaskStateStorage {
     /**
      * Create a new task state and store it, returning an ID to later access this task state.
      * @param state State to insert.

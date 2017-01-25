@@ -19,11 +19,8 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -33,7 +30,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.zookeeper.CreateMode;
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -68,14 +64,14 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     private final Set<String> runningTasks = new HashSet<>();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
-    private final StateStorage storage;
+    private final TaskStateStorage storage;
     private final ZookeeperConnection connection;
 
     private ExecutorService executor;
     private KafkaConsumer<String, String> consumer;
     private volatile boolean running;
 
-    public TaskRunner(StateStorage storage, ZookeeperConnection connection) throws Exception {
+    public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) throws Exception {
         this.storage = storage;
         this.connection = connection;
 

@@ -23,7 +23,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
@@ -67,7 +67,7 @@ import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
-public class GraknStateStorage implements StateStorage {
+public class GraknStateStorage implements TaskStateStorage {
     private final static String TASK_VAR = "task";
     private final static int retries = 10;
 

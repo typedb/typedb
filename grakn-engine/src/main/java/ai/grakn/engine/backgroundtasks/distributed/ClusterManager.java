@@ -18,9 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.EngineID;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -61,7 +60,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
     private DistributedTaskManager taskManager;
     private ZookeeperConnection zookeeperConnection;
-    private StateStorage stateStorage;
+    private TaskStateStorage stateStorage;
     private LeaderSelector leaderSelector;
     private Scheduler scheduler;
     private TreeCache cache;
@@ -133,7 +132,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     /**
      * Get the state storage for this cluster manager
      */
-    public StateStorage getStorage(){
+    public TaskStateStorage getStorage(){
         return stateStorage;
     }
 

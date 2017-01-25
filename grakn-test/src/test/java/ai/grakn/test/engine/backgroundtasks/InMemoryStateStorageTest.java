@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.InMemoryStateStorage;
 import javafx.util.Pair;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class InMemoryStateStorageTest {
-    private StateStorage stateStorage;
+    private TaskStateStorage stateStorage;
 
     @Before
     public void setUp() {
