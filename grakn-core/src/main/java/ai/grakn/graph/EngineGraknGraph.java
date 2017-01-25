@@ -30,7 +30,7 @@ import java.util.Set;
  * </p>
  *
  * <p>
- *     Provides common methods for advanced inteaction with the graph.
+ *     Provides common methods for advanced interaction with the graph.
  *     This is used internally by Engine
  * </p>
  *
