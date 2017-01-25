@@ -43,7 +43,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.util.Pair;
@@ -428,19 +428,11 @@ public class Relation extends TypeAtom {
         return unmappedVars;
     }
 
-    //TODO shouldn't be a map as can have multiple mappings for a single var
-    public Map<VarName, RoleType> getVarRoleMap() {
-        Map<VarName, RoleType> varRoleMap = new HashMap<>();
-        getRoleVarTypeMap().entrySet().forEach( e -> varRoleMap.put(e.getValue().getKey(), e.getKey()));
-        getUnmappedRolePlayers().forEach(v -> varRoleMap.put(v, null));
-        return varRoleMap;
-    }
-
     /**
      * Attempts to infer the implicit roleTypes and matching types based on contents of the parent query
      * @return map containing roleType - (rolePlayer var - rolePlayer type) pairs
      */
-    public Map<RoleType, Pair<VarName, Type>> computeRoleVarTypeMap() {
+    private Map<RoleType, Pair<VarName, Type>> computeRoleVarTypeMap() {
         this.roleVarTypeMap = new HashMap<>();
         Map<Var, Pair<VarName, Type>> roleVarMap = new HashMap<>();
         if (getParentQuery() == null || getType() == null){ return roleVarTypeMap;}
@@ -524,34 +516,36 @@ public class Relation extends TypeAtom {
 
     @Override
     public Map<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() {
-        if (roleVarTypeMap == null) {
-            computeRoleVarTypeMap();
-        }
+        if (roleVarTypeMap == null) computeRoleVarTypeMap();
         return roleVarTypeMap;
+    }
+
+    private Map<RoleType, VarName> getRoleMap(){
+        return getRoleVarTypeMap().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getKey()));
     }
 
     /**
      * @return map of role variable - role type from a predicate
      */
-    private Map<VarName, RoleType> getIndirectRoleMap(){
+    private Map<RoleType, VarName> getIndirectRoleMap(){
         GraknGraph graph =  getParentQuery().graph();
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
-                .collect(Collectors.<AbstractMap.SimpleEntry<VarAdmin,IdPredicate>, VarName, RoleType>toMap(
-                        e -> e.getKey().getVarName(), e -> graph.getConcept(e.getValue().getPredicate())));
+                .collect(Collectors.toMap(e -> graph.getConcept(e.getValue().getPredicate()), e -> e.getKey().getVarName()));
     }
 
     //varsToAllocate <= childBVs
-    private Map<VarName, VarName> getUnifiers(Map<VarName, RoleType> childMap, Map<RoleType, VarName> parentMap,
-                                            List<VarName> childBVs, List<VarName> varsToAllocate){
+    private Map<VarName, VarName> getUnifiers(Map<RoleType, VarName> childMap, Map<RoleType, VarName> parentMap,
+                                              List<VarName> varsToMap, List<VarName> varsToAllocate){
         Map<VarName, VarName> unifiers = new HashMap<>();
         List<VarName> allocatedVars = new ArrayList<>();
-        childBVs.forEach(chVar -> {
+
+        childMap.forEach( (role, chVar) -> {
             if(!varsToAllocate.isEmpty()) {
-                RoleType role = childMap.get(chVar);
                 //map to empty if no var matching
                 VarName pVar = VarName.of("");
                 //go up in role hierarchy to find matching parent variable name
@@ -567,30 +561,29 @@ public class Relation extends TypeAtom {
                 }
             }
         });
+
         //assign unallocated vars
-        childBVs.removeAll(allocatedVars);
-        Iterator<VarName> cit = childBVs.iterator();
+        varsToMap.removeAll(allocatedVars);
+        Iterator<VarName> cit = varsToMap.iterator();
         Iterator<VarName> pit = varsToAllocate.iterator();
         while(pit.hasNext() && cit.hasNext()) unifiers.put(cit.next(), pit.next());
         return unifiers;
     }
 
+
     private Map<VarName, VarName> getRoleTypeUnifiers(Relation parentAtom){
-        Map<VarName, RoleType> childMap = getIndirectRoleMap();
-        Map<RoleType, VarName> parentMap =  parentAtom.getIndirectRoleMap()
-                .entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-        Set<VarName> indirectVarsToAllocate = Sets.newHashSet(parentMap.values());
+        Map<RoleType, VarName> childMap = getIndirectRoleMap();
+        Map<RoleType, VarName> parentMap =  parentAtom.getIndirectRoleMap();
         return getUnifiers(childMap,
                 parentMap,
-                childMap.keySet().stream().collect(Collectors.toList()),
-                indirectVarsToAllocate.stream().collect(Collectors.toList()));
+                Lists.newArrayList(childMap.values()),
+                Lists.newArrayList(parentMap.values()));
     }
 
+
     private Map<VarName, VarName> getRolePlayerUnifiers(Relation parentAtom){
-        Map<VarName, RoleType> childMap = getVarRoleMap();
-        Map<RoleType, VarName> parentMap = new HashMap<>();
-        parentAtom.getRoleVarTypeMap().entrySet().forEach( e -> parentMap.put(e.getKey(), e.getValue().getKey()));
+        Map<RoleType, VarName> childMap = getRoleMap();
+        Map<RoleType, VarName> parentMap = parentAtom.getRoleMap();
         return getUnifiers(
                 childMap,
                 parentMap,
@@ -634,10 +627,9 @@ public class Relation extends TypeAtom {
     private Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
         Map<VarName, IdPredicate> varSubMap = getVarSubMap();
-        Map<RoleType, Pair<VarName, Type>> roleVarMap = getRoleVarTypeMap();
+        Map<RoleType, VarName> roleMap = getRoleMap();
 
-        roleVarMap.forEach( (role, varTypePair) -> {
-            VarName var = varTypePair.getKey();
+        roleMap.forEach( (role, var) -> {
             roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
         });
         return roleConceptMap;

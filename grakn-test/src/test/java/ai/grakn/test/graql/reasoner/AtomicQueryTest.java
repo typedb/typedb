@@ -20,34 +20,22 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -162,15 +150,17 @@ public class AtomicQueryTest {
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        GraknGraph graph = geoGraph.graph();
+        QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers fullAnswers = queryAnswers(query2);
-        Atom atom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), geoGraph.graph()).getAtom();
-        Atom atom2 = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), geoGraph.graph()).getAtom();
-        QueryAnswers permutedAnswers = answers.permute(atom, atom);
-        QueryAnswers permutedAnswers2 = answers.permute(atom2, atom2);
+        Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
+        Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
+
+        QueryAnswers permutedAnswers = answers.permute(mappedAtom, mappedAtom);
+        QueryAnswers permutedAnswers2 = answers.permute(unmappedAtom, unmappedAtom);
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }

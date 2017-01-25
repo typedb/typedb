@@ -38,6 +38,7 @@ import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -249,9 +250,10 @@ public class AtomicTest {
                 graph.graql().parsePattern(childPatternString)),
                 graph);
         testRule.unify(parentAtom);
-        Relation headAtom = (Relation) testRule.getHead().getAtom();
-        Map<VarName, RoleType> varTypeRoleMap = headAtom.getVarRoleMap();
-        assertTrue(varTypeRoleMap.get(VarName.of("x")).equals(graph.getRoleType("wife")));
+        Atom headAtom = testRule.getHead().getAtom();
+        Map<RoleType, VarName> roleMap = headAtom.getRoleVarTypeMap().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getKey()));
+        assertTrue(roleMap.get(graph.getRoleType("wife")).equals(VarName.of("x")));
     }
 
     @Test

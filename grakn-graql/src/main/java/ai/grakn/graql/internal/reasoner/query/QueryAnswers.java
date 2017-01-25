@@ -62,6 +62,12 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
 
+    /**
+     *
+     * @param atom atom which roles are to be permuted
+     * @param headAtom rule head atom which answers we are permuting, only needed when atom is a match all atom
+     * @return permuted answers
+     */
     public QueryAnswers permute(Atom atom, Atom headAtom){
         if (!(atom.isRelation() && headAtom.isRelation())) return this;
         List<VarName> permuteVars = new ArrayList<>();
