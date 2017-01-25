@@ -287,11 +287,11 @@ public class QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", args -> Graql.count());
-        registerAggregate("sum", args -> Graql.sum((String) args.get(0)));
-        registerAggregate("max", args -> Graql.max((String) args.get(0)));
-        registerAggregate("min", args -> Graql.min((String) args.get(0)));
-        registerAggregate("average", args -> Graql.average((String) args.get(0)));
-        registerAggregate("median", args -> Graql.median((String) args.get(0)));
+        registerAggregate("sum", args -> Aggregates.sum((VarName) args.get(0)));
+        registerAggregate("max", args -> Aggregates.max((VarName) args.get(0)));
+        registerAggregate("min", args -> Aggregates.min((VarName) args.get(0)));
+        registerAggregate("average", args -> Aggregates.average((VarName) args.get(0)));
+        registerAggregate("median", args -> Aggregates.median((VarName) args.get(0)));
 
         registerAggregate("group", args -> {
             if (args.size() < 2) {
