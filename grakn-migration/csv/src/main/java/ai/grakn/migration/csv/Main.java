@@ -40,12 +40,15 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  */
 public class Main {
 
+    static boolean newClusterManager = false;
+
     public static void main(String[] args) {
         start(null, args);
     }
 
     public static void start(ClusterManager manager, String[] args){
         if(manager == null){
+            newClusterManager = true;
             manager = new ClusterManager();
         }
 
@@ -90,6 +93,12 @@ public class Main {
             die(throwable);
         }
 
-        initiateShutdown();
+        if (newClusterManager) {
+            try {
+                manager.stop();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

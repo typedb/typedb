@@ -94,7 +94,9 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         leaderSelector.interruptLeadership();
         leaderSelector.close();
 
-        stopScheduler();
+        if (scheduler!=null) {
+            stopScheduler();
+        }
         stopTaskManager();
         stopTaskRunner();
         stopZookeeperConnection();
