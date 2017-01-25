@@ -249,9 +249,9 @@ public class AtomicTest {
                 graph.graql().parsePattern(childPatternString)),
                 graph);
         testRule.unify(parentAtom);
-        Atom headAtom = testRule.getHead().getAtom();
-        Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
-        assertTrue(varTypeRoleMap.get(VarName.of("x")).getValue().equals(graph.getRoleType("wife")));
+        Relation headAtom = (Relation) testRule.getHead().getAtom();
+        Map<VarName, RoleType> varTypeRoleMap = headAtom.getVarRoleMap();
+        assertTrue(varTypeRoleMap.get(VarName.of("x")).equals(graph.getRoleType("wife")));
     }
 
     @Test

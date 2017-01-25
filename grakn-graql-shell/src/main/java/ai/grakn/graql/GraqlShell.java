@@ -37,11 +37,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -64,12 +59,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -105,7 +94,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 /**
  * A Graql REPL shell that can be run from the command line
  */
-@WebSocket
 public class GraqlShell {
     private static final String LICENSE_PROMPT = "\n" +
             "Grakn  Copyright (C) 2016  Grakn Labs Limited \n" +
@@ -130,7 +118,6 @@ public class GraqlShell {
     private static final String LICENSE_COMMAND = "license";
 
     private static final int QUERY_CHUNK_SIZE = 1000;
-    private static final int PING_INTERVAL = 60_000;
 
     /**
      * Array of available commands in shell
@@ -150,20 +137,20 @@ public class GraqlShell {
 
     private final String historyFilename;
 
-    private Session session;
+    private JsonSession session;
 
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
-
-    private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
-
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     /**
      * Run a Graql REPL
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClientImpl());
+        runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClient());
+    }
+
+    public static void runShell(String[] args, String version, String historyFilename) {
+        runShell(args, version, historyFilename, new GraqlClient());
     }
 
     public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {
@@ -311,12 +298,7 @@ public class GraqlShell {
 
         try {
             console = new ConsoleReader(System.in, System.out);
-
-            try {
-                session = client.connect(this, uri).get();
-            } catch (ExecutionException e) {
-                throw e.getCause();
-            }
+            session = new JsonSession(client, uri);
 
             // Send the requested keyspace and output format to the server once connected
             Json initJson = Json.object(
@@ -329,7 +311,7 @@ public class GraqlShell {
             );
             username.ifPresent(u -> initJson.set(USERNAME, u));
             password.ifPresent(p -> initJson.set(PASSWORD, p));
-            sendJson(initJson);
+            session.sendJson(initJson);
 
             // Wait to receive confirmation
             handleMessagesFromServer();
@@ -351,7 +333,7 @@ public class GraqlShell {
     private void start(Optional<List<String>> queryStrings) throws IOException {
 
         // Begin sending pings
-        Thread thread = new Thread(this::ping);
+        Thread thread = new Thread(() -> WebSocketPing.ping(session));
         thread.setDaemon(true);
         thread.start();
 
@@ -486,87 +468,35 @@ public class GraqlShell {
         this.print(result.toString());
     }
 
-    @OnWebSocketClose
-    public void onClose(int statusCode, String reason) throws IOException, ExecutionException, InterruptedException {
-        // 1000 = Normal close, 1001 = Going away
-        if (statusCode != 1000 && statusCode != 1001) {
-            System.err.println("Websocket closed, code: " + statusCode + ", reason: " + reason);
-        }
-
-        // Add dummy end message from server
-        messages.add(Json.object(ACTION, ACTION_END));
-    }
-
-    @OnWebSocketMessage
-    public void onMessage(String msg) {
-        Json json = Json.read(msg);
-        messages.add(json);
-    }
-
-    private void ping() {
-        try {
-            // This runs on a daemon thread, so it will be terminated when the JVM stops
-            //noinspection InfiniteLoopStatement
-            while (true) {
-                sendJson(Json.object(ACTION, ACTION_PING));
-
-                try {
-                    Thread.sleep(PING_INTERVAL);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (WebSocketException e) {
-            // Report an error if the session is still open
-            if (session.isOpen()) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
     private void executeQuery(String queryString) {
         // Split query into chunks
         Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
 
         for (String queryChunk : splitQuery) {
-            sendJson(Json.object(
+            session.sendJson(Json.object(
                     ACTION, ACTION_QUERY,
                     QUERY, queryChunk
             ));
         }
 
-        sendJson(Json.object(ACTION, ACTION_END));
+        session.sendJson(Json.object(ACTION, ACTION_END));
         handleMessagesFromServer();
     }
 
     private void handleMessagesFromServer() {
-        boolean isEndMessage;
-
-        do {
-            Json message;
-            try {
-                message = messages.poll(5, TimeUnit.MINUTES);
-            } catch (InterruptedException e) {
-                System.err.println(e.getMessage());
-                return;
-            }
-            isEndMessage = handleMessage(message);
-        } while (!isEndMessage);
+        session.getMessagesUntilEnd().forEach(this::handleMessage);
     }
 
     /**
      * Handle the given server message
      * @param message the message to handle
-     * @return whether this is an end message
      */
-    private boolean handleMessage(Json message) {
+    private void handleMessage(Json message) {
         switch (message.at(ACTION).asString()) {
             case ACTION_QUERY:
                 String result = message.at(QUERY_RESULT).asString();
                 print(result);
                 break;
-            case ACTION_END:
-                return true;
             case ACTION_TYPES:
                 Set<String> types = message.at(TYPES).asJsonList().stream().map(Json::asString).collect(toSet());
                 graqlCompleter.setTypes(types);
@@ -580,24 +510,22 @@ public class GraqlShell {
             default:
                 throw new RuntimeException("Unrecognized message: " + message);
         }
-
-        return false;
     }
 
     private void setDisplayOptions(Set<String> displayOptions) {
-        sendJson(Json.object(
+        session.sendJson(Json.object(
                 ACTION, ACTION_DISPLAY,
                 DISPLAY, displayOptions
         ));
     }
 
     private void commit() {
-        sendJson(Json.object(ACTION, ACTION_COMMIT));
+        session.sendJson(Json.object(ACTION, ACTION_COMMIT));
         handleMessagesFromServer();
     }
 
     private void rollback() {
-        sendJson(Json.object(ACTION, ACTION_ROLLBACK));
+        session.sendJson(Json.object(ACTION, ACTION_ROLLBACK));
     }
 
     /**
@@ -624,20 +552,6 @@ public class GraqlShell {
         }
 
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
-    }
-
-    private void sendJson(Json json) {
-        try {
-            executor.submit(() -> {
-                try {
-                    session.getRemote().sendString(json.toString());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void print(String string) {

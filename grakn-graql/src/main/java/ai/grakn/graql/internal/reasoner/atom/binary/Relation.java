@@ -80,7 +80,6 @@ import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
 public class Relation extends TypeAtom {
 
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
-    private Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = null;
 
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
@@ -92,8 +91,6 @@ public class Relation extends TypeAtom {
 
     private Relation(Relation a) {
         super(a);
-        this.roleVarTypeMap = a.roleVarTypeMap != null? Maps.newHashMap(a.roleVarTypeMap) : null;
-        this.varTypeRoleMap = a.varTypeRoleMap != null? Maps.newHashMap(a.varTypeRoleMap) : null;
     }
 
     private Set<RelationPlayer> getRelationPlayers() {
@@ -419,7 +416,7 @@ public class Relation extends TypeAtom {
     }
 
     private Set<VarName> getMappedRolePlayers() {
-        return computeRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
+        return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
     }
 
     /**
@@ -433,19 +430,11 @@ public class Relation extends TypeAtom {
     }
 
     //TODO shouldn't be a map as can have multiple mappings for a single var
-    @Override
-    public Map<VarName, Pair<Type, RoleType>> getVarTypeRoleMap() {
-        if (varTypeRoleMap == null) {
-            this.varTypeRoleMap = new HashMap<>();
-            getRoleVarTypeMap().entrySet().forEach( e -> varTypeRoleMap.put(e.getValue().getKey(), new Pair<>(e.getValue().getValue(), e.getKey())));
-            Set<VarName> unmappedVars = getRolePlayers();
-            getRoleVarTypeMap().values().stream().map(Pair::getKey).forEach(unmappedVars::remove);
-            if (!unmappedVars.isEmpty()){
-                Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
-                unmappedVars.forEach(v -> varTypeRoleMap.put(v, new Pair<>(varTypeMap.get(v), null)));
-            }
-        }
-        return varTypeRoleMap;
+    public Map<VarName, RoleType> getVarRoleMap() {
+        Map<VarName, RoleType> varRoleMap = new HashMap<>();
+        getRoleVarTypeMap().entrySet().forEach( e -> varRoleMap.put(e.getValue().getKey(), e.getKey()));
+        getUnmappedRolePlayers().forEach(v -> varRoleMap.put(v, null));
+        return varRoleMap;
     }
 
     /**
@@ -600,9 +589,8 @@ public class Relation extends TypeAtom {
     }
 
     private Map<VarName, VarName> getRolePlayerUnifiers(Relation parentAtom){
-        Map<VarName, RoleType> childMap = new HashMap<>();
+        Map<VarName, RoleType> childMap = getVarRoleMap();
         Map<RoleType, VarName> parentMap = new HashMap<>();
-        getVarTypeRoleMap().entrySet().forEach( e -> childMap.put(e.getKey(), e.getValue().getValue()));
         parentAtom.getRoleVarTypeMap().entrySet().forEach( e -> parentMap.put(e.getKey(), e.getValue().getKey()));
         return getUnifiers(
                 childMap,

@@ -20,7 +20,6 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.Grakn;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -28,6 +27,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import mjson.Json;
+import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -372,7 +372,13 @@ public class GraqlShellIT {
     public void fuzzTest() throws Exception {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
-            testShellAllowErrors(randomString(i));
+            String input = randomString(i);
+            try {
+                testShellAllowErrors(input);
+            } catch (Throwable e) {
+                // We catch all exceptions so we can report exactly what input caused the error
+                throw new RuntimeException("Error when providing the following input to shell: [" + input + "]", e);
+            }
         }
     }
 
@@ -478,14 +484,16 @@ public class GraqlShellIT {
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintStream out = new PrintStream(bout);
-        PrintStream err = new PrintStream(berr);
+
+        // Intercept stderr, but make sure it is still printed using the TeeOutputStream
+        PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
 
         try {
             System.setIn(in);
             System.setOut(out);
             System.setErr(err);
-            
-            GraqlShell.runShell(args, expectedVersion, historyFile, new GraqlClientImpl());
+
+            GraqlShell.runShell(args, expectedVersion, historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
