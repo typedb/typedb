@@ -60,10 +60,11 @@ public class EngineContext extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
+        hideLogs();
+
         //TODO remove when Bug #12029 fixed
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
 
-        hideLogs();
         startEngine();
     }
 
