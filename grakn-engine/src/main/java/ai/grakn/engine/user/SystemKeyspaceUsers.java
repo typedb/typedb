@@ -71,7 +71,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 
             InsertQuery query = graph.graql().insert(user);
             query.execute();
-            graph.commitTx();
+            graph.commit();
             LOG.debug("Created user " + userJson);
             return true;
         } catch (Throwable t) {
@@ -205,7 +205,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             });
 
             if(exists){
-                graph.commitTx();
+                graph.commit();
             }
 
             return exists;

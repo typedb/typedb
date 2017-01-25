@@ -48,9 +48,9 @@ public interface EngineCache {
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @param castingId Casting Ids which require post processing
+     * @param castingIds Casting Ids which require post processing
      */
-    void addJobCasting(String keyspace, Set<String> castingId);
+    void addJobCasting(String keyspace, Set<String> castingIds);
 
     /**
      *
@@ -70,9 +70,9 @@ public interface EngineCache {
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @param resourceId Resources Ids which require post processing
+     * @param resourceIds Resources Ids which require post processing
      */
-    void addJobResource(String keyspace, Set<String> resourceId);
+    void addJobResource(String keyspace, Set<String> resourceIds);
 
     /**
      *

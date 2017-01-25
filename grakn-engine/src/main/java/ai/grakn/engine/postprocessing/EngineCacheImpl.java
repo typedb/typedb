@@ -80,8 +80,8 @@ public class EngineCacheImpl implements EngineCache {
         return castings.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
     @Override
-    public void addJobCasting(String keyspace, Set<String> castingId) {
-        getCastingJobs(keyspace).addAll(castingId);
+    public void addJobCasting(String keyspace, Set<String> castingIds) {
+        getCastingJobs(keyspace).addAll(castingIds);
         updateLastTimeJobAdded();
     }
     @Override
@@ -96,8 +96,8 @@ public class EngineCacheImpl implements EngineCache {
         return resources.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
     @Override
-    public void addJobResource(String keyspace, Set<String> resourceId) {
-        getResourceJobs(keyspace).addAll(resourceId);
+    public void addJobResource(String keyspace, Set<String> resourceIds) {
+        getResourceJobs(keyspace).addAll(resourceIds);
         updateLastTimeJobAdded();
     }
     @Override

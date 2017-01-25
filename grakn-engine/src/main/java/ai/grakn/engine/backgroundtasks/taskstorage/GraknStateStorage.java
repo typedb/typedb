@@ -320,7 +320,7 @@ public class GraknStateStorage implements StateStorage {
             try (EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
                 T result = function.apply(graph);
                 if (commit) {
-                    graph.commitTx();
+                    graph.commit();
                 }
 
                 return Optional.of(result);
