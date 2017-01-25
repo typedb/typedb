@@ -43,7 +43,7 @@ class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final int MAX_RETRY = 10;
 
-    public static void checkCasting(Cache cache, String keyspace, String castingId){
+    public static void checkCasting(EngineCacheImpl cache, String keyspace, String castingId){
         boolean notDone = true;
         int retry = 0;
         while (notDone) {
@@ -65,7 +65,7 @@ class ConceptFixer {
         }
     }
 
-    public static void checkResources(Cache cache, String keyspace, Set<String> resourceIds){
+    public static void checkResources(EngineCacheImpl cache, String keyspace, Set<String> resourceIds){
         boolean notDone = true;
         int retry = 0;
 

@@ -40,20 +40,20 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author fppt
  */
-public class Cache {
+public class EngineCacheImpl {
     private final Map<String, Set<String>> castings;
     private final Map<String, Set<String>> resources;
     private final AtomicBoolean saveInProgress;
 
-    private static Cache instance=null;
+    private static EngineCacheImpl instance=null;
     private final AtomicLong lastTimeModified;
 
-    public static synchronized Cache getInstance(){
-        if(instance==null) instance=new Cache();
+    public static synchronized EngineCacheImpl getInstance(){
+        if(instance==null) instance=new EngineCacheImpl();
         return instance;
     }
 
-    private Cache(){
+    private EngineCacheImpl(){
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);
@@ -98,14 +98,14 @@ public class Cache {
     }
 
     /**
-     * @return the last time a job was added to the Cache.
+     * @return the last time a job was added to the EngineCacheImpl.
      */
     public long getLastTimeJobAdded(){
         return lastTimeModified.get();
     }
 
     /**
-     * Keep a record of the last time something was added to the Cache.
+     * Keep a record of the last time something was added to the EngineCacheImpl.
      */
     private void updateLastTimeJobAdded(){
         lastTimeModified.set(System.currentTimeMillis());
