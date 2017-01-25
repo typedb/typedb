@@ -92,7 +92,7 @@ public class SchedulerTest {
 
         TaskState state = stateStorage.getState(taskId);
 
-        engine.getClusterManager().getStorage().newState(taskId, status, null, null);
+        engine.getClusterManager().getStorage().newState(TestTask.class.getName(), SchedulerTest.class.getName(), null, null, 0, null);
 
         assertNotNull(taskId);
         assertNotNull(state);

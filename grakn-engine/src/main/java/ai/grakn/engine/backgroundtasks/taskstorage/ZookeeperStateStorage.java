@@ -18,18 +18,24 @@
 
 package ai.grakn.engine.backgroundtasks.taskstorage;
 
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import javafx.util.Pair;
 import org.apache.curator.framework.CuratorFramework;
+import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Set;
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
+import static java.lang.String.format;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -42,9 +48,10 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov, Alexandra Orth
  *
  */
-public class ZookeeperStateStorage {
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+public class ZookeeperStateStorage implements StateStorage {
+    private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s" + TASK_STATE_SUFFIX;
 
+    private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final CuratorFramework zookeeperConnection = ConfigHelper.client();
 
     public ZookeeperStateStorage() throws Exception {
@@ -62,26 +69,35 @@ public class ZookeeperStateStorage {
         return zookeeperConnection;
     }
 
-    public void newState(String id, TaskStatus status, String engineID, String checkpoint) throws Exception {
-        if(id == null || status == null) {
-            return;
+    @Override
+    public String newState(String taskName, String createdBy, Instant runAt, Boolean recurring, long interval, JSONObject configuration) {
+        if (taskName == null || createdBy == null || runAt == null || recurring == null) {
+            return null;
         }
 
-        // Serialise to SynchronizedState obj
-        SynchronizedState state = new SynchronizedState(status);
-        if(engineID != null) {
-            state.engineID(engineID);
-        }
-        if(checkpoint != null) {
-            state.checkpoint(checkpoint);
+        TaskState task = new TaskState(taskName)
+                .status(TaskStatus.CREATED)
+                .creator(createdBy)
+                .runAt(runAt)
+                .isRecurring(recurring)
+                .interval(interval)
+                .configuration(configuration);
+
+        try {
+            zookeeperConnection.create()
+                    .creatingParentContainersIfNeeded()
+                    .forPath(format(ZK_TASK_PATH, task.getId()), task.serialise());
+
+        } catch (Exception exception){
+            LOG.error("Could not write task state to Zookeeper");
+            throw new RuntimeException("Could not write state to storage " + getFullStackTrace(exception));
         }
 
-        zookeeperConnection.create()
-              .creatingParentContainersIfNeeded()
-              .forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes(StandardCharsets.UTF_8));
+        return task.getId();
     }
 
-    public Boolean updateState(String id, TaskStatus status, String engineID, String checkpoint) {
+    @Override
+    public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String engineID, Throwable failure, String checkpoint, JSONObject configuration){
         if(id == null) {
             return false;
         }
@@ -90,25 +106,26 @@ public class ZookeeperStateStorage {
             return false;
         }
 
+       TaskState task = getState(id);
+        if(task == null) {
+            return false;
+        }
+
+        // Update values
+        if (status != null) {
+            task.status(status);
+        }
+        if (engineID != null) {
+            task.engineID(engineID);
+        }
+        if (checkpoint != null) {
+            task.checkpoint(checkpoint);
+        }
+
         try {
-            SynchronizedState state = getState(id);
-            if(state == null) {
-                return false;
-            }
-
-            // Update values
-            if (status != null) {
-                state.status(status);
-            }
-            if (engineID != null) {
-                state.engineID(engineID);
-            }
-            if (checkpoint != null) {
-                state.checkpoint(checkpoint);
-            }
-
             // Save to ZK
-            zookeeperConnection.setData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes(StandardCharsets.UTF_8));
+            zookeeperConnection.setData()
+                    .forPath(format(ZK_TASK_PATH, task.getId()), task.serialise());
         }
         catch (Exception e) {
             LOG.error("Could not write to ZooKeeper! - "+e);
@@ -118,16 +135,21 @@ public class ZookeeperStateStorage {
         return true;
     }
 
-    public SynchronizedState getState(String id) {
+    @Override
+    public TaskState getState(String id) {
         try {
             byte[] b = zookeeperConnection.getData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX);
-            return SynchronizedState.deserialize(new String(b, StandardCharsets.UTF_8));
+            return TaskState.deserialise(b);
         }
         catch (Exception e) {
-            LOG.error(" Could not read from ZooKeeper! " + getFullStackTrace(e));
+            //TODO do not throw runtime exception
+            throw new RuntimeException("Could not get state from storage " + getFullStackTrace(e));
         }
+    }
 
-        return null;
+    @Override
+    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
+        throw new UnsupportedOperationException("Task retrieval not supported");
     }
 
     private void createZKPaths() throws Exception {

@@ -43,5 +43,5 @@ public enum TaskStatus {
     /**
      * The task has failed to execute.
      */
-    FAILED
+    FAILED;
 }

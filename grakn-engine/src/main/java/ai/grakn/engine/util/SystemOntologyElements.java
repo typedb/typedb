@@ -21,6 +21,7 @@ package ai.grakn.engine.util;
 import ai.grakn.concept.TypeName;
 
 public interface SystemOntologyElements {
+    TypeName TASK_ID = TypeName.of("task-id");
     TypeName SCHEDULED_TASK = TypeName.of("scheduled-task");
     TypeName STATUS = TypeName.of("status");
     TypeName STATUS_CHANGE_TIME = TypeName.of("status-change-time");

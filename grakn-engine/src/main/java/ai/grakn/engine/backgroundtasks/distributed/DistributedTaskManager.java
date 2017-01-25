@@ -23,8 +23,6 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -37,11 +35,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -51,36 +47,26 @@ public class DistributedTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
-    private KafkaProducer<String, String> producer;
-    private StateStorage stateStorage;
-    private ZookeeperStateStorage zkStorage;
+    private final KafkaProducer<String, String> producer;
+    private final StateStorage stateStorage;
 
-    public DistributedTaskManager(ZookeeperStateStorage zkStorage) {
+    public DistributedTaskManager(StateStorage stateStorage) {
         if(OPENED.compareAndSet(false, true)) {
-            try {
-                noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");
-                noThrow(() -> stateStorage = new GraknStateStorage(), "Could not instantiate grakn state storage");
-
-                this.zkStorage = zkStorage;
-            }
-            catch (Exception e) {
-                e.printStackTrace(System.err);
-                LOG.error("While trying to start the DistributedTaskManager", e);
-                throw new RuntimeException("Could not start task manager : "+e);
-            }
+            this.stateStorage = stateStorage;
+            this.producer = ConfigHelper.kafkaProducer();
         }
         else {
-            LOG.error("DistributedTaskManager open() called multiple times!");
+            throw new RuntimeException("DistributedTaskManager open() called multiple times!");
         }
     }
 
     @Override
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
-            noThrow(producer::close, "Could not close Kafka Producer.");
+            producer.close();
         }
         else {
-            LOG.error("DistributedTaskManager close() called before open()!");
+            throw new RuntimeException("DistributedTaskManager close() called before open()!");
         }
     }
 
@@ -90,8 +76,6 @@ public class DistributedTaskManager implements TaskManager {
 
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
         try {
-            zkStorage.newState(id, CREATED, null, null);
-
             producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, id, configuration.toString()));
             producer.flush();
         }
@@ -119,7 +103,7 @@ public class DistributedTaskManager implements TaskManager {
         return CompletableFuture.runAsync(() -> {
 
             while (true) {
-                TaskStatus status = zkStorage.getState(taskId).status();
+                TaskStatus status = stateStorage.getState(taskId).status();
                 if (status == COMPLETED || status == FAILED || status ==  STOPPED) {
                     break;
                 }
@@ -134,6 +118,6 @@ public class DistributedTaskManager implements TaskManager {
     }
 
     public TaskStatus getState(String taskID){
-        return zkStorage.getState(taskID).status();
+        return stateStorage.getState(taskID).status();
     }
 }

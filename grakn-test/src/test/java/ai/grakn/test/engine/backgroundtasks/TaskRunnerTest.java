@@ -127,7 +127,7 @@ public class TaskRunnerTest {
 
             TaskState state = stateStorage.getState(id);
             state.status(status);
-            zkStorage.newState(id, state.status(), null, null);
+            zkStorage.newState(TestTask.class.getName(), SchedulerTest.class.getName(), null, null, 0, null);
 
             states.add(new Pair<>(id, state));
         }

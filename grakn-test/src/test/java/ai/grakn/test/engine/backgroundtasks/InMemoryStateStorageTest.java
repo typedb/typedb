@@ -21,10 +21,8 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.InMemoryStateStorage;
-import ai.grakn.test.EngineContext;
 import javafx.util.Pair;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Instant;
