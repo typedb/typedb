@@ -19,9 +19,6 @@
 package ai.grakn.engine.backgroundtasks;
 
 import javafx.util.Pair;
-import org.json.JSONObject;
-
-import java.time.Instant;
 import java.util.Set;
 
 public interface TaskStateStorage {
