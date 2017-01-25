@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.util.EngineCache;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author fppt
  */
-public class EngineCacheImpl {
+public class EngineCacheImpl implements EngineCache {
     private final Map<String, Set<String>> castings;
     private final Map<String, Set<String>> resources;
     private final AtomicBoolean saveInProgress;
@@ -72,29 +74,35 @@ public class EngineCacheImpl {
     }
 
     //-------------------- Casting Jobs
+    @Override
     public Set<String> getCastingJobs(String keyspace) {
         keyspace = keyspace.toLowerCase();
         return castings.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
-    public void addJobCasting(String keyspace, Set<String> conceptIds) {
-        getCastingJobs(keyspace).addAll(conceptIds);
+    @Override
+    public void addJobCasting(String keyspace, Set<String> castingId) {
+        getCastingJobs(keyspace).addAll(castingId);
         updateLastTimeJobAdded();
     }
-    public void deleteJobCasting(String keyspace, String conceptId) {
-        getCastingJobs(keyspace).remove(conceptId);
+    @Override
+    public void deleteJobCasting(String keyspace, String castingId) {
+        getCastingJobs(keyspace).remove(castingId);
     }
 
     //-------------------- Resource Jobs
+    @Override
     public Set<String> getResourceJobs(String keyspace) {
         keyspace = keyspace.toLowerCase();
         return resources.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
-    public void addJobResource(String keyspace, Set<String> conceptIds) {
-        getResourceJobs(keyspace).addAll(conceptIds);
+    @Override
+    public void addJobResource(String keyspace, Set<String> resourceId) {
+        getResourceJobs(keyspace).addAll(resourceId);
         updateLastTimeJobAdded();
     }
-    public void deleteJobResource(String keyspace, String conceptId) {
-        getResourceJobs(keyspace).remove(conceptId);
+    @Override
+    public void deleteJobResource(String keyspace, String resourceId) {
+        getResourceJobs(keyspace).remove(resourceId);
     }
 
     /**
