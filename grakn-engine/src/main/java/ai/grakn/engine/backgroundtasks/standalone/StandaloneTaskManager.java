@@ -50,8 +50,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class StandaloneTaskManager implements TaskManager {
-    private static final String RUN_ONCE_NAME = "One off task scheduler.";
-    private static final String RUN_RECURRING_NAME = "Recurring task scheduler.";
     private static final String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
     private static final String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
 
