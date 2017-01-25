@@ -19,8 +19,8 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
 import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -137,7 +137,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             String id = (String)o;
 
             // Mark task as SCHEDULED again.
-            zookeeperStateStorage.updateState(id, SCHEDULED, "", null);
+            zookeeperStateStorage.updateState(id, SCHEDULED, "", null, null, null, null);
 
             String configuration = stateStorage.getState(id)
                                                .configuration()
@@ -156,7 +156,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         Set<String> deadRunners = new HashSet<>();
 
         for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
-            SynchronizedState state = zookeeperStateStorage.getState(id);
+            TaskState state = zookeeperStateStorage.getState(id);
 
             if(state.status() != RUNNING) {
                 break;
