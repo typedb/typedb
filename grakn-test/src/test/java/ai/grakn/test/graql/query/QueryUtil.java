@@ -20,17 +20,15 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import org.hamcrest.Description;
-import org.hamcrest.DiagnosingMatcher;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeDiagnosingMatcher;
+import org.hamcrest.TypeSafeMatcher;
 
 import java.util.List;
-import java.util.Set;
 
 import static ai.grakn.example.MovieGraphFactory.apocalypseNow;
 import static ai.grakn.example.MovieGraphFactory.chineseCoffee;
@@ -40,8 +38,8 @@ import static ai.grakn.example.MovieGraphFactory.hocusPocus;
 import static ai.grakn.example.MovieGraphFactory.spy;
 import static ai.grakn.example.MovieGraphFactory.theMuppets;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
 
 class QueryUtil {
 
@@ -49,21 +47,44 @@ class QueryUtil {
         "Godfather", "The Muppets", "Apocalypse Now", "Heat", "Hocus Pocus", "Spy", "Chinese Coffee"
     };
 
+    static Matcher<MatchQuery> allVariables(Matcher<? extends Iterable<? extends Concept>> matcher) {
+        return new TypeSafeDiagnosingMatcher<MatchQuery>() {
+            @Override
+            public boolean matchesSafely(MatchQuery matchQuery, Description mismatch) {
+                List<? extends Concept> concepts = matchQuery.stream()
+                        .flatMap(result -> result.values().stream())
+                        .collect(toList());
+
+                if (matcher.matches(concepts)) {
+                    return true;
+                } else {
+                    mismatch.appendText("allVariables ");
+                    matcher.describeMismatch(concepts, mismatch);
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("allVariables ").appendDescriptionOf(matcher);
+            }
+        };
+    }
+
     static Matcher<MatchQuery> variable(String varName, Matcher<? extends Iterable<? extends Concept>> matcher) {
         VarName var = VarName.of(varName);
 
-        return new DiagnosingMatcher<MatchQuery>() {
+        return new TypeSafeDiagnosingMatcher<MatchQuery>() {
             @Override
-            public boolean matches(Object item, Description mismatch) {
-                MatchQuery matchQuery = (MatchQuery) item;
+            public boolean matchesSafely(MatchQuery matchQuery, Description mismatch) {
                 List<? extends Concept> concepts = matchQuery.get(varName).collect(toList());
 
-                if (!matcher.matches(concepts)) {
+                if (matcher.matches(concepts)) {
+                    return true;
+                } else {
                     mismatch.appendText("variable ").appendValue(var).appendText(" ");
                     matcher.describeMismatch(concepts, mismatch);
                     return false;
-                } else {
-                    return true;
                 }
             }
 
@@ -74,56 +95,75 @@ class QueryUtil {
         };
     }
 
-    static Matcher<Concept> called(Object value) {
-        return has(new ResourceType[] {}, value);
+    static Matcher<Concept> hasValue(Object value) {
+        return hasValue(is(value));
     }
 
-    static <T> Matcher<Concept> has(ResourceType<T> type, T value) {
-        return has(new ResourceType[] {type}, value);
-    }
-
-    static Matcher<Concept> has(ResourceType[] types, Object value) {
-        return new DiagnosingMatcher<Concept>() {
+    static Matcher<Concept> hasValue(Matcher<?> matcher) {
+        return new TypeSafeDiagnosingMatcher<Concept>() {
             @Override
-            public boolean matches(Object item, Description mismatch) {
-                Concept concept = (Concept) item;
-                Set<Object> values = concept.asInstance().resources(types).stream().map(Resource::getValue).collect(toSet());
+            protected boolean matchesSafely(Concept concept, Description mismatch) {
+                Object value = concept.asResource().getValue();
 
-                if (!values.contains(value)) {
-                    mismatch.appendText("was ").appendValue(values);
-                    return false;
-                } else {
+                if (matcher.matches(value)) {
                     return true;
+                } else {
+                    matcher.describeMismatch(value, mismatch);
+                    return false;
                 }
             }
 
             @Override
             public void describeTo(Description description) {
-                description.appendValue(value);
+                description.appendText("hasValue ").appendDescriptionOf(matcher);
             }
         };
     }
 
-    static Matcher<Concept> type(String typeNameValue) {
-        TypeName typeName = TypeName.of(typeNameValue);
-
-        return new DiagnosingMatcher<Concept>() {
+    static Matcher<Concept> hasType(Type type) {
+        return new TypeSafeDiagnosingMatcher<Concept>() {
             @Override
-            public boolean matches(Object item, Description mismatch) {
-                Concept concept = (Concept) item;
-                TypeName thisName = concept.asType().getName();
-
-                if (!thisName.equals(typeName)) {
-                    mismatch.appendText("was ").appendValue(thisName);
-                    return false;
-                } else {
+            protected boolean matchesSafely(Concept concept, Description mismatch) {
+                Instance instance = concept.asInstance();
+                if (type.instances().contains(instance)) {
                     return true;
+                } else {
+                    mismatch.appendText("hasType ").appendValue(instance.type());
+                    return false;
                 }
             }
 
             @Override
             public void describeTo(Description description) {
-                description.appendValue(typeName);
+                description.appendText("hasType ").appendValue(type);
+            }
+        };
+    }
+
+    static Matcher<Concept> isCasting() {
+        return new TypeSafeMatcher<Concept>() {
+            @Override
+            public boolean matchesSafely(Concept concept) {
+                return concept.isInstance() && concept.asInstance().type().isRoleType();
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("isCasting");
+            }
+        };
+    }
+
+    static Matcher<Concept> isInstance() {
+        return new TypeSafeMatcher<Concept>() {
+            @Override
+            public boolean matchesSafely(Concept concept) {
+                return concept.isInstance();
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("isInstance");
             }
         };
     }

@@ -56,6 +56,7 @@ public class MovieGraphFactory {
     public static RelationType hasCast, directedBy, hasGenre, hasCluster;
     public static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     public static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
+    public static RuleType aRuleType;
 
     public static Instance godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
     public static Instance marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
@@ -313,7 +314,7 @@ public class MovieGraphFactory {
 
     private static void buildRules() {
         // These rules are totally made up for testing purposes and don't work!
-        RuleType aRuleType = graknGraph.putRuleType("a-rule-type");
+        aRuleType = graknGraph.putRuleType("a-rule-type");
         aRuleType.hasResource(name);
 
         Pattern lhs = graknGraph.graql().parsePattern("$x id 'expect-lhs'");
