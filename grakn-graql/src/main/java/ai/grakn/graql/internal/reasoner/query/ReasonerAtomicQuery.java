@@ -20,11 +20,9 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Var;
@@ -35,12 +33,13 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
-import javafx.util.Pair;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,33 +185,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private QueryAnswers insert() {
         QueryAnswers insertAnswers = new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
         if(insertAnswers.isEmpty()){
-            Atom atom = getAtom();
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
-            Set<Concept> insertedConcepts = insert.stream().flatMap(result -> result.values().stream()).collect(Collectors.toSet());
-            //extract resource/relation id if needed
-            if (atom.isUserDefinedName()) {
-                insertedConcepts.stream()
-                        .filter(c -> c.isResource() || c.isRelation())
-                        .forEach(c -> {
-                            Map<VarName, Concept> answer = new HashMap<>();
-                            if (c.isResource()) {
-                                answer.put(atom.getVarName(), graph().getConcept(getIdPredicate(atom.getVarName()).getPredicate()));
-                                answer.put(atom.getValueVariable(), c);
-                            } else if (c.isRelation()) {
-                                answer.put(atom.getVarName(), c);
-                                Map<RoleType, Pair<VarName, Type>> roleMap = atom.getRoleVarTypeMap();
-                                Map<RoleType, Instance> roleplayers = ((ai.grakn.concept.Relation) c).rolePlayers()
-                                        .entrySet().stream()
-                                        .filter(entry -> entry.getValue() != null)
-                                        .filter(entry -> roleMap.containsKey(entry.getKey()))
-                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                                roleplayers.entrySet().forEach(entry ->
-                                        answer.put(roleMap.get(entry.getKey()).getKey(), entry.getValue()));
-                            }
-                            insertAnswers.add(answer);
-                        });
-            }
+            insert.stream()
+                    .map( m ->
+                        m.entrySet().stream()
+                        .collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
+                    .forEach(insertAnswers::add);
        }
        return insertAnswers;
     }
@@ -266,18 +244,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return fullAnswers;
     }
     
-    private QueryAnswers propagateHeadIdPredicates(ReasonerQueryImpl ruleHead, QueryAnswers answers){
+    private QueryAnswers propagateIdPredicates(QueryAnswers answers){
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
-        Set<VarName> queryVars = getVarNames();
         Set<IdPredicate> extraSubs = new HashSet<>();
-        ruleHead.getIdPredicates()
-                .stream().filter(sub -> queryVars.contains(sub.getVarName()))
-                .forEach(extraSubs::add);
-        ruleHead.getTypeConstraints()
-                .stream().flatMap(type -> type.getIdPredicates().stream())
-                .filter(sub -> queryVars.contains(sub.getVarName()))
+        this.getTypeConstraints().stream()
+                .map(TypeAtom::getPredicate).filter(Objects::nonNull)
                 .forEach(extraSubs::add);
 
         answers.forEach( map -> {
@@ -314,22 +287,18 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subs = subs.join(localSubs);
         }
 
-        QueryAnswers answers = this.propagateHeadIdPredicates(ruleHead, subs)
+        QueryAnswers answers = subs
                 .filterNonEquals(ruleBody)
                 .filterVars(ruleHead.getVarNames())
                 .filterKnown(this.getAnswers());
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()){
-            QueryAnswers newAnswers = new ReasonerAtomicQuery(ruleHead, answers).materialise();
-            if (!newAnswers.isEmpty()) {
-                if (materialise) answers = newAnswers;
-                else answers = answers.join(newAnswers);
-            }
+            answers = new ReasonerAtomicQuery(ruleHead, answers).materialise();
         }
 
-        QueryAnswers filteredAnswers = answers
+        QueryAnswers filteredAnswers = this.propagateIdPredicates(answers)
                 .filterVars(this.getVarNames())
-                .permute(this.getAtom());
+                .permute(this.getAtom(), ruleHead.getAtom());
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
@@ -376,6 +345,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         public QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
             this.rules = outer().getAtom().getApplicableRules();
+            LOG.debug("applicable rules: " + rules.size());
             lookup(cache);
             this.answerIterator = outer().newAnswers.iterator();
         }

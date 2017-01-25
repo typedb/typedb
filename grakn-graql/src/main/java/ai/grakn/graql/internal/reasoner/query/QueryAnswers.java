@@ -24,9 +24,11 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
@@ -60,14 +62,20 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
     public QueryAnswers(){super();}
     public QueryAnswers(Collection<? extends Map<VarName, Concept>> ans){ super(ans);}
 
-    public Set<VarName> getVars(){
+    private Set<VarName> getVars(){
         Optional<Map<VarName, Concept>> map = this.stream().findFirst();
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
 
-    public QueryAnswers permute(Atom atom){
-        if (!atom.isRelation()) return this;
-        List<VarName> permuteVars = new ArrayList<>(((Relation) atom).getUnmappedRolePlayers());
+    public QueryAnswers permute(Atom atom, Atom headAtom){
+        if (!(atom.isRelation() && headAtom.isRelation())) return this;
+        List<VarName> permuteVars = new ArrayList<>();
+        //if atom is match all atom, add type from rule head and find unmapped roles
+        Relation relAtom = atom.getValueVariable().getValue().isEmpty()?
+                ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
+                (Relation) atom;
+        relAtom.getUnmappedRolePlayers().forEach(permuteVars::add);
+
         List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
         Set<Map<VarName, VarName>> unifierSet = getUnifiersFromPermutations(permuteVars, varPermutations);
         QueryAnswers permutedAnswers = new QueryAnswers();
@@ -222,7 +230,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         Map<VarName, String> typeConstraints = new HashMap<>();
 
         //find extra type constraints
-        Set<Atom> extraTypes =  Utility.subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
+        Set<TypeAtom> extraTypes =  Utility.subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
         extraTypes.removeAll(childQuery.getTypeConstraints());
         extraTypes.stream().map(t -> (Binary) t).forEach(type -> {
             Predicate predicate = parentQuery.getIdPredicate(type.getValueVariable());
