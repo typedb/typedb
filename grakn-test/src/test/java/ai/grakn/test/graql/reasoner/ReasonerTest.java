@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.experimental.theories.suppliers.TestedOn;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -359,6 +360,36 @@ public class ReasonerTest {
                 "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y, $type;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testPlays(){
+        String queryString = "match $x plays geo-entity;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
+        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
+                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw' or " +
+                "$name value 'Warsaw' or $name value 'Wroclaw' or " +
+                "$name value 'Masovia' or $name value 'Silesia';}; select $x, $y;";
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testPlays2(){
+        String queryString = "match $x plays $role;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
+        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
+                "{" +
+                "{$role type-name geo-entity or $role type-name concept or $role type-name role;};" +
+                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw' or " +
+                "$name value 'Warsaw' or $name value 'Wroclaw' or " +
+                "$name value 'Masovia' or $name value 'Silesia';};" +
+                "} or {" +
+                "{$role type-name entity-location or $role type-name concept or $role type-name role;};" +
+                "{$name value 'Europe' or $name value 'Warsaw' or $name value 'Masovia' or $name value 'Silesia';};" +
+                "}; select $x, $y, $role;";
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
     }
 

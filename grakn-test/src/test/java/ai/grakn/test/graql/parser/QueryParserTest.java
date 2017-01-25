@@ -520,6 +520,16 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testParsePlaysName() {
+        assertParseEquivalence("match $x plays actor;");
+    }
+
+    @Test
+    public void testParsePlaysVariables() {
+        assertParseEquivalence("match $x plays $y;");
+    }
+
+    @Test
     public void testParseComputeCount() {
         assertParseEquivalence("compute count;");
     }
