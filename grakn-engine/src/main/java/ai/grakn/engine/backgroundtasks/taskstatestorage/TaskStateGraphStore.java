@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.taskstorage;
+package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;

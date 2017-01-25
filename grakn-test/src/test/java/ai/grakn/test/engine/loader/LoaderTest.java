@@ -30,7 +30,7 @@ import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.taskstorage.TaskStateGraphStore;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderTask;
 import ai.grakn.exception.GraknValidationException;

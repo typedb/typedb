@@ -20,7 +20,7 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.TaskStateInMemoryStore;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import javafx.util.Pair;
 import org.junit.Before;
 import org.junit.Test;

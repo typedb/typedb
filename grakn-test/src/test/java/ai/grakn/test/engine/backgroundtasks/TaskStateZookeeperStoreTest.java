@@ -20,7 +20,7 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.TaskStateZookeeperStore;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
