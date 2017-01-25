@@ -25,12 +25,12 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -43,6 +43,7 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
+import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -273,6 +274,16 @@ class VarImpl implements VarAdmin {
     @Override
     public Var rel(Var roletype, Var roleplayer) {
         return addCasting(new RelationPlayerImpl(roletype.admin(), roleplayer.admin()));
+    }
+
+    @Override
+    public Var plays(String roleType) {
+        return plays(Graql.name(roleType));
+    }
+
+    @Override
+    public Var plays(Var roleType) {
+        return addProperty(new PlaysProperty(roleType.admin()));
     }
 
     @Override

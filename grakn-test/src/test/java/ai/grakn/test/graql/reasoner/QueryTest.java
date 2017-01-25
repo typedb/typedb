@@ -195,5 +195,4 @@ public class QueryTest {
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
-
 }
