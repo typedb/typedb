@@ -715,8 +715,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit(EngineCache cache) throws GraknValidationException{
         commit((castings, resources) -> {
-            cache.addJobCasting(getKeyspace(), castings);
-            cache.addJobResource(getKeyspace(), resources);
+            String keyspace = getKeyspace();
+            if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+                cache.addJobCasting(keyspace, castings);
+                cache.addJobResource(keyspace, resources);
+            }
         });
     }
 
