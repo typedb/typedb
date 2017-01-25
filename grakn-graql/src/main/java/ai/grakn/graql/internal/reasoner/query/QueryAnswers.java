@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import com.google.common.collect.Maps;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -182,32 +183,12 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @return unified query answers
      */
     public QueryAnswers unify(Map<VarName, VarName> unifiers){
-        return unify(unifiers, new HashMap<>(), new HashMap<>(), new HashMap<>());
-    }
-
-    private QueryAnswers unify(Map<VarName, VarName> unifiers, Map<VarName, Concept> subVars,
-                               Map<VarName, Concept> valueConstraints, Map<VarName, String> typeConstraints){
         if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
-        this.forEach(entry -> {
-            Map<VarName, Concept> answer = new HashMap<>(subVars);
-            boolean isCompatible = true;
-            Iterator<Map.Entry<VarName, Concept>> it = entry.entrySet().iterator();
-            while (it.hasNext() && isCompatible) {
-                Map.Entry<VarName, Concept> elem = it.next();
-                VarName var = elem.getKey();
-                Concept con = elem.getValue();
-                if (unifiers.containsKey(var)) var = unifiers.get(var);
-                if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
-                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.getId().getValue()) ) ) {
-                    isCompatible = false;
-                } else {
-                    answer.put(var, con);
-                }
-            }
-            if (isCompatible && !answer.isEmpty()) {
-                unifiedAnswers.add(answer);
-            }
+        this.forEach(answer -> {
+            Map<VarName, Concept> unifiedAnswer = answer.entrySet().stream()
+                    .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())? unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
+            unifiedAnswers.add(unifiedAnswer);
         });
 
         return unifiedAnswers;
@@ -218,44 +199,13 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @param parentQuery parent atomic query containing target variables
      * @return unified answers
      */
-    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, QueryAnswers answers){
+    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
+        QueryAnswers answers = childQuery.getAnswers();
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        GraknGraph graph = childQuery.graph();
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 
         Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
-
-        //identify extra subs contribute to/constraining answers
-        Map<VarName, Concept> subVars = new HashMap<>();
-        Map<VarName, Concept> valueConstraints = new HashMap<>();
-        Map<VarName, String> typeConstraints = new HashMap<>();
-
-        //find extra type constraints
-        Set<TypeAtom> extraTypes =  Utility.subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
-        extraTypes.removeAll(childQuery.getTypeConstraints());
-        extraTypes.stream().map(t -> (Binary) t).forEach(type -> {
-            Predicate predicate = parentQuery.getIdPredicate(type.getValueVariable());
-            if (predicate != null) typeConstraints.put(type.getVarName(), predicate.getPredicateValue());
-        });
-
-        //find extra subs
-        if (parentQuery.getVarNames().size() != childQuery.getVarNames().size()){
-            //get |child - parent| set difference
-            Set<IdPredicate> extraSubs = Utility.subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
-            extraSubs.forEach( sub -> {
-                VarName var = sub.getVarName();
-                Concept con = graph.getConcept(sub.getPredicate());
-                if (unifiers.containsKey(var)) var = unifiers.get(var);
-                if (childQuery.getVarNames().size() > parentQuery.getVarNames().size()) {
-                    valueConstraints.put(var, con);
-                } else {
-                    subVars.put(var, con);
-                }
-            });
-        }
-
-        QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, valueConstraints, typeConstraints);
-        return unifiedAnswers.filterVars(parentQuery.getVarNames());
+        return answers.unify(unifiers).filterVars(parentQuery.getVarNames());
     }
 }

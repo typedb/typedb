@@ -172,7 +172,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public void memoryLookup(QueryCache cache) {
         ReasonerAtomicQuery equivalentQuery = cache.get(this);
         if(equivalentQuery != null) {
-            QueryAnswers lookup = QueryAnswers.getUnifiedAnswers(this, equivalentQuery, equivalentQuery.getAnswers());
+            QueryAnswers lookup = QueryAnswers.getUnifiedAnswers(this, equivalentQuery);
             lookup.removeAll(answers);
             answers.addAll(lookup);
             newAnswers.addAll(lookup);
