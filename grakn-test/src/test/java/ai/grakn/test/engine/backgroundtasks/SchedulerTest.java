@@ -22,7 +22,7 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -34,7 +34,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -53,7 +52,7 @@ import static org.junit.Assert.assertNotNull;
  * Each test needs to be run with a clean Kafka to pass
  */
 public class SchedulerTest {
-    private GraknStateStorage stateStorage = new GraknStateStorage();
+    private TaskStateGraphStore stateStorage = new TaskStateGraphStore();
 
     @Rule
     public final EngineContext engine = EngineContext.startServer();
