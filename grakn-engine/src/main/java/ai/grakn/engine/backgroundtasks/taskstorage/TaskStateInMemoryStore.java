@@ -30,10 +30,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class InMemoryStateStorage implements TaskStateStorage {
+public class TaskStateInMemoryStore implements TaskStateStorage {
     private final Map<String, SoftReference<TaskState>> storage;
 
-    public InMemoryStateStorage() {
+    public TaskStateInMemoryStore() {
         storage = new ConcurrentHashMap<>();
     }
 

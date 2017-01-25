@@ -22,7 +22,7 @@ import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.InMemoryStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
 import org.json.JSONObject;
@@ -68,7 +68,7 @@ public class StandaloneTaskManager implements TaskManager {
 
     private StandaloneTaskManager() {
         instantiatedTasks = new ConcurrentHashMap<>();
-        stateStorage = new InMemoryStateStorage();
+        stateStorage = new TaskStateInMemoryStore();
         stateUpdateLock = new ReentrantLock();
 
         ConfigProperties properties = ConfigProperties.getInstance();
