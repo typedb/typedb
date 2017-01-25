@@ -267,7 +267,7 @@ public class TaskState implements Cloneable {
         object.put(TASK_CONFIGURATION.getValue(), configuration != null ? configuration.toString() : new JSONObject().toString());
         object.put(TASK_CLASS_NAME.getValue(), taskClassName);
 
-        return object.toString().getBytes();
+        return object.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     public static TaskState deserialise(byte[] b) {

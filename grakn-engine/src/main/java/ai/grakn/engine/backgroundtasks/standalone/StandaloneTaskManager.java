@@ -184,8 +184,6 @@ public class StandaloneTaskManager implements TaskManager {
             }
 
             Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
-            String name = this.getClass().getName();
-
             synchronized (pair) {
                 if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
                     LOG.info("Stopping a currently scheduled task " + id);
