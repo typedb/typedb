@@ -20,21 +20,34 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.graphs.AdmissionsGraph;
+import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -60,6 +73,9 @@ public class AtomicQueryTest {
 
     @ClassRule
     public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+
+    @ClassRule
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
 
     @ClassRule
     public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
