@@ -198,7 +198,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      */
     private void markAsScheduled(String id) {
         LOG.debug("Marking " + id + " as scheduled");
-        zkStorage.updateState(id, SCHEDULED, null, null);
+        zkStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
         stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
     }
 

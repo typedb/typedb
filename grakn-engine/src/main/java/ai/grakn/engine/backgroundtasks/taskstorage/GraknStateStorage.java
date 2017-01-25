@@ -293,7 +293,7 @@ public class GraknStateStorage implements StateStorage {
                 return state.engineID(resourceValue.toString());
             }
             if (resourceName.equals(RUN_AT)) {
-                return state.runAt(Instant.ofEpochMilli((Long)resourceValue));
+                return state.runAt(Instant.ofEpochMilli((Long) resourceValue));
             }
             if (resourceName.equals(RECURRING)) {
                 return state.isRecurring((Boolean) resourceValue);

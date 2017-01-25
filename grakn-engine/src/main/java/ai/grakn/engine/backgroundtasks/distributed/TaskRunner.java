@@ -245,7 +245,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private void updateTaskState(String id, TaskStatus status, String statusChangeBy, String engineID,
                                  Throwable failure, String checkpoint) {
         LOG.debug("Marking task " + id + " as " + status.name());
-        zkStorage.updateState(id, status, engineID, checkpoint);
+        zkStorage.updateState(id, status, statusChangeBy, engineID, failure, checkpoint, null);
         graknStorage.updateState(id, status, statusChangeBy, engineID, failure, checkpoint, null);
     }
 
