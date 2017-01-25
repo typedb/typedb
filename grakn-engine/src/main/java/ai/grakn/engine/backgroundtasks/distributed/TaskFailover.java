@@ -50,21 +50,19 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
+    private final StateStorage stateStorage;
+
     private Map<String, ChildData> current;
     private TreeCache cache;
     private KafkaProducer<String, String> producer;
-    private StateStorage stateStorage;
-    private ZookeeperStateStorage zookeeperStateStorage;
 
-    public TaskFailover(CuratorFramework client, TreeCache cache, ZookeeperStateStorage zookeeperStateStorage) throws Exception {
+    public TaskFailover(CuratorFramework client, TreeCache cache, StateStorage stateStorage) throws Exception {
+        this.stateStorage = stateStorage;
+
         if(OPENED.compareAndSet(false, true)) {
             this.cache = cache;
             current = cache.getCurrentChildren(RUNNERS_WATCH);
             producer = kafkaProducer();
-
-            stateStorage = new GraknStateStorage();
-
-            this.zookeeperStateStorage = zookeeperStateStorage;
 
             scanStaleStates(client);
         }
@@ -136,14 +134,11 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         for(Object o: ids) {
             String id = (String)o;
 
-            // Mark task as SCHEDULED again.
-            zookeeperStateStorage.updateState(id, SCHEDULED, "", null, null, null, null);
+            // Mark task as SCHEDULED again
+            TaskState taskState = stateStorage.getState(id);
 
-            String configuration = stateStorage.getState(id)
-                                               .configuration()
-                                               .toString();
-
-            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, configuration));
+            stateStorage.updateState(taskState.status(SCHEDULED));
+            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState.configuration().toString()));
         }
     }
 
@@ -156,7 +151,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         Set<String> deadRunners = new HashSet<>();
 
         for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
-            TaskState state = zookeeperStateStorage.getState(id);
+            TaskState state = stateStorage.getState(id);
 
             if(state.status() != RUNNING) {
                 break;

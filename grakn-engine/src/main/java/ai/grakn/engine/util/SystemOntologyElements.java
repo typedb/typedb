@@ -36,4 +36,5 @@ public interface SystemOntologyElements {
     TypeName TASK_EXCEPTION = TypeName.of("task-exception");
     TypeName TASK_CHECKPOINT = TypeName.of("task-checkpoint");
     TypeName TASK_CONFIGURATION = TypeName.of("task-configuration");
+    TypeName SERIALISED_TASK = TypeName.of("task-serialized");
 }

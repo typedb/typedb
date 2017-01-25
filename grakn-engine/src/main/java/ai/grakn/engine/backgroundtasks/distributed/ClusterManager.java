@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.engine.util.EngineID;
 import org.apache.curator.framework.CuratorFramework;
@@ -58,7 +60,8 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private Thread schedulerThread;
 
     private DistributedTaskManager taskManager;
-    private ZookeeperStateStorage zookeeperStorage;
+    private ZookeeperConnection zookeeperConnection;
+    private StateStorage stateStorage;
     private LeaderSelector leaderSelector;
     private Scheduler scheduler;
     private TreeCache cache;
@@ -70,6 +73,10 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
             LOG.debug("Starting Cluster manager on " + ENGINE_ID);
 
             startZookeeperConnection();
+
+            //TODO start state storage, decide using reflection
+            stateStorage = new GraknStateStorage();
+
             electLeader();
             startTaskManager();
             startTaskRunner();
@@ -126,10 +133,17 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     }
 
     /**
-     * Get the Zookeeper storage connection for this machine
+     * Get the state storage for this cluster manager
      */
-    public ZookeeperStateStorage getStorage(){
-        return zookeeperStorage;
+    public StateStorage getStorage(){
+        return stateStorage;
+    }
+
+    /**
+     * Expose the connection to zookeeper
+     */
+    public ZookeeperConnection getZookeeperConnection(){
+        return zookeeperConnection;
     }
 
     /**
@@ -145,7 +159,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      * @throws Exception Any error connecting to Zookeeper while waiting for Leader
      */
     private void electLeader() throws Exception {
-        leaderSelector = new LeaderSelector(zookeeperStorage.connection(), SCHEDULER, this);
+        leaderSelector = new LeaderSelector(zookeeperConnection.connection(), SCHEDULER, this);
         leaderSelector.autoRequeue();
 
         // the selection for this instance doesn't start until the leader selector is started
@@ -160,7 +174,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      * Instantiate an instance of the distributed task manager to accept and run tasks
      */
     private void startTaskManager() {
-        taskManager = new DistributedTaskManager(zookeeperStorage);
+        taskManager = new DistributedTaskManager(stateStorage);
     }
 
     /**
@@ -175,7 +189,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      * @throws Exception If an exception is thrown opening the TaskRunner
      */
     private void startTaskRunner() throws Exception {
-        taskRunner = new TaskRunner(zookeeperStorage);
+        taskRunner = new TaskRunner(stateStorage, zookeeperConnection);
 
         taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
         taskRunnerThread.start();
@@ -195,7 +209,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      * @throws Exception If there was a problem instantiating connection to Zookeeper
      */
     private void startZookeeperConnection() throws Exception{
-        zookeeperStorage = new ZookeeperStateStorage();
+        zookeeperConnection = new ZookeeperConnection();
     }
 
     /**
@@ -208,7 +222,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         if (failover!=null) {
             failover.close();
         }
-        zookeeperStorage.close();
+        zookeeperConnection.close();
     }
 
     /**
@@ -218,7 +232,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private void startScheduler() throws Exception {
         LOG.info(ENGINE_ID + " has taken over the scheduler");
 
-        scheduler = new Scheduler(zookeeperStorage);
+        scheduler = new Scheduler(stateStorage);
 
         schedulerThread = new Thread(scheduler, SCHEDULER_THREAD_NAME + scheduler.hashCode());
         schedulerThread.setDaemon(true);
@@ -234,7 +248,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
     private void registerFailover(CuratorFramework client) throws Exception {
         cache = new TreeCache(client, RUNNERS_WATCH);
-        failover = new TaskFailover(client, cache, zookeeperStorage);
+        failover = new TaskFailover(client, cache, stateStorage);
         cache.getListenable().addListener(failover);
         cache.start();
     }
