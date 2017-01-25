@@ -21,8 +21,6 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
@@ -38,7 +36,6 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_P
  */
 public class ZookeeperConnection {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ZookeeperConnection.class);
     private final CuratorFramework zookeeperConnection = ConfigHelper.client();
 
     /**
