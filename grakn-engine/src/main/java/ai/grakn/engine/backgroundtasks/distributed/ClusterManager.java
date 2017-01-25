@@ -202,8 +202,12 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      * Close all connections to Zookeeper
      */
     private void stopZookeeperConnection(){
-        cache.close();
-        failover.close();
+        if (cache!=null) {
+            cache.close();
+        }
+        if (failover!=null) {
+            failover.close();
+        }
         zookeeperStorage.close();
     }
 
