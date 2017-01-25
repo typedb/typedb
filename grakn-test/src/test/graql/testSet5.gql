@@ -1,0 +1,45 @@
+insert
+
+#Roles
+
+role1 sub role;
+role2 sub role;
+
+
+#Entities
+
+entity1 sub entity
+	plays-role role1
+	plays-role role2;
+
+entity2 sub entity
+	plays-role role1
+	plays-role role2;
+
+
+#Relations
+
+relation1 sub relation
+	has-role role1
+	has-role role2;
+
+
+#Rules
+
+isa inference-rule 
+	lhs {
+		(role1:$x, role2:$y) isa relation1;
+		(role1:$y, role2:$z) isa relation1;
+	}
+	rhs {
+		$u isa entity2;
+	};
+
+
+#Data
+
+$x isa entity1;
+$y isa entity1;
+$z isa entity1;
+(role1:$x, role2:$y) isa relation1;
+(role1:$y, role2:$z) isa relation1;
