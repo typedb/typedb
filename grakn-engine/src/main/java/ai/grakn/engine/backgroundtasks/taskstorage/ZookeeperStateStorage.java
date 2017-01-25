@@ -23,10 +23,14 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import javafx.util.Pair;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.CreateMode;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Set;
 
@@ -52,37 +56,14 @@ public class ZookeeperStateStorage implements StateStorage {
     private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s" + TASK_STATE_SUFFIX;
 
     private final KafkaLogger LOG = KafkaLogger.getInstance();
-    private final CuratorFramework zookeeperConnection = ConfigHelper.client();
+    private final CuratorFramework zookeeperConnection;
 
-    public ZookeeperStateStorage() throws Exception {
-        zookeeperConnection.start();
-        zookeeperConnection.blockUntilConnected();
-
-        createZKPaths();
-    }
-
-    public void close() {
-        zookeeperConnection.close();
-    }
-
-    public CuratorFramework connection(){
-        return zookeeperConnection;
+    public ZookeeperStateStorage(ZookeeperConnection connection) throws Exception {
+        zookeeperConnection = connection.connection();
     }
 
     @Override
-    public String newState(String taskName, String createdBy, Instant runAt, Boolean recurring, long interval, JSONObject configuration) {
-        if (taskName == null || createdBy == null || runAt == null || recurring == null) {
-            return null;
-        }
-
-        TaskState task = new TaskState(taskName)
-                .status(TaskStatus.CREATED)
-                .creator(createdBy)
-                .runAt(runAt)
-                .isRecurring(recurring)
-                .interval(interval)
-                .configuration(configuration);
-
+    public String newState(TaskState task){
         try {
             zookeeperConnection.create()
                     .creatingParentContainersIfNeeded()
@@ -90,6 +71,7 @@ public class ZookeeperStateStorage implements StateStorage {
 
         } catch (Exception exception){
             LOG.error("Could not write task state to Zookeeper");
+            //TODO do not throw runtime exception
             throw new RuntimeException("Could not write state to storage " + getFullStackTrace(exception));
         }
 
@@ -97,33 +79,8 @@ public class ZookeeperStateStorage implements StateStorage {
     }
 
     @Override
-    public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String engineID, Throwable failure, String checkpoint, JSONObject configuration){
-        if(id == null) {
-            return false;
-        }
-
-        if(status == null && engineID == null && checkpoint == null) {
-            return false;
-        }
-
-       TaskState task = getState(id);
-        if(task == null) {
-            return false;
-        }
-
-        // Update values
-        if (status != null) {
-            task.status(status);
-        }
-        if (engineID != null) {
-            task.engineID(engineID);
-        }
-        if (checkpoint != null) {
-            task.checkpoint(checkpoint);
-        }
-
+    public Boolean updateState(TaskState task){
         try {
-            // Save to ZK
             zookeeperConnection.setData()
                     .forPath(format(ZK_TASK_PATH, task.getId()), task.serialise());
         }
@@ -150,23 +107,5 @@ public class ZookeeperStateStorage implements StateStorage {
     @Override
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
         throw new UnsupportedOperationException("Task retrieval not supported");
-    }
-
-    private void createZKPaths() throws Exception {
-        if(zookeeperConnection.checkExists().forPath(SCHEDULER) == null) {
-            zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(SCHEDULER);
-        }
-
-        if(zookeeperConnection.checkExists().forPath(RUNNERS_WATCH) == null) {
-            zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(RUNNERS_WATCH);
-        }
-
-        if(zookeeperConnection.checkExists().forPath(RUNNERS_STATE) == null) {
-            zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(RUNNERS_STATE);
-        }
-
-        if(zookeeperConnection.checkExists().forPath(TASKS_PATH_PREFIX) == null) {
-            zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(TASKS_PATH_PREFIX);
-        }
     }
 }

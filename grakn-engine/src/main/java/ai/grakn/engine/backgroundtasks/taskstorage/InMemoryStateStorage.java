@@ -49,65 +49,15 @@ public class InMemoryStateStorage implements StateStorage {
         storage = new ConcurrentHashMap<>();
     }
 
-    public String newState(String taskName, String createdBy, Instant runAt, Boolean recurring, long interval, JSONObject configuration) {
-        if(taskName == null || createdBy == null || runAt == null || recurring == null) {
-            return null;
-        }
-
-        TaskState state = new TaskState(taskName);
-        state.creator(createdBy)
-             .runAt(runAt)
-             .isRecurring(recurring)
-             .interval(interval);
-
-        if(configuration != null) {
-            state.configuration(configuration);
-        } else {
-            state.configuration(new JSONObject());
-        }
-
-        String id = UUID.randomUUID().toString();
-        storage.put(id, new SoftReference<>(state));
-
-        return id;
+    @Override
+    public String newState(TaskState state) {
+        storage.put(state.getId(), new SoftReference<>(state));
+        return state.getId();
     }
 
-    public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String engineID,
-                               Throwable failure, String checkpoint, JSONObject configuration) {
-        if(id == null) {
-            return false;
-        }
-
-        if(status == null && statusChangeBy == null && engineID == null && failure == null
-                && checkpoint == null && configuration == null) {
-            return false;
-        }
-
-        TaskState state = storage.get(id).get();
-
-        if (state == null) return false;
-
-        synchronized (state) {
-            state.status(status);
-
-            if(statusChangeBy != null) {
-                state.statusChangedBy(statusChangeBy);
-            }
-            if(engineID != null) {
-                state.engineID(engineID);
-            }
-            if(failure != null) {
-                state.exception(failure.toString())
-                        .stackTrace(Arrays.toString(failure.getStackTrace()));
-            }
-            if(checkpoint != null) {
-                state.checkpoint(checkpoint);
-            }
-            if(configuration != null) {
-                state.configuration(configuration);
-            }
-        }
-
+    @Override
+    public Boolean updateState(TaskState state) {
+        storage.put(state.getId(), new SoftReference<>(state));
         return true;
     }
 
@@ -116,21 +66,7 @@ public class InMemoryStateStorage implements StateStorage {
             return null;
         }
 
-        TaskState state = storage.get(id).get();
-
-        if (state == null) return null;
-
-        TaskState newState = null;
-
-        synchronized (state) {
-            try {
-                newState = state.clone();
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return newState;
+        return storage.get(id).get();
     }
 
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {

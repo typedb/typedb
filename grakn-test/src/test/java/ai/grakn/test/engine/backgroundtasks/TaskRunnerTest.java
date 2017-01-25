@@ -47,6 +47,7 @@ import java.util.HashSet;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static java.time.Instant.now;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
@@ -54,7 +55,6 @@ import static org.junit.Assume.assumeFalse;
 public class TaskRunnerTest {
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
-    private ZookeeperStateStorage zkStorage;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
@@ -66,12 +66,10 @@ public class TaskRunnerTest {
 
     @Before
     public void setup() throws Exception {
-        producer = ConfigHelper.kafkaProducer();
-        stateStorage = new GraknStateStorage();
-
-        // ZooKeeper client
-        zkStorage = engine.getClusterManager().getStorage();
         assumeFalse(usingTinker());
+
+        producer = ConfigHelper.kafkaProducer();
+        stateStorage = engine.getClusterManager().getStorage();
     }
 
     @After
@@ -120,16 +118,16 @@ public class TaskRunnerTest {
         Collection<Pair<String, TaskState>> states = new HashSet<>();
 
         for (int i = 0; i < count; i++) {
-            String id = stateStorage.newState(TestTask.class.getName(),
-                        this.getClass().getName(),
-                        Instant.now(), false, 0,
-                        new JSONObject(singletonMap("name", "task "+i)));
+            TaskState state = new TaskState(TestTask.class.getName())
+                    .creator(this.getClass().getName())
+                    .statusChangedBy(this.getClass().getName())
+                    .runAt(now())
+                    .isRecurring(false)
+                    .configuration(new JSONObject(singletonMap("name", "task "+i)))
+                    .status(status);
 
-            TaskState state = stateStorage.getState(id);
-            state.status(status);
-            zkStorage.newState(TestTask.class.getName(), SchedulerTest.class.getName(), null, null, 0, null);
-
-            states.add(new Pair<>(id, state));
+            stateStorage.newState(state);
+            states.add(new Pair<>(state.getId(), state));
         }
 
         return states;

@@ -21,6 +21,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.util.EngineID;
@@ -53,8 +54,9 @@ public class DistributedTaskManager implements TaskManager {
     private final StateStorage stateStorage;
 
     public DistributedTaskManager(StateStorage stateStorage) {
+        this.stateStorage = stateStorage;
+
         if(OPENED.compareAndSet(false, true)) {
-            this.stateStorage = stateStorage;
             this.producer = ConfigHelper.kafkaProducer();
         }
         else {
@@ -76,18 +78,24 @@ public class DistributedTaskManager implements TaskManager {
     public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
         Boolean recurring = period > 0;
 
-        String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
+        TaskState taskState = new TaskState(task.getClass().getName())
+                .creator(createdBy)
+                .runAt(runAt)
+                .isRecurring(recurring)
+                .interval(period)
+                .configuration(configuration);
+
+        stateStorage.newState(taskState);
         try {
-            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, id, configuration.toString()));
+            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), configuration.toString()));
             producer.flush();
         }
         catch (Exception e) {
-            LOG.error("Could not write to ZooKeeper! - "+ getFullStackTrace(e));
-            stateStorage.updateState(id, FAILED, this.getClass().getName(), EngineID.getInstance().id(), e, null, null);
-            id = null;
+            stateStorage.updateState(taskState.status(FAILED));
+            LOG.error("Could not send task to Kafka " + getFullStackTrace(e));
         }
 
-        return id;
+        return taskState.getId();
     }
 
     @Override

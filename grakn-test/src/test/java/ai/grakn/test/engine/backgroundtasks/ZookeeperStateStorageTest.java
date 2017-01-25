@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
+import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.test.EngineContext;
@@ -35,19 +36,19 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ZookeeperStateStorageTest {
-    private ZookeeperStateStorage stateStorage;
+    private StateStorage stateStorage;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
 
     @Before
     public void setUp() throws Exception {
-        stateStorage = engine.getClusterManager().getStorage();
+        stateStorage = new ZookeeperStateStorage(engine.getClusterManager().getZookeeperConnection());
     }
 
     @Test
     public void testStoreRetrieve() throws Exception {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), now(), false, 0, null);
+        String id = stateStorage.newState(task());
 
         // Retrieve
         TaskState state = stateStorage.getState(id);
@@ -58,21 +59,21 @@ public class ZookeeperStateStorageTest {
     }
 
     @Test
-    public void testStoreWithPartial() throws Exception {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), now(), null, 0, null);
-        assertNull(id);
-    }
-
-    @Test
     public void testUpdate() throws Exception {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), now(), false, 0, null);
+        String id = stateStorage.newState(task());
 
         // Change
         String engineID = UUID.randomUUID().toString();
         String checkpoint = "test checkpoint";
-        stateStorage.updateState(id, SCHEDULED, "bla", engineID, null, checkpoint, null);
 
-        TaskState state = stateStorage.getState(id);
+        TaskState state = stateStorage.getState(id)
+                .status(SCHEDULED)
+                .engineID(engineID)
+                .checkpoint(checkpoint);
+
+        stateStorage.updateState(state);
+
+        state = stateStorage.getState(id);
         assertEquals(SCHEDULED, state.status());
         assertEquals(engineID, state.engineID());
         assertEquals(checkpoint, state.checkpoint());
@@ -80,19 +81,29 @@ public class ZookeeperStateStorageTest {
 
     @Test
     public void testUpdateInvalid() throws Exception {
-        String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), now(), false, 0, null);
+        String id = stateStorage.newState(task());
 
         // update
         String engineID = UUID.randomUUID().toString();
         String checkpoint = "test checkpoint";
-        stateStorage.updateState(null, SCHEDULED, "bla", engineID, null, checkpoint, null);
+
+        TaskState state = stateStorage.getState(id);
+        stateStorage.updateState(state.engineID(engineID).checkpoint(checkpoint));
 
         // get again
-        TaskState state = stateStorage.getState(id);
-        assertEquals(CREATED, state.status());
-
-        stateStorage.updateState(id, null, null, null, null, null, null);
         state = stateStorage.getState(id);
         assertEquals(CREATED, state.status());
+        assertEquals(engineID, state.engineID());
+        assertEquals(checkpoint, state.checkpoint());
+    }
+
+    public TaskState task(){
+        return new TaskState(TestTask.class.getName())
+                .creator(this.getClass().getName())
+                .statusChangedBy(this.getClass().getName())
+                .runAt(now())
+                .isRecurring(false)
+                .interval(0)
+                .configuration(null);
     }
 }
