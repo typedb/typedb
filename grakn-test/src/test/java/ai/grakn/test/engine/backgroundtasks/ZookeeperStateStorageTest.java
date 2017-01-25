@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import ai.grakn.test.EngineContext;
@@ -36,7 +36,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ZookeeperStateStorageTest {
-    private StateStorage stateStorage;
+    private TaskStateStorage stateStorage;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();

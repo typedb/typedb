@@ -18,25 +18,16 @@
 
 package ai.grakn.engine.backgroundtasks.taskstorage;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import javafx.util.Pair;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.CreateMode;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Set;
 
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
 import static java.lang.String.format;
@@ -52,7 +43,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov, Alexandra Orth
  *
  */
-public class ZookeeperStateStorage implements StateStorage {
+public class ZookeeperStateStorage implements TaskStateStorage {
     private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s" + TASK_STATE_SUFFIX;
 
     private final KafkaLogger LOG = KafkaLogger.getInstance();

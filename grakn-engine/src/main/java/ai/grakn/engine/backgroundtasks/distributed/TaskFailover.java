@@ -18,10 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -57,13 +55,13 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
-    private final StateStorage stateStorage;
+    private final TaskStateStorage stateStorage;
 
     private Map<String, ChildData> current;
     private TreeCache cache;
     private KafkaProducer<String, String> producer;
 
-    public TaskFailover(CuratorFramework client, TreeCache cache, StateStorage stateStorage) throws Exception {
+    public TaskFailover(CuratorFramework client, TreeCache cache, TaskStateStorage stateStorage) throws Exception {
         this.stateStorage = stateStorage;
 
         if(OPENED.compareAndSet(false, true)) {

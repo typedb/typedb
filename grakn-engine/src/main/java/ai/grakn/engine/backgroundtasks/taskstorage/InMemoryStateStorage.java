@@ -18,20 +18,16 @@
 
 package ai.grakn.engine.backgroundtasks.taskstorage;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import javafx.util.Pair;
-import org.json.JSONObject;
 
 import java.lang.ref.SoftReference;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -42,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class InMemoryStateStorage implements StateStorage {
+public class InMemoryStateStorage implements TaskStateStorage {
     private final Map<String, SoftReference<TaskState>> storage;
 
     public InMemoryStateStorage() {

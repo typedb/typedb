@@ -19,12 +19,11 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
@@ -51,9 +50,9 @@ public class DistributedTaskManager implements TaskManager {
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final KafkaProducer<String, String> producer;
-    private final StateStorage stateStorage;
+    private final TaskStateStorage stateStorage;
 
-    public DistributedTaskManager(StateStorage stateStorage) {
+    public DistributedTaskManager(TaskStateStorage stateStorage) {
         this.stateStorage = stateStorage;
 
         if(OPENED.compareAndSet(false, true)) {
@@ -104,7 +103,7 @@ public class DistributedTaskManager implements TaskManager {
     }
 
     @Override
-    public StateStorage storage() {
+    public TaskStateStorage storage() {
         return stateStorage;
     }
 
