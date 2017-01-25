@@ -38,10 +38,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class InMemoryStateStorage implements TaskStateStorage {
+public class TaskStateInMemoryStore implements TaskStateStorage {
     private final Map<String, SoftReference<TaskState>> storage;
 
-    public InMemoryStateStorage() {
+    public TaskStateInMemoryStore() {
         storage = new ConcurrentHashMap<>();
     }
 
