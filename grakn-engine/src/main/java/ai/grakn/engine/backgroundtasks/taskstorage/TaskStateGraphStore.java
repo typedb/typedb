@@ -74,13 +74,13 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class GraknStateStorage implements TaskStateStorage {
+public class TaskStateGraphStore implements TaskStateStorage {
     private final static String TASK_VAR = "task";
     private final static int retries = 10;
 
     private final KafkaLogger LOG = KafkaLogger.getInstance();
 
-    public GraknStateStorage() {}
+    public TaskStateGraphStore() {}
 
     @Override
     public String newState(TaskState task) {

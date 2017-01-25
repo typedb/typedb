@@ -20,7 +20,7 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
 import javafx.util.Pair;
 import org.json.JSONObject;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class GraknStateStorageTest {
+public class TaskStateGraphStoreTest {
     private TaskStateStorage stateStorage;
 
     @ClassRule
@@ -52,7 +52,7 @@ public class GraknStateStorageTest {
 
     @Before
     public void setUp() {
-        stateStorage = new GraknStateStorage();
+        stateStorage = new TaskStateGraphStore();
     }
 
     @Test
