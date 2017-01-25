@@ -20,7 +20,7 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.ZookeeperStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -35,7 +35,7 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class ZookeeperStateStorageTest {
+public class TaskStateZookeeperStoreTest {
     private TaskStateStorage stateStorage;
 
     @ClassRule
@@ -43,7 +43,7 @@ public class ZookeeperStateStorageTest {
 
     @Before
     public void setUp() throws Exception {
-        stateStorage = new ZookeeperStateStorage(engine.getClusterManager().getZookeeperConnection());
+        stateStorage = new TaskStateZookeeperStore(engine.getClusterManager().getZookeeperConnection());
     }
 
     @Test
