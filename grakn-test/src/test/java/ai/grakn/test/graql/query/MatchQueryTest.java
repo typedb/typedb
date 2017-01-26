@@ -39,6 +39,7 @@ import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -293,7 +294,7 @@ public class MatchQueryTest {
                 var("y").isa("movie"),
                 var().rel("y").rel("z"),
                 var("z").isa("person").has("name", "Marlon Brando")
-        ).select("x");
+        ).select("x").distinct();
 
         assertThat(query, variable("x", containsInAnyOrder(marlonBrando, alPacino, martinSheen)));
     }
@@ -370,7 +371,8 @@ public class MatchQueryTest {
                 var("a").isa("has-cast")
         ).select("x");
 
-        assertThat(query, variable("x", contains(theMuppets)));
+        // There are two results because Miss Piggy plays both actor and character roles in 'The Muppets' cast
+        assertThat(query, variable("x", contains(theMuppets, theMuppets)));
     }
 
     @Test
@@ -394,10 +396,10 @@ public class MatchQueryTest {
 
     @Test
     public void testVariableAsRoleType() {
-        MatchQuery query = qb.match(var().rel(var().name("genre-of-production"), "y"));
+        MatchQuery query = qb.match(var().rel(var().name("genre-of-production"), "y")).distinct();
 
-        assertThat(query, variable("x", containsInAnyOrder(
-                crime, drama, war, action, comedy, family, musical, comedy, fantasy
+        assertThat(query, variable("y", containsInAnyOrder(
+                crime, drama, war, action, comedy, family, musical, fantasy
         )));
     }
 
@@ -414,11 +416,16 @@ public class MatchQueryTest {
     public void testVariablesEverywhere() {
         MatchQuery query = qb.match(
                 var()
-                        .rel(name("production-with-genre"), var("x").isa(var().sub(name("production"))))
+                        .rel(name("production-with-genre"), var("x").isa(var("y").sub(name("production"))))
                         .rel(var().has("name", "crime"))
         );
 
-        assertThat(query, variable("x", containsInAnyOrder(godfather, heat)));
+        assertThat(query, containsInAnyOrder(
+                ImmutableMap.of("x", godfather, "y", production),
+                ImmutableMap.of("x", godfather, "y", movie),
+                ImmutableMap.of("x", heat,      "y", production),
+                ImmutableMap.of("x", heat,      "y", movie)
+        ));
     }
 
     @Test
@@ -439,7 +446,7 @@ public class MatchQueryTest {
     @Test
     public void testHasReleaseDate() {
         MatchQuery query = qb.match(var("x").has("release-date"));
-        assertThat(query, variable("x", contains(godfather, theMuppets, spy, chineseCoffee)));
+        assertThat(query, variable("x", containsInAnyOrder(godfather, theMuppets, spy, chineseCoffee)));
     }
 
     @Test
@@ -465,7 +472,7 @@ public class MatchQueryTest {
                 var("y").has("name", "Kermit The Frog")
         ).select("x");
 
-        assertThat(query, variable("x", containsInAnyOrder(theMuppets, kermitTheFrog)));
+        assertThat(query, variable("x", (Matcher) hasItem(kermitTheFrog)));
     }
 
     @Test
