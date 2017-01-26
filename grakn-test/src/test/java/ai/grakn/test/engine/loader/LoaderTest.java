@@ -40,14 +40,19 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
+import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class LoaderTest {
 
@@ -95,7 +100,7 @@ public class LoaderTest {
     @Test(expected=RuntimeException.class)
     public void loadAndDontWaitForLongEnoughTest(){
         try {
-            loadAndTime(1);
+            loadAndTime(1000);
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().equals(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage()));
             throw e;
