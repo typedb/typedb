@@ -59,7 +59,7 @@ public class TasksLoadingControllerTest {
     private static final int NUMBER_TO_TEST = 10;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Test
     @Ignore

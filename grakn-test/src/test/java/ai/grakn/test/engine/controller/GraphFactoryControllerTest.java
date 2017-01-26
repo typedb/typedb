@@ -43,7 +43,7 @@ import static org.junit.Assume.assumeTrue;
 public class GraphFactoryControllerTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
 	@Test
 	public void testKeyspaceList() {

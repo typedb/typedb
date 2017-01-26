@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
@@ -55,7 +54,7 @@ public class LoaderTest {
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void startup() throws Exception {
@@ -64,14 +63,13 @@ public class LoaderTest {
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ClusterManager.class)).setLevel(Level.DEBUG);
     }
 
     @Before
     public void setup() {
         //TODO fix this
         graph = engine.graphWithNewKeyspace();
-        loader = new Loader(engine.getClusterManager(), graph.getKeyspace());
+        loader = new Loader(engine.getTaskManager(), graph.getKeyspace());
         loadOntology(graph.getKeyspace());
     }
 

@@ -41,18 +41,18 @@ public class TaskManagerTest {
     private DistributedTaskManager manager;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void setup() throws Exception {
         assumeFalse(usingTinker());
-        manager = engine.getClusterManager().getTaskManager();
+        manager = (DistributedTaskManager) engine.getTaskManager();
         Thread.sleep(5000);
     }
 
     private void waitToFinish(String id) {
         while (true) {
-            TaskStatus status = manager.getState(id);
+            TaskStatus status = manager.storage().getState(id).status();
             if (status == COMPLETED || status == FAILED) {
                 System.out.println(id + " ------> " + status);
                 break;
@@ -85,7 +85,7 @@ public class TaskManagerTest {
         }
 
         ids.forEach(this::waitToFinish);
-        assertTrue(ids.stream().map(manager::getState).allMatch(s -> s == COMPLETED));
+        assertTrue(ids.stream().map(m -> manager.storage().getState(m).status()).allMatch(s -> s == COMPLETED));
         assertEquals(20, TestTask.startedCounter.get()-startCount);
     }
 }

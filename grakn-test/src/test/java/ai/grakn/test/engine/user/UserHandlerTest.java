@@ -45,7 +45,7 @@ public class UserHandlerTest {
     private static String password = "witcher";
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void addUser(){

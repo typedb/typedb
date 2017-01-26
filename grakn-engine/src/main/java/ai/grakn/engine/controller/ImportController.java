@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknEngineServerException;
@@ -66,14 +66,14 @@ public class ImportController {
 
     private final Logger LOG = LoggerFactory.getLogger(ImportController.class);
     private final AtomicBoolean loadingInProgress = new AtomicBoolean(false);
-    private final ClusterManager manager;
+    private final TaskManager manager;
 
     private static final String INSERT_KEYWORD = "insert";
     private static final String MATCH_KEYWORD = "match";
 
-    public ImportController(ClusterManager manager) {
+    public ImportController(TaskManager manager) {
         if (manager==null) {
-            throw new GraknEngineServerException(500,"Cluster manager has not been instantiated.");
+            throw new GraknEngineServerException(500,"Task manager has not been instantiated.");
         }
         this.manager = manager;
 

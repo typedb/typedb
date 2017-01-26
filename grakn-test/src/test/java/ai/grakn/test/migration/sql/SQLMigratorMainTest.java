@@ -23,7 +23,6 @@ import ai.grakn.test.EngineContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -52,7 +51,7 @@ public class SQLMigratorMainTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup() throws SQLException {
@@ -131,7 +130,7 @@ public class SQLMigratorMainTest {
     }
 
     private void run(String... args){
-        start(engine.getClusterManager(), args);
+        start(engine.getTaskManager(), args);
     }
 
     private void runAndAssertDataCorrect(String... args){

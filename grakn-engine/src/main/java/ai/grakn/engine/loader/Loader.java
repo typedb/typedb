@@ -18,9 +18,8 @@
 
 package ai.grakn.engine.loader;
 
+import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
@@ -56,18 +55,18 @@ public class Loader {
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
     private static final ConfigProperties properties = ConfigProperties.getInstance();
 
-    private final DistributedTaskManager manager;
+    private final TaskManager manager;
     private Semaphore blocker = new Semaphore(25);
 
     private int batchSize;
     private final Collection<InsertQuery> queries;
     private final String keyspace;
 
-    public Loader(ClusterManager manager, String keyspace){
+    public Loader(TaskManager manager, String keyspace){
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
 
-        this.manager = manager.getTaskManager();
+        this.manager = manager;
         setBatchSize(properties.getPropertyAsInt(BATCH_SIZE_PROPERTY));
     }
 
@@ -222,7 +221,7 @@ public class Loader {
      * @return if the given task has been completed or failed.
      */
     private boolean isCompleted(String taskID){
-        TaskStatus status = manager.getState(taskID);
+        TaskStatus status = manager.storage().getState(taskID).status();
         return status == COMPLETED || status == FAILED;
     }
 

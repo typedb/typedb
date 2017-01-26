@@ -71,7 +71,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private KafkaConsumer<String, String> consumer;
     private volatile boolean running;
 
-    public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) throws Exception {
+    public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
         this.connection = connection;
 
@@ -232,17 +232,21 @@ public class TaskRunner implements Runnable, AutoCloseable {
         }
     }
 
-    private void registerAsRunning() throws Exception {
-        if(connection.connection().checkExists().forPath(RUNNERS_WATCH + "/" + ENGINE_ID) == null) {
-            connection.connection().create()
-                    .creatingParentContainersIfNeeded()
-                    .withMode(CreateMode.EPHEMERAL).forPath(RUNNERS_WATCH + "/" + ENGINE_ID);
-        }
+    private void registerAsRunning() {
+        try {
+            if (connection.connection().checkExists().forPath(RUNNERS_WATCH + "/" + ENGINE_ID) == null) {
+                connection.connection().create()
+                        .creatingParentContainersIfNeeded()
+                        .withMode(CreateMode.EPHEMERAL).forPath(RUNNERS_WATCH + "/" + ENGINE_ID);
+            }
 
-        if(connection.connection().checkExists().forPath(RUNNERS_STATE+"/"+ ENGINE_ID) == null) {
-            connection.connection().create()
-                    .creatingParentContainersIfNeeded()
-                    .forPath(RUNNERS_STATE + "/" + ENGINE_ID);
+            if (connection.connection().checkExists().forPath(RUNNERS_STATE + "/" + ENGINE_ID) == null) {
+                connection.connection().create()
+                        .creatingParentContainersIfNeeded()
+                        .forPath(RUNNERS_STATE + "/" + ENGINE_ID);
+            }
+        } catch (Exception exception){
+            throw new RuntimeException("Could not create Zookeeper paths in TaskRunner");
         }
 
         LOG.debug("Registered TaskRunner");

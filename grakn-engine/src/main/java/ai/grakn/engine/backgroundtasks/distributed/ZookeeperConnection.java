@@ -22,6 +22,8 @@ import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 
+import java.util.concurrent.TimeUnit;
+
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
@@ -40,13 +42,18 @@ public class ZookeeperConnection {
 
     /**
      * Start the connection to zookeeper. This method is blocking.
-     * @throws InterruptedException When there is an error while waiting for zookeeper to start
      */
-    public ZookeeperConnection() throws InterruptedException, Exception {
-        zookeeperConnection.start();
-        zookeeperConnection.blockUntilConnected();
+    public ZookeeperConnection() {
+        try {
+            zookeeperConnection.start();
+            if(!zookeeperConnection.blockUntilConnected(30, TimeUnit.SECONDS)){
+                throw new RuntimeException("Could not instantiate zookeeper");
+            }
 
-        createZKPaths();
+            createZKPaths();
+        } catch (Exception exception) {
+            throw new RuntimeException("Could not instantiate zookeeper");
+        }
     }
 
     /**

@@ -51,7 +51,7 @@ import static java.time.Instant.now;
 public class SchedulerTest {
 
     @Rule
-    public final EngineContext engine = EngineContext.startServer();
+    public final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void setup(){
@@ -88,7 +88,7 @@ public class SchedulerTest {
                 .interval(interval)
                 .configuration(Json.object("name", "task" + i));
 
-        engine.getClusterManager().getStorage().newState(state);
+        engine.getTaskManager().storage().newState(state);
 
         return new Pair<>(state.getId(), state);
     }
@@ -112,7 +112,7 @@ public class SchedulerTest {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
-            TaskStatus status = engine.getClusterManager().getStorage().getState(taskId).status();
+            TaskStatus status = engine.getTaskManager().storage().getState(taskId).status();
             System.out.println(taskId + "  -->>  " + status);
             if(status == SCHEDULED || status == RUNNING || status == COMPLETED) {
                 try {

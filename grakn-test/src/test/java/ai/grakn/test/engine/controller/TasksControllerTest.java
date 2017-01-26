@@ -57,7 +57,7 @@ public class TasksControllerTest {
     private String singleTask;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void startEngine() throws Exception{
@@ -67,7 +67,7 @@ public class TasksControllerTest {
     @Before
     public void setUp() throws Exception {
         assumeFalse(usingTinker());
-        DistributedTaskManager manager = engine.getClusterManager().getTaskManager();
+        DistributedTaskManager manager = (DistributedTaskManager) engine.getTaskManager();
         singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0, Json.object());
     }
 

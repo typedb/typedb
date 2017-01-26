@@ -50,7 +50,7 @@ public class PostProcessingTest {
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void onlyRunOnTinker(){

@@ -30,7 +30,6 @@ import javafx.util.Pair;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,7 +45,6 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.time.Instant.now;
-import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
@@ -55,7 +53,7 @@ public class TaskRunnerTest {
     private TaskStateStorage stateStorage;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void startEngine() throws Exception{
@@ -65,7 +63,7 @@ public class TaskRunnerTest {
     @Before
     public void setup() throws Exception {
         producer = ConfigHelper.kafkaProducer();
-        stateStorage = engine.getClusterManager().getStorage();
+        stateStorage = engine.getTaskManager().storage();
 
         assumeFalse(usingTinker());
     }
