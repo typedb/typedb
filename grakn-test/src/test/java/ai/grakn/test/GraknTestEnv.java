@@ -1,12 +1,14 @@
 package ai.grakn.test;
 
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.EngineGraknGraph;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
+import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +31,8 @@ import static ai.grakn.graql.Graql.var;
 public abstract class GraknTestEnv {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
+
+    private static final ConfigProperties properties = ConfigProperties.getInstance();
 
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
@@ -64,6 +68,7 @@ public abstract class GraknTestEnv {
             ensureCassandraRunning();
 
             // start engine
+            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
             GraknEngineServer.start(inMemory);
 
             LOG.info("ENGINE STARTED.");
