@@ -21,7 +21,6 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.util.ConfigProperties;
 import mjson.Json;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

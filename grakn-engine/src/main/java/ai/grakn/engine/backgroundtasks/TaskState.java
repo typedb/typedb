@@ -19,27 +19,10 @@
 package ai.grakn.engine.backgroundtasks;
 
 import mjson.Json;
-import org.json.JSONObject;
 
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
-
-import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
-import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
-import static ai.grakn.engine.util.SystemOntologyElements.TASK_ID;
-import static ai.grakn.engine.util.SystemOntologyElements.ENGINE_ID;
-import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
-import static ai.grakn.engine.util.SystemOntologyElements.RECUR_INTERVAL;
-import static ai.grakn.engine.util.SystemOntologyElements.RUN_AT;
-import static ai.grakn.engine.util.SystemOntologyElements.STACK_TRACE;
-import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
-import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_BY;
-import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_TIME;
-import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
-import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
-import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
