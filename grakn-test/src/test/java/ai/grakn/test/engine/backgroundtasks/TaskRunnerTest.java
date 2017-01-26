@@ -64,10 +64,10 @@ public class TaskRunnerTest {
 
     @Before
     public void setup() throws Exception {
-        assumeFalse(usingTinker());
-
         producer = ConfigHelper.kafkaProducer();
         stateStorage = engine.getClusterManager().getStorage();
+
+        assumeFalse(usingTinker());
     }
 
     @After
