@@ -76,7 +76,7 @@ final class ElementFactory {
     <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
         return buildResourceType(v, Optional.of(type), Optional.of(dataType), Optional.of(isUnique));
     }
-    private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType<V>> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType<V>> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
         return trackConcept(new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
     }
 
@@ -92,7 +92,7 @@ final class ElementFactory {
     RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
         return buildRelationType(v, Optional.of(type), Optional.of(isImplicit));
     }
-    private RelationTypeImpl buildRelationType(Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit){
+    RelationTypeImpl buildRelationType(Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit){
         return trackConcept(new RelationTypeImpl(graknGraph, v, type, isImplicit));
     }
 
@@ -105,7 +105,7 @@ final class ElementFactory {
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    private EntityTypeImpl buildEntityType(Vertex v, Optional<EntityType> type){
+    EntityTypeImpl buildEntityType(Vertex v, Optional<EntityType> type){
         return trackConcept(new EntityTypeImpl(graknGraph, v, type));
     }
 
@@ -118,7 +118,7 @@ final class ElementFactory {
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    private RuleTypeImpl buildRuleType(Vertex v, Optional<RuleType> type){
+    RuleTypeImpl buildRuleType(Vertex v, Optional<RuleType> type){
         return trackConcept(new RuleTypeImpl(graknGraph, v, type));
     }
 
@@ -142,7 +142,7 @@ final class ElementFactory {
     RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
         return buildRoleType(v, Optional.of(type), Optional.of(isImplicit));
     }
-    private RoleTypeImpl buildRoleType(Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit){
+    RoleTypeImpl buildRoleType(Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit){
         return trackConcept(new RoleTypeImpl(graknGraph, v, type, isImplicit));
     }
 
