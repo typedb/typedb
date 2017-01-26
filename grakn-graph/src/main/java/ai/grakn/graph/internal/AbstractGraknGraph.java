@@ -322,11 +322,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> elementFactory.buildEntityType(v, Optional.of(getMetaEntityType())));
     }
 
-    private TypeImpl putType(TypeName name, Schema.BaseType baseType, Type metaType) {
-        checkOntologyMutation();
-        return elementFactory.buildSpecificType(putVertex(name, baseType), metaType);
-    }
-
     private <V extends Type> V putType(TypeName name, Schema.BaseType baseType, Function<Vertex, V> factory){
         checkOntologyMutation();
         return factory.apply(putVertex(name, baseType));

@@ -50,7 +50,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
+                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, Optional.of(type)));
     }
 
     /**
