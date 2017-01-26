@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
@@ -35,9 +36,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javafx.util.Pair;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
@@ -83,6 +86,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
 
         //filter by checking substitutions
+        /*
         Set<IdPredicate> subs = atom.getIdPredicates().stream()
                 .filter(pred -> permuteVars.contains(pred.getVarName()))
                 .collect(Collectors.toSet());
@@ -91,7 +95,10 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
                 .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
                 .forEach(filteredOutAnswers::add));
         permutedAnswers.removeAll(filteredOutAnswers);
-        return permutedAnswers;
+        */
+        return permutedAnswers
+                .filterBySubstitutions(atom)
+                .filterByEntityTypes(atom);
     }
 
     /**
@@ -140,6 +147,47 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         if(filters.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers(this);
         for (NotEquals filter : filters) results = filter.filter(results);
+        return results;
+    }
+
+    public QueryAnswers filterBySubstitutions(Atom parent){
+        if(!parent.isRelation()) return this;
+        Relation atom = (Relation) parent;
+        Set<VarName> unmappedVars = atom.getUnmappedRolePlayers();
+        //filter by checking substitutions
+        Set<IdPredicate> subs = atom.getIdPredicates().stream()
+                .filter(pred -> unmappedVars.contains(pred.getVarName()))
+                .collect(Collectors.toSet());
+        if (subs.isEmpty()) return this;
+
+        QueryAnswers results = new QueryAnswers(this);
+        subs.forEach( sub -> this.stream()
+                .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
+                .forEach(results::remove));
+        return results;
+    }
+
+    public QueryAnswers filterByEntityTypes(Atom parent){
+        if(!parent.isRelation()) return this;
+        Relation atom = (Relation) parent;
+        Set<VarName> unmappedVars = atom.getUnmappedRolePlayers();
+        Map<VarName, Type> varTypeMap = atom.getParentQuery().getVarTypeMap();
+        Map<VarName, Type> filterMap = unmappedVars.stream()
+                .filter(varTypeMap::containsKey)
+                .filter(v -> Objects.nonNull(varTypeMap.get(v)))
+                .collect(Collectors.toMap(v -> v, varTypeMap::get));
+        if (filterMap.isEmpty()) return this;
+
+        QueryAnswers results = new QueryAnswers();
+        this.forEach(answer -> {
+            boolean isCompatible = true;
+            Iterator<Map.Entry<VarName, Type>> it = filterMap.entrySet().iterator();
+            while( it.hasNext() && isCompatible){
+                Map.Entry<VarName, Type> entry = it.next();
+                isCompatible = answer.get(entry.getKey()).asInstance().type().equals(entry.getValue());
+            }
+            if (isCompatible) results.add(answer);
+        });
         return results;
     }
 
