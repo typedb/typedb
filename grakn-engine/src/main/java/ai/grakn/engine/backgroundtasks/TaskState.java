@@ -18,8 +18,10 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import mjson.Json;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
@@ -44,7 +46,7 @@ import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
  *
  * @author Denis Lobanov
  */
-public class TaskState implements Cloneable {
+public class TaskState implements Serializable {
 
     /**
      * Id of this task.
@@ -98,7 +100,7 @@ public class TaskState implements Cloneable {
     /**
      * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
      */
-    private JSONObject configuration;
+    private Json configuration;
 
     public TaskState(String taskClassName) {
         this.status = TaskStatus.CREATED;
@@ -221,77 +223,13 @@ public class TaskState implements Cloneable {
         return taskCheckpoint;
     }
 
-    public TaskState configuration(JSONObject configuration) {
+    public TaskState configuration(Json configuration) {
         this.configuration = configuration;
         return this;
     }
 
-    public JSONObject configuration() {
+    public Json configuration() {
         return configuration;
-    }
-
-    public TaskState clone() throws CloneNotSupportedException {
-        TaskState state = (TaskState) super.clone();
-
-        state.status(status)
-                .statusChangeTime(statusChangeTime)
-                .statusChangedBy(statusChangedBy)
-                .creator(creator)
-                .engineID(engineID)
-                .runAt(runAt)
-                .isRecurring(recurring)
-                .interval(interval)
-                .stackTrace(stackTrace)
-                .exception(exception)
-                .checkpoint(taskCheckpoint)
-                .configuration(new JSONObject(configuration.toString()));
-
-        return state;
-    }
-
-    public byte[] serialise() {
-        JSONObject object = new JSONObject();
-
-        object.put(TASK_ID.getValue(), taskId);
-        object.put(STATUS.getValue(), status.name());
-        object.put(STATUS_CHANGE_TIME.getValue(), statusChangeTime.toEpochMilli());
-        object.put(STATUS_CHANGE_BY.getValue(), statusChangedBy);
-        object.put(CREATED_BY.getValue(), creator);
-        object.put(ENGINE_ID.getValue(), engineID);
-        object.put(RUN_AT.getValue(), runAt.toEpochMilli());
-        object.put(RECURRING.getValue(), recurring);
-        object.put(RECUR_INTERVAL.getValue(), interval);
-        object.put(STACK_TRACE.getValue(), stackTrace);
-        object.put(TASK_EXCEPTION.getValue(), exception);
-        object.put(TASK_CHECKPOINT.getValue(), taskCheckpoint);
-        object.put(TASK_CONFIGURATION.getValue(), configuration != null ? configuration.toString() : new JSONObject().toString());
-        object.put(TASK_CLASS_NAME.getValue(), taskClassName);
-
-        return object.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    public static TaskState deserialise(byte[] b) {
-        JSONObject serialised = new JSONObject(new String(b, StandardCharsets.UTF_8));
-
-        String taskId = serialised.getString(TASK_ID.getValue());
-        String taskClassName = serialised.getString(TASK_CLASS_NAME.getValue());
-        TaskStatus status = TaskStatus.valueOf(serialised.getString(STATUS.getValue()));
-
-        TaskState state = new TaskState(taskClassName, taskId, status);
-
-        if(serialised.has(STATUS_CHANGE_TIME.getValue())) { state.statusChangeTime(Instant.ofEpochMilli(serialised.getLong(STATUS_CHANGE_TIME.getValue())));}
-        if(serialised.has(STATUS_CHANGE_BY.getValue())) { state.statusChangedBy(serialised.getString(STATUS_CHANGE_BY.getValue()));}
-        if(serialised.has(CREATED_BY.getValue())) { state.creator(serialised.getString(CREATED_BY.getValue()));}
-        if(serialised.has(ENGINE_ID.getValue())) { state.engineID(serialised.getString(ENGINE_ID.getValue()));}
-        if(serialised.has(RUN_AT.getValue())) { state.runAt(Instant.ofEpochMilli(serialised.getLong(RUN_AT.getValue())));}
-        if(serialised.has(RECURRING.getValue())) { state.isRecurring(serialised.getBoolean(RECURRING.getValue()));}
-        if(serialised.has(RECUR_INTERVAL.getValue())) { state.interval(serialised.getLong(RECUR_INTERVAL.getValue()));}
-        if(serialised.has(STACK_TRACE.getValue())) { state.stackTrace(serialised.getString(STACK_TRACE.getValue()));}
-        if(serialised.has(TASK_EXCEPTION.getValue())) { state.exception(serialised.getString(TASK_EXCEPTION.getValue()));}
-        if(serialised.has(TASK_CHECKPOINT.getValue())) { state.checkpoint(serialised.getString(TASK_CHECKPOINT.getValue()));}
-        if(serialised.has(TASK_CONFIGURATION.getValue())) { state.configuration(new JSONObject(serialised.getString(TASK_CONFIGURATION.getValue())));}
-
-        return state;
     }
 }
 

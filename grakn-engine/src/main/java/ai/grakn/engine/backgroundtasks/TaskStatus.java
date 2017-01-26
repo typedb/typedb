@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import java.io.Serializable;
+
 /**
  * <p>
  *     Describes the six possible states a task can be in.
@@ -26,7 +28,7 @@ package ai.grakn.engine.backgroundtasks;
  *
  * @author alexandraorth, Denis Lobanov
  */
-public enum TaskStatus {
+public enum TaskStatus implements Serializable {
     /**
      * Save task in the graph, but not plans to run it yet - initial state.
      */

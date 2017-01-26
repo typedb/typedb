@@ -17,7 +17,6 @@
  */
 package ai.grakn.engine;
 
-
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.AuthController;
@@ -35,7 +34,7 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
-import org.json.JSONObject;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -133,10 +132,10 @@ public class GraknEngineServer {
         //FIXME: other things open and close this too
         DistributedTaskManager manager = clusterManager.getTaskManager();
         manager.scheduleTask(new PostProcessingTask(),
-                             GraknEngineServer.class.getName(),
-                             Instant.now(),
-                             prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
-                             new JSONObject());
+                GraknEngineServer.class.getName(),
+                Instant.now(),
+                prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
+                Json.object());
 
     }
 

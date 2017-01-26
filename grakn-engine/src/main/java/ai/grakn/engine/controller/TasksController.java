@@ -28,6 +28,7 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import javafx.util.Pair;
+import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -169,7 +170,7 @@ public class TasksController {
         String runAt = request.queryParams(TASK_RUN_AT_PARAMETER);
 
         Long interval = 0L;
-        JSONObject configuration = new JSONObject();
+        Json configuration = Json.object();
 
         if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null) {
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
@@ -180,7 +181,7 @@ public class TasksController {
 
         try {
             if(request.body() != null && (!request.body().isEmpty())) {
-                configuration = new JSONObject(request.body());
+                configuration = Json.read(request.body());
             }
 
             Instant runAtInstant = Instant.ofEpochMilli(Long.parseLong(runAt));

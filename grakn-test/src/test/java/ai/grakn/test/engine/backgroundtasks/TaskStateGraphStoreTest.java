@@ -23,7 +23,7 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
 import javafx.util.Pair;
-import org.json.JSONObject;
+import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -59,7 +59,7 @@ public class TaskStateGraphStoreTest {
     public void testStoreRetrieve() {
         TestTask task = new TestTask();
         Instant runAt = Instant.now();
-        JSONObject configuration = new JSONObject().put("test key", "test value");
+        Json configuration = Json.object("test key", "test value");
 
         String id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
         assertNotNull(id);
@@ -78,7 +78,7 @@ public class TaskStateGraphStoreTest {
     @Test
     public void testUpdate() {
         Instant runAt = Instant.now();
-        JSONObject configuration = new JSONObject().put("key", "test value");
+        Json configuration = Json.object("test key", "test value");
 
         String id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
         assertNotNull(id);
