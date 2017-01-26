@@ -158,8 +158,6 @@ public class ImportController {
                 }
                 loaderParam.waitToFinish();
             }
-
-            PostProcessing.getInstance().run();
         } catch (Exception e) {
             LOG.error("Exception while batch loading data.", e);
         } finally {
