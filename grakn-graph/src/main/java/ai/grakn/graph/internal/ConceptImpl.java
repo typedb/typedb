@@ -65,9 +65,8 @@ import java.util.function.Function;
  *
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
- * @param <V> The type of the concept. For example if the concept is an {@link Entity} then it's type will be {@link EntityType}
  */
-abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept {
+abstract class ConceptImpl<T extends Concept> implements Concept {
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;

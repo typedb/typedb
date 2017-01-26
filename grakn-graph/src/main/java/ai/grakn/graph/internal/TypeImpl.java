@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
+class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
         super(graknGraph, v);
         superType.ifPresent(this::superType);
@@ -196,7 +196,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl<Concept, Type> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
+            ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
             if(!concept.isCasting()){
                 instances.add((V) concept);
             }

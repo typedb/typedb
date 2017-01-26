@@ -63,7 +63,7 @@ public class ConceptTest extends GraphTestBase{
 
     @Test(expected=MoreThanOneEdgeException.class)
     public void testGetEdgeOutgoingOfType(){
-        ConceptImpl<?, ?> concept = (ConceptImpl<?, ?>) graknGraph.putEntityType("Thing");
+        ConceptImpl<?> concept = (ConceptImpl<?>) graknGraph.putEntityType("Thing");
         assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
 
         TypeImpl type1 = (TypeImpl) graknGraph.putEntityType("Type 1");
