@@ -92,11 +92,6 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
-        removeInstance();
-    }
-
-    private static void removeInstance() {
-        instance = null;
     }
 
     public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
