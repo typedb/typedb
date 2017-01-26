@@ -22,7 +22,6 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -30,7 +29,6 @@ import javafx.util.Pair;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,14 +44,11 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static java.time.Instant.now;
-import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Each test needs to be run with a clean Kafka to pass
  */
 public class SchedulerTest {
-    private TaskStateGraphStore stateStorage = new TaskStateGraphStore();
 
     @Rule
     public final EngineContext engine = EngineContext.startServer();
@@ -86,7 +81,8 @@ public class SchedulerTest {
     private Pair<String, TaskState> createTask(int i, TaskStatus status, boolean recurring, int interval) throws Exception {
         TaskState state = new TaskState(TestTask.class.getName())
                 .status(status)
-                .statusChangedBy(SchedulerTest.class.getName())
+                .creator(this.getClass().getName())
+                .statusChangedBy(this.getClass().getName())
                 .runAt(now())
                 .isRecurring(recurring)
                 .interval(interval)

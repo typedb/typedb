@@ -65,20 +65,24 @@ public class TaskStateInMemoryStoreTest {
 
         // Get current values
         TaskState state = stateStorage.getState(id);
+        assertEquals(CREATED, state.status());
+        assertEquals(this.getClass().getName(), state.statusChangedBy());
+
+        String exception = getFullStackTrace(new UnsupportedOperationException("message"));
 
         // Change
         state.status(SCHEDULED)
                 .statusChangedBy("bla")
-                .statusChangedBy("newEngine")
-                .exception(getFullStackTrace(new UnsupportedOperationException("message")));
+                .engineID("newEngine")
+                .exception(exception);
+
+        stateStorage.updateState(state);
 
         TaskState newState = stateStorage.getState(id);
-        assertNotEquals("status", state.status(), newState.status());
-        assertNotEquals("status changed by", state.statusChangedBy(), newState.statusChangedBy());
-        assertNotEquals("hostname", state.engineID(), newState.engineID());
-        assertNotEquals("exception message", state.exception(), newState.exception());
-        assertNotEquals("stack trace", state.stackTrace(), newState.stackTrace());
-        assertNotEquals("checkpoint", state.checkpoint(), newState.checkpoint());
+        assertEquals(SCHEDULED, newState.status());
+        assertEquals("bla", newState.statusChangedBy());
+        assertEquals("newEngine", newState.engineID());
+        assertEquals(exception, newState.exception());
     }
 
     @Test
@@ -143,6 +147,7 @@ public class TaskStateInMemoryStoreTest {
 
     public TaskState task(){
         return new TaskState(TestTask.class.getName())
+                .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
                 .runAt(now())
                 .isRecurring(false)
