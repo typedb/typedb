@@ -199,6 +199,13 @@ public class GenealogyTest {
     }
 
     @Test
+    public void testMarriedToThemselves(){
+        String queryString = "match (spouse2: $x, spouse1: $x) isa marriage;";
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        assertTrue(answers.isEmpty());
+    }
+
+    @Test
     public void testMarriageType() {
         String queryString = "match $x isa marriage;";
         String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";

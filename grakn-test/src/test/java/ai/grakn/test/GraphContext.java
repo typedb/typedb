@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 
 /**
@@ -80,6 +81,8 @@ public class GraphContext extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
+        hideLogs();
+
         ensureCassandraRunning();
 
         //TODO remove when Bug #12029 fixed
