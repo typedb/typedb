@@ -41,7 +41,7 @@ public class QueryCache extends HashMap<ReasonerAtomicQuery, ReasonerAtomicQuery
     public void record(ReasonerAtomicQuery atomicQuery){
         ReasonerAtomicQuery equivalentQuery = get(atomicQuery);
         if (equivalentQuery != null) {
-            QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, atomicQuery, atomicQuery.getAnswers());
+            QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, atomicQuery);
             get(atomicQuery).getAnswers().addAll(unifiedAnswers);
         } else {
             put(atomicQuery, atomicQuery);

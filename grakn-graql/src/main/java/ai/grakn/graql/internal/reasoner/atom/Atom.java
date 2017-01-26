@@ -191,22 +191,6 @@ public abstract class Atom extends AtomBase {
     }
 
     /**
-     * @return map of varName-(var type, var role type) pairs
-     */
-    public Map<VarName, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
-        Map<VarName, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
-        if (getParentQuery() == null) return roleVarTypeMap;
-        Set<VarName> vars = getVarNames();
-        Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
-
-        vars.forEach(var -> {
-            Type type = varTypeMap.get(var);
-            roleVarTypeMap.put(var, new Pair<>(type, null));
-        });
-        return roleVarTypeMap;
-    }
-
-    /**
      * @return map of role type- (var name, var type) pairs
      */
     public Map<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() { return new HashMap<>();}

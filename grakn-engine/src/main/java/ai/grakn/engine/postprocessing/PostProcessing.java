@@ -60,12 +60,12 @@ public class PostProcessing {
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
-    private final Cache cache;
+    private final EngineCacheImpl cache;
 
     private PostProcessing() {
         postpool = Executors.newFixedThreadPool(1);
         statDump = Executors.newSingleThreadExecutor();
-        cache = Cache.getInstance();
+        cache = EngineCacheImpl.getInstance();
         futures = ConcurrentHashMap.newKeySet();
         isRunning.set(false);
     }
