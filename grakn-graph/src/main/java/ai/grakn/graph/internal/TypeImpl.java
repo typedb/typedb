@@ -256,7 +256,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Type currentSuperType = superType();
         if(currentSuperType == null || (!currentSuperType.equals(superType) && !Schema.MetaSchema.isMetaName(superType.getName()))) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
-            deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
             putEdge(superType, Schema.EdgeLabel.SUB);
 
             checkForLoop(Schema.EdgeLabel.SUB);
