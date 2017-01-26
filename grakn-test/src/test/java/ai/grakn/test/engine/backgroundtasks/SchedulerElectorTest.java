@@ -41,7 +41,7 @@ public class SchedulerElectorTest {
     public static final EngineContext engine = EngineContext.startKafkaServer();
 
     @BeforeClass
-    public void instantiate(){
+    public static void instantiate(){
         connection = new ZookeeperConnection();
         elector = new SchedulerElector(new TaskStateInMemoryStore(), connection);
     }
