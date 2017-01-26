@@ -82,8 +82,7 @@ class QueryUtil {
                 if (matcher.matches(concepts)) {
                     return true;
                 } else {
-                    mismatch.appendText("variable ").appendValue(var).appendText(" ");
-                    matcher.describeMismatch(concepts, mismatch);
+                    mismatch.appendText("variable ").appendValue(var).appendText(" was ").appendValue(concepts);
                     return false;
                 }
             }
