@@ -164,10 +164,6 @@ public class TaskStateGraphStore implements TaskStateStorage {
     }
 
     public TaskState getState(String id) {
-        if(id == null) {
-            return null;
-        }
-
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
             Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
             return instanceToState(graph, instance);
@@ -258,6 +254,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             } 
             catch (GraknBackendException e) {
                 // retry...
+                LOG.debug("Trouble inserting " + getFullStackTrace(e));
             }            
             catch (Throwable e) {
                 LOG.error("Failed to validate the graph when updating the state " + getFullStackTrace(e));
