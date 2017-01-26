@@ -24,7 +24,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -58,16 +57,8 @@ final class ElementFactory {
     }
 
     // ------------------------------------------- Building Castings  --------------------------------------------------
-    CastingImpl buildCasting(Vertex v, RoleType type){
-        return buildCasting(v, Optional.of(type));
-    }
-    private CastingImpl buildCasting(Vertex v, Optional<RoleType> type){
+    CastingImpl buildCasting(Vertex v, Optional<RoleType> type){
         return trackConcept(new CastingImpl(graknGraph, v, type));
-    }
-
-    // -------------------------------------------- Building Types  ----------------------------------------------------
-    private TypeImpl buildType(Vertex v, Optional<Type> type, Optional<Boolean> isImplicit){
-        return trackConcept(new TypeImpl<>(graknGraph, v, type, isImplicit));
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------

@@ -507,7 +507,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //-----------------------------------------------Casting Functionality----------------------------------------------
     //------------------------------------ Construction
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
+        CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), Optional.of(role)).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
             castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
@@ -534,7 +534,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return foundCasting;
     }
 
-    //------------------------------------ Lookup
     private CastingImpl getCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
         try {
             String hash = CastingImpl.generateNewHash(role, rolePlayer);
