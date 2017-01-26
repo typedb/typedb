@@ -61,6 +61,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
     @Test
     public void testQueryPrime() {
         GraknGraph graph = GeoGraph.getGraph();
+        Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql().infer(false);
         QueryBuilder iqb = graph.graql().infer(true);
         String queryString = "match $z1 isa city;$z1 has name $name;"+
@@ -71,16 +72,19 @@ public class GeoInferenceTest extends AbstractEngineTest {
                 "$z1 isa city;$z1 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z1, $name;";
         String explicitQuery2 = "match " +
                 "$z2 isa city;$z2 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z2, $name;";
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query2, false), qb.<MatchQuery>parse(explicitQuery2).stream());
+        assertQueriesEqual(reasoner.resolve(query2, true), qb.<MatchQuery>parse(explicitQuery2).stream());
     }
 
     @Test
     public void testQuery2() {
         GraknGraph graph = GeoGraph.getGraph();
+        Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql().infer(false);
         QueryBuilder iqb = graph.graql().infer(true);
         String queryString = "match $x isa university;$x has name $name;"+
@@ -89,14 +93,15 @@ public class GeoInferenceTest extends AbstractEngineTest {
         String explicitQuery = "match " +
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
+        MatchQuery query = qb.parse(queryString);
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
-
     @Test
     public void testQuery2Prime() {
         GraknGraph graph = GeoGraph.getGraph();
+        Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql().infer(false);
         QueryBuilder iqb = graph.graql().infer(true);
         String queryString = "match $z1 isa university;$z1 has name $name;"+
@@ -109,10 +114,13 @@ public class GeoInferenceTest extends AbstractEngineTest {
         String explicitQuery2 = "match " +
                 "$z2 isa university;$z2 has name $name;" +
                 "{$z2 has name 'University-of-Warsaw';} or {$z2 has name'Warsaw-Polytechnics';};";
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
+
+        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(reasoner.resolve(query2, false), qb.<MatchQuery>parse(explicitQuery2).stream());
+        assertQueriesEqual(reasoner.resolve(query2, true), qb.<MatchQuery>parse(explicitQuery2).stream());
     }
 
     private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
