@@ -27,8 +27,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractEngineTest;

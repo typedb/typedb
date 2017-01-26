@@ -33,11 +33,46 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
+import java.util.function.Function;
 import javafx.util.Pair;
 
 import java.util.*;
 
+import static java.util.stream.Collectors.toSet;
+
 public class Utility {
+
+    private static final String CAPTURE_MARK = "captured-";
+
+    /**
+     * Capture a variable name, by prepending a constant to the name
+     * @param var the variable name to capture
+     * @return the captured variable
+     */
+    public static String capture(String var) {
+        return var.concat(CAPTURE_MARK);
+    }
+
+    /**
+     * Uncapture a variable name, by removing a prepended constant
+     * @param var the variable name to uncapture
+     * @return the uncaptured variable
+     */
+    public static String uncapture(String var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.replace(CAPTURE_MARK, "");
+    }
+
+    /**
+     * Check if a variable has been captured
+     * @param var the variable to check
+     * @return if the variable has been captured
+     */
+    public static boolean isCaptured(String var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.contains(CAPTURE_MARK);
+    }
+
 
     public static void printAnswers(Set<Map<String, Concept>> answers) {
         answers.forEach(result -> {
@@ -50,14 +85,6 @@ public class Utility {
             System.out.println();
         });
         System.out.println();
-    }
-
-    public static Set<RoleType> getCompatibleRoleTypes(Type type, Type relType) {
-        Set<RoleType> cRoles = new HashSet<>();
-        Collection<RoleType> typeRoles = type.playsRoles();
-        Collection<RoleType> relRoles = ((RelationType) relType).hasRoles();
-        relRoles.stream().filter(typeRoles::contains).forEach(cRoles::add);
-        return cRoles;
     }
 
     //rolePlayer-roleType maps
@@ -81,6 +108,89 @@ public class Utility {
             tempVars.add(var);
             tempRoles.add(role);
         });
+    }
+
+    /**
+     * get unifiers by comparing permutations with original variables
+     * @param originalVars original ordered variables
+     * @param permutations different permutations on the variables
+     * @return set of unifiers
+     */
+    public static Set<Map<String, String>> getUnifiersFromPermutations(List<String> originalVars, List<List<String>> permutations){
+        Set<Map<String, String>> unifierSet = new HashSet<>();
+        permutations.forEach(perm -> {
+            Map<String, String> unifiers = new HashMap<>();
+            Iterator<String> pIt = originalVars.iterator();
+            Iterator<String> cIt = perm.iterator();
+            while(pIt.hasNext() && cIt.hasNext()){
+                String pVar = pIt.next();
+                String chVar = cIt.next();
+                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
+            }
+            unifierSet.add(unifiers);
+        });
+        return unifierSet;
+    }
+
+    /**
+     * get all permutations of an entry list
+     * @param entryList entry list to generate permutations of
+     * @param <T> element type
+     * @return set of all possible permutations
+     */
+    public static <T> List<List<T>> getListPermutations(List<T> entryList) {
+        if (entryList.isEmpty()) {
+            List<List<T>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+        List<T> list = new ArrayList<>(entryList);
+        T firstElement = list.remove(0);
+        List<List<T>> returnValue = new ArrayList<>();
+        List<List<T>> permutations = getListPermutations(list);
+        for (List<T> smallerPermuted : permutations) {
+            for (int index = 0; index <= smallerPermuted.size(); index++) {
+                List<T> temp = new ArrayList<>(smallerPermuted);
+                temp.add(index, firstElement);
+                returnValue.add(temp);
+            }
+        }
+        return returnValue;
+    }
+
+    /**
+     * Gets roletypes a given type can play in the provided relType relation type by performing
+     * type intersection between type's playedRoles and relation's hasRoles.
+     * @param type for which we want to obtain compatible roles it plays
+     * @param relType relation type of interest
+     * @return set of role types the type can play in relType
+     */
+    public static Set<RoleType> getCompatibleRoleTypes(Type type, Type relType) {
+        Set<RoleType> cRoles = new HashSet<>();
+        Collection<RoleType> typeRoles = type.playsRoles();
+        Collection<RoleType> relRoles = ((RelationType) relType).hasRoles();
+        relRoles.stream().filter(typeRoles::contains).forEach(cRoles::add);
+        return cRoles;
+    }
+
+    public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
+            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(toSet());
+
+    public static final Function<Type, Set<RelationType>> typeToRelationTypes =
+            type -> type.playsRoles().stream()
+                    .flatMap(roleType -> roleType.relationTypes().stream())
+                    .filter(rt -> !rt.isImplicit())
+                    .collect(toSet());
+
+    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
+        Set<RelationType> compatibleTypes = new HashSet<>();
+        if (types.isEmpty()) return compatibleTypes;
+        Iterator<T> it = types.iterator();
+        compatibleTypes.addAll(typeMapper.apply(it.next()));
+        while(it.hasNext() && compatibleTypes.size() > 1) {
+            compatibleTypes.retainAll(typeMapper.apply(it.next()));
+        }
+        return compatibleTypes;
     }
 
     /**

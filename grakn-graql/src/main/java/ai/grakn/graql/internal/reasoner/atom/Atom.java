@@ -23,10 +23,14 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
@@ -35,17 +39,25 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * Atom implementation defining specialised functionalities.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public abstract class Atom extends AtomBase {
 
     protected Type type = null;
     protected String typeId = null;
 
-    protected Atom(VarAdmin pattern) { this(pattern, null);}
-    protected Atom(VarAdmin pattern, Query par) { super(pattern, par);}
+    protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
         super(a);
         this.type = a.type;
-        this.typeId = a.typeId;
+        this.typeId = a.getTypeId();
     }
 
     @Override
@@ -72,7 +84,7 @@ public abstract class Atom extends AtomBase {
 
     public Set<Rule> getApplicableRules() {
         Set<Rule> children = new HashSet<>();
-        GraknGraph graph = getParentQuery().getGraph().orElse(null);
+        GraknGraph graph = getParentQuery().graph();
         Collection<Rule> rulesFromType = getType() != null? getType().getRulesOfConclusion() : Reasoner.getRules(graph);
         rulesFromType.forEach(rule -> {
             InferenceRule child = new InferenceRule(rule, graph);
@@ -92,66 +104,105 @@ public abstract class Atom extends AtomBase {
 
     @Override
     public boolean isRecursive(){
-        if (isResource()) return false;
+        if (isResource() || getType() == null) return false;
         boolean atomRecursive = false;
 
-        String typeId = getTypeId();
-        if (typeId.isEmpty()) return false;
         Type type = getType();
         Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
         Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
 
         for(Rule rule : presentInConclusion)
             atomRecursive |= presentInHypothesis.contains(rule);
-
         return atomRecursive;
     }
 
+    /**
+     * @return true if the atom requires materialisation in order to be referenced
+     */
     public boolean requiresMaterialisation(){ return false; }
 
+    /**
+     * @return corresponding type if any
+     */
     public Type getType(){
-        if (type == null)
-            type = getParentQuery().getGraph().orElse(null).getType(typeId);
+        if (type == null && typeId != null) {
+            type = getParentQuery().graph().getConcept(typeId).asType();
+        }
         return type;
     }
 
+    /**
+     * @return type id of the corresponding type if any
+     */
     public String getTypeId(){ return typeId;}
 
+    /**
+     * @return value variable name
+     */
     public String getValueVariable() {
         throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
     }
 
-    public abstract Set<Predicate> getPredicates();
-    public abstract Set<Predicate> getIdPredicates();
-    public abstract Set<Predicate> getValuePredicates();
+    /**
+     * @return set of predicates relevant to this atom
+     */
+    public Set<Predicate> getPredicates() {
+        Set<Predicate> predicates = new HashSet<>();
+        predicates.addAll(getValuePredicates());
+        predicates.addAll(getIdPredicates());
+        return predicates;
+    }
 
-    public Set<Atom> getTypeConstraints(){
-        Set<Atom> relevantTypes = new HashSet<>();
+    /**
+     * @return set of id predicates relevant to this atom
+     */
+    public Set<IdPredicate> getIdPredicates() {
+        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * @return set of value predicates relevant to this atom
+     */
+    public Set<ValuePredicate> getValuePredicates(){
+        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
+                .filter(atom -> atom.getVarName().equals(getValueVariable()))
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * @return set of types relevant to this atom
+     */
+    public Set<TypeAtom> getTypeConstraints(){
+        Set<TypeAtom> relevantTypes = new HashSet<>();
         //ids from indirect types
-        getParentQuery().getTypeConstraints().stream()
+        ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(atom -> {
                     relevantTypes.add(atom);
-                    relevantTypes.addAll(((Binary)atom).getLinkedAtoms());
+                    relevantTypes.addAll(atom.getLinkedAtoms().stream()
+                            .filter(Atom::isType).map(at -> (TypeAtom) at)
+                            .collect(Collectors.toSet()));
                 });
         return relevantTypes;
     }
 
-    public Map<String, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
-        Map<String, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
-        if (getParentQuery() == null) return roleVarTypeMap;
-
-        Set<String> vars = getVarNames();
-        Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
-
-        vars.forEach(var -> {
-            Type type = varTypeMap.get(var);
-            roleVarTypeMap.put(var, new Pair<>(type, null));
-        });
-        return roleVarTypeMap;
-    }
-
+    /**
+     * @return map of role type- (var name, var type) pairs
+     */
     public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
+
+    /**
+     * infers types (type, role types) fo the atom if applicable/possible
+     */
     public void inferTypes(){}
-    public Pair<Atom, Map<String, String>> rewrite(Atom parent, Query q){ return new Pair<>(this, new HashMap<>());}
+
+    /**
+     * rewrites the atom to be compatible with parent atom
+     * @param parent atom to be compatible with
+     * @param q query the rewritten atom should belong to
+     * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
+     */
+    public Pair<Atom, Map<String, String>> rewrite(Atom parent, ReasonerQuery q){ return new Pair<>(this, new HashMap<>());}
 }

@@ -35,7 +35,6 @@ import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.atom.binary.HasRole;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
@@ -50,7 +49,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import com.google.common.collect.Sets;
 
 import java.util.HashSet;

@@ -31,8 +31,6 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;

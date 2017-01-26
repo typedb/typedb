@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;

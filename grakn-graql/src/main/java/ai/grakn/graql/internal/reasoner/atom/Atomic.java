@@ -19,13 +19,22 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
 import java.util.Map;
 import java.util.Set;
 
-public interface Atomic extends Cloneable{
+/**
+ *
+ * <p>
+ * Basic interface for logical atoms used in reasoning.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
+public interface Atomic {
 
-    Atomic clone();
+    Atomic copy();
 
     default boolean isAtom(){ return false;}
     default boolean isPredicate(){ return false;}
@@ -34,8 +43,15 @@ public interface Atomic extends Cloneable{
      * @return true if atom alpha-equivalent
      */
     boolean isEquivalent(Object obj);
+
+    /**
+     * @return equivalence hash code
+     */
     int equivalenceHashCode();
 
+    /**
+     * @return true if the variable name is user defined
+     */
     default boolean isUserDefinedName(){ return false;}
 
     /**
@@ -47,6 +63,9 @@ public interface Atomic extends Cloneable{
      */
     default boolean isSelectable(){ return false;}
 
+    /**
+     * @return true if atom is recursive
+     */
     default boolean isRecursive(){ return false;}
 
     /**
@@ -56,29 +75,26 @@ public interface Atomic extends Cloneable{
     default boolean containsVar(String name){ return false;}
 
     /**
-     * @return the corresponding pattern
+     * @return the corresponding base pattern
      * */
     PatternAdmin getPattern();
 
     /**
-     * @return the query this atom belongs to
-     * */
-    Query getParentQuery();
+     * @return the base pattern combined with possible predicate patterns
+     */
+    PatternAdmin getCombinedPattern();
+
+    /**
+     * @return the query the atom is contained in
+     */
+    ReasonerQuery getParentQuery();
 
     /**
      * @param q query this atom is supposed to belong to
      */
-    void setParentQuery(Query q);
+    void setParentQuery(ReasonerQuery q);
 
     Map<String, String> getUnifiers(Atomic parentAtom);
-
-    /**
-     * change each variable occurrence in the atom (apply unifier [from/to])
-     * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
-     * @param from variable name to be changed
-     * @param to new variable name
-     */
-    void unify (String from, String to);
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})

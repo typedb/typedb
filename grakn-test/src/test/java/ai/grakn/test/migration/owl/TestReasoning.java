@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
 import java.util.stream.Stream;

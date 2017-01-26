@@ -23,31 +23,37 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.query.Query;
-import java.util.Set;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Iterator;
+import java.util.Set;
 
+/**
+ *
+ * <p>
+ * Predicate implementation specialising it to be an value predicate.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
-    public ValuePredicate(VarAdmin pattern) {
-        super(pattern);
-    }
-    public ValuePredicate(VarAdmin pattern, Query par) {
-        super(pattern, par);
-    }
-    public ValuePredicate(String varName, ValueProperty prop, Query par){
-        this(createValueVar(varName, prop.getPredicate()), par);}
+    public ValuePredicate(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    public ValuePredicate(String varName, ValuePredicateAdmin pred, ReasonerQuery par){
+        this(createValueVar(varName, pred), par);}
+    public ValuePredicate(String varName, ReasonerQuery par){
+        this(Graql.var(varName).value().admin(), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
+
+    @Override
+    public Atomic copy() {
+        return new ValuePredicate(this);
+    }
 
     public static VarAdmin createValueVar(String name, ValuePredicateAdmin pred) {
         return Graql.var(name).value(pred).admin();
-    }
-
-    @Override
-    public Atomic clone() {
-        return new ValuePredicate(this);
     }
 
     @Override
@@ -96,22 +102,15 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     protected ValuePredicateAdmin extractPredicate(VarAdmin pattern) {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
-        if (properties.hasNext())
+        if (properties.hasNext()) {
             throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
+        }
         return property.getPredicate();
     }
 
     @Override
     public Set<String> getVarNames(){
         Set<String> vars = super.getVarNames();
-        VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
-        return vars;
-    }
-
-    @Override
-    public Set<String> getSelectedNames(){
-        Set<String> vars = super.getSelectedNames();
         VarAdmin innerVar = getPredicate().getInnerVar().orElse(null);
         if(innerVar != null && innerVar.isUserDefinedName()) vars.add(innerVar.getVarName());
         return vars;

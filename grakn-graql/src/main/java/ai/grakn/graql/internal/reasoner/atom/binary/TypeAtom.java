@@ -21,22 +21,28 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
-import java.util.Set;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 
+/**
+ *
+ * <p>
+ * Atom implementation defining type atoms of the type $varName {isa|sub|plays-role|has-resource|has-scope} $valueVariable)
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class TypeAtom extends Binary{
 
-    public TypeAtom(VarAdmin pattern) { this(pattern, null);}
-    public TypeAtom(VarAdmin pattern, Query par) {
-        this(pattern, null, par);
-    }
-    public TypeAtom(VarAdmin pattern, Predicate p, Query par) { super(pattern, p, par);}
+    public TypeAtom(VarAdmin pattern, ReasonerQuery par) { this(pattern, null, par);}
+    public TypeAtom(VarAdmin pattern, IdPredicate p, ReasonerQuery par) { super(pattern, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
     protected String extractTypeId(VarAdmin var) {
-        return getPredicate() != null? getPredicate().getPredicateValue() : "";
+        return getPredicate() != null? getPredicate().getPredicate() : null;
     }
 
     @Override
@@ -51,7 +57,7 @@ public class TypeAtom extends Binary{
     }
 
     @Override
-    public Atomic clone(){
+    public Atomic copy(){
         return new TypeAtom(this);
     }
 
@@ -59,16 +65,15 @@ public class TypeAtom extends Binary{
     public boolean isType(){ return true;}
 
     @Override
-    public Type getType() {
-        return getPredicate() != null ?
-                getParentQuery().graph().getConcept(getPredicate().getPredicateValue()) : null;
+    public boolean isSelectable() {
+        return (getPredicate() == null ||
+                ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(getVarName()) != null && getPredicate() != null);
     }
 
     @Override
-    public Set<Predicate> getIdPredicates() {
-        Set<Predicate> idPredicates = super.getIdPredicates();
-        if (getPredicate() != null) idPredicates.add(getPredicate());
-        return idPredicates;
+    public Type getType() {
+        return getPredicate() != null ?
+                getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }
 }
 

@@ -25,7 +25,6 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

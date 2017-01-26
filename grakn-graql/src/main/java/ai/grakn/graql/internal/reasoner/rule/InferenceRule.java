@@ -20,65 +20,84 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.UUID;
 import javafx.util.Pair;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.match;
+import static java.util.stream.Collectors.toSet;
 
+/**
+ *
+ * <p>
+ * Class providing resolution and higher level facilities for rule objects.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class InferenceRule {
 
-    private final Query body;
-    private final AtomicQuery head;
+    private final ReasonerQueryImpl body;
+    private final ReasonerAtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
-        body = new Query(match(rule.getLHS()), graph);
-        head = new AtomicQuery(match(rule.getRHS()), graph);
+        //TODO simplify once changes propagated to rule objects
+        body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
+        head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
     }
 
-    public Query getBody(){return body;}
-    public AtomicQuery getHead(){return head;}
+    private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
+        Set<VarAdmin> vars = pattern
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Patterns.conjunction(vars);
+    }
+
+    /**
+     * @return body of the rule of the form head :- body
+     */
+    public ReasonerQueryImpl getBody(){ return body;}
+
+    /**
+     * @return head of the rule of the form head :- body
+     */
+    public ReasonerAtomicQuery getHead(){ return head;}
 
     /**
      * @return a conclusion atom which parent contains all atoms in the rule
      */
     public Atom getRuleConclusionAtom() {
-        Query ruleQuery = new Query(head);
+        ReasonerQueryImpl ruleQuery = new ReasonerQueryImpl(head);
         Atom atom = ruleQuery.selectAtoms().iterator().next();
-        body.getAtoms().forEach(at -> ruleQuery.addAtom(at.clone()));
+        body.getAtoms().forEach(at -> ruleQuery.addAtom(at.copy()));
         return atom;
     }
 
     private void propagateConstraints(Atom parentAtom){
-        if(parentAtom.isRelation() || parentAtom.isResource()) {
-            Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                    .filter(type -> !body.containsEquivalentAtom(type))
-                    .collect(Collectors.toSet());
-            Set<Predicate> predicates = new HashSet<>();
-            //predicates obtained from types
-            types.stream().map(type -> (Binary) type)
-                    .filter(type -> type.getPredicate() != null)
-                    .map(Binary::getPredicate)
-                    .forEach(predicates::add);
-            //direct predicates
-            predicates.addAll(parentAtom.getPredicates());
+        Set<Atom> types = parentAtom.getTypeConstraints().stream().collect(toSet());
+        //get all predicates apart from those that correspond to role players with ambiguous role types
+        Set<String> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
+        Set<Predicate> predicates = parentAtom.getPredicates().stream()
+                .filter(pred -> !unmappedVars.contains(pred.getVarName()))
+                .collect(toSet());
 
-            head.addAtomConstraints(predicates);
-            body.addAtomConstraints(predicates);
-            head.addAtomConstraints(types);
-            body.addAtomConstraints(types);
-        }
-        head.selectAppend(parentAtom.getParentQuery().getSelectedNames());
+        head.addAtomConstraints(predicates);
+        body.addAtomConstraints(predicates);
+        body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
     }
 
     private void rewriteHead(Atom parentAtom){
@@ -92,7 +111,7 @@ public class InferenceRule {
             unify(rewriteUnifiers);
 
             //resolve captures
-            Set<String> varIntersection = body.getVarSet();
+            Set<String> varIntersection = body.getVarNames();
             varIntersection.retainAll(parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, UUID.randomUUID().toString()));
@@ -105,23 +124,30 @@ public class InferenceRule {
         body.unify(unifiers);
     }
 
-    /**
-     * propagate variables to child via a relation atom (atom variables are bound)
-     * @param parentAtom   parent atom (atom) being resolved (subgoal)
-     */
     private void unifyViaAtom(Atom parentAtom) {
-        Atomic childAtom = getRuleConclusionAtom();
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Atom childAtom = getRuleConclusionAtom();
+        Map<String, String> unifiers = new HashMap<>();
+        if (!parentAtom.getValueVariable().isEmpty()){
+            childAtom.getUnifiers(parentAtom).forEach(unifiers::put);
+        }
+        //case of match all relation atom
+        else{
+            Relation extendedParent = ((Relation) AtomicFactory.create(parentAtom, parentAtom.getParentQuery()))
+                    .addType(childAtom.getType());
+            childAtom.getUnifiers(extendedParent).forEach(unifiers::put);
+        }
         unify(unifiers);
     }
 
     /**
-     * make child query consistent by performing variable IdPredicate so that parent variables are propagated
-     * @param parentAtom   parent atom (atom) being resolved (subgoal)
+     * make rule consistent variable-wise with the parent atom by means of unification
+     * @param parentAtom atom the rule should be unified with
      */
-   public void unify(Atom parentAtom) {
+    public void unify(Atom parentAtom) {
         rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
-        propagateConstraints(parentAtom);
+        if(parentAtom.isRelation() || parentAtom.isResource()) {
+            propagateConstraints(parentAtom);
+        }
     }
 }

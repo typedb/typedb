@@ -18,71 +18,47 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
-import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.Query;
-import ai.grakn.util.ErrorMessage;
 
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * Factory class for creating atoms out of graql variables and patterns.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class AtomicFactory {
 
-    public static Atomic create(PatternAdmin pattern) {
-        if (!pattern.isVar() )
-            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
-        VarAdmin var = pattern.asVar();
-        if(var.hasProperty(RelationProperty.class))
-            return new Relation(var);
-        else if(var.hasProperty(HasResourceProperty.class))
-            return new Resource(var);
-        else if (var.getId().isPresent())
-            return new IdPredicate(var);
-        else if (var.hasProperty(ValueProperty.class))
-            return new ValuePredicate(var);
-        else
-            return new TypeAtom(var);
-    }
-
-    public static Atomic create(PatternAdmin pattern, Query parent) {
-        if (!pattern.isVar() )
-            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
-        VarAdmin var = pattern.asVar();
-        if(var.hasProperty(RelationProperty.class))
-            return new Relation(var,parent);
-        else if(var.hasProperty(HasResourceProperty.class))
-            return new Resource(var, parent);
-        else if (var.getId().isPresent())
-            return new IdPredicate(var, parent);
-        else if (var.hasProperty(ValueProperty.class))
-            return new ValuePredicate(var, parent);
-        else
-            return new TypeAtom(var, parent);
-    }
-
-    public static Atomic create(Atomic atom, Query parent) {
-        Atomic copy = atom.clone();
+    /**
+     * @param atom to be copied
+     * @param parent query the copied atom should belong to
+     * @return atom copy
+     */
+    public static Atomic create(Atomic atom, ReasonerQuery parent) {
+        Atomic copy = atom.copy();
         copy.setParentQuery(parent);
         return copy;
     }
 
-    public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent, GraknGraph graph) {
+    /**
+     * @param pattern conjunction of patterns to be converted to atoms
+     * @param parent query the created atoms should belong to
+     * @return set of atoms
+     */
+    public static Set<Atomic> createAtomSet(Conjunction<VarAdmin> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = new HashSet<>();
         pattern.getVars().stream()
                 .flatMap(var -> var.getProperties()
-                        .flatMap(prop -> PropertyMapper.map(prop, var, pattern.getVars(), parent, graph).stream()))
+                        .map(vp -> vp.mapToAtom(var, pattern.getVars(), parent))
+                        .filter(Objects::nonNull))
                 .forEach(atoms::add);
         return atoms;
     }
