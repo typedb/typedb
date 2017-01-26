@@ -49,7 +49,7 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
-public class StandaloneTaskManager implements TaskManager {
+public final class StandaloneTaskManager implements TaskManager {
     private static final String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
     private static final String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
 

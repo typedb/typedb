@@ -43,7 +43,7 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
  * Class to manage tasks distributed using Kafka.
  * This class begins the TaskRunner instance that will be running on this machine.
  */
-public class DistributedTaskManager implements TaskManager {
+public final class DistributedTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
 
     private final KafkaProducer<String, String> producer;
@@ -59,8 +59,9 @@ public class DistributedTaskManager implements TaskManager {
     public DistributedTaskManager() {
         stateStorage = new TaskStateGraphStore();
         connection = new ZookeeperConnection();
-        taskRunner = new TaskRunner(stateStorage, connection);
 
+        // run the TaskRunner in a thread
+        taskRunner = new TaskRunner(stateStorage, connection);
         taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
         taskRunnerThread.start();
 
