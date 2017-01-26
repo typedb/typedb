@@ -40,13 +40,15 @@ import java.util.stream.Collectors;
  *
  */
 public class ConceptLog {
+    private final AbstractGraknGraph<?> graknGraph;
     private Set<ConceptImpl> modifiedConcepts;
     private final Set<CastingImpl> modifiedCastings;
     private final Set<ResourceImpl> modifiedResources;
     private final Map<String, RelationImpl> modifiedRelations;
 
 
-    ConceptLog() {
+    ConceptLog(AbstractGraknGraph graknGraph) {
+        this.graknGraph = graknGraph;
         modifiedCastings = new HashSet<>();
         modifiedConcepts = new HashSet<>();
         modifiedResources = new HashSet<>();
@@ -68,21 +70,23 @@ public class ConceptLog {
      * @param concept The concept to be later validated
      */
     public void putConcept(ConceptImpl concept) {
-        if(!modifiedConcepts.contains(concept)) {
-            modifiedConcepts.add(concept);
+        if(graknGraph.isConceptModified(concept)) {
+            if (!modifiedConcepts.contains(concept)) {
+                modifiedConcepts.add(concept);
 
-            if(concept.isCasting()) {
-                modifiedCastings.add(concept.asCasting());
+                if (concept.isCasting()) {
+                    modifiedCastings.add(concept.asCasting());
+                }
+                if (concept.isResource()) {
+                    modifiedResources.add((ResourceImpl) concept);
+                }
             }
-            if(concept.isResource()) {
-                modifiedResources.add((ResourceImpl) concept);
-            }
-        }
 
-        //Caching of relations in memory so they can be retrieved without needing a commit
-        if(concept.isRelation()){
-            RelationImpl relation = (RelationImpl) concept;
-            modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.rolePlayers()), relation);
+            //Caching of relations in memory so they can be retrieved without needing a commit
+            if (concept.isRelation()) {
+                RelationImpl relation = (RelationImpl) concept;
+                modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.rolePlayers()), relation);
+            }
         }
     }
 

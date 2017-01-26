@@ -120,6 +120,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         localShowImplicitStructures.set(false);
     }
 
+    /**
+     * @param concept A concept in the graph
+     * @return True if the concept has been modified in the transaction
+     */
+    public abstract boolean isConceptModified(ConceptImpl concept);
+
     @Override
     public String getKeyspace(){
         return keyspace;
@@ -263,7 +269,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public ConceptLog getConceptLog() {
         ConceptLog conceptLog = localConceptLog.get();
         if(conceptLog == null){
-            localConceptLog.set(conceptLog = new ConceptLog());
+            localConceptLog.set(conceptLog = new ConceptLog(this));
         }
         return conceptLog;
     }
