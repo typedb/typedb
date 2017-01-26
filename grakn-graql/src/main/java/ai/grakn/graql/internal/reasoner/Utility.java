@@ -425,20 +425,4 @@ public class Utility {
     public static boolean checkTypesCompatible(Type parent, Type child) {
         return parent.equals(child) || parent.subTypes().contains(child);
     }
-
-    /**
-     * @param A set
-     * @param B set
-     * @param <T> set element type
-     * @return results of set subtraction starting with larger set
-     */
-    public static <T> Set<T> subtractSets(Set<T> A, Set<T> B){
-        Set<T> sub =  A.size() > B.size()? Sets.newHashSet(A) : Sets.newHashSet(B);
-        if (A.size() > B.size()) {
-            sub.removeAll(B);
-        } else {
-            sub.removeAll(A);
-        }
-        return sub;
-    }
 }

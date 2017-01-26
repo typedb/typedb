@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.AdmissionsGraph;
+import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
@@ -60,6 +61,9 @@ public class AtomicQueryTest {
 
     @ClassRule
     public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+
+    @ClassRule
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
 
     @ClassRule
     public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
@@ -146,15 +150,17 @@ public class AtomicQueryTest {
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        GraknGraph graph = geoGraph.graph();
+        QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers fullAnswers = queryAnswers(query2);
-        Atom atom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), geoGraph.graph()).getAtom();
-        Atom atom2 = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), geoGraph.graph()).getAtom();
-        QueryAnswers permutedAnswers = answers.permute(atom, atom);
-        QueryAnswers permutedAnswers2 = answers.permute(atom2, atom2);
+        Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
+        Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
+
+        QueryAnswers permutedAnswers = answers.permute(mappedAtom, mappedAtom);
+        QueryAnswers permutedAnswers2 = answers.permute(unmappedAtom, unmappedAtom);
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }
