@@ -56,7 +56,6 @@
             <artifactId>halbuilder-standard</artifactId>
             <version>${halbuilder-standard.version}</version>
         </dependency>
-
     </dependencies>
 
     <build>

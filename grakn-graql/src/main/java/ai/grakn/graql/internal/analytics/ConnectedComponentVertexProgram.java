@@ -22,10 +22,8 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -36,69 +34,24 @@ import java.util.Set;
 public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> {
 
     private static final int MAX_ITERATION = 100;
-    private static final String MIN_STRING = "0";
     // element key
     private static final String IS_ACTIVE_CASTING = "connectedComponentVertexProgram.isActiveCasting";
     public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
 
     // memory key
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
-    private static final String IS_LAST_ITERATION = "connectedComponentVertexProgram.isLastIteration";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Sets.newHashSet(IS_ACTIVE_CASTING, CLUSTER_LABEL);
-    private static final Set<String> MEMORY_COMPUTE_KEYS = Sets.newHashSet(VOTE_TO_HALT, IS_LAST_ITERATION);
+    private static final Set<String> MEMORY_COMPUTE_KEYS = Sets.newHashSet(VOTE_TO_HALT);
 
     private static final String MESSAGE_FROM_ROLE_PLAYER = "R";
     private static final String MESSAGE_FROM_ASSERTION = "A";
-
-    private static final String PERSIST = "connectedComponentVertexProgram.persist";
-    private static final String KEYSPACE = "connectedComponentVertexProgram.keyspace";
-    private static final String WITHOUT_HAS_RESOURCE = "connectedComponentVertexProgram.without";
-    private static final String CLUSTER_NAME = "connectedComponentVertexProgram.clusterName";
-
-    private BulkResourceMutate<String> bulkResourceMutate;
-    private Set<TypeName> withoutHasResource = new HashSet<>();
-    private Set<String> selectedLabels = new HashSet<>();
 
     public ConnectedComponentVertexProgram() {
     }
 
     public ConnectedComponentVertexProgram(Set<TypeName> selectedTypes) {
         this.selectedTypes = selectedTypes;
-        this.persistentProperties.put(PERSIST, false);
-    }
-
-    public ConnectedComponentVertexProgram(Set<TypeName> selectedTypes, Set<TypeName> withoutHasResource,
-                                           String keyspace, TypeName clusterName) {
-        this.selectedTypes = selectedTypes;
-        this.withoutHasResource = withoutHasResource;
-        this.persistentProperties.put(PERSIST, true);
-        this.persistentProperties.put(KEYSPACE, keyspace);
-        this.persistentProperties.put(CLUSTER_NAME, clusterName);
-        System.out.println("withoutHasResource = " + withoutHasResource);
-    }
-
-    public ConnectedComponentVertexProgram(Set<TypeName> selectedTypes, Set<TypeName> withoutHasResource,
-                                           String keyspace, TypeName clusterName, Set<String> selectedLabels) {
-        this(selectedTypes, withoutHasResource, keyspace, clusterName);
-        this.selectedLabels = selectedLabels;
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        withoutHasResource.forEach(type -> configuration.addProperty(WITHOUT_HAS_RESOURCE + "." + type, type));
-        selectedLabels.forEach(label -> configuration.addProperty(CLUSTER_LABEL + "." + label, label));
-
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        configuration.subset(WITHOUT_HAS_RESOURCE).getKeys().forEachRemaining(key ->
-                withoutHasResource.add(TypeName.of((String) configuration.getProperty(WITHOUT_HAS_RESOURCE + "." + key))));
-        configuration.subset(CLUSTER_LABEL).getKeys().forEachRemaining(key ->
-                selectedLabels.add((String) configuration.getProperty(CLUSTER_LABEL + "." + key)));
     }
 
     @Override
@@ -115,7 +68,6 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void setup(final Memory memory) {
         LOGGER.debug("ConnectedComponentVertexProgram Started !!!!!!!!");
         memory.set(VOTE_TO_HALT, true);
-        memory.set(IS_LAST_ITERATION, false);
     }
 
     @Override
@@ -126,12 +78,12 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
-                        messenger.sendMessage(messageScopeIn, MESSAGE_FROM_ROLE_PLAYER);
+                        messenger.sendMessage(messageScopeInRolePlayer, MESSAGE_FROM_ROLE_PLAYER);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
                         // the assertion can also be a role-player, so sending 1 to castings following incoming edges
-                        messenger.sendMessage(messageScopeIn, MESSAGE_FROM_ROLE_PLAYER);
+                        messenger.sendMessage(messageScopeInRolePlayer, MESSAGE_FROM_ROLE_PLAYER);
                         // send -1 to castings following outgoing edges
-                        messenger.sendMessage(messageScopeOut, MESSAGE_FROM_ASSERTION);
+                        messenger.sendMessage(messageScopeOutCasting, MESSAGE_FROM_ASSERTION);
                     }
                 }
                 break;
@@ -149,42 +101,24 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                     }
                     // casting is active if both its assertion and role-player is in the subgraph
                     vertex.property(IS_ACTIVE_CASTING, hasBothMessages);
+                    if (hasBothMessages) {
+                        String id = vertex.id().toString();
+                        vertex.property(CLUSTER_LABEL, id);
+                        messenger.sendMessage(messageScopeOutRolePlayer, id);
+                        messenger.sendMessage(messageScopeInCasting, id);
+                    }
                 } else if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String id = vertex.id().toString();
                     vertex.property(CLUSTER_LABEL, id);
-                    messenger.sendMessage(messageScopeIn, id);
-                    messenger.sendMessage(messageScopeOut, id);
-                }
-                break;
-            case 2:
-                //similar to default case, except that casting has no cluster label before this iteration
-                if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
-                        (boolean) vertex.value(IS_ACTIVE_CASTING)) {
-                    String max = IteratorUtils.reduce(messenger.receiveMessages(), MIN_STRING,
-                            (a, b) -> a.compareTo(b) > 0 ? a : b);
-                    vertex.property(CLUSTER_LABEL, max);
-                    messenger.sendMessage(messageScopeIn, max);
-                    messenger.sendMessage(messageScopeOut, max);
+                    messenger.sendMessage(messageScopeInRolePlayer, id);
+                    messenger.sendMessage(messageScopeOutCasting, id);
                 }
                 break;
             default:
-                if ((Boolean)memory.get(IS_LAST_ITERATION)) {
-                    boolean clusterSelected = selectedLabels.isEmpty() || selectedLabels.contains(vertex.<String>value(CLUSTER_LABEL));
-                    if (withoutHasResource.contains(Utility.getVertexType(vertex)) && clusterSelected) {
-                        bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
-                    }
-                } else {
-                    // split the default case because shortcut edges cannot be filtered out
-                    if (memory.getIteration() % 2 != 0) {
-                        if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                            update(vertex, messenger, memory);
-                        }
-                    } else {
-                        if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
-                                (boolean) vertex.value(IS_ACTIVE_CASTING)) {
-                            update(vertex, messenger, memory);
-                        }
-                    }
+                if (selectedTypes.contains(Utility.getVertexType(vertex)) ||
+                        (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
+                                (boolean) vertex.value(IS_ACTIVE_CASTING))) {
+                    update(vertex, messenger, memory);
                 }
                 break;
         }
@@ -205,17 +139,10 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     @Override
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
-        if (memory.getIteration() < 3) return false;
-        if ((Boolean)memory.get(IS_LAST_ITERATION)) return true;
-
-        final boolean voteToHalt = memory.<Boolean>get(VOTE_TO_HALT);
-        if (voteToHalt) {
-            if (!(boolean) this.persistentProperties.get(PERSIST)) return true;
-            LOGGER.debug("Persisting Resources ...");
-            memory.set(IS_LAST_ITERATION, true);
-            return false;
+        if (memory.getIteration() < 2) return false;
+        if (memory.<Boolean>get(VOTE_TO_HALT)) {
+            return true;
         }
-
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
             throw new IllegalStateException(ErrorMessage.MAX_ITERATION_REACHED
@@ -224,22 +151,5 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
 
         memory.or(VOTE_TO_HALT, true);
         return false;
-    }
-
-    @Override
-    public void workerIterationStart(Memory memory) {
-        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
-            LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
-            bulkResourceMutate = new BulkResourceMutate<>((String) persistentProperties.get(KEYSPACE),
-                    TypeName.of((String) persistentProperties.get(CLUSTER_NAME)));
-        }
-    }
-
-    @Override
-    public void workerIterationEnd(Memory memory) {
-        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
-            LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationEnd");
-            bulkResourceMutate.flush();
-        }
     }
 }

@@ -37,7 +37,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.capture;
 /**
  *
  * <p>
- * Base implementationfor binary atoms of the type ($varName, $valueVariable), where value variable
+ * Base implementation for binary atoms of the type ($varName, $valueVariable), where value variable
  * references predicates.
  * </p>
  *
@@ -72,7 +72,6 @@ public abstract class BinaryBase extends Atom {
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
-        //TODO rule applicability for types should be disabled
         Atom ruleAtom = child.getHead().getAtom();
         return (ruleAtom instanceof BinaryBase) && this.getType().equals(ruleAtom.getType());
     }

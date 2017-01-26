@@ -41,7 +41,7 @@ import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
  * </p>
  *
  * <p>
- *     This class facilitates the construction of Grakn Grahs by determining which factory should be built.
+ *     This class facilitates the construction of Grakn Graphs by determining which factory should be built.
  *     It does this by either defaulting to an in memory graph {@link ai.grakn.graph.internal.GraknTinkerGraph} or by
  *     retrieving the factory definition from engine.
  *

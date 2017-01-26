@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.AdmissionsGraph;
+import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
@@ -30,8 +31,9 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
@@ -59,6 +61,9 @@ public class AtomicQueryTest {
 
     @ClassRule
     public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+
+    @ClassRule
+    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get());
 
     @ClassRule
     public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
@@ -142,29 +147,20 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testQueryEquivalence(){
-        String patternString = "{(entity-location: $x2, geo-entity: $xx) isa is-located-in;" +
-                "$x1 isa $t1; $t1 sub geoObject;}";
-        String patternString2 = "{(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
-                "$y1 isa $t2; $t2 sub geoObject;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, geoGraph.graph());
-        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, geoGraph.graph());
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, geoGraph.graph());
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, geoGraph.graph());
-        assertTrue(query.isEquivalent(query2));
-    }
-
-    @Test
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        GraknGraph graph = geoGraph.graph();
+        QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers fullAnswers = queryAnswers(query2);
-        QueryAnswers permutedAnswers = answers.permute(new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), geoGraph.graph()).getAtom());
-        QueryAnswers permutedAnswers2 = answers.permute(new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), geoGraph.graph()).getAtom());
+        Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
+        Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
+
+        QueryAnswers permutedAnswers = answers.permute(mappedAtom, mappedAtom);
+        QueryAnswers permutedAnswers2 = answers.permute(unmappedAtom, unmappedAtom);
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }

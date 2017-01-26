@@ -68,6 +68,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     private Set<TypeName> statisticsResourceTypes = new HashSet<>();
 
+    // Needed internally for OLAP tasks
     public MedianVertexProgram() {
     }
 
@@ -93,8 +94,14 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        if (memory.getIteration() < 3) return messageScopeSet;
-        return Collections.emptySet();
+        switch (memory.getIteration()) {
+            case 0:
+                return messageScopeSetInstance;
+            case 1:
+                return messageScopeSetCasting;
+            default:
+                return Collections.emptySet();
+        }
     }
 
     @Override
@@ -137,12 +144,12 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    degreeStep0(vertex, messenger);
+                    degreeStepInstance(vertex, messenger);
                 }
                 break;
             case 1:
                 if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
-                    degreeStep1(messenger);
+                    degreeStepCasting(messenger);
                 }
                 break;
             case 2:

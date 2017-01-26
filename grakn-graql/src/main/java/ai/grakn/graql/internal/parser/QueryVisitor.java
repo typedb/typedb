@@ -342,8 +342,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public DegreeQuery<?> visitDegrees(GraqlParser.DegreesContext ctx) {
-        DegreeQuery<?> degree = queryBuilder.compute().degree();
+    public DegreeQuery visitDegrees(GraqlParser.DegreesContext ctx) {
+        DegreeQuery degree = queryBuilder.compute().degree();
 
         if (ctx.ofList() != null) {
             degree = degree.of(visitOfList(ctx.ofList()));
@@ -568,6 +568,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public UnaryOperator<Var> visitHasScope(GraqlParser.HasScopeContext ctx) {
         return var -> var.hasScope(var(getVariable(ctx.VARIABLE())));
+    }
+
+    @Override
+    public UnaryOperator<Var> visitPlays(GraqlParser.PlaysContext ctx) {
+        return var -> var.plays(visitVariable(ctx.variable()));
     }
 
     @Override

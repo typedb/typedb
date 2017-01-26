@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -50,7 +49,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new StdMapReduce(statisticsResourceTypeNames, dataType));
-        Map<Serializable, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<Serializable, Map<String, Double>> std = result.memory().get(StdMapReduce.class.getName());
         Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);

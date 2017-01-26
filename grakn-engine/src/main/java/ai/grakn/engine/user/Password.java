@@ -18,8 +18,8 @@
 
 package ai.grakn.engine.user;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graph.EngineGraknGraph;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -32,12 +32,17 @@ import java.util.Base64;
 import java.util.Random;
 
 /**
- * A helper class for generating secure passwords based on random salts
- * The algorithm used is PBKDF2WithHmacSHA1 <a href="http://security.stackexchange.com/a/6415/12614"> recommended by NIST </a>.
- * The hashed value has 256 bits.
+ * <p>
+ *     A utility class for hashing user passwords
+ * </p>
+ *
+ * <p>
+ *     A helper class for generating secure passwords based on random salts
+ *     The algorithm used is PBKDF2WithHmacSHA1 <a href="http://security.stackexchange.com/a/6415/12614"> recommended by NIST </a>.
+ *     The hashed value has 256 bits.
+ * </p>
  *
  * @author fppt
- *
  */
 public class Password {
     private static final Random RANDOM = new SecureRandom();
@@ -56,7 +61,7 @@ public class Password {
      *
      * @return a 16 bytes random salt
      */
-    public static byte[] getNextSalt(GraknGraph graph) {
+    static byte[] getNextSalt(EngineGraknGraph graph) {
         ResourceType<String> saltResourceType = graph.getResourceType(UsersHandler.USER_SALT);
 
         String saltString;
@@ -112,7 +117,7 @@ public class Password {
         return true;
     }
 
-    public static String getString(byte [] bytes){
+    static String getString(byte[] bytes){
         return new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
     }
 

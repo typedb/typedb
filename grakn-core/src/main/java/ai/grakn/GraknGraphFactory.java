@@ -18,8 +18,21 @@
 
 package ai.grakn;
 
+
 /**
- * GraknGraphFactory is a factory instance that produces graphs bound to the same persistence layer and keyspace.
+ * <p>
+ *     Builds a Grakn Graph factory
+ * </p>
+ *
+ * <p>
+ *     This class facilitates the construction of Grakn Graphs by determining which factory should be built.
+ *     The graphs produced by a factory are singletons bound to a specific keyspace.
+ *     To create graphs bound to a different keyspace you must create another factory
+ *     using {@link Grakn#factory(String, String)}
+ *
+ * </p>
+ *
+ * @author fppt
  */
 public interface GraknGraphFactory {
     /**

@@ -24,6 +24,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -57,13 +58,13 @@ public class GeoInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
+    @Ignore
     @Test
     public void testQueryPrime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x isa city;$x has name $name;"+
-                "($x, $y) isa is-located-in;"+
-                "$y isa country;$y has name 'Poland'; select $x, $name;";
+                "($x, $y) isa is-located-in;$y isa country;$y has name 'Poland'; select $x, $name;";
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
@@ -88,6 +89,7 @@ public class GeoInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
+    @Ignore
     @Test
     public void testQuery2Prime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);

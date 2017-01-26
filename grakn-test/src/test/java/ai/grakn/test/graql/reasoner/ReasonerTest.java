@@ -362,6 +362,54 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testPlays(){
+        String queryString = "match $x plays geo-entity;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
+        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
+                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw' or " +
+                "$name value 'Warsaw' or $name value 'Wroclaw' or " +
+                "$name value 'Masovia' or $name value 'Silesia';}; select $x, $y;";
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testPlays2(){
+        String queryString = "match $x plays $role;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
+        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
+                "{" +
+                "{$role type-name geo-entity or $role type-name concept or $role type-name role;};" +
+                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw' or " +
+                "$name value 'Warsaw' or $name value 'Wroclaw' or " +
+                "$name value 'Masovia' or $name value 'Silesia';};" +
+                "} or {" +
+                "{$role type-name entity-location or $role type-name concept or $role type-name role;};" +
+                "{$name value 'Europe' or $name value 'Warsaw' or $name value 'Masovia' or $name value 'Silesia';};" +
+                "}; select $x, $y, $role;";
+        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query2 = geoGraph.graph().graql().infer(false).parse(explicitQuery);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test
+    public void testTautology(){
+        String queryString = "match ($x, $y) isa is-located-in;city sub geoObject;";
+        String queryString2 = "match ($x, $y) isa is-located-in;geoObject sub city;";
+        String queryString3 = "match ($x, $y) isa is-located-in;";
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString3);
+        MatchQuery query2 = qb.parse(queryString);
+        MatchQuery query3 = iqb.parse(queryString);
+        MatchQuery query4 = iqb.parse(queryString2);
+
+        query.execute();
+        assertQueriesEqual(query2, query3);
+        assertTrue(query4.execute().isEmpty());
+    }
+
+    //TODO BUG: getRulesOfConclusion on geo-entity returns a rule!
+    @Test
     public void testPlaysRole(){
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
              "($x, $y) isa is-located-in;";
@@ -385,7 +433,6 @@ public class ReasonerTest {
     }
 
     //TODO loses type variable as non-core types are not unified in rules
-    @Ignore
     @Test
     public void testPlaysRole2(){
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
@@ -661,6 +708,19 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testHasRole2() {
+        String queryString = "match ($x, $y) isa $rel;$rel has-role $role;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        QueryBuilder qb = geoGraph.graph().graql().infer(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
+        MatchQuery query = iqb.parse(queryString2);
+        MatchQuery query2 = qb.parse(queryString);
+        MatchQuery query3 = iqb.parse(queryString);
+        query.execute();
+        assertQueriesEqual(query2, query3);
+    }
+
+    @Test
     public void testScope(){
         String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
         QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
@@ -769,6 +829,29 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers.size(), answers.size());
         assertEquals(requeriedAnswers.size(), requeriedAnswers2.size());
         assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
+    }
+
+    @Test
+    public void testRelationTypeVariable(){
+        String queryString = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;";
+        String queryString2 = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;$rel type-name recommendation;";
+        QueryBuilder qb = snbGraph.graph().graql();
+        QueryAnswers answers = queryAnswers(qb.infer(true).materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.infer(true).materialise(true).parse(queryString));
+        QueryAnswers answers3 = queryAnswers(qb.infer(false).parse(queryString2));
+        assertEquals(answers, answers2);
+        assertEquals(answers2, answers3);
+    }
+
+    @Test
+    public void testMatchAll(){
+        String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
+        String queryString2 = "match $y isa product;{$r(recommended-customer: $x, recommended-product: $y) or " +
+                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};";
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+        assertQueriesEqual(query, query2);
     }
 
     @Test

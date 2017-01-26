@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.postprocessing.Cache;
+import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.ErrorMessage;
@@ -46,7 +46,7 @@ import static spark.Spark.post;
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
  */
 public class CommitLogController {
-    private final Cache cache = Cache.getInstance();
+    private final EngineCacheImpl cache = EngineCacheImpl.getInstance();
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
     public CommitLogController(){

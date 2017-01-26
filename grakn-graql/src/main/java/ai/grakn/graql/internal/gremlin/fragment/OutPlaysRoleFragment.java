@@ -43,8 +43,6 @@ class OutPlaysRoleFragment extends AbstractFragment {
         } else {
             traversal.out(PLAYS_ROLE.getLabel());
         }
-
-        Fragments.inSubs(traversal);
     }
 
     @Override

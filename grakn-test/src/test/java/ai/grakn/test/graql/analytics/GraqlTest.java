@@ -38,15 +38,14 @@ import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.graql.internal.analytics.BulkResourceMutate;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -82,21 +81,18 @@ public class GraqlTest {
     private String relationId12;
     private String relationId24;
 
-    @Rule
-    public final GraphContext context = GraphContext.empty();
+    @ClassRule
+    public static final EngineContext context = EngineContext.startServer();
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
 
-        graph = context.graph();
+        graph = context.graphWithNewKeyspace();
         qb = graph.graql();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
     }
 
@@ -113,7 +109,7 @@ public class GraqlTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        Map<Long, Set<String>> degrees = qb.<DegreeQuery<Map<Long, Set<String>>>>parse("compute degrees;").execute();
+        Map<Long, Set<String>> degrees = qb.<DegreeQuery>parse("compute degrees;").execute();
 
         Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entityId1, 1L);
