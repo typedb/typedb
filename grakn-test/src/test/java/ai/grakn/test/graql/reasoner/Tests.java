@@ -22,6 +22,9 @@ public class Tests{
     @ClassRule
     public static final GraphContext testSet5 = GraphContext.preLoad("testSet5.gql");
 
+    @ClassRule
+    public static final GraphContext testSet10 = GraphContext.preLoad("testSet10.gql");
+
     @Rule
     public final GraphContext graphContext = GraphContext.empty();
 
@@ -42,6 +45,15 @@ public class Tests{
         Assert.assertTrue(!answers2.containsAll(answers));
         Assert.assertTrue(!answers.isEmpty());
         Assert.assertEquals(answers2.size(), 3);
+    }
+
+    @Test
+    public void testSet10() {
+        QueryBuilder iqb = testSet10.graph().graql().infer(true);
+        String queryString = "match (role1: $x, role2: $y) isa relation2;";
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+
+        Assert.assertTrue(!answers.isEmpty());
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
