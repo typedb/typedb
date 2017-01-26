@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
@@ -85,17 +84,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         QueryAnswers permutedAnswers = new QueryAnswers();
         unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
 
-        //filter by checking substitutions
-        /*
-        Set<IdPredicate> subs = atom.getIdPredicates().stream()
-                .filter(pred -> permuteVars.contains(pred.getVarName()))
-                .collect(Collectors.toSet());
-        QueryAnswers filteredOutAnswers = new QueryAnswers();
-        subs.forEach( sub -> permutedAnswers.stream()
-                .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
-                .forEach(filteredOutAnswers::add));
-        permutedAnswers.removeAll(filteredOutAnswers);
-        */
         return permutedAnswers
                 .filterBySubstitutions(atom)
                 .filterByEntityTypes(atom);
