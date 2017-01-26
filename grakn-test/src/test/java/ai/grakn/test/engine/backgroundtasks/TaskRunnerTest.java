@@ -27,6 +27,7 @@ import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
+import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
@@ -120,7 +121,7 @@ public class TaskRunnerTest {
                     .statusChangedBy(this.getClass().getName())
                     .runAt(now())
                     .isRecurring(false)
-                    .configuration(new JSONObject(singletonMap("name", "task "+i)))
+                    .configuration(Json.object("name", "task"))
                     .status(status);
 
             stateStorage.newState(state);

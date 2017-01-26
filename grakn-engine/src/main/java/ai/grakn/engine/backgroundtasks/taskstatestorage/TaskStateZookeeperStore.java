@@ -31,6 +31,8 @@ import java.util.Set;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
 import static java.lang.String.format;
+import static org.apache.commons.lang.SerializationUtils.deserialize;
+import static org.apache.commons.lang.SerializationUtils.serialize;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -58,7 +60,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
         try {
             zookeeperConnection.create()
                     .creatingParentContainersIfNeeded()
-                    .forPath(format(ZK_TASK_PATH, task.getId()), task.serialise());
+                    .forPath(format(ZK_TASK_PATH, task.getId()), serialize(task));
 
         } catch (Exception exception){
             LOG.error("Could not write task state to Zookeeper");
@@ -73,7 +75,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     public Boolean updateState(TaskState task){
         try {
             zookeeperConnection.setData()
-                    .forPath(format(ZK_TASK_PATH, task.getId()), task.serialise());
+                    .forPath(format(ZK_TASK_PATH, task.getId()), serialize(task));
         }
         catch (Exception e) {
             LOG.error("Could not write to ZooKeeper! - "+e);
@@ -87,7 +89,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     public TaskState getState(String id) {
         try {
             byte[] b = zookeeperConnection.getData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX);
-            return TaskState.deserialise(b);
+            return (TaskState) deserialize(b);
         }
         catch (Exception e) {
             //TODO do not throw runtime exception

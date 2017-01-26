@@ -25,7 +25,7 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
-import org.json.JSONObject;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +96,7 @@ public class StandaloneTaskManager implements TaskManager {
         instance = null;
     }
 
-    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = (period != 0);
 
         TaskState taskState = new TaskState(task.getClass().getName())
