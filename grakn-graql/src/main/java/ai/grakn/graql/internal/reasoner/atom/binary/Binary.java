@@ -24,7 +24,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
+import ai.grakn.graql.admin.ReasonerQuery;
 import com.google.common.collect.Sets;
 import java.util.Map;
 import java.util.Set;

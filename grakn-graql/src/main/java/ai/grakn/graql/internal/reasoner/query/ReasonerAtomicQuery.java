@@ -25,12 +25,13 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -66,6 +67,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     final private QueryAnswers answers = new QueryAnswers();
     final private QueryAnswers newAnswers = new QueryAnswers();
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
+
+    public ReasonerAtomicQuery(String rhs, GraknGraph graph){
+        super(rhs, graph);
+        atom = selectAtoms().iterator().next();
+    }
+
+    public ReasonerAtomicQuery(MatchQuery query, GraknGraph graph){
+        super(query, graph);
+        atom = selectAtoms().iterator().next();
+    }
 
 
     public ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph){
@@ -186,7 +197,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             insert.stream()
                     .map( m ->
                         m.entrySet().stream()
-                        .collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
                     .forEach(insertAnswers::add);
        }
        return insertAnswers;

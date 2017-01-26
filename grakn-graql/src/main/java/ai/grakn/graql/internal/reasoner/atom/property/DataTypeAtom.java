@@ -22,8 +22,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 
 public class DataTypeAtom extends AtomBase {
 

@@ -16,14 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;

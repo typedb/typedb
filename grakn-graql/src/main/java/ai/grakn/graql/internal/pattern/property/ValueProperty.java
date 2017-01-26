@@ -18,13 +18,17 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class ValueProperty extends AbstractVarProperty implements NamedProperty, SingleFragmentProperty {
@@ -80,5 +84,10 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty,
     @Override
     public int hashCode() {
         return predicate.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        return new ValuePredicate(var.getVarName(), this.getPredicate(), parent);
     }
 }

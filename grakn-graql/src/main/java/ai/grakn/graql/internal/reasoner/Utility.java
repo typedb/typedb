@@ -24,6 +24,13 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -38,6 +45,8 @@ import javafx.util.Pair;
 
 import java.util.*;
 
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
 
 public class Utility {
@@ -73,6 +82,70 @@ public class Utility {
         return var.contains(CAPTURE_MARK);
     }
 
+    /**
+     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
+     * covers the case when specified variable name is user defined
+     * @param typeVariable variable name of interest
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return mapped IdPredicate
+     */
+    public static IdPredicate getUserDefinedIdPredicate(String typeVariable, Set<VarAdmin> vars, ReasonerQuery parent){
+        return  vars.stream()
+                .filter(v -> v.getVarName().equals(typeVariable))
+                .flatMap(v -> v.hasProperty(NameProperty.class)?
+                        v.getProperties(NameProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
+                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
+     * covers both the cases when variable is and isn't user defined
+     * @param typeVariable variable name of interest
+     * @param typeVar VarAdmin to look for in case the variable name is not user defined
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return mapped IdPredicate
+     */
+    public static IdPredicate getIdPredicate(String typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        IdPredicate predicate = null;
+        //look for id predicate among vars
+        if(typeVar.isUserDefinedName()) {
+            predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+        } else {
+            NameProperty nameProp = typeVar.getProperty(NameProperty.class).orElse(null);
+            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
+        }
+        return predicate;
+    }
+
+    /**
+     * looks for appropriate var properties with a specified name among the vars and maps them to ValuePredicates,
+     * covers both the case when variable is and isn't user defined
+     * @param valueVariable variable name of interest
+     * @param valueVar VarAdmin to look for in case the variable name is not user defined
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return set of mapped ValuePredicates
+     */
+    public static Set<Predicate> getValuePredicates(String valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        Set<Predicate> predicates = new HashSet<>();
+        if(valueVar.isUserDefinedName()){
+            vars.stream()
+                    .filter(v -> v.getVarName().equals(valueVariable))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
+                    .forEach(predicates::add);
+        }
+        //add value atom
+        else {
+            valueVar.getProperties(ValueProperty.class)
+                    .forEach(vp -> predicates
+                            .add(new ValuePredicate(createValueVar(valueVariable, vp.getPredicate()), parent)));
+        }
+        return predicates;
+    }
+
 
     public static void printAnswers(Set<Map<String, Concept>> answers) {
         answers.forEach(result -> {
@@ -87,9 +160,15 @@ public class Utility {
         System.out.println();
     }
 
-    //rolePlayer-roleType maps
-    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, String> roleMap,
-                                        Set<Map<String, String>> roleMaps){
+    /**
+     * compute all rolePlayer-roleType combinations complementing provided roleMap
+     * @param vars set of rolePlayers
+     * @param roles set of roleTypes
+     * @param roleMap initial rolePlayer-roleType roleMap to be complemented
+     * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
+     */
+    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, Var> roleMap,
+                                               Set<Map<String, Var>> roleMaps){
         Set<String> tempVars = Sets.newHashSet(vars);
         Set<RoleType> tempRoles = Sets.newHashSet(roles);
         String var = vars.iterator().next();
@@ -97,12 +176,13 @@ public class Utility {
         roles.forEach(role -> {
             tempVars.remove(var);
             tempRoles.remove(role);
-            roleMap.put(var, role.getName());
-            if (!tempVars.isEmpty() && !tempRoles.isEmpty())
+            roleMap.put(var, var().name(role.getName()).admin());
+            if (!tempVars.isEmpty() && !tempRoles.isEmpty()) {
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
-            else {
-                if (!roleMap.isEmpty())
+            } else {
+                if (!roleMap.isEmpty()) {
                     roleMaps.add(Maps.newHashMap(roleMap));
+                }
                 roleMap.remove(var);
             }
             tempVars.add(var);

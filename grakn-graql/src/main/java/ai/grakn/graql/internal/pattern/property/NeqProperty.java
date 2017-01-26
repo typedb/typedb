@@ -1,11 +1,15 @@
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class NeqProperty extends AbstractVarProperty implements NamedProperty {
@@ -53,5 +57,10 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     @Override
     public int hashCode() {
         return var.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        return new NotEquals(var.getVarName(), this, parent);
     }
 }

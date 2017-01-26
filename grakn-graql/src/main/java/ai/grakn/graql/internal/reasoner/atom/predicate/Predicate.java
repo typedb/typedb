@@ -19,8 +19,8 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQuery;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.HashMap;

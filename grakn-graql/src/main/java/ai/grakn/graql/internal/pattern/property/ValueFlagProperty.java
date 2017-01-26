@@ -18,9 +18,14 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import java.util.Set;
 
 public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty {
 
@@ -43,5 +48,10 @@ public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarP
     @Override
     public int hashCode() {
         return 17;
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        return new ValuePredicate(var.getVarName(), parent);
     }
 }

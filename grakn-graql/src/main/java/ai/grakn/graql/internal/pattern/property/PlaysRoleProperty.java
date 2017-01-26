@@ -18,17 +18,25 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 public class PlaysRoleProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -100,5 +108,16 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
         int result = role.hashCode();
         result = 31 * result + (required ? 1 : 0);
         return result;
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        String varName = var.getVarName();
+        VarAdmin typeVar = this.getRole();
+        String typeVariable = typeVar.getVarName();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+
+        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
+        return new TypeAtom(resVar, predicate, parent);
     }
 }

@@ -24,11 +24,12 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -68,6 +69,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknGraph graph;
     private final Set<Atomic> atomSet = new HashSet<>();
+
+
+    public ReasonerQueryImpl(MatchQuery query, GraknGraph graph) {
+        this.graph = graph;
+        atomSet.addAll(AtomicFactory.createAtomSet(query.admin().getPattern().admin().getDisjunctiveNormalForm().getPatterns().iterator().next(), this));
+        inferTypes();
+    }
+
+    public ReasonerQueryImpl(String query, GraknGraph graph) {
+        this(graph.graql().infer(false).<MatchQuery>parse(query), graph);
+    }
 
     public ReasonerQueryImpl(Conjunction<VarAdmin> pattern, GraknGraph graph) {
         this.graph = graph;

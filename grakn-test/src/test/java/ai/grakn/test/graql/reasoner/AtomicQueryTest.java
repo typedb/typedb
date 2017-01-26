@@ -20,20 +20,14 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.AskQuery;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
-import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.PatternAdmin;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -62,38 +56,19 @@ public class AtomicQueryTest extends AbstractEngineTest{
     }
 
     @Test
-    public void testErrorNonAtomicQuery() {
+    public void testErrorNonReasonerAtomicQuery() {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;";
         exception.expect(IllegalStateException.class);
-        AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, graph);
     }
 
     @Test
     public void testCopyConstructor(){
         String queryString = "match ($x, $y) isa recommendation;";
-        AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        AtomicQuery copy = new AtomicQuery(atomicQuery);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(queryString, graph);
+        ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
         assert(atomicQuery.equals(copy));
         assert(atomicQuery.hashCode() == copy.hashCode());
-    }
-
-    @Test
-    public void testPatternNotVar(){
-        exception.expect(IllegalArgumentException.class);
-        Conjunction<PatternAdmin> pattern = qb.<MatchQuery>parse("match $x isa person;").admin().getPattern();
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-        Atomic atom = AtomicFactory.create(pattern);
-    }
-
-    @Test
-    public void testMaterialize(){
-        assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
-
-        String queryString = "match ($x, $y) isa recommendation;";
-        AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", getConcept("Bob"))
-                                                , new IdPredicate("y", getConcept("Colour of Magic"))));
-        assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic'; ask;").execute());
     }
 
     //TODO Bug #10655 if we group resources into atomic queries
@@ -101,8 +76,8 @@ public class AtomicQueryTest extends AbstractEngineTest{
     @Test
     public void testUnification(){
         GraknGraph localGraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
-        AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", localGraph);
-        AtomicQuery childQuery = new AtomicQuery("match ($X, $Y) isa Friend; $Y has name 'd'; select $X;", localGraph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", localGraph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery("match ($X, $Y) isa Friend; $Y has name 'd'; select $X;", localGraph);
 
         Atomic parentAtom = parentQuery.getAtom();
         Atomic childAtom = childQuery.getAtom();
@@ -120,8 +95,8 @@ public class AtomicQueryTest extends AbstractEngineTest{
         String queryString2 = "match" +
                 "$x has firstname $x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581;" +
                 "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
-        AtomicQuery parentQuery = new AtomicQuery(queryString, graph);
-        AtomicQuery childQuery = new AtomicQuery(queryString2, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(queryString, graph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(queryString2, graph);
         assertTrue(parentQuery.equals(childQuery));
         assertTrue(parentQuery.hashCode() == childQuery.hashCode());
     }
@@ -138,8 +113,8 @@ public class AtomicQueryTest extends AbstractEngineTest{
                 "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
                 "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 type-name 'applicant';" +
                 "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;";
-        AtomicQuery parentQuery = new AtomicQuery(queryString, lgraph);
-        AtomicQuery childQuery = new AtomicQuery(queryString2, lgraph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(queryString, lgraph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(queryString2, lgraph);
         assertTrue(parentQuery.equals(childQuery));
         assertTrue(parentQuery.hashCode() == childQuery.hashCode());
     }
