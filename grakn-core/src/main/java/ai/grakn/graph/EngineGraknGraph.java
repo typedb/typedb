@@ -20,6 +20,7 @@ package ai.grakn.graph;
 
 
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.util.EngineCache;
 
 import java.util.Set;
 
@@ -29,7 +30,7 @@ import java.util.Set;
  * </p>
  *
  * <p>
- *     Provides common methods for advanced inteaction with the graph.
+ *     Provides common methods for advanced interaction with the graph.
  *     This is used internally by Engine
  * </p>
  *
@@ -39,11 +40,12 @@ import java.util.Set;
 public interface EngineGraknGraph extends BaseGraknGraph {
 
     /**
-     * Commits the transaction without submitting any commit logs through the REST API
+     * Commits the transaction without submitting any commit logs through the REST API.
+     * COncepts in need of post processing are submitted directly to the {@link EngineCache}
      *
      * @throws GraknValidationException is thrown when a structural validation fails.
      */
-    void commitTx() throws GraknValidationException;
+    void commit(EngineCache cache) throws GraknValidationException;
 
     /**
      * Merges duplicate castings if one is found.
