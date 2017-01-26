@@ -54,7 +54,8 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
      */
     @Override
     public boolean isConceptModified(ConceptImpl concept) {
-        return ((TitanVertex) concept.getVertex()).isModified();
+        TitanVertex vertex = (TitanVertex) concept.getVertex();
+        return vertex.isModified() || vertex.isNew();
     }
 
     @Override
