@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.orientechnologies.orient.core.record.impl.ODocument;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -38,9 +39,8 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
      */
     @Override
     public boolean isConceptModified(ConceptImpl concept) {
-        return true;
+        return ((ODocument) concept.getVertex()).isDirty();
     }
-
 
     @Override
     protected void commitTransaction(){
