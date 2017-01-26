@@ -82,7 +82,7 @@ public class EntityTest extends GraphTestBase{
     public void testDeleteConceptInstanceInRelationship() throws ConceptException{
         //Build
         EntityType type = graknGraph.putEntityType("Concept Type");
-        RelationType relationType = graknGraph.putRelationType("relationType");
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
         RoleType role1 = graknGraph.putRoleType("role1");
         RoleType role2 = graknGraph.putRoleType("role2");
         RoleType role3 = graknGraph.putRoleType("role3");
@@ -112,7 +112,7 @@ public class EntityTest extends GraphTestBase{
     @Test
     public void testDeleteConceptInstanceInRelationshipLastRolePlayer() throws ConceptException {
         EntityType type = graknGraph.putEntityType("Concept Type");
-        RelationType relationType = graknGraph.putRelationType("relationType");
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
         RoleType role1 = graknGraph.putRoleType("role1");
         RoleType role2 = graknGraph.putRoleType("role2");
         RoleType role3 = graknGraph.putRoleType("role3");

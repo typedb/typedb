@@ -23,7 +23,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -110,20 +109,15 @@ class ValidateGlobalRules {
     static boolean validateHasSingleIncomingHasRoleEdge(RoleType roleType){
         if(roleType.isAbstract())
             return true;
-
-        try {
-            if(roleType.relationType() == null)
-                return false;
-        } catch (MoreThanOneEdgeException e){
+        if(roleType.relationTypes().isEmpty())
             return false;
-        }
         return true;
     }
 
     /**
      *
      * @param relationType The RelationType to validate
-     * @return A flag indicating if the relationType has at least 2 roles
+     * @return An error message if the relationTypes does not have at least 2 roles
      */
     static boolean validateHasMinimumRoles(RelationType relationType) {
         return relationType.isAbstract() || relationType.hasRoles().size() >= 2;
@@ -144,7 +138,15 @@ class ValidateGlobalRules {
             return false;
 
         for(CastingImpl casting: castings){
-            if(!casting.getRole().relationType().getName().equals(relationType.getName()))
+            boolean notFound = true;
+            for (RelationType innerRelationType : casting.getRole().relationTypes()) {
+                if(innerRelationType.getName().equals(relationType.getName())){
+                    notFound = false;
+                    break;
+                }
+            }
+
+            if(notFound)
                 return false;
         }
 
@@ -178,7 +180,7 @@ class ValidateGlobalRules {
         Set<String> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
-        //Check 1) Every role of relationType is the sub of a role which is in the hasRoles of it's supers
+        //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
         if(!superRelationType.isAbstract()) {
             Set<String> allSuperRolesPlayed = new HashSet<>();
             superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
@@ -191,7 +193,7 @@ class ValidateGlobalRules {
             }
         }
 
-        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationType
+        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationTypes
         for (RoleType superHasRole : superHasRoles) {
             boolean subRoleNotFoundInHasRoles = true;
 

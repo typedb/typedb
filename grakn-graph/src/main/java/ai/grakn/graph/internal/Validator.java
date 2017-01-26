@@ -147,7 +147,7 @@ class Validator {
 
     /**
      * Validation rules exclusive to relation types
-     * @param relationType The relationType to validate
+     * @param relationType The relationTypes to validate
      */
     private void validateRelationType(RelationTypeImpl relationType){
         if(!ValidateGlobalRules.validateHasMinimumRoles(relationType))
