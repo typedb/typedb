@@ -107,7 +107,7 @@ class GraqlSession {
         });
 
         // Begin sending pings
-        Thread thread = new Thread(this::ping);
+        Thread thread = new Thread(this::ping, "graql-session-ping");
         thread.setDaemon(true);
         thread.start();
     }
@@ -147,20 +147,19 @@ class GraqlSession {
 
     private void ping() {
         // This runs on a daemon thread, so it will be terminated when the JVM stops
-        //noinspection InfiniteLoopStatement
-        while (true) {
+        while (session.isOpen()) {
             try {
                 sendJson(Json.object(ACTION, ACTION_PING));
-
-                try {
-                    Thread.sleep(PING_INTERVAL);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             } catch (WebSocketException e) {
                 // Report an error if the session is still open
                 if (session.isOpen()) {
                     LOG.error(e.getMessage());
+                }
+            } finally {
+                try {
+                    Thread.sleep(PING_INTERVAL);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
