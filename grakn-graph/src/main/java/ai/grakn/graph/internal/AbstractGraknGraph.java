@@ -518,8 +518,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundCasting = addCasting(role, rolePlayer);
         }
 
-        EdgeImpl assertionToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);// Relation To Casting
-        assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        // Relation To Casting
+        EdgeImpl relationToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        getConceptLog().putConcept(relation); //The relation is explicitly tracked so we can look them up without committing
 
         putShortcutEdges(relation, relation.type());
 
