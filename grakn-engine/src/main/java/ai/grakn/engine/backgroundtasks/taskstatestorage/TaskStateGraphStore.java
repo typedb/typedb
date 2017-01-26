@@ -37,7 +37,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import javafx.util.Pair;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashSet;
