@@ -269,7 +269,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public ConceptLog getConceptLog() {
         ConceptLog conceptLog = localConceptLog.get();
         if(conceptLog == null){
-            localConceptLog.set(conceptLog = new ConceptLog(this));
+            localConceptLog.set(conceptLog = new ConceptLog());
         }
         return conceptLog;
     }

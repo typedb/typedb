@@ -231,7 +231,9 @@ final class ElementFactory {
     }
 
     private <X extends ConceptImpl> X trackConcept(X concept){
-        graknGraph.getConceptLog().putConcept(concept);
+        if(graknGraph.isConceptModified(concept)) { //Only track concepts which have been modified.
+            graknGraph.getConceptLog().putConcept(concept);
+        }
         return concept;
     }
 }
