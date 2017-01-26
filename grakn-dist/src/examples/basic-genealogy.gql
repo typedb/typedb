@@ -138,6 +138,7 @@ mother-in-law sub parent-in-law;
 father-in-law sub parent-in-law;
 
 
+
 # DATA
 
 $57472 isa person has firstname "Mary" has identifier "Mary Guthrie" has surname "Guthrie" has gender "female";
@@ -300,6 +301,7 @@ $40980648 (spouse2: $40968224, spouse1: $41096) isa marriage;
 $40988840 (spouse2: $41349200, spouse1: $249976) isa marriage;
 $81924152 (spouse2: $135288, spouse1: $41340952) isa marriage;
 $81936440 (spouse2: $41209936, spouse1: $282848) isa marriage;
+
 $81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
 
 ## RULES
