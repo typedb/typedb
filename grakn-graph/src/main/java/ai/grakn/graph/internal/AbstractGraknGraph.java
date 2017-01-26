@@ -42,6 +42,7 @@ import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.util.EngineCache;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -65,6 +66,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
@@ -692,37 +694,49 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void commit() throws GraknValidationException {
-        commit(true);
+        commit((castings, resources) -> {
+            Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
+            if(castings.size() > 0) {
+                modifiedConcepts.put(Schema.BaseType.CASTING, castings);
+            }
+            if(resources.size() > 0) {
+                modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
+            }
+            if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && modifiedConcepts.size() > 0) {
+                submitCommitLogs(modifiedConcepts);
+            }
+        });
     }
 
+    /**
+     * Commits the graph and adds concepts for post processing directly to the cache
+     * @throws GraknValidationException when the graph does not conform to the object concept
+     */
     @Override
-    public void commitTx() throws GraknValidationException{
-        commit(false);
+    public void commit(EngineCache cache) throws GraknValidationException{
+        commit((castings, resources) -> {
+            String keyspace = getKeyspace();
+            if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+                cache.addJobCasting(keyspace, castings);
+                cache.addJobResource(keyspace, resources);
+            }
+        });
     }
 
-    public void commit(boolean submitLogs) throws GraknValidationException {
+    public void commit(BiConsumer<Set<String>, Set<String>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
-        Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
         Set<String> castings = getConceptLog().getModifiedCastingIds();
         Set<String> resources = getConceptLog().getModifiedResourceIds();
-
-        if(castings.size() > 0) {
-            modifiedConcepts.put(Schema.BaseType.CASTING, castings);
-        }
-        if(resources.size() > 0) {
-            modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
-        }
 
         LOG.debug("Graph is valid. Committing graph . . . ");
         commitTransaction();
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && submitLogs && modifiedConcepts.size() > 0) {
-            submitCommitLogs(modifiedConcepts);
-        }
+        conceptLogger.accept(castings, resources);
     }
+
     protected void commitTransaction(){
         try {
             getTinkerPopGraph().tx().commit();

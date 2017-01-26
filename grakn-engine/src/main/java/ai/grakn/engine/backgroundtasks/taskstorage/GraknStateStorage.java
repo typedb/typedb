@@ -29,6 +29,7 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -320,7 +321,7 @@ public class GraknStateStorage implements StateStorage {
             try (EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
                 T result = function.apply(graph);
                 if (commit) {
-                    graph.commitTx();
+                    graph.commit(EngineCacheImpl.getInstance());
                 }
 
                 return Optional.of(result);
