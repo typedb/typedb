@@ -586,17 +586,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type The type of the edges to retrieve
      */
     void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        // track changes
-        vertex.edges(direction, type.getLabel()).
-                forEachRemaining(
-                        e -> {
-                            graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
-                            graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildConcept(e.outVertex()));
-                        }
-                );
-
         // deletion
         vertex.edges(direction, type.getLabel()).forEachRemaining(Element::remove);
     }
