@@ -18,6 +18,8 @@
 
 package ai.grakn.test.graql.reasoner;
 
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.AbstractEngineTest;
 import com.google.common.collect.Sets;
 import ai.grakn.GraknGraph;
@@ -51,8 +53,8 @@ public class QueryTest extends AbstractEngineTest {
     @Test
     public void testCopyConstructor(){
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
-        Query query = new Query(queryString, graph);
-        Query copy = new Query(query);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, graph);
+        ReasonerQueryImpl copy = new ReasonerQueryImpl(query);
 
         assertQueriesEqual(query.getMatchQuery(), copy.getMatchQuery());
     }
@@ -64,10 +66,10 @@ public class QueryTest extends AbstractEngineTest {
         String queryString3 = "match $x isa person, value 'Bob';";
         String queryString4 = "match $x isa person;$x value 'Bob';";
 
-        Query query = new Query(queryString, graph);
-        Query query2 = new Query(queryString2, graph);
-        Query query3 = new Query(queryString3, graph);
-        Query query4 = new Query(queryString4, graph);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, graph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, graph);
+        ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, graph);
+        ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, graph);
 
         assertTrue(query.isEquivalent(query2));
         assertTrue(query3.isEquivalent(query4));
@@ -83,8 +85,8 @@ public class QueryTest extends AbstractEngineTest {
                 "($x, $y) isa tagging;" +
                 "$pr isa product;$pr value 'Michelangelo  The Last Judgement'; select $x, $pr;";
 
-        Query query = new Query(queryString, graph);
-        Query query2 = new Query(queryString2, graph);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, graph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, graph);
 
         assertTrue(query.isEquivalent(query2));
     }
@@ -96,8 +98,8 @@ public class QueryTest extends AbstractEngineTest {
         String queryString = "match $X id 'a'; (ancestor-friend: $X, person: $Y), isa Ancestor-friend; select $Y;";
         String queryString2 = "match $X id 'a'; (person: $X, ancestor-friend: $Y), isa Ancestor-friend; select $Y;";
 
-        Query query = new Query(queryString, lgraph);
-        Query query2 = new Query(queryString2, lgraph);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, lgraph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, lgraph);
 
         assertTrue(!query.isEquivalent(query2));
     }
@@ -111,10 +113,10 @@ public class QueryTest extends AbstractEngineTest {
         String queryString3 = "match $x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in; select $y1, $x;";
         String queryString4 = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
 
-        Query query = new Query(queryString, lgraph);
-        Query query2 = new Query(queryString2, lgraph);
-        Query query3 = new Query(queryString3, lgraph);
-        Query query4 = new Query(queryString4, lgraph);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, lgraph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(queryString2, lgraph);
+        ReasonerQueryImpl query3 = new ReasonerQueryImpl(queryString3, lgraph);
+        ReasonerQueryImpl query4 = new ReasonerQueryImpl(queryString4, lgraph);
 
         assertTrue(!query.isEquivalent(query2));
         assertTrue(!query.isEquivalent(query3));
@@ -130,10 +132,10 @@ public class QueryTest extends AbstractEngineTest {
         String queryString7 = "match (entity-location: $y, geo-entity: $x), isa is-located-in; $x isa city; select $y1, $x;";
         String queryString8 = "match $x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in; select $y1, $x;";
 
-        Query query5 = new Query(queryString5, lgraph);
-        Query query6 = new Query(queryString6, lgraph);
-        Query query7 = new Query(queryString7, lgraph);
-        Query query8 = new Query(queryString8, lgraph);
+        ReasonerQueryImpl query5 = new ReasonerQueryImpl(queryString5, lgraph);
+        ReasonerQueryImpl query6 = new ReasonerQueryImpl(queryString6, lgraph);
+        ReasonerQueryImpl query7 = new ReasonerQueryImpl(queryString7, lgraph);
+        ReasonerQueryImpl query8 = new ReasonerQueryImpl(queryString8, lgraph);
 
         assertTrue(query5.isEquivalent(query6));
         assertTrue(query7.isEquivalent(query8));
@@ -145,15 +147,15 @@ public class QueryTest extends AbstractEngineTest {
         String parentQueryString = "match (entity-location: $y, geo-entity: $y1), isa is-located-in; select $y1, $y;";
         String childQueryString = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
 
-        AtomicQuery parentQuery = new AtomicQuery(parentQueryString, lgraph);
-        AtomicQuery childQuery = new AtomicQuery(childQueryString, lgraph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(parentQueryString, lgraph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(childQueryString, lgraph);
 
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
 
-        AtomicQuery childCopy = new AtomicQuery(childQuery.toString(), graph);
+        ReasonerAtomicQuery childCopy = new ReasonerAtomicQuery(childQuery.toString(), graph);
         childCopy.unify(unifiers);
         Atomic childAtomCopy = childCopy.getAtom();
 

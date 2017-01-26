@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -49,7 +50,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
         String queryString = "match $x isa city;$x has name $name;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
@@ -58,6 +59,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
         assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
+    @Ignore
     @Test
     public void testQueryPrime() {
         GraknGraph graph = GeoGraph.getGraph();
@@ -92,6 +94,7 @@ public class GeoInferenceTest extends AbstractEngineTest {
         assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
+    @Ignore
     @Test
     public void testQuery2Prime() {
         GraknGraph graph = GeoGraph.getGraph();

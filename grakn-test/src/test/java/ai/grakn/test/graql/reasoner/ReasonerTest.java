@@ -137,14 +137,6 @@ public class ReasonerTest extends AbstractEngineTest{
     }
 
     @Test
-    public void testIdComma(){
-        GraknGraph graph = SNBGraph.getGraph();
-        String queryString = "match $x isa person, has name 'Bob';";
-        ReasonerQueryImpl query = new ReasonerQueryImpl(queryString, graph);
-        assertTrue(query.getAtoms().size() == 4);
-    }
-
-    @Test
     public void testComma(){
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', value 'Bob', has age <21;";
@@ -366,6 +358,7 @@ public class ReasonerTest extends AbstractEngineTest{
     }
 
     //TODO BUG: getRulesOfConclusion on geo-entity returns a rule!
+    @Ignore
     @Test
     public void testPlaysRole(){
         GraknGraph graph = GeoGraph.getGraph();
@@ -389,12 +382,14 @@ public class ReasonerTest extends AbstractEngineTest{
         MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
 
         Reasoner reasoner = new Reasoner(graph);
+        QueryAnswers answers = new QueryAnswers(reasoner.resolve(query, false).collect(Collectors.toSet()));
+        QueryAnswers answers2 = new QueryAnswers(query2.stream().collect(Collectors.toSet()));
+
         assertQueriesEqual(reasoner.resolve(query, false), query2.stream());
     }
 
     //TODO loses type variable as non-core types are not unified in rules
     @Test
-    @Ignore
     public void testPlaysRole2(){
         GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";

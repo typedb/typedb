@@ -19,8 +19,13 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.concept.RoleType;
@@ -45,6 +50,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Map;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -65,46 +71,7 @@ public class AtomicTest extends AbstractEngineTest{
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
-
-    @Test
-    public void testNonVar(){
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
-
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        String atomString = "match $x isa person;";
-
-        Query query = new Query(atomString, graph);
-        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern());
-    }
-
-    @Test
-    public void testNonVa2r(){
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
-
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        String atomString = "match $x isa person;";
-
-        Query query = new Query(atomString, graph);
-        Atomic atom =  AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern(), query);
-    }
-
-    @Test
-    public void testParentMissing(){
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
-
-        GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        String recRelString = "match ($x, $y) isa resides;";
-
-        Atomic recRel = AtomicFactory.create(qb.<MatchQuery>parse(recRelString).admin().getPattern().getPatterns().iterator().next());
-        assert(recRel.isRecursive());
-    }
-
+    
     @Test
     public void testRecursive(){
         GraknGraph graph = snbGraph;
@@ -112,8 +79,8 @@ public class AtomicTest extends AbstractEngineTest{
         String recRelString = "match ($x, $y) isa resides;";
         String nrecRelString = "match ($x, $y) isa recommendation;";
 
-        AtomicQuery recQuery = new AtomicQuery(recRelString, graph);
-        AtomicQuery nrecQuery = new AtomicQuery(nrecRelString, graph);
+        ReasonerAtomicQuery recQuery = new ReasonerAtomicQuery(recRelString, graph);
+        ReasonerAtomicQuery nrecQuery = new ReasonerAtomicQuery(nrecRelString, graph);
 
         assert(recQuery.getAtom().isRecursive());
         assert(!nrecQuery.getAtom().isRecursive());
@@ -122,30 +89,29 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testFactory(){
         GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        String atomString = "match $x isa person;";
-        String relString = "match ($x, $y) isa recommendation;";
-        String resString = "match $x has gender 'male';";
+        String atomString = "{$x isa person;}";
+        String relString = "{($x, $y) isa recommendation;}";
+        String resString = "{$x has gender 'male';}";
 
-        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern().getPatterns().iterator().next());
-        Atomic relation = AtomicFactory.create(qb.<MatchQuery>parse(relString).admin().getPattern().getPatterns().iterator().next());
-        Atomic res = AtomicFactory.create(qb.<MatchQuery>parse(resString).admin().getPattern().getPatterns().iterator().next());
+        Atom atom = new ReasonerAtomicQuery(conjunction(atomString, graph), graph).getAtom();
+        Atom relation = new ReasonerAtomicQuery(conjunction(relString, graph), graph).getAtom();
+        Atom res = new ReasonerAtomicQuery(conjunction(resString, graph), graph).getAtom();
 
-        assert(((Atom) atom).isType());
-        assert(((Atom) relation).isRelation());
-        assert(((Atom) res).isResource());
+        assertTrue(atom.isType());
+        assertTrue(relation.isRelation());
+        assertTrue(res.isResource());
     }
 
     @Test
     public void testRoleInference(){
         GraknGraph graph = cwGraph;
         String queryString = "match ($z, $y) isa owns; $z isa country; $y isa rocket; select $y, $z;";
-        AtomicQuery query = new AtomicQuery(queryString, graph);
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
         String queryString2 = "match isa owns, ($z, $y); $z isa country; select $y, $z;";
-        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, graph);
         Atom atom2 = query2.getAtom();
 
         Map<RoleType, Pair<String, Type>> roleMap2 = atom2.getRoleVarTypeMap();
@@ -158,12 +124,12 @@ public class AtomicTest extends AbstractEngineTest{
     public void testRoleInference2(){
         GraknGraph graph = cwGraph;
         String queryString = "match ($z, $y, $x), isa transaction;$z isa country;$x isa person; select $x, $y, $z;";
-        AtomicQuery query = new AtomicQuery(queryString, graph);
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
         String queryString2 = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa rocket; select $x, $y, $z;";
-        AtomicQuery query2 = new AtomicQuery(queryString2, graph);
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(queryString2, graph);
         Atom atom2 = query2.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap2 = atom2.getRoleVarTypeMap();
         assertEquals(3, roleMap.size());
@@ -175,10 +141,10 @@ public class AtomicTest extends AbstractEngineTest{
     public void testRoleInference3(){
         GraknGraph graph = TestGraph.getGraph(null, "genealogy/ontology.gql");
 
-        Relation relation = (Relation) new AtomicQuery("match ($p, son: $gc) isa parentship;", graph).getAtom();
-        Relation correctFullRelation = (Relation) new AtomicQuery("match (parent: $p, son: $gc) isa parentship;", graph).getAtom();
-        Relation relation2 = (Relation) new AtomicQuery("match (father: $gp, $p) isa parentship;", graph).getAtom();
-        Relation correctFullRelation2 = (Relation) new AtomicQuery("match (father: $gp, child: $p) isa parentship;", graph).getAtom();
+        Relation relation = (Relation) new ReasonerAtomicQuery("match ($p, son: $gc) isa parentship;", graph).getAtom();
+        Relation correctFullRelation = (Relation) new ReasonerAtomicQuery("match (parent: $p, son: $gc) isa parentship;", graph).getAtom();
+        Relation relation2 = (Relation) new ReasonerAtomicQuery("match (father: $gp, $p) isa parentship;", graph).getAtom();
+        Relation correctFullRelation2 = (Relation) new ReasonerAtomicQuery("match (father: $gp, child: $p) isa parentship;", graph).getAtom();
 
         assertTrue(relation.getRoleVarTypeMap().equals(correctFullRelation.getRoleVarTypeMap()));
         assertTrue(relation2.getRoleVarTypeMap().equals(correctFullRelation2.getRoleVarTypeMap()));
@@ -192,9 +158,9 @@ public class AtomicTest extends AbstractEngineTest{
         String specialisedRelation = "match (father: $p, daughter: $c);";
         String specialisedRelation2 = "match (daughter: $p, father: $c);";
 
-        Atomic atom = new AtomicQuery(relation, graph).getAtom();
-        Atomic specialisedAtom = new AtomicQuery(specialisedRelation, graph).getAtom();
-        Atomic specialisedAtom2 = new AtomicQuery(specialisedRelation2, graph).getAtom();
+        Atomic atom = new ReasonerAtomicQuery(relation, graph).getAtom();
+        Atomic specialisedAtom = new ReasonerAtomicQuery(specialisedRelation, graph).getAtom();
+        Atomic specialisedAtom2 = new ReasonerAtomicQuery(specialisedRelation2, graph).getAtom();
 
         Map<String, String> unifiers = specialisedAtom.getUnifiers(atom);
         Map<String, String> unifiers2 = specialisedAtom2.getUnifiers(atom);
@@ -211,8 +177,8 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testMatchAllUnification(){
         GraknGraph graph = snbGraph;
-        Relation relation = (Relation) new AtomicQuery("match ($z, $b) isa recommendation;", graph).getAtom();
-        Relation parentRelation = (Relation) new AtomicQuery("match ($a, $x);", graph).getAtom();
+        Relation relation = (Relation) new ReasonerAtomicQuery("match ($z, $b) isa recommendation;", graph).getAtom();
+        Relation parentRelation = (Relation) new ReasonerAtomicQuery("match ($a, $x);", graph).getAtom();
         Map<String, String> unifiers = relation.getUnifiers(parentRelation);
         relation.unify(unifiers);
         assertTrue(unifiers.size() == 2);
@@ -228,7 +194,7 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testMatchAllUnification2(){
         GraknGraph graph = snbGraph;
-        Relation parent = (Relation) new AtomicQuery("match $r($a, $x);", graph).getAtom();
+        Relation parent = (Relation) new ReasonerAtomicQuery("match $r($a, $x);", graph).getAtom();
         PatternAdmin body = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
         PatternAdmin head = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
         InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
@@ -247,9 +213,17 @@ public class AtomicTest extends AbstractEngineTest{
     @Test
     public void testValuePredicateComparison(){
         GraknGraph graph = snbGraph;
-        QueryBuilder qb = graph.graql();
-        Atomic atom = AtomicFactory.create(qb.parsePatterns("$x value '0';").iterator().next().admin());
-        Atomic atom2 = AtomicFactory.create(qb.parsePatterns("$x value != '0';").iterator().next().admin());
+        String valueString = "{$x value '0';}";
+        String valueString2 = "{$x value != 0;}";
+        Atomic atom = new ReasonerQueryImpl(conjunction(valueString, graph), graph).getAtoms().iterator().next();
+        Atomic atom2 =new ReasonerQueryImpl(conjunction(valueString2, graph), graph).getAtoms().iterator().next();
         assertTrue(!atom.isEquivalent(atom2));
+    }
+
+    private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
+        Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Patterns.conjunction(vars);
     }
 }
