@@ -58,6 +58,7 @@ public class GraknEngineRunningTest {
     @Test
     public void graknEngineNotRunning() throws Exception {
         GraknEngineServer.stop();
+        GraknEngineServer.stopHTTP();
         Thread.sleep(5000);
 
         boolean running = GraknEngineServer.isRunning();
