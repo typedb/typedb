@@ -48,7 +48,7 @@ public class TaskStateGraphStoreTest {
     private TaskStateStorage stateStorage;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void setUp() {

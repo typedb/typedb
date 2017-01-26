@@ -29,7 +29,7 @@ import org.junit.Test;
 public class GraphWriterMainTest {
 
     @ClassRule
-    public static final EngineContext engineContext = EngineContext.startServer();
+    public static final EngineContext engineContext = EngineContext.startInMemoryServer();
 
     private static GraknGraph graph;
 

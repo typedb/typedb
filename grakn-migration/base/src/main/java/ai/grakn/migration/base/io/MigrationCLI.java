@@ -167,7 +167,6 @@ public class MigrationCLI {
 
     public static void initiateShutdown(){
         System.out.println("Initiating shutdown...");
-        StandaloneTaskManager.getInstance().close();
     }
 
     public static String fileAsString(File file){

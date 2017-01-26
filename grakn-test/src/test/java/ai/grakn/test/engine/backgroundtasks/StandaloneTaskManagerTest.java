@@ -22,15 +22,9 @@ import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
-import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import mjson.Json;
-import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -46,20 +40,17 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
-import static java.util.Collections.singletonMap;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class StandaloneTaskManagerTest {
-    private TaskManager taskManager;
+    private static TaskManager taskManager;
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
-
-    @Before
-    public void setUp() {
-        taskManager = StandaloneTaskManager.getInstance();
-        ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
+    @BeforeClass
+    public static void setUp() {
+        hideLogs();
+        taskManager = new StandaloneTaskManager() ;
     }
 
     @Test

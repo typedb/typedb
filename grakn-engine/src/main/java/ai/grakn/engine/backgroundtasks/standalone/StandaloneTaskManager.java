@@ -76,7 +76,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final ExecutorService executorService;
     private final ScheduledExecutorService schedulingService;
 
-    private StandaloneTaskManager() {
+    public StandaloneTaskManager() {
         instantiatedTasks = new ConcurrentHashMap<>();
         stateStorage = new TaskStateInMemoryStore();
         stateUpdateLock = new ReentrantLock();
@@ -84,13 +84,6 @@ public class StandaloneTaskManager implements TaskManager {
         ConfigProperties properties = ConfigProperties.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
-    }
-
-    public static synchronized StandaloneTaskManager getInstance() {
-        if (instance == null) {
-            instance = new StandaloneTaskManager();
-        }
-        return instance;
     }
 
     public TaskManager open() {

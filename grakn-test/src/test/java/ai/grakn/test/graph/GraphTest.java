@@ -25,7 +25,7 @@ import static org.junit.Assert.assertNotNull;
 public class GraphTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Test
     public void testSwitchingBetweenNormalAndBatchGraphCleanly() throws Exception {

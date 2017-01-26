@@ -18,7 +18,8 @@
 
 package ai.grakn.migration.json;
 
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.base.io.MigrationCLI;
 
@@ -45,19 +46,19 @@ public class Main {
         start(null, args);
     }
 
-    public static void start(ClusterManager manager, String[] args){
+    public static void start(TaskManager manager, String[] args){
         if(manager == null){
-            manager = new ClusterManager();
+            manager = new DistributedTaskManager();
         }
 
-        ClusterManager finalManager = manager;
+        TaskManager finalManager = manager;
         MigrationCLI.init(args, JsonMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .forEach((options) -> runJson(finalManager, options));
     }
 
-    public static void runJson(ClusterManager manager, JsonMigrationOptions options){
+    public static void runJson(TaskManager manager, JsonMigrationOptions options){
         File jsonDataFile = new File(options.getInput());
         File jsonTemplateFile = new File(options.getTemplate());
 

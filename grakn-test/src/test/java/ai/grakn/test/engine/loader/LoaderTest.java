@@ -23,10 +23,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
@@ -48,7 +47,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -71,7 +69,7 @@ public class LoaderTest {
     private int numberOfTimesFakeLoaderCalled = 0;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -83,14 +81,13 @@ public class LoaderTest {
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ClusterManager.class)).setLevel(Level.DEBUG);
     }
 
     @Before
     public void setup() {
         //TODO fix this
         graph = engine.graphWithNewKeyspace();
-        loader = new Loader(engine.getClusterManager(), graph.getKeyspace());
+        loader = new Loader(engine.getTaskManager(), graph.getKeyspace());
         loadOntology(graph.getKeyspace());
     }
 
@@ -182,7 +179,7 @@ public class LoaderTest {
     }
 
     private Loader getFakeNormalLoader() {
-        ClusterManager fakeClusterManager = getFakeClusterManager(invocation -> {
+        TaskManager fakeTaskManager = getFakeTaskManager(invocation -> {
             switch (numberOfTimesFakeLoaderCalled) {
                 case 0:
                     numberOfTimesFakeLoaderCalled++;
@@ -194,26 +191,26 @@ public class LoaderTest {
                     return TaskStatus.COMPLETED;
             }
         });
-        return new Loader(fakeClusterManager,graph.getKeyspace());
+        return new Loader(fakeTaskManager,graph.getKeyspace());
     }
 
     private Loader getFakeTimeoutLoader() {
-        ClusterManager fakeClusterManager = getFakeClusterManager(invocation -> TaskStatus.CREATED);
+        TaskManager fakeClusterManager = getFakeTaskManager(invocation -> TaskStatus.CREATED);
         return new Loader(fakeClusterManager,graph.getKeyspace());
     }
 
-    private ClusterManager getFakeClusterManager(Answer answer) {
+    private TaskManager getFakeTaskManager(Answer answer) {
         String fakeTaskId = "task001";
-        ClusterManager fakeClusterManager = mock(ClusterManager.class);
         DistributedTaskManager fakeTaskManager = mock(DistributedTaskManager.class);
-        when(fakeClusterManager.getTaskManager()).thenReturn(fakeTaskManager);
-        StateStorage fakeStorage = mock(StateStorage.class);
+        TaskStateGraphStore fakeStorage = mock(TaskStateGraphStore.class);
+        TaskState fakeTaskState = mock(TaskState.class);
         when(fakeTaskManager.storage()).thenReturn(fakeStorage);
-        when(fakeTaskManager.getState(fakeTaskId)).thenAnswer(answer);
+        when(fakeStorage.getState(fakeTaskId)).thenReturn(fakeTaskState);
+        when(fakeStorage.getState(fakeTaskId).status()).thenAnswer(answer);
         Set<Pair<String,TaskState>> fakeTasks = new HashSet<>();
         Pair<String, TaskState> fakePair =  new Pair<String,TaskState>(fakeTaskId, null);
         fakeTasks.add(fakePair);
         when(fakeStorage.getTasks(null, LoaderTask.class.getName(), graph.getKeyspace(), 100000, 0)).thenReturn(fakeTasks);
-        return fakeClusterManager;
+        return fakeTaskManager;
     }
 }

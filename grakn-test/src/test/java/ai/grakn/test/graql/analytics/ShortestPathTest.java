@@ -54,7 +54,7 @@ public class ShortestPathTest {
     public GraknGraph graph;
 
     @ClassRule
-    public static EngineContext rule = EngineContext.startServer();
+    public static EngineContext rule = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() {

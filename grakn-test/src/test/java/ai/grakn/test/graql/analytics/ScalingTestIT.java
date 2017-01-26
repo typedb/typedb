@@ -82,7 +82,7 @@ import static org.junit.Assert.assertEquals;
 public class ScalingTestIT {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startServer();
+    public static final EngineContext context = EngineContext.startDistributedServer();
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};
@@ -273,7 +273,7 @@ public class ScalingTestIT {
         // create the ontology
         simpleOntology(keyspace);
 
-        Loader loader = new Loader(GraknEngineServer.getClusterManager(), keyspace);
+        Loader loader = new Loader(GraknEngineServer.getTaskManager(), keyspace);
 
         for (int g=1; g<totalSteps+1; g++) {
             LOGGER.info("starting step: " + g);
@@ -410,7 +410,7 @@ public class ScalingTestIT {
 
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
-        Loader loader = new Loader(GraknEngineServer.getClusterManager(), keyspace);
+        Loader loader = new Loader(GraknEngineServer.getTaskManager(), keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<Var> insertQuery = new ArrayList<>();

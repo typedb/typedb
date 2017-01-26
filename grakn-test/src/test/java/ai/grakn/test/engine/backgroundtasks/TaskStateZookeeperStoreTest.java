@@ -20,9 +20,11 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -31,19 +33,25 @@ import java.util.UUID;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static java.time.Instant.now;
-import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class TaskStateZookeeperStoreTest {
-    private TaskStateStorage stateStorage;
+    private static ZookeeperConnection connection;
+    private static TaskStateStorage stateStorage;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startKafkaServer();
 
-    @Before
-    public void setUp() throws Exception {
-        stateStorage = new TaskStateZookeeperStore(engine.getClusterManager().getZookeeperConnection());
+    @BeforeClass
+    public static void setUp() throws Exception {
+        connection = new ZookeeperConnection();
+        stateStorage = new TaskStateZookeeperStore(connection);
+    }
+
+    @AfterClass
+    public static void teardown(){
+        connection.close();
     }
 
     @Test
