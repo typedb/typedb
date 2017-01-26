@@ -24,6 +24,13 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -33,11 +40,112 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
+import java.util.function.Function;
 import javafx.util.Pair;
 
 import java.util.*;
 
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
+import static java.util.stream.Collectors.toSet;
+
 public class Utility {
+
+    private static final String CAPTURE_MARK = "captured-";
+
+    /**
+     * Capture a variable name, by prepending a constant to the name
+     * @param var the variable name to capture
+     * @return the captured variable
+     */
+    public static String capture(String var) {
+        return var.concat(CAPTURE_MARK);
+    }
+
+    /**
+     * Uncapture a variable name, by removing a prepended constant
+     * @param var the variable name to uncapture
+     * @return the uncaptured variable
+     */
+    public static String uncapture(String var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.replace(CAPTURE_MARK, "");
+    }
+
+    /**
+     * Check if a variable has been captured
+     * @param var the variable to check
+     * @return if the variable has been captured
+     */
+    public static boolean isCaptured(String var) {
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        return var.contains(CAPTURE_MARK);
+    }
+
+    /**
+     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
+     * covers the case when specified variable name is user defined
+     * @param typeVariable variable name of interest
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return mapped IdPredicate
+     */
+    public static IdPredicate getUserDefinedIdPredicate(String typeVariable, Set<VarAdmin> vars, ReasonerQuery parent){
+        return  vars.stream()
+                .filter(v -> v.getVarName().equals(typeVariable))
+                .flatMap(v -> v.hasProperty(NameProperty.class)?
+                        v.getProperties(NameProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
+                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
+     * covers both the cases when variable is and isn't user defined
+     * @param typeVariable variable name of interest
+     * @param typeVar VarAdmin to look for in case the variable name is not user defined
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return mapped IdPredicate
+     */
+    public static IdPredicate getIdPredicate(String typeVariable, VarAdmin typeVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        IdPredicate predicate = null;
+        //look for id predicate among vars
+        if(typeVar.isUserDefinedName()) {
+            predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
+        } else {
+            NameProperty nameProp = typeVar.getProperty(NameProperty.class).orElse(null);
+            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
+        }
+        return predicate;
+    }
+
+    /**
+     * looks for appropriate var properties with a specified name among the vars and maps them to ValuePredicates,
+     * covers both the case when variable is and isn't user defined
+     * @param valueVariable variable name of interest
+     * @param valueVar VarAdmin to look for in case the variable name is not user defined
+     * @param vars VarAdmins to look for properties
+     * @param parent reasoner query the mapped predicate should belong to
+     * @return set of mapped ValuePredicates
+     */
+    public static Set<Predicate> getValuePredicates(String valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        Set<Predicate> predicates = new HashSet<>();
+        if(valueVar.isUserDefinedName()){
+            vars.stream()
+                    .filter(v -> v.getVarName().equals(valueVariable))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
+                    .forEach(predicates::add);
+        }
+        //add value atom
+        else {
+            valueVar.getProperties(ValueProperty.class)
+                    .forEach(vp -> predicates
+                            .add(new ValuePredicate(createValueVar(valueVariable, vp.getPredicate()), parent)));
+        }
+        return predicates;
+    }
+
 
     public static void printAnswers(Set<Map<String, Concept>> answers) {
         answers.forEach(result -> {
@@ -52,6 +160,91 @@ public class Utility {
         System.out.println();
     }
 
+    /**
+     * compute all rolePlayer-roleType combinations complementing provided roleMap
+     * @param vars set of rolePlayers
+     * @param roles set of roleTypes
+     * @param roleMap initial rolePlayer-roleType roleMap to be complemented
+     * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
+     */
+    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, Var> roleMap,
+                                               Set<Map<String, Var>> roleMaps){
+        Set<String> tempVars = Sets.newHashSet(vars);
+        Set<RoleType> tempRoles = Sets.newHashSet(roles);
+        String var = vars.iterator().next();
+
+        roles.forEach(role -> {
+            tempVars.remove(var);
+            tempRoles.remove(role);
+            roleMap.put(var, var().name(role.getName()).admin());
+            if (!tempVars.isEmpty() && !tempRoles.isEmpty()) {
+                computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
+            } else {
+                if (!roleMap.isEmpty()) {
+                    roleMaps.add(Maps.newHashMap(roleMap));
+                }
+                roleMap.remove(var);
+            }
+            tempVars.add(var);
+            tempRoles.add(role);
+        });
+    }
+
+    /**
+     * get unifiers by comparing permutations with original variables
+     * @param originalVars original ordered variables
+     * @param permutations different permutations on the variables
+     * @return set of unifiers
+     */
+    public static Set<Map<String, String>> getUnifiersFromPermutations(List<String> originalVars, List<List<String>> permutations){
+        Set<Map<String, String>> unifierSet = new HashSet<>();
+        permutations.forEach(perm -> {
+            Map<String, String> unifiers = new HashMap<>();
+            Iterator<String> pIt = originalVars.iterator();
+            Iterator<String> cIt = perm.iterator();
+            while(pIt.hasNext() && cIt.hasNext()){
+                String pVar = pIt.next();
+                String chVar = cIt.next();
+                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
+            }
+            unifierSet.add(unifiers);
+        });
+        return unifierSet;
+    }
+
+    /**
+     * get all permutations of an entry list
+     * @param entryList entry list to generate permutations of
+     * @param <T> element type
+     * @return set of all possible permutations
+     */
+    public static <T> List<List<T>> getListPermutations(List<T> entryList) {
+        if (entryList.isEmpty()) {
+            List<List<T>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+        List<T> list = new ArrayList<>(entryList);
+        T firstElement = list.remove(0);
+        List<List<T>> returnValue = new ArrayList<>();
+        List<List<T>> permutations = getListPermutations(list);
+        for (List<T> smallerPermuted : permutations) {
+            for (int index = 0; index <= smallerPermuted.size(); index++) {
+                List<T> temp = new ArrayList<>(smallerPermuted);
+                temp.add(index, firstElement);
+                returnValue.add(temp);
+            }
+        }
+        return returnValue;
+    }
+
+    /**
+     * Gets roletypes a given type can play in the provided relType relation type by performing
+     * type intersection between type's playedRoles and relation's hasRoles.
+     * @param type for which we want to obtain compatible roles it plays
+     * @param relType relation type of interest
+     * @return set of role types the type can play in relType
+     */
     public static Set<RoleType> getCompatibleRoleTypes(Type type, Type relType) {
         Set<RoleType> cRoles = new HashSet<>();
         Collection<RoleType> typeRoles = type.playsRoles();
@@ -60,27 +253,24 @@ public class Utility {
         return cRoles;
     }
 
-    //rolePlayer-roleType maps
-    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, String> roleMap,
-                                        Set<Map<String, String>> roleMaps){
-        Set<String> tempVars = Sets.newHashSet(vars);
-        Set<RoleType> tempRoles = Sets.newHashSet(roles);
-        String var = vars.iterator().next();
+    public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
+            role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(toSet());
 
-        roles.forEach(role -> {
-            tempVars.remove(var);
-            tempRoles.remove(role);
-            roleMap.put(var, role.getName());
-            if (!tempVars.isEmpty() && !tempRoles.isEmpty())
-                computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
-            else {
-                if (!roleMap.isEmpty())
-                    roleMaps.add(Maps.newHashMap(roleMap));
-                roleMap.remove(var);
-            }
-            tempVars.add(var);
-            tempRoles.add(role);
-        });
+    public static final Function<Type, Set<RelationType>> typeToRelationTypes =
+            type -> type.playsRoles().stream()
+                    .flatMap(roleType -> roleType.relationTypes().stream())
+                    .filter(rt -> !rt.isImplicit())
+                    .collect(toSet());
+
+    public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
+        Set<RelationType> compatibleTypes = new HashSet<>();
+        if (types.isEmpty()) return compatibleTypes;
+        Iterator<T> it = types.iterator();
+        compatibleTypes.addAll(typeMapper.apply(it.next()));
+        while(it.hasNext() && compatibleTypes.size() > 1) {
+            compatibleTypes.retainAll(typeMapper.apply(it.next()));
+        }
+        return compatibleTypes;
     }
 
     /**

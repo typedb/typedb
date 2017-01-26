@@ -19,8 +19,13 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
@@ -28,7 +33,10 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 public class HasRoleProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -96,5 +104,16 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     @Override
     public int hashCode() {
         return role.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        String varName = var.getVarName();
+        VarAdmin roleVar = this.getRole();
+        String roleVariable = roleVar.getVarName();
+        IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
+
+        VarAdmin hrVar = Graql.var(varName).hasRole(Graql.var(roleVariable)).admin();
+        return new TypeAtom(hrVar, rolePredicate, parent);
     }
 }

@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
@@ -124,7 +123,6 @@ public class SNBInferenceTest extends AbstractEngineTest{
         GraknGraph graph = SNBGraph.getGraph();
         QueryBuilder qbr = graph.graql().infer(true);
         QueryBuilder qb = graph.graql().infer(false);
-        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;($x, $y) isa recommendation;";
         String limitedQueryString = "match $x isa person;($x, $y) isa recommendation; limit 1;";
         MatchQuery query = qbr.parse(queryString);
@@ -383,7 +381,7 @@ public class SNBInferenceTest extends AbstractEngineTest{
         QueryBuilder qb = graph.graql().infer(false);
         Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$pr isa product, has name 'Nocturnes';($x, $pr) isa recommendation; select $x;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = graph.graql().parse(queryString);
 
         String explicitQuery = "match {$x has name 'Frank';} or {$x has name 'Karl Fischer';};";
         assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());

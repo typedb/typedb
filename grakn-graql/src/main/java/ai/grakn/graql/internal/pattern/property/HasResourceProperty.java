@@ -24,20 +24,27 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.internal.reasoner.Utility.getValuePredicates;
 import static java.util.stream.Collectors.joining;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
@@ -162,5 +169,21 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         int result = resourceType.hashCode();
         result = 31 * result + resource.hashCode();
         return result;
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        String varName = var.getVarName();
+        Optional<String> type = this.getType();
+        VarAdmin valueVar = this.getResource();
+        String valueVariable = valueVar.getVarName();
+        Set<Predicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
+
+        //add resource atom
+        Var resource = Graql.var(valueVariable);
+        VarAdmin resVar = type
+                .map(t ->Graql.var(varName).has(t, resource))
+                .orElseGet(() -> Graql.var(varName).has(resource)).admin();
+        return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }
 }

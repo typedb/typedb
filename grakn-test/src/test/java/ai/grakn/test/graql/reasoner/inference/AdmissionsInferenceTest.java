@@ -25,16 +25,15 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-
 
 public class AdmissionsInferenceTest extends AbstractEngineTest{
 
@@ -50,7 +49,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
 
         assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
@@ -120,7 +119,7 @@ public class AdmissionsInferenceTest extends AbstractEngineTest{
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
-        Query query = new Query(queryString, graph);
+        MatchQuery query = qb.parse(queryString);
         assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(queryString).stream());
     }
 

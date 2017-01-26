@@ -22,29 +22,34 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 
+/**
+ *
+ * <p>
+ * Predicate implementation specialising it to be an id predicate.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class IdPredicate extends Predicate<String>{
 
-    public IdPredicate(VarAdmin pattern) {
-        super(pattern);
-    }
-    public IdPredicate(VarAdmin pattern, Query par) {
+    public IdPredicate(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);
     }
-    public IdPredicate(String varName, IdProperty prop, Query par){
+    public IdPredicate(String varName, IdProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop.getId()), par);
     }
-
-    public IdPredicate(String varName, NameProperty prop, Query par){
+    public IdPredicate(String varName, NameProperty prop, ReasonerQuery par){
         this(createIdVar(varName, par.graph().getType(prop.getNameValue()).getId()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}
 
-    public IdPredicate(String varName, Concept con) {
-        super(createIdVar(varName, con.getId()));
+    public IdPredicate(String varName, Concept con, ReasonerQuery par) {
+        super(createIdVar(varName, con.getId()), par);
         this.predicate = con.getId();
     }
 
@@ -53,7 +58,7 @@ public class IdPredicate extends Predicate<String>{
     }
 
     @Override
-    public Atomic clone(){
+    public Atomic copy(){
         return new IdPredicate(this);
     }
 
@@ -64,5 +69,5 @@ public class IdPredicate extends Predicate<String>{
     public String getPredicateValue() { return predicate;}
 
     @Override
-    protected String extractPredicate(VarAdmin var){ return var.admin().getId().orElse("");}
+    protected String extractPredicate(VarAdmin var){ return var.admin().getId().orElse(null);}
 }

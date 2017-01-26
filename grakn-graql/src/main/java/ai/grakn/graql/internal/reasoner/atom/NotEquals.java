@@ -19,20 +19,32 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
-import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.admin.ReasonerQuery;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.reasoner.Utility.capture;
+
+/**
+ *
+ * <p>
+ * Implementation of atom corresponding to graql NotEquals property.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class NotEquals extends AtomBase {
 
     private String refVarName;
 
-    public NotEquals(String varName, NeqProperty prop, Query parent){
-        super(Graql.var(varName).neq(Graql.var(prop.getProperty().replace("$",""))).admin(), parent);
+    public NotEquals(String varName, NeqProperty prop, ReasonerQuery parent){
+        super(var(varName).neq(var(prop.getProperty().replace("$",""))).admin(), parent);
         this.refVarName = prop.getProperty().replace("$","");
     }
     public NotEquals(NotEquals a){
@@ -63,22 +75,11 @@ public class NotEquals extends AtomBase {
     public int equivalenceHashCode() { return 1;}
 
     @Override
-    public Atomic clone() { return new NotEquals(this);}
+    public Atomic copy() { return new NotEquals(this);}
 
     private void setRefVarName(String var){
         refVarName = var;
-        atomPattern = Graql.var(varName).neq(Graql.var(var)).admin();
-    }
-
-    @Override
-    public void unify(String from, String to) {
-        super.unify(from, to);
-        String var = getReferenceVarName();
-        if (var.equals(from)) {
-            setRefVarName(to);
-        } else if (var.equals(to)) {
-            setRefVarName("captured->" + var);
-        }
+        atomPattern = var(varName).neq(var(var)).admin();
     }
 
     @Override
@@ -87,9 +88,8 @@ public class NotEquals extends AtomBase {
         String var = getReferenceVarName();
         if (unifiers.containsKey(var)) {
             setRefVarName(unifiers.get(var));
-        }
-        else if (unifiers.containsValue(var)) {
-            setRefVarName("captured->" + var);
+        } else if (unifiers.containsValue(var)) {
+            setRefVarName(capture(var));
         }
     }
 
@@ -102,6 +102,11 @@ public class NotEquals extends AtomBase {
     public static BiFunction<Map<String, Concept>, NotEquals, Stream<Map<String, Concept>>> notEqualsFunction =
             (a, atom) -> notEqualsOperator(a, atom)? Stream.empty(): Stream.of(a);
 
+    /**
+     * apply the not equals filter to answer set
+     * @param answers the filter should be applied to
+     * @return filtered answer set
+     */
     public QueryAnswers filter(QueryAnswers answers){
         QueryAnswers results = new QueryAnswers();
         answers.stream()
@@ -110,6 +115,11 @@ public class NotEquals extends AtomBase {
         return results;
     }
 
+    /**
+     * apply the not equals filter to answer stream
+     * @param answers the filter should be applied to
+     * @return filtered answer stream
+     */
     public Stream<Map<String, Concept>> filter(Stream<Map<String, Concept>> answers){
         return answers.filter(answer -> !answer.get(varName).equals(answer.get(refVarName)));
     }

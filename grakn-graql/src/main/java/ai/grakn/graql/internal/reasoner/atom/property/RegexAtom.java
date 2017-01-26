@@ -21,14 +21,14 @@ package ai.grakn.graql.internal.reasoner.atom.property;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 
 public class RegexAtom extends AtomBase {
 
     private final String regex;
 
-    public RegexAtom(String varName, RegexProperty prop, Query parent){
+    public RegexAtom(String varName, RegexProperty prop, ReasonerQuery parent){
         super(Graql.var(varName).regex(prop.getRegex()).admin(), parent);
         this.regex = prop.getRegex();
     }
@@ -70,6 +70,6 @@ public class RegexAtom extends AtomBase {
     }
 
     @Override
-    public Atomic clone() { return new RegexAtom(this);}
+    public Atomic copy() { return new RegexAtom(this);}
     public String getRegex(){ return regex;}
 }

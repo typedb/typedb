@@ -22,15 +22,21 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.Graql.name;
 
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -131,5 +137,15 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public int hashCode() {
         return resourceType.hashCode();
+    }
+
+    @Override
+    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
+        //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
+        String varName = var.getVarName();
+        String typeName = this.getResourceType().getTypeName().orElse(null);
+        //isa part
+        VarAdmin resVar = Graql.var(varName).hasResource(name(typeName)).admin();
+        return new TypeAtom(resVar, parent);
     }
 }
