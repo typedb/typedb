@@ -65,8 +65,6 @@ public class StandaloneTaskManager implements TaskManager {
     private static final String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
     private static final String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
 
-    private static StandaloneTaskManager instance = null;
-
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
     private final Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
