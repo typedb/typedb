@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -59,56 +58,61 @@ public class GeoInferenceTest extends AbstractEngineTest {
         assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
     }
 
-    @Ignore
     @Test
     public void testQueryPrime() {
         GraknGraph graph = GeoGraph.getGraph();
-        Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql().infer(false);
-        String queryString = "match $x isa city;$x has name $name;"+
-                "($x, $y) isa is-located-in;"+
-                "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
-
+        QueryBuilder iqb = graph.graql().infer(true);
+        String queryString = "match $z1 isa city;$z1 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1, $name;";
+        String queryString2 = "match $z2 isa city;$z2 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
         String explicitQuery = "match " +
-                "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
+                "$z1 isa city;$z1 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z1, $name;";
+        String explicitQuery2 = "match " +
+                "$z2 isa city;$z2 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z2, $name;";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
 
     @Test
     public void testQuery2() {
         GraknGraph graph = GeoGraph.getGraph();
-        Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder iqb = graph.graql().infer(true);
         String queryString = "match $x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
 
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    @Ignore
     @Test
     public void testQuery2Prime() {
         GraknGraph graph = GeoGraph.getGraph();
-        Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql().infer(false);
-        String queryString = "match $x isa university;$x has name $name;"+
-                "($x, $y) isa is-located-in;"+
-                "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
+        QueryBuilder iqb = graph.graql().infer(true);
+        String queryString = "match $z1 isa university;$z1 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1, $name;";
+        String queryString2 = "match $z2 isa university;$z2 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
         String explicitQuery = "match " +
-                "$x isa university;$x has name $name;" +
-                "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
-        assertQueriesEqual(reasoner.resolve(query, false), qb.<MatchQuery>parse(explicitQuery).stream());
-        assertQueriesEqual(reasoner.resolve(query, true), qb.<MatchQuery>parse(explicitQuery).stream());
+                "$z1 isa university;$z1 has name $name;" +
+                "{$z1 has name 'University-of-Warsaw';} or {$z1 has name'Warsaw-Polytechnics';};";
+        String explicitQuery2 = "match " +
+                "$z2 isa university;$z2 has name $name;" +
+                "{$z2 has name 'University-of-Warsaw';} or {$z2 has name'Warsaw-Polytechnics';};";
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
 
     private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {

@@ -358,7 +358,6 @@ public class ReasonerTest extends AbstractEngineTest{
     }
 
     //TODO BUG: getRulesOfConclusion on geo-entity returns a rule!
-    @Ignore
     @Test
     public void testPlaysRole(){
         GraknGraph graph = GeoGraph.getGraph();
