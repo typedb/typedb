@@ -25,6 +25,7 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
+import mjson.Json;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,10 +231,10 @@ public class Loader {
      * @param queries queries to include in configuration
      * @return configuration for the loader task
      */
-    private JSONObject getConfiguration(Collection<InsertQuery> queries){
-        JSONObject json = new JSONObject();
-        json.put(KEYSPACE_PARAM, keyspace);
-        json.put(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()));
+    private Json getConfiguration(Collection<InsertQuery> queries){
+        Json json = Json.object();
+        json.set(KEYSPACE_PARAM, keyspace);
+        json.set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()));
         return json;
     }
 }

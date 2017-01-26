@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import org.json.JSONObject;
+import mjson.Json;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -36,7 +36,7 @@ public interface TaskManager extends AutoCloseable {
      *                      get an initialised but empty JSONObject).
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration);
+    String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration);
 
     /**
      * Return a future that allows registering asynchronous callbacks triggered when a task is completed.
