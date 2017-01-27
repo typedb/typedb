@@ -56,7 +56,7 @@ public class TaskStateGraphStoreTest {
     }
 
     @Test
-    public void testStoreRetrieve() {
+    public void testTaskStateStoreRetrieve() {
         TestTask task = new TestTask();
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
@@ -76,7 +76,7 @@ public class TaskStateGraphStoreTest {
     }
 
     @Test
-    public void testUpdate() {
+    public void testUpdateTaskState() {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
@@ -108,7 +108,7 @@ public class TaskStateGraphStoreTest {
     }
 
     @Test
-    public void testGetByStatus() {
+    public void testGetTaskStateByStatus() {
         String id = stateStorage.newState(task());
         assertNotNull(id);
 
@@ -121,7 +121,7 @@ public class TaskStateGraphStoreTest {
     }
 
     @Test
-    public void testGetByCreator() {
+    public void testGetTaskStateByCreator() {
         String id = stateStorage.newState(task());
         assertNotNull(id);
 
@@ -134,7 +134,7 @@ public class TaskStateGraphStoreTest {
     }
 
     @Test
-    public void testGetByClassName() {
+    public void testGetTaskStateByClassName() {
         String id = stateStorage.newState(task());
         assertNotNull(id);
 
@@ -147,7 +147,7 @@ public class TaskStateGraphStoreTest {
     }
 
     @Test
-    public void testGetAll() {
+    public void testGetAllTaskStates() {
         String id = stateStorage.newState(task());
         assertNotNull(id);
 
@@ -160,7 +160,7 @@ public class TaskStateGraphStoreTest {
     }
 
     @Test
-    public void testPagination() {
+    public void testTaskStatePagination() {
         for (int i = 0; i < 10; i++) {
             stateStorage.newState(task());
         }
