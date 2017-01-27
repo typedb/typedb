@@ -33,6 +33,9 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeTrue;
 
+/**
+ * Suite of tests checking different meanders and aspects of reasoning - full reasoning cycle is being tested.
+ */
 public class ReasoningTests {
 
     @ClassRule
@@ -43,6 +46,10 @@ public class ReasoningTests {
         assumeTrue(usingTinker());
     }
 
+    /**
+     * recursive relation having same type for different role players
+     * tests for handling recursivity and equivalence of queries and relations
+     */
     @Test
     public void testSet10() {
         QueryBuilder iqb = testSet10.graph().graql().infer(true);

@@ -58,6 +58,9 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+/**
+ * Suite of tests focused on reasoning expressivity and various edge cases.
+ */
 public class ReasonerTest {
 
     @ClassRule
