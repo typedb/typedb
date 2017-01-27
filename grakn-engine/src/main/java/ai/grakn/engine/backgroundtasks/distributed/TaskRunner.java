@@ -23,6 +23,7 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -30,13 +31,15 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.zookeeper.CreateMode;
 import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
@@ -49,7 +52,6 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -67,7 +69,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov, alexandraorth
  */
 public class TaskRunner implements Runnable, AutoCloseable {
-    private final static KafkaLogger LOG = KafkaLogger.getInstance();
+    private final static Logger LOG = LoggerFactory.getLogger(TaskRunner.class);
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
@@ -75,43 +77,33 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final static String ENGINE_ID = EngineID.getInstance().id();
 
     private final Set<String> runningTasks = new HashSet<>();
-    private final AtomicBoolean OPENED = new AtomicBoolean(false);
     private final TaskStateStorage storage;
     private final ZookeeperConnection connection;
 
     private ExecutorService executor;
     private KafkaConsumer<String, String> consumer;
-    private volatile boolean running;
 
     public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
         this.connection = connection;
 
-        if(OPENED.compareAndSet(false, true)) {
-            consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-            consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new RebalanceListener(consumer));
+        consumer = kafkaConsumer(TASK_RUNNER_GROUP);
+        consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new HandleRebalance());
 
-            // Create initial entries in ZK for TaskFailover to watch.
-            registerAsRunning();
-            updateOwnState();
-            executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
+        // Create initial entries in ZK for TaskFailover to watch.
+        registerAsRunning();
+        updateOwnState();
+        executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-            LOG.info("TaskRunner opened.");
-        }
-        else {
-            LOG.error("TaskRunner already opened!");
-        }
-
-        running = false;
+        LOG.info("TaskRunner opened.");
     }
 
     /**
      * Start the main loop, this will block until a call to stop().
      */
     public void run()  {
-        running = true;
         try {
-            while (running) {
+            while (true) {
                 LOG.debug("TaskRunner polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(WORK_QUEUE_TOPIC).stream().map(i -> new TopicPartition(WORK_QUEUE_TOPIC, i.partition())).collect(toSet())));
 
                 // Poll for new tasks only when we know we have space to accept them.
@@ -119,14 +111,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
                     processRecords(consumer.poll(POLLING_FREQUENCY));
                 }
             }
-
         }
         catch (WakeupException e) {
-            if (running) {
-                LOG.error("TaskRunner interrupted unexpectedly (without clearing 'running' flag first", e);
-            } else {
-                LOG.debug("TaskRunner exiting gracefully.");
-            }
+            LOG.debug("TaskRunner exiting, woken up.");
         }
         finally {
             consumer.commitSync();
@@ -138,20 +125,13 @@ public class TaskRunner implements Runnable, AutoCloseable {
      * Stop the main loop, causing run() to exit.
      */
     public void close() {
-        if(OPENED.compareAndSet(true, false)) {
-            running = false;
+        // Stop execution of kafka consumer
+        consumer.wakeup();
 
-            // Stop execution of kafka consumer
-            noThrow(consumer::wakeup, "Could not call wakeup on Kafka Consumer.");
+        // Interrupt all currently running threads - these will be re-allocated to another Engine.
+        executor.shutdownNow();
 
-            // Interrupt all currently running threads - these will be re-allocated to another Engine.
-            noThrow(executor::shutdownNow, "Could shutdown executor pool.");
-
-            LOG.debug("TaskRunner stopped");
-        }
-        else {
-            LOG.error("TaskRunner close() called before open()!");
-        }
+        LOG.debug("TaskRunner stopped");
     }
 
     private void processRecords(ConsumerRecords<String, String> records) {
@@ -166,7 +146,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             String id = record.key();
 
-            TaskState state = getState(id);
+            TaskState state = storage.getState(id);
             if(state.status() != SCHEDULED) {
                 LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: "+ state.status());
                 continue;
@@ -178,15 +158,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
             // Advance offset
             seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset()+1);
         }
-    }
-
-    /**
-     * Gets the state of the task from whichever storage is being used
-     * @param id String id
-     * @return State of the given task
-     */
-    private TaskState getState(String id) {
-        return storage.getState(id);
     }
 
     /**
@@ -281,5 +252,15 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private void seekAndCommit(TopicPartition partition, long offset) {
         consumer.seek(partition, offset);
         consumer.commitSync();
+    }
+
+    private class HandleRebalance implements ConsumerRebalanceListener {
+        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+            LOG.debug("Scheduler partitions assigned " + partitions);
+        }
+        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+            consumer.commitSync();
+            LOG.debug("Scheduler partitions revoked " + partitions);
+        }
     }
 }
