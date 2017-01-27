@@ -57,7 +57,7 @@ final class ElementFactory {
     }
 
     // ------------------------------------------- Building Castings  --------------------------------------------------
-    CastingImpl buildCasting(Vertex v, Optional<RoleType> type){
+    CastingImpl buildCasting(Vertex v, RoleType type){
         return trackConcept(new CastingImpl(graknGraph, v, type));
     }
 
@@ -128,7 +128,7 @@ final class ElementFactory {
                 concept = new RelationImpl(graknGraph, v, Optional.empty());
                 break;
             case CASTING:
-                concept = new CastingImpl(graknGraph, v, Optional.empty());
+                concept = new CastingImpl(graknGraph, v);
                 break;
             case TYPE:
                 concept = new TypeImpl<>(graknGraph, v, Optional.empty(), Optional.empty());

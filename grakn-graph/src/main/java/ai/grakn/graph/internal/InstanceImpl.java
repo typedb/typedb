@@ -65,6 +65,15 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         type.ifPresent(this::type);
     }
 
+    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, V type) {
+        super(graknGraph, v);
+        type(type);
+    }
+
+    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
     /**
      * Deletes the concept as an Instance
      */
