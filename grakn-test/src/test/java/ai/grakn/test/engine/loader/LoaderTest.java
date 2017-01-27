@@ -68,24 +68,22 @@ public class LoaderTest {
     private GraknGraph graph;
     private int numberOfTimesFakeLoaderCalled = 0;
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     @ClassRule
     public static final EngineContext engine = EngineContext.startDistributedServer();
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void startup() throws Exception {
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
     }
 
     @Before
     public void setup() {
-        //TODO fix this
         graph = engine.graphWithNewKeyspace();
         loader = new Loader(engine.getTaskManager(), graph.getKeyspace());
         loadOntology(graph.getKeyspace());
@@ -165,6 +163,7 @@ public class LoaderTest {
         }
 
         loader.waitToFinish(timeout);
+        System.out.println("ended");
 
         System.out.println("Time to load:");
         long duration = System.currentTimeMillis() - startTime;

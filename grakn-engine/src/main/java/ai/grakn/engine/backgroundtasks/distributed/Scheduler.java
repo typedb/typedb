@@ -22,6 +22,7 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -31,9 +32,12 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -50,8 +54,8 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.SCHEDULERS_GROUP
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.util.ConfigProperties.SCHEDULER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -62,8 +66,10 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov
  */
 public class Scheduler implements Runnable, AutoCloseable {
+    private static final String STATUS_MESSAGE = "Topic [%s], partition [%s] received [%s] records, next offset is [%s]";
+
     private final static ConfigProperties properties = ConfigProperties.getInstance();
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final static Logger LOG = LoggerFactory.getLogger(Scheduler.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final TaskStateStorage storage;
@@ -80,7 +86,7 @@ public class Scheduler implements Runnable, AutoCloseable {
         if(OPENED.compareAndSet(false, true)) {
             // Kafka listener
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
-            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new RebalanceListener(consumer));
+            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new HandleRebalance());
 
             // Kafka writer
             producer = kafkaProducer();
@@ -104,9 +110,8 @@ public class Scheduler implements Runnable, AutoCloseable {
 
         try {
             while (running) {
-                LOG.debug("Scheduler polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(NEW_TASKS_TOPIC).stream().map(i -> new TopicPartition(NEW_TASKS_TOPIC, i.partition())).collect(toSet())));
-
-                ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(SCHEDULER_POLLING_FREQ));
+                ConsumerRecords<String, String> records = consumer.poll(1000);
+                printConsumerStatus(records);
 
                 for(ConsumerRecord<String, String> record:records) {
                     scheduleTask(record.key(), record.value());
@@ -219,7 +224,12 @@ public class Scheduler implements Runnable, AutoCloseable {
                     String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
                     scheduleTask(p.getKey(), config, p.getValue());
                 });
-        LOG.debug("Scheduler restarted " + tasks.size() + " recurring tasks");
+    }
+
+    private void printConsumerStatus(ConsumerRecords<String, String> records){
+        consumer.assignment().stream()
+                .map(p -> format(STATUS_MESSAGE, p.partition(), p.topic(), records.count(), consumer.position(p)))
+                .forEach(LOG::debug);
     }
 
     private class KafkaLoggingCallback implements Callback {
@@ -228,6 +238,16 @@ public class Scheduler implements Runnable, AutoCloseable {
             if(exception != null) {
                 LOG.debug(getFullStackTrace(exception));
             }
+        }
+    }
+
+    private class HandleRebalance implements ConsumerRebalanceListener {
+        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+            LOG.debug("Scheduler partitions assigned " + partitions);
+        }
+        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+            consumer.commitSync();
+            LOG.debug("Scheduler partitions revoked " + partitions);
         }
     }
 }
