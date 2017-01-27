@@ -230,7 +230,7 @@ public class Scheduler implements Runnable, AutoCloseable {
                 .forEach(LOG::debug);
     }
 
-    private class KafkaLoggingCallback implements Callback {
+    private static class KafkaLoggingCallback implements Callback {
         @Override
         public void onCompletion(RecordMetadata metadata, Exception exception) {
             if(exception != null) {
