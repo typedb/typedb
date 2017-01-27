@@ -72,8 +72,12 @@ final class ElementFactory {
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    RelationTypeImpl buildRelationType(Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit){
-        return trackConcept(new RelationTypeImpl(graknGraph, v, type, isImplicit));
+    RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
+        if(isImplicit) {
+            return trackConcept(new RelationTypeImpl(graknGraph, v, type, true));
+        } else {
+            return trackConcept(new RelationTypeImpl(graknGraph, v, type)); //No need to save something as non-implicit.
+        }
     }
 
     // -------------------------------------------- Building Relations
@@ -137,7 +141,7 @@ final class ElementFactory {
                 concept = new RoleTypeImpl(graknGraph, v, Optional.empty(), Optional.empty());
                 break;
             case RELATION_TYPE:
-                concept = new RelationTypeImpl(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new RelationTypeImpl(graknGraph, v);
                 break;
             case ENTITY:
                 concept = new EntityImpl(graknGraph, v, Optional.empty());

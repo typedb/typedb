@@ -43,7 +43,15 @@ import java.util.Set;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit) {
+    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type) {
+        super(graknGraph, v, type);
+    }
+
+    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type, Boolean isImplicit) {
         super(graknGraph, v, type, isImplicit);
     }
 

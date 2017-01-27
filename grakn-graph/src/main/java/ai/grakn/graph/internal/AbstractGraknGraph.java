@@ -335,12 +335,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RelationType putRelationType(TypeName name) {
         return putType(name, Schema.BaseType.RELATION_TYPE,
-                v -> elementFactory.buildRelationType(v, Optional.of(getMetaRelationType()), Optional.empty())).asRelationType();
+                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
     }
 
     RelationType putRelationTypeImplicit(TypeName name) {
         return putType(name, Schema.BaseType.RELATION_TYPE,
-                v -> elementFactory.buildRelationType(v, Optional.of(getMetaRelationType()), Optional.of(Boolean.TRUE))).asRelationType();
+                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
     }
 
     @Override
