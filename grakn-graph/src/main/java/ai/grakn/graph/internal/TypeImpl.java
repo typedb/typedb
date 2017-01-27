@@ -64,6 +64,20 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         isImplicit.ifPresent(i -> setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, i, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity()));
     }
 
+    TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
+        this(graknGraph, v);
+        superType(superType);
+    }
+
+    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType, Boolean isImplicit) {
+        this(graknGraph, v, superType);
+        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
+    }
+
     /**
      *
      * @param instanceBaseType The base type of the instances of this type

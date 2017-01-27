@@ -368,7 +368,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
         return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> elementFactory.buildResourceType(v, Optional.of(getMetaResourceType()), Optional.of(dataType), Optional.of(Boolean.FALSE))).asResourceType();
+                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.FALSE)).asResourceType();
     }
 
     @Override
@@ -380,7 +380,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
         return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> elementFactory.buildResourceType(v, Optional.of(getMetaResourceType()), Optional.of(dataType), Optional.of(Boolean.TRUE))).asResourceType();
+                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.TRUE)).asResourceType();
     }
 
     @Override

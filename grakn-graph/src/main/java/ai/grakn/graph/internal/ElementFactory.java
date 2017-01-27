@@ -62,7 +62,7 @@ final class ElementFactory {
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType<V>> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
         return trackConcept(new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
     }
 
@@ -146,7 +146,7 @@ final class ElementFactory {
                 concept = new EntityTypeImpl(graknGraph, v, Optional.empty());
                 break;
             case RESOURCE_TYPE:
-                concept = new ResourceTypeImpl<>(graknGraph, v, Optional.empty(), Optional.empty(), Optional.empty());
+                concept = new ResourceTypeImpl<>(graknGraph, v);
                 break;
             case RESOURCE:
                 concept = new ResourceImpl<>(graknGraph, v, Optional.empty(), Optional.empty());
