@@ -42,8 +42,12 @@ import java.util.Optional;
  * @author fppt
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
-    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type) {
-        super(graknGraph, v, type, Optional.empty());
+    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RuleType type) {
+        super(graknGraph, v, type);
     }
 
     @Override

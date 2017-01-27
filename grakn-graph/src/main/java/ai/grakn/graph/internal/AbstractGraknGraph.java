@@ -65,7 +65,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -391,7 +390,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RuleType putRuleType(TypeName name) {
         return putType(name, Schema.BaseType.RULE_TYPE,
-                v ->  elementFactory.buildRuleType(v, Optional.of(getMetaRuleType())));
+                v ->  elementFactory.buildRuleType(v, getMetaRuleType()));
     }
 
     //------------------------------------ Lookup

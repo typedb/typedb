@@ -26,7 +26,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
-import com.sun.javafx.scene.control.behavior.OptionalBoolean;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +96,7 @@ final class ElementFactory {
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    RuleTypeImpl buildRuleType(Vertex v, Optional<RuleType> type){
+    RuleTypeImpl buildRuleType(Vertex v, RuleType type){
         return trackConcept(new RuleTypeImpl(graknGraph, v, type));
     }
 
@@ -140,7 +139,7 @@ final class ElementFactory {
                 concept = new CastingImpl(graknGraph, v);
                 break;
             case TYPE:
-                concept = new TypeImpl<>(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new TypeImpl<>(graknGraph, v);
                 break;
             case ROLE_TYPE:
                 concept = new RoleTypeImpl(graknGraph, v);
@@ -164,7 +163,7 @@ final class ElementFactory {
                 concept = new RuleImpl(graknGraph, v, Optional.empty(), Optional.empty(), Optional.empty());
                 break;
             case RULE_TYPE:
-                concept = new RuleTypeImpl(graknGraph, v, Optional.empty());
+                concept = new RuleTypeImpl(graknGraph, v);
                 break;
         }
 
