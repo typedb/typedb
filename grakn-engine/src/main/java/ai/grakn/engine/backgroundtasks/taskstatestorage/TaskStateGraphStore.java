@@ -165,7 +165,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
 
     public TaskState getState(String id) {
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
-            Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
+            Instance instance = graph.getResourceType(SCHEDULED_TASK.getValue()).getResource(id).owner();
             return instanceToState(graph, instance);
         }, false);
 
