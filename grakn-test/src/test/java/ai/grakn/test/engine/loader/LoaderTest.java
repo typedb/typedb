@@ -40,7 +40,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -65,6 +67,9 @@ public class LoaderTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void startup() throws Exception {
@@ -103,27 +108,20 @@ public class LoaderTest {
 
     @Test
     public void whenLoadingNormalDataThenDontTimeout(){
+        // test the the total duration is longer than the timeout
+        // however, the individual tasks will be completing faster than the timeout
         int timeout = 10000;
-        long duration = 0;
-        try {
-            duration = loadAndTime(timeout);
-        } catch (RuntimeException e) {
-            // check that the total time is more than the timeout
-            // however, each individual task was long enough that the timeout was not triggered
-            assertThat(duration, greaterThan(Integer.toUnsignedLong(timeout)));
-            throw e;
-        }
+        long startTime = System.currentTimeMillis();
+        loadAndTime(timeout);
+        long endTime = System.currentTimeMillis();
+        assertThat(endTime-startTime, greaterThan(Integer.toUnsignedLong(timeout)));
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test
     public void whenLoadingDataExceedsTimeoutThenTimeout(){
+        exception.expectMessage(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage());
         int timeout = 1;
-        try {
-            loadAndTime(timeout);
-        } catch (RuntimeException e) {
-            assertTrue(e.getMessage().equals(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage()));
-            throw e;
-        }
+        loadAndTime(timeout);
     }
 
     public static void loadOntology(String keyspace){
