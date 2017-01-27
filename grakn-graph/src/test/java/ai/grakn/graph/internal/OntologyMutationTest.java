@@ -29,8 +29,6 @@ import ai.grakn.exception.GraphRuntimeException;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Map;
-
 import static ai.grakn.util.ErrorMessage.SCHEMA_LOCKED;
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_IS_ABSTRACT;
@@ -81,16 +79,6 @@ public class OntologyMutationTest extends GraphTestBase{
     @Test
     public void testDeleteHasRole() throws GraknValidationException {
         marriage.deleteHasRole(husband);
-
-        String roles = "";
-        String rolePlayers = "";
-        for(Map.Entry<RoleType, Instance> entry: relation.rolePlayers().entrySet()){
-            if(entry.getKey() != null)
-                roles = roles + entry.getKey().getName() + ",";
-            if(entry.getValue() != null)
-                rolePlayers = rolePlayers + entry.getValue().getId() + ",";
-        }
-
         expectedException.expect(GraknValidationException.class);
         graknGraph.commit();
     }

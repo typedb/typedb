@@ -46,9 +46,6 @@ class EdgeImpl {
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
     public void delete(){
-        graknGraph.getConceptLog().putConcept(getTarget());
-        graknGraph.getConceptLog().putConcept(getSource());
-
         edge.remove();
         edge = null;
     }

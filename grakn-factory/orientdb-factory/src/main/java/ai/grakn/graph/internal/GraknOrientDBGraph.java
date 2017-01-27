@@ -30,7 +30,16 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
         super(graph, name, engineUrl, batchLoading);
     }
 
-
+    /**
+     *
+     * @param concept A concept in the graph
+     * @return True because at the moment there is no method in
+     * {@link org.apache.tinkerpop.gremlin.orientdb.OrientElement} which helps us to determine this.
+     */
+    @Override
+    public boolean isConceptModified(ConceptImpl concept) {
+        return true;
+    }
 
     @Override
     protected void commitTransaction(){

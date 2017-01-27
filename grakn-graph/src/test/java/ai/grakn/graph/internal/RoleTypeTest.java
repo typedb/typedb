@@ -200,4 +200,21 @@ public class RoleTypeTest extends GraphTestBase {
         assertTrue(roleType.relationTypes().contains(relationType));
         assertTrue(roleType.relationTypes().contains(relationType2));
     }
+
+    @Test
+    public void testCastingsAreReturnedFromRoleType(){
+        RoleTypeImpl roleA = (RoleTypeImpl) graknGraph.putRoleType("roleA");
+        RoleType roleB = graknGraph.putRoleType("roleB");
+        EntityType entityType = graknGraph.putEntityType("entityType");
+        Entity a = entityType.addEntity();
+        Entity b = entityType.addEntity();
+
+        relationType.addRelation().
+                putRolePlayer(roleA, a).
+                putRolePlayer(roleB, b);
+
+        assertEquals(1, roleA.castings().size());
+        CastingImpl casting = roleA.castings().iterator().next();
+        assertEquals(roleA, casting.type());
+    }
 }

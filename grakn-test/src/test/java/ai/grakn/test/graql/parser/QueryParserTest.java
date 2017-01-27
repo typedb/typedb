@@ -71,9 +71,11 @@ import static ai.grakn.util.Schema.MetaSchema.RELATION;
 import static ai.grakn.util.Schema.MetaSchema.ROLE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
@@ -723,6 +725,12 @@ public class QueryParserTest {
             List<Query<?>> queries = Graql.parseList(option);
             assertEquals(option, 2, queries.size());
         });
+    }
+
+    @Test
+    public void testParseHasWithoutValueOrVariable() {
+        MatchQuery query = qb.parse("match $x has name; limit 10;");
+        assertThat(query.execute(), hasSize(10));
     }
 
     @Test(expected = IllegalArgumentException.class)

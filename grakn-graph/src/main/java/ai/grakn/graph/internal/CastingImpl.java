@@ -108,7 +108,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      * @return All the {@link Relation} this casting is linked with.
      */
     public Set<RelationImpl> getRelations() {
-        ConceptImpl<?, ?> thisRef = this;
+        ConceptImpl<?> thisRef = this;
         Set<RelationImpl> relations = new HashSet<>();
         Set<ConceptImpl> concepts = thisRef.getIncomingNeighbours(Schema.EdgeLabel.CASTING);
 
