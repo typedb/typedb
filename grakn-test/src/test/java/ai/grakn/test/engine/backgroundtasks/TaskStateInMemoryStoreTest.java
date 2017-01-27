@@ -47,7 +47,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
-    public void testNewState() {
+    public void testInsertNewState() {
         String id = stateStorage.newState(task());
         assertNotNull(id);
 
@@ -59,7 +59,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
-    public void testUpdateState() {
+    public void testUpdateTaskState() {
         String id = stateStorage.newState(task());
         assertNotNull(id);
 
@@ -86,7 +86,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
-    public void testGetByStatus() {
+    public void testGetTasksByStatus() {
         String id = stateStorage.newState(task());
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
 
@@ -98,7 +98,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
-    public void testGetByCreator() {
+    public void testGetTasksByCreator() {
         String id = stateStorage.newState(task());
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
 
@@ -110,7 +110,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
-    public void testGetByClassName() {
+    public void testGetTasksByClassName() {
         String id = stateStorage.newState(task());
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
 
@@ -122,7 +122,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
-    public void testGetAll() {
+    public void testGetAllTasks() {
         String id = stateStorage.newState(task());
         Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, null, 0, 0);
 
@@ -134,7 +134,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
-    public void testPagination() {
+    public void testTaskPagination() {
         for (int i = 0; i < 20; i++) {
             stateStorage.newState(task());
         }
