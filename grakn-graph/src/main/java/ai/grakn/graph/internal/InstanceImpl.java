@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
  * @param <V> The type of the concept which extends {@link Type} of the concept.
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
-abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
+abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type) {
         super(graknGraph, v);
         type.ifPresent(this::type);
@@ -156,7 +156,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
-        ConceptImpl<?, ?> parent = this;
+        ConceptImpl<?> parent = this;
         parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(((CastingImpl)c).getRole()));
         return roleTypes;
     }

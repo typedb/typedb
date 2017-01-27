@@ -225,9 +225,9 @@ class GraqlSession {
                         attemptRollback();
                     }
                     sendQueryError(errorMessage);
-                } else {
-                    sendEnd();
                 }
+
+                sendEnd();
             }
         });
     }
@@ -324,8 +324,6 @@ class GraqlSession {
                     ERROR, errorChunk
             ));
         }
-
-        sendJson(Json.object(ACTION, ACTION_END));
     }
 
     /**

@@ -197,14 +197,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         boolean performDeletion = true;
         Collection<Instance> rolePlayers = rolePlayers().values();
 
-        // tracking
-        rolePlayers.forEach(r -> {
-            if(r != null) {
-                getGraknGraph().getConceptLog().putConcept((ConceptImpl) r);
-            }
-        });
-        this.getMappingCasting().forEach(c -> getGraknGraph().getConceptLog().putConcept(c));
-
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null )){
                 performDeletion = false;

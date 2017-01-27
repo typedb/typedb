@@ -10,7 +10,7 @@ SCRIPT_DIR=$(dirname $0)
 GRAKN_TEST_PROFILE=$1
 
 # Find all tests in grakn-test
-find "$SCRIPT_DIR"/../../grakn-test/ -name '*Test.java' -o -name '*IT.java' | xargs --no-run-if-empty -n1 basename | sed -e 's/\.java//' > /tmp/grakn_mvn_docker_test_list
+find "$SCRIPT_DIR"/../../grakn-test/ -name '*Test*.java' -o -name '*IT*.java' | xargs --no-run-if-empty -n1 basename | sed -e 's/\.java//' > /tmp/grakn_mvn_docker_test_list
 
 # Run parallel at '75% core capacity'
 # Mount volume so tests results are output in surefire-reports
