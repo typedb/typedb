@@ -24,13 +24,10 @@ import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -59,11 +56,6 @@ public class SchedulerTest {
 
     @Rule
     public final EngineContext kafkaServer = EngineContext.startKafkaServer();
-
-    @BeforeClass
-    public static void setup(){
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
-    }
 
     @Before
     public void start() throws Exception {

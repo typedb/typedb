@@ -57,10 +57,6 @@ public class TaskRunnerTest {
     @Rule
     public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @BeforeClass
-    public static void start() throws Exception{
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-    }
     @Before
     public void setup() throws Exception {
         connection = new ZookeeperConnection();
