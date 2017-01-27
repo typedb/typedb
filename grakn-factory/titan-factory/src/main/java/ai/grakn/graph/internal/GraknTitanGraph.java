@@ -23,6 +23,7 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
@@ -43,6 +44,18 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
         super(graph, name, engineUrl, batchLoading);
+    }
+
+    /**
+     * Uses {@link TitanVertex#isModified()}
+     *
+     * @param concept A concept in the graph
+     * @return true if the concept has been modified
+     */
+    @Override
+    public boolean isConceptModified(ConceptImpl concept) {
+        TitanVertex vertex = (TitanVertex) concept.getVertex();
+        return vertex.isModified() || vertex.isNew();
     }
 
     @Override

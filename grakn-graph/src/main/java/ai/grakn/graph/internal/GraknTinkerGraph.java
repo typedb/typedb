@@ -41,6 +41,17 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
         super(tinkerGraph, name, engineUrl, batchLoading);
     }
 
+    /**
+     *
+     * @param concept A concept in the graph
+     * @return true all the time. There is no way to know if a
+     * {@link org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex} has been modified or not.
+     */
+    @Override
+    public boolean isConceptModified(ConceptImpl concept) {
+        return true;
+    }
+
     @Override
     public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         try {
