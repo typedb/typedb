@@ -22,19 +22,17 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
+import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -45,14 +43,12 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertNotNull;
+import static java.time.Instant.now;
 
 /**
  * Each test needs to be run with a clean Kafka to pass
  */
 public class SchedulerTest {
-    private GraknStateStorage stateStorage = new GraknStateStorage();
 
     @Rule
     public final EngineContext engine = EngineContext.startServer();
@@ -83,21 +79,18 @@ public class SchedulerTest {
     }
 
     private Pair<String, TaskState> createTask(int i, TaskStatus status, boolean recurring, int interval) throws Exception {
-        String taskId = stateStorage.newState(
-                TestTask.class.getName(),
-                SchedulerTest.class.getName(),
-                Instant.now(), recurring, interval, new JSONObject(singletonMap("name", "task"+i)));
+        TaskState state = new TaskState(TestTask.class.getName())
+                .status(status)
+                .creator(this.getClass().getName())
+                .statusChangedBy(this.getClass().getName())
+                .runAt(now())
+                .isRecurring(recurring)
+                .interval(interval)
+                .configuration(Json.object("name", "task" + i));
 
-        stateStorage.updateState(taskId, status, null, null, null, null, null);
+        engine.getClusterManager().getStorage().newState(state);
 
-        TaskState state = stateStorage.getState(taskId);
-
-        engine.getClusterManager().getStorage().newState(taskId, status, null, null);
-
-        assertNotNull(taskId);
-        assertNotNull(state);
-
-        return new Pair<>(taskId, state);
+        return new Pair<>(state.getId(), state);
     }
 
     private void sendTasksToNewTasksQueue(Map<String, TaskState> tasks) {

@@ -19,16 +19,14 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.engine.util.EngineID;
+import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +35,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -51,57 +47,52 @@ public class DistributedTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
-    private KafkaProducer<String, String> producer;
-    private StateStorage stateStorage;
-    private SynchronizedStateStorage zkStorage;
+    private final KafkaProducer<String, String> producer;
+    private final TaskStateStorage stateStorage;
 
-    public DistributedTaskManager(SynchronizedStateStorage zkStorage) {
+    public DistributedTaskManager(TaskStateStorage stateStorage) {
+        this.stateStorage = stateStorage;
+
         if(OPENED.compareAndSet(false, true)) {
-            try {
-                noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");
-                noThrow(() -> stateStorage = new GraknStateStorage(), "Could not instantiate grakn state storage");
-
-                this.zkStorage = zkStorage;
-            }
-            catch (Exception e) {
-                e.printStackTrace(System.err);
-                LOG.error("While trying to start the DistributedTaskManager", e);
-                throw new RuntimeException("Could not start task manager : "+e);
-            }
+            this.producer = ConfigHelper.kafkaProducer();
         }
         else {
-            LOG.error("DistributedTaskManager open() called multiple times!");
+            throw new RuntimeException("DistributedTaskManager open() called multiple times!");
         }
     }
 
     @Override
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
-            noThrow(producer::close, "Could not close Kafka Producer.");
+            producer.close();
         }
         else {
-            LOG.error("DistributedTaskManager close() called before open()!");
+            throw new RuntimeException("DistributedTaskManager close() called before open()!");
         }
     }
 
     @Override
-    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = period > 0;
 
-        String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
-        try {
-            zkStorage.newState(id, CREATED, null, null);
+        TaskState taskState = new TaskState(task.getClass().getName())
+                .creator(createdBy)
+                .runAt(runAt)
+                .isRecurring(recurring)
+                .interval(period)
+                .configuration(configuration);
 
-            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, id, configuration.toString()));
+        stateStorage.newState(taskState);
+        try {
+            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), configuration.toString()));
             producer.flush();
         }
         catch (Exception e) {
-            LOG.error("Could not write to ZooKeeper! - "+ getFullStackTrace(e));
-            stateStorage.updateState(id, FAILED, this.getClass().getName(), EngineID.getInstance().id(), e, null, null);
-            id = null;
+            stateStorage.updateState(taskState.status(FAILED));
+            LOG.error("Could not send task to Kafka " + getFullStackTrace(e));
         }
 
-        return id;
+        return taskState.getId();
     }
 
     @Override
@@ -110,7 +101,7 @@ public class DistributedTaskManager implements TaskManager {
     }
 
     @Override
-    public StateStorage storage() {
+    public TaskStateStorage storage() {
         return stateStorage;
     }
 
@@ -119,7 +110,7 @@ public class DistributedTaskManager implements TaskManager {
         return CompletableFuture.runAsync(() -> {
 
             while (true) {
-                TaskStatus status = zkStorage.getState(taskId).status();
+                TaskStatus status = stateStorage.getState(taskId).status();
                 if (status == COMPLETED || status == FAILED || status ==  STOPPED) {
                     break;
                 }
@@ -134,6 +125,6 @@ public class DistributedTaskManager implements TaskManager {
     }
 
     public TaskStatus getState(String taskID){
-        return zkStorage.getState(taskID).status();
+        return stateStorage.getState(taskID).status();
     }
 }

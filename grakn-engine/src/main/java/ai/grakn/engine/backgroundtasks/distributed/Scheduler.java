@@ -18,9 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -65,22 +64,18 @@ public class Scheduler implements Runnable, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
-    private final SynchronizedStateStorage zkStorage;
+    private final TaskStateStorage storage;
 
-    private GraknStateStorage stateStorage;
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
 
-    public Scheduler(SynchronizedStateStorage zkStorage){
-        this.zkStorage = zkStorage;
+    public Scheduler(TaskStateStorage storage){
+        this.storage = storage;
 
         if(OPENED.compareAndSet(false, true)) {
-            // Init task storage
-            stateStorage = new GraknStateStorage();
-
             // Kafka listener
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
             consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new RebalanceListener(consumer));
@@ -160,7 +155,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param configuration configuration of task to be scheduled, will be copied to WORK_QUEUE_TOPIC
      */
     private void scheduleTask(String id, String configuration) {
-        TaskState state = stateStorage.getState(id);
+        TaskState state = storage.getState(id);
         scheduleTask(id, configuration, state);
     }
 
@@ -173,18 +168,15 @@ public class Scheduler implements Runnable, AutoCloseable {
     private void scheduleTask(String id,  String configuration, TaskState state) {
         long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
-        markAsScheduled(id);
+        markAsScheduled(state);
         if(state.isRecurring()) {
-            LOG.debug("Scheduling recurring " + id);
-
             Runnable submit = () -> {
-                markAsScheduled(id);
+                markAsScheduled(state);
                 sendToWorkQueue(id, configuration);
             };
             schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
         }
         else {
-            LOG.debug("Scheduling once " + id+" @ "+delay);
             Runnable submit = () -> sendToWorkQueue(id, configuration);
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
@@ -192,12 +184,11 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     /**
      * Mark the taskstorage of the given task as scheduled
-     * @param id task to mark the taskstorage of
+     * @param state task to mark the state of
      */
-    private void markAsScheduled(String id) {
-        LOG.debug("Marking " + id + " as scheduled");
-        zkStorage.updateState(id, SCHEDULED, null, null);
-        stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
+    private void markAsScheduled(TaskState state) {
+        LOG.debug("Marking " + state.getId() + " as scheduled");
+        storage.updateState(state.status(SCHEDULED));
     }
 
     /**
@@ -215,8 +206,9 @@ public class Scheduler implements Runnable, AutoCloseable {
      * Get all recurring tasks from the graph and schedule them
      */
     private void restartRecurringTasks() {
-        Set<Pair<String, TaskState>> tasks = stateStorage.getTasks(null, null, null, 0, 0, true);
+        Set<Pair<String, TaskState>> tasks = storage.getTasks(null, null, null, 0, 0);
         tasks.stream()
+                .filter(p -> p.getValue().isRecurring())
                 .filter(p -> p.getValue().status() != STOPPED)
                 .forEach(p -> {
                     // Not sure what is the right format for "no configuration", but somehow the configuration

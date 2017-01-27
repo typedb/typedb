@@ -18,7 +18,9 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-public enum TaskStatus {
+import java.io.Serializable;
+
+public enum TaskStatus implements Serializable {
     /**
      * Save task in the graph, but not plans to run it yet - initial state.
      */
@@ -43,5 +45,5 @@ public enum TaskStatus {
     /**
      * The task has failed to execute.
      */
-    FAILED
+    FAILED;
 }

@@ -18,17 +18,16 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
+import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
@@ -39,7 +38,6 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -47,14 +45,14 @@ import java.util.HashSet;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static java.time.Instant.now;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
 public class TaskRunnerTest {
     private KafkaProducer<String, String> producer;
-    private StateStorage stateStorage;
-    private SynchronizedStateStorage zkStorage;
+    private TaskStateStorage stateStorage;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
@@ -67,10 +65,8 @@ public class TaskRunnerTest {
     @Before
     public void setup() throws Exception {
         producer = ConfigHelper.kafkaProducer();
-        stateStorage = new GraknStateStorage();
+        stateStorage = engine.getClusterManager().getStorage();
 
-        // ZooKeeper client
-        zkStorage = engine.getClusterManager().getStorage();
         assumeFalse(usingTinker());
     }
 
@@ -120,16 +116,16 @@ public class TaskRunnerTest {
         Collection<Pair<String, TaskState>> states = new HashSet<>();
 
         for (int i = 0; i < count; i++) {
-            String id = stateStorage.newState(TestTask.class.getName(),
-                        this.getClass().getName(),
-                        Instant.now(), false, 0,
-                        new JSONObject(singletonMap("name", "task "+i)));
+            TaskState state = new TaskState(TestTask.class.getName())
+                    .creator(this.getClass().getName())
+                    .statusChangedBy(this.getClass().getName())
+                    .runAt(now())
+                    .isRecurring(false)
+                    .configuration(Json.object("name", "task"))
+                    .status(status);
 
-            TaskState state = stateStorage.getState(id);
-            state.status(status);
-            zkStorage.newState(id, state.status(), null, null);
-
-            states.add(new Pair<>(id, state));
+            stateStorage.newState(state);
+            states.add(new Pair<>(state.getId(), state));
         }
 
         return states;
