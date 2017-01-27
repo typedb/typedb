@@ -20,125 +20,94 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
+import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import javafx.util.Pair;
-import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
+import java.util.Set;
 
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static java.time.Instant.now;
-import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assume.assumeFalse;
+import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
+import static junit.framework.Assert.assertEquals;
 
 public class TaskRunnerTest {
-    private KafkaProducer<String, String> producer;
-    private TaskStateStorage stateStorage;
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    private static ZookeeperConnection connection;
+
+    private TaskStateStorage storage;
+    private TaskRunner taskRunner;
+    private KafkaProducer<String, String> producer;
+
+    private Thread taskRunnerThread;
+
+    @Rule
+    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
     @BeforeClass
-    public static void startEngine() throws Exception{
-        ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
+    public static void start() throws Exception{
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
     }
-
     @Before
     public void setup() throws Exception {
-        producer = ConfigHelper.kafkaProducer();
-        stateStorage = engine.getTaskManager().storage();
+        connection = new ZookeeperConnection();
 
-        assumeFalse(usingTinker());
+        producer = ConfigHelper.kafkaProducer();
+        storage = new TaskStateInMemoryStore();
+
+        taskRunner = new TaskRunner(storage, connection);
+        taskRunnerThread = new Thread(taskRunner);
+        taskRunnerThread.start();
     }
 
     @After
     public void tearDown() throws Exception {
         producer.close();
+
+        taskRunner.close();
+        taskRunnerThread.join();
+
+        connection.close();
     }
 
     @Test
     public void testSendReceive() throws Exception {
         TestTask.startedCounter.set(0);
-        precomputeStates(5, SCHEDULED).forEach(x -> {
-            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, x.getKey(), x.getValue().configuration().toString()));
-            System.out.println("Task to work queue - " + x.getKey());
-        });
-        producer.flush();
 
-        waitUntilXTasksFinishedOrTimeout(5);
+        Set<TaskState> tasks = createTasks(storage, 5, SCHEDULED);
+        sendTasksToWorkQueue(tasks);
+        waitForStatus(storage, tasks, COMPLETED);
+
         assertEquals(5, TestTask.startedCounter.get());
     }
 
     @Test
-    @Ignore
-    /* TODO: Fix this test
-     * Probably caused by not waiting properly until tasks are finished.
-     *
-     * junit.framework.AssertionFailedError: expected:<5> but was:<6>
-     * at ai.grakn.test.engine.backgroundtasks.TaskRunnerTest.testSendDuplicate(TaskRunnerTest.java:106)
-     */
     public void testSendDuplicate() throws Exception {
         TestTask.startedCounter.set(0);
-        precomputeStates(5, SCHEDULED).forEach(x -> {
-            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, x.getKey(), x.getValue().configuration().toString()));
-            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, x.getKey(), x.getValue().configuration().toString()));
-            System.out.println("Task to work queue - " + x.getKey());
-        });
-        producer.flush();
 
-        waitUntilXTasksFinishedOrTimeout(5);
+        Set<TaskState> tasks = createTasks(storage, 5, SCHEDULED);
+        sendTasksToWorkQueue(tasks);
+        sendTasksToWorkQueue(tasks);
+
+        waitForStatus(storage, tasks, COMPLETED);
         assertEquals(5, TestTask.startedCounter.get());
     }
 
-    /**
-     * Precompute states so that they can later be sent quickly
-     */
-    private Collection<Pair<String, TaskState>> precomputeStates(int count, TaskStatus status) throws Exception {
-        Collection<Pair<String, TaskState>> states = new HashSet<>();
-
-        for (int i = 0; i < count; i++) {
-            TaskState state = new TaskState(TestTask.class.getName())
-                    .creator(this.getClass().getName())
-                    .statusChangedBy(this.getClass().getName())
-                    .runAt(now())
-                    .isRecurring(false)
-                    .configuration(Json.object("name", "task"))
-                    .status(status);
-
-            stateStorage.newState(state);
-            states.add(new Pair<>(state.getId(), state));
-        }
-
-        return states;
-    }
-
-    private void waitUntilXTasksFinishedOrTimeout(int numberShouldFinish) throws InterruptedException{
-        final long initial = new Date().getTime();
-
-        while ((new Date().getTime())-initial < 60000) {
-            if (TestTask.startedCounter.get() == numberShouldFinish) {
-                break;
-            }
-
-            Thread.sleep(1000);
-        }
-
+    private void sendTasksToWorkQueue(Set<TaskState> tasks) {
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), t.configuration().toString())));
+        producer.flush();
     }
 }
