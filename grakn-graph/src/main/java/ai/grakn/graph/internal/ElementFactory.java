@@ -26,6 +26,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
+import com.sun.javafx.scene.control.behavior.OptionalBoolean;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,8 +107,12 @@ final class ElementFactory {
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleTypeImpl buildRoleType(Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit){
-        return trackConcept(new RoleTypeImpl(graknGraph, v, type, isImplicit));
+    RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
+        if(isImplicit) {
+            return trackConcept(new RoleTypeImpl(graknGraph, v, type, true));
+        } else {
+            return trackConcept(new RoleTypeImpl(graknGraph, v, type));
+        }
     }
 
     /**
@@ -138,7 +143,7 @@ final class ElementFactory {
                 concept = new TypeImpl<>(graknGraph, v, Optional.empty(), Optional.empty());
                 break;
             case ROLE_TYPE:
-                concept = new RoleTypeImpl(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new RoleTypeImpl(graknGraph, v);
                 break;
             case RELATION_TYPE:
                 concept = new RelationTypeImpl(graknGraph, v);

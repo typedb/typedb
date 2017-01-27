@@ -351,12 +351,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RoleType putRoleType(TypeName name) {
         return putType(name, Schema.BaseType.ROLE_TYPE,
-                v -> elementFactory.buildRoleType(v, Optional.of(getMetaRoleType()), Optional.empty())).asRoleType();
+                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
     RoleType putRoleTypeImplicit(TypeName name) {
         return putType(name, Schema.BaseType.ROLE_TYPE,
-                v -> elementFactory.buildRoleType(v, Optional.of(getMetaRoleType()), Optional.of(Boolean.TRUE))).asRoleType();
+                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
     @Override
