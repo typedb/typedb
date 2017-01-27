@@ -20,9 +20,14 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
+import ai.grakn.engine.loader.Loader;
 import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import mjson.Json;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -37,17 +42,22 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class TaskManagerTest {
+public class DistributedTaskManagerTest {
     private DistributedTaskManager manager;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startDistributedServer();
 
+    @BeforeClass
+    public static void startup() throws Exception {
+        ((Logger) org.slf4j.LoggerFactory.getLogger(DistributedTaskManager.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
+    }
+
     @Before
     public void setup() throws Exception {
-        assumeFalse(usingTinker());
         manager = (DistributedTaskManager) engine.getTaskManager();
-        Thread.sleep(5000);
     }
 
     private void waitToFinish(String id) {
@@ -78,7 +88,7 @@ public class TaskManagerTest {
         final int startCount = TestTask.startedCounter.get();
 
         for(int i = 0; i < 20; i++) {
-            String taskId = manager.scheduleTask(new TestTask(), TaskManagerTest.class.getName(),
+            String taskId = manager.scheduleTask(new TestTask(), DistributedTaskManagerTest.class.getName(),
                     Instant.now(), 0, Json.object("name", "task" + i));
 
             ids.add(taskId);
