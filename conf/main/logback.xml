@@ -62,11 +62,11 @@
         <appender-ref ref="${jetty.log.appender:-MAIN}"/>
     </logger>
 
-    <logger name="ai.grakn" level="${grakn.log.level}">
+    <logger name="ai.grakn" level="${grakn.log.level:-INFO}">
         <appender-ref ref="MAIN"/>
     </logger>
 
-    <logger name="${grakn.log.name.postprocessing}" level="${grakn.log.level}">
+    <logger name="${grakn.log.name.postprocessing}" level="${grakn.log.level:-INFO}">
         <appender-ref ref="POST-PROCESSING"/>
     </logger>
 

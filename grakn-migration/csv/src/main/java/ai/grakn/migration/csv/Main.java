@@ -27,7 +27,6 @@ import java.util.Optional;
 
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
-import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
 import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
@@ -40,12 +39,15 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  */
 public class Main {
 
+    static boolean newClusterManager = false;
+
     public static void main(String[] args) {
         start(null, args);
     }
 
     public static void start(ClusterManager manager, String[] args){
         if(manager == null){
+            newClusterManager = true;
             manager = new ClusterManager();
         }
 
@@ -90,6 +92,12 @@ public class Main {
             die(throwable);
         }
 
-        initiateShutdown();
+        if (newClusterManager) {
+            try {
+                manager.stop();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -52,7 +52,11 @@ public class JsonSession {
 
     private final Session session;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
 
