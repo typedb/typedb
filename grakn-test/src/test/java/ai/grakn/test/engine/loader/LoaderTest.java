@@ -35,6 +35,7 @@ import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,9 +51,12 @@ import java.util.UUID;
 
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 
 public class LoaderTest {
 
@@ -97,10 +101,25 @@ public class LoaderTest {
         loadAndTime(60000);
     }
 
-    @Test(expected=RuntimeException.class)
-    public void loadAndDontWaitForLongEnoughTest(){
+    @Test
+    public void whenLoadingNormalDataThenDontTimeout(){
+        int timeout = 10000;
+        long duration = 0;
         try {
-            loadAndTime(1000);
+            duration = loadAndTime(timeout);
+        } catch (RuntimeException e) {
+            // check that the total time is more than the timeout
+            // however, each individual task was long enough that the timeout was not triggered
+            assertThat(duration, greaterThan(Integer.toUnsignedLong(timeout)));
+            throw e;
+        }
+    }
+
+    @Test(expected=RuntimeException.class)
+    public void whenLoadingDataExceedsTimeoutThenTimeout(){
+        int timeout = 1;
+        try {
+            loadAndTime(timeout);
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().equals(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage()));
             throw e;
@@ -124,7 +143,7 @@ public class LoaderTest {
         }
     }
 
-    private void loadAndTime(int timeout){
+    private long loadAndTime(int timeout){
         long startTime = System.currentTimeMillis();
 
         Collection<String> ids = new ArrayList<>();
@@ -145,11 +164,14 @@ public class LoaderTest {
         loader.waitToFinish(timeout);
 
         System.out.println("Time to load:");
-        System.out.println(System.currentTimeMillis() - startTime);
+        long duration = System.currentTimeMillis() - startTime;
+        System.out.println(duration);
 
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
         assertEquals(50, nameTags.size());
         ids.stream().map(graph::getResourcesByValue).forEach(Assert::assertNotNull);
+
+        return duration;
     }
 }
