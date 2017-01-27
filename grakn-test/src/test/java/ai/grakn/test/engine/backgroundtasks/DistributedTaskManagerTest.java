@@ -37,7 +37,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class TaskManagerTest {
+public class DistributedTaskManagerTest {
     private DistributedTaskManager manager;
 
     @ClassRule
@@ -45,9 +45,7 @@ public class TaskManagerTest {
 
     @Before
     public void setup() throws Exception {
-        assumeFalse(usingTinker());
         manager = (DistributedTaskManager) engine.getTaskManager();
-        Thread.sleep(5000);
     }
 
     private void waitToFinish(String id) {
@@ -78,7 +76,7 @@ public class TaskManagerTest {
         final int startCount = TestTask.startedCounter.get();
 
         for(int i = 0; i < 20; i++) {
-            String taskId = manager.scheduleTask(new TestTask(), TaskManagerTest.class.getName(),
+            String taskId = manager.scheduleTask(new TestTask(), DistributedTaskManagerTest.class.getName(),
                     Instant.now(), 0, Json.object("name", "task" + i));
 
             ids.add(taskId);
