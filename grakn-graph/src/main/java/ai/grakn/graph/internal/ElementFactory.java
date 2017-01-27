@@ -67,7 +67,7 @@ final class ElementFactory {
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(Vertex v, Optional<ResourceType<V>> type, Optional<V> value){
+    <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
         return trackConcept(new ResourceImpl<>(graknGraph, v, type, value));
     }
 
@@ -81,7 +81,7 @@ final class ElementFactory {
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(Vertex v, Optional<RelationType> type){
+    RelationImpl buildRelation(Vertex v, RelationType type){
         return trackConcept(new RelationImpl(graknGraph, v, type));
     }
 
@@ -91,7 +91,7 @@ final class ElementFactory {
     }
 
     // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(Vertex v, Optional<EntityType> type){
+    EntityImpl buildEntity(Vertex v, EntityType type){
         return trackConcept(new EntityImpl(graknGraph, v, type));
     }
 
@@ -101,7 +101,7 @@ final class ElementFactory {
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs){
+    RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
         return trackConcept(new RuleImpl(graknGraph, v, type, lhs, rhs));
     }
 
@@ -133,7 +133,7 @@ final class ElementFactory {
         ConceptImpl concept = null;
         switch (type){
             case RELATION:
-                concept = new RelationImpl(graknGraph, v, Optional.empty());
+                concept = new RelationImpl(graknGraph, v);
                 break;
             case CASTING:
                 concept = new CastingImpl(graknGraph, v);
@@ -148,7 +148,7 @@ final class ElementFactory {
                 concept = new RelationTypeImpl(graknGraph, v);
                 break;
             case ENTITY:
-                concept = new EntityImpl(graknGraph, v, Optional.empty());
+                concept = new EntityImpl(graknGraph, v);
                 break;
             case ENTITY_TYPE:
                 concept = new EntityTypeImpl(graknGraph, v);
@@ -157,10 +157,10 @@ final class ElementFactory {
                 concept = new ResourceTypeImpl<>(graknGraph, v);
                 break;
             case RESOURCE:
-                concept = new ResourceImpl<>(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new ResourceImpl<>(graknGraph, v);
                 break;
             case RULE:
-                concept = new RuleImpl(graknGraph, v, Optional.empty(), Optional.empty(), Optional.empty());
+                concept = new RuleImpl(graknGraph, v);
                 break;
             case RULE_TYPE:
                 concept = new RuleTypeImpl(graknGraph, v);

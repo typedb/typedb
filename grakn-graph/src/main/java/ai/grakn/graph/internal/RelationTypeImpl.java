@@ -26,7 +26,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -58,7 +57,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, Optional.of(type)));
+                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
     }
 
     /**

@@ -26,7 +26,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,7 +90,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         Resource<D> resource = getResource(value);
         if(resource == null){
             resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->
-                    getGraknGraph().getElementFactory().buildResource(vertex, Optional.of(type), Optional.of(value)));
+                    getGraknGraph().getElementFactory().buildResource(vertex, type, value));
         }
         return resource;
 

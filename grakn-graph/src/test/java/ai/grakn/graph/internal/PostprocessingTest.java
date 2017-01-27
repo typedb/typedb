@@ -32,7 +32,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -233,6 +232,6 @@ public class PostprocessingTest extends GraphTestBase{
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
-        return new ResourceImpl<>(graknGraph, resourceVertex, Optional.of(type), Optional.empty());
+        return new ResourceImpl<>(graknGraph, resourceVertex);
     }
 }
