@@ -169,7 +169,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             return instanceToState(graph, instance);
         }, false);
 
-        return result.get();
+        return result.orElse(null);
     }
 
     /**
