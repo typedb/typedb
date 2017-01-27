@@ -83,7 +83,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         updateOwnState();
         executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-        LOG.info("TaskRunner opened.");
+        LOG.info("TaskRunner started");
     }
 
     /**
@@ -244,11 +244,11 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     private class HandleRebalance implements ConsumerRebalanceListener {
         public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            LOG.debug("Scheduler partitions assigned " + partitions);
+            LOG.debug("TaskRunner consumer partitions assigned " + partitions);
         }
         public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
             consumer.commitSync();
-            LOG.debug("Scheduler partitions revoked " + partitions);
+            LOG.debug("TaskRunner consumer partitions revoked " + partitions);
         }
     }
 }
