@@ -82,7 +82,7 @@ final class ElementFactory {
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    EntityTypeImpl buildEntityType(Vertex v, Optional<EntityType> type){
+    EntityTypeImpl buildEntityType(Vertex v, EntityType type){
         return trackConcept(new EntityTypeImpl(graknGraph, v, type));
     }
 
@@ -143,7 +143,7 @@ final class ElementFactory {
                 concept = new EntityImpl(graknGraph, v, Optional.empty());
                 break;
             case ENTITY_TYPE:
-                concept = new EntityTypeImpl(graknGraph, v, Optional.empty());
+                concept = new EntityTypeImpl(graknGraph, v);
                 break;
             case RESOURCE_TYPE:
                 concept = new ResourceTypeImpl<>(graknGraph, v);

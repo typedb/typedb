@@ -39,8 +39,12 @@ import java.util.Optional;
  *
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {
-        super(graknGraph, v, type, Optional.empty());
+    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, EntityType type) {
+        super(graknGraph, v, type);
     }
 
     @Override

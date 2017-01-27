@@ -235,7 +235,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return new QueryBuilderImpl(this);
     }
 
-    public ElementFactory getElementFactory(){
+    ElementFactory getElementFactory(){
         return elementFactory;
     }
 
@@ -319,7 +319,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public EntityType putEntityType(TypeName name) {
         return putType(name, Schema.BaseType.ENTITY_TYPE,
-                v -> elementFactory.buildEntityType(v, Optional.of(getMetaEntityType())));
+                v -> elementFactory.buildEntityType(v, getMetaEntityType()));
     }
 
     private <V extends Type> V putType(TypeName name, Schema.BaseType baseType, Function<Vertex, V> factory){

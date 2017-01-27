@@ -44,13 +44,12 @@ import java.util.stream.Collectors;
  * @author fppt
  */
 class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
+    CastingImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
 
     CastingImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type) {
         super(graknGraph, v, type);
-    }
-
-    CastingImpl(AbstractGraknGraph graknGraph, Vertex v) {
-        super(graknGraph, v);
     }
 
     /**
