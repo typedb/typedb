@@ -29,9 +29,11 @@ import org.junit.Test;
 
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeTrue;
 
-public class Tests{
+public class ReasoningTests {
 
     @ClassRule
     public static final GraphContext testSet10 = GraphContext.preLoad("testSet10.gql");
@@ -46,7 +48,7 @@ public class Tests{
         QueryBuilder iqb = testSet10.graph().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation2;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
-        Assert.assertTrue(!answers.isEmpty());
+        Assert.assertThat(answers, not(empty()));
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
