@@ -24,7 +24,6 @@ import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Lists;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
