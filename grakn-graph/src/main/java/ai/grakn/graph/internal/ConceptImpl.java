@@ -65,9 +65,8 @@ import java.util.function.Function;
  *
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
- * @param <V> The type of the concept. For example if the concept is an {@link Entity} then it's type will be {@link EntityType}
  */
-abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept {
+abstract class ConceptImpl<T extends Concept> implements Concept {
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
@@ -578,12 +577,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The edge created
      */
     public EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        EdgeImpl newEdge = getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), graknGraph);
-
-        graknGraph.getConceptLog().putConcept(this);
-        graknGraph.getConceptLog().putConcept(toConcept);
-
-        return newEdge;
+        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), graknGraph);
     }
 
     /**
@@ -592,18 +586,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param type The type of the edges to retrieve
      */
     void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        // track changes
-        vertex.edges(direction, type.getLabel()).
-                forEachRemaining(
-                        e -> {
-                            graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
-                            graknGraph.getConceptLog().putConcept(
-                                    getGraknGraph().getElementFactory().buildConcept(e.outVertex()));
-                        }
-                );
-
-        // deletion
         vertex.edges(direction, type.getLabel()).forEachRemaining(Element::remove);
     }
 

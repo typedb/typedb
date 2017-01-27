@@ -20,6 +20,7 @@ package ai.grakn.engine.user;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeName;
+import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.EngineGraknGraph;
@@ -71,7 +72,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 
             InsertQuery query = graph.graql().insert(user);
             query.execute();
-            graph.commitTx();
+            graph.commit(EngineCacheImpl.getInstance());
             LOG.debug("Created user " + userJson);
             return true;
         } catch (Throwable t) {
@@ -205,7 +206,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             });
 
             if(exists){
-                graph.commitTx();
+                graph.commit(EngineCacheImpl.getInstance());
             }
 
             return exists;

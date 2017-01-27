@@ -50,7 +50,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, type));
+                (vertex, type) -> getGraknGraph().getElementFactory().buildRelation(vertex, Optional.of(type)));
     }
 
     /**
@@ -85,8 +85,17 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     public RelationType deleteHasRole(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.HAS_ROLE, roleType);
+
+        RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add castings of roleType to make sure relations are still valid
-        ((RoleTypeImpl) roleType).castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
+        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
+
+        //Add the Role Type itself
+        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+
+        //Add the Relation Type
+        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+
         return this;
     }
 }

@@ -36,8 +36,6 @@ class InPlaysRoleFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        Fragments.outSubs(traversal);
-
         if (required) {
             traversal.inE(PLAYS_ROLE.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {

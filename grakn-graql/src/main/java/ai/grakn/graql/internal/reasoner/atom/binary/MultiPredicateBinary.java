@@ -109,9 +109,6 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     }
 
     @Override
-    public boolean isValueUserDefinedName() { return multiPredicate.isEmpty();}
-
-    @Override
     public void unify (Map<VarName, VarName> unifiers) {
         super.unify(unifiers);
         multiPredicate.forEach(predicate -> predicate.unify(unifiers));

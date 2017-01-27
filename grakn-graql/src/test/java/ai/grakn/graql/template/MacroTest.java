@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.template;
+package ai.grakn.graql.template;
 
 import ai.grakn.graql.Graql;
 import org.junit.Test;

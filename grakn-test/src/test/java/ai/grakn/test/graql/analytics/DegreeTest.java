@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -30,12 +31,12 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -53,13 +54,16 @@ import static org.junit.Assume.assumeFalse;
 
 public class DegreeTest {
 
-    @Rule
-    public final GraphContext context = GraphContext.empty();
+    @ClassRule
+    public static final EngineContext context = EngineContext.startServer();
+    private GraknGraph graph;
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
+
+        graph = context.graphWithNewKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -74,34 +78,34 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // create instances
-        EntityType thing = context.graph().putEntityType("thing");
-        EntityType anotherThing = context.graph().putEntityType("another");
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
 
         ConceptId entity1 = thing.addEntity().getId();
         ConceptId entity2 = thing.addEntity().getId();
         ConceptId entity3 = thing.addEntity().getId();
         ConceptId entity4 = anotherThing.addEntity().getId();
 
-        RoleType role1 = context.graph().putRoleType("role1");
-        RoleType role2 = context.graph().putRoleType("role2");
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
         thing.playsRole(role1).playsRole(role2);
         anotherThing.playsRole(role1).playsRole(role2);
-        RelationType related = context.graph().putRelationType("related").hasRole(role1).hasRole(role2);
+        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
         ConceptId id1 = related.addRelation()
-                .putRolePlayer(role1, context.graph().getConcept(entity1))
-                .putRolePlayer(role2, context.graph().getConcept(entity2))
+                .putRolePlayer(role1, graph.getConcept(entity1))
+                .putRolePlayer(role2, graph.getConcept(entity2))
                 .getId();
         ConceptId id2 = related.addRelation()
-                .putRolePlayer(role1, context.graph().getConcept(entity2))
-                .putRolePlayer(role2, context.graph().getConcept(entity3))
+                .putRolePlayer(role1, graph.getConcept(entity2))
+                .putRolePlayer(role2, graph.getConcept(entity3))
                 .getId();
         ConceptId id3 = related.addRelation()
-                .putRolePlayer(role1, context.graph().getConcept(entity2))
-                .putRolePlayer(role2, context.graph().getConcept(entity4))
+                .putRolePlayer(role1, graph.getConcept(entity2))
+                .putRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
-        context.graph().commit();
+        graph.commit();
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -114,7 +118,7 @@ public class DegreeTest {
 
         // compute degrees
         long start = System.currentTimeMillis();
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(3, degrees.size());
@@ -126,7 +130,7 @@ public class DegreeTest {
         ));
 
         start = System.currentTimeMillis();
-        Map<Long, Set<String>> degrees2 = context.graph().graql().compute().degree().of("thing").execute();
+        Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
         System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(2, degrees2.size());
@@ -139,7 +143,7 @@ public class DegreeTest {
                 }
         ));
 
-        degrees2 = context.graph().graql().compute().degree().of("thing", "related").execute();
+        degrees2 = graph.graql().compute().degree().of("thing", "related").execute();
         assertEquals(3, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
         assertEquals(3, degrees2.get(2L).size());
@@ -152,7 +156,7 @@ public class DegreeTest {
         ));
 
         start = System.currentTimeMillis();
-        degrees2 = context.graph().graql().compute().degree().of().execute();
+        degrees2 = graph.graql().compute().degree().of().execute();
         System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(3, degrees2.size());
@@ -167,7 +171,7 @@ public class DegreeTest {
         ));
 
         // compute degrees on subgraph
-        Map<Long, Set<String>> degrees3 = context.graph().graql().compute().degree().in("thing", "related").execute();
+        Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in("thing", "related").execute();
         correctDegrees.put(id3, 1L);
         assertTrue(!degrees3.isEmpty());
         degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -177,7 +181,7 @@ public class DegreeTest {
                 }
         ));
 
-        degrees3 = context.graph().graql().compute().degree().of("thing").in("thing", "related").execute();
+        degrees3 = graph.graql().compute().degree().of("thing").in("thing", "related").execute();
         assertEquals(2, degrees3.size());
         assertEquals(2, degrees3.get(1L).size());
         assertEquals(1, degrees3.get(3L).size());
@@ -195,18 +199,18 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // create a simple graph
-        RoleType pet = context.graph().putRoleType("pet");
-        RoleType owner = context.graph().putRoleType("owner");
-        context.graph().putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
-        context.graph().putEntityType("person").playsRole(owner);
-        EntityType animal = context.graph().putEntityType("animal").playsRole(pet);
-        EntityType dog = context.graph().putEntityType("dog").superType(animal);
+        RoleType pet = graph.putRoleType("pet");
+        RoleType owner = graph.putRoleType("owner");
+        graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        graph.putEntityType("person").playsRole(owner);
+        EntityType animal = graph.putEntityType("animal").playsRole(pet);
+        EntityType dog = graph.putEntityType("dog").superType(animal);
         ConceptId foofoo = dog.addEntity().getId();
-        context.graph().commit();
+        graph.commit();
 
         // set subgraph
         HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("person"), TypeName.of("animal"), TypeName.of("mans-best-friend"));
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(ct).execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
 
         // check that dog has a degree to confirm sub has been inferred
         assertTrue(degrees.keySet().iterator().next().equals(0L));
@@ -218,17 +222,17 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // create a simple graph
-        RoleType pet = context.graph().putRoleType("pet");
-        RoleType owner = context.graph().putRoleType("owner");
-        RelationType mansBestFriend = context.graph().putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
-        RoleType target = context.graph().putRoleType("target");
-        RoleType value = context.graph().putRoleType("value");
-        RelationType hasName = context.graph().putRelationType("has-name").hasRole(value).hasRole(target);
-        EntityType person = context.graph().putEntityType("person").playsRole(owner);
-        EntityType animal = context.graph().putEntityType("animal").playsRole(pet).playsRole(target);
-        ResourceType<String> name = context.graph().putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
+        RoleType pet = graph.putRoleType("pet");
+        RoleType owner = graph.putRoleType("owner");
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        RoleType target = graph.putRoleType("target");
+        RoleType value = graph.putRoleType("value");
+        RelationType hasName = graph.putRelationType("has-name").hasRole(value).hasRole(target);
+        EntityType person = graph.putEntityType("person").playsRole(owner);
+        EntityType animal = graph.putEntityType("animal").playsRole(pet).playsRole(target);
+        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
         ResourceType<String> altName =
-                context.graph().putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
+                graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
 
         // add data to the graph
         Entity coco = animal.addEntity();
@@ -239,13 +243,13 @@ public class DegreeTest {
         Relation cocoName = hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, coconut);
         Relation cocoAltName = hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, stinky);
 
-        // manually compute the degree for small context.graph()
+        // manually compute the degree for small graph
         Map<ConceptId, Long> subGraphReferenceDegrees = new HashMap<>();
         subGraphReferenceDegrees.put(coco.getId(), 1L);
         subGraphReferenceDegrees.put(dave.getId(), 1L);
         subGraphReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
 
-        // manually compute degree for almost full context.graph()
+        // manually compute degree for almost full graph
         Map<ConceptId, Long> almostFullReferenceDegrees = new HashMap<>();
         almostFullReferenceDegrees.put(coco.getId(), 3L);
         almostFullReferenceDegrees.put(dave.getId(), 1L);
@@ -264,11 +268,11 @@ public class DegreeTest {
         referenceDegrees.put(cocoName.getId(), 2L);
         referenceDegrees.put(cocoAltName.getId(), 2L);
 
-        context.graph().commit();
+        graph.commit();
 
         // create a subgraph excluding resources and the relationship
         HashSet<TypeName> subGraphTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"));
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(subGraphTypes).execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -279,7 +283,7 @@ public class DegreeTest {
 
         // create a subgraph excluding resource type only
         HashSet<TypeName> almostFullTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"), TypeName.of("has-name"), TypeName.of("name"));
-        degrees = context.graph().graql().compute().degree().in(almostFullTypes).execute();
+        degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -289,7 +293,7 @@ public class DegreeTest {
         ));
 
         // full graph
-        degrees = context.graph().graql().compute().degree().execute();
+        degrees = graph.graql().compute().degree().execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -305,13 +309,13 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // create a simple graph
-        RoleType pet = context.graph().putRoleType("pet");
-        RoleType owner = context.graph().putRoleType("owner");
-        RoleType breeder = context.graph().putRoleType("breeder");
-        RelationType mansBestFriend = context.graph().putRelationType("mans-best-friend")
+        RoleType pet = graph.putRoleType("pet");
+        RoleType owner = graph.putRoleType("owner");
+        RoleType breeder = graph.putRoleType("breeder");
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .hasRole(pet).hasRole(owner).hasRole(breeder);
-        EntityType person = context.graph().putEntityType("person").playsRole(owner).playsRole(breeder);
-        EntityType animal = context.graph().putEntityType("animal").playsRole(pet);
+        EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
         Entity coco = animal.addEntity();
@@ -325,10 +329,10 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
-        context.graph().commit();
+        graph.commit();
 
         // compute and persist degrees
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
 
         // check degrees are correct
         referenceDegrees.entrySet().forEach(entry ->
@@ -344,23 +348,23 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // create a simple graph
-        RoleType pet = context.graph().putRoleType("pet");
-        RoleType owner = context.graph().putRoleType("owner");
-        RelationType mansBestFriend = context.graph().putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
-        RoleType target = context.graph().putRoleType("target");
-        RoleType value = context.graph().putRoleType("value");
-        RelationType hasName = context.graph().putRelationType("has-name").hasRole(value).hasRole(target);
-        EntityType person = context.graph().putEntityType("person").playsRole(owner);
-        EntityType animal = context.graph().putEntityType("animal").playsRole(pet).playsRole(target);
-        ResourceType<String> name = context.graph().putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
+        RoleType pet = graph.putRoleType("pet");
+        RoleType owner = graph.putRoleType("owner");
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        RoleType target = graph.putRoleType("target");
+        RoleType value = graph.putRoleType("value");
+        RelationType hasName = graph.putRelationType("has-name").hasRole(value).hasRole(target);
+        EntityType person = graph.putEntityType("person").playsRole(owner);
+        EntityType animal = graph.putEntityType("animal").playsRole(pet).playsRole(target);
+        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
         ResourceType<String> altName =
-                context.graph().putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
-        RoleType ownership = context.graph().putRoleType("ownership");
-        RoleType ownershipResource = context.graph().putRoleType("ownership-resource");
+                graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
+        RoleType ownership = graph.putRoleType("ownership");
+        RoleType ownershipResource = graph.putRoleType("ownership-resource");
         RelationType hasOwnershipResource =
-                context.graph().putRelationType("has-ownership-resource").hasRole(ownership).hasRole(ownershipResource);
+                graph.putRelationType("has-ownership-resource").hasRole(ownership).hasRole(ownershipResource);
         ResourceType<String> startDate =
-                context.graph().putResourceType("start-date", ResourceType.DataType.STRING).playsRole(ownershipResource);
+                graph.putResourceType("start-date", ResourceType.DataType.STRING).playsRole(ownershipResource);
         mansBestFriend.playsRole(ownership);
 
         // add data to the graph
@@ -390,12 +394,12 @@ public class DegreeTest {
         referenceDegrees2.put(dave.getId(), 1L);
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
-        context.graph().commit();
+        graph.commit();
 
         // create a subgraph with assertion on assertion
         HashSet<TypeName> ct =
                 Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"), TypeName.of("start-date"), TypeName.of("has-ownership-resource"));
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(ct).execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
         assertTrue(!degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -409,7 +413,7 @@ public class DegreeTest {
         ct.add(TypeName.of("animal"));
         ct.add(TypeName.of("person"));
         ct.add(TypeName.of("mans-best-friend"));
-        degrees = context.graph().graql().compute().degree().in(ct).execute();
+        degrees = graph.graql().compute().degree().in(ct).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -426,17 +430,17 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // make relation
-        RoleType productionWithCast = context.graph().putRoleType("production-with-cast");
-        RoleType actor = context.graph().putRoleType("actor");
-        RoleType characterBeingPlayed = context.graph().putRoleType("character-being-played");
-        RelationType hasCast = context.graph().putRelationType("has-cast")
+        RoleType productionWithCast = graph.putRoleType("production-with-cast");
+        RoleType actor = graph.putRoleType("actor");
+        RoleType characterBeingPlayed = graph.putRoleType("character-being-played");
+        RelationType hasCast = graph.putRelationType("has-cast")
                 .hasRole(productionWithCast)
                 .hasRole(actor)
                 .hasRole(characterBeingPlayed);
 
-        EntityType movie = context.graph().putEntityType("movie").playsRole(productionWithCast);
-        EntityType person = context.graph().putEntityType("person").playsRole(actor);
-        EntityType character = context.graph().putEntityType("character").playsRole(characterBeingPlayed);
+        EntityType movie = graph.putEntityType("movie").playsRole(productionWithCast);
+        EntityType person = graph.putEntityType("person").playsRole(actor);
+        EntityType character = graph.putEntityType("character").playsRole(characterBeingPlayed);
 
         Entity godfather = movie.addEntity();
         Entity marlonBrando = person.addEntity();
@@ -449,9 +453,9 @@ public class DegreeTest {
                 .putRolePlayer(characterBeingPlayed, donVitoCorleone);
         ConceptId relationId = relation.getId();
 
-        context.graph().commit();
+        graph.commit();
 
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         assertTrue(degrees.get(3L).contains(relationId.getValue()));
         assertTrue(degrees.get(1L).contains(marlonId.getValue()));
     }
@@ -463,13 +467,13 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // create a simple graph
-        RoleType pet = context.graph().putRoleType("pet");
-        RoleType owner = context.graph().putRoleType("owner");
-        RoleType breeder = context.graph().putRoleType("breeder");
-        RelationType mansBestFriend = context.graph().putRelationType("mans-best-friend")
+        RoleType pet = graph.putRoleType("pet");
+        RoleType owner = graph.putRoleType("owner");
+        RoleType breeder = graph.putRoleType("breeder");
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .hasRole(pet).hasRole(owner).hasRole(breeder);
-        EntityType person = context.graph().putEntityType("person").playsRole(owner).playsRole(breeder);
-        EntityType animal = context.graph().putEntityType("animal").playsRole(pet);
+        EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
         Entity coco = animal.addEntity();
@@ -486,9 +490,9 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 2L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
 
-        context.graph().commit();
+        graph.commit();
 
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {
@@ -505,14 +509,14 @@ public class DegreeTest {
         assumeFalse(usingTinker());
 
         // create a simple graph
-        RoleType pet = context.graph().putRoleType("pet");
-        RoleType owner = context.graph().putRoleType("owner");
-        RoleType breeder = context.graph().putRoleType("breeder");
-        RelationType mansBestFriend = context.graph().putRelationType("mans-best-friend")
+        RoleType pet = graph.putRoleType("pet");
+        RoleType owner = graph.putRoleType("owner");
+        RoleType breeder = graph.putRoleType("breeder");
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .hasRole(pet).hasRole(owner).hasRole(breeder);
-        EntityType person = context.graph().putEntityType("person").playsRole(owner).playsRole(breeder);
-        EntityType dog = context.graph().putEntityType("dog").playsRole(pet);
-        EntityType cat = context.graph().putEntityType("cat").playsRole(pet);
+        EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType dog = graph.putEntityType("dog").playsRole(pet);
+        EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
         Entity beast = dog.addEntity();
@@ -531,12 +535,12 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsBeast.getId(), 2L);
 
         // validate
-        context.graph().commit();
+        graph.commit();
 
         // check degree for dave owning cats
         //TODO: should we count the relationship even if there is no cat attached?
         HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("mans-best-friend"), TypeName.of("cat"), TypeName.of("person"));
-        Map<Long, Set<String>> degrees = context.graph().graql().compute().degree().in(ct).execute();
+        Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
                 id -> {

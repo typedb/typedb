@@ -87,7 +87,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         Resource<D> resource = getResource(value);
         if(resource == null){
             resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->
-                    getGraknGraph().getElementFactory().buildResource(vertex, type, value));
+                    getGraknGraph().getElementFactory().buildResource(vertex, Optional.of(type), Optional.of(value)));
         }
         return resource;
 

@@ -18,13 +18,17 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -45,6 +49,7 @@ import org.junit.rules.ExpectedException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -74,6 +79,7 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -501,25 +507,35 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testPlaysRoleSub() {
+    public void testGraqlPlaysRoleSemanticsMatchGraphAPI() {
+        TypeName a = TypeName.of("a");
+        TypeName b = TypeName.of("b");
+        TypeName c = TypeName.of("c");
+        TypeName d = TypeName.of("d");
+        TypeName e = TypeName.of("e");
+        TypeName f = TypeName.of("f");
+
         qb.insert(
-                name("c").sub(name("b").sub(name("a").sub("entity"))),
-                name("f").sub(name("e").sub(name("d").sub("role"))),
-                name("b").playsRole("e")
+                name(c).sub(name(b).sub(name(a).sub("entity"))),
+                name(f).sub(name(e).sub(name(d).sub("role"))),
+                name(b).playsRole(name(e))
         ).execute();
 
-        // Make sure SUBs are followed correctly...
-        assertTrue(qb.match(name("b").playsRole("e")).ask().execute());
-        assertTrue(qb.match(name("b").playsRole("f")).ask().execute());
-        assertTrue(qb.match(name("c").playsRole("e")).ask().execute());
-        assertTrue(qb.match(name("c").playsRole("f")).ask().execute());
+        GraknGraph graph = movieGraph.graph();
 
-        // ...and not incorrectly
-        assertFalse(qb.match(name("a").playsRole("d")).ask().execute());
-        assertFalse(qb.match(name("a").playsRole("e")).ask().execute());
-        assertFalse(qb.match(name("a").playsRole("f")).ask().execute());
-        assertFalse(qb.match(name("b").playsRole("d")).ask().execute());
-        assertFalse(qb.match(name("c").playsRole("d")).ask().execute());
+        Stream.of(a, b, c, d, e, f).forEach(type -> {
+            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(toSet());
+            Collection<RoleType> graphAPIPlaysRoles = graph.getType(type).playsRoles();
+
+            assertThat(graqlPlaysRoles, is(graphAPIPlaysRoles));
+        });
+
+        Stream.of(d, e, f).forEach(type -> {
+            Set<Concept> graqlPlayedBy = qb.match(var("x").playsRole(name(type))).get("x").collect(toSet());
+            Collection<Type> graphAPIPlayedBy = graph.<RoleType>getType(type).playedByTypes();
+
+            assertThat(graqlPlayedBy, is(graphAPIPlayedBy));
+        });
 
         // clean graph of inserts
         movieGraph.rollback();
@@ -729,6 +745,25 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void testPlaysQuery() {
+        List<Map<String, Concept>> queryWithRelation = qb.match(var().rel("actor", "x")).distinct().execute();
+        List<Map<String, Concept>> queryWithPlays = qb.match(var("x").plays("actor")).execute();
+
+        assertEquals(queryWithRelation, queryWithPlays);
+    }
+
+    @Test
+    public void testPlaysQueryVariable() {
+        MatchQuery query = qb.match(var().has("title", "Godfather").plays(var("x")));
+        Set<String> roles = query.get("x").map(concept -> concept.asType().getName().getValue()).collect(toSet());
+
+        assertEquals(
+                Sets.newHashSet("production-with-cast", "production-with-genre", "production-with-cluster", "concept", "role"),
+                roles
+        );
+    }
+
+    @Test
     public void testMatchHasResource() {
         MatchQuery query = qb.match(var("x").hasResource("name"));
 
@@ -782,7 +817,7 @@ public class MatchQueryTest {
 
         assertThat(types, allOf(hasItem("movie"), not(hasItem("has-title"))));
 
-        GraknGraph graph2 = Grakn.factory(Grakn.DEFAULT_URI, movieGraph.graph().getKeyspace()).getGraph();
+        GraknGraph graph2 = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(movieGraph.graph().getKeyspace());
         Set<String> typesAgain = graph2.graql().match(var("x").sub("concept")).get("x").map(type -> type.asType().getName().getValue()).collect(toSet());
 
         assertEquals(types, typesAgain);

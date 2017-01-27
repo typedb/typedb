@@ -97,10 +97,12 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testPlayedByTypes(){
         RoleType crewMember = graknGraph.putRoleType("crew-member").setAbstract(true);
-        EntityType person = graknGraph.putEntityType("person").playsRole(crewMember);
+        EntityType human = graknGraph.putEntityType("human").playsRole(crewMember);
+        EntityType person = graknGraph.putEntityType("person").superType(human);
 
-        assertEquals(1, crewMember.playedByTypes().size());
-        assertEquals(person, crewMember.playedByTypes().iterator().next());
+        assertEquals(2, crewMember.playedByTypes().size());
+        assertTrue(crewMember.playedByTypes().contains(human));
+        assertTrue(crewMember.playedByTypes().contains(person));
     }
 
     @Test
@@ -197,5 +199,22 @@ public class RoleTypeTest extends GraphTestBase {
         assertEquals(2, roleType.relationTypes().size());
         assertTrue(roleType.relationTypes().contains(relationType));
         assertTrue(roleType.relationTypes().contains(relationType2));
+    }
+
+    @Test
+    public void testCastingsAreReturnedFromRoleType(){
+        RoleTypeImpl roleA = (RoleTypeImpl) graknGraph.putRoleType("roleA");
+        RoleType roleB = graknGraph.putRoleType("roleB");
+        EntityType entityType = graknGraph.putEntityType("entityType");
+        Entity a = entityType.addEntity();
+        Entity b = entityType.addEntity();
+
+        relationType.addRelation().
+                putRolePlayer(roleA, a).
+                putRolePlayer(roleB, b);
+
+        assertEquals(1, roleA.castings().size());
+        CastingImpl casting = roleA.castings().iterator().next();
+        assertEquals(roleA, casting.type());
     }
 }

@@ -71,9 +71,11 @@ import static ai.grakn.util.Schema.MetaSchema.RELATION;
 import static ai.grakn.util.Schema.MetaSchema.ROLE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static ai.grakn.test.GraknTestEnv.*;
@@ -468,6 +470,36 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testParseSumAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate sum $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseMaxAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate max $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseMinAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate min $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseAverageAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate average $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
+    public void testParseMedianAggregate() {
+        String query = "match $x has tmdb-vote-count $t; aggregate median $t;";
+        assertEquals(query, parse(query).toString());
+    }
+
+    @Test
     public void testCustomAggregate() {
         QueryBuilder qb = graph.graql();
 
@@ -487,6 +519,16 @@ public class QueryParserTest {
         Concept result = query.execute();
 
         assertEquals("movie", result.asInstance().type().getName().getValue());
+    }
+
+    @Test
+    public void testParsePlaysName() {
+        assertParseEquivalence("match $x plays actor;");
+    }
+
+    @Test
+    public void testParsePlaysVariables() {
+        assertParseEquivalence("match $x plays $y;");
     }
 
     @Test
@@ -683,6 +725,12 @@ public class QueryParserTest {
             List<Query<?>> queries = Graql.parseList(option);
             assertEquals(option, 2, queries.size());
         });
+    }
+
+    @Test
+    public void testParseHasWithoutValueOrVariable() {
+        MatchQuery query = qb.parse("match $x has name; limit 10;");
+        assertThat(query.execute(), hasSize(10));
     }
 
     @Test(expected = IllegalArgumentException.class)
