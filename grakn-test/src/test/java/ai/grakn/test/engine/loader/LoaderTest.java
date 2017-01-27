@@ -110,7 +110,7 @@ public class LoaderTest {
     public void whenLoadingNormalDataThenDontTimeout(){
         // test the the total duration is longer than the timeout
         // however, the individual tasks will be completing faster than the timeout
-        int timeout = 10000;
+        int timeout = 100;
         long startTime = System.currentTimeMillis();
         loadAndTime(timeout);
         long endTime = System.currentTimeMillis();
