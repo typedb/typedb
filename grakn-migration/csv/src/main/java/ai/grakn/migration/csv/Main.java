@@ -94,7 +94,7 @@ public class Main {
 
         if (newClusterManager) {
             try {
-                manager.stop();
+                manager.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
