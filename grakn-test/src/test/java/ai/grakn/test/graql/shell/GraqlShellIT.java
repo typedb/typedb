@@ -153,7 +153,7 @@ public class GraqlShellIT {
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-f", "src/test/graql/shell-test.gql");
-        assertEquals(err.toString(), "");
+        assertEquals("", err.toString());
     }
 
     @Test
