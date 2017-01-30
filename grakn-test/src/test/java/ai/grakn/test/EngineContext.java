@@ -80,17 +80,14 @@ public class EngineContext extends ExternalResource {
         hideLogs();
 
         if(startKafka){
-            System.out.println("kafkas");
             startKafka();
         }
 
         if (startDistributedEngine){
-            System.out.println("disengines");
             startEngine(false);
         }
 
         if (startInMemoryEngine){
-            System.out.println("engines");
             startEngine(true);
         }
     }
@@ -99,12 +96,10 @@ public class EngineContext extends ExternalResource {
     protected void after() {
         try {
             if(startDistributedEngine | startInMemoryEngine){
-                System.out.println("engine");
                 stopEngine();
             }
 
             if(startKafka){
-                System.out.println("kafka");
                 stopKafka();
             }
         } catch (Exception e){

@@ -93,11 +93,8 @@ public abstract class GraknTestEnv {
             LOG.info("STOPPING ENGINE...");
 
             GraknEngineServer.stop();
-            System.out.println("after stop");
             clearGraphs();
-            System.out.println("after clear");
             GraknEngineServer.stopHTTP();
-            System.out.println("after http");
 
             LOG.info("ENGINE STOPPED.");
         }

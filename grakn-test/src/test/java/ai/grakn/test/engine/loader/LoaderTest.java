@@ -74,14 +74,6 @@ public class LoaderTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startDistributedServer();
 
-    @BeforeClass
-    public static void startup() throws Exception {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-    }
-
     @Before
     public void setup() {
         graph = engine.graphWithNewKeyspace();
