@@ -65,7 +65,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -235,7 +234,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return new QueryBuilderImpl(this);
     }
 
-    public ElementFactory getElementFactory(){
+    ElementFactory getElementFactory(){
         return elementFactory;
     }
 
@@ -319,7 +318,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public EntityType putEntityType(TypeName name) {
         return putType(name, Schema.BaseType.ENTITY_TYPE,
-                v -> elementFactory.buildEntityType(v, Optional.of(getMetaEntityType())));
+                v -> elementFactory.buildEntityType(v, getMetaEntityType()));
     }
 
     private <V extends Type> V putType(TypeName name, Schema.BaseType baseType, Function<Vertex, V> factory){
@@ -335,12 +334,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RelationType putRelationType(TypeName name) {
         return putType(name, Schema.BaseType.RELATION_TYPE,
-                v -> elementFactory.buildRelationType(v, Optional.of(getMetaRelationType()), Optional.empty())).asRelationType();
+                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
     }
 
     RelationType putRelationTypeImplicit(TypeName name) {
         return putType(name, Schema.BaseType.RELATION_TYPE,
-                v -> elementFactory.buildRelationType(v, Optional.of(getMetaRelationType()), Optional.of(Boolean.TRUE))).asRelationType();
+                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
     }
 
     @Override
@@ -351,12 +350,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RoleType putRoleType(TypeName name) {
         return putType(name, Schema.BaseType.ROLE_TYPE,
-                v -> elementFactory.buildRoleType(v, Optional.of(getMetaRoleType()), Optional.empty())).asRoleType();
+                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
     RoleType putRoleTypeImplicit(TypeName name) {
         return putType(name, Schema.BaseType.ROLE_TYPE,
-                v -> elementFactory.buildRoleType(v, Optional.of(getMetaRoleType()), Optional.of(Boolean.TRUE))).asRoleType();
+                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
     @Override
@@ -368,7 +367,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
         return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> elementFactory.buildResourceType(v, Optional.of(getMetaResourceType()), Optional.of(dataType), Optional.of(Boolean.FALSE))).asResourceType();
+                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.FALSE)).asResourceType();
     }
 
     @Override
@@ -380,7 +379,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
         return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> elementFactory.buildResourceType(v, Optional.of(getMetaResourceType()), Optional.of(dataType), Optional.of(Boolean.TRUE))).asResourceType();
+                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.TRUE)).asResourceType();
     }
 
     @Override
@@ -391,7 +390,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RuleType putRuleType(TypeName name) {
         return putType(name, Schema.BaseType.RULE_TYPE,
-                v ->  elementFactory.buildRuleType(v, Optional.of(getMetaRuleType())));
+                v ->  elementFactory.buildRuleType(v, getMetaRuleType()));
     }
 
     //------------------------------------ Lookup
@@ -507,7 +506,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //-----------------------------------------------Casting Functionality----------------------------------------------
     //------------------------------------ Construction
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), Optional.of(role)).setHash(role, rolePlayer);
+        CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
             castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());

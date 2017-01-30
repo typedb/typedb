@@ -58,19 +58,23 @@ public class GeoInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    @Ignore
     @Test
     public void testQueryPrime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $x isa city;$x has name $name;"+
-                "($x, $y) isa is-located-in;$y isa country;$y has name 'Poland'; select $x, $name;";
-
+        String queryString = "match $z1 isa city;$z1 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1, $name;";
+        String queryString2 = "match $z2 isa city;$z2 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
         String explicitQuery = "match " +
-                "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
+                "$z1 isa city;$z1 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z1, $name;";
+        String explicitQuery2 = "match " +
+                "$z2 isa city;$z2 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z2, $name;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
 
     @Test
@@ -80,7 +84,6 @@ public class GeoInferenceTest {
         String queryString = "match $x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                 "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
@@ -89,20 +92,24 @@ public class GeoInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    @Ignore
     @Test
     public void testQuery2Prime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $x isa university;$x has name $name;"+
-                "($x, $y) isa is-located-in;"+
-                "$y isa country;$y has name 'Poland'; select $x, $name;";
-        MatchQuery query = qb.parse(queryString);
+        String queryString = "match $z1 isa university;$z1 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1, $name;";
+        String queryString2 = "match $z2 isa university;$z2 has name $name;"+
+                "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
         String explicitQuery = "match " +
-                "$x isa university;$x has name $name;" +
-                "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
+                "$z1 isa university;$z1 has name $name;" +
+                "{$z1 has name 'University-of-Warsaw';} or {$z1 has name'Warsaw-Polytechnics';};";
+        String explicitQuery2 = "match " +
+                "$z2 isa university;$z2 has name $name;" +
+                "{$z2 has name 'University-of-Warsaw';} or {$z2 has name'Warsaw-Polytechnics';};";
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

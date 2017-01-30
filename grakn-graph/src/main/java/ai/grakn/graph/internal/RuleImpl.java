@@ -27,7 +27,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 
 /**
  * <p>
@@ -44,10 +43,14 @@ import java.util.Optional;
  *
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs) {
+    RuleImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RuleImpl(AbstractGraknGraph graknGraph, Vertex v, RuleType type, Pattern lhs, Pattern rhs) {
         super(graknGraph, v, type);
-        lhs.ifPresent(l -> setImmutableProperty(Schema.ConceptProperty.RULE_LHS, l, getLHS(), Pattern::toString));
-        rhs.ifPresent(r -> setImmutableProperty(Schema.ConceptProperty.RULE_RHS, r, getRHS(), Pattern::toString));
+        setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
+        setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
     }
 
     //TODO: Fill out details on this method
