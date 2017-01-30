@@ -93,8 +93,11 @@ public abstract class GraknTestEnv {
             LOG.info("STOPPING ENGINE...");
 
             GraknEngineServer.stop();
+            System.out.println("after stop");
             clearGraphs();
+            System.out.println("after clear");
             GraknEngineServer.stopHTTP();
+            System.out.println("after http");
 
             LOG.info("ENGINE STOPPED.");
         }
@@ -114,9 +117,6 @@ public abstract class GraknTestEnv {
                     EngineGraknGraph graph = engineGraknGraphFactory.getGraph(name);
                     graph.clear();
                 }));
-
-        // Drop the system keyspaces too
-        systemGraph.clear();
 
         engineGraknGraphFactory.refreshConnections();
     }

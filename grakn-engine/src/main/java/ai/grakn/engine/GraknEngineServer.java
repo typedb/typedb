@@ -91,6 +91,9 @@ public class GraknEngineServer {
     }
 
     public static void stop() throws Exception {
+        //TODO there is a bug where clear() on graphs still submits to the commit log (#12388). We
+        //TODO cannot stop http here until that is fixed, because in tests after stopping engine
+        //TODO we need to clear the graphs
 //        stopHTTP();
         stopTaskManager();
     }
