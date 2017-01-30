@@ -36,6 +36,8 @@ import java.util.Optional;
 
 /**
  * Internal query factory
+ *
+ * @author Felix Chapman
  */
 public class Queries {
 

@@ -30,6 +30,8 @@ import java.util.Optional;
 
 /**
  * Factory for making {@link Aggregate} implementations.
+ *
+ * @author Felix Chapman
  */
 public class Aggregates {
 

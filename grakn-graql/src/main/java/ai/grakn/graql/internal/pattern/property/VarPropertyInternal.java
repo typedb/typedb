@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 
 /**
  * Internal interface for {@link VarProperty}, providing additional methods to match, insert or delete the property.
+ *
+ * @author Felix Chapman
  */
 public interface VarPropertyInternal extends VarProperty {
 

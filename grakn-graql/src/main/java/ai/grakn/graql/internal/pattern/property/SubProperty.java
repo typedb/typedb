@@ -46,6 +46,8 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  *
  * This property relates a {@link ai.grakn.concept.Type} and another {@link ai.grakn.concept.Type}. It indicates
  * that every instance of the left type is also an instance of the right type.
+ *
+ * @author Felix Chapman
  */
 public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 

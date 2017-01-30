@@ -42,6 +42,8 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  * This property relates an {@link ai.grakn.concept.Instance} and a {@link ai.grakn.concept.RoleType}. It indicates
  * that an {@link ai.grakn.concept.Instance} must be a role-player in a {@link ai.grakn.concept.Relation} where it plays
  * the role of the {@link ai.grakn.concept.RoleType}.
+ *
+ * @author Felix Chapman
  */
 public class PlaysProperty extends AbstractVarProperty implements NamedProperty {
 

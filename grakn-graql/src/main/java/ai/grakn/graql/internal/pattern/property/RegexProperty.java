@@ -39,6 +39,8 @@ import java.util.Set;
  *
  * This property introduces a validation constraint on instances of this {@link ResourceType}, stating that their
  * values must conform to the given regular expression.
+ *
+ * @author Felix Chapman
  */
 public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty, NamedProperty {
 

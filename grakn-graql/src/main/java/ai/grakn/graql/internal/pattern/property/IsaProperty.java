@@ -52,6 +52,8 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  *
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@ode $bob isa person} and {@bob isa entity}.
+ *
+ * @author Felix Chapman
  */
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 

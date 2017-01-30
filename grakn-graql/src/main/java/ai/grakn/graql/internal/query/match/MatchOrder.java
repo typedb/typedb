@@ -26,6 +26,8 @@ import java.util.stream.Stream;
 
 /**
  * An interface for handling ordering match queries.
+ *
+ * @author Felix Chapman
  */
 public interface MatchOrder {
     VarName getVar();

@@ -26,6 +26,8 @@ import java.util.function.Function;
 
 /**
  * Factory method for {@link Printer} implementations, for printing Graql results in multiple ways.
+ *
+ * @author Felix Chapman
  */
 public class Printers {
 

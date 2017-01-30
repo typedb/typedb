@@ -52,6 +52,8 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Base MatchQuery implementation that executes the gremlin traversal
+ *
+ * @author Felix Chapman
  */
 public class MatchQueryBase extends AbstractMatchQuery {
 

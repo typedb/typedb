@@ -70,6 +70,8 @@ import static java.util.stream.Collectors.toSet;
  *
  * This propert is comprised of instances of {@link RelationPlayer}, which represents associations between a
  * role-player {@link Instance} and an optional {@link RoleType}.
+ *
+ * @author Felix Chapman
  */
 public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 

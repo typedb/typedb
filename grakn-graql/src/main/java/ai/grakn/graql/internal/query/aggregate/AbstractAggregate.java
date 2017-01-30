@@ -27,6 +27,8 @@ import ai.grakn.graql.NamedAggregate;
  *
  * @param <T> The input type to the aggregate.
  * @param <S> The result type of the aggregate.
+ *
+ * @author Felix Chapman
  */
 public abstract class AbstractAggregate<T, S> implements Aggregate<T, S> {
 

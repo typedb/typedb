@@ -63,6 +63,8 @@ import static java.util.stream.Collectors.joining;
  *
  * When inserting, an implicit relation is created between the instance and the resource, using type names derived from
  * the name of the resource type.
+ *
+ * @author Felix Chapman
  */
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 

@@ -35,6 +35,8 @@ import java.util.Set;
  *
  * This property can be queried. While this property cannot be inserted, if used in an insert query any existing concept
  * with the given ID will be retrieved.
+ *
+ * @author Felix Chapman
  */
 public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 

@@ -37,6 +37,8 @@ import java.util.stream.Stream;
  * This property can be queried. It asserts identity inequality between two concepts. Concepts may have shared
  * properties but still be distinct. For example, two instances of a type without any resources are still considered
  * unequal. Similarly, two resources with the same value but of different types are considered unequal.
+ *
+ * @author Felix Chapman
  */
 public class NeqProperty extends AbstractVarProperty implements NamedProperty {
 

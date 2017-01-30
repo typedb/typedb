@@ -38,6 +38,8 @@ import java.util.stream.Stream;
  * This property can be queried or inserted.
  *
  * This property matches only resources whose value matches the given {@link ValuePredicate}.
+ *
+ * @author Felix Chapman
  */
 public class ValueProperty extends AbstractVarProperty implements NamedProperty, SingleFragmentProperty {
 

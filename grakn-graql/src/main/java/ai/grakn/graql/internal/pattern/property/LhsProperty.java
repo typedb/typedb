@@ -37,6 +37,8 @@ import java.util.Set;
  *
  * The left-hand side describes the left-hand of an implication, stating that when the left-hand side of a rule is true
  * the right-hand side must hold.
+ *
+ * @author Felix Chapman
  */
 public class LhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty{
 

@@ -51,6 +51,8 @@ import static ai.grakn.graql.Graql.name;
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link ResourceType},
  * including one implicit {@link RelationType} and two implicit {@link RoleType}s. The names of these types are derived
  * from the name of the {@link ResourceType}.
+ *
+ * @author Felix Chapman
  */
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 

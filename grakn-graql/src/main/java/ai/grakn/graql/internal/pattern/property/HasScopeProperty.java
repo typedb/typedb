@@ -47,6 +47,8 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  * This property can be queried, inserted or deleted.
  *
  * This property relates a {@link Relation} and an {@link Instance}, where the instance behaves as the "scope".
+ *
+ * @author Felix Chapman
  */
 public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 

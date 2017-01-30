@@ -33,6 +33,8 @@ import static ai.grakn.util.Schema.EdgeLabel.SUB;
 
 /**
  * Factory for creating instances of {@link Fragment}.
+ *
+ * @author Felix Chapman
  */
 public class Fragments {
 

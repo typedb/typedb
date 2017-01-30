@@ -32,6 +32,8 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for converting Graql strings, used in the parser and for toString methods
+ *
+ * @author Felix Chapman
  */
 public class StringConverter {
 

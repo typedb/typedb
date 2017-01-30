@@ -36,6 +36,8 @@ import java.util.Set;
  *
  * The insertion behaviour is not implemented here, but instead in
  * {@link ai.grakn.graql.internal.query.InsertQueryExecutor}.
+ *
+ * @author Felix Chapman
  */
 public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 

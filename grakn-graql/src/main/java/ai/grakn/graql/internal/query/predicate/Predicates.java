@@ -23,6 +23,8 @@ import ai.grakn.graql.admin.VarAdmin;
 
 /**
  * Factory method for {@link ValuePredicate} implementations.
+ *
+ * @author Felix Chapman
  */
 public class Predicates {
 

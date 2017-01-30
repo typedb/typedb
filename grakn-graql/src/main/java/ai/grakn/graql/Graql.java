@@ -43,6 +43,8 @@ import java.util.stream.Stream;
  * Main class containing static methods for creating Graql queries.
  *
  * It is recommended you statically import these methods.
+ *
+ * @author Felix Chapman
  */
 public class Graql {
 
