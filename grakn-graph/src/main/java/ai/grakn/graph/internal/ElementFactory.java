@@ -30,8 +30,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-
 /**
  * <p>
  *     Constructs Concepts And Edges
@@ -57,53 +55,61 @@ final class ElementFactory {
     }
 
     // ------------------------------------------- Building Castings  --------------------------------------------------
-    CastingImpl buildCasting(Vertex v, Optional<RoleType> type){
+    CastingImpl buildCasting(Vertex v, RoleType type){
         return trackConcept(new CastingImpl(graknGraph, v, type));
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Optional<ResourceType<V>> type, Optional<ResourceType.DataType<V>> dataType, Optional<Boolean> isUnique){
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
         return trackConcept(new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(Vertex v, Optional<ResourceType<V>> type, Optional<V> value){
+    <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
         return trackConcept(new ResourceImpl<>(graknGraph, v, type, value));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    RelationTypeImpl buildRelationType(Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit){
-        return trackConcept(new RelationTypeImpl(graknGraph, v, type, isImplicit));
+    RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
+        if(isImplicit) {
+            return trackConcept(new RelationTypeImpl(graknGraph, v, type, true));
+        } else {
+            return trackConcept(new RelationTypeImpl(graknGraph, v, type)); //No need to save something as non-implicit.
+        }
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(Vertex v, Optional<RelationType> type){
+    RelationImpl buildRelation(Vertex v, RelationType type){
         return trackConcept(new RelationImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    EntityTypeImpl buildEntityType(Vertex v, Optional<EntityType> type){
+    EntityTypeImpl buildEntityType(Vertex v, EntityType type){
         return trackConcept(new EntityTypeImpl(graknGraph, v, type));
     }
 
     // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(Vertex v, Optional<EntityType> type){
+    EntityImpl buildEntity(Vertex v, EntityType type){
         return trackConcept(new EntityImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    RuleTypeImpl buildRuleType(Vertex v, Optional<RuleType> type){
+    RuleTypeImpl buildRuleType(Vertex v, RuleType type){
         return trackConcept(new RuleTypeImpl(graknGraph, v, type));
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(Vertex v, Optional<RuleType> type, Optional<Pattern> lhs, Optional<Pattern> rhs){
+    RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
         return trackConcept(new RuleImpl(graknGraph, v, type, lhs, rhs));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleTypeImpl buildRoleType(Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit){
-        return trackConcept(new RoleTypeImpl(graknGraph, v, type, isImplicit));
+    RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
+        if(isImplicit) {
+            return trackConcept(new RoleTypeImpl(graknGraph, v, type, true));
+        } else {
+            return trackConcept(new RoleTypeImpl(graknGraph, v, type));
+        }
     }
 
     /**
@@ -125,37 +131,37 @@ final class ElementFactory {
         ConceptImpl concept = null;
         switch (type){
             case RELATION:
-                concept = new RelationImpl(graknGraph, v, Optional.empty());
+                concept = new RelationImpl(graknGraph, v);
                 break;
             case CASTING:
-                concept = new CastingImpl(graknGraph, v, Optional.empty());
+                concept = new CastingImpl(graknGraph, v);
                 break;
             case TYPE:
-                concept = new TypeImpl<>(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new TypeImpl<>(graknGraph, v);
                 break;
             case ROLE_TYPE:
-                concept = new RoleTypeImpl(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new RoleTypeImpl(graknGraph, v);
                 break;
             case RELATION_TYPE:
-                concept = new RelationTypeImpl(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new RelationTypeImpl(graknGraph, v);
                 break;
             case ENTITY:
-                concept = new EntityImpl(graknGraph, v, Optional.empty());
+                concept = new EntityImpl(graknGraph, v);
                 break;
             case ENTITY_TYPE:
-                concept = new EntityTypeImpl(graknGraph, v, Optional.empty());
+                concept = new EntityTypeImpl(graknGraph, v);
                 break;
             case RESOURCE_TYPE:
-                concept = new ResourceTypeImpl<>(graknGraph, v, Optional.empty(), Optional.empty(), Optional.empty());
+                concept = new ResourceTypeImpl<>(graknGraph, v);
                 break;
             case RESOURCE:
-                concept = new ResourceImpl<>(graknGraph, v, Optional.empty(), Optional.empty());
+                concept = new ResourceImpl<>(graknGraph, v);
                 break;
             case RULE:
-                concept = new RuleImpl(graknGraph, v, Optional.empty(), Optional.empty(), Optional.empty());
+                concept = new RuleImpl(graknGraph, v);
                 break;
             case RULE_TYPE:
-                concept = new RuleTypeImpl(graknGraph, v, Optional.empty());
+                concept = new RuleTypeImpl(graknGraph, v);
                 break;
         }
 
