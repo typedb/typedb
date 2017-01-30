@@ -48,6 +48,8 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Task that will load data into the graph
+ *
+ * @author Alexandra Orth
  */
 public class LoaderTask implements BackgroundTask {
 

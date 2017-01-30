@@ -24,6 +24,8 @@ import java.util.function.Consumer;
 
 /**
  * Interface which all tasks that wish to be scheduled for later execution as background tasks must implement.
+ *
+ * @author Denis Lobanov
  */
 public interface BackgroundTask {
     /**

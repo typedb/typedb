@@ -59,6 +59,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * Handle execution of recurring tasks.
  * Monitor new tasks queue to add them to ScheduledExecutorService.
  * ScheduledExecutorService will be given a function to add the task in question to the work queue.
+ *
+ * @author Denis Lobanov
  */
 public class Scheduler implements Runnable, AutoCloseable {
     private final static ConfigProperties properties = ConfigProperties.getInstance();
