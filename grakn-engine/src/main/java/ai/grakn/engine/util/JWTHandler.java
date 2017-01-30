@@ -30,6 +30,13 @@ import java.security.SignatureException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * <p>
+ *     Retrieves and verifies user data using JWT
+ * </p>
+ *
+ * @author Marco Scoppetta
+ */
 public class JWTHandler {
 
     static private final String issuer = "https://grakn.ai/";

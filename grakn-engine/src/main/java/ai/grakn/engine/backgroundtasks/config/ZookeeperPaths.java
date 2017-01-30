@@ -18,7 +18,13 @@
 
 package ai.grakn.engine.backgroundtasks.config;
 
-
+/**
+ * <p>
+ * Class containing strings that describe the file storage locations in Zookeeper
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public interface ZookeeperPaths {
     String TASKS_NAMESPACE = "grakn";
     String SCHEDULER = "/scheduler";

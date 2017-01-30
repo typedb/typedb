@@ -20,6 +20,13 @@ package ai.grakn.engine.util;
 
 import ai.grakn.concept.TypeName;
 
+/**
+ * <p>
+ *     Describes the system ontology elements related to task loading
+ * </p>
+ *
+ * @author Denis Lobanov
+ */
 public interface SystemOntologyElements {
     TypeName SCHEDULED_TASK = TypeName.of("scheduled-task");
     TypeName STATUS = TypeName.of("status");

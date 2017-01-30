@@ -58,6 +58,18 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
+/**
+ * <p>
+ *      Picks up tasks from the work queue, runs them and marks them as completed or failed.
+ * </p>
+ *
+ * <p>
+ *     Runs tasks in a pool. The size of this pool is configurable in the properties file.
+ *     Controls marking the state of running TaskRunner in Zookeeper.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class TaskRunner implements Runnable, AutoCloseable {
     private final static KafkaLogger LOG = KafkaLogger.getInstance();
     private final static ConfigProperties properties = ConfigProperties.getInstance();

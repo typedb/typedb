@@ -41,6 +41,13 @@ import static spark.Spark.get;
 import static spark.Spark.post;
 import static spark.Spark.put;
 
+/**
+ * <p>
+ *     Endpoint used to control user interaction.
+ * </p>
+ *
+ * @author Marco Scoppetta
+ */
 @Path("/user")
 @Produces({"application/json", "text/plain"})
 public class UserController {

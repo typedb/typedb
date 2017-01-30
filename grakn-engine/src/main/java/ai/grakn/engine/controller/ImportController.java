@@ -59,6 +59,13 @@ import static spark.Spark.before;
 import static spark.Spark.halt;
 import static spark.Spark.post;
 
+/**
+ * <p>
+ *     Endpoints to import Graql data from a file.
+ * </p>
+ *
+ * @author Marco Scoppetta, Felix Chapman, alexandraorth
+ */
 @Api(value = "/import", description = "Endpoints to import Graql data from a file.")
 @Path("/import")
 @Produces("text/plain")

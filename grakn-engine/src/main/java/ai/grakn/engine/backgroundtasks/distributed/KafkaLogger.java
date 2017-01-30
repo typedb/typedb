@@ -22,6 +22,15 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>
+ * Logger class that will send all logs to a kafka queue
+ * To be removed- not fully implemented and we have alternate solutions to accumulating logs
+ * across instances of engine.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class KafkaLogger {
     private final static Logger LOG = LoggerFactory.getLogger(KafkaLogger.class);
     private final LogLevel logLevel;

@@ -34,6 +34,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * <p>
+ *     Implementation of StateStorage that stores task state in memory.
+ *     If engine fails, task state recovery is not possible.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class InMemoryStateStorage implements StateStorage {
     private static InMemoryStateStorage instance = null;
 

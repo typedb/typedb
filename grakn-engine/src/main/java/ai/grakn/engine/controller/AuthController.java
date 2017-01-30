@@ -39,6 +39,13 @@ import javax.ws.rs.Produces;
 import static spark.Spark.get;
 import static spark.Spark.post;
 
+/**
+ * <p>
+ *     Endpoints used to handle operations related to authentication.
+ * </p>
+ *
+ * @author Marco Scoppetta
+ */
 @Path("/auth")
 @Api(value = "/graph", description = "Endpoints used to handle operations related to authentication.")
 @Produces({"application/json", "text/plain"})
