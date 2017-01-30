@@ -79,8 +79,6 @@ public abstract class GraknTestEnv {
         tempDirectory = Files.createTempDirectory("graknKafkaUnit " + UUID.randomUUID());
         kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
         kafkaUnit.startup();
-
-        try {Thread.sleep(5000);} catch(InterruptedException ex) { LOG.info("Thread sleep interrupted."); }
     }
 
     static void stopKafka() throws Exception {
@@ -127,6 +125,8 @@ public abstract class GraknTestEnv {
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
             hideLogs();
+
+            try {Thread.sleep(5000);} catch(InterruptedException ex) { LOG.info("Thread sleep interrupted."); }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
