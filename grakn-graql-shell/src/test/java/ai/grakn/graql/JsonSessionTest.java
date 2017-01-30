@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
@@ -93,7 +94,7 @@ public class JsonSessionTest {
     }
 
     @Test
-    public void whenCreatingAJsonSessionNoNewNonDaemonThreadsShouldBeCreated() {
+    public void whenCreatingAJsonSessionNoNewNonDaemonThreadsShouldBeCreated() throws IOException {
         long activeNonDaemonThreadsBefore =
                 Thread.getAllStackTraces().keySet().stream().filter(thread -> !thread.isDaemon()).count();
 
@@ -114,5 +115,16 @@ public class JsonSessionTest {
         jsonSession.onMessage(dummyMessage.toString());
         List<Json> messages = jsonSession.getMessagesUntilEnd().collect(toList());
         assertThat(messages, contains(dummyMessage));
+    }
+
+    @Test
+    public void whenSendJsonSeesAnEOFExceptionThenItShouldThrowItBack() throws IOException {
+        doThrow(EOFException.class).when(remote).sendString(any());
+
+        JsonSession jsonSession = new JsonSession(client, uri);
+
+        exception.expect(EOFException.class);
+
+        jsonSession.sendJson(Json.object(ACTION, ACTION_END));
     }
 }

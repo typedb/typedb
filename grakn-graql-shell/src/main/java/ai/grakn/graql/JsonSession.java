@@ -116,7 +116,7 @@ public class JsonSession {
         }
     }
 
-    void sendJson(Json json) throws WebSocketException {
+    void sendJson(Json json) throws WebSocketException, IOException {
         try {
             executor.submit(() -> {
                 try {
@@ -128,7 +128,13 @@ public class JsonSession {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
+            RuntimeException inner = (RuntimeException) e.getCause();
+            Throwable cause = inner.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            } else {
+                throw inner;
+            }
         }
     }
 
