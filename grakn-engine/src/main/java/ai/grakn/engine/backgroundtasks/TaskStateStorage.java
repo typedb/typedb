@@ -19,9 +19,7 @@
 package ai.grakn.engine.backgroundtasks;
 
 import javafx.util.Pair;
-import org.json.JSONObject;
 
-import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -35,47 +33,23 @@ import java.util.Set;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public interface StateStorage {
+public interface TaskStateStorage {
     /**
      * Create a new task state and store it, returning an ID to later access this task state.
-     * @param taskName String class name of object implementing the BackgroundTask interface. This must not be null.
-     * @param createdBy String of who is creating this new state. This must not be null.
-     * @param runAt Instant when should this task be executed. This must not be null.
-     * @param recurring Boolean marking if this task should be run again after it has finished executing successfully.
-     *                  This must not be null.
-     * @param interval If a task is marked as recurring, this represents the time delay between the next executing of this task.
-     *                 This must not be null.
-     * @param configuration A JSONObject instance containing configuration and optionally data for the task. This is an
-     *                      optional parameter and may be set to null to not pass any configuration (task.start() will
-     *                      get an initialised but empty JSONObject).
+     * @param state State to insert.
      * @return String form of the task id, which can be use later to update or retrieve the task state. Null if task could
      * not be created of mandatory fields were omitted.
      */
-    String newState(String taskName,
-                    String createdBy,
-                    Instant runAt,
-                    Boolean recurring,
-                    long interval,
-                    JSONObject configuration);
+    String newState(TaskState state);
 
     /**
      * Used to update task state. With the exception of @id any other fields may individually be null, however all parameters
      * cannot be null at the same time. Setting any of the parameters to null indicates that their values should not be
      * changed.
-     * @param id ID of task to update, this must not be null.
-     * @param status New status of task, may be null.
-     * @param statusChangeBy String identifying caller, may be null.
-     * @param engineID String ID of engine instance scheduling/executing this task. May be null.
-     * @param failure Throwable to store any exceptions that occurred during executing. May be null.
-     * @param checkpoint String to store task checkpoint, may be null.
+     * @param state State to update.
+     * @return true if inserted successfully
      */
-    Boolean updateState(String id,
-                        TaskStatus status,
-                        String statusChangeBy,
-                        String engineID,
-                        Throwable failure,
-                        String checkpoint,
-                        JSONObject configuration);
+    Boolean updateState(TaskState state);
 
     /**
      * This is a copy of the internal TaskState object. It is guaranteed to be correct at the time of call, however the actual

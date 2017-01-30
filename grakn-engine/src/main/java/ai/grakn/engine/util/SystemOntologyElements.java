@@ -28,6 +28,7 @@ import ai.grakn.concept.TypeName;
  * @author Denis Lobanov
  */
 public interface SystemOntologyElements {
+    TypeName TASK_ID = TypeName.of("task-id");
     TypeName SCHEDULED_TASK = TypeName.of("scheduled-task");
     TypeName STATUS = TypeName.of("status");
     TypeName STATUS_CHANGE_TIME = TypeName.of("status-change-time");
@@ -42,4 +43,5 @@ public interface SystemOntologyElements {
     TypeName TASK_EXCEPTION = TypeName.of("task-exception");
     TypeName TASK_CHECKPOINT = TypeName.of("task-checkpoint");
     TypeName TASK_CONFIGURATION = TypeName.of("task-configuration");
+    TypeName SERIALISED_TASK = TypeName.of("task-serialized");
 }

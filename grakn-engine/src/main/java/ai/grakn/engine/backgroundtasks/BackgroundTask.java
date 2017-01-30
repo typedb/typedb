@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import org.json.JSONObject;
+import mjson.Json;
 
 import java.util.function.Consumer;
 
@@ -33,7 +33,7 @@ public interface BackgroundTask {
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
      */
-    void start(Consumer<String> saveCheckpoint, JSONObject configuration);
+    void start(Consumer<String> saveCheckpoint, Json configuration);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.

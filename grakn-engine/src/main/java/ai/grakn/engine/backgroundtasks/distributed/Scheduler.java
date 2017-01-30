@@ -18,11 +18,11 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -32,9 +32,12 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -51,8 +54,8 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.SCHEDULERS_GROUP
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.util.ConfigProperties.SCHEDULER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -63,29 +66,27 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov
  */
 public class Scheduler implements Runnable, AutoCloseable {
+    private static final String STATUS_MESSAGE = "Topic [%s], partition [%s] received [%s] records, next offset is [%s]";
+
     private final static ConfigProperties properties = ConfigProperties.getInstance();
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final static Logger LOG = LoggerFactory.getLogger(Scheduler.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
-    private final SynchronizedStateStorage zkStorage;
+    private final TaskStateStorage storage;
 
-    private GraknStateStorage stateStorage;
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
 
-    public Scheduler(SynchronizedStateStorage zkStorage){
-        this.zkStorage = zkStorage;
+    public Scheduler(TaskStateStorage storage){
+        this.storage = storage;
 
         if(OPENED.compareAndSet(false, true)) {
-            // Init task storage
-            stateStorage = new GraknStateStorage();
-
             // Kafka listener
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
-            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new RebalanceListener(consumer));
+            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new HandleRebalance());
 
             // Kafka writer
             producer = kafkaProducer();
@@ -109,9 +110,8 @@ public class Scheduler implements Runnable, AutoCloseable {
 
         try {
             while (running) {
-                LOG.debug("Scheduler polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(NEW_TASKS_TOPIC).stream().map(i -> new TopicPartition(NEW_TASKS_TOPIC, i.partition())).collect(toSet())));
-
-                ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(SCHEDULER_POLLING_FREQ));
+                ConsumerRecords<String, String> records = consumer.poll(1000);
+                printConsumerStatus(records);
 
                 for(ConsumerRecord<String, String> record:records) {
                     scheduleTask(record.key(), record.value());
@@ -162,7 +162,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param configuration configuration of task to be scheduled, will be copied to WORK_QUEUE_TOPIC
      */
     private void scheduleTask(String id, String configuration) {
-        TaskState state = stateStorage.getState(id);
+        TaskState state = storage.getState(id);
         scheduleTask(id, configuration, state);
     }
 
@@ -175,18 +175,15 @@ public class Scheduler implements Runnable, AutoCloseable {
     private void scheduleTask(String id,  String configuration, TaskState state) {
         long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
-        markAsScheduled(id);
+        markAsScheduled(state);
         if(state.isRecurring()) {
-            LOG.debug("Scheduling recurring " + id);
-
             Runnable submit = () -> {
-                markAsScheduled(id);
+                markAsScheduled(state);
                 sendToWorkQueue(id, configuration);
             };
             schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
         }
         else {
-            LOG.debug("Scheduling once " + id+" @ "+delay);
             Runnable submit = () -> sendToWorkQueue(id, configuration);
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
@@ -194,12 +191,11 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     /**
      * Mark the taskstorage of the given task as scheduled
-     * @param id task to mark the taskstorage of
+     * @param state task to mark the state of
      */
-    private void markAsScheduled(String id) {
-        LOG.debug("Marking " + id + " as scheduled");
-        zkStorage.updateState(id, SCHEDULED, null, null);
-        stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
+    private void markAsScheduled(TaskState state) {
+        LOG.debug("Marking " + state.getId() + " as scheduled");
+        storage.updateState(state.status(SCHEDULED));
     }
 
     /**
@@ -217,8 +213,9 @@ public class Scheduler implements Runnable, AutoCloseable {
      * Get all recurring tasks from the graph and schedule them
      */
     private void restartRecurringTasks() {
-        Set<Pair<String, TaskState>> tasks = stateStorage.getTasks(null, null, null, 0, 0, true);
+        Set<Pair<String, TaskState>> tasks = storage.getTasks(null, null, null, 0, 0);
         tasks.stream()
+                .filter(p -> p.getValue().isRecurring())
                 .filter(p -> p.getValue().status() != STOPPED)
                 .forEach(p -> {
                     // Not sure what is the right format for "no configuration", but somehow the configuration
@@ -227,15 +224,30 @@ public class Scheduler implements Runnable, AutoCloseable {
                     String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
                     scheduleTask(p.getKey(), config, p.getValue());
                 });
-        LOG.debug("Scheduler restarted " + tasks.size() + " recurring tasks");
     }
 
-    private class KafkaLoggingCallback implements Callback {
+    private void printConsumerStatus(ConsumerRecords<String, String> records){
+        consumer.assignment().stream()
+                .map(p -> format(STATUS_MESSAGE, p.partition(), p.topic(), records.count(), consumer.position(p)))
+                .forEach(LOG::debug);
+    }
+
+    private static class KafkaLoggingCallback implements Callback {
         @Override
         public void onCompletion(RecordMetadata metadata, Exception exception) {
             if(exception != null) {
                 LOG.debug(getFullStackTrace(exception));
             }
+        }
+    }
+
+    private class HandleRebalance implements ConsumerRebalanceListener {
+        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+            LOG.debug("Scheduler partitions assigned " + partitions);
+        }
+        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+            consumer.commitSync();
+            LOG.debug("Scheduler partitions revoked " + partitions);
         }
     }
 }

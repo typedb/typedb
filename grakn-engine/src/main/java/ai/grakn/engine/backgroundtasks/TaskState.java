@@ -18,16 +18,23 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import org.json.JSONObject;
+import mjson.Json;
 
+import java.io.Serializable;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
  *
  * @author Denis Lobanov
  */
-public class TaskState implements Cloneable {
+public class TaskState implements Serializable {
+
+    /**
+     * Id of this task.
+     */
+    private final String taskId;
     /**
      * Task status, @see TaskStatus.
      */
@@ -76,15 +83,28 @@ public class TaskState implements Cloneable {
     /**
      * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
      */
-    private JSONObject configuration;
-    
+    private Json configuration;
+
     public TaskState(String taskClassName) {
-        status = TaskStatus.CREATED;
+        this.status = TaskStatus.CREATED;
+        this.statusChangeTime = Instant.now();
         this.taskClassName = taskClassName;
+        this.taskId = UUID.randomUUID().toString();
+    }
+
+    public TaskState(String taskClassName, String id, TaskStatus status){
+        this.taskId = id;
+        this.taskClassName = taskClassName;
+        this.status = status;
+    }
+
+    public String getId() {
+        return taskId;
     }
 
     public TaskState status(TaskStatus status) {
         this.status = status;
+        this.statusChangeTime = Instant.now();
         return this;
     }
 
@@ -186,50 +206,13 @@ public class TaskState implements Cloneable {
         return taskCheckpoint;
     }
 
-    public TaskState configuration(JSONObject configuration) {
+    public TaskState configuration(Json configuration) {
         this.configuration = configuration;
         return this;
     }
 
-    public JSONObject configuration() {
+    public Json configuration() {
         return configuration;
     }
-
-    public TaskState clone() throws CloneNotSupportedException {
-        TaskState state = (TaskState)super.clone();
-
-        state.status(status)
-             .statusChangeTime(statusChangeTime)
-             .statusChangedBy(statusChangedBy)
-             .creator(creator)
-             .engineID(engineID)
-             .runAt(runAt)
-             .isRecurring(recurring)
-             .interval(interval)
-             .stackTrace(stackTrace)
-             .exception(exception)
-             .checkpoint(taskCheckpoint)
-             .configuration(new JSONObject(configuration.toString()));
-
-        return state;
-    }
-
-    @Override
-    public String toString() {
-        return "TaskState{" +
-                "status=" + status +
-                ", statusChangeTime=" + statusChangeTime +
-                ", statusChangedBy='" + statusChangedBy + '\'' +
-                ", taskClassName='" + taskClassName + '\'' +
-                ", creator='" + creator + '\'' +
-                ", engineID='" + engineID + '\'' +
-                ", runAt=" + runAt +
-                ", recurring=" + recurring +
-                ", interval=" + interval +
-                ", stackTrace='" + stackTrace + '\'' +
-                ", exception='" + exception + '\'' +
-                ", taskCheckpoint='" + taskCheckpoint + '\'' +
-                ", configuration=" + configuration +
-                '}';
-    }
 }
+

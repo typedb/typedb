@@ -47,7 +47,7 @@ public class VisualiserControllerTest {
     private static GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void setUp() throws Exception{

@@ -40,7 +40,7 @@ import static org.junit.Assume.assumeFalse;
 public class CountTest {
 
     @ClassRule
-    public static final EngineContext rule = EngineContext.startServer();
+    public static final EngineContext rule = EngineContext.startInMemoryServer();
 
     private GraknGraph graph;
 
