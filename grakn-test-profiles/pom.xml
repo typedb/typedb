@@ -17,6 +17,7 @@
         <grakn.test-profile>tinker</grakn.test-profile>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
         <docker-tests>true</docker-tests>
+        <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
     </properties>
 
     <build>
@@ -70,6 +71,7 @@
             <id>titan</id>
             <properties>
                 <grakn.test-profile>titan</grakn.test-profile>
+                <grakn.skip-bash-tests>false</grakn.skip-bash-tests>
             </properties>
             <dependencies>
                 <dependency>
@@ -101,48 +103,6 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.googlecode.maven-download-plugin</groupId>
-                        <artifactId>download-maven-plugin</artifactId>
-                        <version>1.2.1</version>
-                        <executions>
-                            <execution>
-                                <id>install-shunit2</id>
-                                <phase>integration-test</phase>
-                                <goals>
-                                    <goal>wget</goal>
-                                </goals>
-                                <configuration>
-                                    <url>https://github.com/burukuru/shunit2/archive/master.zip</url>
-                                    <unpack>true</unpack>
-                                    <outputDirectory>${project.parent.basedir}/grakn-dist/target/lib</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.5.0</version>
-                        <executions>
-                            <execution>
-                                <id>bash-tests</id>
-                                <phase>integration-test</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <skip>${skipTests}</skip>
-                            <workingDirectory>${project.parent.basedir}/grakn-dist/src/test/bash</workingDirectory>
-                            <executable>${project.parent.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
