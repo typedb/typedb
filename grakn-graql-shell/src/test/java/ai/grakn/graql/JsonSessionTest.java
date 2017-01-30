@@ -31,13 +31,17 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -99,5 +103,16 @@ public class JsonSessionTest {
                 Thread.getAllStackTraces().keySet().stream().filter(thread -> !thread.isDaemon()).count();
 
         assertEquals(activeNonDaemonThreadsBefore, activeNonDaemonThreadsAfter);
+    }
+
+    @Test
+    public void whenEngineTimesOutThenJsonSessionShouldReturnAllMessagesUpToThatPoint() {
+        long timeout = 0;
+        Json dummyMessage = Json.object("dummy", "message");
+        JsonSession jsonSession = new JsonSession(client, uri, timeout);
+
+        jsonSession.onMessage(dummyMessage.toString());
+        List<Json> messages = jsonSession.getMessagesUntilEnd().collect(toList());
+        assertThat(messages, contains(dummyMessage));
     }
 }

@@ -51,6 +51,7 @@ import static java.util.Spliterator.IMMUTABLE;
 public class JsonSession {
 
     private final Session session;
+    private static final long DEFAULT_TIMEOUT = 5;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = Executors.defaultThreadFactory().newThread(runnable);
@@ -59,8 +60,15 @@ public class JsonSession {
     });
 
     private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
+    private final long timeout;
 
     JsonSession(GraqlClient client, URI uri) {
+        this(client, uri, DEFAULT_TIMEOUT);
+    }
+
+    JsonSession(GraqlClient client, URI uri, long timeout) {
+        this.timeout = timeout;
+
         try {
             this.session = client.connect(this, uri).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -83,7 +91,12 @@ public class JsonSession {
             @Override
             public boolean tryAdvance(Consumer<? super Json> action) {
                 Json message = getMessage();
-                if (message.is(ACTION, ACTION_END)) {
+
+                if (message == null) {
+                    System.err.println("Timeout while contacting engine");
+                }
+
+                if (message == null || message.is(ACTION, ACTION_END)) {
                     return false;
                 } else {
                     action.accept(message);
@@ -97,7 +110,7 @@ public class JsonSession {
 
     private Json getMessage() {
         try {
-            return messages.poll(5, TimeUnit.SECONDS);
+            return messages.poll(timeout, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
