@@ -49,6 +49,18 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
+/**
+ * <p>
+ * In-memory task manager to schedule and execute tasks. By default this task manager uses an in-memory
+ * state storage.
+ * </p>
+ *
+ * <p>
+ * If engine fails while using this task manager, there will be no possibility for task recovery.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class StandaloneTaskManager implements TaskManager {
     private static final String RUN_ONCE_NAME = "One off task scheduler.";
     private static final String RUN_RECURRING_NAME = "Recurring task scheduler.";

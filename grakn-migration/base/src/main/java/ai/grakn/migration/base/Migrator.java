@@ -22,6 +22,17 @@ import ai.grakn.graql.InsertQuery;
 
 import java.util.stream.Stream;
 
+/**
+ * <p>
+ *     The base Migrator interface
+ * </p>
+ *
+ * <p>
+ *     Provides common methods for migrating data from source into insert queries.
+ * </p>
+ *
+ * @author alexandraorth
+ */
 public interface Migrator extends AutoCloseable {
 
     /**

@@ -24,6 +24,17 @@ import org.json.JSONObject;
 import java.time.Instant;
 import java.util.Set;
 
+/**
+ * <p>
+ *     The base StateStorage interface.
+ * </p>
+ *
+ * <p>
+ *     Provides common methods for storing and accessing the state of tasks.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public interface StateStorage {
     /**
      * Create a new task state and store it, returning an ID to later access this task state.

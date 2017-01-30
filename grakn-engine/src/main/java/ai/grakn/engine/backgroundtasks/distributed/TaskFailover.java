@@ -46,6 +46,13 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATC
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
+/**
+ * <p>
+ * Re-schedule tasks that were running when an instance of Engine failed
+ * </p>
+ *
+ * @author Denis lobanov
+ */
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
