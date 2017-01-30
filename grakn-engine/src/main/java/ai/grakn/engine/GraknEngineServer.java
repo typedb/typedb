@@ -80,7 +80,7 @@ public class GraknEngineServer {
     private static TaskManager taskManager;
 
     public static void main(String[] args) {
-        start(false);
+        start(true);
     }
 
     public static void start(boolean inMemory){
