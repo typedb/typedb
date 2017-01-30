@@ -45,7 +45,7 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
  * @author Denis Lobanov
  * This class begins the TaskRunner instance that will be running on this machine.
  */
-public final class DistributedTaskManager implements TaskManager {
+public class DistributedTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
 
     private final KafkaProducer<String, String> producer;
