@@ -29,6 +29,10 @@
 
     <artifactId>grakn-dist</artifactId>
 
+    <properties>
+        <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -117,6 +121,47 @@
                         <descriptor>${project.basedir}/src/dist.xml</descriptor>
                     </descriptors>
                     <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <id>install-shunit2</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://github.com/burukuru/shunit2/archive/master.zip</url>
+                            <unpack>true</unpack>
+                            <outputDirectory>${main.basedir}/grakn-dist/target/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>${grakn.skip-bash-tests}</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <executions>
+                    <execution>
+                        <id>bash-tests</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>${grakn.skip-bash-tests}</skip>
+                    <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
+                    <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
                 </configuration>
             </plugin>
         </plugins>

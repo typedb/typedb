@@ -1,0 +1,1 @@
+match $p isa person, has identifier $i;
