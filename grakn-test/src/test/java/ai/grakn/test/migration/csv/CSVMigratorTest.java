@@ -49,7 +49,7 @@ public class CSVMigratorTest {
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup(){

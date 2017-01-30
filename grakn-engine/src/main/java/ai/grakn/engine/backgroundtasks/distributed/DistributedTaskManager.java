@@ -19,98 +19,100 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.engine.util.EngineID;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
+import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Class to manage tasks distributed using Kafka.
+ * This class begins the TaskRunner instance that will be running on this machine.
  */
-public class DistributedTaskManager implements TaskManager {
+public final class DistributedTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
-    private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
-    private KafkaProducer<String, String> producer;
-    private StateStorage stateStorage;
-    private SynchronizedStateStorage zkStorage;
+    private final KafkaProducer<String, String> producer;
 
-    public DistributedTaskManager(SynchronizedStateStorage zkStorage) {
-        if(OPENED.compareAndSet(false, true)) {
-            try {
-                noThrow(() -> producer = ConfigHelper.kafkaProducer(), "Could not instantiate Kafka Producer");
-                noThrow(() -> stateStorage = new GraknStateStorage(), "Could not instantiate grakn state storage");
+    private final SchedulerElector elector;
+    private final ZookeeperConnection connection;
+    private final TaskRunner taskRunner;
+    private final TaskStateStorage stateStorage;
 
-                this.zkStorage = zkStorage;
-            }
-            catch (Exception e) {
-                e.printStackTrace(System.err);
-                LOG.error("While trying to start the DistributedTaskManager", e);
-                throw new RuntimeException("Could not start task manager : "+e);
-            }
-        }
-        else {
-            LOG.error("DistributedTaskManager open() called multiple times!");
-        }
+    private static final String TASKRUNNER_THREAD_NAME = "taskrunner-";
+    private Thread taskRunnerThread;
+
+    public DistributedTaskManager() {
+        stateStorage = new TaskStateGraphStore();
+        connection = new ZookeeperConnection();
+
+        // run the TaskRunner in a thread
+        taskRunner = new TaskRunner(stateStorage, connection);
+        taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
+        taskRunnerThread.start();
+
+        // Elect the scheduler or add yourself to the scheduler pool
+        elector = new SchedulerElector(stateStorage, connection);
+
+        this.producer = ConfigHelper.kafkaProducer();
     }
 
     @Override
     public void close() {
-        if(OPENED.compareAndSet(true, false)) {
-            noThrow(producer::close, "Could not close Kafka Producer.");
+        producer.close();
+
+        elector.stop();
+        taskRunner.close();
+        try {
+            taskRunnerThread.join();
+        } catch (InterruptedException e){
+            LOG.error("Error while waiting for taskrunner to exit");
         }
-        else {
-            LOG.error("DistributedTaskManager close() called before open()!");
-        }
+
+        // stop zookeeper connection
+        connection.close();
     }
 
     @Override
-    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = period > 0;
 
-        String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
-        try {
-            zkStorage.newState(id, CREATED, null, null);
+        TaskState taskState = new TaskState(task.getClass().getName())
+                .creator(createdBy)
+                .runAt(runAt)
+                .isRecurring(recurring)
+                .interval(period)
+                .configuration(configuration);
 
-            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, id, configuration.toString()));
-            producer.flush();
-        }
-        catch (Exception e) {
-            LOG.error("Could not write to ZooKeeper! - "+ getFullStackTrace(e));
-            stateStorage.updateState(id, FAILED, this.getClass().getName(), EngineID.getInstance().id(), e, null, null);
-            id = null;
-        }
+        stateStorage.newState(taskState);
 
-        return id;
+        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), configuration.toString()));
+        producer.flush();
+
+        return taskState.getId();
     }
 
     @Override
     public TaskManager stopTask(String id, String requesterName) {
-        throw new UnsupportedOperationException(this.getClass().getName()+" currently doesnt support stopping tasks");
+        throw new UnsupportedOperationException(this.getClass().getName() + " currently doesn't support stopping tasks");
     }
 
     @Override
-    public StateStorage storage() {
+    public TaskStateStorage storage() {
         return stateStorage;
     }
 
@@ -119,7 +121,7 @@ public class DistributedTaskManager implements TaskManager {
         return CompletableFuture.runAsync(() -> {
 
             while (true) {
-                TaskStatus status = zkStorage.getState(taskId).status();
+                TaskStatus status = stateStorage.getState(taskId).status();
                 if (status == COMPLETED || status == FAILED || status ==  STOPPED) {
                     break;
                 }
@@ -131,9 +133,5 @@ public class DistributedTaskManager implements TaskManager {
                 }
             }
         });
-    }
-
-    public TaskStatus getState(String taskID){
-        return zkStorage.getState(taskID).status();
     }
 }

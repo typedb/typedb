@@ -23,10 +23,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
@@ -39,7 +38,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,24 +55,24 @@ public class LoaderTest {
     private Loader loader;
     private GraknGraph graph;
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void startup() throws Exception {
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ClusterManager.class)).setLevel(Level.DEBUG);
     }
 
     @Before
     public void setup() {
-        //TODO fix this
         graph = engine.graphWithNewKeyspace();
-        loader = new Loader(engine.getClusterManager(), graph.getKeyspace());
+        loader = new Loader(engine.getTaskManager(), graph.getKeyspace());
         loadOntology(graph.getKeyspace());
     }
 
@@ -92,14 +93,11 @@ public class LoaderTest {
         loadAndTime(60000);
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test
     public void loadAndDontWaitForLongEnoughTest(){
-        try {
-            loadAndTime(1);
-        } catch (RuntimeException e) {
-            assertTrue(e.getMessage().equals(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage()));
-            throw e;
-        }
+        exception.expect(RuntimeException.class);
+        exception.expectMessage(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage());
+        loadAndTime(1);
     }
 
     public static void loadOntology(String keyspace){
@@ -138,6 +136,7 @@ public class LoaderTest {
         }
 
         loader.waitToFinish(timeout);
+        System.out.println("ended");
 
         System.out.println("Time to load:");
         System.out.println(System.currentTimeMillis() - startTime);

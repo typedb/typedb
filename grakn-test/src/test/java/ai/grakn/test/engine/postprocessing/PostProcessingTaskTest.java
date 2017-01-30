@@ -33,10 +33,10 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 
 public class PostProcessingTaskTest {
-    private StandaloneTaskManager taskManager = StandaloneTaskManager.getInstance();
+    private StandaloneTaskManager taskManager = new StandaloneTaskManager();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Test
     public void testStart() throws Exception {

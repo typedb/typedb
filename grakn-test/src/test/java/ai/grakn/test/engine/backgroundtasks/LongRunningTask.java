@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import org.json.JSONObject;
+import mjson.Json;
 
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 public class LongRunningTask implements BackgroundTask {
     private final AtomicBoolean isRunning = new AtomicBoolean(true);
 
-    public void start(Consumer<String> saveCheckpoint, JSONObject config) {
+    public void start(Consumer<String> saveCheckpoint, Json config) {
         long initial = new Date().getTime();
 
         while (isRunning.get() && ((new Date().getTime()) - initial < 50000)) {

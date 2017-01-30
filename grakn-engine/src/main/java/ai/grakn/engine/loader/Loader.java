@@ -18,13 +18,13 @@
 
 package ai.grakn.engine.loader;
 
+import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
+import mjson.Json;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,18 +55,18 @@ public class Loader {
     private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
     private static final ConfigProperties properties = ConfigProperties.getInstance();
 
-    private final DistributedTaskManager manager;
+    private final TaskManager manager;
     private Semaphore blocker = new Semaphore(25);
 
     private int batchSize;
     private final Collection<InsertQuery> queries;
     private final String keyspace;
 
-    public Loader(ClusterManager manager, String keyspace){
+    public Loader(TaskManager manager, String keyspace){
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
 
-        this.manager = manager.getTaskManager();
+        this.manager = manager;
         setBatchSize(properties.getPropertyAsInt(BATCH_SIZE_PROPERTY));
     }
 
@@ -221,7 +221,7 @@ public class Loader {
      * @return if the given task has been completed or failed.
      */
     private boolean isCompleted(String taskID){
-        TaskStatus status = manager.getState(taskID);
+        TaskStatus status = manager.storage().getState(taskID).status();
         return status == COMPLETED || status == FAILED;
     }
 
@@ -230,10 +230,10 @@ public class Loader {
      * @param queries queries to include in configuration
      * @return configuration for the loader task
      */
-    private JSONObject getConfiguration(Collection<InsertQuery> queries){
-        JSONObject json = new JSONObject();
-        json.put(KEYSPACE_PARAM, keyspace);
-        json.put(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()));
+    private Json getConfiguration(Collection<InsertQuery> queries){
+        Json json = Json.object();
+        json.set(KEYSPACE_PARAM, keyspace);
+        json.set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()));
         return json;
     }
 }

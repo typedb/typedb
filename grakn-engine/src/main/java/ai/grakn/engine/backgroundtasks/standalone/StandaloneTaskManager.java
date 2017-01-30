@@ -19,13 +19,13 @@
 package ai.grakn.engine.backgroundtasks.standalone;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstorage.InMemoryStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
-import org.json.JSONObject;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,38 +49,27 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
-public class StandaloneTaskManager implements TaskManager {
-    private static final String RUN_ONCE_NAME = "One off task scheduler.";
-    private static final String RUN_RECURRING_NAME = "Recurring task scheduler.";
+public final class StandaloneTaskManager implements TaskManager {
     private static final String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
     private static final String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
-
-    private static StandaloneTaskManager instance = null;
 
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
     private final Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
-    private final StateStorage stateStorage;
+    private final TaskStateStorage stateStorage;
     private final ReentrantLock stateUpdateLock;
 
     private final ExecutorService executorService;
     private final ScheduledExecutorService schedulingService;
 
-    private StandaloneTaskManager() {
+    public StandaloneTaskManager() {
         instantiatedTasks = new ConcurrentHashMap<>();
-        stateStorage = InMemoryStateStorage.getInstance();
+        stateStorage = new TaskStateInMemoryStore();
         stateUpdateLock = new ReentrantLock();
 
         ConfigProperties properties = ConfigProperties.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
-    }
-
-    public static synchronized StandaloneTaskManager getInstance() {
-        if (instance == null) {
-            instance = new StandaloneTaskManager();
-        }
-        return instance;
     }
 
     public TaskManager open() {
@@ -91,42 +80,45 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
-        removeInstance();
     }
 
-    private static void removeInstance() {
-        instance = null;
-    }
-
-    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = (period != 0);
-        String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
+
+        TaskState taskState = new TaskState(task.getClass().getName())
+                .creator(createdBy)
+                .runAt(runAt)
+                .isRecurring(recurring)
+                .interval(period)
+                .configuration(configuration);
+
+        stateStorage.newState(taskState);
 
         // Schedule task to run.
         Instant now = Instant.now();
         long delay = Duration.between(runAt, now).toMillis();
 
         try {
-            stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
+            stateStorage.updateState(taskState.status(SCHEDULED).statusChangedBy(this.getClass().getName()));
 
             ScheduledFuture<?> future;
             if(recurring) {
-                future = schedulingService.scheduleAtFixedRate(runTask(id, task, true), delay, period, MILLISECONDS);
+                future = schedulingService.scheduleAtFixedRate(runTask(taskState.getId(), task, true), delay, period, MILLISECONDS);
             } else {
-                future = schedulingService.schedule(runTask(id, task, false), delay, MILLISECONDS);
+                future = schedulingService.schedule(runTask(taskState.getId(), task, false), delay, MILLISECONDS);
             }
 
-            instantiatedTasks.put(id, new Pair<>(future, task));
+            instantiatedTasks.put(taskState.getId(), new Pair<>(future, task));
 
         }
         catch (Throwable t) {
             LOG.error(getFullStackTrace(t));
-            stateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
-            instantiatedTasks.remove(id);
+            stateStorage.updateState(taskState.status(FAILED).exception(getFullStackTrace(t)));
+            instantiatedTasks.remove(taskState.getId());
             return null;
         }
 
-        return id;
+        return taskState.getId();
     }
 
     public CompletableFuture completableFuture(String taskId) {
@@ -164,13 +156,11 @@ public class StandaloneTaskManager implements TaskManager {
             }
 
             Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
-            String name = this.getClass().getName();
-
             synchronized (pair) {
                 if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
                     LOG.info("Stopping a currently scheduled task " + id);
                     pair.getKey().cancel(true);
-                    stateStorage.updateState(id, STOPPED, name, null, null, null, null);
+                    stateStorage.updateState(state.status(STOPPED));
                 } else if (state.status() == RUNNING) {
                     LOG.info("Stopping running task " + id);
 
@@ -179,7 +169,7 @@ public class StandaloneTaskManager implements TaskManager {
                         task.stop();
                     }
 
-                    stateStorage.updateState(id, STOPPED, name, null, null, null, null);
+                    stateStorage.updateState(state.status(STOPPED));
                 } else {
                     LOG.warn("Task not running - " + id);
                 }
@@ -191,24 +181,27 @@ public class StandaloneTaskManager implements TaskManager {
         return this;
     }
 
-    public StateStorage storage() {
+    public TaskStateStorage storage() {
         return stateStorage;
     }
 
-    private Runnable exceptionCatcher(String id, BackgroundTask task) {
+    private Runnable exceptionCatcher(TaskState state, BackgroundTask task) {
         return () -> {
             try {
-                task.start(saveCheckpoint(id), stateStorage.getState(id).configuration());
+                task.start(saveCheckpoint(state), state.configuration());
 
                 stateUpdateLock.lock();
-                if(stateStorage.getState(id).status() == RUNNING) {
-                    stateStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null, null);
+                if(state.status() == RUNNING) {
+                    stateStorage.updateState(state.status(COMPLETED).statusChangedBy(EXCEPTION_CATCHER_NAME));
                 }
                 stateUpdateLock.unlock();
             }
             catch (Throwable t) {
                 LOG.error(getFullStackTrace(t));
-                stateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null, null);
+                stateStorage.updateState(state
+                        .status(FAILED)
+                        .statusChangedBy(EXCEPTION_CATCHER_NAME)
+                        .exception(getFullStackTrace(t)));
             }
         };
     }
@@ -219,22 +212,22 @@ public class StandaloneTaskManager implements TaskManager {
 
             TaskState state = stateStorage.getState(id);
             if(recurring && (state.status() == SCHEDULED || state.status() == COMPLETED)) {
-                stateStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null, null);
-                executorService.submit(exceptionCatcher(id, task));
+                stateStorage.updateState(state.status(RUNNING).isRecurring(true));
+                executorService.submit(exceptionCatcher(state, task));
             }
             else if (!recurring && state.status() == SCHEDULED) {
-                stateStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null, null);
-                executorService.submit(exceptionCatcher(id, task));
+                stateStorage.updateState(state.status(RUNNING).isRecurring(false));
+                executorService.submit(exceptionCatcher(state, task));
             }
 
             stateUpdateLock.unlock();
         };
     }
 
-    private Consumer<String> saveCheckpoint(String id) {
+    private Consumer<String> saveCheckpoint(TaskState state) {
         return s -> {
             stateUpdateLock.lock();
-            stateStorage.updateState(id, stateStorage.getState(id).status(), SAVE_CHECKPOINT_NAME, null, null, s, null);
+            stateStorage.updateState(state.checkpoint(SAVE_CHECKPOINT_NAME));
             stateUpdateLock.unlock();
         };
     }

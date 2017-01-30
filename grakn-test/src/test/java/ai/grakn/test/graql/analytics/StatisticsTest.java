@@ -75,7 +75,7 @@ public class StatisticsTest {
     private ConceptId entityId4;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startServer();
+    public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknGraph graph;
 
     @Before

@@ -19,125 +19,109 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
+import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import javafx.util.Pair;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONObject;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertNotNull;
+import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
 
 /**
- * Each test needs to be run with a clean Kafka to pass
+ * Test the Scheduler with an In Memory state storage. Kafka needs to be running.
+ * Run the Scheduler in another thread, submit some tasks to the correct kafka queue&
+ * wait for them to be scheduled, then close the thread.
+ *
+ * @author alexandraorth
  */
 public class SchedulerTest {
-    private GraknStateStorage stateStorage = new GraknStateStorage();
+
+    private TaskStateStorage storage;
+    private Scheduler scheduler;
+    private KafkaProducer<String, String> producer;
+
+    private Thread schedulerThread;
 
     @Rule
-    public final EngineContext engine = EngineContext.startServer();
+    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @BeforeClass
-    public static void setup(){
-        ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
+    @Before
+    public void start() throws Exception {
+        storage = new TaskStateInMemoryStore();
+        scheduler = new Scheduler(storage);
+
+        schedulerThread = new Thread(scheduler);
+        schedulerThread.start();
+
+        producer = ConfigHelper.kafkaProducer();
+    }
+
+    @After
+    public void stop() throws Exception {
+        producer.close();
+
+        scheduler.close();
+        schedulerThread.join();
     }
 
     @Test
-    public void testInstantaneousOneTimeTasks() throws Exception {
-        Map<String, TaskState> tasks = createTasks(5);
+    public void immediateNonRecurringScheduled() {
+        Set<TaskState> tasks = createTasks(storage, 5, CREATED);
         sendTasksToNewTasksQueue(tasks);
-        waitUntilScheduled(tasks.keySet());
+        waitForStatus(storage, tasks, SCHEDULED);
+
+        tasks.stream().map(TaskState::getId)
+                .map(storage::getState)
+                .map(TaskState::status)
+                .allMatch(t -> t.equals(SCHEDULED));
     }
 
-    private Map<String, TaskState> createTasks(int n) throws Exception {
-        Map<String, TaskState> tasks = new HashMap<>();
+    @Test
+    public void schedulerPicksUpFromLastOffset() throws InterruptedException {
+        // Schedule 5 tasks
+        Set<TaskState> tasks = createTasks(storage, 5, CREATED);
+        sendTasksToNewTasksQueue(tasks);
+        waitForStatus(storage, tasks, SCHEDULED);
 
-        for(int i=0; i < n; i++) {
-            Pair<String, TaskState> task = createTask(i, CREATED, false, 0);
-            tasks.put(task.getKey(), task.getValue());
-
-            System.out.println("task " + i + " created");
-        }
-
-        return tasks;
-    }
-
-    private Pair<String, TaskState> createTask(int i, TaskStatus status, boolean recurring, int interval) throws Exception {
-        String taskId = stateStorage.newState(
-                TestTask.class.getName(),
-                SchedulerTest.class.getName(),
-                Instant.now(), recurring, interval, new JSONObject(singletonMap("name", "task"+i)));
-
-        stateStorage.updateState(taskId, status, null, null, null, null, null);
-
-        TaskState state = stateStorage.getState(taskId);
-
-        engine.getClusterManager().getStorage().newState(taskId, status, null, null);
-
-        assertNotNull(taskId);
-        assertNotNull(state);
-
-        return new Pair<>(taskId, state);
-    }
-
-    private void sendTasksToNewTasksQueue(Map<String, TaskState> tasks) {
-        KafkaProducer<String, String> producer = ConfigHelper.kafkaProducer();
-
-        for(String taskId:tasks.keySet()){
-            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskId, tasks.get(taskId).configuration().toString()));
-        }
-
-        producer.flush();
+        // Kill the scheduler
         producer.close();
+        scheduler.close();
+        schedulerThread.join();
+        producer = ConfigHelper.kafkaProducer();
+
+        // Schedule 5 more tasks
+        tasks = createTasks(storage, 5, CREATED);
+        sendTasksToNewTasksQueue(tasks);
+
+        // Restart the scheduler
+        scheduler = new Scheduler(storage);
+
+        schedulerThread = new Thread(scheduler);
+        schedulerThread.start();
+
+        // Wait for new tasks to complete
+        waitForStatus(storage, tasks, SCHEDULED);
+
+        tasks.stream().map(TaskState::getId)
+                .map(storage::getState)
+                .map(TaskState::status)
+                .allMatch(t -> t.equals(SCHEDULED));
     }
 
-    private void waitUntilScheduled(Collection<String> tasks) {
-        tasks.forEach(this::waitUntilScheduled);
-    }
-
-    private void waitUntilScheduled(String taskId) {
-        final long initial = new Date().getTime();
-
-        while((new Date().getTime())-initial < 60000) {
-            TaskStatus status = engine.getClusterManager().getStorage().getState(taskId).status();
-            System.out.println(taskId + "  -->>  " + status);
-            if(status == SCHEDULED || status == RUNNING || status == COMPLETED) {
-                try {
-                    Thread.sleep(5000);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                break;
-            }
-
-            try {
-                Thread.sleep(500);
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            }
-        }
+    private void sendTasksToNewTasksQueue(Set<TaskState> tasks) {
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), t.configuration().toString())));
+        producer.flush();
     }
 }

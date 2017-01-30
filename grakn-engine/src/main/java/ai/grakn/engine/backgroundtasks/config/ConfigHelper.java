@@ -59,6 +59,8 @@ public class ConfigHelper {
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("group.id", groupId);
         properties.put("enable.auto.commit", false);
+        properties.put("auto.offset.reset", "earliest");
+        properties.put("metadata.max.age.ms", 1000);
         properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
         properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");

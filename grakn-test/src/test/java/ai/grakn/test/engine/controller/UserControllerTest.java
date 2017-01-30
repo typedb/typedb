@@ -32,7 +32,7 @@ public class UserControllerTest {
     private UsersHandler users = UsersHandler.getInstance();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Test
     public void testAddNewUser(){

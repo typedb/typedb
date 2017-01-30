@@ -26,6 +26,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
+import mjson.Json;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class LoaderTask implements BackgroundTask {
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public void start(Consumer<String> saveCheckpoint, JSONObject configuration) {
+    public void start(Consumer<String> saveCheckpoint, Json configuration) {
         attemptInsertions(
                 getURI(configuration),
                 getKeyspace(configuration),
@@ -155,10 +156,10 @@ public class LoaderTask implements BackgroundTask {
      * @param configuration JSONObject containing configuration
      * @return insert queries from the configuration
      */
-    private Collection<InsertQuery> getInserts(JSONObject configuration){
+    private Collection<InsertQuery> getInserts(Json configuration){
         if(configuration.has(TASK_LOADER_INSERTS)){
             List<String> inserts = new ArrayList<>();
-            configuration.getJSONArray(TASK_LOADER_INSERTS).forEach(i -> inserts.add((String) i));
+            configuration.at(TASK_LOADER_INSERTS).asJsonList().forEach(i -> inserts.add(i.asString()));
 
             return inserts.stream()
                     .map(builder::<InsertQuery>parse)
@@ -173,9 +174,9 @@ public class LoaderTask implements BackgroundTask {
      * @param configuration JSONObject containing configuration
      * @return keyspace from the configuration
      */
-    private String getKeyspace(JSONObject configuration){
+    private String getKeyspace(Json configuration){
         if(configuration.has(KEYSPACE_PARAM)){
-            return configuration.getString(KEYSPACE_PARAM);
+            return configuration.at(KEYSPACE_PARAM).asString();
         }
 
         //TODO default graph name
@@ -187,9 +188,9 @@ public class LoaderTask implements BackgroundTask {
      * @param configuration JSONObject containing configuration
      * @return uri from the configuration or default
      */
-    private String getURI(JSONObject configuration){
+    private String getURI(Json configuration){
         if(configuration.has(URI_PARAM)){
-            return configuration.getString(URI_PARAM);
+            return configuration.at(URI_PARAM).asString();
         }
 
         return Grakn.DEFAULT_URI;
