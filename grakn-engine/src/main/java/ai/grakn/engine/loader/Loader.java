@@ -30,9 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 
@@ -157,6 +160,22 @@ public class Loader {
         return false;
     }
 
+    private Map<TaskStatus,Integer> countTasks(Collection<String> tasks) {
+        Map<TaskStatus, Integer> taskCounter = getTaskCounter();
+
+        tasks.stream().map(manager::getState).forEach(state -> {
+            taskCounter.computeIfPresent(state, (key, value) -> ++value);
+        });
+
+        return taskCounter;
+    }
+
+    private Map<TaskStatus,Integer> getTaskCounter() {
+        Map<TaskStatus,Integer> taskCounter = new HashMap<>();
+        Arrays.asList(TaskStatus.values()).forEach(key -> taskCounter.put(key,0));
+        return taskCounter;
+    }
+
     /**
      * Wait for all tasks to finish.
      * @param timeout amount of time (in ms) to wait.
@@ -164,12 +183,24 @@ public class Loader {
     public void waitToFinish(int timeout){
         flush();
 
-        final long initial = new Date().getTime();
         Collection<String> currentTasks = getTasks();
-        while ((new Date().getTime())-initial < timeout) {
+        Map<TaskStatus,Integer> currentTaskCounter = countTasks(currentTasks);
+        Map<TaskStatus, Integer> previousTaskCounter;
+        long timestamp = 0L;
+        while (true) {
             if(allTasksFinished(currentTasks)) {
                 printLoaderState();
                 return;
+            }
+
+            previousTaskCounter = currentTaskCounter;
+            currentTaskCounter = countTasks(currentTasks);
+            if (currentTaskCounter.equals(previousTaskCounter) && timestamp==0L) {
+                timestamp = new Date().getTime();
+            } else if (!currentTaskCounter.equals(previousTaskCounter)) {
+                timestamp = 0L;
+            } else if (new Date().getTime() - timestamp > timeout) {
+                break;
             }
 
             try {

@@ -90,13 +90,13 @@ public class Main {
             }
         } catch (Throwable throwable) {
             die(throwable);
-        }
-
-        if (newClusterManager) {
-            try {
-                manager.stop();
-            } catch (Exception e) {
-                e.printStackTrace();
+        } finally {
+            if (newClusterManager) {
+                try {
+                    manager.stop();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

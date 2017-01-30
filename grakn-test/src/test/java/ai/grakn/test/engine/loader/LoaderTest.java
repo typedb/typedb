@@ -23,11 +23,16 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderTask;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -35,27 +40,41 @@ import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import javafx.util.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class LoaderTest {
 
     private Loader loader;
     private GraknGraph graph;
+    private int numberOfTimesFakeLoaderCalled = 0;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startServer();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void startup() throws Exception {
@@ -92,14 +111,25 @@ public class LoaderTest {
         loadAndTime(60000);
     }
 
-    @Test(expected=RuntimeException.class)
-    public void loadAndDontWaitForLongEnoughTest(){
-        try {
-            loadAndTime(1);
-        } catch (RuntimeException e) {
-            assertTrue(e.getMessage().equals(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage()));
-            throw e;
-        }
+    @Test
+    public void whenLoadingNormalDataThenDontTimeout(){
+        // test the the total duration is longer than the timeout
+        // however, the individual tasks will be completing faster than the timeout
+        int timeout = 100;
+
+        Loader loaderWithFakeTaskManager = getFakeNormalLoader();
+
+        long startTime = System.currentTimeMillis();
+        loaderWithFakeTaskManager.waitToFinish(timeout);
+        long endTime = System.currentTimeMillis();
+        assertThat(endTime-startTime, greaterThan(Integer.toUnsignedLong(timeout)));
+    }
+
+    @Test
+    public void whenLoadingDataExceedsTimeoutThenTimeout(){
+        exception.expectMessage(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage());
+        Loader loaderWithFakeTaskManager = getFakeTimeoutLoader();
+        loaderWithFakeTaskManager.waitToFinish(100);
     }
 
     public static void loadOntology(String keyspace){
@@ -119,7 +149,7 @@ public class LoaderTest {
         }
     }
 
-    private void loadAndTime(int timeout){
+    private long loadAndTime(int timeout){
         long startTime = System.currentTimeMillis();
 
         Collection<String> ids = new ArrayList<>();
@@ -140,11 +170,50 @@ public class LoaderTest {
         loader.waitToFinish(timeout);
 
         System.out.println("Time to load:");
-        System.out.println(System.currentTimeMillis() - startTime);
+        long duration = System.currentTimeMillis() - startTime;
+        System.out.println(duration);
 
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
         assertEquals(50, nameTags.size());
         ids.stream().map(graph::getResourcesByValue).forEach(Assert::assertNotNull);
+
+        return duration;
+    }
+
+    private Loader getFakeNormalLoader() {
+        ClusterManager fakeClusterManager = getFakeClusterManager(invocation -> {
+            switch (numberOfTimesFakeLoaderCalled) {
+                case 0:
+                    numberOfTimesFakeLoaderCalled++;
+                    return TaskStatus.CREATED;
+                case 1:
+                    numberOfTimesFakeLoaderCalled++;
+                    return TaskStatus.SCHEDULED;
+                default:
+                    return TaskStatus.COMPLETED;
+            }
+        });
+        return new Loader(fakeClusterManager,graph.getKeyspace());
+    }
+
+    private Loader getFakeTimeoutLoader() {
+        ClusterManager fakeClusterManager = getFakeClusterManager(invocation -> TaskStatus.CREATED);
+        return new Loader(fakeClusterManager,graph.getKeyspace());
+    }
+
+    private ClusterManager getFakeClusterManager(Answer answer) {
+        String fakeTaskId = "task001";
+        ClusterManager fakeClusterManager = mock(ClusterManager.class);
+        DistributedTaskManager fakeTaskManager = mock(DistributedTaskManager.class);
+        when(fakeClusterManager.getTaskManager()).thenReturn(fakeTaskManager);
+        StateStorage fakeStorage = mock(StateStorage.class);
+        when(fakeTaskManager.storage()).thenReturn(fakeStorage);
+        when(fakeTaskManager.getState(fakeTaskId)).thenAnswer(answer);
+        Set<Pair<String,TaskState>> fakeTasks = new HashSet<>();
+        Pair<String, TaskState> fakePair =  new Pair<String,TaskState>(fakeTaskId, null);
+        fakeTasks.add(fakePair);
+        when(fakeStorage.getTasks(null, LoaderTask.class.getName(), graph.getKeyspace(), 100000, 0)).thenReturn(fakeTasks);
+        return fakeClusterManager;
     }
 }
