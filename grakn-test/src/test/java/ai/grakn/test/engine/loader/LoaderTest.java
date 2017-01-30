@@ -26,9 +26,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
-import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
-import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderTask;
@@ -37,12 +35,9 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import javafx.util.Pair;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -192,7 +187,7 @@ public class LoaderTest {
 
     private TaskManager getFakeTaskManager(Answer answer) {
         String fakeTaskId = "task001";
-        DistributedTaskManager fakeTaskManager = mock(DistributedTaskManager.class);
+        StandaloneTaskManager fakeTaskManager = mock(StandaloneTaskManager.class);
         TaskStateGraphStore fakeStorage = mock(TaskStateGraphStore.class);
         TaskState fakeTaskState = mock(TaskState.class);
         when(fakeTaskManager.storage()).thenReturn(fakeStorage);
