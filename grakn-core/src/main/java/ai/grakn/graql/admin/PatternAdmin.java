@@ -26,6 +26,8 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Admin class for inspecting and manipulating a Pattern
+ *
+ * @author Felix Chapman
  */
 public interface PatternAdmin extends Pattern {
     /**
@@ -91,5 +93,9 @@ public interface PatternAdmin extends Pattern {
                 .collect(toSet());
     }
 
+    /**
+     * Create a deep copy of this pattern
+     * @return a copy of this pattern
+     */
     PatternAdmin cloneMe();
 }

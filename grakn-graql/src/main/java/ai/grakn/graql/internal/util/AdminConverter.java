@@ -29,6 +29,8 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Helper methods for converting classes to admin equivalents
+ *
+ * @author Felix Chapman
  */
 public class AdminConverter {
 

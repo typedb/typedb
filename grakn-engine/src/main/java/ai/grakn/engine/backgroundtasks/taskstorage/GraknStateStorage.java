@@ -71,6 +71,13 @@ import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
+/**
+ * <p>
+ *     Implementation of StateStorage that stores task state in the Grakn system graph.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class GraknStateStorage implements StateStorage {
     private final static String TASK_VAR = "task";
     private final static int retries = 10;

@@ -22,6 +22,8 @@ import java.util.Optional;
 
 /**
  * A pair of role type and role player (where the role type may not be present)
+ *
+ * @author Felix Chapman
  */
 public interface RelationPlayer {
     /**

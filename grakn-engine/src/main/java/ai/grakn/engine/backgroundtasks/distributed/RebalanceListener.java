@@ -24,6 +24,12 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.util.Collection;
 
+/**
+ * A callback interface that triggers a kafka sync when the set of partitions assigned to the
+ * consumer changes.
+ *
+ * @author alexandraorth, Denis Lobanov
+ */
 public class RebalanceListener implements ConsumerRebalanceListener {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final KafkaConsumer consumer;

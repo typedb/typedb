@@ -30,6 +30,14 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
 import java.util.Set;
 
+/**
+ * Represents the {@code type-name} property on a {@link ai.grakn.concept.Type}.
+ *
+ * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
+ * name, then that type will be retrieved.
+ *
+ * @author Felix Chapman
+ */
 public class NameProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
     private final TypeName name;

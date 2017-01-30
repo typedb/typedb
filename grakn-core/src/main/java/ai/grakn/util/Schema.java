@@ -22,6 +22,8 @@ import ai.grakn.concept.TypeName;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
+ *
+ * @author Filipe Teixeira
  */
 public final class Schema {
     private Schema() {

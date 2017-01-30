@@ -27,6 +27,14 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * The MapReduce program for computing the sum of the given resource.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class SumMapReduce extends GraknMapReduce<Number> {
 
     // Needed internally for OLAP tasks

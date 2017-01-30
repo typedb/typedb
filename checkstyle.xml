@@ -86,6 +86,14 @@
         <!-- Allow only one statement per line -->
         <module name="OneStatementPerLine"/>
 
+        <!-- Require JavaDoc on types (classes, interfaces, etc.) -->
+        <module name="JavadocType">
+            <property name="scope" value="public"/>
+            <property name="allowMissingParamTags" value="true"/>
+            <property name="allowUnknownTags" value="true"/>
+            <property name="authorFormat" value=".*"/>
+        </module>
+
     </module>
 
 </module>

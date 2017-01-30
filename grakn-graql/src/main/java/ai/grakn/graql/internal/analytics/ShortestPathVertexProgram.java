@@ -37,6 +37,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * The vertex program for computing the shortest path between two instances.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private static final int MAX_ITERATION = 50;

@@ -46,6 +46,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 
 /**
  * Class to manage tasks distributed using Kafka.
+ *
+ * @author Denis Lobanov
  */
 public class DistributedTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);

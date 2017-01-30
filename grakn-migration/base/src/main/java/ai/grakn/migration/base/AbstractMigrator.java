@@ -35,6 +35,14 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * <p>
+ *     Abstract migrator class containing methods and functionality needed by
+ *     all extending migrator classes.
+ * </p>
+ *
+ * @author alexandraorth
+ */
 public abstract class AbstractMigrator implements Migrator {
 
     private static final ConfigProperties properties = ConfigProperties.getInstance();

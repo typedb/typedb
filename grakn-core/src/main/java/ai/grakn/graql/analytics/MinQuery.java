@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Compute the minimum value of the selected resource-type.
+ *
+ * @author Jason Liu
  */
 public interface MinQuery extends ComputeQuery<Optional<Number>> {
 

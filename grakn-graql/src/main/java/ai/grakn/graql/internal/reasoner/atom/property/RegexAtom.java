@@ -25,6 +25,15 @@ import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.admin.Atomic;
 
+/**
+ *
+ * <p>
+ * Atomic corresponding to graql RegexProperty.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class RegexAtom extends AtomBase {
 
     private final String regex;

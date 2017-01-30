@@ -31,6 +31,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * The vertex program for computing the degree.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key

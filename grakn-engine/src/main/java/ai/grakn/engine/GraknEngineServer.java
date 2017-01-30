@@ -62,6 +62,8 @@ import static spark.Spark.webSocketIdleTimeoutMillis;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
+ *
+ * @author Marco Scoppetta
  */
 
 public class GraknEngineServer {

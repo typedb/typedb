@@ -22,6 +22,8 @@ import java.util.Set;
 
 /**
  * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
+ *
+ * @author Felix Chapman
  */
 public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     /**

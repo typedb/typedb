@@ -22,6 +22,13 @@ import ai.grakn.GraknGraph;
 
 import java.util.stream.Stream;
 
+/**
+ * A Graql query of any kind. May read and write to the graph.
+ *
+ * @param <T> The result type after executing the query
+ *
+ * @author Felix Chapman
+ */
 public interface Query<T> {
 
     /**
@@ -30,6 +37,10 @@ public interface Query<T> {
      */
     Query<T> withGraph(GraknGraph graph);
 
+    /**
+     * Execute the query against the graph (potentially writing to the graph) and return a result
+     * @return the result of the query
+     */
     T execute();
 
     /**

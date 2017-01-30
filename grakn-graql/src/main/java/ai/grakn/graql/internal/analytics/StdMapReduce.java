@@ -28,6 +28,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * The MapReduce program for computing the standard deviation of the given resource.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class StdMapReduce extends GraknMapReduce<Map<String, Double>> {
 
     public static final String COUNT = "C";

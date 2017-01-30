@@ -28,6 +28,17 @@ import java.util.function.Consumer;
 
 import static ai.grakn.engine.util.ConfigProperties.POST_PROCESSING_DELAY;
 
+/**
+ * <p>
+ *     Task that control when postprocessing starts.
+ * </p>
+ *
+ * <p>
+ *     This task begins only if enough time has passed (configurable) since the last time a job was added.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class PostProcessingTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final ConfigProperties properties = ConfigProperties.getInstance();

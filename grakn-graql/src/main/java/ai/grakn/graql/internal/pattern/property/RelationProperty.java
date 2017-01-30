@@ -63,6 +63,16 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a {@link Relation}.
+ *
+ * This property can be queried and inserted.
+ *
+ * This propert is comprised of instances of {@link RelationPlayer}, which represents associations between a
+ * role-player {@link Instance} and an optional {@link RoleType}.
+ *
+ * @author Felix Chapman
+ */
 public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
     private final ImmutableMultiset<RelationPlayer> relationPlayers;

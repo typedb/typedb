@@ -30,6 +30,8 @@ import java.util.Optional;
 
 /**
  * Compute the shortest path between two instances.
+ *
+ * @author Jason Liu
  */
 public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
 

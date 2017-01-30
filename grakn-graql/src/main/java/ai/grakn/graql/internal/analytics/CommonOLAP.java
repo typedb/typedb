@@ -32,6 +32,10 @@ import java.util.Set;
 
 /**
  * Core Grakn implementation of the common methods on the MapReduce and VertexProgram interfaces.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
  */
 public abstract class CommonOLAP {
 

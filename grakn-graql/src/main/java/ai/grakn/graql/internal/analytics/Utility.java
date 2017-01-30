@@ -30,6 +30,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Some helper methods for MapReduce and vertex program.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
@@ -84,8 +92,8 @@ public class Utility {
      * A helper method for set MapReduce. It simply combines sets into one set.
      *
      * @param values the aggregated values associated with the key
+     * @param <T>    the type of the set
      * @return the combined set
-     * @param <T> the type of the set
      */
     static <T> Set<T> reduceSet(Iterator<Set<T>> values) {
         Set<T> set = new HashSet<>();

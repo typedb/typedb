@@ -20,8 +20,10 @@ package ai.grakn.graql.internal.util;
 
 /**
  * Includes ANSI unicode commands for different colours
+ *
+ * @author Felix Chapman
  */
-@SuppressWarnings({"unused", "JavaDoc"})
+@SuppressWarnings("unused")
 public class ANSI {
     private ANSI() {
 

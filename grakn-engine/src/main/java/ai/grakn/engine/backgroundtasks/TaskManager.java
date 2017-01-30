@@ -23,6 +23,17 @@ import org.json.JSONObject;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * <p>
+ *     The base TaskManager interface.
+ * </p>
+ *
+ * <p>
+ *     Provides common methods for scheduling tasks for execution and stopping task execution.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public interface TaskManager extends AutoCloseable {
     /**
      * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds. All parameters must not be

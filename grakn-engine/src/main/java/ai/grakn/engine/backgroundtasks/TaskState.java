@@ -24,6 +24,8 @@ import java.time.Instant;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
+ *
+ * @author Denis Lobanov
  */
 public class TaskState implements Cloneable {
     /**

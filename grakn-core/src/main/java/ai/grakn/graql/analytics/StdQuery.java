@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Compute the standard deviation of the selected resource-type.
+ *
+ * @author Jason Liu
  */
 public interface StdQuery extends ComputeQuery<Optional<Double>> {
 

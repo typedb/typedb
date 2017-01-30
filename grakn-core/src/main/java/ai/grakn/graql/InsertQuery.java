@@ -34,6 +34,8 @@ import java.util.Map;
  * <p>
  * When built from a {@code MatchQuery}, the insert query will execute for each result of the {@code MatchQuery},
  * where variable names in the {@code InsertQuery} are bound to the concept in the result of the {@code MatchQuery}.
+ *
+ * @author Felix Chapman
  */
 public interface InsertQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
 

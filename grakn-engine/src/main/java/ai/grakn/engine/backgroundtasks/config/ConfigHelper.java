@@ -39,6 +39,14 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
 import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
 import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 
+/**
+ * <p>
+ * Class containing helper methods to retrieve the default configuration for
+ * Zookeeper and Kafka consumers & producers
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class ConfigHelper {
 
     public static CuratorFramework client() {

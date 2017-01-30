@@ -52,6 +52,8 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Manage loading tasks in the Task Manager
+ *
+ * @author Alexandra Orth
  */
 public class Loader {
 

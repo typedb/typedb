@@ -26,6 +26,15 @@ import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.admin.Atomic;
 
+/**
+ *
+ * <p>
+ * Atomic corresponding to graql DataTypeProperty.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class DataTypeAtom extends AtomBase {
 
     private final ResourceType.DataType<?> datatype;

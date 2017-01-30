@@ -18,6 +18,14 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+/**
+ * <p>
+ *     Describes the six possible states a task can be in.
+ *     Each state represents a different point in the process of execution.
+ * </p>
+ *
+ * @author alexandraorth, Denis Lobanov
+ */
 public enum TaskStatus {
     /**
      * Save task in the graph, but not plans to run it yet - initial state.

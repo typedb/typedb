@@ -58,6 +58,13 @@ import static spark.Spark.get;
 import static spark.Spark.post;
 import static spark.Spark.put;
 
+/**
+ * <p>
+ *     Endpoints used to query and control queued background tasks.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {

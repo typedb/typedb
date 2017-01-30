@@ -20,6 +20,8 @@ package ai.grakn.exception;
 
 /**
  * This Exception is thrown when a concept is malformed or incorrect in some way.
+ *
+ * @author Filipe Teixeira
  */
 public class ConceptException extends GraphRuntimeException {
     public ConceptException(String message) {

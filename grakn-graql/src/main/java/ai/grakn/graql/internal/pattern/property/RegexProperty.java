@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -31,6 +32,16 @@ import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.graql.internal.util.StringConverter;
 import java.util.Set;
 
+/**
+ * Represents the {@code regex} property on a {@link ResourceType}.
+ *
+ * This property can be queried and inserted.
+ *
+ * This property introduces a validation constraint on instances of this {@link ResourceType}, stating that their
+ * values must conform to the given regular expression.
+ *
+ * @author Felix Chapman
+ */
 public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty, NamedProperty {
 
     private final String regex;

@@ -47,7 +47,7 @@ import java.util.Set;
  * </p>
  *
  * <p>
- *     This produces an in memory grakn graph on top of {@link TitanGraph}.
+ *     This produces a grakn graph on top of {@link TitanGraph}.
  *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
  * </p>
  *

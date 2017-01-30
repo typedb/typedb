@@ -39,6 +39,18 @@ import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 
+/**
+ * <p>
+ *     A Grakn Graph on top of {@link OrientGraph}
+ * </p>
+ *
+ * <p>
+ *     This produces an grakn graph on top of {@link OrientGraph}.
+ *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ * </p>
+ *
+ * @author fppt
+ */
 public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrientDBGraph, OrientGraph> {
     private final Logger LOG = LoggerFactory.getLogger(OrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;

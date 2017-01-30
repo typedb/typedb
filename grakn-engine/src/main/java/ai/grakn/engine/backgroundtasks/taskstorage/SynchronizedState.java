@@ -27,6 +27,8 @@ import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
 
 /**
  * State to be stored in Zookeeper
+ *
+ * @author Denis Lobanov
  */
 public class SynchronizedState {
     private TaskStatus status;

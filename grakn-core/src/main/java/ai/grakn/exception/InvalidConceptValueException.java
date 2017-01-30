@@ -20,6 +20,8 @@ package ai.grakn.exception;
 
 /**
  * Thrown when the value of a resource does not match the resources datatype.
+ *
+ * @author Filipe Teixeira
  */
 public class InvalidConceptValueException extends ConceptException {
     public InvalidConceptValueException(String message) {

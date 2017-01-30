@@ -34,7 +34,13 @@ import java.util.Properties;
 
 import static spark.Spark.get;
 
-
+/**
+ * <p>
+ *     Endpoints used to retrieve all the info about the current instance of Grakn.
+ * </p>
+ *
+ * @author Marco Scoppetta
+ */
 @Path("/status")
 @Api(value = "/status", description = "Endpoints used to retrieve all the info about the current instance of Grakn")
 @Produces({"application/json"})
