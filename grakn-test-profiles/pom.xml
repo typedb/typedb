@@ -17,7 +17,6 @@
         <grakn.test-profile>tinker</grakn.test-profile>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
         <docker-tests>true</docker-tests>
-        <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
     </properties>
 
     <build>
