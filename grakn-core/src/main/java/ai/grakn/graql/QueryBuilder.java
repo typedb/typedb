@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 
 /**
  * Starting point for creating queries
+ *
+ * @author Felix Chapman
  */
 public interface QueryBuilder {
 

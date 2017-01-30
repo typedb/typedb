@@ -26,6 +26,8 @@ import ai.grakn.util.Schema;
 
 /**
  * This exception is thrown when two concepts attept to have the same unique id.
+ *
+ * @author Filipe Teixeira
  */
 public class ConceptNotUniqueException extends ConceptException {
     public ConceptNotUniqueException(Concept concept, Schema.ConceptProperty type, String id) {

@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting a Var
+ *
+ * @author Felix Chapman
  */
 public interface VarAdmin extends PatternAdmin, Var {
     @Override

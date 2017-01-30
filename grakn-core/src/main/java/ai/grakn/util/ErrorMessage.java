@@ -23,6 +23,8 @@ package ai.grakn.util;
  *
  * Each error message contains a single format string, with a method {@link ErrorMessage#getMessage(Object...)} that
  * accepts arguments to be passed to the format string.
+ *
+ * @author Filipe Teixeira
  */
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------

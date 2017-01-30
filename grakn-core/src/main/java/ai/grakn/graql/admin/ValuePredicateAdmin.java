@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Admin class for inspecting a ValuePredicate
+ *
+ * @author Felix Chapman
  */
 public interface ValuePredicateAdmin extends ValuePredicate {
 

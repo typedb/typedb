@@ -20,6 +20,8 @@ package ai.grakn.util;
 
 /**
  * Class containing strings describing the REST API, including URIs and fields.
+ *
+ * @author Marco Scoppetta
  */
 public class REST {
 

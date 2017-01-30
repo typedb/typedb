@@ -32,6 +32,8 @@ import java.util.Optional;
  * to convert a {@code Yaml} into a {@code String}.
  *
  * <T> The type of the intermediate representation that can be converted into a string
+ *
+ * @author Felix Chapman
  */
 public interface Printer<T> {
 

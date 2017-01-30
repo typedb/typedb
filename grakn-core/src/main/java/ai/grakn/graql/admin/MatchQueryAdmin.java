@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting and manipulating a MatchQuery
+ *
+ * @author Felix Chapman
  */
 public interface MatchQueryAdmin extends MatchQuery {
 

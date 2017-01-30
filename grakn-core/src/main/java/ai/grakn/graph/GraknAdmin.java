@@ -31,6 +31,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * Admin interface for {@link GraknGraph}.
+ *
+ * @author Filipe Teixeira
  */
 public interface GraknAdmin {
 

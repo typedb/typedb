@@ -18,9 +18,12 @@
 
 package ai.grakn.exception;
 
+//TODO: communicate in complete sentences
 /**
  * This exception is thrown when attempting to incorrectly cast a concept to something it is not.
  * For example when
+ *
+ * @author Filipe Teixiera
  */
 public class InvalidConceptTypeException extends ConceptException {
     public InvalidConceptTypeException(String message) {

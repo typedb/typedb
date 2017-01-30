@@ -22,6 +22,8 @@ import ai.grakn.util.ErrorMessage;
 
 /**
  * An exception which encapsulates a vendor backend error
+ *
+ * @author Filipe Teixeira
  */
 public class GraknBackendException extends GraphRuntimeException {
     public GraknBackendException(Exception e) {

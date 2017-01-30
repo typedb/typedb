@@ -26,6 +26,8 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
  * A atom describes a atom (true/false) function that can be tested against some value in the graph.
  * <p>
  * Predicates can be combined together using the methods {@code and}, {@code or}, {@code any} and {@code all}.
+ *
+ * @author Felix Chapman
  */
 public interface ValuePredicate {
 

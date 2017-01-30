@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 
 /**
  * A property of a {@link VarAdmin}, such as "isa movie" or "has name 'Jim'"
+ *
+ * @author Felix Chapman
  */
 public interface VarProperty {
 

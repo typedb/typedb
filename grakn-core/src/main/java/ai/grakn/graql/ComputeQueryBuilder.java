@@ -34,6 +34,8 @@ import java.util.Map;
 
 /**
  * Starting point for creating compute queries.
+ *
+ * @author Jason Liu
  */
 public interface ComputeQueryBuilder {
 

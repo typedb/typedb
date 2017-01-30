@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting and manipulating an InsertQuery
+ *
+ * @author Felix CHapman
  */
 public interface InsertQueryAdmin extends InsertQuery {
 
