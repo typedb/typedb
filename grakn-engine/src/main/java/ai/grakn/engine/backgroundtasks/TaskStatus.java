@@ -40,7 +40,7 @@ public enum TaskStatus {
      * The task has been stopped on request.
      */
     STOPPED,
-    currentStatus, /**
+    /**
      * The task has failed to execute.
      */
     FAILED
