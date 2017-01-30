@@ -333,7 +333,7 @@ public class GraqlShell {
     private void start(Optional<List<String>> queryStrings) throws IOException {
 
         // Begin sending pings
-        Thread thread = new Thread(() -> WebSocketPing.ping(session));
+        Thread thread = new Thread(() -> WebSocketPing.ping(session), "graql-shell-ping");
         thread.setDaemon(true);
         thread.start();
 
