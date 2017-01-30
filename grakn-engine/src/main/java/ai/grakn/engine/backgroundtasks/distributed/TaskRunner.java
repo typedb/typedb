@@ -38,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -79,6 +80,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final Set<String> runningTasks = new HashSet<>();
     private final TaskStateStorage storage;
     private final ZookeeperConnection connection;
+    private final CountDownLatch shutdownLatch;
 
     private ExecutorService executor;
     private KafkaConsumer<String, String> consumer;
@@ -94,6 +96,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
         registerAsRunning();
         updateOwnState();
         executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
+
+        shutdownLatch = new CountDownLatch(1);
 
         LOG.info("TaskRunner started");
     }
@@ -118,6 +122,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         finally {
             consumer.commitSync();
             consumer.close();
+            shutdownLatch.countDown();
         }
     }
 
@@ -127,6 +132,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
     public void close() {
         // Stop execution of kafka consumer
         consumer.wakeup();
+
+        try {
+            shutdownLatch.await();
+        } catch (InterruptedException e){
+            LOG.error("Error waiting for TaskRunner consumer to exit " + getFullStackTrace(e));
+        }
 
         // Interrupt all currently running threads - these will be re-allocated to another Engine.
         executor.shutdownNow();
