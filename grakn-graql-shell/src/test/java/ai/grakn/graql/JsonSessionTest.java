@@ -29,11 +29,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -69,6 +72,20 @@ public class JsonSessionTest {
         exception.expect(WebSocketException.class);
 
         jsonSession.sendJson(Json.object(ACTION, ACTION_END));
+    }
+
+    @Test
+    public void whenSessionThrowsACheckedExceptionThenConstructorShouldThrowARuntimeException() throws Exception {
+        client = mock(GraqlClient.class);
+        CompletableFuture<Session> future = mock(CompletableFuture.class);
+        when(client.connect(any(), any())).thenReturn(future);
+        ExecutionException executionException = new ExecutionException(new ConnectException());
+        when(future.get()).thenThrow(executionException);
+
+        exception.expect(RuntimeException.class);
+        exception.expectCause(is(executionException));
+
+        new JsonSession(client, uri);
     }
 
     @Test

@@ -63,10 +63,8 @@ public class JsonSession {
     JsonSession(GraqlClient client, URI uri) {
         try {
             this.session = client.connect(this, uri).get();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
         }
     }
 
@@ -99,7 +97,7 @@ public class JsonSession {
 
     private Json getMessage() {
         try {
-            return messages.poll(5, TimeUnit.MINUTES);
+            return messages.poll(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
