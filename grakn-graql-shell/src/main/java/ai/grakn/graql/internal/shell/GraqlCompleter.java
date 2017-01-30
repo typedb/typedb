@@ -29,6 +29,8 @@ import java.util.concurrent.ExecutionException;
 /**
  * An autocompleter for Graql.
  * Provides a default 'complete' method that will filter results to only those that pass the Graql lexer
+ *
+ * @author Felix Chapman
  */
 public class GraqlCompleter implements Completer {
 

@@ -93,6 +93,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 
 /**
  * A Graql REPL shell that can be run from the command line
+ *
+ * @author Felix Chapman
  */
 public class GraqlShell {
     private static final String LICENSE_PROMPT = "\n" +

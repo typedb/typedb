@@ -46,6 +46,8 @@ import static java.util.Spliterator.IMMUTABLE;
 
 /**
  * Websocket session for sending and receiving JSON
+ *
+ * @author Felix Chapman
  */
 @WebSocket
 public class JsonSession {
