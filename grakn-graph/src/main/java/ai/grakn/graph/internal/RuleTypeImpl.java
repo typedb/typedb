@@ -27,8 +27,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
-
 /**
  * <p>
  *     An ontological element used to model and categorise different types of {@link Rule}.
@@ -42,8 +40,12 @@ import java.util.Optional;
  * @author fppt
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
-    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type) {
-        super(graknGraph, v, type, Optional.empty());
+    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RuleType type) {
+        super(graknGraph, v, type);
     }
 
     @Override
@@ -57,6 +59,6 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
         }
 
         return addInstance(Schema.BaseType.RULE, (vertex, type) ->
-                getGraknGraph().getElementFactory().buildRule(vertex, Optional.of(type), Optional.of(lhs), Optional.of(rhs)));
+                getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
     }
 }

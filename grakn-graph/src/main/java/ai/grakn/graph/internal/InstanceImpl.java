@@ -37,7 +37,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,9 +59,13 @@ import java.util.stream.Collectors;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
-    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<V> type) {
+    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        type.ifPresent(this::type);
+    }
+
+    InstanceImpl(AbstractGraknGraph graknGraph, Vertex v, V type) {
+        super(graknGraph, v);
+        type(type);
     }
 
     /**

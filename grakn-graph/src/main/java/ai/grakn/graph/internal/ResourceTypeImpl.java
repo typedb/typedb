@@ -26,7 +26,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,10 +49,14 @@ import java.util.regex.Pattern;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
-    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<ResourceType<D>> type, Optional<DataType<D>> dataType, Optional<Boolean> isUnique) {
-        super(graknGraph, v, type, Optional.empty());
-        dataType.ifPresent(d -> setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, d, getDataType(), DataType::getName));
-        isUnique.ifPresent(u -> setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, u, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity()));
+    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, ResourceType<D> type, DataType<D> dataType, Boolean isUnique) {
+        super(graknGraph, v, type);
+        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
+        setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity());
     }
 
     /**
@@ -87,7 +90,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         Resource<D> resource = getResource(value);
         if(resource == null){
             resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->
-                    getGraknGraph().getElementFactory().buildResource(vertex, Optional.of(type), Optional.of(value)));
+                    getGraknGraph().getElementFactory().buildResource(vertex, type, value));
         }
         return resource;
 
