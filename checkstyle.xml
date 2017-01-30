@@ -91,6 +91,7 @@
             <property name="scope" value="public"/>
             <property name="allowMissingParamTags" value="true"/>
             <property name="allowUnknownTags" value="true"/>
+            <property name="authorFormat" value=".*"/>
         </module>
 
     </module>
