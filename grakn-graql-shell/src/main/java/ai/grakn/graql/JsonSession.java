@@ -51,7 +51,7 @@ import static java.util.Spliterator.IMMUTABLE;
 public class JsonSession {
 
     private final Session session;
-    private static final long DEFAULT_TIMEOUT = 5;
+    private static final long DEFAULT_TIMEOUT = 1;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = Executors.defaultThreadFactory().newThread(runnable);
