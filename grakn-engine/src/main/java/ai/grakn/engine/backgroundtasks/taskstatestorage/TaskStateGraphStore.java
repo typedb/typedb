@@ -38,7 +38,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import javafx.util.Pair;
 
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -67,8 +66,6 @@ import static ai.grakn.engine.util.SystemOntologyElements.SERIALISED_TASK;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
-import static org.apache.commons.lang.SerializationUtils.deserialize;
-import static org.apache.commons.lang.SerializationUtils.serialize;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -96,7 +93,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
                 .has(RUN_AT, var().value(task.runAt().toEpochMilli()))
                 .has(RECURRING, var().value(task.isRecurring()))
                 .has(RECUR_INTERVAL, var().value(task.interval()))
-                .has(SERIALISED_TASK, var().value(Base64.getMimeEncoder().encodeToString(serialize(task))));
+                .has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
 
         if(task.configuration() != null) {
             state.has(TASK_CONFIGURATION, var().value(task.configuration().toString()));
@@ -123,7 +120,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Var resources = var(TASK_VAR);
 
         resourcesToDettach.add(SERIALISED_TASK);
-        resources.has(SERIALISED_TASK, var().value(Base64.getMimeEncoder().encodeToString(serialize(task))));
+        resources.has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
 
         // TODO make sure all properties are being update
         if(task.status() != null) {
@@ -201,7 +198,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         ResourceType<String> serialisedResourceType = graph.getResourceType(SERIALISED_TASK.getValue());
         String serialisedTask = (String) instance.resources(serialisedResourceType).iterator().next().getValue();
 
-        return (TaskState) deserialize(Base64.getMimeDecoder().decode(serialisedTask));
+        return TaskState.deserialize(serialisedTask);
     }
 
     @Override
