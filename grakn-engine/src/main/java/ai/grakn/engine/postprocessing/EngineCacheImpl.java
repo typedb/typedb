@@ -98,7 +98,7 @@ public class EngineCacheImpl implements EngineCache {
     //-------------------- Casting Jobs
     @Override
     public Map<String, Set<ConceptId>> getCastingJobs(String keyspace) {
-        return castings.get(keyspace);
+        return castings.computeIfAbsent(keyspace, key -> new ConcurrentHashMap<>());
     }
 
     @Override
@@ -114,7 +114,7 @@ public class EngineCacheImpl implements EngineCache {
     //-------------------- Resource Jobs
     @Override
     public Map<String, Set<ConceptId>> getResourceJobs(String keyspace) {
-        return resources.get(keyspace);
+        return resources.computeIfAbsent(keyspace, key -> new ConcurrentHashMap<>());
     }
 
     @Override

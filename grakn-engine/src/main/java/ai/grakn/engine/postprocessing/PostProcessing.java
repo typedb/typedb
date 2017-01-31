@@ -134,7 +134,7 @@ public class PostProcessing {
     private void performResourceFix(){
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                cache.getCastingJobs(keyspace).entrySet().
+                cache.getResourceJobs(keyspace).entrySet().
                         forEach(entry -> futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, entry.getKey(), entry.getValue()))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);

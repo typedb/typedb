@@ -43,7 +43,6 @@ import java.util.UUID;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
@@ -98,8 +97,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs(BOB).size());
         assertEquals(1, cache.getResourceJobs(BOB).size());
 
-        assertNull(cache.getCastingJobs(TIM));
-        assertNull(cache.getResourceJobs(TIM));
+        assertEquals(0, cache.getCastingJobs(TIM).size());
+        assertEquals(0, cache.getResourceJobs(TIM).size());
 
         addSomeData(tim);
 
@@ -166,6 +165,6 @@ public class CommitLogControllerTest {
         resourceType.putResource("c");
         graph1.commit();
 
-        assertNull(cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME));
+        assertEquals(0, cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME).size());
     }
 }

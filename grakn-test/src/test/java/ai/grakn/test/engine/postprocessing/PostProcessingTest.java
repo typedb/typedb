@@ -204,13 +204,13 @@ public class PostProcessingTest {
         boolean flag = true;
         while(flag){
             if(isCasting){
-                if(cache.getCastingJobs(keyspace).size() < value){
+                if(cache.getNumCastingJobs(keyspace) < value){
                     Thread.sleep(1000);
                 } else{
                     flag = false;
                 }
             } else {
-                if(cache.getResourceJobs(keyspace).size() < value){
+                if(cache.getNumResourceJobs(keyspace) < value){
                     Thread.sleep(1000);
                 } else {
                     flag = false;
