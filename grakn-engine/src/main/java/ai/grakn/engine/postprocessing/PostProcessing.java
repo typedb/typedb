@@ -61,7 +61,7 @@ public class PostProcessing {
     private final EngineCacheImpl cache;
 
     private PostProcessing() {
-        postpool = Executors.newFixedThreadPool(Integer.valueOf(ConfigProperties.getInstance().getProperty(ConfigProperties.POST_PROCESSING_THREADS)));
+        postpool = Executors.newFixedThreadPool(Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
         cache = EngineCacheImpl.getInstance();
         futures = ConcurrentHashMap.newKeySet();
