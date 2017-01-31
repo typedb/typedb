@@ -78,7 +78,7 @@ public class SchedulerTest {
 
     @Test
     public void immediateNonRecurringScheduled() {
-        Set<TaskState> tasks = createTasks(storage, 5, CREATED);
+        Set<TaskState> tasks = createTasks(5, CREATED);
         sendTasksToNewTasksQueue(tasks);
         waitForStatus(storage, tasks, SCHEDULED);
 
@@ -91,7 +91,7 @@ public class SchedulerTest {
     @Test
     public void schedulerPicksUpFromLastOffset() throws InterruptedException {
         // Schedule 5 tasks
-        Set<TaskState> tasks = createTasks(storage, 5, CREATED);
+        Set<TaskState> tasks = createTasks(5, CREATED);
         sendTasksToNewTasksQueue(tasks);
         waitForStatus(storage, tasks, SCHEDULED);
 
@@ -102,7 +102,7 @@ public class SchedulerTest {
         producer = ConfigHelper.kafkaProducer();
 
         // Schedule 5 more tasks
-        tasks = createTasks(storage, 5, CREATED);
+        tasks = createTasks(5, CREATED);
         sendTasksToNewTasksQueue(tasks);
 
         // Restart the scheduler
@@ -121,7 +121,7 @@ public class SchedulerTest {
     }
 
     private void sendTasksToNewTasksQueue(Set<TaskState> tasks) {
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), t.configuration().toString())));
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), TaskState.serialize(t))));
         producer.flush();
     }
 }
