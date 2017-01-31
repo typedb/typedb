@@ -795,42 +795,28 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
     /**
-     * Merges duplicate castings if one is found.
-     * @param castingId The id of the casting to check for duplicates
-     * @return true if some castings were merged
+     * Merges the provided duplicate castings.
+     *
+     * @param castingVertexIds The vertex Ids of the duplicate castings
+     * @return if castings were merged and a commit is required.
      */
     @Override
-    public boolean fixDuplicateCasting(Object castingId){
-        //Get the Casting
-        ConceptImpl concept = getConceptByBaseIdentifier(castingId);
-        if(concept == null || !concept.isCasting()) {
-            return false;
+    public boolean fixDuplicateCastings(Set<String> castingVertexIds){
+        Set<CastingImpl> castings = castingVertexIds.stream().map(this::<CastingImpl>getConceptByBaseIdentifier).collect(Collectors.toSet());
+        if(castings.size() > 1){
+            CastingImpl mainCasting = castings.iterator().next();
+            castings.remove(mainCasting);
+
+            //Fix the duplicates
+            Set<RelationImpl> duplicateRelations = mergeCastings(mainCasting, castings);
+
+            //Remove Redundant Relations
+            deleteRelations(duplicateRelations);
+
+            return true;
         }
 
-        //Check if the casting has duplicates
-        CastingImpl casting = concept.asCasting();
-        InstanceImpl rolePlayer = casting.getRolePlayer();
-        RoleType role = casting.getRole();
-
-        //Traversal here is used to take advantage of vertex centric index
-        List<Vertex> castingVertices = getTinkerPopGraph().traversal().V(rolePlayer.getBaseIdentifier()).
-                inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
-
-        Set<CastingImpl> castings = castingVertices.stream().map( elementFactory::<CastingImpl>buildConcept).collect(Collectors.toSet());
-
-        if(castings.size() < 2){
-            return false;
-        }
-
-        //Fix the duplicates
-        castings.remove(casting);
-        Set<RelationImpl> duplicateRelations = mergeCastings(casting, castings);
-
-        //Remove Redundant Relations
-        deleteRelations(duplicateRelations);
-
-        return true;
+        return false;
     }
 
     /**

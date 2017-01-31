@@ -48,9 +48,10 @@ class ConceptFixer {
         int retry = 0;
         while (notDone) {
             try (AbstractGraknGraph graph = (AbstractGraknGraph) EngineGraknGraphFactory.getInstance().getGraph(keyspace)) {
-                if (graph.fixDuplicateCasting(castingId)) {
-                    graph.commit((c, r) -> {}); //No caching is needed in this case
-                }
+                //TODO: Get this working with new casting fixer
+                //if (graph.fixDuplicateCasting(castingId)) {
+                //    graph.commit((c, r) -> {}); //No caching is needed in this case
+                //}
                 cache.deleteJobCasting(graph.getKeyspace(), castingId);
                 notDone = false;
             } catch (Exception e) {

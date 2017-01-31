@@ -48,11 +48,12 @@ public interface EngineGraknGraph extends BaseGraknGraph {
     void commit(EngineCache cache) throws GraknValidationException;
 
     /**
-     * Merges duplicate castings if one is found.
-     * @param castingId The id of the casting to check for duplicates
-     * @return true if some castings were merged
+     * Merges the provided duplicate castings.
+     *
+     * @param castingVertexIds The vertex Ids of the duplicate castings
+     * @return if castings were merged and a commit is required.
      */
-    boolean fixDuplicateCasting(Object castingId);
+    boolean fixDuplicateCastings(Set<String> castingVertexIds);
 
     /**
      *

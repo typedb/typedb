@@ -66,20 +66,22 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingDuplicateCasting(){
-        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3);
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
+        Set<String> castingVertexIds = new HashSet<>();
+        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId().getValue());
+        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue());
+        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4).getId().getValue());
         assertEquals(3, instance1.castings().size());
 
-        graknGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
+        graknGraph.fixDuplicateCastings(castingVertexIds);
         assertEquals(1, instance1.castings().size());
     }
 
-    private void buildDuplicateCastingWithNewRelation(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
+    private CastingImpl buildDuplicateCastingWithNewRelation(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
         RelationImpl relation = (RelationImpl) relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
         Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
@@ -90,6 +92,8 @@ public class PostprocessingTest extends GraphTestBase{
 
         putFakeShortcutEdge(relationType, relation, mainRoleType, mainInstance, otherRoleType, otherInstance);
         putFakeShortcutEdge(relationType, relation, otherRoleType, otherInstance, mainRoleType, mainInstance);
+
+        return graknGraph.admin().buildConcept(castingVertex);
     }
 
     private void putFakeShortcutEdge(RelationType relationType, Relation relation, RoleType fromRole, InstanceImpl fromInstance, RoleType toRole, InstanceImpl toInstance){
@@ -113,10 +117,11 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingDuplicateRelationsDueToDuplicateCastings() {
-        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
+        Set<String> castingVertexIds = new HashSet<>();
 
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2);
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3);
+        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId().getValue());
+        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue());
+        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue());
 
         assertEquals(3, instance1.relations().size());
         assertEquals(2, instance2.relations().size());
@@ -125,7 +130,7 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(6, graknGraph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
-        graknGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
+        graknGraph.fixDuplicateCastings(castingVertexIds);
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());
