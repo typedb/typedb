@@ -70,6 +70,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.REST.Request.COMMIT_LOG_ID;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_INDEX;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 /**
@@ -773,9 +776,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void loadCommitLogConcepts(JSONArray jsonArray, Schema.BaseType baseType, Set<Pair<String, ConceptId>> concepts){
         concepts.forEach(concept -> {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("concept-base-type", baseType.name());
-            jsonObject.put("concept-index", concept.getValue0());
-            jsonObject.put("concept-vertex-id", concept.getValue1().getValue());
+            jsonObject.put(REST.Request.COMMIT_LOG_TYPE, baseType.name());
+            jsonObject.put(REST.Request.COMMIT_LOG_INDEX, concept.getValue0());
+            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().getValue());
             jsonArray.put(jsonObject);
         });
     }
