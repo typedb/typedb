@@ -23,7 +23,6 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
@@ -31,11 +30,9 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static ai.grakn.test.matcher.MatchableConcept.NAME_TYPES;
 import static ai.grakn.util.Schema.MetaSchema.CONCEPT;
 import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
@@ -46,6 +43,7 @@ import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Collection of static methods to create {@link Matcher} instances for tests.
@@ -65,25 +63,16 @@ public class GraknMatchers {
     public static Matcher<MatchQuery> results(
             Matcher<? extends Iterable<? extends Map<String, ? extends MatchableConcept>>> matcher
     ) {
-        return new TypeSafeDiagnosingMatcher<MatchQuery>() {
-            @Override
-            protected boolean matchesSafely(MatchQuery query, Description mismatch) {
-                List<Map<String, MatchableConcept>> results =
-                        query.stream().map(m -> Maps.transformValues(m, MatchableConcept::new)).collect(toList());
+        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<String, ? extends MatchableConcept>>>(matcher) {
 
-                if (matcher.matches(results)) {
-                    return true;
-                } else {
-                    mismatch.appendText("results(");
-                    matcher.describeMismatch(results, mismatch);
-                    mismatch.appendText(")");
-                    return false;
-                }
+            @Override
+            public String getName() {
+                return "results";
             }
 
             @Override
-            public void describeTo(Description description) {
-                description.appendText("results(").appendDescriptionOf(matcher).appendText(")");
+            Iterable<? extends Map<String, ? extends MatchableConcept>> transform(MatchQuery item) {
+                return item.stream().map(m -> Maps.transformValues(m, MatchableConcept::new)).collect(toList());
             }
         };
     }
@@ -92,27 +81,19 @@ public class GraknMatchers {
      * Create a matcher to test against every variable of every result of a Graql query.
      */
     public static Matcher<MatchQuery> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
-        return new TypeSafeDiagnosingMatcher<MatchQuery>() {
-            @Override
-            public boolean matchesSafely(MatchQuery matchQuery, Description mismatch) {
-                List<? extends MatchableConcept> concepts = matchQuery.stream()
-                        .flatMap(result -> result.values().stream())
-                        .map(MatchableConcept::new)
-                        .collect(toList());
+        return new PropertyMatcher<MatchQuery, Iterable<? extends MatchableConcept>>(matcher) {
 
-                if (matcher.matches(concepts)) {
-                    return true;
-                } else {
-                    mismatch.appendText("allVariables(");
-                    matcher.describeMismatch(concepts, mismatch);
-                    mismatch.appendText(")");
-                    return false;
-                }
+            @Override
+            public String getName() {
+                return "allVariables";
             }
 
             @Override
-            public void describeTo(Description description) {
-                description.appendText("allVariables(").appendDescriptionOf(matcher).appendText(")");
+            Iterable<? extends MatchableConcept> transform(MatchQuery item) {
+                return item.stream()
+                        .flatMap(result -> result.values().stream())
+                        .map(MatchableConcept::new)
+                        .collect(toList());
             }
         };
     }
@@ -123,28 +104,16 @@ public class GraknMatchers {
     public static Matcher<MatchQuery> variable(
             String varName, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
     ) {
-        VarName var = VarName.of(varName);
+        return new PropertyMatcher<MatchQuery, Iterable<? extends MatchableConcept>>(matcher) {
 
-        return new TypeSafeDiagnosingMatcher<MatchQuery>() {
             @Override
-            public boolean matchesSafely(MatchQuery matchQuery, Description mismatch) {
-                List<? extends MatchableConcept> concepts =
-                        matchQuery.get(varName).map(MatchableConcept::new).collect(toList());
-
-                if (matcher.matches(concepts)) {
-                    return true;
-                } else {
-                    mismatch.appendText("variable(");
-                    matcher.describeMismatch(concepts, mismatch);
-                    mismatch.appendText(")");
-                    return false;
-                }
+            public String getName() {
+                return "variable";
             }
 
             @Override
-            public void describeTo(Description description) {
-                description.appendText("variable(")
-                        .appendValue(var).appendText(", ").appendDescriptionOf(matcher).appendText(")");
+            Iterable<? extends MatchableConcept> transform(MatchQuery item) {
+                return item.get(varName).map(MatchableConcept::new).collect(toList());
             }
         };
     }
@@ -153,22 +122,16 @@ public class GraknMatchers {
      * Create a matcher to test the value of a resource.
      */
     public static Matcher<MatchableConcept> hasValue(Object expectedValue) {
-        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
-            @Override
-            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
-                Object value = concept.get().asResource().getValue();
+        return new PropertyEqualsMatcher<MatchableConcept, Object>(expectedValue) {
 
-                if (value.equals(expectedValue)) {
-                    return true;
-                } else {
-                    mismatch.appendValue(value);
-                    return false;
-                }
+            @Override
+            public String getName() {
+                return "hasValue";
             }
 
             @Override
-            public void describeTo(Description description) {
-                description.appendValue(expectedValue);
+            public Object transform(MatchableConcept item) {
+                return item.get().asResource().getValue();
             }
         };
     }
@@ -177,27 +140,16 @@ public class GraknMatchers {
      * Create a matcher to test the type of an instance.
      */
     public static Matcher<MatchableConcept> hasType(Matcher<MatchableConcept> matcher) {
-        Matcher<Iterable<? super MatchableConcept>> matchTypes = hasItem(matcher);
+        return new PropertyMatcher<MatchableConcept, Iterable<? super MatchableConcept>>(hasItem(matcher)) {
 
-        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
             @Override
-            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
-                Set<MatchableConcept> types =
-                        getTypes(concept.get().asInstance()).stream().map(MatchableConcept::new).collect(toSet());
-
-                if (matchTypes.matches(types)) {
-                    return true;
-                } else {
-                    mismatch.appendText("hasType(");
-                    matchTypes.describeMismatch(types, mismatch);
-                    mismatch.appendText(")");
-                    return false;
-                }
+            public String getName() {
+                return "hasType";
             }
 
             @Override
-            public void describeTo(Description description) {
-                description.appendText("hasType(").appendDescriptionOf(matcher).appendText(")");
+            Iterable<? super MatchableConcept> transform(MatchableConcept item) {
+                return getTypes(item.get().asInstance()).stream().map(MatchableConcept::new).collect(toSet());
             }
         };
     }
@@ -247,22 +199,16 @@ public class GraknMatchers {
      * Create a matcher to test that the concept has the given type name.
      */
     private static Matcher<MatchableConcept> type(TypeName expectedName) {
-        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
-            @Override
-            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
-                TypeName typeName = concept.get().asType().getName();
+        return new PropertyEqualsMatcher<MatchableConcept, TypeName>(expectedName) {
 
-                if (typeName.equals(expectedName)) {
-                    return true;
-                } else {
-                    mismatch.appendText("type(").appendText(typeNameToString(typeName)).appendText(")");
-                    return false;
-                }
+            @Override
+            public String getName() {
+                return "type";
             }
 
             @Override
-            public void describeTo(Description description) {
-                description.appendText("type(").appendValue(typeNameToString(expectedName)).appendText(")");
+            TypeName transform(MatchableConcept item) {
+                return item.get().asType().getName();
             }
         };
     }
@@ -280,29 +226,19 @@ public class GraknMatchers {
      * See {@link MatchableConcept#NAME_TYPES} for possible 'name' resources.
      */
     private static Matcher<MatchableConcept> instance(Matcher<MatchableConcept> matcher) {
-        Matcher<Iterable<? super MatchableConcept>> matchResources = hasItem(matcher);
+        return new PropertyMatcher<MatchableConcept, Iterable<? super MatchableConcept>>(hasItem(matcher)) {
 
-        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
             @Override
-            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
-                Set<MatchableConcept> resources = concept.get().asInstance().resources().stream()
-                        .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
-                        .map(MatchableConcept::new)
-                        .collect(toSet());
-
-                if (matchResources.matches(resources)) {
-                    return true;
-                } else {
-                    mismatch.appendText("instance(");
-                    matchResources.describeMismatch(resources, mismatch);
-                    mismatch.appendText(")");
-                    return false;
-                }
+            public String getName() {
+                return "instance";
             }
 
             @Override
-            public void describeTo(Description description) {
-                description.appendText("instance(").appendDescriptionOf(matcher).appendText(")");
+            Iterable<? super MatchableConcept> transform(MatchableConcept item) {
+                return item.get().asInstance().resources().stream()
+                        .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
+                        .map(MatchableConcept::new)
+                        .collect(toSet());
             }
         };
     }
@@ -319,4 +255,51 @@ public class GraknMatchers {
         return types;
     }
 
+}
+
+
+/**
+ * A matcher for testing properties on objects.
+ */
+abstract class PropertyEqualsMatcher<T, S> extends PropertyMatcher<T, S> {
+
+    PropertyEqualsMatcher(S expected) {
+        super(is(expected));
+    }
+}
+
+
+/**
+ * A matcher for testing properties on objects.
+ */
+abstract class PropertyMatcher<T, S> extends TypeSafeDiagnosingMatcher<T> {
+
+    private final Matcher<? extends S> matcher;
+
+    PropertyMatcher(Matcher<? extends S> matcher) {
+        this.matcher = matcher;
+    }
+
+    @Override
+    protected final boolean matchesSafely(T item, Description mismatch) {
+        S transformed = transform(item);
+
+        if (matcher.matches(transformed)) {
+            return true;
+        } else {
+            mismatch.appendText(getName()).appendText("(");
+            matcher.describeMismatch(transformed, mismatch);
+            mismatch.appendText(")");
+            return false;
+        }
+    }
+
+    @Override
+    public final void describeTo(Description description) {
+        description.appendText(getName()).appendText("(").appendDescriptionOf(matcher).appendText(")");
+    }
+
+    public abstract String getName();
+
+    abstract S transform(T item);
 }
