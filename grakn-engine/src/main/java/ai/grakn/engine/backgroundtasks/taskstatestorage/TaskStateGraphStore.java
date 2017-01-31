@@ -28,6 +28,7 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -86,7 +87,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     public TaskStateGraphStore() {}
 
     @Override
-    public String newState(TaskState task) {
+    public String newState(TaskState task) throws EngineStorageException {
         Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId())
                 .has(STATUS, var().value(CREATED.toString()))
@@ -106,7 +107,11 @@ public class TaskStateGraphStore implements TaskStateStorage {
             return true;
         }, true);
 
-        return result.get().equals(true) ? task.getId() : null;
+        if(!result.isPresent()){
+            throw new EngineStorageException("Concept " + task.getId() + " could not be saved in storage");
+        }
+
+        return task.getId();
     }
 
     @Override
@@ -170,13 +175,18 @@ public class TaskStateGraphStore implements TaskStateStorage {
         return result.isPresent();
     }
 
-    public TaskState getState(String id) {
+    @Override
+    public TaskState getState(String id) throws EngineStorageException {
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
             Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
             return instanceToState(graph, instance);
         }, false);
 
-        return result.orElse(null);
+        if(!result.isPresent()){
+            throw new EngineStorageException("Concept " + id + " not found in storage");
+        }
+
+        return result.get();
     }
 
     /**
@@ -194,6 +204,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         return (TaskState) deserialize(Base64.getMimeDecoder().decode(serialisedTask));
     }
 
+    @Override
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
                                                  int limit, int offset) {
         return getTasks(taskStatus, taskClassName, createdBy, limit, offset, false);

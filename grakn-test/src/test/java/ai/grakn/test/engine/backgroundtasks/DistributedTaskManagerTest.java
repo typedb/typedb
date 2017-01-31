@@ -50,19 +50,17 @@ public class DistributedTaskManagerTest {
 
     private void waitToFinish(String id) {
         while (true) {
-            TaskStatus status = manager.storage().getState(id).status();
-            if (status == COMPLETED || status == FAILED) {
-                System.out.println(id + " ------> " + status);
-                break;
-            }
-
-            System.out.println("Checking " + id + " " + status);
-
             try {
+                TaskStatus status = manager.storage().getState(id).status();
+                if (status == COMPLETED || status == FAILED) {
+                    System.out.println(id + " ------> " + status);
+                    break;
+                }
+
+                System.out.println("Checking " + id + " " + status);
+
                 Thread.sleep(5000);
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception ignored){}
         }
     }
 

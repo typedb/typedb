@@ -174,6 +174,7 @@ public enum ErrorMessage {
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] "),
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     LOADER_WAIT_TIMEOUT("Exception thrown due to timeout being exceeded while waiting for loading to complete"),
+    STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     GRAPH_MISSING("Provided query does not have an associated graph"),

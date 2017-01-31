@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import ai.grakn.exception.EngineStorageException;
 import javafx.util.Pair;
 
 import java.util.Set;
@@ -40,7 +41,7 @@ public interface TaskStateStorage {
      * @return String form of the task id, which can be use later to update or retrieve the task state. Null if task could
      * not be created of mandatory fields were omitted.
      */
-    String newState(TaskState state);
+    String newState(TaskState state) throws EngineStorageException;
 
     /**
      * Used to update task state. With the exception of @id any other fields may individually be null, however all parameters
@@ -57,7 +58,7 @@ public interface TaskStateStorage {
      * @param id String id of task.
      * @return TaskState object or null if no TaskState with this id could be found.
      */
-    TaskState getState(String id);
+    TaskState getState(String id) throws EngineStorageException;
 
     /**
      * Return a Set of Pairs of tasks that match any of the criteria. The first value of the Pair is the task id, whilst

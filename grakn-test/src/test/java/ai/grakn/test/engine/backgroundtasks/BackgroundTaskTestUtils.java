@@ -64,8 +64,12 @@ public class BackgroundTaskTestUtils {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
-            TaskStatus currentStatus = storage.getState(task.getId()).status();
-            if(currentStatus == status) { return; }
+            try {
+                TaskStatus currentStatus = storage.getState(task.getId()).status();
+                if (currentStatus == status) {
+                    return;
+                }
+            } catch (Exception ignored){}
         }
     }
 }
