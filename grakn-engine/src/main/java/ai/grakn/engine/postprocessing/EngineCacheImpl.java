@@ -64,7 +64,7 @@ public class EngineCacheImpl implements EngineCache {
         lastTimeModified = new AtomicLong(System.currentTimeMillis());
     }
 
-    public boolean isSaveInProgress() {
+    boolean isSaveInProgress() {
         return saveInProgress.get();
     }
 
@@ -78,14 +78,27 @@ public class EngineCacheImpl implements EngineCache {
 
     @Override
     public long getNumJobs(String keyspace) {
-        //TODO
-        return 0;
+        return getNumCastingJobs(keyspace) + getNumCastingJobs(keyspace);
+    }
+
+    @Override
+    public long getNumCastingJobs(String keyspace) {
+        return getNumJobsCount(getCastingJobs(keyspace));
+    }
+
+    @Override
+    public long getNumResourceJobs(String keyspace) {
+        return getNumJobsCount(getResourceJobs(keyspace));
+    }
+
+    private long getNumJobsCount(Map<String, Set<ConceptId>> cache){
+        return cache.values().stream().mapToLong(Set::size).sum();
     }
 
     //-------------------- Casting Jobs
     @Override
-    public Set<String> getCastingJobs(String keyspace) {
-        //TODO
+    public Map<String, Set<ConceptId>> getCastingJobs(String keyspace) {
+        return castings.get(keyspace);
     }
 
     @Override
@@ -94,14 +107,14 @@ public class EngineCacheImpl implements EngineCache {
     }
 
     @Override
-    public void deleteJobCasting(String keyspace, String castingId) {
-        //TODO
+    public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
+        deleteJob(resources, keyspace, castingIndex, castingId);
     }
 
     //-------------------- Resource Jobs
     @Override
-    public Set<String> getResourceJobs(String keyspace) {
-        //TODO
+    public Map<String, Set<ConceptId>> getResourceJobs(String keyspace) {
+        return resources.get(keyspace);
     }
 
     @Override
@@ -110,8 +123,8 @@ public class EngineCacheImpl implements EngineCache {
     }
 
     @Override
-    public void deleteJobResource(String keyspace, String resourceId) {
-        //TODO
+    public void deleteJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
+        deleteJob(resources, keyspace, resourceIndex, resourceId);
     }
 
     private void addJob(Map<String, Map<String, Set<ConceptId>>> cache, String keyspace, String index, ConceptId vertexId){
@@ -122,10 +135,20 @@ public class EngineCacheImpl implements EngineCache {
         indexSpecificSet.add(vertexId);
     }
 
+    private void deleteJob(Map<String, Map<String, Set<ConceptId>>> cache, String keyspace, String index, ConceptId vertexId){
+        updateLastTimeJobAdded();
+
+        Map<String, Set<ConceptId>> keyspaceSpecificCache = cache.get(keyspace);
+        if(keyspaceSpecificCache != null){
+            Set<ConceptId> indexSpecificSet = keyspaceSpecificCache.get(index);
+            indexSpecificSet.remove(vertexId);
+        }
+    }
+
     /**
      * @return the last time a job was added to the EngineCacheImpl.
      */
-    public long getLastTimeJobAdded(){
+    long getLastTimeJobAdded(){
         return lastTimeModified.get();
     }
 
