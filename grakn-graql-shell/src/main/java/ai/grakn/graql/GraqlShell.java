@@ -335,15 +335,15 @@ public class GraqlShell {
     private void start(Optional<List<String>> queryStrings) throws IOException {
 
         // Begin sending pings
-        Thread thread = new Thread(() -> WebSocketPing.ping(session));
+        Thread thread = new Thread(() -> WebSocketPing.ping(session), "graql-shell-ping");
         thread.setDaemon(true);
         thread.start();
 
         if (queryStrings.isPresent()) {
-            queryStrings.get().forEach(queryString -> {
+            for (String queryString : queryStrings.get()) {
                 executeQuery(queryString);
                 commit();
-            });
+            }
         } else {
             executeRepl();
         }
@@ -470,7 +470,7 @@ public class GraqlShell {
         this.print(result.toString());
     }
 
-    private void executeQuery(String queryString) {
+    private void executeQuery(String queryString) throws IOException {
         // Split query into chunks
         Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
 
@@ -514,19 +514,19 @@ public class GraqlShell {
         }
     }
 
-    private void setDisplayOptions(Set<String> displayOptions) {
+    private void setDisplayOptions(Set<String> displayOptions) throws IOException {
         session.sendJson(Json.object(
                 ACTION, ACTION_DISPLAY,
                 DISPLAY, displayOptions
         ));
     }
 
-    private void commit() {
+    private void commit() throws IOException {
         session.sendJson(Json.object(ACTION, ACTION_COMMIT));
         handleMessagesFromServer();
     }
 
-    private void rollback() {
+    private void rollback() throws IOException {
         session.sendJson(Json.object(ACTION, ACTION_ROLLBACK));
     }
 

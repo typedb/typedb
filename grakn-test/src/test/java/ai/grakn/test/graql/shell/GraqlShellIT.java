@@ -58,7 +58,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-@Ignore("This test is consistently failing on Travis")
 public class GraqlShellIT {
 
     @ClassRule
@@ -154,7 +153,7 @@ public class GraqlShellIT {
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-f", "src/test/graql/shell-test.gql");
-        assertEquals(err.toString(), "");
+        assertEquals("", err.toString());
     }
 
     @Test
