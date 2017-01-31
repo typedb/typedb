@@ -20,7 +20,6 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -30,7 +29,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -45,7 +43,7 @@ import java.util.UUID;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
 public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
@@ -100,8 +98,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs(BOB).size());
         assertEquals(1, cache.getResourceJobs(BOB).size());
 
-        assertEquals(0, cache.getCastingJobs(TIM).size());
-        assertEquals(0, cache.getResourceJobs(TIM).size());
+        assertNull(cache.getCastingJobs(TIM));
+        assertNull(cache.getResourceJobs(TIM));
 
         addSomeData(tim);
 
@@ -115,11 +113,6 @@ public class CommitLogControllerTest {
         assertEquals(0, cache.getCastingJobs(TIM).size());
         assertEquals(0, cache.getResourceJobs(BOB).size());
         assertEquals(0, cache.getResourceJobs(TIM).size());
-
-        cache.getResourceJobs(BOB).forEach(resourceId -> {
-            Concept concept = ((AbstractGraknGraph) bob).getConceptByBaseIdentifier(resourceId);
-            assertTrue(concept.isResource());
-        });
 
         bob.close();
         tim.close();
@@ -173,6 +166,6 @@ public class CommitLogControllerTest {
         resourceType.putResource("c");
         graph1.commit();
 
-        assertEquals(0, cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME).size());
+        assertNull(cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME));
     }
 }

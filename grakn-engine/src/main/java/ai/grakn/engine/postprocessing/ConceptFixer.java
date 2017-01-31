@@ -23,7 +23,6 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graph.EngineGraknGraph;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.EngineCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -52,61 +51,13 @@ class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final int MAX_RETRY = 10;
 
-    public static void checkCasting(EngineCacheImpl cache, String keyspace, String castingId){
-        boolean notDone = true;
-        int retry = 0;
-        while (notDone) {
-            try (AbstractGraknGraph graph = (AbstractGraknGraph) EngineGraknGraphFactory.getInstance().getGraph(keyspace)) {
-                //TODO: Get this working with new casting fixer
-                //if (graph.fixDuplicateCasting(castingId)) {
-                //    graph.commit((c, r) -> {}); //No caching is needed in this case
-                //}
-                cache.deleteJobCasting(graph.getKeyspace(), castingId);
-                notDone = false;
-            } catch (Exception e) {
-                LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage("casting", e.getMessage()), e);
-                if (retry++ > MAX_RETRY) {
-                    LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(castingId, e.getMessage()), e);
-                    notDone = false;
-                } else {
-                    performRetry(retry);
-                }
-            }
-        }
+    public static void checkResources(String keyspace, String index, Set<ConceptId> conceptIds){
+        runPostProcessingJob(ConceptFixer::runResourceFix, keyspace, index, conceptIds);
     }
 
-    public static void checkResources(EngineCacheImpl cache, String keyspace, Set<String> resourceIds){
-        boolean notDone = true;
-        int retry = 0;
-
-        while (notDone) {
-            try(AbstractGraknGraph graph = (AbstractGraknGraph) EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
-                if (graph.fixDuplicateResources(resourceIds)) {
-                    graph.commit((c, r) -> {});
-                }
-                resourceIds.forEach(resourceId -> cache.deleteJobResource(graph.getKeyspace(), resourceId));
-                notDone = false;
-            } catch (Exception e) {
-                LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage("resource", e.getMessage()), e);
-                if (retry++ > MAX_RETRY) {
-                    StringBuilder message = new StringBuilder();
-                    for (String resourceId : resourceIds) {
-                        message.append(resourceId);
-                    }
-                    LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(message, e.getMessage()), e);
-                    notDone = false;
-                } else {
-                    performRetry(retry);
-                }
-            }
-        }
+    public static void checkCastings(String keyspace, String index, Set<ConceptId> conceptIds){
+        runPostProcessingJob(ConceptFixer::runCastingFix, keyspace, index, conceptIds);
     }
-
-    public static void checkResource(EngineCache cache, String keyspace, String index, Set<ConceptId> conceptIds){
-
-    }
-
-
 
     /**
      * Main method which attempts to run all post processing jobs.
@@ -134,7 +85,10 @@ class ConceptFixer {
                 BiConsumer<EngineCache, String> jobFinaliser = postProcessor.apply(graph, conceptIds);
 
                 //Check if the fix worked
-                validateFix(graph, conceptIndex, conceptIds).ifPresent(message -> {throw new RuntimeException(message);});
+                validateFix(graph, conceptIndex, conceptIds).
+                        ifPresent(message -> {
+                            throw new RuntimeException(message);
+                        });
 
                 //Finally clear the cache
                 jobFinaliser.accept(EngineCacheImpl.getInstance(), conceptIndex);
@@ -189,20 +143,30 @@ class ConceptFixer {
         return Optional.empty();
     }
 
-    private static BiConsumer<EngineCache, String> runResourceFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) throws GraknValidationException {
+    private static BiConsumer<EngineCache, String> runResourceFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
         if(graph.fixDuplicateResources(conceptIds)){
-            graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
+            try {
+                graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
+            } catch (GraknValidationException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        return (cache, index) -> {conceptIds.forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));};
+        return (cache, index) -> {conceptIds.
+                forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));};
     }
 
-    private static BiConsumer<EngineCache, String> runCastingFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) throws GraknValidationException {
+    private static BiConsumer<EngineCache, String> runCastingFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
         if(graph.fixDuplicateResources(conceptIds)){
-            graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
+            try {
+                graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
+            } catch (GraknValidationException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        return (cache, index) -> {conceptIds.forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));};
+        return (cache, index) -> {conceptIds.
+                forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));};
     }
 
     private static int performRetry(int retry){

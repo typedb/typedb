@@ -31,7 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -124,24 +123,19 @@ public class PostProcessing {
     private void performCastingFix() {
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                for (String castingId : cache.getCastingJobs(keyspace)) {
-                    futures.add(postpool.submit(() ->
-                            ConceptFixer.checkCasting(cache, keyspace, castingId)));
-                }
+                cache.getCastingJobs(keyspace).entrySet().
+                        forEach(entry -> futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, entry.getKey(), entry.getValue()))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
-
         });
     }
 
     private void performResourceFix(){
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                futures.add(postpool.submit(() -> {
-                    Set<String> deepCopy = cache.getResourceJobs(keyspace).stream().map(String::new).collect(Collectors.toSet());
-                    ConceptFixer.checkResources(cache, keyspace, deepCopy);
-                }));
+                cache.getCastingJobs(keyspace).entrySet().
+                        forEach(entry -> futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, entry.getKey(), entry.getValue()))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }

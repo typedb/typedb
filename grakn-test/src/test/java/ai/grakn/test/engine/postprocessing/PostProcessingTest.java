@@ -193,10 +193,11 @@ public class PostProcessingTest {
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
+        resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);
 
-        cache.getResourceJobs(graknGraph.getKeyspace()).add(resourceVertex.id().toString());
+        cache.addJobResource(graknGraph.getKeyspace(), resourceVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(resourceVertex.id().toString()));
     }
 
     private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
