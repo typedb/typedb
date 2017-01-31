@@ -53,7 +53,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 
-public class QueryUtil {
+public class GraknMatchers {
 
     private static final ImmutableSet<TypeName> nameTypes = ImmutableSet.of(TypeName.of("name"), TypeName.of("title"));
 
@@ -332,7 +332,7 @@ public class QueryUtil {
         };
     }
 
-    static Set<Type> getTypes(Instance instance) {
+    private static Set<Type> getTypes(Instance instance) {
         Set<Type> types = Sets.newHashSet();
         Type type = instance.type();
 
