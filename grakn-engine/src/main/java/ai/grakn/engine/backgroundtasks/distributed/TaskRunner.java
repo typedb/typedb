@@ -154,6 +154,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             String id = record.key();
 
+            // Instead of deserializing TaskState from value, get up-to-date state from the storage
             TaskState state = storage.getState(id);
             if(state.status() != SCHEDULED) {
                 LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: "+ state.status());
