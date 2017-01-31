@@ -25,6 +25,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.matcher.QueryUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;

@@ -14,9 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.test.graql.query;
+package ai.grakn.test.matcher;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
@@ -52,73 +53,73 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 
-class QueryUtil {
+public class QueryUtil {
 
-    static final ImmutableSet<TypeName> nameTypes = ImmutableSet.of(TypeName.of("name"), TypeName.of("title"));
+    private static final ImmutableSet<TypeName> nameTypes = ImmutableSet.of(TypeName.of("name"), TypeName.of("title"));
 
-    static final Matcher<MatchableConcept> concept = type(CONCEPT.getName());
-    static final Matcher<MatchableConcept> entity = type(ENTITY.getName());
-    static final Matcher<MatchableConcept> resource = type(RESOURCE.getName());
-    static final Matcher<MatchableConcept> rule = type(RULE.getName());
-    static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getName());
-    static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getName());
+    public static final Matcher<MatchableConcept> concept = type(CONCEPT.getName());
+    public static final Matcher<MatchableConcept> entity = type(ENTITY.getName());
+    public static final Matcher<MatchableConcept> resource = type(RESOURCE.getName());
+    public static final Matcher<MatchableConcept> rule = type(RULE.getName());
+    public static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getName());
+    public static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getName());
 
-    static final Matcher<MatchableConcept> production = type("production");
-    static final Matcher<MatchableConcept> movie = type("movie");
-    static final Matcher<MatchableConcept> person = type("person");
-    static final Matcher<MatchableConcept> genre = type("genre");
-    static final Matcher<MatchableConcept> character = type("character");
-    static final Matcher<MatchableConcept> cluster = type("cluster");
-    static final Matcher<MatchableConcept> language = type("language");
-    static final Matcher<MatchableConcept> title = type("title");
-    static final Matcher<MatchableConcept> gender = type("gender");
-    static final Matcher<MatchableConcept> realName = type("real-name");
-    static final Matcher<MatchableConcept> name = type("name");
-    static final Matcher<MatchableConcept> tmdbVoteCount = type("tmdb-vote-count");
-    static final Matcher<MatchableConcept> releaseDate = type("release-date");
-    static final Matcher<MatchableConcept> runtime = type("runtime");
-    static final Matcher<MatchableConcept> tmdbVoteAverage = type("tmdb-vote-average");
-    static final Matcher<MatchableConcept> genreOfProduction = type("genre-of-production");
-    static final Matcher<MatchableConcept> aRuleType = type("a-rule-type");
-    static final Matcher<MatchableConcept> hasTitle = type("has-title");
+    public static final Matcher<MatchableConcept> production = type("production");
+    public static final Matcher<MatchableConcept> movie = type("movie");
+    public static final Matcher<MatchableConcept> person = type("person");
+    public static final Matcher<MatchableConcept> genre = type("genre");
+    public static final Matcher<MatchableConcept> character = type("character");
+    public static final Matcher<MatchableConcept> cluster = type("cluster");
+    public static final Matcher<MatchableConcept> language = type("language");
+    public static final Matcher<MatchableConcept> title = type("title");
+    public static final Matcher<MatchableConcept> gender = type("gender");
+    public static final Matcher<MatchableConcept> realName = type("real-name");
+    public static final Matcher<MatchableConcept> name = type("name");
+    public static final Matcher<MatchableConcept> tmdbVoteCount = type("tmdb-vote-count");
+    public static final Matcher<MatchableConcept> releaseDate = type("release-date");
+    public static final Matcher<MatchableConcept> runtime = type("runtime");
+    public static final Matcher<MatchableConcept> tmdbVoteAverage = type("tmdb-vote-average");
+    public static final Matcher<MatchableConcept> genreOfProduction = type("genre-of-production");
+    public static final Matcher<MatchableConcept> aRuleType = type("a-rule-type");
+    public static final Matcher<MatchableConcept> hasTitle = type("has-title");
 
-    static final Matcher<MatchableConcept> godfather = instance("Godfather");
-    static final Matcher<MatchableConcept> theMuppets = instance("The Muppets");
-    static final Matcher<MatchableConcept> heat = instance("Heat");
-    static final Matcher<MatchableConcept> apocalypseNow = instance("Apocalypse Now");
-    static final Matcher<MatchableConcept> hocusPocus = instance("Hocus Pocus");
-    static final Matcher<MatchableConcept> spy = instance("Spy");
-    static final Matcher<MatchableConcept> chineseCoffee = instance("Chinese Coffee");
-    static final Matcher<MatchableConcept> marlonBrando = instance("Marlon Brando");
-    static final Matcher<MatchableConcept> alPacino = instance("Al Pacino");
-    static final Matcher<MatchableConcept> missPiggy = instance("Miss Piggy");
-    static final Matcher<MatchableConcept> kermitTheFrog = instance("Kermit The Frog");
-    static final Matcher<MatchableConcept> martinSheen = instance("Martin Sheen");
-    static final Matcher<MatchableConcept> robertDeNiro = instance("Robert de Niro");
-    static final Matcher<MatchableConcept> judeLaw = instance("Jude Law");
-    static final Matcher<MatchableConcept> mirandaHeart = instance("Miranda Heart");
-    static final Matcher<MatchableConcept> betteMidler = instance("Bette Midler");
-    static final Matcher<MatchableConcept> sarahJessicaParker = instance("Sarah Jessica Parker");
-    static final Matcher<MatchableConcept> crime = instance("crime");
-    static final Matcher<MatchableConcept> drama = instance("drama");
-    static final Matcher<MatchableConcept> war = instance("war");
-    static final Matcher<MatchableConcept> action = instance("action");
-    static final Matcher<MatchableConcept> comedy = instance("comedy");
-    static final Matcher<MatchableConcept> family = instance("family");
-    static final Matcher<MatchableConcept> musical = instance("musical");
-    static final Matcher<MatchableConcept> fantasy = instance("fantasy");
-    static final Matcher<MatchableConcept> benjaminLWillard = instance("Benjamin L. Willard");
-    static final Matcher<MatchableConcept> neilMcCauley = instance("Neil McCauley");
-    static final Matcher<MatchableConcept> sarah = instance("Sarah");
-    static final Matcher<MatchableConcept> harry = instance("Harry");
+    public static final Matcher<MatchableConcept> godfather = instance("Godfather");
+    public static final Matcher<MatchableConcept> theMuppets = instance("The Muppets");
+    public static final Matcher<MatchableConcept> heat = instance("Heat");
+    public static final Matcher<MatchableConcept> apocalypseNow = instance("Apocalypse Now");
+    public static final Matcher<MatchableConcept> hocusPocus = instance("Hocus Pocus");
+    public static final Matcher<MatchableConcept> spy = instance("Spy");
+    public static final Matcher<MatchableConcept> chineseCoffee = instance("Chinese Coffee");
+    public static final Matcher<MatchableConcept> marlonBrando = instance("Marlon Brando");
+    public static final Matcher<MatchableConcept> alPacino = instance("Al Pacino");
+    public static final Matcher<MatchableConcept> missPiggy = instance("Miss Piggy");
+    public static final Matcher<MatchableConcept> kermitTheFrog = instance("Kermit The Frog");
+    public static final Matcher<MatchableConcept> martinSheen = instance("Martin Sheen");
+    public static final Matcher<MatchableConcept> robertDeNiro = instance("Robert de Niro");
+    public static final Matcher<MatchableConcept> judeLaw = instance("Jude Law");
+    public static final Matcher<MatchableConcept> mirandaHeart = instance("Miranda Heart");
+    public static final Matcher<MatchableConcept> betteMidler = instance("Bette Midler");
+    public static final Matcher<MatchableConcept> sarahJessicaParker = instance("Sarah Jessica Parker");
+    public static final Matcher<MatchableConcept> crime = instance("crime");
+    public static final Matcher<MatchableConcept> drama = instance("drama");
+    public static final Matcher<MatchableConcept> war = instance("war");
+    public static final Matcher<MatchableConcept> action = instance("action");
+    public static final Matcher<MatchableConcept> comedy = instance("comedy");
+    public static final Matcher<MatchableConcept> family = instance("family");
+    public static final Matcher<MatchableConcept> musical = instance("musical");
+    public static final Matcher<MatchableConcept> fantasy = instance("fantasy");
+    public static final Matcher<MatchableConcept> benjaminLWillard = instance("Benjamin L. Willard");
+    public static final Matcher<MatchableConcept> neilMcCauley = instance("Neil McCauley");
+    public static final Matcher<MatchableConcept> sarah = instance("Sarah");
+    public static final Matcher<MatchableConcept> harry = instance("Harry");
 
-    static final ImmutableSet<Matcher<? super MatchableConcept>> movies = ImmutableSet.of(
+    public static final ImmutableSet<Matcher<? super MatchableConcept>> movies = ImmutableSet.of(
             godfather, theMuppets, apocalypseNow, heat, hocusPocus, spy, chineseCoffee
     );
 
-    static final Matcher<Iterable<? extends MatchableConcept>> containsAllMovies = containsInAnyOrder(movies);
+    public static final Matcher<Iterable<? extends MatchableConcept>> containsAllMovies = containsInAnyOrder(movies);
 
-    static Matcher<MatchQuery> results(
+    public static Matcher<MatchQuery> results(
             Matcher<? extends Iterable<? extends Map<String, ? extends MatchableConcept>>> matcher
     ) {
         return new TypeSafeDiagnosingMatcher<MatchQuery>() {
@@ -144,7 +145,7 @@ class QueryUtil {
         };
     }
 
-    static Matcher<MatchQuery> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
+    public static Matcher<MatchQuery> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
         return new TypeSafeDiagnosingMatcher<MatchQuery>() {
             @Override
             public boolean matchesSafely(MatchQuery matchQuery, Description mismatch) {
@@ -170,7 +171,9 @@ class QueryUtil {
         };
     }
 
-    static Matcher<MatchQuery> variable(String varName, Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
+    public static Matcher<MatchQuery> variable(
+            String varName, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
+    ) {
         VarName var = VarName.of(varName);
 
         return new TypeSafeDiagnosingMatcher<MatchQuery>() {
@@ -254,7 +257,7 @@ class QueryUtil {
         };
     }
 
-    static Matcher<MatchableConcept> hasValue(Object expectedValue) {
+    public static Matcher<MatchableConcept> hasValue(Object expectedValue) {
         return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
             @Override
             protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
@@ -275,7 +278,7 @@ class QueryUtil {
         };
     }
 
-    static Matcher<MatchableConcept> hasType(Matcher<MatchableConcept> matcher) {
+    public static Matcher<MatchableConcept> hasType(Matcher<MatchableConcept> matcher) {
         Matcher<Iterable<? super MatchableConcept>> matchTypes = hasItem(matcher);
 
         return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
@@ -301,7 +304,7 @@ class QueryUtil {
         };
     }
 
-    static Matcher<MatchableConcept> isCasting() {
+    public static Matcher<MatchableConcept> isCasting() {
         return new TypeSafeMatcher<MatchableConcept>() {
             @Override
             public boolean matchesSafely(MatchableConcept concept) {
@@ -315,7 +318,7 @@ class QueryUtil {
         };
     }
 
-    static Matcher<MatchableConcept> isInstance() {
+    public static Matcher<MatchableConcept> isInstance() {
         return new TypeSafeMatcher<MatchableConcept>() {
             @Override
             public boolean matchesSafely(MatchableConcept concept) {
