@@ -39,6 +39,14 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
 import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
 import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 
+/**
+ * <p>
+ * Class containing helper methods to retrieve the default configuration for
+ * Zookeeper and Kafka consumers & producers
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public class ConfigHelper {
 
     public static CuratorFramework client() {
@@ -59,6 +67,8 @@ public class ConfigHelper {
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("group.id", groupId);
         properties.put("enable.auto.commit", false);
+        properties.put("auto.offset.reset", "earliest");
+        properties.put("metadata.max.age.ms", 1000);
         properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
         properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");

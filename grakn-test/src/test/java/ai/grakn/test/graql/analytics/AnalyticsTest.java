@@ -49,7 +49,7 @@ import static org.junit.Assume.assumeFalse;
 public class AnalyticsTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startServer();
+    public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknGraph graph;
 
     @Before

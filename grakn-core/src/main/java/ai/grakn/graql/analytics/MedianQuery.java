@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Compute the median of the selected resource-type.
+ *
+ * @author Jason Liu
  */
 public interface MedianQuery extends ComputeQuery<Optional<Number>> {
 

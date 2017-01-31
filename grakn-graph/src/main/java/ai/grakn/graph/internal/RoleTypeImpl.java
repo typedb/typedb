@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -51,7 +50,15 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type, Optional<Boolean> isImplicit) {
+    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type) {
+        super(graknGraph, v, type);
+    }
+
+    RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type, Boolean isImplicit) {
         super(graknGraph, v, type, isImplicit);
     }
 
@@ -91,7 +98,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> getGraknGraph().getConceptLog().putConcept(relation)));
+        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> castings.add((CastingImpl) concept));
         return castings;
     }
 

@@ -25,6 +25,8 @@ import java.util.function.Function;
 
 /**
  * A variable name in a Graql query
+ *
+ * @author Felix Chapman
  */
 public final class VarName {
     private final String value;

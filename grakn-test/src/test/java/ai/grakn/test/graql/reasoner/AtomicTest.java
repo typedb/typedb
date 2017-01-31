@@ -38,6 +38,7 @@ import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -141,6 +142,28 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference3(){
+        GraknGraph graph = cwGraph.graph();
+        String patternString = "{(buyer: $y, seller: $y, transaction-item: $x), isa transaction;}";
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
+        Map<RoleType, Pair<VarName, Type>> roleMap = query.getAtom().getRoleVarTypeMap();
+
+        String patternString2 = "{(buyer: $y, seller: $y, $x), isa transaction;}";
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
+        Map<RoleType, Pair<VarName, Type>> roleMap2 = query2.getAtom().getRoleVarTypeMap();
+
+        String patternString3 = "{(buyer: $y, $y, transaction-item: $x), isa transaction;}";
+        ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(conjunction(patternString3, graph), graph);
+        Map<RoleType, Pair<VarName, Type>> roleMap3 = query3.getAtom().getRoleVarTypeMap();
+
+        assertEquals(3, roleMap.size());
+        assertEquals(3, roleMap2.size());
+        assertEquals(3, roleMap3.size());
+        assertEquals(roleMap, roleMap2);
+        assertEquals(roleMap2, roleMap3);
+    }
+
+    @Test
+    public void testRoleInference4(){
         GraknGraph graph = genealogyOntology.graph();
         String relationString = "{($p, son: $gc) isa parentship;}";
         String fullRelationString = "{(parent: $p, son: $gc) isa parentship;}";
@@ -228,8 +251,9 @@ public class AtomicTest {
                 graph);
         testRule.unify(parentAtom);
         Atom headAtom = testRule.getHead().getAtom();
-        Map<VarName, Pair<Type, RoleType>> varTypeRoleMap = headAtom.getVarTypeRoleMap();
-        assertTrue(varTypeRoleMap.get(VarName.of("x")).getValue().equals(graph.getRoleType("wife")));
+        Map<RoleType, VarName> roleMap = headAtom.getRoleVarTypeMap().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getKey()));
+        assertTrue(roleMap.get(graph.getRoleType("wife")).equals(VarName.of("x")));
     }
 
     @Test

@@ -18,11 +18,22 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import org.json.JSONObject;
+import mjson.Json;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * <p>
+ *     The base TaskManager interface.
+ * </p>
+ *
+ * <p>
+ *     Provides common methods for scheduling tasks for execution and stopping task execution.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public interface TaskManager extends AutoCloseable {
     /**
      * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds. All parameters must not be
@@ -36,7 +47,7 @@ public interface TaskManager extends AutoCloseable {
      *                      get an initialised but empty JSONObject).
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, JSONObject configuration);
+    String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration);
 
     /**
      * Return a future that allows registering asynchronous callbacks triggered when a task is completed.
@@ -58,5 +69,5 @@ public interface TaskManager extends AutoCloseable {
      * Return the StateStorage instance that is used by this class.
      * @return A StateStorage instance.
      */
-    StateStorage storage();
+    TaskStateStorage storage();
 }

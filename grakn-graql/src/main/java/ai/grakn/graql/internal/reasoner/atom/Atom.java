@@ -26,7 +26,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -176,32 +176,18 @@ public abstract class Atom extends AtomBase {
     /**
      * @return set of types relevant to this atom
      */
-    public Set<Atom> getTypeConstraints(){
-        Set<Atom> relevantTypes = new HashSet<>();
+    public Set<TypeAtom> getTypeConstraints(){
+        Set<TypeAtom> relevantTypes = new HashSet<>();
         //ids from indirect types
         ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(atom -> {
                     relevantTypes.add(atom);
-                    relevantTypes.addAll(((Binary)atom).getLinkedAtoms());
+                    relevantTypes.addAll(atom.getLinkedAtoms().stream()
+                            .filter(Atom::isType).map(at -> (TypeAtom) at)
+                            .collect(Collectors.toSet()));
                 });
         return relevantTypes;
-    }
-
-    /**
-     * @return map of varName-(var type, var role type) pairs
-     */
-    public Map<VarName, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
-        Map<VarName, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
-        if (getParentQuery() == null) return roleVarTypeMap;
-        Set<VarName> vars = getVarNames();
-        Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
-
-        vars.forEach(var -> {
-            Type type = varTypeMap.get(var);
-            roleVarTypeMap.put(var, new Pair<>(type, null));
-        });
-        return roleVarTypeMap;
     }
 
     /**

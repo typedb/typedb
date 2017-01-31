@@ -24,6 +24,15 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 
+/**
+ *
+ * <p>
+ * Atomic corresponding to graql IsAbstractProperty.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class IsAbstractAtom extends AtomBase {
 
     public IsAbstractAtom(VarName varName, ReasonerQuery parent){

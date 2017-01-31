@@ -24,6 +24,8 @@ import ai.grakn.GraknGraph;
  * An aggregate query produced from a {@link MatchQuery}.
  *
  * @param <T> the type of the result of the aggregate query
+ *
+ * @author Felix Chapman
  */
 public interface AggregateQuery<T> extends Query<T> {
 

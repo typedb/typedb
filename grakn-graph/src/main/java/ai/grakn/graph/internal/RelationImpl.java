@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -53,7 +52,11 @@ import java.util.TreeSet;
  *
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
-    RelationImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RelationType> type) {
+    RelationImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RelationImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type) {
         super(graknGraph, v, type);
     }
 
@@ -196,14 +199,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public void cleanUp() {
         boolean performDeletion = true;
         Collection<Instance> rolePlayers = rolePlayers().values();
-
-        // tracking
-        rolePlayers.forEach(r -> {
-            if(r != null) {
-                getGraknGraph().getConceptLog().putConcept((ConceptImpl) r);
-            }
-        });
-        this.getMappingCasting().forEach(c -> getGraknGraph().getConceptLog().putConcept(c));
 
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null )){

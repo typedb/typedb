@@ -29,6 +29,16 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import java.util.Set;
 
+/**
+ * Represents the {@code datatype} property on a {@link ResourceType}.
+ *
+ * This property can be queried or inserted.
+ *
+ * The insertion behaviour is not implemented here, but instead in
+ * {@link ai.grakn.graql.internal.query.InsertQueryExecutor}.
+ *
+ * @author Felix Chapman
+ */
 public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
     private final ResourceType.DataType<?> datatype;

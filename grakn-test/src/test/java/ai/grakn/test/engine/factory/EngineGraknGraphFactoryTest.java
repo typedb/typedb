@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 public class EngineGraknGraphFactoryTest {
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Test
     public void testDifferentFactoriesReturnTheSameGraph(){

@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.util.EngineCache;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -40,20 +42,20 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author fppt
  */
-public class Cache {
+public class EngineCacheImpl implements EngineCache {
     private final Map<String, Set<String>> castings;
     private final Map<String, Set<String>> resources;
     private final AtomicBoolean saveInProgress;
 
-    private static Cache instance=null;
+    private static EngineCacheImpl instance=null;
     private final AtomicLong lastTimeModified;
 
-    public static synchronized Cache getInstance(){
-        if(instance==null) instance=new Cache();
+    public static synchronized EngineCacheImpl getInstance(){
+        if(instance==null) instance=new EngineCacheImpl();
         return instance;
     }
 
-    private Cache(){
+    private EngineCacheImpl(){
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);
@@ -72,40 +74,46 @@ public class Cache {
     }
 
     //-------------------- Casting Jobs
+    @Override
     public Set<String> getCastingJobs(String keyspace) {
         keyspace = keyspace.toLowerCase();
         return castings.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
-    public void addJobCasting(String keyspace, Set<String> conceptIds) {
-        getCastingJobs(keyspace).addAll(conceptIds);
+    @Override
+    public void addJobCasting(String keyspace, Set<String> castingIds) {
+        getCastingJobs(keyspace).addAll(castingIds);
         updateLastTimeJobAdded();
     }
-    public void deleteJobCasting(String keyspace, String conceptId) {
-        getCastingJobs(keyspace).remove(conceptId);
+    @Override
+    public void deleteJobCasting(String keyspace, String castingId) {
+        getCastingJobs(keyspace).remove(castingId);
     }
 
     //-------------------- Resource Jobs
+    @Override
     public Set<String> getResourceJobs(String keyspace) {
         keyspace = keyspace.toLowerCase();
         return resources.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
-    public void addJobResource(String keyspace, Set<String> conceptIds) {
-        getResourceJobs(keyspace).addAll(conceptIds);
+    @Override
+    public void addJobResource(String keyspace, Set<String> resourceIds) {
+        getResourceJobs(keyspace).addAll(resourceIds);
         updateLastTimeJobAdded();
     }
-    public void deleteJobResource(String keyspace, String conceptId) {
-        getResourceJobs(keyspace).remove(conceptId);
+    @Override
+    public void deleteJobResource(String keyspace, String resourceId) {
+        getResourceJobs(keyspace).remove(resourceId);
     }
 
     /**
-     * @return the last time a job was added to the Cache.
+     * @return the last time a job was added to the EngineCacheImpl.
      */
     public long getLastTimeJobAdded(){
         return lastTimeModified.get();
     }
 
     /**
-     * Keep a record of the last time something was added to the Cache.
+     * Keep a record of the last time something was added to the EngineCacheImpl.
      */
     private void updateLastTimeJobAdded(){
         lastTimeModified.set(System.currentTimeMillis());

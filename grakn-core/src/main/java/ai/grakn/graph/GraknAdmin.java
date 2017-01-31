@@ -18,6 +18,7 @@
 
 package ai.grakn.graph;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -28,6 +29,11 @@ import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+/**
+ * Admin interface for {@link GraknGraph}.
+ *
+ * @author Filipe Teixeira
+ */
 public interface GraknAdmin {
 
     /**

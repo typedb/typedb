@@ -28,6 +28,16 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * The MapReduce program for collecting the result of a clustering query.
+ * <p>
+ * It returns a map, the key being the cluster id, the value being the number of vertices the given cluster has.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
 
     private static final String CLUSTER_LABEL = "clusterSizeMapReduce.clusterLabel";

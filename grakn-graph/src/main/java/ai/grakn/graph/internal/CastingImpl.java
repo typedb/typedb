@@ -27,7 +27,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,8 +44,11 @@ import java.util.stream.Collectors;
  * @author fppt
  */
 class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
+    CastingImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
 
-    CastingImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RoleType> type) {
+    CastingImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type) {
         super(graknGraph, v, type);
     }
 
@@ -108,7 +110,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      * @return All the {@link Relation} this casting is linked with.
      */
     public Set<RelationImpl> getRelations() {
-        ConceptImpl<?, ?> thisRef = this;
+        ConceptImpl<?> thisRef = this;
         Set<RelationImpl> relations = new HashSet<>();
         Set<ConceptImpl> concepts = thisRef.getIncomingNeighbours(Schema.EdgeLabel.CASTING);
 

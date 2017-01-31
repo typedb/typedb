@@ -18,7 +18,8 @@
 
 package ai.grakn.migration.csv;
 
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
 
@@ -27,7 +28,6 @@ import java.util.Optional;
 
 import static ai.grakn.migration.base.io.MigrationCLI.die;
 import static ai.grakn.migration.base.io.MigrationCLI.fileAsString;
-import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
 import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
 import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
@@ -40,23 +40,25 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  */
 public class Main {
 
+    static boolean newClusterManager = false;
+
     public static void main(String[] args) {
         start(null, args);
     }
 
-    public static void start(ClusterManager manager, String[] args){
+    public static void start(TaskManager manager, String[] args){
         if(manager == null){
-            manager = new ClusterManager();
+            manager = new DistributedTaskManager();
         }
 
-        ClusterManager finalManager = manager;
+        TaskManager finalManager = manager;
         MigrationCLI.init(args, CSVMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .forEach((options) -> runCSV(finalManager, options));
     }
 
-    public static void runCSV(ClusterManager manager, CSVMigrationOptions options){
+    public static void runCSV(TaskManager manager, CSVMigrationOptions options){
         // get files
         File csvDataFile = new File(options.getInput());
         File csvTemplate = new File(options.getTemplate());
@@ -88,8 +90,14 @@ public class Main {
             }
         } catch (Throwable throwable) {
             die(throwable);
+        } finally {
+            if (newClusterManager) {
+                try {
+                    manager.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
-
-        initiateShutdown();
     }
 }

@@ -22,8 +22,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
-
 /**
  * <p>
  *     An instance of Entity Type {@link EntityType}
@@ -38,7 +36,11 @@ import java.util.Optional;
  * @author fppt
  */
 class EntityImpl extends InstanceImpl<Entity, EntityType> implements Entity {
-    EntityImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {
+    EntityImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    EntityImpl(AbstractGraknGraph graknGraph, Vertex v, EntityType type) {
         super(graknGraph, v, type);
     }
 }

@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -57,11 +56,19 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> implements Type {
-    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<T> superType, Optional<Boolean> isImplicit) {
+class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
+    TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        superType.ifPresent(this::superType);
-        isImplicit.ifPresent(i -> setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, i, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity()));
+    }
+
+    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
+        this(graknGraph, v);
+        superType(superType);
+    }
+
+    TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType, Boolean isImplicit) {
+        this(graknGraph, v, superType);
+        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
     }
 
     /**
@@ -196,7 +203,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl<Concept, Type> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
+            ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
             if(!concept.isCasting()){
                 instances.add((V) concept);
             }
@@ -256,7 +263,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T, Type> 
         Type currentSuperType = superType();
         if(currentSuperType == null || (!currentSuperType.equals(superType) && !Schema.MetaSchema.isMetaName(superType.getName()))) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
-            deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
             putEdge(superType, Schema.EdgeLabel.SUB);
 
             checkForLoop(Schema.EdgeLabel.SUB);

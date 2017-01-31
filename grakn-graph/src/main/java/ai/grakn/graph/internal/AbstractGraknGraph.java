@@ -19,8 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.graph.EngineGraknGraph;
-import ai.grakn.graph.GraknAdmin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -40,8 +38,11 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graph.EngineGraknGraph;
+import ai.grakn.graph.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.util.EngineCache;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -65,6 +66,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
@@ -117,6 +120,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.committed = false;
         localShowImplicitStructures.set(false);
     }
+
+    /**
+     * @param concept A concept in the graph
+     * @return True if the concept has been modified in the transaction
+     */
+    public abstract boolean isConceptModified(ConceptImpl concept);
 
     @Override
     public String getKeyspace(){
@@ -225,7 +234,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return new QueryBuilderImpl(this);
     }
 
-    public ElementFactory getElementFactory(){
+    ElementFactory getElementFactory(){
         return elementFactory;
     }
 
@@ -308,12 +317,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public EntityType putEntityType(TypeName name) {
-        return putType(name, Schema.BaseType.ENTITY_TYPE, getMetaEntityType()).asEntityType();
+        return putType(name, Schema.BaseType.ENTITY_TYPE,
+                v -> elementFactory.buildEntityType(v, getMetaEntityType()));
     }
 
-    private TypeImpl putType(TypeName name, Schema.BaseType baseType, Type metaType) {
+    private <V extends Type> V putType(TypeName name, Schema.BaseType baseType, Function<Vertex, V> factory){
         checkOntologyMutation();
-        return elementFactory.buildSpecificType(putVertex(name, baseType), metaType);
+        return factory.apply(putVertex(name, baseType));
     }
 
     @Override
@@ -323,12 +333,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RelationType putRelationType(TypeName name) {
-        return putType(name, Schema.BaseType.RELATION_TYPE, getMetaRelationType()).asRelationType();
+        return putType(name, Schema.BaseType.RELATION_TYPE,
+                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
     }
 
     RelationType putRelationTypeImplicit(TypeName name) {
-        Vertex v = putVertex(name, Schema.BaseType.RELATION_TYPE);
-        return elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.TRUE);
+        return putType(name, Schema.BaseType.RELATION_TYPE,
+                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
     }
 
     @Override
@@ -338,12 +349,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RoleType putRoleType(TypeName name) {
-        return putType(name, Schema.BaseType.ROLE_TYPE, getMetaRoleType()).asRoleType();
+        return putType(name, Schema.BaseType.ROLE_TYPE,
+                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
     RoleType putRoleTypeImplicit(TypeName name) {
-        Vertex v = putVertex(name, Schema.BaseType.ROLE_TYPE);
-        return elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.TRUE);
+        return putType(name, Schema.BaseType.ROLE_TYPE,
+                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
     @Override
@@ -354,11 +366,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
-        return elementFactory.buildResourceType(
-                putType(name, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
-                getMetaResourceType(),
-                dataType,
-                false);
+        return putType(name, Schema.BaseType.RESOURCE_TYPE,
+                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.FALSE)).asResourceType();
     }
 
     @Override
@@ -369,11 +378,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
-        return elementFactory.buildResourceType(
-                putType(name, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
-                getMetaResourceType(),
-                dataType,
-                true);
+        return putType(name, Schema.BaseType.RESOURCE_TYPE,
+                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.TRUE)).asResourceType();
     }
 
     @Override
@@ -383,7 +389,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RuleType putRuleType(TypeName name) {
-        return putType(name, Schema.BaseType.RULE_TYPE, getMetaRuleType()).asRuleType();
+        return putType(name, Schema.BaseType.RULE_TYPE,
+                v ->  elementFactory.buildRuleType(v, getMetaRuleType()));
     }
 
     //------------------------------------ Lookup
@@ -516,15 +523,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundCasting = addCasting(role, rolePlayer);
         }
 
-        EdgeImpl assertionToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);// Relation To Casting
-        assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        // Relation To Casting
+        EdgeImpl relationToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        getConceptLog().putConcept(relation); //The relation is explicitly tracked so we can look them up without committing
 
         putShortcutEdges(relation, relation.type());
 
         return foundCasting;
     }
 
-    //------------------------------------ Lookup
     private CastingImpl getCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
         try {
             String hash = CastingImpl.generateNewHash(role, rolePlayer);
@@ -692,37 +700,49 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void commit() throws GraknValidationException {
-        commit(true);
+        commit((castings, resources) -> {
+            Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
+            if(castings.size() > 0) {
+                modifiedConcepts.put(Schema.BaseType.CASTING, castings);
+            }
+            if(resources.size() > 0) {
+                modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
+            }
+            if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && modifiedConcepts.size() > 0) {
+                submitCommitLogs(modifiedConcepts);
+            }
+        });
     }
 
+    /**
+     * Commits the graph and adds concepts for post processing directly to the cache
+     * @throws GraknValidationException when the graph does not conform to the object concept
+     */
     @Override
-    public void commitTx() throws GraknValidationException{
-        commit(false);
+    public void commit(EngineCache cache) throws GraknValidationException{
+        commit((castings, resources) -> {
+            String keyspace = getKeyspace();
+            if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+                cache.addJobCasting(keyspace, castings);
+                cache.addJobResource(keyspace, resources);
+            }
+        });
     }
 
-    public void commit(boolean submitLogs) throws GraknValidationException {
+    public void commit(BiConsumer<Set<String>, Set<String>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
-        Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
         Set<String> castings = getConceptLog().getModifiedCastingIds();
         Set<String> resources = getConceptLog().getModifiedResourceIds();
-
-        if(castings.size() > 0) {
-            modifiedConcepts.put(Schema.BaseType.CASTING, castings);
-        }
-        if(resources.size() > 0) {
-            modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
-        }
 
         LOG.debug("Graph is valid. Committing graph . . . ");
         commitTransaction();
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && submitLogs && modifiedConcepts.size() > 0) {
-            submitCommitLogs(modifiedConcepts);
-        }
+        conceptLogger.accept(castings, resources);
     }
+
     protected void commitTransaction(){
         try {
             getTinkerPopGraph().tx().commit();

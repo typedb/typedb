@@ -35,6 +35,8 @@ import java.util.stream.Stream;
  * subgraph, then the {@code MatchQuery} will traverse the graph in an efficient fashion to find any matching subgraphs.
  * <p>
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
+ *
+ * @author Felix Chapman
  */
 public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
 

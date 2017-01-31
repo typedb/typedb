@@ -23,8 +23,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
-
 /**
  * <p>
  *     Ontology element used to represent categories.
@@ -39,8 +37,12 @@ import java.util.Optional;
  *
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<EntityType> type) {
-        super(graknGraph, v, type, Optional.empty());
+    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    EntityTypeImpl(AbstractGraknGraph graknGraph, Vertex v, EntityType type) {
+        super(graknGraph, v, type);
     }
 
     @Override

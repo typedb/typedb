@@ -18,6 +18,8 @@ stack-trace sub resource, datatype string;
 task-exception sub resource, datatype string;
 task-checkpoint sub resource, datatype string;
 task-configuration sub resource, datatype string;
+task-serialized sub resource, datatype string;
+task-id sub resource, datatype string;
 
 scheduled-task has-resource status,
                has-resource status-change-time,
@@ -31,7 +33,9 @@ scheduled-task has-resource status,
                has-resource stack-trace,
                has-resource task-exception,
                has-resource task-checkpoint,
-               has-resource task-configuration;
+               has-resource task-configuration
+               has-resource task-serialized
+               has-resource task-id;
 
 # Keep track of all keyspaces in system.
 keyspace sub entity;

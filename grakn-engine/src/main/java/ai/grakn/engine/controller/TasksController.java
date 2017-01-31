@@ -19,15 +19,16 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
+import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import javafx.util.Pair;
+import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -58,15 +59,22 @@ import static spark.Spark.get;
 import static spark.Spark.post;
 import static spark.Spark.put;
 
+/**
+ * <p>
+ *     Endpoints used to query and control queued background tasks.
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
     private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
-    private ClusterManager manager;
+    private TaskManager manager;
 
-    public TasksController(ClusterManager manager) {
+    public TasksController(TaskManager manager) {
         if (manager==null) {
-            throw new GraknEngineServerException(500,"Cluster manager has not been instantiated.");
+            throw new GraknEngineServerException(500,"Task manager has not been instantiated.");
         }
         this.manager = manager;
 
@@ -106,7 +114,7 @@ public class TasksController {
         }
 
         JSONArray result = new JSONArray();
-        for (Pair<String, TaskState> pair : manager.getTaskManager().storage().getTasks(status, className, creator, limit, offset)) {
+        for (Pair<String, TaskState> pair : manager.storage().getTasks(status, className, creator, limit, offset)) {
             result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
         }
 
@@ -121,7 +129,7 @@ public class TasksController {
     private String getTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            JSONObject result = serialiseStateFull(id, manager.getTaskManager().storage().getState(id));
+            JSONObject result = serialiseStateFull(id, manager.storage().getState(id));
             response.type("application/json");
 
             return result.toString();
@@ -137,7 +145,7 @@ public class TasksController {
     private String stopTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            manager.getTaskManager().stopTask(id, this.getClass().getName());
+            manager.stopTask(id, this.getClass().getName());
             return "";
         }
         catch (Exception e) {
@@ -162,7 +170,7 @@ public class TasksController {
         String runAt = request.queryParams(TASK_RUN_AT_PARAMETER);
 
         Long interval = 0L;
-        JSONObject configuration = new JSONObject();
+        Json configuration = Json.object();
 
         if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null) {
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
@@ -173,7 +181,7 @@ public class TasksController {
 
         try {
             if(request.body() != null && (!request.body().isEmpty())) {
-                configuration = new JSONObject(request.body());
+                configuration = Json.read(request.body());
             }
 
             Instant runAtInstant = Instant.ofEpochMilli(Long.parseLong(runAt));
@@ -181,7 +189,7 @@ public class TasksController {
             Class<?> clazz = Class.forName(className);
             BackgroundTask task = (BackgroundTask)clazz.newInstance();
 
-            String id = manager.getTaskManager().scheduleTask(task, createdBy, runAtInstant, interval, configuration);
+            String id = manager.scheduleTask(task, createdBy, runAtInstant, interval, configuration);
             JSONObject resp = new JSONObject()
                     .put("id", id);
 

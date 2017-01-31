@@ -33,6 +33,8 @@ import ai.grakn.graql.admin.VarAdmin;
  * query its used in. In a {@code MatchQuery}, a {@code Var} describes the properties any matching concept must have. In
  * an {@code InsertQuery}, it describes the properties that should be set on the inserted concept. In a
  * {@code DeleteQuery}, it describes the properties that should be deleted.
+ *
+ * @author Felix Chapman
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface Var extends Pattern {
@@ -250,6 +252,22 @@ public interface Var extends Pattern {
      * @return this
      */
     Var rel(Var roletype, Var roleplayer);
+
+    /**
+     * the variable must play the given role type
+     *
+     * @param roleType the role type the variable must play
+     * @return this
+     */
+    Var plays(String roleType);
+
+    /**
+     * the variable must play the given role type
+     *
+     * @param roleType the role type the variable must play
+     * @return this
+     */
+    Var plays(Var roleType);
 
     /**
      * set this concept type variable as abstract, meaning it cannot have direct instances

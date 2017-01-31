@@ -28,7 +28,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.Cache;
+import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -45,12 +45,12 @@ import static ai.grakn.test.GraknTestEnv.*;
 
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private Cache cache = Cache.getInstance();
+    private EngineCacheImpl cache = EngineCacheImpl.getInstance();
 
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void onlyRunOnTinker(){

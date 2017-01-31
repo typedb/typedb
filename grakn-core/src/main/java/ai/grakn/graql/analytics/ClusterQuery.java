@@ -28,6 +28,8 @@ import java.util.Set;
 
 /**
  * Compute the connected components in the subgraph.
+ *
+ * @author Jason Liu
  */
 public interface ClusterQuery<T> extends ComputeQuery<T> {
 

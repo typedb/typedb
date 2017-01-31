@@ -28,6 +28,13 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import java.util.Set;
 
+/**
+ * Represents the {@code value} property on a {@link ai.grakn.concept.Instance}.
+ *
+ * This property can be queried. It matches any instance with a value.
+ *
+ * @author Felix Chapman
+ */
 public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty {
 
     @Override

@@ -38,7 +38,12 @@ import java.util.Set;
 
 /**
  * A vertex program specific to Grakn with common method implementations.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
  */
+
 public abstract class GraknVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);

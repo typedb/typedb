@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import org.json.JSONObject;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +31,8 @@ public class TestTask implements BackgroundTask {
 
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
 
-    public void start(Consumer<String> saveCheckpoint, JSONObject config) {
-        LOG.debug(config.getString("name"));
+    public void start(Consumer<String> saveCheckpoint, Json config) {
+        LOG.debug(config.at("name").asString());
 
         startedCounter.incrementAndGet();
     }

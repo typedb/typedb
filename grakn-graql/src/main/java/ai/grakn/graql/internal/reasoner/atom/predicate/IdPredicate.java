@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.Atomic;
 /**
  *
  * <p>
- * Predicate implementation specialising it to be an id predicate.
+ * Predicate implementation specialising it to be an id predicate. Corresponds to graql IdProperty.
  * </p>
  *
  * @author Kasper Piskorski

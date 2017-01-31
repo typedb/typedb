@@ -25,6 +25,13 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
 
+/**
+ * <p>
+ *     Assigns a random ID to the current instance of Engine.
+ * </p>
+ *
+ * @author Denis Lobanov
+ */
 public class EngineID {
     private String id;
     private static EngineID instance = null;

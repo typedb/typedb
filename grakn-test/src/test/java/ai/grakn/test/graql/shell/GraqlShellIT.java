@@ -20,7 +20,6 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.Grakn;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.GraqlClientImpl;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -28,6 +27,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import mjson.Json;
+import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -61,7 +61,7 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -153,7 +153,7 @@ public class GraqlShellIT {
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-f", "src/test/graql/shell-test.gql");
-        assertEquals(err.toString(), "");
+        assertEquals("", err.toString());
     }
 
     @Test
@@ -483,15 +483,17 @@ public class GraqlShellIT {
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream(bout);
-        PrintStream err = new PrintStream(berr);
+
+        // Intercept stderr and stdout, but make sure it is still printed using the TeeOutputStream
+        PrintStream out = new PrintStream(new TeeOutputStream(bout, trueOut));
+        PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
 
         try {
             System.setIn(in);
             System.setOut(out);
             System.setErr(err);
-            
-            GraqlShell.runShell(args, expectedVersion, historyFile, new GraqlClientImpl());
+
+            GraqlShell.runShell(args, expectedVersion, historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();

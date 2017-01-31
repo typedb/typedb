@@ -69,6 +69,8 @@ import static ai.grakn.util.ErrorMessage.NAME_NOT_FOUND;
  * A class for executing insert queries.
  *
  * This behaviour is moved to its own class to allow InsertQueryImpl to have fewer mutable fields.
+ *
+ * @author Felix Chapman
  */
 public class InsertQueryExecutor {
 

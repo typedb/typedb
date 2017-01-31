@@ -54,6 +54,8 @@ import static java.util.stream.Collectors.toSet;
  * A traversal over a Grakn graph, representing one of many ways to execute a {@code MatchQuery}.
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
+ *
+ * @author Felix Chapman
  */
 public class GraqlTraversal {
 

@@ -20,6 +20,8 @@ package ai.grakn.exception;
 
 /**
  * Thrown when two concepts are returned when using a unique id to retrieve them.
+ *
+ * @author Filipe Teixeira
  */
 public class MoreThanOneConceptException extends ConceptException {
     public MoreThanOneConceptException(String message) {

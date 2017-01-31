@@ -18,6 +18,13 @@
 
 package ai.grakn.engine.backgroundtasks.config;
 
+/**
+ * <p>
+ * Class containing strings that describe the Kafka queues and groups
+ * </p>
+ *
+ * @author Denis Lobanov, alexandraorth
+ */
 public interface KafkaTerms {
     String TASK_RUNNER_GROUP = "task-runners";
     String SCHEDULERS_GROUP = "schedulers";

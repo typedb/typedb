@@ -225,9 +225,9 @@ class GraqlSession {
                         attemptRollback();
                     }
                     sendQueryError(errorMessage);
-                } else {
-                    sendEnd();
                 }
+
+                sendEnd();
             }
         });
     }
@@ -324,8 +324,6 @@ class GraqlSession {
                     ERROR, errorChunk
             ));
         }
-
-        sendJson(Json.object(ACTION, ACTION_END));
     }
 
     /**
@@ -352,12 +350,14 @@ class GraqlSession {
      * Send the given JSON to the client
      */
     private void sendJson(Json json) {
-        LOG.debug("Sending message: " + json);
-        try {
-            session.getRemote().sendString(json.toString());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        queryExecutor.submit(() -> {
+            LOG.debug("Sending message: " + json);
+            try {
+                session.getRemote().sendString(json.toString());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**

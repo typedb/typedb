@@ -26,7 +26,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -43,7 +42,15 @@ import java.util.Set;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RelationType> type, Optional<Boolean> isImplicit) {
+    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type) {
+        super(graknGraph, v, type);
+    }
+
+    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type, Boolean isImplicit) {
         super(graknGraph, v, type, isImplicit);
     }
 
@@ -85,8 +92,17 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     public RelationType deleteHasRole(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.HAS_ROLE, roleType);
+
+        RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add castings of roleType to make sure relations are still valid
-        ((RoleTypeImpl) roleType).castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
+        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
+
+        //Add the Role Type itself
+        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+
+        //Add the Relation Type
+        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+
         return this;
     }
 }

@@ -68,19 +68,19 @@ public class ConceptLog {
      * @param concept The concept to be later validated
      */
     public void putConcept(ConceptImpl concept) {
-        if(!modifiedConcepts.contains(concept)) {
+        if (!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
 
-            if(concept.isCasting()) {
+            if (concept.isCasting()) {
                 modifiedCastings.add(concept.asCasting());
             }
-            if(concept.isResource()) {
+            if (concept.isResource()) {
                 modifiedResources.add((ResourceImpl) concept);
             }
         }
 
         //Caching of relations in memory so they can be retrieved without needing a commit
-        if(concept.isRelation()){
+        if (concept.isRelation()) {
             RelationImpl relation = (RelationImpl) concept;
             modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.rolePlayers()), relation);
         }

@@ -38,6 +38,8 @@ import java.util.Optional;
  *     <li>if the type and role-types are specified, they are specified only by id and no other properties</li>
  *     <li>the relation has not been given a variable name</li>
  * </ul>
+ *
+ * @author Felix Chapman
  */
 public class ShortcutTraversal {
 

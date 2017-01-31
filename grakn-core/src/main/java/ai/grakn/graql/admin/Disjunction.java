@@ -22,6 +22,8 @@ import java.util.Set;
 
 /**
  * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
+ *
+ * @author Felix Chapman
  */
 public interface Disjunction<T extends PatternAdmin> extends PatternAdmin {
     /**

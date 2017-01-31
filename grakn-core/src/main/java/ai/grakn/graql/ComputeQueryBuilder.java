@@ -32,6 +32,11 @@ import ai.grakn.graql.analytics.SumQuery;
 
 import java.util.Map;
 
+/**
+ * Starting point for creating compute queries.
+ *
+ * @author Jason Liu
+ */
 public interface ComputeQueryBuilder {
 
     /**

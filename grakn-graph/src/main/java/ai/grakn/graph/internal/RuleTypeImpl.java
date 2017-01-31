@@ -18,14 +18,14 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.graph.GraknAdmin;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.graph.GraknAdmin;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
-import java.util.Optional;
 
 /**
  * <p>
@@ -40,12 +40,24 @@ import java.util.Optional;
  * @author fppt
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
-    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, Optional<RuleType> type) {
-        super(graknGraph, v, type, Optional.empty());
+    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
+        super(graknGraph, v);
+    }
+
+    RuleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RuleType type) {
+        super(graknGraph, v, type);
     }
 
     @Override
     public Rule addRule(Pattern lhs, Pattern rhs) {
+        if(lhs == null) {
+            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_LHS.name()));
+        }
+
+        if(rhs == null) {
+            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
+        }
+
         return addInstance(Schema.BaseType.RULE, (vertex, type) ->
                 getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
     }

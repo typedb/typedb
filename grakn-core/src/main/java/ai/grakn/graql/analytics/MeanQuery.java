@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Compute the mean of the selected resource-type.
+ *
+ * @author Jason Liu
  */
 public interface MeanQuery extends ComputeQuery<Optional<Double>> {
 

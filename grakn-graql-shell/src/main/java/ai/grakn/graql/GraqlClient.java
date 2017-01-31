@@ -19,15 +19,43 @@
 package ai.grakn.graql;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Future;
 
 /**
- * Interface for connecting a Graql websocket to a remote URI. Used for mocking in tests.
+ * Connects a Graql websocket to a remote URI
  */
-public interface GraqlClient {
-    Future<Session> connect(Object websocket, URI uri);
+class GraqlClient {
 
-    void close();
+    private static final long TIMEOUT = 3_600_000;
+
+    private WebSocketClient client;
+
+    Future<Session> connect(Object websocket, URI uri) {
+        client = new WebSocketClient();
+
+        client.getPolicy().setIdleTimeout(TIMEOUT);
+
+        try {
+            client.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            return client.connect(websocket, uri);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void close() {
+        try {
+            client.stop();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

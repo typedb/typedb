@@ -22,16 +22,15 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.backgroundtasks.TaskManager;
 import org.junit.rules.ExternalResource;
 
-import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.startEngine;
+import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
+import static ai.grakn.test.GraknTestEnv.stopKafka;
 
 /**
  * <p>
@@ -42,16 +41,34 @@ import static ai.grakn.test.GraknTestEnv.stopEngine;
  */
 public class EngineContext extends ExternalResource {
 
-    public static EngineContext startServer(){
-        return new EngineContext();
+    private final boolean startKafka;
+    private final boolean startDistributedEngine;
+    private final boolean startInMemoryEngine;
+
+    private EngineContext(boolean startKafka, boolean startDistributedEngine, boolean startInMemoryEngine){
+        this.startDistributedEngine = startDistributedEngine;
+        this.startInMemoryEngine = startInMemoryEngine;
+        this.startKafka = startKafka;
+    }
+
+    public static EngineContext startKafkaServer(){
+        return new EngineContext(true, false, false);
+    }
+
+    public static EngineContext startDistributedServer(){
+        return new EngineContext(true, true, false);
+    }
+
+    public static EngineContext startInMemoryServer(){
+        return new EngineContext(false, false, true);
     }
 
     public GraknGraph graphWithNewKeyspace(){
         return factoryWithNewKeyspace().getGraph();
     }
 
-    public ClusterManager getClusterManager(){
-        return GraknEngineServer.getClusterManager();
+    public TaskManager getTaskManager(){
+        return GraknEngineServer.getTaskManager();
     }
 
     public GraknGraphFactory factoryWithNewKeyspace() {
@@ -60,20 +77,33 @@ public class EngineContext extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        //TODO remove when Bug #12029 fixed
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
-
         hideLogs();
-        startEngine();
+
+        if(startKafka){
+            startKafka();
+        }
+
+        if (startDistributedEngine){
+            startEngine(false);
+        }
+
+        if (startInMemoryEngine){
+            startEngine(true);
+        }
     }
 
     @Override
     protected void after() {
         try {
-            stopEngine();
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-            throw new RuntimeException("Stopping Engine for test", e);
+            if(startDistributedEngine | startInMemoryEngine){
+                stopEngine();
+            }
+
+            if(startKafka){
+                stopKafka();
+            }
+        } catch (Exception e){
+            throw new RuntimeException("Could not shut down ", e);
         }
     }
 }

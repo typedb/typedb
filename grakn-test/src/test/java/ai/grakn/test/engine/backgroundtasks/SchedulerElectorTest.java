@@ -19,11 +19,13 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.distributed.SchedulerElector;
+import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Objects;
@@ -31,41 +33,46 @@ import java.util.function.Predicate;
 
 import static org.junit.Assert.assertNotEquals;
 
-public class ClusterManagerTest {
-    private static ClusterManager clusterManager;
+public class SchedulerElectorTest {
+    private static SchedulerElector elector;
+    private static ZookeeperConnection connection;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startKafkaServer();
 
     @BeforeClass
     public static void instantiate(){
-        clusterManager = engine.getClusterManager();
+        connection = new ZookeeperConnection();
+        elector = new SchedulerElector(new TaskStateInMemoryStore(), connection);
+    }
+
+    @AfterClass
+    public static void teardown(){
+        connection.close();
     }
 
     @Test
     public void testSchedulerRestartsAfterKilled() throws Exception {
-        synchronized (clusterManager.getScheduler()) {
-            waitForScheduler(clusterManager, Objects::nonNull);
-            Scheduler scheduler1 = clusterManager.getScheduler();
+        waitForScheduler(Objects::nonNull);
+        Scheduler scheduler1 = elector.getScheduler();
 
-            // Kill scheduler- client should create a new one
-            scheduler1.close();
+        // Kill scheduler- client should create a new one
+        scheduler1.close();
 
-            waitForScheduler(clusterManager, Objects::nonNull);
+        waitForScheduler(Objects::isNull);
 
-            Scheduler scheduler2 = clusterManager.getScheduler();
-            assertNotEquals(scheduler1, scheduler2);
-        }
+        Scheduler scheduler2 = elector.getScheduler();
+        assertNotEquals(scheduler1, scheduler2);
     }
 
-    protected void waitForScheduler(ClusterManager clusterManager, Predicate<Scheduler> fn) throws Exception {
+    protected void waitForScheduler(Predicate<Scheduler> fn) throws Exception {
         int runs = 0;
 
-        while (fn.test(clusterManager.getScheduler()) && runs < 50 ) {
+        while (!fn.test(elector.getScheduler()) && runs < 50 ) {
             Thread.sleep(100);
             runs++;
         }
 
-        System.out.println("wait done, runs " + runs + " scheduler " + clusterManager.getScheduler());
+        System.out.println("wait done, runs " + runs + " scheduler " + elector.getScheduler());
     }
 }

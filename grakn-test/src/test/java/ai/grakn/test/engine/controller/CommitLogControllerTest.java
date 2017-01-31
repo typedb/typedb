@@ -27,7 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.Cache;
+import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -49,10 +49,10 @@ import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
-    private final Cache cache = Cache.getInstance();
+    private final EngineCacheImpl cache = EngineCacheImpl.getInstance();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void setUp() throws Exception {
