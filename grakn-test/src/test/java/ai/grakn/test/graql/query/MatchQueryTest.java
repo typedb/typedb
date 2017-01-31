@@ -21,23 +21,20 @@ package ai.grakn.test.graql.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -56,53 +53,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graphs.MovieGraph.aRuleType;
-import static ai.grakn.graphs.MovieGraph.action;
-import static ai.grakn.graphs.MovieGraph.alPacino;
-import static ai.grakn.graphs.MovieGraph.apocalypseNow;
-import static ai.grakn.graphs.MovieGraph.benjaminLWillard;
-import static ai.grakn.graphs.MovieGraph.betteMidler;
-import static ai.grakn.graphs.MovieGraph.character;
-import static ai.grakn.graphs.MovieGraph.chineseCoffee;
-import static ai.grakn.graphs.MovieGraph.cluster;
-import static ai.grakn.graphs.MovieGraph.comedy;
-import static ai.grakn.graphs.MovieGraph.crime;
-import static ai.grakn.graphs.MovieGraph.drama;
-import static ai.grakn.graphs.MovieGraph.family;
-import static ai.grakn.graphs.MovieGraph.fantasy;
-import static ai.grakn.graphs.MovieGraph.gender;
-import static ai.grakn.graphs.MovieGraph.genre;
-import static ai.grakn.graphs.MovieGraph.genreOfProduction;
-import static ai.grakn.graphs.MovieGraph.get;
-import static ai.grakn.graphs.MovieGraph.godfather;
-import static ai.grakn.graphs.MovieGraph.harry;
-import static ai.grakn.graphs.MovieGraph.heat;
-import static ai.grakn.graphs.MovieGraph.hocusPocus;
-import static ai.grakn.graphs.MovieGraph.judeLaw;
-import static ai.grakn.graphs.MovieGraph.kermitTheFrog;
-import static ai.grakn.graphs.MovieGraph.language;
-import static ai.grakn.graphs.MovieGraph.marlonBrando;
-import static ai.grakn.graphs.MovieGraph.martinSheen;
-import static ai.grakn.graphs.MovieGraph.mirandaHeart;
-import static ai.grakn.graphs.MovieGraph.missPiggy;
-import static ai.grakn.graphs.MovieGraph.movie;
-import static ai.grakn.graphs.MovieGraph.musical;
-import static ai.grakn.graphs.MovieGraph.name;
-import static ai.grakn.graphs.MovieGraph.neilMcCauley;
-import static ai.grakn.graphs.MovieGraph.person;
-import static ai.grakn.graphs.MovieGraph.production;
-import static ai.grakn.graphs.MovieGraph.realName;
-import static ai.grakn.graphs.MovieGraph.releaseDate;
-import static ai.grakn.graphs.MovieGraph.robertDeNiro;
-import static ai.grakn.graphs.MovieGraph.runtime;
-import static ai.grakn.graphs.MovieGraph.sarah;
-import static ai.grakn.graphs.MovieGraph.sarahJessicaParker;
-import static ai.grakn.graphs.MovieGraph.spy;
-import static ai.grakn.graphs.MovieGraph.theMuppets;
-import static ai.grakn.graphs.MovieGraph.title;
-import static ai.grakn.graphs.MovieGraph.tmdbVoteAverage;
-import static ai.grakn.graphs.MovieGraph.tmdbVoteCount;
-import static ai.grakn.graphs.MovieGraph.war;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.eq;
@@ -115,13 +65,68 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.test.graql.query.QueryUtil.aRuleType;
+import static ai.grakn.test.graql.query.QueryUtil.action;
+import static ai.grakn.test.graql.query.QueryUtil.alPacino;
 import static ai.grakn.test.graql.query.QueryUtil.allVariables;
+import static ai.grakn.test.graql.query.QueryUtil.apocalypseNow;
+import static ai.grakn.test.graql.query.QueryUtil.benjaminLWillard;
+import static ai.grakn.test.graql.query.QueryUtil.betteMidler;
+import static ai.grakn.test.graql.query.QueryUtil.character;
+import static ai.grakn.test.graql.query.QueryUtil.chineseCoffee;
+import static ai.grakn.test.graql.query.QueryUtil.cluster;
+import static ai.grakn.test.graql.query.QueryUtil.comedy;
+import static ai.grakn.test.graql.query.QueryUtil.concept;
+import static ai.grakn.test.graql.query.QueryUtil.constraintRule;
 import static ai.grakn.test.graql.query.QueryUtil.containsAllMovies;
+import static ai.grakn.test.graql.query.QueryUtil.crime;
+import static ai.grakn.test.graql.query.QueryUtil.drama;
+import static ai.grakn.test.graql.query.QueryUtil.entity;
+import static ai.grakn.test.graql.query.QueryUtil.family;
+import static ai.grakn.test.graql.query.QueryUtil.fantasy;
+import static ai.grakn.test.graql.query.QueryUtil.gender;
+import static ai.grakn.test.graql.query.QueryUtil.genre;
+import static ai.grakn.test.graql.query.QueryUtil.genreOfProduction;
+import static ai.grakn.test.graql.query.QueryUtil.godfather;
+import static ai.grakn.test.graql.query.QueryUtil.harry;
+import static ai.grakn.test.graql.query.QueryUtil.hasTitle;
 import static ai.grakn.test.graql.query.QueryUtil.hasType;
 import static ai.grakn.test.graql.query.QueryUtil.hasValue;
+import static ai.grakn.test.graql.query.QueryUtil.heat;
+import static ai.grakn.test.graql.query.QueryUtil.hocusPocus;
+import static ai.grakn.test.graql.query.QueryUtil.inferenceRule;
 import static ai.grakn.test.graql.query.QueryUtil.isCasting;
 import static ai.grakn.test.graql.query.QueryUtil.isInstance;
+import static ai.grakn.test.graql.query.QueryUtil.judeLaw;
+import static ai.grakn.test.graql.query.QueryUtil.kermitTheFrog;
+import static ai.grakn.test.graql.query.QueryUtil.language;
+import static ai.grakn.test.graql.query.QueryUtil.marlonBrando;
+import static ai.grakn.test.graql.query.QueryUtil.martinSheen;
+import static ai.grakn.test.graql.query.QueryUtil.mirandaHeart;
+import static ai.grakn.test.graql.query.QueryUtil.missPiggy;
+import static ai.grakn.test.graql.query.QueryUtil.movie;
+import static ai.grakn.test.graql.query.QueryUtil.movies;
+import static ai.grakn.test.graql.query.QueryUtil.musical;
+import static ai.grakn.test.graql.query.QueryUtil.name;
+import static ai.grakn.test.graql.query.QueryUtil.neilMcCauley;
+import static ai.grakn.test.graql.query.QueryUtil.person;
+import static ai.grakn.test.graql.query.QueryUtil.production;
+import static ai.grakn.test.graql.query.QueryUtil.realName;
+import static ai.grakn.test.graql.query.QueryUtil.releaseDate;
+import static ai.grakn.test.graql.query.QueryUtil.resource;
+import static ai.grakn.test.graql.query.QueryUtil.results;
+import static ai.grakn.test.graql.query.QueryUtil.robertDeNiro;
+import static ai.grakn.test.graql.query.QueryUtil.rule;
+import static ai.grakn.test.graql.query.QueryUtil.runtime;
+import static ai.grakn.test.graql.query.QueryUtil.sarah;
+import static ai.grakn.test.graql.query.QueryUtil.sarahJessicaParker;
+import static ai.grakn.test.graql.query.QueryUtil.spy;
+import static ai.grakn.test.graql.query.QueryUtil.theMuppets;
+import static ai.grakn.test.graql.query.QueryUtil.title;
+import static ai.grakn.test.graql.query.QueryUtil.tmdbVoteAverage;
+import static ai.grakn.test.graql.query.QueryUtil.tmdbVoteCount;
 import static ai.grakn.test.graql.query.QueryUtil.variable;
+import static ai.grakn.test.graql.query.QueryUtil.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
@@ -135,6 +140,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasKey;
@@ -154,29 +160,14 @@ public class MatchQueryTest {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(get());
+    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EntityType entity;
-    private Type concept;
-    private RuleType rule;
-    private RuleType inferenceRule;
-    private RuleType constraintRule;
-    private ResourceType resource;
-    private RelationType hasTitle;
 
     @Before
     public void setUp() {
         qb = movieGraph.graph().graql();
-
-        concept = movieGraph.graph().admin().getMetaConcept();
-        entity = movieGraph.graph().admin().getMetaEntityType();
-        resource = movieGraph.graph().admin().getMetaResourceType();
-        rule = movieGraph.graph().admin().getMetaRuleType();
-        inferenceRule = movieGraph.graph().admin().getMetaRuleInference();
-        constraintRule = movieGraph.graph().admin().getMetaRuleConstraint();
-        hasTitle = movieGraph.graph().getRelationType("has-title");
     }
 
     @After
@@ -187,13 +178,13 @@ public class MatchQueryTest {
     @Test
     public void testMovieQuery() {
         MatchQuery query = qb.match(var("x").isa("movie"));
-        assertThat(query, variable("x", containsAllMovies()));
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
     public void testProductionQuery() {
         MatchQuery query = qb.match(var("x").isa("production"));
-        assertThat(query, variable("x", containsAllMovies()));
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
@@ -420,12 +411,12 @@ public class MatchQueryTest {
                         .rel(var().has("name", "crime"))
         );
 
-        assertThat(query, containsInAnyOrder(
-                ImmutableMap.of("x", godfather, "y", production),
-                ImmutableMap.of("x", godfather, "y", movie),
-                ImmutableMap.of("x", heat,      "y", production),
-                ImmutableMap.of("x", heat,      "y", movie)
-        ));
+        assertThat(query, results(containsInAnyOrder(
+                allOf(hasEntry(is("x"), godfather), hasEntry(is("y"), production)),
+                allOf(hasEntry(is("x"), godfather), hasEntry(is("y"), movie)),
+                allOf(hasEntry(is("x"), heat),      hasEntry(is("y"), production)),
+                allOf(hasEntry(is("x"), heat),      hasEntry(is("y"), movie))
+        )));
     }
 
     @Test
@@ -512,7 +503,7 @@ public class MatchQueryTest {
     public void testDisconnectedQuery() {
         MatchQuery query = qb.match(var("x").isa("movie"), var("y").isa("person"));
         int numPeople = 10;
-        assertThat(query.execute(), hasSize(QueryUtil.movies.length * numPeople));
+        assertThat(query.execute(), hasSize(movies.size() * numPeople));
     }
 
     @Test
@@ -844,7 +835,7 @@ public class MatchQueryTest {
         List<Map<String, Concept>> results = query.execute();
         assertThat(results, allOf(
                 (Matcher) everyItem(not(hasKey(anything()))),
-                hasSize(QueryUtil.movies.length)
+                hasSize(movies.size())
         ));
     }
 

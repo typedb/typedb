@@ -56,13 +56,13 @@ public class QueryBuilderTest {
     @Test
     public void testBuildQueryGraphFirst() {
         MatchQuery query = movieGraph.graph().graql().match(var("x").isa("movie"));
-        assertThat(query, variable("x", containsAllMovies()));
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
     public void testBuildMatchQueryGraphLast() {
         MatchQuery query = match(var("x").isa("movie")).withGraph(movieGraph.graph());
-        assertThat(query, variable("x", containsAllMovies()));
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test

@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
@@ -28,20 +29,12 @@ import org.junit.Test;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graphs.MovieGraph.apocalypseNow;
-import static ai.grakn.graphs.MovieGraph.get;
-import static ai.grakn.graphs.MovieGraph.godfather;
-import static ai.grakn.graphs.MovieGraph.heat;
-import static ai.grakn.graphs.MovieGraph.hocusPocus;
-import static ai.grakn.graphs.MovieGraph.kermitTheFrog;
-import static ai.grakn.graphs.MovieGraph.missPiggy;
-import static ai.grakn.graphs.MovieGraph.spy;
-import static ai.grakn.graphs.MovieGraph.theMuppets;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Order.asc;
 import static ai.grakn.graql.Order.desc;
+import static ai.grakn.test.graql.query.QueryUtil.*;
 import static ai.grakn.test.graql.query.QueryUtil.containsAllMovies;
 import static ai.grakn.test.graql.query.QueryUtil.variable;
 import static org.hamcrest.Matchers.contains;
@@ -55,7 +48,7 @@ public class MatchQueryModifierTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(get());
+    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {
@@ -103,7 +96,9 @@ public class MatchQueryModifierTest {
                 var("y").has("name", var("n"))
         ).orderBy("n").offset(4).limit(8).select("x");
 
-        assertThat(query, variable("x", containsInAnyOrder(hocusPocus, spy, theMuppets, godfather, apocalypseNow)));
+        assertThat(query, variable("x", containsInAnyOrder(
+                hocusPocus, spy, spy, theMuppets, theMuppets, godfather, apocalypseNow, apocalypseNow
+        )));
     }
 
     @Test
@@ -113,7 +108,7 @@ public class MatchQueryModifierTest {
         assertResultsOrderedByValue(query, "n", false);
 
         // Make sure all results are included
-        assertThat(query, variable("x", containsAllMovies()));
+        assertThat(query, variable("the-movie", containsAllMovies));
     }
 
     @Test
@@ -121,7 +116,7 @@ public class MatchQueryModifierTest {
         MatchQuery query = qb.match(var("z").isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", desc);
 
         // Make sure movies are in the correct order
-        assertThat(query, variable("x", contains(godfather, hocusPocus, apocalypseNow, theMuppets)));
+        assertThat(query, variable("z", contains(godfather, hocusPocus, apocalypseNow, theMuppets, chineseCoffee)));
     }
 
     @Test

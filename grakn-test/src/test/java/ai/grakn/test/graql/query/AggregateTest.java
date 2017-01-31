@@ -63,7 +63,7 @@ public class AggregateTest {
 
         long count = countQuery.execute();
 
-        Assert.assertEquals(QueryUtil.movies.length, count);
+        Assert.assertEquals(QueryUtil.movies.size(), count);
     }
 
     @Test
@@ -73,7 +73,7 @@ public class AggregateTest {
 
         Map<Concept, List<Map<VarName, Concept>>> groups = groupQuery.execute();
 
-        Assert.assertEquals(QueryUtil.movies.length, groups.size());
+        Assert.assertEquals(QueryUtil.movies.size(), groups.size());
 
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
@@ -107,7 +107,7 @@ public class AggregateTest {
         // We can't guarantee the generic type is correct here
         @SuppressWarnings("unchecked") Map<Concept, List<Map<String, Concept>>> groups = (Map) results.get("g");
 
-        Assert.assertEquals(QueryUtil.movies.length, groups.size());
+        Assert.assertEquals(QueryUtil.movies.size(), groups.size());
 
         long groupedResults = groups.values().stream().mapToInt(List::size).sum();
 

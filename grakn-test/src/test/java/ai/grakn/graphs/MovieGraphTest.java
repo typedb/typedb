@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.ErrorMessage.CANNOT_LOAD_EXAMPLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -55,17 +54,6 @@ public class MovieGraphTest {
         graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         MovieGraph.get().accept(graknGraph);
         graph = ((AbstractGraknGraph) graknGraph).getTinkerPopGraph();
-    }
-
-    @Test
-    public void failToLoad(){
-        GraknGraph graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        graknGraph.putRelationType("fake");
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(CANNOT_LOAD_EXAMPLE.getMessage());
-
-        MovieGraph.get().accept(graknGraph);
     }
 
     @Test
