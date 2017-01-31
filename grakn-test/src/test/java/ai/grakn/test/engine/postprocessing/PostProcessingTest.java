@@ -116,6 +116,9 @@ public class PostProcessingTest {
 
         //Check it's all fixed
         assertEquals(4, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+
+        //Check the cache has been cleaned
+        assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
     }
 
     private void buildDuplicateCasting(ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
@@ -191,6 +194,9 @@ public class PostProcessingTest {
 
         //Check it's fixed
         assertEquals(1, graph.getResourceType(sample).instances().size());
+
+        //Check the cache has been cleared
+        assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
     }
     private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
         AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;

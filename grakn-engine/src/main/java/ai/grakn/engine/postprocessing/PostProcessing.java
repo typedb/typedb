@@ -61,6 +61,7 @@ public class PostProcessing {
     private final EngineCacheImpl cache;
 
     private PostProcessing() {
+        
         postpool = Executors.newFixedThreadPool(1);
         statDump = Executors.newSingleThreadExecutor();
         cache = EngineCacheImpl.getInstance();
