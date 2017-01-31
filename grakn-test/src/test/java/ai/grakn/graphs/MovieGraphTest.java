@@ -14,9 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.example;
+package ai.grakn.graphs;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -33,8 +34,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -43,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class MovieGraphFactoryTest {
+public class MovieGraphTest {
 
     private static Graph graph;
     private static GraknGraph graknGraph;
@@ -54,7 +53,7 @@ public class MovieGraphFactoryTest {
     @BeforeClass
     public static void setUp() throws IOException{
         graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(graknGraph);
+        MovieGraph.get().accept(graknGraph);
         graph = ((AbstractGraknGraph) graknGraph).getTinkerPopGraph();
     }
 
@@ -66,14 +65,7 @@ public class MovieGraphFactoryTest {
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(CANNOT_LOAD_EXAMPLE.getMessage());
 
-        MovieGraphFactory.loadGraph(graknGraph);
-    }
-
-    @Test(expected=InvocationTargetException.class)
-    public void testConstructorIsPrivate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Constructor<MovieGraphFactory> c = MovieGraphFactory.class.getDeclaredConstructor();
-        c.setAccessible(true);
-        c.newInstance();
+        MovieGraph.get().accept(graknGraph);
     }
 
     @Test

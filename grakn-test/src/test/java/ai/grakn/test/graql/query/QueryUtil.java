@@ -30,13 +30,13 @@ import org.hamcrest.TypeSafeMatcher;
 
 import java.util.List;
 
-import static ai.grakn.example.MovieGraphFactory.apocalypseNow;
-import static ai.grakn.example.MovieGraphFactory.chineseCoffee;
-import static ai.grakn.example.MovieGraphFactory.godfather;
-import static ai.grakn.example.MovieGraphFactory.heat;
-import static ai.grakn.example.MovieGraphFactory.hocusPocus;
-import static ai.grakn.example.MovieGraphFactory.spy;
-import static ai.grakn.example.MovieGraphFactory.theMuppets;
+import static ai.grakn.graphs.MovieGraph.apocalypseNow;
+import static ai.grakn.graphs.MovieGraph.chineseCoffee;
+import static ai.grakn.graphs.MovieGraph.godfather;
+import static ai.grakn.graphs.MovieGraph.heat;
+import static ai.grakn.graphs.MovieGraph.hocusPocus;
+import static ai.grakn.graphs.MovieGraph.spy;
+import static ai.grakn.graphs.MovieGraph.theMuppets;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;

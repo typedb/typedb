@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
@@ -29,14 +28,15 @@ import org.junit.Test;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.example.MovieGraphFactory.apocalypseNow;
-import static ai.grakn.example.MovieGraphFactory.godfather;
-import static ai.grakn.example.MovieGraphFactory.heat;
-import static ai.grakn.example.MovieGraphFactory.hocusPocus;
-import static ai.grakn.example.MovieGraphFactory.kermitTheFrog;
-import static ai.grakn.example.MovieGraphFactory.missPiggy;
-import static ai.grakn.example.MovieGraphFactory.spy;
-import static ai.grakn.example.MovieGraphFactory.theMuppets;
+import static ai.grakn.graphs.MovieGraph.apocalypseNow;
+import static ai.grakn.graphs.MovieGraph.get;
+import static ai.grakn.graphs.MovieGraph.godfather;
+import static ai.grakn.graphs.MovieGraph.heat;
+import static ai.grakn.graphs.MovieGraph.hocusPocus;
+import static ai.grakn.graphs.MovieGraph.kermitTheFrog;
+import static ai.grakn.graphs.MovieGraph.missPiggy;
+import static ai.grakn.graphs.MovieGraph.spy;
+import static ai.grakn.graphs.MovieGraph.theMuppets;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
@@ -55,7 +55,7 @@ public class MatchQueryModifierTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final GraphContext rule = GraphContext.preLoad(get());
 
     @Before
     public void setUp() {
