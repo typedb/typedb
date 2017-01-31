@@ -70,9 +70,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.REST.Request.COMMIT_LOG_ID;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_INDEX;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 /**
@@ -246,6 +243,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return ((ConceptImpl)from).addEdge((ConceptImpl) to, type);
     }
 
+    @Override
     public <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
@@ -713,8 +711,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit(EngineCache cache) throws GraknValidationException{
         commit((castings, resources) -> {
-            castings.forEach(pair -> cache.addJobCasting(keyspace, pair.getValue0(), pair.getValue1()));
-            resources.forEach(pair -> cache.addJobResource(keyspace, pair.getValue0(), pair.getValue1()));
+            if(cache != null) {
+                castings.forEach(pair -> cache.addJobCasting(keyspace, pair.getValue0(), pair.getValue1()));
+                resources.forEach(pair -> cache.addJobResource(keyspace, pair.getValue0(), pair.getValue1()));
+            }
         });
     }
 
@@ -797,8 +797,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return if castings were merged and a commit is required.
      */
     @Override
-    public boolean fixDuplicateCastings(Set<String> castingVertexIds){
-        Set<CastingImpl> castings = castingVertexIds.stream().map(this::<CastingImpl>getConceptByBaseIdentifier).collect(Collectors.toSet());
+    public boolean fixDuplicateCastings(Set<ConceptId> castingVertexIds){
+        Set<CastingImpl> castings = castingVertexIds.stream().
+                map(id -> this.<CastingImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
         if(castings.size() > 1){
             CastingImpl mainCasting = castings.iterator().next();
             castings.remove(mainCasting);
@@ -894,8 +895,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if a commit is required.
      */
     @Override
-    public boolean fixDuplicateResources(Set<String> resourceVertexIds){
-        Set<ResourceImpl> duplicates = resourceVertexIds.stream().map(this::<ResourceImpl>getConceptByBaseIdentifier).collect(Collectors.toSet());
+    public boolean fixDuplicateResources(Set<ConceptId> resourceVertexIds){
+        Set<ResourceImpl> duplicates = resourceVertexIds.stream().
+                map(id -> this.<ResourceImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
 
         if(duplicates.size() > 1){
             Iterator<ResourceImpl> it = duplicates.iterator();

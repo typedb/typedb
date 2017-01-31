@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -66,10 +67,10 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingDuplicateCasting(){
-        Set<String> castingVertexIds = new HashSet<>();
-        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId().getValue());
-        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue());
-        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4).getId().getValue());
+        Set<ConceptId> castingVertexIds = new HashSet<>();
+        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId());
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4).getId().getValue()));
         assertEquals(3, instance1.castings().size());
 
         graknGraph.fixDuplicateCastings(castingVertexIds);
@@ -117,11 +118,11 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingDuplicateRelationsDueToDuplicateCastings() {
-        Set<String> castingVertexIds = new HashSet<>();
+        Set<ConceptId> castingVertexIds = new HashSet<>();
 
-        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId().getValue());
-        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue());
-        castingVertexIds.add(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue());
+        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId());
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue()));
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
 
         assertEquals(3, instance1.relations().size());
         assertEquals(2, instance2.relations().size());
@@ -146,10 +147,10 @@ public class PostprocessingTest extends GraphTestBase{
         ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Create fake resources
-        Set<String> resourceIds = new HashSet<>();
-        resourceIds.add(createFakeResource(resourceType, "1").getId().getValue());
-        resourceIds.add(createFakeResource(resourceType, "1").getId().getValue());
-        resourceIds.add(createFakeResource(resourceType, "1").getId().getValue());
+        Set<ConceptId> resourceIds = new HashSet<>();
+        resourceIds.add(createFakeResource(resourceType, "1").getId());
+        resourceIds.add(createFakeResource(resourceType, "1").getId());
+        resourceIds.add(createFakeResource(resourceType, "1").getId());
 
         //Check we have duplicate resources
         assertEquals(3, resourceType.instances().size());
@@ -173,14 +174,14 @@ public class PostprocessingTest extends GraphTestBase{
         Entity e3 = entityType.addEntity();
 
         //Create fake resources
-        Set<String> resourceIds = new HashSet<>();
+        Set<ConceptId> resourceIds = new HashSet<>();
         ResourceImpl<?> r1 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r11 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r111 = createFakeResource(resourceType, "1");
 
-        resourceIds.add(r1.getId().getValue());
-        resourceIds.add(r11.getId().getValue());
-        resourceIds.add(r111.getId().getValue());
+        resourceIds.add(r1.getId());
+        resourceIds.add(r11.getId());
+        resourceIds.add(r111.getId());
 
         //Give resources some relationships
         relationType.addRelation().putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);

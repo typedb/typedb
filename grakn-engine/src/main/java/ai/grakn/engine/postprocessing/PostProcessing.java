@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
 public class PostProcessing {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
-
     private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
     private static PostProcessing instance = null;
