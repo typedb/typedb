@@ -19,8 +19,10 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
@@ -165,9 +167,14 @@ public class Loader {
     private Map<TaskStatus,Integer> countTasks(Collection<String> tasks) {
         Map<TaskStatus, Integer> taskCounter = getTaskCounter();
 
-        tasks.stream()
-                .map(s -> manager.storage().getState(s))
-                .forEach(state -> taskCounter.computeIfPresent(state.status(), (key, value) -> ++value));
+        for(String taskId:tasks){
+            try {
+                TaskState state = manager.storage().getState(taskId);
+                taskCounter.computeIfPresent(state.status(), (key, value) -> ++value);
+            } catch (EngineStorageException e){
+                LOG.debug("Could not find status of " + taskId + " in storage.");
+            }
+        }
 
         return taskCounter;
     }
@@ -254,8 +261,12 @@ public class Loader {
      * @return if the given task has been completed or failed.
      */
     private boolean isCompleted(String taskID){
-        TaskStatus status = manager.storage().getState(taskID).status();
-        return status == COMPLETED || status == FAILED;
+        try {
+            TaskStatus status = manager.storage().getState(taskID).status();
+            return status == COMPLETED || status == FAILED;
+        } catch (EngineStorageException e){
+            return false;
+        }
     }
 
     /**
