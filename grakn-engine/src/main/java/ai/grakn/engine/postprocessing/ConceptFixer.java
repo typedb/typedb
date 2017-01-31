@@ -157,7 +157,7 @@ class ConceptFixer {
     }
 
     private static BiConsumer<EngineCache, String> runCastingFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
-        if(graph.fixDuplicateResources(conceptIds)){
+        if(graph.fixDuplicateCastings(conceptIds)){
             try {
                 graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
             } catch (GraknValidationException e) {

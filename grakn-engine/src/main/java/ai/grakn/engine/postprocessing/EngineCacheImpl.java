@@ -108,7 +108,7 @@ public class EngineCacheImpl implements EngineCache {
 
     @Override
     public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
-        deleteJob(resources, keyspace, castingIndex, castingId);
+        deleteJob(castings, keyspace, castingIndex, castingId);
     }
 
     //-------------------- Resource Jobs

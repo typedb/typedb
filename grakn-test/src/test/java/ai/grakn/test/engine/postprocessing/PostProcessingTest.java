@@ -34,6 +34,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -139,8 +140,14 @@ public class PostProcessingTest {
         Vertex mainInstanceVertex = rawGraph.traversal().V().
                 hasId(mainInstanceId.getValue()).next();
 
+        Vertex otherCasting = mainRoleTypeVertex.edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).next().outVertex();
+
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
+
+        castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
+        castingVertex.property(Schema.ConceptProperty.INDEX.name(), otherCasting.value(Schema.ConceptProperty.INDEX.name()));
+
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
@@ -148,6 +155,8 @@ public class PostProcessingTest {
 
         edge = relationVertex.addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
+
+        cache.addJobCasting(graph.getKeyspace(), castingVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(castingVertex.id().toString()));
     }
 
     @Test
