@@ -24,7 +24,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
@@ -46,9 +45,11 @@ import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 
+/**
+ * Collection of static methods to create {@link Matcher} instances for tests.
+ */
 public class GraknMatchers {
 
     public static final Matcher<MatchableConcept> concept = type(CONCEPT.getName());
@@ -58,61 +59,9 @@ public class GraknMatchers {
     public static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getName());
     public static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getName());
 
-    public static final Matcher<MatchableConcept> production = type("production");
-    public static final Matcher<MatchableConcept> movie = type("movie");
-    public static final Matcher<MatchableConcept> person = type("person");
-    public static final Matcher<MatchableConcept> genre = type("genre");
-    public static final Matcher<MatchableConcept> character = type("character");
-    public static final Matcher<MatchableConcept> cluster = type("cluster");
-    public static final Matcher<MatchableConcept> language = type("language");
-    public static final Matcher<MatchableConcept> title = type("title");
-    public static final Matcher<MatchableConcept> gender = type("gender");
-    public static final Matcher<MatchableConcept> realName = type("real-name");
-    public static final Matcher<MatchableConcept> name = type("name");
-    public static final Matcher<MatchableConcept> tmdbVoteCount = type("tmdb-vote-count");
-    public static final Matcher<MatchableConcept> releaseDate = type("release-date");
-    public static final Matcher<MatchableConcept> runtime = type("runtime");
-    public static final Matcher<MatchableConcept> tmdbVoteAverage = type("tmdb-vote-average");
-    public static final Matcher<MatchableConcept> genreOfProduction = type("genre-of-production");
-    public static final Matcher<MatchableConcept> aRuleType = type("a-rule-type");
-    public static final Matcher<MatchableConcept> hasTitle = type("has-title");
-
-    public static final Matcher<MatchableConcept> godfather = instance("Godfather");
-    public static final Matcher<MatchableConcept> theMuppets = instance("The Muppets");
-    public static final Matcher<MatchableConcept> heat = instance("Heat");
-    public static final Matcher<MatchableConcept> apocalypseNow = instance("Apocalypse Now");
-    public static final Matcher<MatchableConcept> hocusPocus = instance("Hocus Pocus");
-    public static final Matcher<MatchableConcept> spy = instance("Spy");
-    public static final Matcher<MatchableConcept> chineseCoffee = instance("Chinese Coffee");
-    public static final Matcher<MatchableConcept> marlonBrando = instance("Marlon Brando");
-    public static final Matcher<MatchableConcept> alPacino = instance("Al Pacino");
-    public static final Matcher<MatchableConcept> missPiggy = instance("Miss Piggy");
-    public static final Matcher<MatchableConcept> kermitTheFrog = instance("Kermit The Frog");
-    public static final Matcher<MatchableConcept> martinSheen = instance("Martin Sheen");
-    public static final Matcher<MatchableConcept> robertDeNiro = instance("Robert de Niro");
-    public static final Matcher<MatchableConcept> judeLaw = instance("Jude Law");
-    public static final Matcher<MatchableConcept> mirandaHeart = instance("Miranda Heart");
-    public static final Matcher<MatchableConcept> betteMidler = instance("Bette Midler");
-    public static final Matcher<MatchableConcept> sarahJessicaParker = instance("Sarah Jessica Parker");
-    public static final Matcher<MatchableConcept> crime = instance("crime");
-    public static final Matcher<MatchableConcept> drama = instance("drama");
-    public static final Matcher<MatchableConcept> war = instance("war");
-    public static final Matcher<MatchableConcept> action = instance("action");
-    public static final Matcher<MatchableConcept> comedy = instance("comedy");
-    public static final Matcher<MatchableConcept> family = instance("family");
-    public static final Matcher<MatchableConcept> musical = instance("musical");
-    public static final Matcher<MatchableConcept> fantasy = instance("fantasy");
-    public static final Matcher<MatchableConcept> benjaminLWillard = instance("Benjamin L. Willard");
-    public static final Matcher<MatchableConcept> neilMcCauley = instance("Neil McCauley");
-    public static final Matcher<MatchableConcept> sarah = instance("Sarah");
-    public static final Matcher<MatchableConcept> harry = instance("Harry");
-
-    public static final ImmutableSet<Matcher<? super MatchableConcept>> movies = ImmutableSet.of(
-            godfather, theMuppets, apocalypseNow, heat, hocusPocus, spy, chineseCoffee
-    );
-
-    public static final Matcher<Iterable<? extends MatchableConcept>> containsAllMovies = containsInAnyOrder(movies);
-
+    /**
+     * Create a matcher to test against the results of a Graql query.
+     */
     public static Matcher<MatchQuery> results(
             Matcher<? extends Iterable<? extends Map<String, ? extends MatchableConcept>>> matcher
     ) {
@@ -139,6 +88,9 @@ public class GraknMatchers {
         };
     }
 
+    /**
+     * Create a matcher to test against every variable of every result of a Graql query.
+     */
     public static Matcher<MatchQuery> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
         return new TypeSafeDiagnosingMatcher<MatchQuery>() {
             @Override
@@ -165,6 +117,9 @@ public class GraknMatchers {
         };
     }
 
+    /**
+     * Create matcher to test against a particular variable on every result of a Graql query.
+     */
     public static Matcher<MatchQuery> variable(
             String varName, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
     ) {
@@ -194,6 +149,9 @@ public class GraknMatchers {
         };
     }
 
+    /**
+     * Create a matcher to test the value of a resource.
+     */
     public static Matcher<MatchableConcept> hasValue(Object expectedValue) {
         return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
             @Override
@@ -215,6 +173,9 @@ public class GraknMatchers {
         };
     }
 
+    /**
+     * Create a matcher to test the type of an instance.
+     */
     public static Matcher<MatchableConcept> hasType(Matcher<MatchableConcept> matcher) {
         Matcher<Iterable<? super MatchableConcept>> matchTypes = hasItem(matcher);
 
@@ -241,6 +202,9 @@ public class GraknMatchers {
         };
     }
 
+    /**
+     * Create a matcher to test that the concept is a casting.
+     */
     public static Matcher<MatchableConcept> isCasting() {
         return new TypeSafeMatcher<MatchableConcept>() {
             @Override
@@ -255,6 +219,9 @@ public class GraknMatchers {
         };
     }
 
+    /**
+     * Create a matcher to test that the concept is an instance.
+     */
     public static Matcher<MatchableConcept> isInstance() {
         return new TypeSafeMatcher<MatchableConcept>() {
             @Override
@@ -269,10 +236,16 @@ public class GraknMatchers {
         };
     }
 
-    private static Matcher<MatchableConcept> type(String type) {
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    static Matcher<MatchableConcept> type(String type) {
         return type(TypeName.of(type));
     }
 
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
     private static Matcher<MatchableConcept> type(TypeName expectedName) {
         return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
             @Override
@@ -294,10 +267,18 @@ public class GraknMatchers {
         };
     }
 
-    private static Matcher<MatchableConcept> instance(Object value) {
+    /**
+     * Create a matcher to test that the concept is an instance with a 'name' resource of the given value.
+     * See {@link MatchableConcept#NAME_TYPES} for possible 'name' resources.
+     */
+    static Matcher<MatchableConcept> instance(Object value) {
         return instance(hasValue(value));
     }
 
+    /**
+     * Create a matcher to test that the concept is an instance with a 'name' resource that matches the given matcher.
+     * See {@link MatchableConcept#NAME_TYPES} for possible 'name' resources.
+     */
     private static Matcher<MatchableConcept> instance(Matcher<MatchableConcept> matcher) {
         Matcher<Iterable<? super MatchableConcept>> matchResources = hasItem(matcher);
 

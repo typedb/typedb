@@ -22,6 +22,7 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.matcher.MovieMatchers;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -34,8 +35,7 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Order.asc;
 import static ai.grakn.graql.Order.desc;
-import static ai.grakn.test.matcher.GraknMatchers.*;
-import static ai.grakn.test.matcher.GraknMatchers.containsAllMovies;
+import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
 import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -81,7 +81,7 @@ public class MatchQueryModifierTest {
                 )
         ).orderBy("v", desc);
 
-        assertThat(query, variable("x", contains(godfather, godfather, apocalypseNow)));
+        assertThat(query, variable("x", contains(MovieMatchers.godfather, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
     }
 
     @Test
@@ -97,7 +97,7 @@ public class MatchQueryModifierTest {
         ).orderBy("n").offset(4).limit(8).select("x");
 
         assertThat(query, variable("x", containsInAnyOrder(
-                hocusPocus, spy, spy, theMuppets, theMuppets, godfather, apocalypseNow, apocalypseNow
+                MovieMatchers.hocusPocus, MovieMatchers.spy, MovieMatchers.spy, MovieMatchers.theMuppets, MovieMatchers.theMuppets, MovieMatchers.godfather, MovieMatchers.apocalypseNow, MovieMatchers.apocalypseNow
         )));
     }
 
@@ -116,7 +116,7 @@ public class MatchQueryModifierTest {
         MatchQuery query = qb.match(var("z").isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", desc);
 
         // Make sure movies are in the correct order
-        assertThat(query, variable("z", contains(godfather, hocusPocus, apocalypseNow, theMuppets, chineseCoffee)));
+        assertThat(query, variable("z", contains(MovieMatchers.godfather, MovieMatchers.hocusPocus, MovieMatchers.apocalypseNow, MovieMatchers.theMuppets, MovieMatchers.chineseCoffee)));
     }
 
     @Test
@@ -130,7 +130,7 @@ public class MatchQueryModifierTest {
                 )
         ).orderBy("t", desc).select("x").distinct();
 
-        assertThat(query, variable("x", contains(heat, godfather, apocalypseNow)));
+        assertThat(query, variable("x", contains(MovieMatchers.heat, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
     }
 
     @Test
@@ -141,7 +141,7 @@ public class MatchQueryModifierTest {
                 var().rel("x").rel("y")
         ).select("x");
 
-        assertThat(query, variable("x", containsInAnyOrder(kermitTheFrog, kermitTheFrog, missPiggy, missPiggy)));
+        assertThat(query, variable("x", containsInAnyOrder(MovieMatchers.kermitTheFrog, MovieMatchers.kermitTheFrog, MovieMatchers.missPiggy, MovieMatchers.missPiggy)));
     }
 
     @Test
@@ -152,7 +152,7 @@ public class MatchQueryModifierTest {
                 var().rel("x").rel("y")
         ).distinct().select("x");
 
-        assertThat(query, variable("x", containsInAnyOrder(kermitTheFrog, missPiggy)));
+        assertThat(query, variable("x", containsInAnyOrder(MovieMatchers.kermitTheFrog, MovieMatchers.missPiggy)));
     }
 
     private <T extends Comparable<T>> void assertResultsOrderedByValue(MatchQuery query, String var, boolean asc) {
