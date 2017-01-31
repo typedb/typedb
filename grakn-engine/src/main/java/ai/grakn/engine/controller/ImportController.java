@@ -20,11 +20,9 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
@@ -40,12 +38,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -55,6 +50,7 @@ import static ai.grakn.engine.controller.Utilities.getAsString;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static ai.grakn.util.REST.Request.PATH_FIELD;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.joining;
 import static spark.Spark.before;
 import static spark.Spark.halt;
 import static spark.Spark.post;
@@ -74,9 +70,6 @@ public class ImportController {
     private final Logger LOG = LoggerFactory.getLogger(ImportController.class);
     private final AtomicBoolean loadingInProgress = new AtomicBoolean(false);
     private final TaskManager manager;
-
-    private static final String INSERT_KEYWORD = "insert";
-    private static final String MATCH_KEYWORD = "match";
 
     public ImportController(TaskManager manager) {
         if (manager==null) {
@@ -113,11 +106,14 @@ public class ImportController {
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
             }
 
-            Loader loader = getLoader(keyspace);
+            Loader loader = new Loader(manager, keyspace);
 
             // Spawn threads to load and check status of loader
             ScheduledFuture scheduledFuture = scheduledPrinting(loader);
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(file, loader, scheduledFuture));
+
+            // Submit task to parse and load data in another thread
+            Thread importDataThread = new Thread(() -> importDataFromFile(file, loader, scheduledFuture));
+            importDataThread.start();
 
         } catch (FileNotFoundException j) {
             throw new GraknEngineServerException(400, j);
@@ -126,15 +122,6 @@ public class ImportController {
         }
 
         return "Loading successfully STARTED.\n";
-    }
-
-    /**
-     * Return the appropriate loader- Blocking if no hosts are provided, distributed otherwise
-     * @param keyspace name of the graph to use
-     * @return Loader configured to the provided keyspace
-     */
-    private Loader getLoader(String keyspace){
-        return new Loader(manager, keyspace);
     }
 
     /**
@@ -147,81 +134,26 @@ public class ImportController {
                 .scheduleAtFixedRate(loader::printLoaderState, 10, 10, SECONDS);
     }
 
-    // This method works under the following assumption:
-    // - all entities insert statements are before the relation ones
-    private void importDataFromFile(File file, Loader loaderParam, Future statusPrinter) {
+    private void importDataFromFile(File file, Loader loader, Future statusPrinter) {
         LOG.info("Data loading started.");
         loadingInProgress.set(true);
-        try (InputStream inputStream = new FileInputStream(file)) {
-            Iterator<Object> batchIterator = QueryParser.create(Graql.withoutGraph()).parseBatchLoad(inputStream).iterator();
-            if (batchIterator.hasNext()) {
-                Object var = batchIterator.next();
-                // -- ENTITIES --
-                while (var.equals(INSERT_KEYWORD)) {
-                    var = consumeInsertEntity(batchIterator, loaderParam);
-                }
-                loaderParam.waitToFinish(60000);
-                // ---- RELATIONS --- //
-                while (var.equals(MATCH_KEYWORD)) {
-                    var = consumeInsertRelation(batchIterator, loaderParam);
-                }
-                loaderParam.waitToFinish(60000);
-            }
 
-            PostProcessing.getInstance().run();
-        } catch (Exception e) {
-            LOG.error("Exception while batch loading data.", e);
+        try {
+            String fileAsString = Files.readAllLines(file.toPath()).stream().collect(joining("\n"));
+
+            Graql.withoutGraph()
+                    .parseList(fileAsString).stream()
+                    .map(p -> (InsertQuery) p)
+                    .forEach(loader::add);
+
+            loader.waitToFinish(60000);
+
+            LOG.info("Loading complete.");
+        } catch (IOException e) {
+            LOG.error("Exception while parsing data for batch load" + e);
         } finally {
             statusPrinter.cancel(true);
             loadingInProgress.set(false);
         }
-    }
-
-    private Object consumeInsertEntity(Iterator<Object> batchIterator, Loader loader) {
-        Object var = null;
-        List<Var> insertQuery = new ArrayList<>();
-        while (batchIterator.hasNext()) {
-            var = batchIterator.next();
-            if (var instanceof Var) {
-                insertQuery.add(((Var) var));
-            } else {
-                break;
-            }
-        }
-        loader.add(Graql.insert(insertQuery));
-
-        return var;
-    }
-
-    private Object consumeInsertRelation(Iterator<Object> batchIterator, Loader loader) {
-        Object var = null;
-        List<Var> insertQueryMatch = new ArrayList<>();
-        while (batchIterator.hasNext()) {
-            var = batchIterator.next();
-            if (var instanceof Var) {
-                insertQueryMatch.add(((Var) var));
-            } else {
-                break;
-            }
-        }
-        List<Var> insertQuery;
-        if (!var.equals(INSERT_KEYWORD)) {
-            throw new GraknEngineServerException(500, "Match statement not followed by any Insert.");
-        }
-
-        insertQuery = new ArrayList<>();
-        while (batchIterator.hasNext()) {
-            var = batchIterator.next();
-            if (var instanceof Var) {
-                insertQuery.add(((Var) var));
-            } else {
-                break;
-            }
-        }
-
-
-        loader.add(Graql.match(insertQueryMatch).insert(insertQuery));
-
-        return var;
     }
 }
